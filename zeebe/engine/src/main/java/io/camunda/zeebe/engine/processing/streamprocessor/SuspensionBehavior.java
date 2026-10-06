@@ -12,10 +12,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.Suspen
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
@@ -105,14 +107,16 @@ public final class SuspensionBehavior {
     final var value = command.getValue();
     if (value instanceof final ProcessInstanceRelated processInstanceRelated
         && processInstanceRelated.getProcessInstanceKey() > 0) {
-      return instanceKeysOf(processInstanceRelated);
+      return instanceKeysOf(command, processInstanceRelated);
     }
 
     final long key = command.getKey();
     return switch (command.getValueType()) {
-      case JOB -> instanceKeysOf(processingState.getJobState().getJob(key));
-      case INCIDENT -> instanceKeysOf(processingState.getIncidentState().getIncidentRecord(key));
-      case USER_TASK -> instanceKeysOf(processingState.getUserTaskState().getUserTask(key));
+      case JOB -> instanceKeysOf(command, processingState.getJobState().getJob(key));
+      case INCIDENT ->
+          instanceKeysOf(command, processingState.getIncidentState().getIncidentRecord(key));
+      case USER_TASK ->
+          instanceKeysOf(command, processingState.getUserTaskState().getUserTask(key));
       case AD_HOC_SUB_PROCESS_INSTRUCTION -> {
         final var adHocValue = (AdHocSubProcessInstructionRecordValue) value;
         final var elementInstance =
@@ -137,7 +141,8 @@ public final class SuspensionBehavior {
     };
   }
 
-  private static InstanceKeys instanceKeysOf(final @Nullable ProcessInstanceRelated entity) {
+  private static InstanceKeys instanceKeysOf(
+      final TypedRecord<?> command, final @Nullable ProcessInstanceRelated entity) {
     if (entity == null) {
       return UNRESOLVED_INSTANCE_KEYS;
     }
@@ -146,6 +151,10 @@ public final class SuspensionBehavior {
           case final JobRecordValue job -> job.getElementInstanceKey();
           case final UserTaskRecordValue userTask -> userTask.getElementInstanceKey();
           case final IncidentRecordValue incident -> incident.getElementInstanceKey();
+          // keyed by the element instance whose listener completed, e.g. a cancel listener
+          case final ProcessInstanceRecordValue ignored
+              when command.getIntent() == ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER ->
+              command.getKey();
           default -> -1;
         };
     return new InstanceKeys(entity.getProcessInstanceKey(), elementInstanceKey);
