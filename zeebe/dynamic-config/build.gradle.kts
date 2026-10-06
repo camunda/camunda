@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.protobuf-conventions") }
 
 // Point to the proto files in resources
@@ -20,7 +22,7 @@ dependencies {
   implementation(project(":zeebe-protocol"))
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.io.micrometer.micrometer.commons)
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(libs.org.awaitility.awaitility)
   testImplementation(libs.org.mockito.mockito.core)

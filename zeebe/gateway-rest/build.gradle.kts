@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.test-jar-conventions")
@@ -80,12 +82,12 @@ dependencies {
   testImplementation(libs.com.jayway.jsonpath.json.path)
   testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-msgpack-core"))
-  testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
+  testImplementation(projectArtifact(":zeebe-protocol-asserts", ArtifactKind.GENERATED_ASSERTIONS))
   testImplementation(project(":zeebe-scheduler"))
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(project(":zeebe-gateway"))
-  testImplementation(project(":zeebe-gateway", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-gateway", ArtifactKind.TESTS))
   testImplementation(libs.org.reactivestreams.reactive.streams)
   testImplementation(libs.io.projectreactor.reactor.core)
   testImplementation(libs.org.awaitility.awaitility)

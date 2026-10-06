@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.test-jar-conventions")
@@ -22,7 +24,7 @@ dependencies {
   implementation(libs.com.fasterxml.jackson.core.jackson.databind)
   implementation(libs.com.fasterxml.jackson.core.jackson.core)
   testImplementation(project(":zeebe-logstreams"))
-  testImplementation(project(":zeebe-logstreams", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
   testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
   testImplementation(libs.org.mockito.mockito.core)
 }

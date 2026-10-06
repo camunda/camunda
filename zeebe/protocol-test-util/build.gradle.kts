@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
@@ -23,7 +25,7 @@ dependencies {
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.org.jeasy.easy.random.core)
   implementation(libs.io.github.classgraph.classgraph)
-  testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
+  testImplementation(projectArtifact(":zeebe-protocol-asserts", ArtifactKind.GENERATED_ASSERTIONS))
 }
 
 description = "Zeebe Protocol Test Util"

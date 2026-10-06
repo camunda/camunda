@@ -1,3 +1,5 @@
+import buildlogic.artifactKind
+import buildlogic.ArtifactKind
 import org.gradle.process.CommandLineArgumentProvider
 import buildlogic.OptionalDependenciesPomAction
 import buildlogic.micrometerOptionalDependencies
@@ -28,6 +30,7 @@ val mainOutput =
   configurations.create("mainOutput") {
     isCanBeConsumed = true
     isCanBeResolved = false
+    artifactKind(project, ArtifactKind.MAIN_OUTPUT)
   }
 
 artifacts {

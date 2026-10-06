@@ -1,3 +1,5 @@
+import buildlogic.artifactKind
+import buildlogic.ArtifactKind
 import buildlogic.TestJarPublishingExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
@@ -15,6 +17,7 @@ val tests =
   configurations.create("tests") {
     isCanBeConsumed = true
     isCanBeResolved = false
+    artifactKind(project, ArtifactKind.TESTS)
   }
 
 artifacts { add("tests", testsJar) }

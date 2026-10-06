@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.test-jar-conventions")
@@ -16,7 +18,7 @@ dependencies {
   api(libs.com.fasterxml.jackson.core.jackson.databind)
   api(libs.com.fasterxml.jackson.core.jackson.annotations)
   testImplementation(libs.org.awaitility.awaitility)
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(project(":zeebe-test-util"))

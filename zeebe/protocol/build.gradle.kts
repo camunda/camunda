@@ -1,3 +1,5 @@
+import buildlogic.artifactKind
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.sbe-conventions") }
 
 java { disableAutoTargetJvm() }
@@ -8,6 +10,7 @@ val mainClasses =
   configurations.create("mainClasses") {
     isCanBeConsumed = true
     isCanBeResolved = false
+    artifactKind(project, ArtifactKind.MAIN_CLASSES)
   }
 
 artifacts {

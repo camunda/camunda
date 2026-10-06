@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.sbe-conventions")
   id("buildlogic.serial-test-conventions")
@@ -70,16 +72,16 @@ dependencies {
   implementation(libs.org.agrona.agrona)
   implementation(libs.org.apache.commons.commons.lang3)
   testImplementation(libs.org.springframework.boot.spring.boot)
-  testImplementation(project(":zeebe-atomix-cluster", configuration = "tests"))
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-atomix-cluster", ArtifactKind.TESTS))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-bpmn-model"))
   testImplementation(project(":camunda-client-java"))
-  testImplementation(project(":zeebe-logstreams", configuration = "tests"))
-  testImplementation(project(":zeebe-util", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
+  testImplementation(projectArtifact(":zeebe-util", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-protocol-test-util"))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(project(":zeebe-exporter-test"))
-  testImplementation(project(":zeebe-workflow-engine", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-workflow-engine", ArtifactKind.TESTS))
   testImplementation(libs.junit.junit)
   testImplementation(libs.net.bytebuddy.byte.buddy)
   testImplementation(libs.org.awaitility.awaitility)

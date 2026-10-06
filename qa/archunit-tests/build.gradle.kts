@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
@@ -5,7 +7,7 @@ dependencies {
   testImplementation(libs.org.springframework.spring.test)
   testImplementation(libs.org.springframework.spring.webflux)
   testImplementation(project(":camunda-zeebe"))
-  testImplementation(project(":camunda-qa-acceptance-tests", configuration = "tests"))
+  testImplementation(projectArtifact(":camunda-qa-acceptance-tests", ArtifactKind.TESTS))
   testImplementation(project(":camunda-client-java"))
   testImplementation(project(":camunda-service"))
   testImplementation(project(":camunda-search-domain"))
@@ -14,7 +16,7 @@ dependencies {
   testImplementation(project(":camunda-db-rdbms"))
   testImplementation(project(":webapps-schema"))
   testImplementation(project(":zeebe-gateway-rest"))
-  testImplementation(project(":zeebe-gateway-rest", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-gateway-rest", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-protocol"))
   testImplementation(project(":zeebe-protocol-impl"))
   testImplementation(project(":camunda-security-protocol"))

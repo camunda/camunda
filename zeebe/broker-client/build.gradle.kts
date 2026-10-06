@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.serial-test-conventions")
@@ -19,7 +21,7 @@ dependencies {
   api(libs.io.micrometer.micrometer.commons)
   api(libs.io.micrometer.micrometer.core)
   testImplementation(project(":zeebe-test-util"))
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-protocol-test-util"))
   testImplementation(libs.org.awaitility.awaitility)
   testImplementation(libs.org.hamcrest.hamcrest)

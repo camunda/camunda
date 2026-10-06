@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 import buildlogic.filterMavenResources
 import java.nio.file.Files
 
@@ -77,7 +79,7 @@ dependencies {
   implementation(project(":zeebe-scheduler"))
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(project(":zeebe-test-util"))

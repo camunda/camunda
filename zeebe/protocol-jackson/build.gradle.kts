@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 java { disableAutoTargetJvm() }
@@ -9,7 +11,7 @@ dependencies {
   api(libs.com.fasterxml.jackson.core.jackson.databind)
   api(libs.com.fasterxml.jackson.core.jackson.core)
   testImplementation(project(":zeebe-protocol-test-util"))
-  testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
+  testImplementation(projectArtifact(":zeebe-protocol-asserts", ArtifactKind.GENERATED_ASSERTIONS))
 }
 
 description = "Zeebe Protocol Jackson"

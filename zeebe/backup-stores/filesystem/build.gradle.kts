@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
@@ -12,7 +14,7 @@ dependencies {
   api(libs.com.fasterxml.jackson.core.jackson.databind)
   implementation(libs.org.slf4j.slf4j.api)
   testImplementation(project(":zeebe-backup-testkit"))
-  testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-backup-testkit", ArtifactKind.TESTS))
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(project(":zeebe-protocol"))
 }

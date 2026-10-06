@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
@@ -22,8 +24,8 @@ dependencies {
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.awaitility.awaitility)
   testImplementation(libs.org.junit.platform.junit.platform.commons)
-  testImplementation(project(":zeebe-logstreams", configuration = "tests"))
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
 }
 
 description = "Zeebe Stream Platform"

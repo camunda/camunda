@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.test-jar-conventions")
@@ -19,7 +21,7 @@ dependencies {
   implementation(libs.com.fasterxml.jackson.core.jackson.annotations)
   runtimeOnly(libs.org.opensearch.client.opensearch.rest.client)
   testImplementation(project(":optimize-backend"))
-  testImplementation(project(":optimize-backend", configuration = "tests"))
+  testImplementation(projectArtifact(":optimize-backend", ArtifactKind.TESTS))
   testImplementation(project(":optimize-commons"))
   testImplementation(libs.org.junit.platform.junit.platform.suite.api)
   testImplementation(libs.org.junit.platform.junit.platform.suite)

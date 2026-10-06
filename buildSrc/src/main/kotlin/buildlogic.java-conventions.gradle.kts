@@ -1,3 +1,4 @@
+import buildlogic.ARTIFACT_KIND
 import buildlogic.skipWhen
 import buildlogic.registerTestPortSlotService
 import buildlogic.requiredVersion
@@ -33,6 +34,10 @@ val isCi =
 val quickly = providers.gradleProperty("quickly").asEnabledFlag().orElse(false)
 
 dependencies {
+  // A consumer that requests an artifact kind must get that variant, not the default jar variant.
+  attributesSchema {
+    setAttributeDisambiguationPrecedence(listOf(ARTIFACT_KIND) + attributeDisambiguationPrecedence)
+  }
   add("implementation", platform(versionCatalog.findLibrary("org-junit-junit-bom").get()))
   add("errorprone", versionCatalog.findLibrary("com-google-errorprone-error-prone-core").get())
   add("errorprone", versionCatalog.findLibrary("com-uber-nullaway-nullaway").get())
