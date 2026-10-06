@@ -244,6 +244,40 @@ class RocksDbSharedCacheTest {
   }
 
   @Test
+  void shouldValidateFractionAgainstMemoryMinimum() {
+    // given
+    rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
+    rocksdbCfg.setMemoryFraction(0.15);
+    rocksdbCfg.setMemoryMinimum(DataSize.ofMegabytes(96));
+
+    // when
+    try (final var managementFactoryMock = mockMemoryEnvironment(512L * 1024 * 1024)) {
+      final var throwable = catchThrowable(() -> rocksdbCfg.validateRocksDbMemory(3));
+
+      // then
+      assertThat(throwable).isNull();
+    }
+  }
+
+  @Test
+  void shouldIgnoreMemoryMinimumForBrokerStrategy() {
+    // given
+    rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
+    rocksdbCfg.setMemoryLimit(DataSize.ofMegabytes(64));
+    rocksdbCfg.setMemoryMinimum(DataSize.ofMegabytes(96));
+
+    // when
+    try (final var managementFactoryMock = mockMemoryEnvironment(512L * 1024 * 1024)) {
+      final var throwable = catchThrowable(() -> rocksdbCfg.validateRocksDbMemory(3));
+
+      // then
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("per partition to be at least");
+    }
+  }
+
+  @Test
   void shouldThrowIfMemoryFractionIsInvalid() {
     // when
     rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);

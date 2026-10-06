@@ -47,6 +47,7 @@ public class RocksDbPropertiesTest {
         "camunda.data.primary-storage.rocks-db.column-family-options.write_buffer_size=67108864",
         "camunda.data.primary-storage.rocks-db.column-family-options.compaction_pri=kOldestLargestSeqFirst",
         "camunda.data.primary-storage.rocks-db.memory-fraction=0.5",
+        "camunda.data.primary-storage.rocks-db.memory-minimum=256MB",
         "camunda.data.primary-storage.rocks-db.max-memory-fraction=0.8"
       })
   class WithOnlyUnifiedConfigSet {
@@ -76,6 +77,12 @@ public class RocksDbPropertiesTest {
     @Test
     void shouldSetMemoryFraction() {
       assertThat(brokerCfg.getExperimental().getRocksdb().getMemoryFraction()).isEqualTo(0.5);
+    }
+
+    @Test
+    void shouldSetMemoryMinimum() {
+      assertThat(brokerCfg.getExperimental().getRocksdb().getMemoryMinimum())
+          .isEqualTo(DataSize.ofMegabytes(256));
     }
 
     @Test

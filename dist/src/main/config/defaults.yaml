@@ -623,6 +623,10 @@ camunda: # Type: io.camunda.configuration.Camunda
         # all partitions in a broker. The memory allocation strategy depends on the memoryAllocationStrategy
         # setting.
         memory-limit: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT
+        # Configures the minimum memory to allocate to RocksDB when using the 'FRACTION' memory allocation
+        # strategy. If memoryFraction of total system memory is less than this value, this value is allocated
+        # instead. Defaults to 0, which disables the minimum.
+        memory-minimum: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYMINIMUM
         # Configures how many write buffers should be full before they are merged and flushed to disk. Having
         # a higher number here means you may flush less often, but will flush more data at once. Have a lower
         # one means flushing more often, but flushing less data at once.

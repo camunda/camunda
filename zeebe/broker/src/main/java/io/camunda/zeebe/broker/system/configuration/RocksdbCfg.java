@@ -13,6 +13,7 @@ import com.sun.management.OperatingSystemMXBean;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import java.lang.management.ManagementFactory;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -56,6 +57,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private MemoryAllocationStrategy memoryAllocationStrategy =
       DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
   private double memoryFraction = 0.1;
+  private DataSize memoryMinimum = DataSize.ofBytes(RocksDbConfiguration.DEFAULT_MEMORY_MINIMUM);
   private double maxMemoryFraction = -1;
 
   @Override
@@ -73,16 +75,16 @@ public final class RocksdbCfg implements ConfigurationEntry {
   long getMemoryLimitBytes(final int partitionsPerBrokerCount) {
     return switch (getMemoryAllocationStrategy()) {
       case BROKER -> getMemoryLimit().toBytes();
-      case FRACTION -> getFixedMemoryPercentage(getMemoryFraction());
+      case FRACTION -> getFractionMemoryLimit();
       case PARTITION -> getMemoryLimit().toBytes() * partitionsPerBrokerCount;
     };
   }
 
-  private static long getFixedMemoryPercentage(final double memoryFraction) {
-    // get total memory from the OS bean.
+  private long getFractionMemoryLimit() {
     final long totalMemorySize =
         ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
-    return Math.round(totalMemorySize * memoryFraction);
+    return RocksDbResources.fractionMemoryLimit(
+        totalMemorySize, memoryFraction, memoryMinimum.toBytes());
   }
 
   public void validateRocksDbMemory(final int partitionsPerBrokerCount) {
@@ -209,6 +211,14 @@ public final class RocksdbCfg implements ConfigurationEntry {
     this.memoryFraction = memoryFraction;
   }
 
+  public DataSize getMemoryMinimum() {
+    return memoryMinimum;
+  }
+
+  public void setMemoryMinimum(final DataSize memoryMinimum) {
+    this.memoryMinimum = memoryMinimum;
+  }
+
   public MemoryAllocationStrategy getMemoryAllocationStrategy() {
     return memoryAllocationStrategy;
   }
@@ -293,7 +303,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         .setWalDisabled(disableWal)
         .setSstPartitioningEnabled(enableSstPartitioning)
         .setMemoryAllocationStrategy(memoryAllocationStrategy)
-        .setMemoryFraction(memoryFraction);
+        .setMemoryFraction(memoryFraction)
+        .setMemoryMinimum(memoryMinimum.toBytes());
   }
 
   @Override
@@ -311,6 +322,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         + memoryAllocationStrategy
         + ", memoryFraction="
         + memoryFraction
+        + ", memoryMinimum="
+        + memoryMinimum
         + ", maxMemoryFraction="
         + maxMemoryFraction
         + ", maxOpenFiles="
