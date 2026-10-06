@@ -96,7 +96,7 @@ public final class BpmnAdHocSubProcessBehavior {
     activateElement(context, elementToActivate, adHocSubProcessInnerInstanceKey);
   }
 
-  private long createInnerInstance(
+  public long createInnerInstance(
       final BpmnElementContext adHocSubProcessContext,
       final ExecutableAdHocSubProcess adHocSubProcess) {
     final var adHocSubProcessElementInstanceKey = adHocSubProcessContext.getElementInstanceKey();

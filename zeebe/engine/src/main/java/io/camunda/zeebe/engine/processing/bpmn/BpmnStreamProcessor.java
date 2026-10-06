@@ -90,6 +90,7 @@ public final class BpmnStreamProcessor
             bpmnBehaviors.eventSubscriptionBehavior(),
             bpmnBehaviors.incidentBehavior(),
             bpmnBehaviors.userTaskBehavior(),
+            bpmnBehaviors.adHocSubProcessBehavior(),
             processEngineMetrics,
             this::getContainerProcessor,
             writers);

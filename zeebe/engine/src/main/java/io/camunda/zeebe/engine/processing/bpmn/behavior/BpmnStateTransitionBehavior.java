@@ -14,8 +14,10 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
@@ -38,6 +40,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 public final class BpmnStateTransitionBehavior {
@@ -62,6 +65,7 @@ public final class BpmnStateTransitionBehavior {
   private final TypedCommandWriter commandWriter;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
 
   public BpmnStateTransitionBehavior(
       final KeyGenerator keyGenerator,
@@ -70,6 +74,7 @@ public final class BpmnStateTransitionBehavior {
       final BpmnEventSubscriptionBehavior eventSubscriptionBehavior,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnUserTaskBehavior userTaskBehavior,
+      final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior,
       final ProcessEngineMetrics metrics,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
@@ -84,6 +89,7 @@ public final class BpmnStateTransitionBehavior {
     commandWriter = writers.command();
     this.eventSubscriptionBehavior = eventSubscriptionBehavior;
     this.incidentBehavior = incidentBehavior;
+    this.adHocSubProcessBehavior = adHocSubProcessBehavior;
   }
 
   public void continueTerminating(final BpmnElementContext context) {
@@ -367,11 +373,93 @@ public final class BpmnStateTransitionBehavior {
 
   public void takeSequenceFlow(
       final BpmnElementContext context, final ExecutableSequenceFlow sequenceFlow) {
+    takeSequenceFlows(context, List.of(sequenceFlow));
+  }
+
+  /**
+   * Takes the given outgoing sequence flows of the element.
+   *
+   * <p>Inside an ad-hoc sub-process, a joining gateway that is reached from more than one ad-hoc
+   * activity lives in the ad-hoc sub-process instance, not in an inner instance. A sequence flow
+   * into such a join leaves the inner instance, and each outgoing sequence flow of the join
+   * continues in a new inner instance.
+   */
+  public void takeSequenceFlows(
+      final BpmnElementContext context, final List<ExecutableSequenceFlow> sequenceFlows) {
+    if (sequenceFlows.isEmpty()) {
+      return;
+    }
+
+    final var flowScope = sequenceFlows.getFirst().getSource().getFlowScope();
+    if (flowScope == null
+        || flowScope.getElementType() != BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE) {
+      sequenceFlows.forEach(
+          sequenceFlow -> takeSequenceFlow(context, sequenceFlow, context.getFlowScopeKey()));
+      return;
+    }
+
+    final var adHocSubProcess = (ExecutableAdHocSubProcess) flowScope.getFlowScope();
+    // only shared joins live in the ad-hoc sub-process instance, all other elements in an inner
+    // one;
+    // a shared join activated by process instance modification lives in an inner instance, though
+    final boolean isInAdHocSubProcessScope =
+        adHocSubProcess.isSharedJoin(sequenceFlows.getFirst().getSource())
+            && stateBehavior.getFlowScopeInstance(context).getValue().getBpmnElementType()
+                == BpmnElementType.AD_HOC_SUB_PROCESS;
+
+    boolean hasLeftInnerInstance = false;
+    for (final ExecutableSequenceFlow sequenceFlow : sequenceFlows) {
+      final boolean isToSharedJoin = adHocSubProcess.isSharedJoin(sequenceFlow.getTarget());
+      final long targetFlowScopeKey;
+      if (isToSharedJoin == isInAdHocSubProcessScope) {
+        targetFlowScopeKey = context.getFlowScopeKey();
+      } else if (isToSharedJoin) {
+        targetFlowScopeKey =
+            stateBehavior.getFlowScopeInstance(context).getValue().getFlowScopeKey();
+        hasLeftInnerInstance = true;
+      } else {
+        // like an activated element, each path after the join runs in its own inner instance
+        targetFlowScopeKey =
+            adHocSubProcessBehavior.createInnerInstance(
+                stateBehavior.getFlowScopeContext(context), adHocSubProcess);
+      }
+      takeSequenceFlow(context, sequenceFlow, targetFlowScopeKey);
+    }
+
+    if (hasLeftInnerInstance) {
+      closeInnerInstanceIfNothingIsLeft(context, (ExecutableFlowElementContainer) flowScope);
+    }
+  }
+
+  /**
+   * Completes the inner instance after its last token moved to a shared join. The execution path
+   * continues at the join, so the ad-hoc sub-process is not notified about a completed path: no
+   * completion condition, output collection, or new job, the same as for a token that moves on
+   * inside the ad-hoc sub-process.
+   */
+  private void closeInnerInstanceIfNothingIsLeft(
+      final BpmnElementContext context, final ExecutableFlowElementContainer innerInstanceElement) {
+    final var innerInstance = stateBehavior.getFlowScopeInstance(context);
+    if (innerInstance.getNumberOfActiveElementInstances() == 0
+        && innerInstance.getActiveSequenceFlows() == 0) {
+      final var completing =
+          transitionTo(
+              stateBehavior.getFlowScopeContext(context), ProcessInstanceIntent.ELEMENT_COMPLETING);
+      final var completed = transitionTo(completing, ProcessInstanceIntent.ELEMENT_COMPLETED);
+      metrics.elementInstanceCompleted(completed, innerInstanceElement.getEventType());
+    }
+  }
+
+  private void takeSequenceFlow(
+      final BpmnElementContext context,
+      final ExecutableSequenceFlow sequenceFlow,
+      final long flowScopeKey) {
     verifyTransition(context, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
     final var target = sequenceFlow.getTarget();
 
     followUpInstanceRecord.wrap(context.getRecordValue());
     followUpInstanceRecord
+        .setFlowScopeKey(flowScopeKey)
         .setElementId(sequenceFlow.getId())
         .setBpmnElementType(sequenceFlow.getElementType())
         .setBpmnEventType(sequenceFlow.getEventType());
@@ -493,7 +581,7 @@ public final class BpmnStateTransitionBehavior {
 
   public <T extends ExecutableFlowNode> void takeOutgoingSequenceFlows(
       final T element, final BpmnElementContext context) {
-    element.getOutgoing().forEach(sequenceFlow -> takeSequenceFlow(context, sequenceFlow));
+    takeSequenceFlows(context, element.getOutgoing());
   }
 
   /**
@@ -661,7 +749,13 @@ public final class BpmnStateTransitionBehavior {
 
     if (flowScope != null) {
       containerContext = stateBehavior.getFlowScopeContext(childContext);
-      containerScope = flowScope;
+      if (flowScope.getElementType() == BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE
+          && containerContext.getBpmnElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
+        // a shared join lives in the ad-hoc sub-process instance, not in an inner instance
+        containerScope = flowScope.getFlowScope();
+      } else {
+        containerScope = flowScope;
+      }
 
     } else if (childContext.getParentElementInstanceKey() > 0) {
       // no flow scope, it is called from a parent process
