@@ -53,7 +53,7 @@ Each tenant gets its own connectors runtime on the next free port from 8087 upwa
 
 To run with tenants for one start only, without saving them (useful in CI), use `./c8run start --physical-tenants sales,hr`. Removing a tenant keeps its data in secondary storage under the tenant's prefix, so adding the same ID again restores it, including the users created in that tenant. `./c8run tenants reset` removes all saved tenants.
 
-`./c8run tenants path` shows where tenants are saved; `C8RUN_TENANTS_FILE` selects another file. If your `--config` already declares `camunda.physical-tenants`, c8run uses it as-is and does not apply its saved tenants. Set `C8RUN_TENANTS_MODE=external` to disable the `tenants` commands entirely.
+`./c8run tenants path` shows where tenants are saved; `C8RUN_TENANTS_FILE` selects another file. If your `--config` already declares `camunda.physical-tenants`, c8run uses it as-is and does not apply its saved tenants. Set `C8RUN_TENANTS_MODE=external` to leave tenants entirely to your `--config`: the `tenants` commands are disabled, saved tenants are not applied, and `start --physical-tenants` is rejected.
 
 Tools that wrap c8run, such as `c8ctl cluster`, can set `C8RUN_CLI_NAME` to the command users type, for example `C8RUN_CLI_NAME="c8ctl cluster"`. c8run then shows that name in help output and in command hints such as `c8ctl cluster tenants list`. When the variable is unset, output names `c8run`.
 
