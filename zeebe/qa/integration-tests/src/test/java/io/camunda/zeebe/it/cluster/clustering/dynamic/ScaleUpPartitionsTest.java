@@ -853,6 +853,18 @@ class ScaleUpPartitionsWithAuthTest extends ScaleUpPartitionsTest {
   }
 
   @Override
+  @Disabled("Backup/restore is tested without auth in ScaleUpPartitionsBackupRestoreTest")
+  public void shouldBePossibleToRestoreFromBackupBeforeScaling() throws IOException {
+    super.shouldBePossibleToRestoreFromBackupBeforeScaling();
+  }
+
+  @Override
+  @Disabled("Backup/restore is tested without auth in ScaleUpPartitionsBackupRestoreTest")
+  public void shouldBePossibleToRestoreFromBackupTakenAfterScaleup() throws IOException {
+    super.shouldBePossibleToRestoreFromBackupTakenAfterScaleup();
+  }
+
+  @Override
   protected TestCluster buildCluster(final Path backupPath) {
     final var h2Url =
         "jdbc:h2:mem:scale-up-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
