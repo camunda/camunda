@@ -20,6 +20,7 @@ import static org.mockito.Mockito.withSettings;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.broker.transport.backupapi.CheckpointSnapshotReserver;
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -33,7 +34,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.Either;
 import java.util.Map;
 import org.agrona.ExpandableArrayBuffer;
@@ -63,7 +63,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, mock(PersistedSnapshotStore.class), new TestConcurrencyControl());
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -97,7 +97,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, mock(PersistedSnapshotStore.class), new TestConcurrencyControl());
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.setDiskSpaceAvailable(false);
@@ -127,7 +127,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, mock(PersistedSnapshotStore.class), new TestConcurrencyControl());
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -169,7 +169,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, mock(PersistedSnapshotStore.class), new TestConcurrencyControl());
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -201,7 +201,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, mock(PersistedSnapshotStore.class), new TestConcurrencyControl());
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
@@ -229,7 +229,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, mock(PersistedSnapshotStore.class), new TestConcurrencyControl());
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
@@ -264,7 +264,7 @@ final class InterPartitionCommandReceiverTest {
     final var logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, mock(PersistedSnapshotStore.class), new TestConcurrencyControl());
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -301,7 +301,7 @@ final class InterPartitionCommandReceiverTest {
     final var logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, mock(PersistedSnapshotStore.class), new TestConcurrencyControl());
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
