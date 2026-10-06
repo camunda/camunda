@@ -35,12 +35,11 @@
 /gradlew                                                 @camunda/orchestration-cluster
 /gradlew.bat                                             @camunda/orchestration-cluster
 /gradle/                                                 @camunda/orchestration-cluster
-/buildSrc/                                               @camunda/orchestration-cluster
 # Convention-plugin exceptions (owned by the domain team, last match wins)
-/buildSrc/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
-/buildSrc/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
-/buildSrc/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
-/buildSrc/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/core-features
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/core-features
 
 ###################
 ## Core Features ##

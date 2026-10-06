@@ -113,22 +113,32 @@ that workaround until the task and its callers have been verified together.
 
 ## Build-logic tests and fixtures
 
-The convention and task implementation tests live in `buildSrc/src/test/kotlin/`; their TestKit
-fixtures live in `buildSrc/src/test/resources/fixtures/`. Run them with:
-
-```bash
-./gradlew -p buildSrc test
-```
-
-The shared Maven POM resolver is an included build. Its unit tests can be run with:
+The convention and task implementation tests live in
+`gradle/build-logic/conventions/src/test/kotlin/`; their TestKit fixtures live in
+`gradle/build-logic/conventions/src/test/resources/fixtures/`. `gradle/build-logic` is an included
+build holding the convention plugins (`conventions`) and the shared Maven POM resolver
+(`pom-resolution`). Run all of its tests with:
 
 ```bash
 ./gradlew -p gradle/build-logic test
 ```
 
+Run only the convention tests, or a single test class or method, with:
+
+```bash
+./gradlew -p gradle/build-logic :conventions:test
+./gradlew -p gradle/build-logic :conventions:test \
+  --tests 'buildlogic.DistributionPackagingTest'
+./gradlew -p gradle/build-logic :conventions:test \
+  --tests 'buildlogic.DistributionPackagingTest.<methodName>'
+```
+
+These tests are not part of the root build's `test` or `testClasses` tasks, and CI does not run
+them. Run them locally after changing anything under `gradle/build-logic/`.
+
 To add a build-logic regression fixture, add a small isolated project under
-`buildSrc/src/test/resources/fixtures/<fixture-name>/`. Add a JUnit test under
-`buildSrc/src/test/kotlin/` that copies the fixture to a temporary directory, starts it with
+`gradle/build-logic/conventions/src/test/resources/fixtures/<fixture-name>/`. Add a JUnit test under
+`gradle/build-logic/conventions/src/test/kotlin/` that copies the fixture to a temporary directory, starts it with
 `GradleRunner` and `withPluginClasspath()`, and asserts task outcomes or generated files. Keep the
 fixture offline and scoped to the behavior under test; avoid depending on the full monorepo project
 graph when a minimal project can reproduce the contract.

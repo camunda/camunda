@@ -89,7 +89,7 @@ gradle.lifecycle.afterProject {
 
 dependencyResolutionManagement {
   // PREFER_SETTINGS: repositories declared here take precedence; subproject repositories are
-  // still allowed (e.g. buildSrc/build.gradle.kts uses gradlePluginPortal()).
+  // still allowed (e.g. gradle/build-logic/conventions/build.gradle.kts uses gradlePluginPortal()).
   repositoriesMode = RepositoriesMode.PREFER_SETTINGS
 
   repositories {

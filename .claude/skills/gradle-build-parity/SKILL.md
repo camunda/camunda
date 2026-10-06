@@ -1,6 +1,6 @@
 ---
 name: gradle-build-parity
-description: Use when editing, fixing, or debugging the Gradle build in the Camunda monorepo (build.gradle.kts, settings.gradle.kts, buildSrc/, buildlogic conventions) — especially for missing dependencies, "cannot find symbol" across modules, test-jar wiring, optional dependencies, published-POM parity, or any Gradle vs Maven behavioral difference.
+description: Use when editing, fixing, or debugging the Gradle build in the Camunda monorepo (build.gradle.kts, settings.gradle.kts, gradle/build-logic/, buildlogic conventions) — especially for missing dependencies, "cannot find symbol" across modules, test-jar wiring, optional dependencies, published-POM parity, or any Gradle vs Maven behavioral difference.
 ---
 
 # Gradle Build Parity
@@ -393,7 +393,7 @@ exclusions or filename mappings:
 - `parent/pom.xml` and module-local `pom.xml` files — authoritative for versions, deps, code
   generation, exclusions, packaging, publication
 - `settings.gradle.kts` — module registration
-- `buildSrc/` — convention plugins (`buildlogic.*`)
+- `gradle/build-logic/conventions/` — convention plugins (`buildlogic.*`)
 - [references/rebase-pom-audit.md](references/rebase-pom-audit.md) — audit for POM changes
   introduced by a rebase and reduction to the final net state
 - [references/pom-change-porting.md](references/pom-change-porting.md) — reusable procedure for
