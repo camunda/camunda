@@ -179,6 +179,7 @@ You can specify a secondary storage type as the second argument:
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
+The Makefile also disables the data availability monitoring and the k6 `data-read` test, because they read from secondary storage.
 
 #### ECK Elasticsearch
 
