@@ -384,7 +384,7 @@ func (c *tenantsCommand) confirm(confirmed bool, question string) (bool, error) 
 	_, _ = fmt.Fprintf(c.errorOutput, "%s [y/N]: ", question)
 	answer, err := bufio.NewReader(c.input).ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
-		return false, nil
+		return false, fmt.Errorf("read confirmation: %w", err)
 	}
 	answer = strings.TrimSpace(answer)
 	return strings.EqualFold(answer, "y") || strings.EqualFold(answer, "yes"), nil

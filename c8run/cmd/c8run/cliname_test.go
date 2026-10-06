@@ -35,3 +35,20 @@ func TestTenantsHintsUseConfiguredCLIName(t *testing.T) {
 	assert.Contains(t, out.String(), "`c8ctl cluster tenants add <id>`")
 	assert.NotContains(t, out.String(), "c8run tenants")
 }
+
+func TestUsageTextUsesConfiguredCLIName(t *testing.T) {
+	help := usageText("/opt/c8run/c8run", "c8ctl cluster")
+	assert.Contains(t, help, "c8ctl cluster tenants add sales")
+	assert.NotContains(t, help, "/opt/c8run/c8run")
+	assert.Contains(t, usageText("./c8run", ""), "./c8run stop", "unset name keeps the executable path")
+}
+
+func TestConfirmReadFailureIsAnError(t *testing.T) {
+	base := t.TempDir()
+	cmd, _, _ := testTenantsCommand(t, "", true, "")
+	require.NoError(t, cmd.run(base, []string{"add", "a"}))
+	cmd.input = failingReader{}
+	for _, args := range [][]string{{"remove", "a"}, {"reset"}} {
+		assert.ErrorContains(t, cmd.run(base, args), "read confirmation: test read failure")
+	}
+}
