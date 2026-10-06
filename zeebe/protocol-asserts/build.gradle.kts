@@ -1,112 +1,10 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath(libs.org.assertj.assertj.assertions.generator)
-    }
-}
-
-import com.google.common.reflect.TypeToken
-import org.assertj.assertions.generator.AssertionsEntryPointType
-import org.assertj.assertions.generator.BaseAssertionGenerator
-import org.assertj.assertions.generator.description.converter.ClassToClassDescriptionConverter
-import org.gradle.api.DefaultTask
-import org.gradle.api.file.ConfigurableFileCollection
-import org.gradle.api.file.DirectoryProperty
+import buildlogic.GenerateAssertjAssertionsTask
 import org.gradle.api.file.DuplicatesStrategy
-import org.gradle.api.file.FileSystemOperations
-import org.gradle.api.tasks.CacheableTask
-import org.gradle.api.tasks.Classpath
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.compile.JavaCompile
-import java.lang.reflect.Modifier
-import java.net.URLClassLoader
-import javax.inject.Inject
 
 plugins {
     id("buildlogic.server-conventions")
-}
-
-@CacheableTask
-abstract class GenerateAssertjAssertionsTask : DefaultTask() {
-    @get:Classpath
-    abstract val classDirs: ConfigurableFileCollection
-
-    @get:Classpath
-    abstract val classpath: ConfigurableFileCollection
-
-    @get:OutputDirectory
-    abstract val outputDir: DirectoryProperty
-
-    @get:Inject
-    abstract val fs: FileSystemOperations
-
-    @TaskAction
-    fun generate() {
-        val outDir = outputDir.get().asFile
-        fs.delete { delete(outDir) }
-        outDir.mkdirs()
-
-        val classDirFiles = classDirs.files
-        val cp = classpath.files + classDirFiles
-        val loader = URLClassLoader(
-            cp.map { it.toURI().toURL() }.toTypedArray(),
-            javaClass.classLoader,
-        )
-
-        try {
-            val classNames = classDirFiles.flatMap { dir ->
-                dir.walkTopDown()
-                    .filter { it.isFile && it.extension == "class" }
-                    .map { file ->
-                        file.relativeTo(dir).invariantSeparatorsPath
-                            .removeSuffix(".class")
-                            .replace('/', '.')
-                    }
-                    .toList()
-            }.toSet()
-                .filter { it.startsWith("io.camunda.zeebe.protocol.record") }
-                .filterNot {
-                    it.endsWith(".package-info") ||
-                        it.contains(".Immutable") ||
-                        it.endsWith("Assert") ||
-                        it.endsWith("Assertions")
-                }
-
-            val types = classNames
-                .map { loader.loadClass(it) }
-                .filterNot { it.simpleName == "package-info" }
-                .filterNot { it.isSynthetic }
-                .filterNot { Modifier.isPrivate(it.modifiers) }
-                .map { TypeToken.of(it) }
-                .toSet()
-            val converter = ClassToClassDescriptionConverter()
-            val generator = BaseAssertionGenerator()
-            generator.setDirectoryWhereAssertionFilesAreGenerated(outDir)
-
-            val descriptions = types.map { type ->
-                val description = converter.convertToClassDescription(type)
-                generator.generateCustomAssertionFor(description)
-                description
-            }.toSet()
-
-            generator.generateAssertionsEntryPointClassFor(
-                descriptions,
-                AssertionsEntryPointType.STANDARD,
-                null,
-            )
-            generator.generateAssertionsEntryPointClassFor(
-                descriptions,
-                AssertionsEntryPointType.SOFT,
-                null,
-            )
-        } finally {
-            loader.close()
-        }
-    }
 }
 
 val assertjGeneratedDir = layout.buildDirectory.dir("generated-sources/assertj-assertions")
@@ -114,6 +12,11 @@ val patchedAssertjGeneratedDir =
     layout.buildDirectory.dir("generated-sources/assertj-assertions-patched")
 val generatedAssertjClassesDir = layout.buildDirectory.dir("generated-classes/assertj")
 
+val assertjGeneratorClasspath =
+  configurations.create("assertjGeneratorClasspath") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+  }
 val protocolClassDirectories =
   configurations.create("protocolClassDirectories") {
     isCanBeConsumed = false
@@ -129,6 +32,7 @@ val generateAssertjAssertions =
 
     classDirs.from(protocolClassDirectories)
     classpath.from(protocolCompileClasspath)
+    generatorClasspath.from(assertjGeneratorClasspath)
     outputDir.set(assertjGeneratedDir)
 }
 
@@ -138,9 +42,8 @@ val generateAssertjAssertions =
 val patchRecordAssert = tasks.register<Sync>("patchRecordAssert") {
     group = "code generation"
     description = "Copy generated AssertJ assertions, patching RecordAssert generic types"
-    dependsOn(generateAssertjAssertions)
 
-    from(assertjGeneratedDir)
+    from(generateAssertjAssertions.flatMap { it.outputDir })
     into(patchedAssertjGeneratedDir)
     filesMatching("**/RecordAssert.java") {
         filter { line: String ->
@@ -160,6 +63,7 @@ dependencies {
         protocolClassDirectories.name,
         project(":camunda-security-protocol", configuration = "mainClasses"),
     )
+    add(assertjGeneratorClasspath.name, libs.org.assertj.assertj.assertions.generator)
     implementation(project(":zeebe-protocol"))
     implementation(project(":camunda-security-protocol"))
     implementation(libs.org.assertj.assertj.core)
@@ -168,15 +72,14 @@ dependencies {
 
 val compileGeneratedAssertjJava =
   tasks.register<JavaCompile>("compileGeneratedAssertjJava") {
-    dependsOn(patchRecordAssert)
-    source(patchedAssertjGeneratedDir)
+    source(patchRecordAssert)
     classpath = files(sourceSets["main"].compileClasspath, protocolClassDirectories)
     destinationDirectory.set(generatedAssertjClassesDir)
     options.encoding = "utf-8"
 }
 
 sourceSets.named("main") {
-    output.dir(mapOf("builtBy" to compileGeneratedAssertjJava), generatedAssertjClassesDir)
+    output.dir(compileGeneratedAssertjJava.flatMap { it.destinationDirectory })
 }
 
 tasks.named("classes") {
@@ -193,9 +96,7 @@ val generatedAssertions = configurations.create("generatedAssertions") {
 }
 
 artifacts {
-    add("generatedAssertions", generatedAssertjClassesDir) {
-        builtBy(compileGeneratedAssertjJava)
-    }
+    add("generatedAssertions", compileGeneratedAssertjJava.flatMap { it.destinationDirectory })
 }
 
 description = "Zeebe Protocol AssertJ Assertions"

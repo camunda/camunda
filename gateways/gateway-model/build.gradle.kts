@@ -1,3 +1,5 @@
+import buildlogic.GeneratedSourcesJavaExec
+import buildlogic.GatewayModelGeneratorArguments
 import buildlogic.OpenApiDefaults
 
 plugins {
@@ -6,6 +8,9 @@ plugins {
 }
 
 val openapiDir = "${project.rootDir}/zeebe/gateway-protocol/src/main/proto/v2"
+val advancedModelSourcesDir = layout.buildDirectory.dir("generated/openapi/src/main/java")
+val advancedModelOutputDir =
+  advancedModelSourcesDir.map { it.dir("io/camunda/gateway/protocol/model") }
 
 // Separate source set for the ModelGenerator tool — compiled on demand, not shipped in the jar
 val toolSources = sourceSets.create("toolSources") { java.srcDir("src/tool/java") }
@@ -18,33 +23,27 @@ val modelGeneratorTool =
   }
 
 val generateAdvancedModel =
-  tasks.register<JavaExec>("generateAdvancedModel") {
+  tasks.register<GeneratedSourcesJavaExec>("generateAdvancedModel") {
     group = "openapi"
     description = "Generate advanced model classes from OpenAPI spec using ModelGenerator"
 
-    dependsOn(toolSources.compileJavaTaskName)
-
     mainClass.set("io.camunda.gateway.protocol.model.tools.ModelGenerator")
     classpath = toolSources.output + modelGeneratorTool
+    generatedSourcesDirectory.set(advancedModelSourcesDir)
 
-    val outputDir =
-      layout.buildDirectory.dir("generated/openapi/src/main/java/io/camunda/gateway/protocol/model")
-
-    inputs
-      .dir(openapiDir)
-      .withPropertyName("openapiDir")
-      .withPathSensitivity(PathSensitivity.RELATIVE)
     inputs
       .files(toolSources.allJava)
       .withPropertyName("toolSources")
       .withPathSensitivity(PathSensitivity.RELATIVE)
-    outputs.dir(outputDir).withPropertyName("advancedModelOutDir")
-
-    args(openapiDir, outputDir.get().asFile.absolutePath)
+    argumentProviders.add(
+      objects.newInstance<GatewayModelGeneratorArguments>().apply {
+        openApiDirectory.set(rootProject.layout.projectDirectory.dir("zeebe/gateway-protocol/src/main/proto/v2"))
+        outputDirectory.set(advancedModelOutputDir)
+      }
+    )
 
     outputs.cacheIf { true }
 
-    doFirst { outputDir.get().asFile.mkdirs() }
   }
 
 // Second OpenAPI generation: "simple" models with simplified type mappings
@@ -216,15 +215,10 @@ val openApiGenerateSimple =
 sourceSets {
   main {
     java {
-      srcDir(layout.buildDirectory.dir("generated/openapi/src/main/java"))
-      srcDir(layout.buildDirectory.dir("generated/openapi-simple/src/main/java"))
+      srcDir(generateAdvancedModel)
+      srcDir(openApiGenerateSimple)
     }
   }
-}
-
-tasks.named("compileJava") {
-  dependsOn(generateAdvancedModel)
-  dependsOn(openApiGenerateSimple)
 }
 
 dependencies {

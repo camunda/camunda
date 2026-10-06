@@ -102,25 +102,22 @@ val openApiGenerateUpgradeReadiness =
 
 val syncOpenApiGeneratedSources =
   tasks.register<Sync>("syncOpenApiGeneratedSources") {
-    dependsOn(
-      openApiGenerateBackups,
-      openApiGenerateCluster,
-      openApiGenerateExporter,
-      openApiGenerateUpgradeReadiness,
-    )
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     into(mergedOpenApiJavaDir)
-    from("$openApiBackupsOutputDir/src/main/java")
-    from("$openApiClusterOutputDir/src/main/java") { exclude("**/BrokerId.java") }
-    from("$openApiExporterOutputDir/src/main/java") { exclude("**/BrokerId.java") }
-    from("$openApiUpgradeReadinessOutputDir/src/main/java") { exclude("**/BrokerId.java") }
+    from(openApiGenerateBackups.flatMap { it.outputDir }.map { it.dir("src/main/java") })
+    from(openApiGenerateCluster.flatMap { it.outputDir }.map { it.dir("src/main/java") }) {
+      exclude("**/BrokerId.java")
+    }
+    from(openApiGenerateExporter.flatMap { it.outputDir }.map { it.dir("src/main/java") }) {
+      exclude("**/BrokerId.java")
+    }
+    from(openApiGenerateUpgradeReadiness.flatMap { it.outputDir }.map { it.dir("src/main/java") }) {
+      exclude("**/BrokerId.java")
+    }
   }
 
-// Add merged generated sources to the source set
-sourceSets { main { java { srcDir(mergedOpenApiJavaDir) } } }
-
-// Make compileJava depend on the merged generated sources
-tasks.named("compileJava") { dependsOn(syncOpenApiGeneratedSources) }
+// Add merged generated sources to the source set; the task output carries its dependency.
+sourceSets { main { java { srcDir(syncOpenApiGeneratedSources) } } }
 
 val gitCommitId =
   providers

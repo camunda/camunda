@@ -1,3 +1,5 @@
+import buildlogic.ClientDiscriminatorArguments
+import buildlogic.GeneratedSourcesJavaExec
 import buildlogic.OpenApiDefaults
 import buildlogic.OptionalDependenciesPomAction
 import buildlogic.filterMavenResources
@@ -30,6 +32,8 @@ val openapiDir = "${project.rootDir}/zeebe/gateway-protocol/src/main/proto/v2"
 val rawGeneratedOpenApiDir = layout.buildDirectory.dir("generated/openapi-raw")
 val discriminatorOutputDir = layout.buildDirectory.dir("generated/openapi-discriminated")
 val generatedOpenApiSources = layout.buildDirectory.dir("generated/openapi/src/main/java")
+val openApiGenerateTask =
+  tasks.named<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("openApiGenerate")
 
 val discriminatorToolClasspath = configurations.create("discriminatorToolClasspath")
 
@@ -42,35 +46,21 @@ val compileDiscriminatorTool =
   }
 
 val runDiscriminatorPostProcessor =
-  tasks.register<JavaExec>("runDiscriminatorPostProcessor") {
-    dependsOn("openApiGenerate", compileDiscriminatorTool)
-    classpath = discriminatorToolClasspath + files(layout.buildDirectory.dir("tool-classes"))
+  tasks.register<GeneratedSourcesJavaExec>("runDiscriminatorPostProcessor") {
+    classpath =
+      files(discriminatorToolClasspath, compileDiscriminatorTool.flatMap { it.destinationDirectory })
     mainClass.set("io.camunda.client.protocol.tools.DiscriminatorModelPostProcessor")
-    inputs
-      .dir(openapiDir)
-      .withPropertyName("openapiDir")
-      .withPathSensitivity(PathSensitivity.RELATIVE)
-    inputs
-      .dir(rawGeneratedOpenApiDir)
-      .withPropertyName("rawGeneratedOpenApiDir")
-      .withPathSensitivity(PathSensitivity.RELATIVE)
-    outputs.dir(discriminatorOutputDir).withPropertyName("discriminatorOutputDir")
+    generatedSourcesDirectory.set(discriminatorOutputDir)
+    argumentProviders.add(
+      objects.newInstance<ClientDiscriminatorArguments>().apply {
+        openApiDirectory.set(rootProject.layout.projectDirectory.dir("zeebe/gateway-protocol/src/main/proto/v2"))
+        generatedOpenApiDirectory.set(openApiGenerateTask.flatMap { it.outputDir })
+        outputDirectory.set(discriminatorOutputDir)
+      }
+    )
 
     // JavaExec is not cacheable by default; opt in so unchanged inputs hit the build cache.
     outputs.cacheIf { true }
-    args(
-      openapiDir,
-      rawGeneratedOpenApiDir
-        .get()
-        .dir("src/main/java/io/camunda/client/protocol/rest")
-        .asFile
-        .absolutePath,
-      discriminatorOutputDir
-        .get()
-        .dir("src/main/java/io/camunda/client/protocol/rest")
-        .asFile
-        .absolutePath,
-    )
   }
 
 openApiGenerate {
@@ -152,28 +142,27 @@ openApiGenerate {
   )
 }
 
-sourceSets {
-  main { java { srcDir("${project.layout.buildDirectory.get()}/generated/openapi/src/main/java") } }
-}
-
 tasks.named("openApiGenerate") {
   inputs
     .files(fileTree(openapiDir) { include("**/*.yaml", "**/*.yml") })
     .withPathSensitivity(org.gradle.api.tasks.PathSensitivity.RELATIVE)
 }
 
-tasks.named("compileJava") { dependsOn("stripJsonFormatFromGeneratedOpenApiSources") }
-
 val stripJsonFormatFromGeneratedOpenApiSources =
   tasks.register<Sync>("stripJsonFormatFromGeneratedOpenApiSources") {
-    dependsOn(runDiscriminatorPostProcessor)
-    from(discriminatorOutputDir.map { it.dir("src/main/java") })
+    from(
+      runDiscriminatorPostProcessor
+        .flatMap { it.generatedSourcesDirectory }
+        .map { it.dir("src/main/java") }
+    )
     into(generatedOpenApiSources)
     include("**/*.java")
     filter { line: String ->
       line.takeUnless { it == "@JsonFormat(shape=JsonFormat.Shape.OBJECT)" }
     }
   }
+
+sourceSets { main { java { srcDir(stripJsonFormatFromGeneratedOpenApiSources) } } }
 
 tasks.named<ProcessResources>("processResources") {
   val resourceTokens = project.projectVersionToken()

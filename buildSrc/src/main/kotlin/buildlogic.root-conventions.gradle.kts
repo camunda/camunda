@@ -51,8 +51,6 @@ extensions.configure<SpotlessExtension> {
     targetExclude(
       "**/build/**",
       "**/target/**",
-      // buildscript{} before imports = valid Gradle DSL but invalid Kotlin; ktfmt rejects it
-      "zeebe/protocol-asserts/build.gradle.kts",
     )
     ktfmt().googleStyle()
   }

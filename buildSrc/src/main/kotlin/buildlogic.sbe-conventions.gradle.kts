@@ -106,17 +106,14 @@ val sbeTool =
 
 dependencies { sbeTool("uk.co.real-logic:sbe-tool:$sbeToolVersion") }
 
-// Add generated Java sources to the source set
-sourceSets { main { java { srcDir(layout.buildDirectory.dir("generated-sources/sbe")) } } }
+// Add generated Java sources to the source set; the task output carries its dependency.
+sourceSets { main { java { srcDir(generateSbe) } } }
 
 // Package generated SBE IR and schema resources like Maven does.
 tasks.named<ProcessResources>("processResources") {
-  dependsOn(generateSbe)
-  from(layout.buildDirectory.dir("generated-sources")) {
+  from(generateSbe) {
+    into("sbe")
     include("**/*.sbeir")
     include("**/*.xml")
   }
 }
-
-// Make compileJava depend on SBE generation
-tasks.named("compileJava") { dependsOn(generateSbe) }
