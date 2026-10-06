@@ -930,6 +930,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         }
         if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
           final Set<String> failedOperationIds = getFailedOperationIds(bulkResponse);
+          recordNestedLimitSkippedDocuments(itemName, failedOperationIds.size());
           LOG.warn(
               "There were failures while performing bulk on {} due to the nested document limit being reached."
                   + " Removing {} failed items and retrying",
