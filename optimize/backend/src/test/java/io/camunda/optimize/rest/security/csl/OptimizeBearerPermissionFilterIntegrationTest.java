@@ -272,15 +272,14 @@ class OptimizeBearerPermissionFilterIntegrationTest {
   }
 
   @Test
-  void shouldRejectARoleLessUserWhoseTokenLacksTheOptimizeApiAudience() throws Exception {
-    // given: on Keycloak, a user without the Optimize role gets a token without the Optimize API
-    // audience, so the Identity SDK fails the verification before the permission check
+  void shouldRejectAUserWhoseTokenFailsVerification() throws Exception {
+    // given
     final String token = userToken("noopt");
     ccsmRunner()
         .run(
             ctx -> {
               // given
-              doThrow(new InvalidClaimException(new RuntimeException("missing audience")))
+              doThrow(new InvalidClaimException(new RuntimeException("invalid claim")))
                   .when(ctx.getBean(CCSMTokenService.class))
                   .verifyAccessToken(token);
 

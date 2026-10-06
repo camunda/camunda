@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.authentication.exception.InvalidClaimException;
+import io.camunda.identity.sdk.authentication.exception.JsonWebKeyException;
 import io.camunda.identity.sdk.authentication.exception.TokenExpiredException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
@@ -141,14 +142,32 @@ class OptimizeBearerPermissionFilterTest {
   }
 
   @Test
-  void shouldReject401WhenAUserTokenLacksTheOptimizeApiAudience() throws Exception {
-    // given: on Keycloak, a user without the Optimize role gets a token without the Optimize API
-    // audience, so the verification fails before the permission check
+  void shouldReject401WhenTheTokenFailsVerification() throws Exception {
+    // given
     final Jwt jwt = jwtWithClaims(Map.of("preferred_username", "noopt"));
     authenticateWith(jwt);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(CamundaAuthentication.of(b -> b.user("noopt")));
-    doThrow(new InvalidClaimException(new RuntimeException("missing audience optimize-api")))
+    doThrow(new InvalidClaimException(new RuntimeException("invalid claim")))
+        .when(tokenService)
+        .verifyAccessToken("raw-token-value");
+
+    // when
+    filter.doFilter(request, response, chain);
+
+    // then
+    verify(response).sendError(HttpServletResponse.SC_UNAUTHORIZED);
+    verifyNoInteractions(chain);
+  }
+
+  @Test
+  void shouldReject401WhenTheVerificationKeysCannotBeFetched() throws Exception {
+    // given
+    final Jwt jwt = jwtWithClaims(Map.of("preferred_username", "noopt"));
+    authenticateWith(jwt);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("noopt")));
+    doThrow(new JsonWebKeyException("JWKS error", new RuntimeException("connection refused")))
         .when(tokenService)
         .verifyAccessToken("raw-token-value");
 

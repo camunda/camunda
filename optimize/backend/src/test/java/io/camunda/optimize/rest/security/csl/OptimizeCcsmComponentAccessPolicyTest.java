@@ -13,6 +13,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.authentication.exception.InvalidClaimException;
+import io.camunda.identity.sdk.authentication.exception.JsonWebKeyException;
 import io.camunda.identity.sdk.authentication.exception.TokenExpiredException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
@@ -79,12 +80,25 @@ class OptimizeCcsmComponentAccessPolicyTest {
   }
 
   @Test
-  void shouldDenySessionWhenTokenLacksTheOptimizeApiAudience() {
-    // On Keycloak, a user without the Optimize role gets a token without the Optimize API audience,
-    // so the verification fails before the permission check.
+  void shouldDenySessionWhenTheTokenFailsVerification() {
     // given
     when(tokenService.getCurrentUserAuthToken()).thenReturn(Optional.of("token"));
-    doThrow(new InvalidClaimException(new RuntimeException("missing audience optimize-api")))
+    doThrow(new InvalidClaimException(new RuntimeException("invalid claim")))
+        .when(tokenService)
+        .verifyAccessToken("token");
+
+    // when
+    final Either<String, Void> access = policy().checkAccess(AUTHENTICATION);
+
+    // then
+    assertThat(access.isLeft()).isTrue();
+  }
+
+  @Test
+  void shouldDenySessionWhenTheVerificationKeysCannotBeFetched() {
+    // given
+    when(tokenService.getCurrentUserAuthToken()).thenReturn(Optional.of("token"));
+    doThrow(new JsonWebKeyException("JWKS error", new RuntimeException("connection refused")))
         .when(tokenService)
         .verifyAccessToken("token");
 
