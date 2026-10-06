@@ -400,6 +400,47 @@ final class SuspensionBehaviorTest {
     assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
   }
 
+  @Test
+  void shouldProcessCompleteExecutionListenerCommandOfTerminatingElement() {
+    // given
+    elementInstanceIsTerminating(true);
+    markerIs(State.SUSPENDED);
+    final var command = completeExecutionListenerCommand();
+    final var processor = overridingProcessor(SuspensionAction.BUFFER);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+  }
+
+  @Test
+  void
+      shouldApplyProcessorClassificationForCompleteExecutionListenerCommandOfNonTerminatingElement() {
+    // given
+    elementInstanceIsTerminating(false);
+    markerIs(State.SUSPENDED);
+    final var command = completeExecutionListenerCommand();
+    final var processor = overridingProcessor(SuspensionAction.BUFFER);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.BUFFER);
+  }
+
+  private static TypedRecord<?> completeExecutionListenerCommand() {
+    final var command = mock(TypedRecord.class);
+    when(command.getValue())
+        .thenReturn(new ProcessInstanceRecord().setProcessInstanceKey(PROCESS_INSTANCE_KEY));
+    when(command.getKey()).thenReturn(ELEMENT_INSTANCE_KEY);
+    when(command.getIntent()).thenReturn(ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER);
+    when(command.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    return command;
+  }
+
   private void jobOfElementInstance() {
     final var jobState = mock(JobState.class);
     when(processingState.getJobState()).thenReturn(jobState);

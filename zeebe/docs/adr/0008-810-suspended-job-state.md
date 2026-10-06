@@ -111,10 +111,11 @@ Notes:
 - The `JobRecurAfterBackoff` `SUSPENDED` switch branch is a safety net only; the gate already blocks
   that processor while suspended.
 - Jobs of a terminating element bypass the gate. When a suspended instance is canceled, the
-  termination waits for its canceling task listener jobs, and the instance is never resumed. So
-  `SuspensionBehavior` processes `JOB`, `USER_TASK`, and `INCIDENT` commands of a terminating element
-  without asking the processor, and `JobTimeOut` does not park such a job. Otherwise the termination
-  never finishes (#64505).
+  termination waits for its canceling task listener and cancel execution listener jobs, and the
+  instance is never resumed. So `SuspensionBehavior` processes `JOB`, `USER_TASK`, and `INCIDENT`
+  commands and `ProcessInstance.COMPLETE_EXECUTION_LISTENER` of a terminating element without asking
+  the processor, and `JobTimeOut` does not park such a job. Otherwise the termination never finishes
+  (#64505).
 
 **D4. `Job.SUSPENDED` and `Job.RESUMED` are exported but not consumed.** Both exporters filter by an
 allow-list (`JobHandler.JOB_EVENTS`, `JobExportHandler.EXPORTABLE_INTENTS`) that does not include
