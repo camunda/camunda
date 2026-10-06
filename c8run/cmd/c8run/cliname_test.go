@@ -9,6 +9,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -88,4 +89,11 @@ func TestPathOutputIsNotRewritten(t *testing.T) {
 	tcmd.output, tcmd.plainOutput = brandWriter(&branded), &plain
 	require.NoError(t, tcmd.run(t.TempDir(), []string{"path"}))
 	assert.Contains(t, plain.String(), tenantsFile)
+}
+
+// failingReader lives in secrets_test.go on main; stable/8.10 predates it.
+type failingReader struct{}
+
+func (failingReader) Read([]byte) (int, error) {
+	return 0, errors.New("test read failure")
 }
