@@ -9,6 +9,7 @@ package io.camunda.optimize.service.importing.engine.service.zeebe;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
@@ -23,7 +24,8 @@ import java.time.ZoneId;
 import java.util.List;
 import org.slf4j.Logger;
 
-public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements ImportService<T> {
+public abstract class ZeebeProcessInstanceSubEntityImportService<T extends ZeebeRecordDto<?, ?>>
+    implements ImportService<T> {
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeProcessInstanceSubEntityImportService.class);
@@ -62,6 +64,7 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
           filterAndMapZeebeRecordsToOptimizeEntities(zeebeRecords);
       final DatabaseImportJob<ProcessInstanceDto> databaseImportJob =
           createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+      databaseImportJob.setRecordSource(zeebeRecords.get(0).getValueType().name(), partitionId);
       addDatabaseImportJobToQueue(databaseImportJob);
     }
   }

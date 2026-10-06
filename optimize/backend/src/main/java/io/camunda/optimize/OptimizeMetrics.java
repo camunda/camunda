@@ -8,12 +8,14 @@
 package io.camunda.optimize;
 
 import static io.camunda.optimize.MetricEnum.ERROR_METRIC;
+import static io.camunda.optimize.MetricEnum.IMPORT_DB_WRITE_RETRIES_METRIC;
 import static io.camunda.optimize.MetricEnum.OVERALL_IMPORT_TIME_METRIC;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class OptimizeMetrics {
 
@@ -35,7 +38,10 @@ public final class OptimizeMetrics {
   public static final String ERROR_TYPE_TAG = "ERROR_TYPE";
   public static final String METRICS_ENDPOINT = "metrics";
 
+  private static final String UNKNOWN_ERROR_TYPE = "unknown";
+
   private static final ConcurrentMap<ErrorType, Counter> ERROR_COUNTERS;
+  private static final ConcurrentMap<GaugeKey, AtomicLong> GAUGE_VALUES = new ConcurrentHashMap<>();
 
   static {
     ERROR_COUNTERS = new ConcurrentHashMap<>();
@@ -73,6 +79,55 @@ public final class OptimizeMetrics {
         .tag(RECORD_TYPE_TAG, recordType)
         .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
         .register(Metrics.globalRegistry);
+  }
+
+  /**
+   * Counts a failed attempt to write an import page and records the failure as an {@link ErrorType}
+   * error.
+   */
+  public static void recordDbWriteRetry(
+      final String recordType, final String partitionId, final Throwable failure) {
+    final ErrorType errorType = ErrorType.fromException(failure);
+    Counter.builder(IMPORT_DB_WRITE_RETRIES_METRIC.getName())
+        .description(IMPORT_DB_WRITE_RETRIES_METRIC.getDescription())
+        .tag(RECORD_TYPE_TAG, recordType)
+        .tag(PARTITION_ID_TAG, partitionId)
+        .tag(ERROR_TYPE_TAG, errorType == null ? UNKNOWN_ERROR_TYPE : errorType.getValue())
+        .register(Metrics.globalRegistry)
+        .increment();
+    recordError(errorType);
+  }
+
+  public static void setGauge(
+      final MetricEnum metric,
+      final String recordType,
+      final Integer partitionId,
+      final long value) {
+    setGauge(
+        metric,
+        Tags.of(RECORD_TYPE_TAG, recordType, PARTITION_ID_TAG, String.valueOf(partitionId)),
+        value);
+  }
+
+  /**
+   * Sets the value of a gauge. The value is held here rather than read from the reporting object,
+   * because a gauge stays bound to the first object it was registered with, and import components
+   * are recreated when the import is reset.
+   */
+  public static void setGauge(final MetricEnum metric, final Tags tags, final long value) {
+    GAUGE_VALUES
+        .computeIfAbsent(
+            new GaugeKey(metric, tags),
+            key -> {
+              final AtomicLong gaugeValue = new AtomicLong();
+              Gauge.builder(metric.getName(), gaugeValue, AtomicLong::get)
+                  .description(metric.getDescription())
+                  .baseUnit(metric.getBaseUnit())
+                  .tags(tags)
+                  .register(Metrics.globalRegistry);
+              return gaugeValue;
+            })
+        .set(value);
   }
 
   /**
@@ -117,4 +172,6 @@ public final class OptimizeMetrics {
       ERROR_COUNTERS.put(errorType, counter);
     }
   }
+
+  private record GaugeKey(MetricEnum metric, Tags tags) {}
 }

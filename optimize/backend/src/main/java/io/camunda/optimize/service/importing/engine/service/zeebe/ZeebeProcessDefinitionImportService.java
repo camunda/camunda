@@ -19,6 +19,7 @@ import io.camunda.optimize.service.importing.engine.service.ImportService;
 import io.camunda.optimize.service.importing.job.ProcessDefinitionDatabaseImportJob;
 import io.camunda.optimize.service.util.BpmnModelUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -100,6 +101,7 @@ public class ZeebeProcessDefinitionImportService
         new ProcessDefinitionDatabaseImportJob(
             processDefinitionWriter, importCompleteCallback, databaseClient);
     procDefImportJob.setEntitiesToImport(processDefinitions);
+    procDefImportJob.setRecordSource(ValueType.PROCESS.name(), partitionId);
     return procDefImportJob;
   }
 

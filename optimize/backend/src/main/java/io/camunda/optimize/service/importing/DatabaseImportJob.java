@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.importing;
 
+import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -23,6 +24,9 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
   private final Runnable importCompleteCallback;
+  // jobs that don't import Zeebe records report retries under their own name
+  private String recordType = getClass().getSimpleName();
+  private String partitionId = "none";
 
   protected DatabaseImportJob(
       final Runnable importCompleteCallback, final DatabaseClient databaseClient) {
@@ -45,6 +49,12 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
     newOptimizeEntities = pageOfOptimizeEntities;
   }
 
+  /** Tags this job's metrics with the Zeebe record type and partition its entities come from. */
+  public void setRecordSource(final String recordType, final int partitionId) {
+    this.recordType = recordType;
+    this.partitionId = String.valueOf(partitionId);
+  }
+
   protected void executeImport() {
     if (!newOptimizeEntities.isEmpty()) {
       boolean success = false;
@@ -57,6 +67,7 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
           success = true;
         } catch (final Exception e) {
           logger.error("Error while executing import to database", e);
+          OptimizeMetrics.recordDbWriteRetry(recordType, partitionId, e);
           final long sleepTime = backoffCalculator.calculateSleepTime();
           try {
             Thread.sleep(sleepTime);

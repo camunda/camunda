@@ -18,6 +18,8 @@ public enum ErrorType {
   VERSION_CONFLICT("version_conflict"),
   SEARCH_CONTEXT_MISSING("search_context_missing"),
   NESTED_LIMIT_EXCEEDED("nested_limit_exceeded"),
+  CLUSTER_BLOCK("cluster_block"),
+  REJECTED_EXECUTION("rejected_execution"),
   ELASTICSEARCH_ERROR("elasticsearch_error"),
   OPENSEARCH_ERROR("opensearch_error");
   private final String value;
@@ -50,6 +52,12 @@ public enum ErrorType {
         }
         if (lowerMessage.contains("nested") && lowerMessage.contains("limit")) {
           return NESTED_LIMIT_EXCEEDED;
+        }
+        if (lowerMessage.contains("cluster_block_exception")) {
+          return CLUSTER_BLOCK;
+        }
+        if (lowerMessage.contains("rejected_execution_exception")) {
+          return REJECTED_EXECUTION;
         }
       }
       if (fallback == null) {

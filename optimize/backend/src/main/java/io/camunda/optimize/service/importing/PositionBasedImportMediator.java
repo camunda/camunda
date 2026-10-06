@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.importing;
 
+import static io.camunda.optimize.MetricEnum.IMPORTED_UNTIL_METRIC;
 import static io.camunda.optimize.MetricEnum.IMPORT_CYCLE_DURATION_METRIC;
 import static io.camunda.optimize.MetricEnum.IMPORT_MEDIATOR_ERROR_METRIC;
 import static io.camunda.optimize.MetricEnum.INDEXING_DURATION_METRIC;
@@ -18,6 +19,7 @@ import io.camunda.optimize.service.importing.engine.service.ImportService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import java.time.Instant;
@@ -38,6 +40,8 @@ public abstract class PositionBasedImportMediator<
   protected BackoffCalculator idleBackoffCalculator;
   protected T importIndexHandler;
   protected ImportService<DTO> importService;
+  private OffsetDateTime fetchStartTime = LocalDateUtil.getCurrentDateTime();
+  private boolean importedUntilReported = false;
 
   @Override
   public CompletableFuture<Void> runImport() {
@@ -48,12 +52,20 @@ public abstract class PositionBasedImportMediator<
             cycleSample.stop(
                 OptimizeMetrics.getTimer(
                     IMPORT_CYCLE_DURATION_METRIC, getRecordType(), getPartitionId())));
+    // registered before the first error, so that its rate is 0 rather than absent
+    final Counter mediatorErrors =
+        OptimizeMetrics.getCounter(IMPORT_MEDIATOR_ERROR_METRIC, getRecordType(), getPartitionId());
+    if (!importedUntilReported) {
+      // until the first page is imported, which never happens if writes keep failing, the import
+      // is complete up to the last record persisted before the restart
+      reportImportedUntil(importIndexHandler.getTimestampOfLastPersistedEntity().toInstant());
+    }
+    fetchStartTime = LocalDateUtil.getCurrentDateTime();
     boolean pageIsPresent;
     try {
       pageIsPresent = importNextPage(() -> importCompleted.complete(null));
     } catch (final Exception e) {
-      OptimizeMetrics.getCounter(IMPORT_MEDIATOR_ERROR_METRIC, getRecordType(), getPartitionId())
-          .increment();
+      mediatorErrors.increment();
       logger.error("Was not able to import next page, skipping this round.", e);
       importCompleted.complete(null);
       pageIsPresent = false;
@@ -107,6 +119,10 @@ public abstract class PositionBasedImportMediator<
         getRecordType(),
         getPartitionId(),
         entitiesNextPage.size());
+    final boolean pageIsFull =
+        entitiesNextPage.size() >= configurationService.getConfiguredZeebe().getMaxImportPageSize();
+    // a page that isn't full contains every record exported before the fetch started
+    final OffsetDateTime pageFetchStartTime = fetchStartTime;
     if (!entitiesNextPage.isEmpty()) {
       final DTO lastImportedEntity = entitiesNextPage.get(entitiesNextPage.size() - 1);
       final long currentPageLastEntityPosition = lastImportedEntity.getPosition();
@@ -130,16 +146,20 @@ public abstract class PositionBasedImportMediator<
                     Instant.ofEpochMilli(lastImportedEntity.getTimestamp()),
                     ZoneId.systemDefault()));
             OptimizeMetrics.recordOverallEntitiesImportTime(entitiesNextPage);
+            reportImportedUntil(
+                pageIsFull
+                    ? Instant.ofEpochMilli(lastImportedEntity.getTimestamp())
+                    : pageFetchStartTime.toInstant());
             importCompleteCallback.run();
           });
       importIndexHandler.updatePendingLastEntityPositionAndSequence(
           currentPageLastEntityPosition, currentPageLastEntitySequence);
     } else {
+      reportImportedUntil(pageFetchStartTime.toInstant());
       importCompleteCallback.run();
     }
 
-    return entitiesNextPage.size()
-        >= configurationService.getConfiguredZeebe().getMaxImportPageSize();
+    return pageIsFull;
   }
 
   public Timer getIndexingDurationTimer() {
@@ -149,6 +169,12 @@ public abstract class PositionBasedImportMediator<
   protected abstract String getRecordType();
 
   protected abstract Integer getPartitionId();
+
+  private void reportImportedUntil(final Instant importedUntil) {
+    importedUntilReported = true;
+    OptimizeMetrics.setGauge(
+        IMPORTED_UNTIL_METRIC, getRecordType(), getPartitionId(), importedUntil.getEpochSecond());
+  }
 
   private void calculateNewDateUntilIsBlocked() {
     if (idleBackoffCalculator.isMaximumBackoffReached()) {

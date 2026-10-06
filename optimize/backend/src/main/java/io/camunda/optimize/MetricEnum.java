@@ -28,16 +28,50 @@ public enum MetricEnum {
       MetricType.IMPORT,
       "newPageFetchTime",
       "Records the time spent for fetching next import page from Zeebe Elasticsearch"),
+  IMPORT_DB_WRITE_RETRIES_METRIC(
+      MetricType.IMPORT,
+      "dbWriteRetries",
+      "Counts failed attempts to write an import page to the database, the page is retried until"
+          + " it succeeds"),
+  IMPORTED_UNTIL_METRIC(
+      MetricType.IMPORT,
+      "importedUntil",
+      "Epoch time up to which all exported records of this type and partition are imported",
+      "seconds"),
+  FETCH_PAGE_SIZE_METRIC(
+      MetricType.IMPORT,
+      "fetchPageSize",
+      "Page size used to fetch Zeebe records, reduced after failed fetches and gradually restored"),
+  MAX_PAGE_SIZE_METRIC(
+      MetricType.IMPORT, "maxPageSize", "Configured maximum page size of Zeebe record fetches"),
+  CONFIGURED_PARTITIONS_METRIC(
+      MetricType.IMPORT,
+      "configuredPartitions",
+      "Number of Zeebe partitions Optimize is configured to import from"),
+  ZEEBE_INDEX_MISSING_METRIC(
+      MetricType.IMPORT,
+      "zeebeIndexMissing",
+      "Counts fetches that found no Zeebe record index to read from"),
   REPORT_LATENCY_METRIC(
       MetricType.REPORT, "reportLatency", "Records the time taken to evaluate a report"),
   ERROR_METRIC(MetricType.GENERAL, "error", "Counter for errors occurring across Optimize");
   private final String id;
   private final String name;
   private final String description;
+  private final String baseUnit;
 
   MetricEnum(final MetricType metricType, final String id, final String description) {
+    this(metricType, id, description, null);
+  }
+
+  MetricEnum(
+      final MetricType metricType,
+      final String id,
+      final String description,
+      final String baseUnit) {
     this.id = id;
     this.description = description;
+    this.baseUnit = baseUnit;
     name = metricType.prefix + "." + id;
   }
 
@@ -51,6 +85,10 @@ public enum MetricEnum {
 
   public String getDescription() {
     return description;
+  }
+
+  public String getBaseUnit() {
+    return baseUnit;
   }
 
   private enum MetricType {
