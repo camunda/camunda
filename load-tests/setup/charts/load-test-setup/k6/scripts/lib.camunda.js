@@ -4,8 +4,8 @@
  * Create the client in the test script at module level: that code runs once per VU, so each VU
  * has its own instance.
  */
-import http from 'k6/http';
-import { sleep } from 'k6';
+import http from "k6/http";
+import { sleep } from "k6";
 
 export class Client {
   constructor() {
@@ -16,11 +16,11 @@ export class Client {
   }
 
   get(endpoint, params) {
-    return this.request('GET', endpoint, undefined, params);
+    return this.request("GET", endpoint, undefined, params);
   }
 
   post(endpoint, payload, params) {
-    return this.request('POST', endpoint, payload, params);
+    return this.request("POST", endpoint, payload, params);
   }
 
   /* Send an authenticated JSON request to a Camunda endpoint, renewing the token if needed.
@@ -34,8 +34,8 @@ export class Client {
     const mergedParams = {
       ...params,
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': "Bearer " + this.token.accessToken,
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + this.token.accessToken,
         ...params.headers,
       },
       tags: { name: endpoint, ...params.tags },
@@ -46,7 +46,7 @@ export class Client {
 
   // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/search-process-definitions/
   searchProcessDefinitions() {
-    return this.post('/v2/process-definitions/search', {
+    return this.post("/v2/process-definitions/search", {
       sort: [
         {
           field: "processDefinitionKey",
@@ -61,16 +61,11 @@ export class Client {
 
   // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-process-instances/
   searchProcessInstances(processDefinitionId) {
-    return this.post('/v2/process-instances/search', {
-      sort: [
-        {field: "startDate", order: "DESC"},
-      ],
+    return this.post("/v2/process-instances/search", {
+      sort: [{ field: "startDate", order: "DESC" }],
       filter: {
         processDefinitionId: processDefinitionId,
-        $or: [
-          { state: "ACTIVE" },
-          { hasIncident: true },
-        ],
+        $or: [{ state: "ACTIVE" }, { hasIncident: true }],
       },
       page: {
         limit: 100,
@@ -80,7 +75,7 @@ export class Client {
 
   // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-topology/
   topology() {
-    return this.get('/v2/topology');
+    return this.get("/v2/topology");
   }
 
   /* Wait for Camunda to be ready. Intended to be called from `setup()`. */
@@ -90,11 +85,16 @@ export class Client {
       try {
         const response = this.topology();
         if (response.status !== 200) {
-          throw new Error(`Camunda topology endpoint returned status: ${response.status}`);
+          throw new Error(
+            `Camunda topology endpoint returned status: ${response.status}`,
+          );
         }
         break;
       } catch (e) {
-        console.error(`Error waiting for Camunda to be ready (will retry in ${waitTime}s).`, e);
+        console.error(
+          `Error waiting for Camunda to be ready (will retry in ${waitTime}s).`,
+          e,
+        );
         sleep(waitTime);
       }
     }
@@ -112,7 +112,7 @@ export class Client {
 
     const missing = vars.filter((name) => {
       const value = __ENV[name];
-      if (value === undefined || value === '') {
+      if (value === undefined || value === "") {
         console.error(`Environment variable ${name} is not defined or empty.`);
         return true;
       }
@@ -120,7 +120,7 @@ export class Client {
     });
 
     if (missing.length > 0) {
-      throw Error(`Missing environment variables: ${missing.join(', ')}`);
+      throw Error(`Missing environment variables: ${missing.join(", ")}`);
     }
   }
 
@@ -129,33 +129,39 @@ export class Client {
     console.debug(`Fetching authentication token from: ${tokenURL}`);
 
     const payload = {
-      grant_type: 'client_credentials',
+      grant_type: "client_credentials",
       audience: __ENV.CAMUNDA_TOKEN_AUDIENCE,
       client_id: __ENV.CAMUNDA_CLIENT_ID,
       client_secret: __ENV.CAMUNDA_CLIENT_SECRET,
     };
 
     const params = {
-      tags: { name: 'token-request' },
+      tags: { name: "token-request" },
     };
 
-    console.debug(`Requesting token from ${tokenURL} using client ID=${payload.client_id}`);
+    console.debug(
+      `Requesting token from ${tokenURL} using client ID=${payload.client_id}`,
+    );
     const response = http.post(tokenURL, payload, params);
     if (response.status != 200) {
-      throw new Error(`unable to fetch token, got HTTP status=${response.status}, body=${response.body}`);
+      throw new Error(
+        `unable to fetch token, got HTTP status=${response.status}, body=${response.body}`,
+      );
     }
 
-    const accessToken = response.json('access_token');
+    const accessToken = response.json("access_token");
 
     // Stagger token renewal.
-    const expiresIn = response.json('expires_in');
+    const expiresIn = response.json("expires_in");
     const renewalJitterSeconds = 1 + Math.floor(Math.random() * 60);
     const renewIn = expiresIn - renewalJitterSeconds;
 
     this.token.accessToken = accessToken;
     this.token.renewalDate = Date.now() + renewIn * 1000;
 
-    console.log(`Authentication token fetched successfully; expire in ${expiresIn}s, will renew in ${renewIn}s`);
+    console.log(
+      `Authentication token fetched successfully; expire in ${expiresIn}s, will renew in ${renewIn}s`,
+    );
   }
 
   #renewToken() {
@@ -163,7 +169,7 @@ export class Client {
       return;
     }
 
-    console.debug("Token will expire soon, will renew now.")
+    console.debug("Token will expire soon, will renew now.");
     try {
       this.#fetchToken();
     } catch (e) {
