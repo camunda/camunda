@@ -28,6 +28,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.BulkByScrollFailure;
+import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
+import org.opensearch.client.opensearch.core.bulk.OperationType;
 import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.transport.OpenSearchTransport;
@@ -53,6 +56,38 @@ public class OptimizeOpenSearchClientTest {
         ArgumentCaptor.forClass(SimpleEndpoint.class);
     verify(openSearchTransport).performRequestAsync(any(), endpointArgumentCaptor.capture(), any());
     assertThat(endpointArgumentCaptor.getValue().responseDeserializer()).isNull();
+  }
+
+  @Test
+  void shouldDescribeWhyBulkItemsFailed() {
+    // given
+    final BulkResponseItem blocked =
+        BulkResponseItem.of(
+            item ->
+                item.operationType(OperationType.Update)
+                    .index("optimize-process-instance-a_v8")
+                    .id("1")
+                    .status(403)
+                    .error(
+                        e ->
+                            e.type("cluster_block_exception")
+                                .reason("index [optimize-process-instance-a_v8] blocked")));
+    final BulkResponseItem succeeded =
+        BulkResponseItem.of(
+            item ->
+                item.operationType(OperationType.Update)
+                    .index("optimize-process-instance-a_v8")
+                    .id("2")
+                    .status(200));
+    final BulkResponse bulkResponse =
+        BulkResponse.of(b -> b.errors(true).took(1L).items(blocked, succeeded));
+
+    // when
+    final String description = OptimizeOpenSearchClient.describeFailedItems(bulkResponse);
+
+    // then
+    assertThat(description)
+        .isEqualTo("Update cluster_block_exception index [optimize-process-instance-a_v8] blocked");
   }
 
   @Test
