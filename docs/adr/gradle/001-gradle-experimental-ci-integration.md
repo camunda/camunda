@@ -99,8 +99,7 @@ For this ADR, Gradle build inputs are:
 - `**/*.gradle.kts` files;
 - `gradle.properties`;
 - `gradlew` and `gradlew.bat`;
-- files below `gradle/`; and
-- files below `buildSrc/`.
+- files below `gradle/`.
 
 The implementation must reuse the existing `java-code-change`, `maven-change`, `ci-relevant` filters and define
 a new `gradle-changes` filter, when deciding whether build behavior may
