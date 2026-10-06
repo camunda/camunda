@@ -27,6 +27,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -177,6 +179,7 @@ public final class BpmnAdHocSubProcessBehavior {
     final var hasActiveSequenceFlows = adHocSubProcessInstance.getActiveSequenceFlows() > 0;
 
     if (cancelRemainingInstances) {
+      deleteTokensWaitingAtJoins(adHocSubProcessContext);
       // terminate all remaining child instances or directly complete ad-hoc sub-process if there
       // is no child activity left
       if (hasActiveChildInstances) {
@@ -189,6 +192,38 @@ public final class BpmnAdHocSubProcessBehavior {
       // complete ad-hoc sub-process if possible, otherwise skip completion as the same block
       // will be evaluated when the next activity is completed
       completeAdHocSubProcess(adHocSubProcessContext);
+    }
+  }
+
+  /**
+   * Deletes the tokens that wait at a shared join in the ad-hoc sub-process instance. Otherwise,
+   * they would keep the ad-hoc sub-process from completing after its remaining instances are
+   * canceled.
+   */
+  private void deleteTokensWaitingAtJoins(final BpmnElementContext adHocSubProcessContext) {
+    final long adHocSubProcessInstanceKey = adHocSubProcessContext.getElementInstanceKey();
+    final List<DirectBuffer> waitingSequenceFlowIds = new ArrayList<>();
+    elementInstanceState.visitTakenSequenceFlows(
+        adHocSubProcessInstanceKey,
+        (flowScopeKey, gatewayElementId, sequenceFlowId, numberOfTokens) -> {
+          for (int i = 0; i < numberOfTokens; i++) {
+            waitingSequenceFlowIds.add(BufferUtil.cloneBuffer(sequenceFlowId));
+          }
+        });
+
+    for (final DirectBuffer sequenceFlowId : waitingSequenceFlowIds) {
+      final var sequenceFlowRecord = new ProcessInstanceRecord();
+      sequenceFlowRecord.copyFrom(adHocSubProcessContext.getRecordValue());
+      sequenceFlowRecord
+          .setElementId(sequenceFlowId)
+          .setBpmnElementType(BpmnElementType.SEQUENCE_FLOW)
+          .setBpmnEventType(BpmnEventType.UNSPECIFIED)
+          .setFlowScopeKey(adHocSubProcessInstanceKey)
+          .resetElementInstancePath()
+          .resetCallingElementPath()
+          .resetProcessDefinitionPath();
+      stateWriter.appendFollowUpEvent(
+          keyGenerator.nextKey(), ProcessInstanceIntent.SEQUENCE_FLOW_DELETED, sequenceFlowRecord);
     }
   }
 

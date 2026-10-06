@@ -104,6 +104,40 @@ public final class AdHocSubProcessSharedJoinTest {
   }
 
   @Test
+  public void shouldCancelWaitingTokenWhenCompletionConditionCancelsRemainingInstances() {
+    // given
+    final long processInstanceKey =
+        deployAndCreate(
+            adHocSubProcess -> {
+              adHocSubProcess
+                  .zeebeActiveElementsCollectionExpression("[\"task1\",\"task2\",\"task4\"]")
+                  .completionCondition("=task4Done = true")
+                  .cancelRemainingInstances(true);
+              adHocSubProcess
+                  .manualTask("task1")
+                  .sequenceFlowId("toJoin1")
+                  .parallelGateway("join")
+                  .manualTask("task3");
+              adHocSubProcess.serviceTask("task2", t -> t.zeebeJobType(jobType)).connectTo("join");
+              adHocSubProcess
+                  .serviceTask("task4", t -> t.zeebeJobType(jobType + "-4"))
+                  .zeebeOutputExpression("true", "task4Done");
+            });
+    awaitTokenAtJoin(processInstanceKey);
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(jobType + "-4").complete();
+
+    // then
+    assertThat(recordsUntilCompleted(processInstanceKey))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .contains(
+            tuple("task2", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
   public void shouldKeepWaitingTokenWhenCompletionConditionDoesNotCancelRemainingInstances() {
     // given
     final long processInstanceKey =
