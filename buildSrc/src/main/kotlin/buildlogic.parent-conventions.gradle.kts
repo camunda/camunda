@@ -102,7 +102,7 @@ dependencies {
 
 // Force versions in the same way they are pinned by maven.
 // Either explicitly or implicitly by the order of the dependencies being listed in the pom.
-configurations.all {
+configurations.configureEach {
   resolutionStrategy.force(
     "co.elastic.clients:elasticsearch-java:$esJavaVersion",
     "com.google.code.gson:gson:$gsonVersion",
