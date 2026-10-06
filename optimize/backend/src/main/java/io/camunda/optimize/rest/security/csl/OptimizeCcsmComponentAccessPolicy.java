@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.identity.sdk.authentication.exception.JsonWebKeyException;
 import io.camunda.identity.sdk.authentication.exception.TokenExpiredException;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
@@ -69,9 +70,14 @@ public class OptimizeCcsmComponentAccessPolicy implements OptimizeComponentAcces
       // not renew it, until the next web app request renews it and denies them.
       LOG.debug("Access token has expired: {}", e.getMessage());
       return Either.right(null);
+    } catch (final JsonWebKeyException e) {
+      // Denies like any other verification error, but logs a warning: when the keys cannot be
+      // fetched, every user is denied, not only a user without the permission.
+      LOG.warn("Could not fetch the keys to verify the access token, denying access", e);
+      return Either.left("Access token could not be verified: " + e.getMessage());
     } catch (final TokenVerificationException e) {
-      // On Keycloak, the Optimize role also adds the Optimize API audience to the token, so a user
-      // without the role fails here, before the permission check.
+      // Any verification error other than expiry is a denial. OptimizeBearerPermissionFilter makes
+      // the same decision for bearer requests.
       return Either.left("Access token could not be verified: " + e.getMessage());
     }
   }
