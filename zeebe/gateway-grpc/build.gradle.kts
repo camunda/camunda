@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.netty-tcnative-runtime-conventions")
@@ -49,8 +51,8 @@ dependencies {
   api(libs.io.netty.netty.transport)
   implementation(project(":camunda-service"))
   runtimeOnly(libs.io.netty.netty.tcnative.boringssl.static)
-  testImplementation(project(":zeebe-gateway", configuration = "tests"))
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-gateway", ArtifactKind.TESTS))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(libs.org.msgpack.msgpack.core)
   testImplementation(libs.org.apache.logging.log4j.log4j.api)
   testImplementation(libs.org.apache.logging.log4j.log4j.slf4j2.impl)

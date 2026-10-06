@@ -1,3 +1,6 @@
+import buildlogic.projectArtifact
+import buildlogic.artifactKind
+import buildlogic.ArtifactKind
 import buildlogic.GenerateAssertjAssertionsTask
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.tasks.bundling.Jar
@@ -57,11 +60,11 @@ val patchRecordAssert = tasks.register<Sync>("patchRecordAssert") {
 dependencies {
     add(
         protocolClassDirectories.name,
-        project(":zeebe-protocol", configuration = "mainClasses"),
+        projectArtifact(":zeebe-protocol", ArtifactKind.MAIN_CLASSES),
     )
     add(
         protocolClassDirectories.name,
-        project(":camunda-security-protocol", configuration = "mainClasses"),
+        projectArtifact(":camunda-security-protocol", ArtifactKind.MAIN_CLASSES),
     )
     add(assertjGeneratorClasspath.name, libs.org.assertj.assertj.assertions.generator)
     implementation(project(":zeebe-protocol"))
@@ -93,6 +96,7 @@ tasks.named<Jar>("jar") {
 val generatedAssertions = configurations.create("generatedAssertions") {
     isCanBeConsumed = true
     isCanBeResolved = false
+    artifactKind(project, ArtifactKind.GENERATED_ASSERTIONS)
 }
 
 artifacts {

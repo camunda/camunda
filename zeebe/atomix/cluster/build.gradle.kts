@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 import buildlogic.requiredVersion
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
@@ -47,8 +49,8 @@ dependencies {
   api(libs.io.netty.netty.resolver)
   runtimeOnly("io.netty:netty-transport-native-epoll:${nettyVersion}:linux-x86_64")
   runtimeOnly(libs.io.netty.netty.tcnative.boringssl.static)
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
-  testImplementation(project(":zeebe-snapshots", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
+  testImplementation(projectArtifact(":zeebe-snapshots", ArtifactKind.TESTS))
   testImplementation(libs.net.jodah.concurrentunit)
   testImplementation(libs.junit.junit)
   testImplementation(libs.org.mockito.mockito.core)

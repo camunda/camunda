@@ -1,3 +1,6 @@
+import buildlogic.projectArtifact
+import buildlogic.artifactKind
+import buildlogic.ArtifactKind
 import org.gradle.process.CommandLineArgumentProvider
 import buildlogic.OptionalDependenciesPomAction
 import buildlogic.micrometerOptionalDependencies
@@ -110,7 +113,7 @@ dependencies {
   }
   add(
     baseStarterMainOutput.name,
-    project(":camunda-spring-boot-starter", configuration = "mainOutput"),
+    projectArtifact(":camunda-spring-boot-starter", ArtifactKind.MAIN_OUTPUT),
   )
   api(project(":camunda-client-java"))
   compileOnly(libs.io.micrometer.micrometer.core)

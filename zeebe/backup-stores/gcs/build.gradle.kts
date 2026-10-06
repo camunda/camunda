@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
@@ -19,7 +21,7 @@ dependencies {
   api(libs.com.fasterxml.jackson.core.jackson.core)
   implementation(libs.org.slf4j.slf4j.api)
   testImplementation(project(":zeebe-backup-testkit"))
-  testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-backup-testkit", ArtifactKind.TESTS))
   testImplementation(libs.org.testcontainers.testcontainers)
   testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
   testImplementation(libs.org.apache.commons.commons.lang3)

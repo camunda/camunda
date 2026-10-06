@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
@@ -16,7 +18,7 @@ dependencies {
   implementation(project(":zeebe-atomix-cluster"))
   implementation(libs.org.slf4j.slf4j.api)
   testImplementation(project(":zeebe-backup-testkit"))
-  testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-backup-testkit", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-protocol"))
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.mockito.mockito.junit.jupiter)

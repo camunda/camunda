@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 import java.time.Duration
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
@@ -33,7 +35,7 @@ dependencies {
   testImplementation(project(":camunda-qa-util"))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(project(":zeebe-scheduler"))
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":camunda-schema-manager"))
   testImplementation(libs.org.awaitility.awaitility)
   testImplementation(libs.com.ibm.icu.icu4j)

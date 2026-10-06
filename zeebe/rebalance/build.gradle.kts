@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.protobuf-conventions")
 }
@@ -21,7 +23,7 @@ dependencies {
   testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
   testRuntimeOnly(libs.org.junit.jupiter.junit.jupiter.engine)
   testImplementation(libs.org.assertj.assertj.core)
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-test-util"))
 }
 

@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.netty-tcnative-runtime-conventions")
@@ -30,7 +32,7 @@ dependencies {
   api(libs.io.micrometer.micrometer.core)
   runtimeOnly(libs.io.netty.netty.tcnative.boringssl.static)
   testImplementation(project(":zeebe-test-util"))
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)

@@ -1,3 +1,5 @@
+import buildlogic.artifactKind
+import buildlogic.ArtifactKind
 import buildlogic.filterMavenResources
 import buildlogic.optimizeBackendTestResourceTokens
 import org.gradle.jvm.tasks.Jar
@@ -33,6 +35,7 @@ val distributionResources =
   configurations.create("distributionResources") {
     isCanBeConsumed = true
     isCanBeResolved = false
+    artifactKind(project, ArtifactKind.DISTRIBUTION_RESOURCES)
   }
 
 artifacts {

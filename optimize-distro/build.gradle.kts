@@ -1,3 +1,6 @@
+import buildlogic.projectArtifact
+import buildlogic.artifactKind
+import buildlogic.ArtifactKind
 import buildlogic.DistributionDependencyReportExtension
 import buildlogic.filterMavenResources
 import io.camunda.gradle.pom.PomResolver
@@ -160,7 +163,7 @@ val distZip =
 dependencies {
   add(
     optimizeBackendResources.name,
-    project(":optimize-backend", configuration = "distributionResources"),
+    projectArtifact(":optimize-backend", ArtifactKind.DISTRIBUTION_RESOURCES),
   )
   implementation(project(":optimize-backend"))
   implementation(project(":upgrade-optimize"))

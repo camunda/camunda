@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
@@ -36,8 +38,8 @@ dependencies {
   api(libs.org.springframework.security.spring.security.crypto)
   testImplementation(project(":zeebe-auth"))
   testImplementation(project(":camunda-cluster"))
-  testImplementation(project(":zeebe-gateway", configuration = "tests"))
-  testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
+  testImplementation(projectArtifact(":zeebe-gateway", ArtifactKind.TESTS))
+  testImplementation(projectArtifact(":zeebe-protocol-asserts", ArtifactKind.GENERATED_ASSERTIONS))
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.mockito.mockito.junit.jupiter)
   testImplementation(libs.org.instancio.instancio.core)

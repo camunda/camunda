@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
@@ -28,7 +30,7 @@ dependencies {
   implementation(project(":zeebe-broker-client"))
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.mockito.mockito.junit.jupiter)
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(libs.net.jqwik.jqwik.api)
   testImplementation(libs.net.jqwik.jqwik)
 }

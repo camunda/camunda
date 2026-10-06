@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.serial-test-conventions")
@@ -45,10 +47,10 @@ dependencies {
   implementation(project(":camunda-search-client"))
   implementation(project(":camunda-search-domain"))
   testImplementation(project(":zeebe-scheduler"))
-  testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-logstreams"))
-  testImplementation(project(":zeebe-logstreams", configuration = "tests"))
-  testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
+  testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
+  testImplementation(projectArtifact(":zeebe-protocol-asserts", ArtifactKind.GENERATED_ASSERTIONS))
   testImplementation(libs.junit.junit)
   testImplementation(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.hamcrest.hamcrest)

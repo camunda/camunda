@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
@@ -17,7 +19,7 @@ dependencies {
   implementation(libs.org.slf4j.slf4j.api)
   implementation(libs.org.jspecify.jspecify)
 
-  testImplementation(project(":zeebe-restore", configuration = "tests"))
+  testImplementation(projectArtifact(":zeebe-restore", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-protocol"))
   testImplementation(libs.org.assertj.assertj.core)
   testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
