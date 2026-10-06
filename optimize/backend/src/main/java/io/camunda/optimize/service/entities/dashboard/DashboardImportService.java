@@ -139,9 +139,7 @@ public class DashboardImportService {
   private void validateDashboardFiltersOrFail(
       final DashboardDefinitionExportDto dashboardToImport) {
     try {
-      // Whether variable filters exist in the dashboard's reports is deliberately not checked:
-      // validation runs before the reports are imported, so the tiles still point to the report
-      // IDs of the source environment and no variable names can be resolved for them.
+      // Tiles still hold source report IDs here, so variable existence can't be checked.
       dashboardService.validateDashboardFilterStructure(dashboardToImport.getAvailableFilters());
     } catch (final Exception e) {
       throw new OptimizeImportFileInvalidException(
