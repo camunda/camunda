@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_revisit" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="revisit" name="Instances revisited every ten minutes" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>toRounds</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="toRounds" sourceRef="start" targetRef="rounds" />
+    <bpmn:subProcess id="rounds">
+      <bpmn:incoming>toRounds</bpmn:incoming>
+      <bpmn:outgoing>toEnd</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=for i in 1..12 return i" inputElement="round" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="roundStart">
+        <bpmn:outgoing>toWait</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="toWait" sourceRef="roundStart" targetRef="wait" />
+      <bpmn:intermediateCatchEvent id="wait">
+        <bpmn:incoming>toWait</bpmn:incoming>
+        <bpmn:outgoing>toTask</bpmn:outgoing>
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10M</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:sequenceFlow id="toTask" sourceRef="wait" targetRef="task" />
+      <bpmn:serviceTask id="task">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="benchmark-task" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>toTask</bpmn:incoming>
+        <bpmn:outgoing>toRoundEnd</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="toRoundEnd" sourceRef="task" targetRef="roundEnd" />
+      <bpmn:endEvent id="roundEnd">
+        <bpmn:incoming>toRoundEnd</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="toEnd" sourceRef="rounds" targetRef="end" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>toEnd</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>
