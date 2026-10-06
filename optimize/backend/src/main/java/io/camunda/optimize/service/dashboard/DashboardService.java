@@ -491,37 +491,31 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       final String userId,
       final List<DashboardFilterDto<?>> availableFilters,
       final List<DashboardReportTileDto> reportsInDashboard) {
-    if (!CollectionUtils.isEmpty(availableFilters)) {
-      final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
-          groupFiltersByClass(availableFilters);
-      validateDashboardFilterStructure(availableFilters, filtersByClass);
-      validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
-    }
+    validateDashboardFilterStructure(availableFilters);
+    validateVariableFiltersExistInReports(
+        userId, reportsInDashboard, groupFiltersByClass(availableFilters));
   }
 
-  /**
-   * Validates everything about the filters that does not depend on the reports of the dashboard
-   * already being stored.
-   */
+  /** Validates the filters without needing the dashboard's reports to be stored yet. */
   public void validateDashboardFilterStructure(final List<DashboardFilterDto<?>> availableFilters) {
-    if (!CollectionUtils.isEmpty(availableFilters)) {
-      validateDashboardFilterStructure(availableFilters, groupFiltersByClass(availableFilters));
+    if (CollectionUtils.isEmpty(availableFilters)) {
+      return;
     }
-  }
-
-  private Map<String, List<DashboardFilterDto<?>>> groupFiltersByClass(
-      final List<DashboardFilterDto<?>> availableFilters) {
-    return availableFilters.stream()
-        .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
-  }
-
-  private void validateDashboardFilterStructure(
-      final List<DashboardFilterDto<?>> availableFilters,
-      final Map<String, List<DashboardFilterDto<?>>> filtersByClass) {
+    final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
+        groupFiltersByClass(availableFilters);
     validateFiltersHaveData(availableFilters);
     validateDateAndStateFilters(filtersByClass);
     validateIdentityFilters(filtersByClass);
     validateVariableFilters(filtersByClass);
+  }
+
+  private Map<String, List<DashboardFilterDto<?>>> groupFiltersByClass(
+      final List<DashboardFilterDto<?>> availableFilters) {
+    if (CollectionUtils.isEmpty(availableFilters)) {
+      return Map.of();
+    }
+    return availableFilters.stream()
+        .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
   }
 
   private List<DashboardDefinitionRestDto> getDashboardDefinitionsInCollectionAsService(
