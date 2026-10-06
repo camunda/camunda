@@ -56,9 +56,10 @@ jobs:
         run: |
           set -euo pipefail
           echo "Detecting base branch for input branch: $BRANCH"
-          # Most specific first, so a branch cut exactly where a stable line
-          # forked resolves to that stable line rather than its ancestor.
-          candidates=(stable/8.10 stable/8.9 stable/8.8 stable/8.7 stable/8.6 main)
+          # main first: an equal distance means the branch forked from trunk
+          # at or before the point a stable line was cut, so it left main, not
+          # that stable line. Strict < below keeps main on a tie.
+          candidates=(main stable/8.10 stable/8.9 stable/8.8 stable/8.7 stable/8.6)
           git fetch origin "${candidates[@]}" "$BRANCH"
 
           base=""
