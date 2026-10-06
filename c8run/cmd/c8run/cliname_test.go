@@ -60,7 +60,7 @@ func TestConfirmReadFailureIsAnError(t *testing.T) {
 func TestTenantsHelpHidesAliasesForWrapper(t *testing.T) {
 	cmd, out, _ := testTenantsCommand(t, "", false, "")
 	require.NoError(t, cmd.run(t.TempDir(), []string{"help"}))
-	assert.Contains(t, out.String(), "Aliases: c8run pt")
+	assert.Contains(t, out.String(), "without saving them.\n\nAliases: c8run pt, c8run physical-tenants.\nC8RUN_TENANTS_FILE")
 
 	t.Setenv(cliNameEnv, "c8ctl cluster")
 	cmd, out, _ = testTenantsCommand(t, "", false, "")

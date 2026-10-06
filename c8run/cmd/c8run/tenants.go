@@ -67,11 +67,11 @@ func defaultStorageType(baseDir string) (string, error) {
 
 func (c *tenantsCommand) run(baseDir string, args []string) error {
 	if len(args) == 0 || args[0] == "help" || args[0] == "-h" || args[0] == "--help" {
-		_, _ = fmt.Fprint(c.output, tenantsHelp)
+		help := tenantsHelp
 		if cliName() == "" {
-			// Wrappers delegate only `tenants`, so the aliases are not runnable through them.
-			_, _ = fmt.Fprintln(c.output, "Aliases: c8run pt, c8run physical-tenants.")
+			help += tenantsHelpAliases
 		}
+		_, _ = fmt.Fprint(c.output, help+tenantsHelpFooter)
 		return nil
 	}
 	if len(args) == 2 && (args[1] == "help" || args[1] == "-h" || args[1] == "--help") {
@@ -454,7 +454,12 @@ e.g. "sales" or "team2".
 Tenants are saved for the current OS user and applied on every ` + "`c8run start`" + `.
 Use ` + "`c8run start --physical-tenants a,b`" + ` to run with tenants for one run without saving them.
 
-C8RUN_TENANTS_FILE selects another tenants file; relative paths use the current directory.
+`
+
+// tenantsHelpAliases is omitted under a wrapper, which delegates only `tenants`.
+const tenantsHelpAliases = "Aliases: c8run pt, c8run physical-tenants.\n"
+
+const tenantsHelpFooter = `C8RUN_TENANTS_FILE selects another tenants file; relative paths use the current directory.
 C8RUN_TENANTS_MODE defaults to local; external disables these commands so camunda.physical-tenants
 in your --config file is the only source.
 Requires Camunda 8.10 or newer.
