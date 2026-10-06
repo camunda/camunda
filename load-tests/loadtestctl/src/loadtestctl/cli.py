@@ -9,7 +9,7 @@ HERE = Path(__file__).resolve().parent
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="loadtestctl",
-        description="A helper CLI to control and operate on load tests.",
+        description="A helper CLI for controlling and operating on load tests",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Examples: 
         tbd.

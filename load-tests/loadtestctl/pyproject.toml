@@ -1,7 +1,7 @@
 [project]
 name = "loadtestctl"
 version = "0.1.0"
-description = "A helper CLI to control and operate on load tests"
+description = "A helper CLI for controlling and operating on load tests"
 readme = "README.md"
 authors = [
     { name = "Christopher Kujawa", email = "ChrisKujawa@users.noreply.github.com" },
