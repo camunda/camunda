@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Reserve a minimum share of job-worker capacity for the polling path | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Reserve a minimum share of job-worker capacity for the polling path | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Alexandre Janoni"><meta data-rh="true" property="og:description" content="DRI: Alexandre Janoni"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-64095/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-64095/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-64095/assets/js/runtime~main.fe8a809d.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-64095/assets/js/main.558607cb.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64095/assets/js/runtime~main.b64f16dc.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64095/assets/js/main.2a961b4d.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -17,7 +17,7 @@
 <p><strong>Deciders</strong></p>
 <ul>
 <li class="">Alexandre Janoni</li>
-<li class="">Zeebe job-worker / client domain owner (to confirm the direction)</li>
+<li class="">Meggle (megglos)</li>
 </ul>
 <p><strong>Purpose</strong>: Decide whether the Java client&#x27;s job worker should reserve a
 minimum slice of its shared activation capacity for the polling (ActivateJobs)
@@ -64,21 +64,40 @@ the poll path wins only ~6–8% of delivered jobs under push contention. It is
 identical in both arms. The harm is to poll-path liveness — the fairness of the
 recovery/backlog-drain mechanism — not to throughput.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
-<p>Add an <strong>optional reserved poll lane</strong> to <code>BlockingExecutor</code>, wired on the
-streaming path only.</p>
+<p>Add a <strong>demand-gated reserved poll lane</strong> to <code>BlockingExecutor</code>, wired on the
+streaming path only. The lane is reserved only while the poll has demand, so a
+streaming worker that is not saturated keeps the full push capacity it had
+before.</p>
 <ul>
 <li class=""><code>total = Semaphore(maxJobsActive)</code> remains the single capacity authority.
 <code>freeCapacity()</code>, poll request sizing, and <code>hasNoJobsInFlight()</code> are unchanged,
 so the unification from #59632 is preserved — the reserved lane is a sub-limit
 on one path, not a second tally.</li>
-<li class="">The push path additionally acquires a <code>pushBudget = Semaphore(maxJobsActive − reserved)</code> permit before <code>total</code>; both are released together in the same
-<code>finally</code>. The poll path acquires only <code>total</code>, so it can still reach every
-slot including the reserved ones.</li>
+<li class="">The push path additionally acquires a <code>pushBudget</code> permit before <code>total</code>; both
+are released together in the same <code>finally</code>, and both acquisitions share one
+deadline so a push is bounded by a single activation timeout. The poll path
+acquires only <code>total</code>, so it can still reach every slot including the
+reserved ones.</li>
+<li class=""><code>pushBudget</code> is resizable. It starts at <code>maxJobsActive</code>, so push can use every
+slot. While the lane is reserved it is shrunk by <code>reserved</code> (via
+<code>Semaphore.reducePermits</code>) and grown back by <code>release(reserved)</code> when the lane
+is released. Every push takes a budget permit in both modes, so the count of
+pushed jobs in flight stays correct across a change. If push already holds
+more than the smaller budget, the budget goes negative and new pushes wait
+until enough pushed jobs finish; no running job is interrupted.</li>
+<li class="">The worker drives the lane from <code>JobWorkerImpl.onPollSuccess</code>: a response with
+jobs reserves it (a backlog only the poll can drain; refused jobs, which are a
+subset of these, show push took the slots the poll was sized for during the
+round-trip), and an empty response releases it. An empty response already
+starts the stream backoff, so a push-dominated worker that keeps up runs with
+the lane released.</li>
 <li class="">Reservation size = <code>floor(maxJobsActive × 0.25)</code>. <code>floor</code> reserves nothing
 until a whole slot can be spared (<code>N&lt;4→0, N=4→1, N=30→7</code>), which avoids halving
 push at small <code>maxJobsActive</code> (a <code>round</code>-with-minimum-1 policy broke
-<code>shouldNotAskForJobsWhileItCannotRunAnyMore</code> at N=2). The 0.25 fraction is a
-tunable knob, not a load-bearing constant.</li>
+<code>shouldNotAskForJobsWhileItCannotRunAnyMore</code> at N=2). The 0.25 fraction is an
+internal constant with no user setting; because the lane only engages under
+poll demand, a worker that is not saturated is unaffected, which removes the
+need for an opt-out.</li>
 <li class="">The non-streaming (poll-only) path passes <code>reserved = 0</code> and is byte-for-byte
 unchanged.</li>
 </ul>
@@ -89,12 +108,21 @@ unchanged.</li>
 even under sustained push contention.</li>
 <li class=""><strong>No throughput cost.</strong> At matched load, completed/s is identical (28.5 vs
 28.9) and timeouts are no worse (fewer, in the matched-load window). Reserving
-slots for poll does not reduce total delivery in the oversubscribed regime.</li>
-<li class=""><strong>Streaming-only, opt-in by construction.</strong> Only the streaming builder path
-sets a non-zero reservation; existing poll-only workers are unaffected.</li>
-<li class=""><strong>A purely-pushed streaming worker keeps polling for its reserved slots.</strong> It
-no longer fills entirely from push — this is the backlog-drain mechanism doing
-its job, at the cost of a few more <code>ActivateJobs</code> requests.</li>
+slots for poll does not reduce total delivery in the oversubscribed regime.
+The A/B ran with an always-reserved lane; in that regime every poll returns
+jobs, so the demand-gated lane stays reserved and behaves the same.</li>
+<li class=""><strong>No change for a streaming worker that is not saturated.</strong> With no backlog
+the poll comes back empty, the lane stays released, and push can fill every
+slot exactly as before. An always-reserved lane would instead cap push at
+~75% of <code>maxJobsActive</code> while a slot sits free, block the stream earlier, and
+leave already-pushed jobs waiting until they expire.</li>
+<li class=""><strong>Streaming-only.</strong> Only the streaming builder path sets a non-zero
+reservation; existing poll-only workers are unaffected. There is no user
+setting; the only way to avoid the lane entirely is to disable streaming,
+which is acceptable because the lane is inert without poll demand.</li>
+<li class=""><strong>The lane lags demand by one poll.</strong> It engages after a poll returns jobs and
+disengages after an empty one, so the first contested poll still loses to
+push, and a backlog that drains keeps the lane for one more poll.</li>
 <li class=""><strong>Moderate severity, honest framing.</strong> Because push masks most of the impact,
 a won&#x27;t-fix remains defensible; this ADR lands the fix as a low-risk liveness
 improvement rather than a throughput fix, and leaves the final call to the
@@ -109,6 +137,19 @@ which time the parked push thread has already taken the freed permit. A fair
 semaphore therefore cannot arbitrate poll-vs-push here, and a microbenchmark
 confirmed it does not help (and can hurt) once the poll&#x27;s round-trip is
 modelled.</li>
+<li class=""><strong>Always-reserved lane.</strong> The first iteration of this ADR. Rejected: it caps
+push at <code>maxJobsActive − reserved</code> even when the poll has nothing to drain,
+which regresses streaming workers that are not saturated (see Consequences).</li>
+<li class=""><strong>Pre-acquire capacity when sending <code>ActivateJobs</code>.</strong> The poll takes its
+permits when it sends the request and releases the unused ones when the
+response arrives, so push cannot take slots the poll already asked for during
+the round-trip — attacking the root cause directly. Rejected: the poll holds
+those permits for the whole long-poll (up to the request timeout), and on a
+push-dominated worker most polls come back empty, so push is kept out of
+slots that end up unused far more often than with a lane that only engages
+under demand. It would also turn <code>freeCapacity()</code> and <code>hasNoJobsInFlight()</code>
+into counts of reservations rather than jobs in flight, undoing the single
+in-flight count from #59632.</li>
 <li class=""><strong>Won&#x27;t-fix.</strong> Defensible on severity (push carries throughput; no cliff).
 Not chosen because the reserved lane is throughput-neutral and cheaply
 restores recovery-path liveness, but recorded here as the reasonable
@@ -119,11 +160,14 @@ alternative the issue explicitly sanctioned.</li>
 <li class="">Issue: camunda/camunda#59734 (non-fair shared capacity semaphore)</li>
 <li class="">Prerequisite: camunda/camunda#59632 / PR #63915 (unified worker capacity
 accounting)</li>
-<li class="">Implementation: <code>clients/java/src/main/java/io/camunda/client/impl/worker/BlockingExecutor.java</code>,
-<code>JobWorkerBuilderImpl.java</code></li>
-<li class="">Validation benchmarks:
-<code>microbenchmarks/.../worker/CapacityLaneReservationBenchmark.java</code> (RTT-aware
-A/B) and <code>CapacitySemaphoreFairnessBenchmark.java</code> (fair-semaphore control)</li>
+<li class="">Implementation: <code>clients/java/src/main/java/io/camunda/client/impl/worker/BlockingExecutor.java</code>
+(resizable push budget), <code>JobWorkerImpl.java</code> (lane driven by poll demand),
+<code>JobWorkerBuilderImpl.java</code> (reservation size, streaming only)</li>
+<li class="">Microbenchmarks:
+<code>microbenchmarks/.../worker/CapacityLaneReservationBenchmark.java</code> (shared vs
+reserved lane with the poll round-trip modelled; models the lane in its
+reserved state) and <code>CapacitySemaphoreFairnessBenchmark.java</code> (fair vs
+non-fair semaphore with a zero-latency poll)</li>
 </ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/adr/clients/0002-reserved-poll-capacity-for-job-worker.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a></li><li><a href="#alternatives-considered" class="table-of-contents__link toc-highlight">Alternatives considered</a></li><li><a href="#references" class="table-of-contents__link toc-highlight">References</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
 </body>
 </html>
