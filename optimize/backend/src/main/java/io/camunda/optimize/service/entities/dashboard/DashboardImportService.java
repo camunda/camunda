@@ -51,11 +51,6 @@ public class DashboardImportService {
 
   public void validateAllDashboardsOrFail(
       final List<DashboardDefinitionExportDto> dashboardsToImport) {
-    validateAllDashboardsOrFail(null, dashboardsToImport);
-  }
-
-  public void validateAllDashboardsOrFail(
-      final String userId, final List<DashboardDefinitionExportDto> dashboardsToImport) {
     final Set<ImportIndexMismatchDto> indexMismatches = new HashSet<>();
 
     dashboardsToImport.stream()
