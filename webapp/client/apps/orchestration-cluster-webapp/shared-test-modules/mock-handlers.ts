@@ -336,6 +336,46 @@ const mockDeleteMappingRuleEndpoint = createEndpointMock({
 	method: endpoints.deleteMappingRule.method,
 });
 
+const mockQueryClusterVariablesEndpoint = createEndpointMock({
+	endpoint: endpoints.searchClusterVariables.getUrl(),
+	method: endpoints.searchClusterVariables.method,
+});
+
+const mockGetGlobalClusterVariableEndpoint = createEndpointMock({
+	endpoint: endpoints.getGlobalClusterVariable.getUrl({name: ':name'}),
+	method: endpoints.getGlobalClusterVariable.method,
+});
+
+const mockGetTenantClusterVariableEndpoint = createEndpointMock({
+	endpoint: endpoints.getTenantClusterVariable.getUrl({tenantId: ':tenantId', name: ':name'}),
+	method: endpoints.getTenantClusterVariable.method,
+});
+
+const mockCreateGlobalClusterVariableEndpoint = createEndpointMock({
+	endpoint: endpoints.createGlobalClusterVariable.getUrl(),
+	method: endpoints.createGlobalClusterVariable.method,
+});
+
+const mockCreateTenantClusterVariableEndpoint = createEndpointMock({
+	endpoint: endpoints.createTenantClusterVariable.getUrl({tenantId: ':tenantId'}),
+	method: endpoints.createTenantClusterVariable.method,
+});
+
+const mockUpdateGlobalClusterVariableEndpoint = createEndpointMock({
+	endpoint: endpoints.updateGlobalClusterVariable.getUrl({name: ':name'}),
+	method: endpoints.updateGlobalClusterVariable.method,
+});
+
+const mockDeleteGlobalClusterVariableEndpoint = createEndpointMock({
+	endpoint: endpoints.deleteGlobalClusterVariable.getUrl({name: ':name'}),
+	method: endpoints.deleteGlobalClusterVariable.method,
+});
+
+const mockQueryTenantsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryTenants.getUrl(),
+	method: endpoints.queryTenants.method,
+});
+
 const mockCreateCancellationBatchOperationEndpoint = createEndpointMock({
 	endpoint: endpoints.createCancellationBatchOperation.getUrl(),
 	method: endpoints.createCancellationBatchOperation.method,
@@ -471,4 +511,12 @@ export {
 	mockCreateUserEndpoint,
 	mockUpdateUserEndpoint,
 	mockDeleteUserEndpoint,
+	mockQueryClusterVariablesEndpoint,
+	mockGetGlobalClusterVariableEndpoint,
+	mockGetTenantClusterVariableEndpoint,
+	mockCreateGlobalClusterVariableEndpoint,
+	mockCreateTenantClusterVariableEndpoint,
+	mockUpdateGlobalClusterVariableEndpoint,
+	mockDeleteGlobalClusterVariableEndpoint,
+	mockQueryTenantsEndpoint,
 };

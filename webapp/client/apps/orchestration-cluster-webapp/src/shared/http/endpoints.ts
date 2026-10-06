@@ -58,6 +58,11 @@ import {
 	type CreateUserRequestBody,
 	type UpdateUserRequestBody,
 	type QueryUsersRequestBody,
+	type ClusterVariable,
+	type CreateClusterVariableRequestBody,
+	type UpdateClusterVariableRequestBody,
+	type QueryClusterVariablesRequestBody,
+	type QueryTenantsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -711,6 +716,96 @@ const endpoints = {
 				method: unifiedAPIEndpoints.deleteMappingRule.method,
 			},
 		),
+
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.searchClusterVariables.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.searchClusterVariables.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getClusterVariable: ({name, scope, tenantId}: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) => {
+		const encodedName = encodeURIComponent(name);
+		return new Request(
+			getFullURL(
+				scope === 'TENANT'
+					? unifiedAPIEndpoints.getTenantClusterVariable.getUrl({
+							tenantId: encodeURIComponent(tenantId ?? ''),
+							name: encodedName,
+						})
+					: unifiedAPIEndpoints.getGlobalClusterVariable.getUrl({name: encodedName}),
+			),
+			{...BASE_REQUEST_OPTIONS, method: 'GET'},
+		);
+	},
+
+	createClusterVariable: ({
+		scope,
+		tenantId,
+		...body
+	}: Pick<ClusterVariable, 'scope' | 'tenantId'> & CreateClusterVariableRequestBody) =>
+		new Request(
+			getFullURL(
+				scope === 'TENANT'
+					? unifiedAPIEndpoints.createTenantClusterVariable.getUrl({tenantId: encodeURIComponent(tenantId ?? '')})
+					: unifiedAPIEndpoints.createGlobalClusterVariable.getUrl(),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: 'POST',
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
+
+	updateClusterVariable: ({
+		name,
+		scope,
+		tenantId,
+		...body
+	}: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'> & UpdateClusterVariableRequestBody) => {
+		const encodedName = encodeURIComponent(name);
+		return new Request(
+			getFullURL(
+				scope === 'TENANT'
+					? unifiedAPIEndpoints.updateTenantClusterVariable.getUrl({
+							tenantId: encodeURIComponent(tenantId ?? ''),
+							name: encodedName,
+						})
+					: unifiedAPIEndpoints.updateGlobalClusterVariable.getUrl({name: encodedName}),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: 'PUT',
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		);
+	},
+
+	deleteClusterVariable: ({name, scope, tenantId}: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) => {
+		const encodedName = encodeURIComponent(name);
+		return new Request(
+			getFullURL(
+				scope === 'TENANT'
+					? unifiedAPIEndpoints.deleteTenantClusterVariable.getUrl({
+							tenantId: encodeURIComponent(tenantId ?? ''),
+							name: encodedName,
+						})
+					: unifiedAPIEndpoints.deleteGlobalClusterVariable.getUrl({name: encodedName}),
+			),
+			{...BASE_REQUEST_OPTIONS, method: 'DELETE'},
+		);
+	},
+
+	queryTenants: (body: QueryTenantsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryTenants.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryTenants.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
 };
 
 export {endpoints};

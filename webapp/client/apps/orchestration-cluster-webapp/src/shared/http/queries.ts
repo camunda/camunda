@@ -40,6 +40,11 @@ import type {
 	User,
 	QueryUsersRequestBody,
 	QueryUsersResponseBody,
+	ClusterVariable,
+	QueryClusterVariablesRequestBody,
+	QueryClusterVariablesResponseBody,
+	QueryTenantsRequestBody,
+	QueryTenantsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -82,6 +87,10 @@ const queryKeys = {
 	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
 	users: (body: QueryUsersRequestBody) => ['users', body] as const,
 	user: (username: string) => ['user', username] as const,
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody) => ['queryClusterVariables', body] as const,
+	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
+		['getClusterVariable', variable] as const,
+	queryTenants: (body: QueryTenantsRequestBody) => ['queryTenants', body] as const,
 };
 
 const queries = {
@@ -481,6 +490,42 @@ const queries = {
 			queryKey: queryKeys.queryMappingRules(body),
 			queryFn: async (): Promise<QueryMappingRulesResponseBody> => {
 				const {response, error} = await request(endpoints.queryMappingRules(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryClusterVariables(body),
+			queryFn: async (): Promise<QueryClusterVariablesResponseBody> => {
+				const {response, error} = await request(endpoints.queryClusterVariables(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
+		queryOptions({
+			queryKey: queryKeys.getClusterVariable(variable),
+			queryFn: async (): Promise<ClusterVariable> => {
+				const {response, error} = await request(endpoints.getClusterVariable(variable));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryTenants: (body: QueryTenantsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryTenants(body),
+			queryFn: async (): Promise<QueryTenantsResponseBody> => {
+				const {response, error} = await request(endpoints.queryTenants(body));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
