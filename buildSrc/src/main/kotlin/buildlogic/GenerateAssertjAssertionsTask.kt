@@ -98,7 +98,10 @@ abstract class GenerateAssertjAssertionsWorkAction :
         .map { loader.loadClass(it) }
         .filterNot { it.simpleName == "package-info" }
         .filterNot { it.isSynthetic }
-        .filterNot { Modifier.isPrivate(it.modifiers) }
+        // Maven scans dependency JARs for top-level classes; exclude member types from this
+        // class-directory scan to keep the generated assertion API aligned with Maven.
+        .filter { Modifier.isPublic(it.modifiers) }
+        .filterNot { it.isMemberClass || it.isLocalClass || it.isAnonymousClass }
         .map { TypeToken.of(it) }
         .toSet()
     val converter = ClassToClassDescriptionConverter()
