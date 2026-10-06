@@ -36,18 +36,26 @@ function createHistoryState(instanceKey: string): HistoryState {
 	};
 }
 
-function historyWindowQuery(instance: string, scope: Scope) {
+function historyWindowQuery(instance: string, scope: Scope, onForbidden: (error: ForbiddenError) => void) {
 	return queryOptions({
 		queryKey: ['instanceHistory', instance, scope.key, scope.version, scope.from] as const,
-		queryFn: ({signal}) =>
-			instanceRequest<QueryElementInstancesResponseBody>(
-				endpoints.queryElementInstances({
-					filter: {elementInstanceScopeKey: scope.key},
-					page: {from: scope.from, limit: 100},
-					sort: historySort,
-				}),
-				signal,
-			),
+		queryFn: async ({signal}) => {
+			try {
+				return await instanceRequest<QueryElementInstancesResponseBody>(
+					endpoints.queryElementInstances({
+						filter: {elementInstanceScopeKey: scope.key},
+						page: {from: scope.from, limit: 100},
+						sort: historySort,
+					}),
+					signal,
+				);
+			} catch (error) {
+				if (error instanceof ForbiddenError && !signal.aborted) {
+					onForbidden(error);
+				}
+				throw error;
+			}
+		},
 		retry: false,
 		staleTime: Infinity,
 		refetchOnWindowFocus: false,
@@ -74,7 +82,11 @@ function useHistoryController(instance: ProcessInstance) {
 				updateState((current) => (current.visible === visible ? current : {...current, visible})),
 			setTimestamps: (timestamps: boolean) => updateState((current) => ({...current, timestamps})),
 			setExecutionCount: (executionCount: boolean) => updateState((current) => ({...current, executionCount})),
-			setPageError: (pageError: unknown) => updateState((current) => ({...current, pageError})),
+			setPageError: (pageError: unknown) =>
+				updateState((current) => ({
+					...current,
+					pageError: current.pageError instanceof ForbiddenError ? current.pageError : pageError,
+				})),
 			setScopeErrors: (update: (current: Record<string, unknown>) => Record<string, unknown>) =>
 				updateState((current) => ({...current, scopeErrors: update(current.scopeErrors)})),
 		}),
@@ -86,12 +98,11 @@ function useHistoryController(instance: ProcessInstance) {
 	const pending = useRef(new Map<string, number>());
 	const queries = useQueries({
 		queries: scopes.map((scope) => ({
-			...historyWindowQuery(instanceKey, scope),
+			...historyWindowQuery(instanceKey, scope, setPageError),
 			enabled: visible && !(pageError instanceof ForbiddenError),
 		})),
 	});
-	const forbiddenError =
-		pageError instanceof ForbiddenError ? pageError : queries.find(({error}) => error instanceof ForbiddenError)?.error;
+	const forbiddenError = pageError instanceof ForbiddenError ? pageError : undefined;
 	const forbidden = Boolean(forbiddenError);
 	const windows = new Map(
 		scopes.map((scope, index) => [scope.key, {scope, query: queries[index]!, error: scopeErrors[scope.version]}]),
@@ -137,7 +148,13 @@ function useHistoryController(instance: ProcessInstance) {
 		}
 	}
 	const poll = useEffectEvent(async () => {
-		if (document.hidden || polling.current || pending.current.size > 0 || queries.some(({isFetching}) => isFetching)) {
+		if (
+			forbidden ||
+			document.hidden ||
+			polling.current ||
+			pending.current.size > 0 ||
+			queries.some(({isFetching}) => isFetching)
+		) {
 			return;
 		}
 		polling.current = true;
@@ -150,7 +167,7 @@ function useHistoryController(instance: ProcessInstance) {
 				windows.get(key)?.query.data?.items.some(({state}) => state === 'ACTIVE'),
 		);
 		await refreshScopes(active, (scope) =>
-			client.fetchQuery({...historyWindowQuery(instanceKey, scope), staleTime: 0}),
+			client.fetchQuery({...historyWindowQuery(instanceKey, scope, setPageError), staleTime: 0}),
 		);
 		polling.current = false;
 	});
@@ -188,7 +205,10 @@ function useHistoryController(instance: ProcessInstance) {
 			scope,
 			query: {data},
 		} = window;
-		if (direction === 'next' ? scope.from + 100 >= data.page.totalItems : scope.from === 0) {
+		const hasNextPage = data.page.hasMoreTotalItems
+			? data.items.length === 100
+			: scope.from + 100 < data.page.totalItems;
+		if (direction === 'next' ? !hasNextPage : scope.from === 0) {
 			return 0;
 		}
 		const next = {
@@ -199,7 +219,7 @@ function useHistoryController(instance: ProcessInstance) {
 		const generation = lifecycle.current.version;
 		pending.current.set(key, next.version);
 		try {
-			const result = await client.fetchQuery(historyWindowQuery(instanceKey, next));
+			const result = await client.fetchQuery(historyWindowQuery(instanceKey, next, setPageError));
 			if (generation !== lifecycle.current.version || pending.current.get(key) !== next.version) {
 				return -1;
 			}
@@ -226,6 +246,7 @@ function useHistoryController(instance: ProcessInstance) {
 		windows,
 		forbidden,
 		pageError,
+		handleForbidden: setPageError,
 		retry: () => {
 			setPageError(null);
 			void refreshScopes(scopes, (scope) => windows.get(scope.key)!.query.refetch({throwOnError: true}));

@@ -23,8 +23,8 @@ function ProcessInstancePageProvider({
 	search: ProcessInstanceSearch;
 	children: React.ReactNode;
 }) {
-	const selection = useResolvedSelection(processInstanceId, search);
 	const history = useHistoryController(processInstance);
+	const selection = useResolvedSelection(processInstanceId, search, history.handleForbidden);
 	return (
 		<ProcessInstanceContext value={{processInstanceId, processInstance, search, selection: search}}>
 			<ElementSelectionContext value={selection}>

@@ -67,6 +67,9 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 	});
 	const setVisible = history.setVisible;
 	useEffect(() => {
+		if (scrollRef.current) {
+			scrollRef.current.scrollTop = 0;
+		}
 		setVisible(xml.isSuccess);
 		return () => setVisible(false);
 	}, [setVisible, xml.isSuccess, processInstanceId]);

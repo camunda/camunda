@@ -31,6 +31,7 @@ import {useProcessInstanceElementSelection} from './useProcessInstanceElementSel
 import {processInstanceSearchSchema} from './processInstanceSearch';
 import {InstanceHistory} from './InstanceHistory';
 import {useProcessInstancePage} from './useProcessInstancePage';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 const instance = createProcessInstance();
 const child = createElementInstance();
 const path = '/operate/processes/$processInstanceId/variables';
@@ -65,6 +66,8 @@ function Probe() {
 					timestamps: history.timestamps,
 					nestedReady: history.windows.get(child.elementInstanceKey)?.query.isSuccess ?? false,
 					nestedError: Boolean(history.windows.get(child.elementInstanceKey)?.error),
+					ready: window?.query.isSuccess,
+					historyError: window?.query.isError,
 				})}
 			</output>
 			<button onClick={() => void history.page(processInstanceId, 'next')}>Next</button>
@@ -76,6 +79,15 @@ function Probe() {
 			</button>
 			<button onClick={() => void history.page(child.elementInstanceKey, 'next')}>Next nested</button>
 			<button onClick={history.retry}>Retry</button>
+			<button
+				onClick={() =>
+					void selection.selectElementInstance(
+						createElementInstance({...child, type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE'}),
+					)
+				}
+			>
+				Select ad-hoc instance
+			</button>
 		</>
 	);
 }
@@ -86,7 +98,9 @@ function Harness({tree = false}: {tree?: boolean}) {
 	return (
 		<>
 			<button onClick={() => setShown(!shown)}>Remount</button>
-			<button onClick={() => setId('other')}>Instance</button>
+			<button onClick={() => setId(id === instance.processInstanceKey ? 'other' : instance.processInstanceKey)}>
+				Instance
+			</button>
 			<ProcessInstancePageProvider
 				processInstanceId={id}
 				processInstance={createProcessInstance({processInstanceKey: id})}
@@ -102,21 +116,22 @@ describe('InstanceHistory', () => {
 		await cleanup();
 		vi.useRealTimers();
 		vi.restoreAllMocks();
+		notificationsStore.reset();
 	});
-	it.for([0, 1, 3, 'key', 'placeholder', 'key-error', 'id-error'])(
+	it.for([0, 1, 3, 'key', 'placeholder', 'key-error', 'id-error', 'capped-one'])(
 		'should resolve selection without broadening process scope (%s)',
 		async (mode, {worker}) => {
 			const failed = String(mode).endsWith('error');
-			const keyed = typeof mode === 'string' && mode !== 'id-error';
+			const keyed = ['key', 'placeholder', 'key-error'].includes(String(mode));
 			const placeholder = mode === 'placeholder';
 			const total = typeof mode === 'number' ? mode : 1;
+			const response = createQueryElementInstancesResponse([child], total);
+			response.page.hasMoreTotalItems = mode === 'capped-one';
 			const get = vi.fn(() => (failed ? new HttpResponse(null, {status: 500}) : HttpResponse.json(child)));
 			worker.use(
 				http.get('/v2/element-instances/:key', get),
 				mockQueryElementInstancesEndpoint({
-					successResponse: failed
-						? new HttpResponse(null, {status: 500})
-						: HttpResponse.json(createQueryElementInstancesResponse([child], total)),
+					successResponse: failed ? new HttpResponse(null, {status: 500}) : HttpResponse.json(response),
 				}),
 			);
 			const screen = await renderPage(
@@ -129,7 +144,10 @@ describe('InstanceHistory', () => {
 				);
 			}
 			const count = failed || placeholder ? null : total;
-			const resolved = !failed && !placeholder && (keyed || total === 1) ? `"${child.elementInstanceKey}"` : 'null';
+			const resolved =
+				!failed && !placeholder && mode !== 'capped-one' && (keyed || total === 1)
+					? `"${child.elementInstanceKey}"`
+					: 'null';
 			await expect
 				.element(screen.getByText(new RegExp(`"count":${count},"error":${failed},"fetching":false,"selected":true`)))
 				.toBeVisible();
@@ -137,32 +155,99 @@ describe('InstanceHistory', () => {
 			expect(get).toHaveBeenCalledTimes(keyed && !placeholder ? 1 : 0);
 		},
 	);
-	it.for([53, 153])('should use replacement windows with 50-offset stride, total=%i', async (total, {worker}) => {
-		const offsets: number[] = [];
-		worker.use(
-			http.post('/v2/element-instances/search', async ({request}) => {
-				const body = (await request.json()) as {page: {from: number; limit: number}};
-				offsets.push(body.page.from);
-				expect(body.page.limit).toBe(100);
-				return HttpResponse.json(
-					createQueryElementInstancesResponse(
+	it.for([
+		{total: 53, capped: false},
+		{total: 153, capped: false},
+		{total: 153, capped: true},
+	])(
+		'should use replacement windows with 50-offset stride, total=$total capped=$capped',
+		async ({total, capped}, {worker}) => {
+			const offsets: number[] = [];
+			worker.use(
+				http.post('/v2/element-instances/search', async ({request}) => {
+					const body = (await request.json()) as {page: {from: number; limit: number}};
+					offsets.push(body.page.from);
+					expect(body.page.limit).toBe(100);
+					const response = createQueryElementInstancesResponse(
 						Array.from({length: Math.min(100, total - body.page.from)}, (_, index) =>
 							createElementInstance({elementInstanceKey: String(index + body.page.from)}),
 						),
-						total,
-					),
-				);
+						capped ? 50 : total,
+					);
+					response.page.hasMoreTotalItems = capped;
+					return HttpResponse.json(response);
+				}),
+			);
+			const screen = await renderPage();
+			await expect.element(screen.getByText(/"first":"0"/)).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+			if (total === 153) {
+				await expect.element(screen.getByText(/"from":50,"first":"50"/)).toBeVisible();
+				await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+				await expect.element(screen.getByText(/"from":100,"first":"100"/)).toBeVisible();
+				await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+				await userEvent.click(screen.getByRole('button', {name: 'Previous'}));
+				await expect.element(screen.getByText(/"from":50,"first":"50"/)).toBeVisible();
+				await userEvent.click(screen.getByRole('button', {name: 'Previous'}));
+				await expect.element(screen.getByText(/"from":0,"first":"0"/)).toBeVisible();
+			}
+			expect(offsets).toEqual(total === 53 ? [0] : [0, 50, 100, 50, 0]);
+		},
+	);
+	it.for([403, 500])(
+		'should fail closed only for forbidden ad-hoc child-scope reads (%i)',
+		async (status, {worker}) => {
+			vi.useFakeTimers({toFake: ['setInterval', 'clearInterval']});
+			let rootReads = 0;
+			worker.use(
+				http.post('/v2/element-instances/search', async ({request}) => {
+					const {page} = (await request.json()) as {page: {limit: number}};
+					if (page.limit === 1) {
+						return new HttpResponse(null, {status});
+					}
+					rootReads++;
+					return HttpResponse.json(createQueryElementInstancesResponse());
+				}),
+			);
+			const screen = await renderPage();
+			await expect.poll(() => rootReads).toBe(1);
+			await userEvent.click(screen.getByRole('button', {name: 'Select ad-hoc instance'}));
+			if (status === 403) {
+				await expect.element(screen.getByText(/"forbidden":true/)).toBeVisible();
+				await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+				await vi.advanceTimersByTimeAsync(15000);
+				expect(rootReads).toBe(1);
+			} else {
+				await expect.poll(() => notificationsStore.notifications.length).toBe(1);
+				await expect.element(screen.getByText(/"forbidden":false/)).toBeVisible();
+			}
+			await expect.element(screen.getByText(/"selected":false/)).toBeVisible();
+		},
+	);
+	it('should re-read a previously forbidden cached instance after returning to it', async ({worker}) => {
+		let denied = true;
+		let reads = 0;
+		worker.use(
+			http.post('/v2/element-instances/search', async ({request}) => {
+				const {filter} = (await request.json()) as {filter: {elementInstanceScopeKey: string}};
+				if (filter.elementInstanceScopeKey === instance.processInstanceKey) {
+					reads++;
+					if (denied) {
+						return new HttpResponse(null, {status: 403});
+					}
+				}
+				return HttpResponse.json(createQueryElementInstancesResponse());
 			}),
 		);
 		const screen = await renderPage();
-		await expect.element(screen.getByText(/"first":"0"/)).toBeVisible();
-		await userEvent.click(screen.getByRole('button', {name: 'Next'}));
-		if (total === 153) {
-			await expect.element(screen.getByText(/"from":50,"first":"50"/)).toBeVisible();
-			await userEvent.click(screen.getByRole('button', {name: 'Previous'}));
-			await expect.element(screen.getByText(/"from":0,"first":"0"/)).toBeVisible();
-		}
-		expect(offsets).toEqual(total === 53 ? [0] : [0, 50, 0]);
+		await expect.element(screen.getByText(/"forbidden":true/)).toBeVisible();
+		denied = false;
+		await userEvent.click(screen.getByRole('button', {name: 'Instance'}));
+		await expect.element(screen.getByText(/"ready":true/)).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Instance'}));
+		await expect.poll(() => reads).toBe(2);
+		await expect.element(screen.getByText(/"forbidden":false/)).toBeVisible();
+		await expect.element(screen.getByText(/"ready":true/)).toBeVisible();
 	});
 	it('should retain windows and controls through remount and reset on instance change', async ({worker}) => {
 		const requests = vi.fn(() => HttpResponse.json(createQueryElementInstancesResponse([child])));
@@ -214,23 +299,15 @@ describe('InstanceHistory', () => {
 		worker.use(http.post('/v2/element-instances/search', requests));
 		const screen = await renderPage();
 		await expect.poll(() => requests.mock.calls.length).toBe(1);
+		const rootQueryKey = ['instanceHistory', instance.processInstanceKey, instance.processInstanceKey, 0, 0];
+		await expect.poll(() => screen.queryClient.getQueryState(rootQueryKey)?.status).toBe('error');
+		await expect.element(screen.getByText(/"historyError":true/)).toBeVisible();
 		await vi.advanceTimersByTimeAsync(5000);
 		expect(requests).toHaveBeenCalledTimes(1);
 		hidden.mockReturnValue(false);
 		status = 200;
 		await vi.advanceTimersByTimeAsync(5000);
-		await expect
-			.poll(
-				() =>
-					screen.queryClient.getQueryState([
-						'instanceHistory',
-						instance.processInstanceKey,
-						instance.processInstanceKey,
-						0,
-						0,
-					])?.status,
-			)
-			.toBe('success');
+		await expect.poll(() => screen.queryClient.getQueryState(rootQueryKey)?.status).toBe('success');
 		status = 403;
 		await vi.advanceTimersByTimeAsync(5000);
 		await expect.element(screen.getByText(/"forbidden":true/)).toBeVisible();

@@ -12,10 +12,15 @@ import {useNavigate, useRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {ElementInstance, QueryElementInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {endpoints} from '#/shared/http/endpoints';
+import {ForbiddenError} from '#/shared/errors';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {historySort, instanceRequest} from './processInstance.queries';
 import type {ProcessInstanceSelection} from './processInstanceSearch';
-function useResolvedSelection(processInstanceKey: string, selection: ProcessInstanceSelection) {
+function useResolvedSelection(
+	processInstanceKey: string,
+	selection: ProcessInstanceSelection,
+	onHistoryForbidden: (error: ForbiddenError) => void,
+) {
 	const navigate = useNavigate();
 	const router = useRouter();
 	const {t} = useTranslation();
@@ -64,7 +69,10 @@ function useResolvedSelection(processInstanceKey: string, selection: ProcessInst
 		staleTime: elementInstanceKey ? 0 : 10000,
 		select: (data) =>
 			'items' in data
-				? {instance: data.page.totalItems === 1 ? (data.items[0] ?? null) : null, count: data.page.totalItems}
+				? {
+						instance: data.page.totalItems === 1 && !data.page.hasMoreTotalItems ? (data.items[0] ?? null) : null,
+						count: data.page.totalItems,
+					}
 				: {instance: data, count: 1},
 	});
 	const result = enabled ? query.data : undefined;
@@ -117,13 +125,17 @@ function useResolvedSelection(processInstanceKey: string, selection: ProcessInst
 					if (!anchorElementId) {
 						throw new Error('Missing anchor');
 					}
-				} catch {
+				} catch (error) {
 					if (version === current.version) {
-						notificationsStore.displayNotification({
-							kind: 'warning',
-							title: t('operate.processInstance.history.anchorError'),
-							isDismissable: true,
-						});
+						if (error instanceof ForbiddenError) {
+							onHistoryForbidden(error);
+						} else {
+							notificationsStore.displayNotification({
+								kind: 'warning',
+								title: t('operate.processInstance.history.anchorError'),
+								isDismissable: true,
+							});
+						}
 					}
 					return;
 				}
@@ -135,7 +147,7 @@ function useResolvedSelection(processInstanceKey: string, selection: ProcessInst
 				anchorElementId,
 			});
 		},
-		[replaceSelection, t],
+		[replaceSelection, t, onHistoryForbidden],
 	);
 	const isSelected = useCallback(
 		(id: string, key?: string, multiInstanceBody = false) =>
