@@ -1,4 +1,4 @@
-SRC = load-test-tool
+SRC = src
 
 all: fmt
 

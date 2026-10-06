@@ -14,57 +14,13 @@ import httpx
 import yaml
 from rich.console import Console
 
+from .auth import AuthContext
+from .cmd import run
+from .utils import TaskGroup
+
 console = Console()
 
 logger = logging.getLogger("load-test-tool")
-
-
-class TG:
-    def __init__(self):
-        self.tasks: list[asyncio.Task] = []
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.wait()
-
-    def add(self, name, coro):
-        task = asyncio.create_task(coro, name=name)
-        self.tasks.append(task)
-        return task
-
-    async def wait(self):
-        try:
-            _, pending = await asyncio.wait(
-                self.tasks, return_when=asyncio.FIRST_COMPLETED
-            )
-        except asyncio.CancelledError:
-            pending = self.tasks
-
-        for task in pending:
-            logger.debug(f"cancelling task {task}")
-            task.cancel()
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
-
-
-@dataclass
-class CommandResult:
-    returncode: int
-    stdout: str
-    stderr: str
-
-
-async def run(*cmd: str) -> CommandResult:
-    logger.debug("Running command: %s", shlex.join(cmd))
-    process = await asyncio.create_subprocess_exec(*cmd, stdout=PIPE, stderr=PIPE)
-    stdout, stderr = await process.communicate()
-    returncode = await process.wait()
-
-    return CommandResult(returncode, stdout.decode(), stderr.decode())
 
 
 @dataclass
@@ -105,42 +61,6 @@ class Cluster:
             tg.create_task(
                 port_forward(namespace, "identity", 8084, 80), name="identity"
             )
-
-
-@dataclass
-class AuthContext:
-    namespace: str
-    base_url: str
-    oauth_url: str
-    client_id: str
-    client_secret_name: str
-    client_secret_key: str
-    audience: str
-
-    @classmethod
-    async def new(
-        cls,
-        *,
-        namespace: str | None,
-        base_url: str,
-        oauth_url: str,
-        client_id: str,
-        client_secret_name: str,
-        client_secret_key: str,
-        audience: str,
-    ) -> Self:
-        if namespace is None:
-            namespace = (await run("kubens", "-c")).stdout.strip()
-
-        return cls(
-            namespace=namespace,
-            base_url=base_url,
-            oauth_url=oauth_url,
-            client_id=client_id,
-            client_secret_name=client_secret_name,
-            client_secret_key=client_secret_key,
-            audience=audience,
-        )
 
 
 # Decorator to pass to commands taking the auth context.
@@ -323,7 +243,7 @@ async def cmd_get_token(ctx: AuthContext) -> None:
 
     logger.info(f"Starting port-forward for Keycloak {namespace}...")
 
-    async with TG() as tg:
+    async with TaskGroup() as tg:
         tg.add("port-forward", port_forward(namespace, "keycloak", local_port))
         t = tg.add("get-token", wait_and_get_token(ctx, client_secret))
 
@@ -377,7 +297,7 @@ async def async_cmd_run(ctx: AuthContext, cmd: list[str], use_camunda_gateway: b
         env["PS1"] = f"[load-test-tool] {ps1}"
         cmd = [shell]
 
-    async with TG() as tg:
+    async with TaskGroup() as tg:
         tg.add("port-forward", cluster.forward_cluster())
         tg.add("run-cmd", run_cmd_all([ctx.base_url, ctx.oauth_url], env, cmd))
 
@@ -393,7 +313,6 @@ class User:
 
 
 async def get_admin_user(ctx: AuthContext) -> User:
-
     identity_cm = "identity-configuration"
 
     cmd = [
@@ -465,7 +384,7 @@ async def async_cmd_tunnel(
         await asyncio.sleep(3600 * 24 * 365)  # sleep for a year, until interrupted
 
     print("Opening up tunnels...")
-    async with TG() as tg:
+    async with TaskGroup() as tg:
         tg.add("port-forward", cluster.forward_cluster())
         tg.add("wait", wait_for())
 
