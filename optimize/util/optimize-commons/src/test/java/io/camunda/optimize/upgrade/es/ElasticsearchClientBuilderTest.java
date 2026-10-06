@@ -24,7 +24,7 @@ import java.util.Map;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.impl.BasicEntityDetails;
 import org.apache.hc.core5.http.message.BasicHttpRequest;
-import org.apache.hc.core5.http.protocol.BasicHttpContext;
+import org.apache.hc.core5.http.protocol.HttpCoreContext;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -89,7 +89,7 @@ class ElasticsearchClientBuilderTest {
     final var interceptorCaptor =
         ArgumentCaptor.forClass(org.apache.hc.core5.http.HttpRequestInterceptor.class);
     Mockito.verify(builder).addRequestInterceptorLast(interceptorCaptor.capture());
-    final var context = new BasicHttpContext();
+    final var context = HttpCoreContext.create();
     final var request = new BasicHttpRequest("GET", "localhost");
     try {
       interceptorCaptor.getValue().process(request, new BasicEntityDetails(0, null), context);
@@ -144,7 +144,7 @@ class ElasticsearchClientBuilderTest {
     final var request = new BasicHttpRequest("GET", "localhost");
     interceptorCaptor
         .getValue()
-        .process(request, new BasicEntityDetails(0, null), new BasicHttpContext());
+        .process(request, new BasicEntityDetails(0, null), HttpCoreContext.create());
 
     // then
     final String expectedEncoded =
