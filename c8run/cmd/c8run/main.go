@@ -101,8 +101,23 @@ Docs & Support:
 `
 
 func usage(exitcode int) {
-	fmt.Printf(helpTemplate, os.Args[0])
+	fmt.Print(usageText(os.Args[0], cliName()))
 	os.Exit(exitcode)
+}
+
+// usageText renders the help template, preferring a wrapper's configured CLI
+// name over the executable path.
+func usageText(executable, name string) string {
+	if name == "" {
+		name = executable
+	}
+	return fmt.Sprintf(helpTemplate, name)
+}
+
+// exitWithError prints err with c8run commands rewritten for a wrapper and exits.
+func exitWithError(err error) {
+	fmt.Println(withCLIName(err.Error(), cliName()))
+	os.Exit(1)
 }
 
 type stringSliceFlag []string
@@ -226,19 +241,16 @@ func initialize(baseCommand string, baseDir string) *types.State {
 
 	settings, startupURLProvided, err := getBaseCommandSettings(baseCommand)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		exitWithError(err)
 	}
 
 	applySecondaryStorageDefaults(baseDir, &settings)
 	if err := applyEffectiveRuntimeSettings(&settings); err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		exitWithError(err)
 	}
 	if baseCommand == "start" {
 		if err := applyPhysicalTenants(baseDir, camundaVersion, &settings); err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
+			exitWithError(err)
 		}
 	}
 	settings.StartupMarkerPath = startupurl.MarkerPath(baseDir)
@@ -252,8 +264,7 @@ func initialize(baseCommand string, baseDir string) *types.State {
 			vendor = rdbmsVendorFromURL(url)
 		}
 		if err := ensureDriversAvailable(baseDir, camundaVersion, vendor, settings.ExtraDrivers); err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
+			exitWithError(err)
 		}
 	}
 
@@ -269,8 +280,7 @@ func initialize(baseCommand string, baseDir string) *types.State {
 
 	err = validateKeystore(settings, baseDir)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		exitWithError(err)
 	}
 
 	processInfo := types.Processes{
