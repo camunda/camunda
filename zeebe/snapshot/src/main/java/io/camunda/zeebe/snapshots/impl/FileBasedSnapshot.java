@@ -129,9 +129,8 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
         new CompletableActorFuture<>();
     actor.run(
         () -> {
-          if (!deleted) {
-            final FileBasedSnapshotReservation reservation = new FileBasedSnapshotReservation(this);
-            reservations.add(reservation);
+          final var reservation = reserveOnActor();
+          if (reservation != null) {
             snapshotLocked.complete(reservation);
           } else {
             snapshotLocked.completeExceptionally(
@@ -141,6 +140,25 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
           }
         });
     return snapshotLocked;
+  }
+
+  /**
+   * Reserves this snapshot immediately; must be called on the snapshot store's actor.
+   *
+   * @return the reservation, or null if the snapshot is deleted
+   */
+  FileBasedSnapshotReservation reserveOnActor() {
+    if (deleted) {
+      return null;
+    }
+    final var reservation = new FileBasedSnapshotReservation(this);
+    reservations.add(reservation);
+    return reservation;
+  }
+
+  /** Releases the reservation immediately; must be called on the snapshot store's actor. */
+  void removeReservationOnActor(final FileBasedSnapshotReservation reservation) {
+    reservations.remove(reservation);
   }
 
   @Override
@@ -214,7 +232,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   ActorFuture<Void> removeReservation(final FileBasedSnapshotReservation reservation) {
     return actor.call(
         () -> {
-          reservations.remove(reservation);
+          removeReservationOnActor(reservation);
           return null;
         });
   }

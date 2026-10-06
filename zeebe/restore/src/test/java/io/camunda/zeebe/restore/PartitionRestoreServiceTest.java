@@ -251,7 +251,7 @@ class PartitionRestoreServiceTest {
   private Backup takeBackup(final long backupId, final long checkpointPosition) {
     final var backup =
         backupStore.waitForBackup(new BackupIdentifierImpl(nodeId, partitionId, backupId));
-    backupService.takeBackup(backupId, checkpointPosition);
+    backupService.takeBackup(backupId, checkpointPosition, "");
     return backup.orTimeout(30, TimeUnit.SECONDS).join();
   }
 

@@ -22,9 +22,11 @@ public interface BackupManager {
    *
    * @param checkpointId id of the backup
    * @param checkpointPosition position of the record until which must be included in the backup.
+   * @param snapshotId id of the snapshot reserved for the checkpoint before it was written, or an
+   *     empty string if none was reserved
    * @return an ActorFuture with the result of the backup
    */
-  ActorFuture<Void> takeBackup(long checkpointId, long checkpointPosition);
+  ActorFuture<Void> takeBackup(long checkpointId, long checkpointPosition, String snapshotId);
 
   /**
    * Get the status of the backup
@@ -55,4 +57,10 @@ public interface BackupManager {
   ActorFuture<Void> closeAsync();
 
   void failInProgressBackup(long lastCheckpointId);
+
+  /**
+   * Releases the reservation of a snapshot that was reserved for a checkpoint which does not take a
+   * backup, e.g. because the checkpoint was ignored.
+   */
+  void releaseSnapshotReservation(long checkpointId, String snapshotId);
 }

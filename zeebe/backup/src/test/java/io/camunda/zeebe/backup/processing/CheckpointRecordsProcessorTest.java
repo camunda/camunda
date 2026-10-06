@@ -9,6 +9,9 @@ package io.camunda.zeebe.backup.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -108,7 +111,7 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is triggered
-    verify(backupManager, times(1)).takeBackup(checkpointId, checkpointPosition);
+    verify(backupManager, times(1)).takeBackup(checkpointId, checkpointPosition, "");
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -144,7 +147,8 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(checkpointId, checkpointPosition);
+    verify(backupManager, never())
+        .takeBackup(eq(checkpointId), eq(checkpointPosition), anyString());
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -176,7 +180,8 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(lowerCheckpointId, checkpointPosition + 10);
+    verify(backupManager, never())
+        .takeBackup(eq(lowerCheckpointId), eq(checkpointPosition + 10), anyString());
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -326,5 +331,52 @@ final class CheckpointRecordsProcessorTest {
 
     // then
     assertThat(checkpoint).hasValue(checkpointId);
+  }
+
+  @Test
+  void shouldTakeBackupWithSnapshotReservedForCheckpoint() {
+    // given
+    final var value = new CheckpointRecord().setCheckpointId(1).setSnapshotId("reserved-snapshot");
+    final var record =
+        new MockTypedCheckpointRecord(10, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager).takeBackup(1L, 10L, "reserved-snapshot");
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
+    final var created = (CheckpointRecord) result.records().getFirst().value();
+    assertThat(created.getSnapshotId()).isEqualTo("reserved-snapshot");
+  }
+
+  @Test
+  void shouldReleaseSnapshotReservationWhenCheckpointIsIgnored() {
+    // given
+    state.setCheckpointInfo(1, 10);
+    final var value = new CheckpointRecord().setCheckpointId(1).setSnapshotId("reserved-snapshot");
+    final var record =
+        new MockTypedCheckpointRecord(20, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager).releaseSnapshotReservation(1L, "reserved-snapshot");
+  }
+
+  @Test
+  void shouldNotReleaseSnapshotReservationWhenCheckpointHasNoSnapshot() {
+    // given
+    state.setCheckpointInfo(1, 10);
+    final var value = new CheckpointRecord().setCheckpointId(1);
+    final var record =
+        new MockTypedCheckpointRecord(20, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
   }
 }

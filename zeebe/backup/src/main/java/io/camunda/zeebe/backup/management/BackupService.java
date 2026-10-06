@@ -66,11 +66,15 @@ public final class BackupService extends Actor implements BackupManager {
   @Override
   protected void onActorClosing() {
     internalBackupManager.close();
+    // checkpoints written but not yet processed will not find their reservation once a new
+    // backup manager is installed, so nothing needs the snapshots reserved for them anymore
+    snapshotStore.releaseAllReservations();
     metrics.cancelInProgressOperations();
   }
 
   @Override
-  public ActorFuture<Void> takeBackup(final long checkpointId, final long checkpointPosition) {
+  public ActorFuture<Void> takeBackup(
+      final long checkpointId, final long checkpointPosition, final String snapshotId) {
     final ActorFuture<Void> result = createFuture();
     actor.run(
         () -> {
@@ -80,6 +84,7 @@ public final class BackupService extends Actor implements BackupManager {
                   getBackupId(checkpointId),
                   checkpointPosition,
                   numberOfPartitions,
+                  snapshotId.isEmpty() ? Optional.empty() : Optional.of(snapshotId),
                   actor,
                   segmentsDirectory,
                   journalInfoProvider);
@@ -177,5 +182,10 @@ public final class BackupService extends Actor implements BackupManager {
 
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
     return new BackupIdentifierImpl(nodeId, partitionId, checkpointId);
+  }
+
+  @Override
+  public void releaseSnapshotReservation(final long checkpointId, final String snapshotId) {
+    snapshotStore.releaseReservation(checkpointId, snapshotId);
   }
 }
