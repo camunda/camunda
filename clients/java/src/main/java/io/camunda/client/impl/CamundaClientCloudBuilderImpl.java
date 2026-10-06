@@ -32,7 +32,6 @@ import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilde
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.ClientProperties;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobExceptionHandler;
@@ -42,7 +41,6 @@ import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -121,7 +119,6 @@ public class CamundaClientCloudBuilderImpl
         ClientProperties.STREAM_ENABLED);
 
     innerBuilder.withProperties(properties);
-    resetMultiTenancy();
     return this;
   }
 
@@ -130,7 +127,6 @@ public class CamundaClientCloudBuilderImpl
     // no need to invoke the cloud builders withProperties here as the applied properties cannot be
     // derived from the configuration anyway
     innerBuilder.withConfiguration(configuration);
-    resetMultiTenancy();
     return this;
   }
 
@@ -154,10 +150,8 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/14106")
   public CamundaClientBuilder defaultTenantId(final String tenantId) {
-    Loggers.LOGGER.debug(
-        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/camunda/issues/14106.");
+    innerBuilder.defaultTenantId(tenantId);
     return this;
   }
 
@@ -174,10 +168,8 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/14106")
   public CamundaClientBuilder defaultJobWorkerTenantIds(final List<String> tenantIds) {
-    Loggers.LOGGER.debug(
-        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/camunda/issues/14106.");
+    innerBuilder.defaultJobWorkerTenantIds(tenantIds);
     return this;
   }
 
@@ -353,12 +345,6 @@ public class CamundaClientCloudBuilderImpl
     innerBuilder.restAddress(determineRestAddress());
     innerBuilder.credentialsProvider(determineCredentialsProvider());
     return innerBuilder.build();
-  }
-
-  private void resetMultiTenancy() {
-    // todo(#14106): allow default tenant id setting for cloud client
-    innerBuilder.defaultTenantId("");
-    innerBuilder.defaultJobWorkerTenantIds(Collections.emptyList());
   }
 
   private URI determineRestAddress() {

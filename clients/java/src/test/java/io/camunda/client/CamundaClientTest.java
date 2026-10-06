@@ -939,7 +939,7 @@ public final class CamundaClientTest {
 
   @ParameterizedTest
   @ValueSource(strings = {DEFAULT_TENANT_ID})
-  public void shouldNotSetDefaultTenantIdFromPropertyWithCloudClientBuilder(
+  public void shouldSetDefaultTenantIdFromPropertyWithCloudClientBuilder(
       final String propertyName) {
     // given
     final String tenantId = "test-tenant";
@@ -957,26 +957,26 @@ public final class CamundaClientTest {
             .build();
 
     // then
-    // todo(#14106): verify that tenant id is set in the request
-    assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo("");
+    assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo(tenantId);
   }
 
   @Test
-  public void shouldNotSetDefaultTenantIdFromSetterWithCloudClientBuilder() {
+  public void shouldSetDefaultTenantIdFromSetterWithCloudClientBuilder() {
     // given
     final String tenantId = "test-tenant";
     final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
 
     // when
-    final CamundaClientCloudBuilderImpl builderWithTenantId =
-        (CamundaClientCloudBuilderImpl) builder.defaultTenantId(tenantId);
+    final CamundaClient client =
+        builder
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .defaultTenantId(tenantId)
+            .build();
 
     // then
-    // todo(#14106): verify that tenant id is set in the builder
-    assertThat(builderWithTenantId)
-        .describedAs(
-            "This method has no effect on the cloud client builder while under development")
-        .isEqualTo(builder);
+    assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo(tenantId);
   }
 
   @Test
@@ -1091,7 +1091,7 @@ public final class CamundaClientTest {
 
   @ParameterizedTest
   @ValueSource(strings = {DEFAULT_JOB_WORKER_TENANT_IDS})
-  public void shouldNotSetDefaultJobWorkerTenantIdsFromPropertyWithCloudClientBuilder(
+  public void shouldSetDefaultJobWorkerTenantIdsFromPropertyWithCloudClientBuilder(
       final String propertyName) {
     // given
     final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
@@ -1109,26 +1109,28 @@ public final class CamundaClientTest {
             .build();
 
     // then
-    // todo(#14106): verify that tenant ids are set in the request
-    assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds()).isEmpty();
+    assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds())
+        .containsExactlyElementsOf(tenantIdList);
   }
 
   @Test
-  public void shouldNotSetDefaultJobWorkerTenantIdsFromSetterWithCloudClientBuilder() {
+  public void shouldSetDefaultJobWorkerTenantIdsFromSetterWithCloudClientBuilder() {
     // given
     final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
     final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
 
     // when
-    final CamundaClientCloudBuilderImpl builderWithTenantId =
-        (CamundaClientCloudBuilderImpl) builder.defaultJobWorkerTenantIds(tenantIdList);
+    final CamundaClient client =
+        builder
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .defaultJobWorkerTenantIds(tenantIdList)
+            .build();
 
     // then
-    // todo(#14106): verify that tenant id is set in the builder
-    assertThat(builderWithTenantId)
-        .describedAs(
-            "This method has no effect on the cloud client builder while under development")
-        .isEqualTo(builder);
+    assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds())
+        .containsExactlyElementsOf(tenantIdList);
   }
 
   @Test
