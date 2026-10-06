@@ -213,8 +213,34 @@ public final class RestoreValidator
     final var metadataByPartition =
         loadMetadataForAllPartitions(
             exportedPositions == null ? partitionCount : exportedPositions.size());
-    return RestorePointResolver.resolve(
-        metadataByPartition, instantFrom, instantTo, exportedPositions);
+    final var restorableBackups =
+        RestorePointResolver.resolve(
+            metadataByPartition, instantFrom, instantTo, exportedPositions);
+    if (exportedPositions != null) {
+      verifyBackupsHoldTheExportedPartitions(restorableBackups, exportedPositions.size());
+    }
+    return restorableBackups;
+  }
+
+  /**
+   * The RDBMS must hold exported positions for exactly the partitions the backups to restore were
+   * taken with: the exported positions are what the restore point is resolved against, and what
+   * decides which partitions are restored. A database and backups that disagree on the partitions
+   * do not belong together, e.g. a database that was not restored to the point of the backups.
+   */
+  private void verifyBackupsHoldTheExportedPartitions(
+      final RestorableBackups restorableBackups, final int exportedPartitionCount) {
+    final var store =
+        requireNonNull(backupStore, "Backup store must be configured to load backups");
+    final var lastBackup =
+        requireNonNull(restorableBackups.backupsByPartitionId().get(1)).getLast().checkpointId();
+    final var backupPartitionCount = backupPartitionCount(store, lastBackup);
+    if (backupPartitionCount != exportedPartitionCount) {
+      throw new IllegalStateException(
+          ("Cannot restore: backup %d was taken with %d partitions, but the RDBMS holds exported "
+                  + "positions for %d")
+              .formatted(lastBackup, backupPartitionCount, exportedPartitionCount));
+    }
   }
 
   /**
@@ -234,7 +260,8 @@ public final class RestoreValidator
             .orElseThrow(
                 () ->
                     new NoSuchElementException(
-                        "No completed backup found with backup id %d".formatted(backupId)))
+                        "No completed backup found for partition 1 with backup id %d"
+                            .formatted(backupId)))
             .numberOfPartitions();
     if (backupPartitionCount > partitionCount) {
       throw new IllegalArgumentException(
