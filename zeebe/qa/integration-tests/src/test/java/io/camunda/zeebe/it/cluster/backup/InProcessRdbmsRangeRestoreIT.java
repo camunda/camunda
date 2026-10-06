@@ -158,6 +158,11 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
         // then - the group routes over the backup's partitions again
         InProcessRestoreTestUtil.assertRoutesOverPartitions(
             clusterActuator, BACKUP_PARTITIONS_COUNT);
+        InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+            scaledBroker.getWorkingDirectory(),
+            DEFAULT_PHYSICAL_TENANT_ID,
+            BACKUP_PARTITIONS_COUNT,
+            SCALED_PARTITIONS_COUNT);
         InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
             scaledBroker, SCALED_PROCESS_ID, BACKUP_PARTITIONS_COUNT);
 

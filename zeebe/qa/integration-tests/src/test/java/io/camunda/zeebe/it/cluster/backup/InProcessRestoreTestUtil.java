@@ -575,6 +575,30 @@ public final class InProcessRestoreTestUtil {
   }
 
   /**
+   * Asserts the broker keeps the partitions {@code 1..restoredPartitionCount} that were restored,
+   * and no directory at all for the ones above, up to {@code configuredPartitionCount}: the backup
+   * does not hold them, so their data is deleted rather than left behind as empty directories.
+   */
+  static void assertOnlyRestoredPartitionDirectories(
+      final Path workingDirectory,
+      final String partitionGroup,
+      final int restoredPartitionCount,
+      final int configuredPartitionCount) {
+    for (int partitionId = 1; partitionId <= configuredPartitionCount; partitionId++) {
+      final var directory = partitionDirectory(workingDirectory, partitionGroup, partitionId);
+      if (partitionId <= restoredPartitionCount) {
+        assertThat(directory)
+            .describedAs("restored partition %d", partitionId)
+            .isNotEmptyDirectory();
+      } else {
+        assertThat(directory)
+            .describedAs("partition %d, which the backup does not hold", partitionId)
+            .doesNotExist();
+      }
+    }
+  }
+
+  /**
    * Truncates every {@code .sst} file in the given node's completed backup snapshot for the given
    * partition on disk, overwriting it with garbage bytes so a later restore's RocksDB sanity check
    * fails with a checksum/corruption error. Returns the original file contents so they can be

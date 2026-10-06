@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.qa.util.actuator.ClusterActuator.of;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -167,6 +168,16 @@ final class InProcessRestoreSchemaInitializationIT {
 
       // then - the group routes over the backup's partitions again, on every broker
       InProcessRestoreTestUtil.assertRoutesOverPartitions(clusterActuator, BACKUP_PARTITIONS_COUNT);
+      cluster
+          .brokers()
+          .values()
+          .forEach(
+              broker ->
+                  InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+                      broker.getWorkingDirectory(),
+                      DEFAULT_PHYSICAL_TENANT_ID,
+                      BACKUP_PARTITIONS_COUNT,
+                      SCALED_PARTITIONS_COUNT));
       cluster
           .brokers()
           .values()
