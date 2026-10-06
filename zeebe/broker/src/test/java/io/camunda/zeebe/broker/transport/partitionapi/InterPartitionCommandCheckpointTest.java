@@ -290,6 +290,8 @@ final class InterPartitionCommandCheckpointTest {
             any(WriteContext.class),
             matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
     verifyNoMoreInteractions(logStreamWriter);
+    verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
+    verify(snapshotStore, never()).releaseReservation(anyLong(), any());
   }
 
   @Test
@@ -309,6 +311,8 @@ final class InterPartitionCommandCheckpointTest {
             any(WriteContext.class),
             matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
     verifyNoMoreInteractions(logStreamWriter);
+    verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
+    verify(snapshotStore, never()).releaseReservation(anyLong(), any());
   }
 
   @Test
