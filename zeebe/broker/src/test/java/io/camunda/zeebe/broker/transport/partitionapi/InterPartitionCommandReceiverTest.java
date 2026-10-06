@@ -21,6 +21,7 @@ import static org.mockito.Mockito.withSettings;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.broker.transport.backupapi.CheckpointSnapshotReserver;
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -34,7 +35,6 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import org.agrona.ExpandableArrayBuffer;
@@ -64,7 +64,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
+            logStreamWriter, snapshotReserver(), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -98,7 +98,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
+            logStreamWriter, snapshotReserver(), new TestConcurrencyControl());
 
     // when
     receiver.setDiskSpaceAvailable(false);
@@ -128,7 +128,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
+            logStreamWriter, snapshotReserver(), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -167,7 +167,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
+            logStreamWriter, snapshotReserver(), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -199,7 +199,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
+            logStreamWriter, snapshotReserver(), new TestConcurrencyControl());
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
@@ -227,7 +227,7 @@ final class InterPartitionCommandReceiverTest {
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
+            logStreamWriter, snapshotReserver(), new TestConcurrencyControl());
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
@@ -274,11 +274,11 @@ final class InterPartitionCommandReceiverTest {
     return messageCaptor.getValue();
   }
 
-  private static PersistedSnapshotStore snapshotStore() {
-    final var snapshotStore = mock(PersistedSnapshotStore.class);
+  private static CheckpointSnapshotReserver snapshotReserver() {
+    final var snapshotReserver = mock(CheckpointSnapshotReserver.class);
     lenient()
-        .when(snapshotStore.reserveLatestSnapshot(anyLong()))
+        .when(snapshotReserver.reserveFor(anyLong()))
         .thenReturn(CompletableActorFuture.completed(Optional.empty()));
-    return snapshotStore;
+    return snapshotReserver;
   }
 }

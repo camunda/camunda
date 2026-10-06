@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * <p>It forces a fresh snapshot and reserves it. If no fresh snapshot is taken, it falls back to
  * the latest snapshot, and if there is none, the checkpoint is written without a snapshot.
  */
-final class CheckpointSnapshotReserver {
+public final class CheckpointSnapshotReserver {
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointSnapshotReserver.class);
 
   private final PersistedSnapshotStore snapshotStore;
@@ -32,7 +32,7 @@ final class CheckpointSnapshotReserver {
   private final CheckpointState checkpointState;
   private final ConcurrencyControl concurrencyControl;
 
-  CheckpointSnapshotReserver(
+  public CheckpointSnapshotReserver(
       final PersistedSnapshotStore snapshotStore,
       final SnapshotTrigger snapshotTrigger,
       final CheckpointState checkpointState,
@@ -47,7 +47,7 @@ final class CheckpointSnapshotReserver {
    * @return future completed with the id of the snapshot reserved for the checkpoint, or empty if
    *     the checkpoint needs none or no snapshot could be reserved
    */
-  ActorFuture<Optional<String>> reserveFor(final long checkpointId) {
+  public ActorFuture<Optional<String>> reserveFor(final long checkpointId) {
     // The processor ignores a checkpoint that is not newer than the latest one, e.g. a retried
     // request, and releases its reservation. This check only saves forcing a snapshot for it: a
     // stale read costs a reservation that the processor releases again.
@@ -67,7 +67,7 @@ final class CheckpointSnapshotReserver {
   }
 
   /** Releases a reservation made by {@link #reserveFor}, e.g. if the checkpoint was not written. */
-  void release(final long checkpointId, final Optional<String> snapshotId) {
+  public void release(final long checkpointId, final Optional<String> snapshotId) {
     snapshotId.ifPresent(id -> snapshotStore.releaseReservation(checkpointId, id));
   }
 

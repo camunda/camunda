@@ -8,11 +8,14 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.broker.transport.backupapi.SnapshotTrigger;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
 public final class InterPartitionCommandServiceStep implements PartitionTransitionStep {
 
@@ -88,12 +91,18 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
   private ActorFuture<Void> installReceiver(final PartitionTransitionContext context) {
     final ActorFuture<Void> future = context.getConcurrencyControl().createFuture();
     final var logStreamWriter = context.getLogStream().newLogStreamWriter();
+
+    final var checkpointState =
+        new DbCheckpointState(context.getZeebeDb(), context.getZeebeDb().createContext());
+
     final var receiver =
         new InterPartitionCommandReceiverActor(
             context.getPartitionId(),
             context.getClusterCommunicationService(),
             logStreamWriter,
-            context.getPersistedSnapshotStore());
+            context.getPersistedSnapshotStore(),
+            snapshotTrigger(context),
+            checkpointState);
     context
         .getActorSchedulingService()
         .submitActor(receiver)
@@ -108,6 +117,15 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
               }
             });
     return future;
+  }
+
+  private SnapshotTrigger snapshotTrigger(final PartitionTransitionContext context) {
+    return () -> {
+      final var snapshotDirector = context.getSnapshotDirector();
+      return snapshotDirector != null
+          ? snapshotDirector.forceSnapshot()
+          : CompletableActorFuture.completed(null);
+    };
   }
 
   private ActorFuture<Void> installSender(final PartitionTransitionContext context) {

@@ -13,8 +13,11 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.utils.serializer.serializers.DefaultSerializers;
 import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.transport.backupapi.CheckpointSnapshotReserver;
+import io.camunda.zeebe.broker.transport.backupapi.SnapshotTrigger;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -42,10 +45,14 @@ public final class InterPartitionCommandReceiverActor extends Actor
       final int partitionId,
       final ClusterCommunicationService communicationService,
       final LogStreamWriter logStreamWriter,
-      final PersistedSnapshotStore snapshotStore) {
+      final PersistedSnapshotStore snapshotStore,
+      final SnapshotTrigger snapshotTrigger,
+      final CheckpointState checkpointState) {
     this.partitionId = partitionId;
     this.communicationService = communicationService;
-    receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, snapshotStore, actor);
+    final var snapshotReserver =
+        new CheckpointSnapshotReserver(snapshotStore, snapshotTrigger, checkpointState, actor);
+    receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, snapshotReserver, actor);
     actorName = buildActorName(getClass().getSimpleName(), partitionId);
   }
 
