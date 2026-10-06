@@ -15,6 +15,8 @@ import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -35,6 +37,8 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
       "The number of nested documents has exceeded the allowed limit of";
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
   private static final Logger LOG = LoggerFactory.getLogger(DatabaseClient.class);
+  private static final String NESTED_LIMIT_SKIPPED_DOCUMENTS_METRIC =
+      "optimize.import.nestedLimitSkippedDocuments";
   protected OptimizeIndexNameService indexNameService;
 
   private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
@@ -221,5 +225,14 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   public void setSnapshotInProgressRetryDelaySeconds(
       final int snapshotInProgressRetryDelaySeconds) {
     this.snapshotInProgressRetryDelaySeconds = snapshotInProgressRetryDelaySeconds;
+  }
+
+  protected static void recordNestedLimitSkippedDocuments(final String itemName, final int count) {
+    Counter.builder(NESTED_LIMIT_SKIPPED_DOCUMENTS_METRIC)
+        .description(
+            "Counts documents not imported because they exceeded the nested document limit")
+        .tag("ITEM", itemName)
+        .register(Metrics.globalRegistry)
+        .increment(count);
   }
 }
