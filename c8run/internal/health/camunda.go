@@ -17,6 +17,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/camunda/camunda/c8run/internal/cliname"
 	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	"github.com/camunda/camunda/c8run/internal/startupurl"
 	"github.com/camunda/camunda/c8run/internal/types"
@@ -74,7 +75,7 @@ func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8
 		}
 		if len(settings.PhysicalTenants) > 0 {
 			results := probeTenantsFunc(ctx, settings, 12, 5*time.Second)
-			physicaltenants.PrintSummary(os.Stdout, settings, results, inboundConnectorsPort)
+			physicaltenants.PrintSummary(cliname.Writer(os.Stdout), settings, results, inboundConnectorsPort)
 			var notReady []string
 			for _, r := range results {
 				if !r.Ready {

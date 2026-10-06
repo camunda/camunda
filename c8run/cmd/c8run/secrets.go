@@ -25,6 +25,9 @@ type secretsCommand struct {
 	tenantScoped string
 	input        io.Reader
 	output       io.Writer
+	// plainOutput receives values printed verbatim, such as paths, which must
+	// never be rewritten by C8RUN_CLI_NAME. Falls back to output when nil.
+	plainOutput  io.Writer
 	errorOutput  io.Writer
 	isTerminal   func() bool
 	readPassword func() ([]byte, error)
@@ -53,6 +56,7 @@ func newSecretsCommand() *secretsCommand {
 	return &secretsCommand{
 		input:        os.Stdin,
 		output:       brandWriter(os.Stdout),
+		plainOutput:  os.Stdout,
 		errorOutput:  brandWriter(os.Stderr),
 		isTerminal:   stdinIsTerminal,
 		readPassword: readSecretFromTerminal,
@@ -99,7 +103,7 @@ func (c *secretsCommand) run(baseDir string, args []string) error {
 		if err != nil {
 			return err
 		}
-		_, _ = fmt.Fprintln(c.output, directory)
+		_, _ = fmt.Fprintln(c.plain(), directory)
 		return nil
 	case "delete":
 		return c.delete(store, args[1:])
@@ -470,4 +474,11 @@ func (c *secretsCommand) tenantSuffix() string {
 		return ""
 	}
 	return " for physical tenant " + c.tenantScoped
+}
+
+func (c *secretsCommand) plain() io.Writer {
+	if c.plainOutput != nil {
+		return c.plainOutput
+	}
+	return c.output
 }
