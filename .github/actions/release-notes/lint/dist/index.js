@@ -31,7 +31,7 @@ function renderStickyComment(gate) {
         .filter((check) => check.outcome === 'fail')
         .map((check) => `**${check.label}**\n${check.reasons.map((reason) => `- ${reason}`).join('\n')}`)
         .join('\n\n');
-    const footer = `[Causes and fixes](${exports.GATE_DOCS_URL}) · advisory, does not block merge`;
+    const footer = `[Causes and fixes](${exports.GATE_DOCS_URL}) · fix this to turn the check green`;
     return `${exports.STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${footer}\n`;
 }
 /** fail: update or create. pass: update to the resolved body if a comment
@@ -562,7 +562,8 @@ const core = __importStar(__nccwpck_require__(93));
 const labels_1 = __nccwpck_require__(855);
 const resolver_1 = __nccwpck_require__(306);
 /**
- * PR-gate lint entrypoint (warn-only rollout).
+ * PR-gate lint entrypoint. Enforcing in the workflow (`enforce: 'true'`);
+ * `enforce=false` remains available as a warn-only mode.
  *
  * Security: runs on `pull_request`, resolving from the PR head — no
  * privileged token anywhere here. A fork PR gets a read-only GITHUB_TOKEN
@@ -572,8 +573,7 @@ const resolver_1 = __nccwpck_require__(306);
  * Body/title are fetched fresh from the API rather than the event payload,
  * so a PR edited twice in quick succession is judged on the current body.
  *
- * ponytail: warn-only for now. `enforce=true` flips a fail into a non-zero
- * exit; enforce mode ships in a follow-up PR.
+ * `enforce=true` turns a fail into a non-zero exit; `enforce=false` only warns.
  */
 async function run() {
     const token = core.getInput('token', { required: true });
@@ -587,7 +587,7 @@ async function run() {
     }
     const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
     const resolver = new resolver_1.GithubResolver(token, owner ?? '', repo ?? '');
-    let gate; // a transient API error respects `enforce` too — warn-only means a blip can't turn a green check red
+    let gate; // a transient API error respects `enforce` too — in warn-only mode a blip can't turn a green check red
     try {
         const pull = await resolver.fetchPull(prNumber);
         if (!pull) {

@@ -84,7 +84,7 @@ Dealing with reported issues that are identified as urgent/**high severity**:
 
 The `Release-notes PR-gate` check verifies that a pull request can be attributed in the release notes: it must link a tracked **issue** (or explicitly opt out), and its title must be a conventional commit. Release notes are generated from those links, so an unlinked PR silently disappears from them.
 
-The check is currently **advisory** — it reports red on failure but is not a required status check, so it never blocks a merge. On failure it posts a single sticky comment naming the reason, and adds the `no-issue` label when the issue link is what failed.
+The check fails the job when the PR cannot be attributed. It is not (yet) a required status check in branch protection. On failure it posts a single sticky comment naming the reason, and adds the `no-issue` label when the issue link is what failed.
 
 ### Causes and fixes
 
