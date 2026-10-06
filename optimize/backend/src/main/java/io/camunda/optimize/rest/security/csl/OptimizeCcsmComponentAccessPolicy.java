@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.identity.sdk.authentication.exception.TokenExpiredException;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
@@ -61,13 +62,17 @@ public class OptimizeCcsmComponentAccessPolicy implements OptimizeComponentAcces
       return Either.right(null);
     } catch (final NotAuthorizedException e) {
       return Either.left(e.getMessage());
-    } catch (final TokenVerificationException e) {
+    } catch (final TokenExpiredException e) {
       // An expired token is renewed by the webapp chain and passed through by the API chain, so
       // treating it as a denial here would log out a user whose permission is intact. The cost is
       // that a revoked user keeps API access until the token is renewed, at most for its remaining
       // lifetime, while the next web app request denies them right away.
-      LOG.debug("Access token could not be verified: {}", e.getMessage());
+      LOG.debug("Access token has expired: {}", e.getMessage());
       return Either.right(null);
+    } catch (final TokenVerificationException e) {
+      // On Keycloak, the Optimize role also adds the Optimize API audience to the token, so a user
+      // without the role fails here, before the permission check.
+      return Either.left("Access token could not be verified: " + e.getMessage());
     }
   }
 }

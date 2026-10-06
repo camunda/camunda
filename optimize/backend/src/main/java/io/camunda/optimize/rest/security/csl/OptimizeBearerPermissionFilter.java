@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.identity.sdk.authentication.exception.TokenExpiredException;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
@@ -16,7 +17,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -45,7 +45,6 @@ public final class OptimizeBearerPermissionFilter extends OncePerRequestFilter {
 
   private final CamundaAuthenticationProvider authenticationProvider;
   private final CCSMTokenService tokenService;
-  private final AtomicBoolean warnedAboutFailOpen = new AtomicBoolean(false);
 
   public OptimizeBearerPermissionFilter(
       final CamundaAuthenticationProvider authenticationProvider,
@@ -79,22 +78,16 @@ public final class OptimizeBearerPermissionFilter extends OncePerRequestFilter {
       LOG.debug("Denying bearer request at {}: {}", request.getRequestURI(), e.getMessage());
       response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
       return;
+    } catch (final TokenExpiredException e) {
+      // The chain checked the expiry before this filter, so the token expired only in between. This
+      // is not evidence that the user lacks the permission.
+      LOG.debug("Access token expired during the bearer request at {}", request.getRequestURI());
     } catch (final TokenVerificationException e) {
-      // The bearer chain already verified signature and audience before this filter runs; a fresh
-      // permission lookup failing here (e.g. Identity temporarily unreachable) is not evidence the
-      // user lacks the permission, so it must not be treated as a denial. Mirrors
-      // OptimizeCcsmComponentAccessPolicy's identical leniency on this exception.
-      if (warnedAboutFailOpen.compareAndSet(false, true)) {
-        LOG.warn(
-            "Access token could not be freshly verified, letting the request through without the"
-                + " Optimize permission check: {}. This means the check is not currently being"
-                + " enforced on bearer requests; further occurrences are logged at DEBUG.",
-            e.getMessage());
-      } else {
-        LOG.debug(
-            "Access token could not be freshly verified, letting the request through: {}",
-            e.getMessage());
-      }
+      // On Keycloak, the Optimize role also adds the Optimize API audience to the token, so a user
+      // without the role fails here, before the permission check.
+      LOG.debug("Denying bearer request at {}: {}", request.getRequestURI(), e.getMessage());
+      response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+      return;
     }
 
     filterChain.doFilter(request, response);

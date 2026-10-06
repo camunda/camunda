@@ -12,7 +12,8 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
-import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
+import io.camunda.identity.sdk.authentication.exception.InvalidClaimException;
+import io.camunda.identity.sdk.authentication.exception.TokenExpiredException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -61,12 +62,12 @@ class OptimizeCcsmComponentAccessPolicyTest {
   }
 
   @Test
-  void shouldAllowSessionWhenTheTokenCanNoLongerBeVerified() {
+  void shouldAllowSessionWhenTheTokenHasExpired() {
     // An expired token is renewed by the webapp chain and passed through by the API chain, so it
     // must not be mistaken for a missing permission.
     // given
     when(tokenService.getCurrentUserAuthToken()).thenReturn(Optional.of("expired"));
-    doThrow(new TokenVerificationException("token expired"))
+    doThrow(new TokenExpiredException(new RuntimeException("token expired")))
         .when(tokenService)
         .verifyAccessToken("expired");
 
@@ -75,6 +76,23 @@ class OptimizeCcsmComponentAccessPolicyTest {
 
     // then
     assertThat(access.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldDenySessionWhenTokenLacksTheOptimizeApiAudience() {
+    // On Keycloak, a user without the Optimize role gets a token without the Optimize API audience,
+    // so the verification fails before the permission check.
+    // given
+    when(tokenService.getCurrentUserAuthToken()).thenReturn(Optional.of("token"));
+    doThrow(new InvalidClaimException(new RuntimeException("missing audience optimize-api")))
+        .when(tokenService)
+        .verifyAccessToken("token");
+
+    // when
+    final Either<String, Void> access = policy().checkAccess(AUTHENTICATION);
+
+    // then
+    assertThat(access.isLeft()).isTrue();
   }
 
   @Test
