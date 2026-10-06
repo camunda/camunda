@@ -211,7 +211,11 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							key: 'dashboard',
 							label: t('operate.dashboard.title'),
 							icon: LayoutDashboard,
-							isActive: !isOperateProcessesRoute && !isOperateDecisionsRoute,
+							isActive:
+								!isOperateProcessesRoute &&
+								!isOperateDecisionsRoute &&
+								!isOperateBatchOperationsRoute &&
+								!isOperateOperationsLogRoute,
 							linkProps: {
 								to: tabRoutes['operateDashboard'],
 								activeOptions: {exact: true},
