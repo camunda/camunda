@@ -21,7 +21,7 @@ val mybatisVersion = versionCatalog.requiredVersion("mybatis")
 val optimizeElasticsearchRestClientVersion =
   versionCatalog.requiredVersion("optimize-elasticsearch-client")
 
-configurations.all {
+configurations.configureEach {
   resolutionStrategy.force(
     // Versions from optimize/pom.xml <properties>
     "com.github.sisyphsu:dateparser:${optVersion("version.dateparser")}",

@@ -11,7 +11,7 @@ extra["springBoot3Version"] = springBoot3Version
 
 extra["spring6Version"] = spring6Version
 
-configurations.all {
+configurations.configureEach {
   exclude(group = "org.springframework.boot", module = "spring-boot-health")
   resolutionStrategy.eachDependency {
     when (requested.group) {

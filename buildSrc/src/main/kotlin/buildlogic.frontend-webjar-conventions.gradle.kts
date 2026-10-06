@@ -1,8 +1,8 @@
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.npm.task.NpmTask
 import io.camunda.gradle.flags.asEnabledFlag
-import io.camunda.gradle.pom.PomResolver
-import io.camunda.gradle.pom.resolvePomProperty
+import buildlogic.requiredVersion
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.jvm.tasks.Jar
 
 plugins {
@@ -21,16 +21,16 @@ val frontendBuildDirectory = frontendWebjar.frontendBuildDirectory
 val frontendPackagedDirectory = frontendWebjar.frontendPackagedDirectory
 val resourceTargetPath = frontendWebjar.resourceTargetPath
 
-val parentPomVersions =
-  PomResolver(providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get())
-    .properties()
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val parentNodeVersion = versionCatalog.requiredVersion("parent-node").removePrefix("v")
+val parentNpmVersion = versionCatalog.requiredVersion("parent-npm")
 
 val nodeExtension = extensions.getByType<NodeExtension>()
 
 extensions.configure<NodeExtension> {
   download.set(true)
-  version.set(resolvePomProperty("version.node", parentPomVersions).removePrefix("v"))
-  npmVersion.set(resolvePomProperty("version.npm", parentPomVersions))
+  version.set(parentNodeVersion)
+  npmVersion.set(parentNpmVersion)
   distBaseUrl.set(null as String?)
   workDir.set(layout.settingsDirectory.dir(".gradle/nodejs/${project.name}"))
   npmWorkDir.set(layout.settingsDirectory.dir(".gradle/npm/${project.name}"))

@@ -99,7 +99,7 @@ tasks.named<JavaCompile>("compileJava") {
   options.errorprone.option("NullAway:AcknowledgeRestrictiveAnnotations", "true")
 }
 
-tasks.withType<Javadoc> { options.encoding = "utf-8" }
+tasks.withType<Javadoc>().configureEach { options.encoding = "utf-8" }
 
 val includeRandomTests = providers.gradleProperty("includeRandomTests").isPresent
 val includeSlowTests = providers.gradleProperty("includeSlowTests").isPresent
