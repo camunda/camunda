@@ -8,6 +8,7 @@
 package io.camunda.optimize;
 
 import static io.camunda.optimize.MetricEnum.ERROR_METRIC;
+import static io.camunda.optimize.MetricEnum.IMPORT_DB_WRITE_FAILURES_METRIC;
 import static io.camunda.optimize.MetricEnum.OVERALL_IMPORT_TIME_METRIC;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -34,6 +35,8 @@ public final class OptimizeMetrics {
   // Error-related tags
   public static final String ERROR_TYPE_TAG = "ERROR_TYPE";
   public static final String METRICS_ENDPOINT = "metrics";
+
+  private static final String UNKNOWN_ERROR_TYPE = "unknown";
 
   private static final ConcurrentMap<ErrorType, Counter> ERROR_COUNTERS;
 
@@ -73,6 +76,19 @@ public final class OptimizeMetrics {
         .tag(RECORD_TYPE_TAG, recordType)
         .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
         .register(Metrics.globalRegistry);
+  }
+
+  public static void recordDbWriteFailure(
+      final String recordType, final String partitionId, final Throwable failure) {
+    final ErrorType errorType = ErrorType.fromException(failure);
+    Counter.builder(IMPORT_DB_WRITE_FAILURES_METRIC.getName())
+        .description(IMPORT_DB_WRITE_FAILURES_METRIC.getDescription())
+        .tag(RECORD_TYPE_TAG, recordType)
+        .tag(PARTITION_ID_TAG, partitionId)
+        .tag(ERROR_TYPE_TAG, errorType == null ? UNKNOWN_ERROR_TYPE : errorType.getValue())
+        .register(Metrics.globalRegistry)
+        .increment();
+    recordError(errorType);
   }
 
   /**

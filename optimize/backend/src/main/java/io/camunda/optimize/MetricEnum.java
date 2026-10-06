@@ -28,6 +28,11 @@ public enum MetricEnum {
       MetricType.IMPORT,
       "newPageFetchTime",
       "Records the time spent for fetching next import page from Zeebe Elasticsearch"),
+  IMPORT_DB_WRITE_FAILURES_METRIC(
+      MetricType.IMPORT,
+      "dbWriteFailures",
+      "Counts failed attempts to write an import page to the database, the page is retried until"
+          + " it succeeds"),
   REPORT_LATENCY_METRIC(
       MetricType.REPORT, "reportLatency", "Records the time taken to evaluate a report"),
   ERROR_METRIC(MetricType.GENERAL, "error", "Counter for errors occurring across Optimize");
