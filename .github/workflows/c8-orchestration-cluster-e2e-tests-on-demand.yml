@@ -18,7 +18,9 @@ permissions:
 jobs:
   validate-branch:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Unshallowed checkout plus six branch fetches; 5 minutes was sized for a
+    # depth-1 clone.
+    timeout-minutes: 15
     permissions: {}
     outputs:
       base: ${{ steps.detect-base.outputs.base }}
@@ -42,6 +44,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Base detection counts commits back to each candidate's
+          # merge-base, which a shallow clone cannot answer.
+          fetch-depth: 0
 
       - name: Detect base branch
         id: detect-base
@@ -49,15 +54,34 @@ jobs:
         env:
           BRANCH: ${{ github.event.inputs.branch }}
         run: |
+          set -euo pipefail
           echo "Detecting base branch for input branch: $BRANCH"
-          git fetch origin stable/8.6 stable/8.7 stable/8.8 stable/8.9 stable/8.10 main "$BRANCH"
-          base="main"
-          for candidate in stable/8.6 stable/8.7 stable/8.8 stable/8.9 stable/8.10 main; do
-            if git merge-base --is-ancestor origin/$candidate "origin/$BRANCH"; then
+          # main first: an equal distance means the branch forked from trunk
+          # at or before the point a stable line was cut, so it left main, not
+          # that stable line. Strict < below keeps main on a tie.
+          candidates=(main stable/8.10 stable/8.9 stable/8.8 stable/8.7 stable/8.6)
+          git fetch origin "${candidates[@]}" "$BRANCH"
+
+          base=""
+          best=""
+          for candidate in "${candidates[@]}"; do
+            if ! merge_base=$(git merge-base "origin/$candidate" "origin/$BRANCH"); then
+              echo "  $candidate: no common history, skipping"
+              continue
+            fi
+            distance=$(git rev-list --count "$merge_base..origin/$BRANCH")
+            echo "  $candidate: forked at ${merge_base:0:9}, $distance commit(s) since"
+            if [[ -z "$best" || "$distance" -lt "$best" ]]; then
+              best="$distance"
               base="$candidate"
-              break
             fi
           done
+
+          if [[ -z "$base" ]]; then
+            echo "Error: no candidate branch shares history with '$BRANCH'." >&2
+            exit 1
+          fi
+
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
