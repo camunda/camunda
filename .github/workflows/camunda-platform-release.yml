@@ -230,6 +230,13 @@ jobs:
           # Assign the amount of seconds that the plugin will wait for a deployment
           # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
           CENTRAL_WAIT_MAX_TIME: "10800"
+          # maven-scm discards git's stderr (GitRemoteInfoCommand builds its
+          # ScmException from the URL alone), so a failed ls-remote reports nothing
+          # but "unbale to execute ls-remote". A file path routes git's own
+          # diagnostics past maven; NO_DATA keeps packfile bodies out of the trace.
+          GIT_TRACE: ${{ runner.temp }}/git-trace.log
+          GIT_TRACE_CURL: ${{ runner.temp }}/git-trace-curl.log
+          GIT_TRACE_CURL_NO_DATA: "1"
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -267,6 +274,65 @@ jobs:
           echo "Release tag ${RELEASE_TAG} points to commit ${TAG_COMMIT_SHA}"
           echo "tagCommitSha=${TAG_COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           popd
+
+      # release:perform's `git ls-remote` (run from java.io.tmpdir) has failed
+      # intermittently on 8.10.0-alpha5-rc2, 8.9.19, 8.8.39 and 8.10.0-rc1 -- always
+      # in under a second, always after the clone and every push in the same job had
+      # succeeded against the same URL. That is an answer, not a timeout, but maven
+      # swallowed it every time. These failure-only steps record whether the remote
+      # rejected us (HTTP status) or the runner never reached it (DNS/connect). All
+      # are best-effort: a release is never failed by its own diagnostics.
+      - name: Probe git remote access
+        id: probe-git-remote
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          APP_TOKEN: ${{ steps.github-token.outputs.token }}
+          PROBE_LOG: ${{ runner.temp }}/git-remote-probe.log
+          REF_ADVERTISEMENT: https://github.com/camunda/camunda.git/info/refs?service=git-upload-pack
+        run: .github/scripts/probe-git-remote.sh
+
+      # GIT_TRACE_CURL records request headers, Authorization included. Scrub before
+      # the traces leave the runner.
+      - name: Redact git traces
+        id: redact-git-traces
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        env:
+          DIAGNOSTICS_DIR: ${{ runner.temp }}/git-remote-diagnostics
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${DIAGNOSTICS_DIR}"
+
+          for source in \
+            "${{ runner.temp }}/git-trace.log" \
+            "${{ runner.temp }}/git-trace-curl.log" \
+            "${{ runner.temp }}/git-remote-probe.log"; do
+            [ -f "${source}" ] || continue
+            destination="${DIAGNOSTICS_DIR}/$(basename "${source}")"
+            # Keep only the last 5 MB: the failure is at the end of the trace, and
+            # the artifact stays bounded however verbose git gets.
+            tail -c 5M "${source}" | sed -E \
+              -e 's#//[^@/[:space:]]*@#//***@#g' \
+              -e 's#(authorization|AUTHORIZATION): .*#\1: ***#gI' \
+              -e 's#(x-access-token|ghs_|github_pat_)[A-Za-z0-9_]*#\1***#g' \
+              > "${destination}"
+          done
+
+      - name: Upload git remote diagnostics
+        if: >-
+          failure() &&
+          steps.maven-perform-release.outcome == 'failure' &&
+          steps.redact-git-traces.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: git-remote-diagnostics-${{ env.RELEASE_VERSION }}
+          path: ${{ runner.temp }}/git-remote-diagnostics/
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Validate flattened POM metadata
         if: ${{ inputs.dryRun }}
@@ -1517,5 +1583,4 @@ jobs:
                 }
               ]
             }
-
 
