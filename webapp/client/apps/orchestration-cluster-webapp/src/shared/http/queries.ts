@@ -45,6 +45,9 @@ import type {
 	QueryClusterVariablesResponseBody,
 	QueryTenantsRequestBody,
 	QueryTenantsResponseBody,
+	QueryGlobalTaskListenersRequestBody,
+	QueryGlobalTaskListenersResponseBody,
+	GlobalTaskListener,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -91,6 +94,9 @@ const queryKeys = {
 	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
 		['getClusterVariable', variable] as const,
 	queryTenants: (body: QueryTenantsRequestBody) => ['queryTenants', body] as const,
+	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
+		['searchGlobalTaskListeners', body] as const,
+	globalTaskListener: (id: string) => ['globalTaskListener', id] as const,
 };
 
 const queries = {
@@ -508,6 +514,17 @@ const queries = {
 				return response.json();
 			},
 		}),
+	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.searchGlobalTaskListeners(body),
+			queryFn: async (): Promise<QueryGlobalTaskListenersResponseBody> => {
+				const {response, error} = await request(endpoints.searchGlobalTaskListeners(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
 
 	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
 		queryOptions({
@@ -526,6 +543,17 @@ const queries = {
 			queryKey: queryKeys.queryTenants(body),
 			queryFn: async (): Promise<QueryTenantsResponseBody> => {
 				const {response, error} = await request(endpoints.queryTenants(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+	getGlobalTaskListener: (id: string) =>
+		queryOptions({
+			queryKey: queryKeys.globalTaskListener(id),
+			queryFn: async (): Promise<GlobalTaskListener> => {
+				const {response, error} = await request(endpoints.getGlobalTaskListener({id}));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}

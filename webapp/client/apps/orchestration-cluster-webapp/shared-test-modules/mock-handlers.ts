@@ -375,6 +375,30 @@ const mockQueryTenantsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryTenants.getUrl(),
 	method: endpoints.queryTenants.method,
 });
+const mockSearchGlobalTaskListenersEndpoint = createEndpointMock({
+	endpoint: endpoints.searchGlobalTaskListeners.getUrl(),
+	method: endpoints.searchGlobalTaskListeners.method,
+});
+
+const mockGetGlobalTaskListenerEndpoint = createEndpointMock({
+	endpoint: endpoints.getGlobalTaskListener.getUrl({id: ':id'}),
+	method: endpoints.getGlobalTaskListener.method,
+});
+
+const mockCreateGlobalTaskListenerEndpoint = createEndpointMock({
+	endpoint: endpoints.createGlobalTaskListener.getUrl(),
+	method: endpoints.createGlobalTaskListener.method,
+});
+
+const mockUpdateGlobalTaskListenerEndpoint = createEndpointMock({
+	endpoint: endpoints.updateGlobalTaskListener.getUrl({id: ':id'}),
+	method: endpoints.updateGlobalTaskListener.method,
+});
+
+const mockDeleteGlobalTaskListenerEndpoint = createEndpointMock({
+	endpoint: endpoints.deleteGlobalTaskListener.getUrl({id: ':id'}),
+	method: endpoints.deleteGlobalTaskListener.method,
+});
 
 const mockCreateCancellationBatchOperationEndpoint = createEndpointMock({
 	endpoint: endpoints.createCancellationBatchOperation.getUrl(),
@@ -519,4 +543,9 @@ export {
 	mockUpdateGlobalClusterVariableEndpoint,
 	mockDeleteGlobalClusterVariableEndpoint,
 	mockQueryTenantsEndpoint,
+	mockSearchGlobalTaskListenersEndpoint,
+	mockGetGlobalTaskListenerEndpoint,
+	mockCreateGlobalTaskListenerEndpoint,
+	mockUpdateGlobalTaskListenerEndpoint,
+	mockDeleteGlobalTaskListenerEndpoint,
 };
