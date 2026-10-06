@@ -8,6 +8,7 @@
 
 import {assign, fromPromise, setup} from 'xstate';
 import type {QueryClient} from '@tanstack/react-query';
+import type {useNavigate} from '@tanstack/react-router';
 import {t} from 'i18next';
 import type {
 	BatchOperation,
@@ -40,7 +41,8 @@ type SubmissionResponse =
 	| SuspendProcessInstancesBatchOperationResponseBody
 	| ResumeProcessInstancesBatchOperationResponseBody
 	| CreateModificationBatchOperationResponseBody;
-type TrackingInput = {queryClient: QueryClient; batchOperationKey: string};
+type Navigate = ReturnType<typeof useNavigate>;
+type TrackingInput = {queryClient: QueryClient; batchOperationKey: string; navigate: Navigate};
 const REQUESTS = {
 	delete: endpoints.createDeletionBatchOperation,
 	cancel: endpoints.createCancellationBatchOperation,
@@ -56,7 +58,7 @@ function refresh(queryClient: QueryClient) {
 	}
 }
 
-function notifyDetails(batchOperationKey: string, title: string, kind: 'success' | 'warning') {
+function notifyDetails(batchOperationKey: string, title: string, kind: 'success' | 'warning', navigate: Navigate) {
 	notificationsStore.displayNotification({
 		kind,
 		title,
@@ -64,7 +66,8 @@ function notifyDetails(batchOperationKey: string, title: string, kind: 'success'
 		isDismissable: true,
 		isActionable: true,
 		actionButtonLabel: t('operate.processes.toolbar.details'),
-		onActionButtonClick: () => window.location.assign(`/operate/batch-operations/${batchOperationKey}`),
+		onActionButtonClick: () =>
+			void navigate({to: '/operate/batch-operations/$batchOperationKey', params: {batchOperationKey}}),
 	});
 }
 
@@ -113,7 +116,12 @@ const trackingMachine = setup({
 						target: 'done',
 						actions: ({context}) => {
 							refresh(context.queryClient);
-							notifyDetails(context.batchOperationKey, t('operate.processes.toolbar.progressUnavailable'), 'warning');
+							notifyDetails(
+								context.batchOperationKey,
+								t('operate.processes.toolbar.progressUnavailable'),
+								'warning',
+								context.navigate,
+							);
 						},
 					},
 					{target: 'waiting', actions: assign({failures: ({context}) => context.failures + 1})},
@@ -127,8 +135,13 @@ const trackingMachine = setup({
 
 const processBulkOperationMachine = setup({
 	types: {
-		input: {} as {queryClient: QueryClient},
-		context: {} as {queryClient: QueryClient; acceptedIdentity: string | null; acceptedKey: string | null},
+		input: {} as {queryClient: QueryClient; navigate: Navigate},
+		context: {} as {
+			queryClient: QueryClient;
+			navigate: Navigate;
+			acceptedIdentity: string | null;
+			acceptedKey: string | null;
+		},
 		events: {} as Submission,
 	},
 	actors: {
@@ -156,7 +169,7 @@ const processBulkOperationMachine = setup({
 					target: 'idle',
 					actions: assign(({context, event, spawn}) => {
 						const {batchOperationKey, batchOperationType, filterIdentity} = event.output;
-						spawn('track', {input: {queryClient: context.queryClient, batchOperationKey}});
+						spawn('track', {input: {queryClient: context.queryClient, batchOperationKey, navigate: context.navigate}});
 						refresh(context.queryClient);
 						notifyDetails(
 							batchOperationKey,
@@ -164,6 +177,7 @@ const processBulkOperationMachine = setup({
 								operationType: formatOperationType(batchOperationType),
 							}),
 							'success',
+							context.navigate,
 						);
 						return {acceptedIdentity: filterIdentity, acceptedKey: batchOperationKey};
 					}),
