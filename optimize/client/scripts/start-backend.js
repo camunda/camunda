@@ -105,7 +105,7 @@ function startBackend() {
     };
 
     backendProcess = spawnWithArgs(
-      `mvn -f optimize-distro/pom.xml exec:java -Dexec.mainClass="io.camunda.optimize.Main"`,
+      `./mvnw -f optimize-distro/pom.xml exec:java -Dexec.mainClass="io.camunda.optimize.Main"`,
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
