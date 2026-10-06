@@ -62,10 +62,6 @@ import org.testcontainers.containers.ToxiproxyContainer;
  * {@code Retry-After}, the readiness gauge at 0, and background recovery — has nothing
  * vendor-specific about it, and the matrix is expensive. The counterpart on Elasticsearch is {@link
  * PhysicalTenantSchemaInitializationIsolationIT}.
- *
- * <p>The degraded tenant is deliberately <em>not</em> the default one: until the module-specific
- * readiness indicators are replaced ({@code #51861}), a degraded default tenant still pulls down
- * the readiness group, so isolation is only observable for a non-default tenant.
  */
 @Tag("rdbms")
 @Timeout(300)
