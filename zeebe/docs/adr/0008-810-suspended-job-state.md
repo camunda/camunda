@@ -63,7 +63,8 @@ migration. Cost is paid once per suspend, and once per resume cycle, not on ever
   `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job, then appends
   `ProcessInstance.SUSPENDED` and responds `SUSPENDED`. All work runs inline in the same record
   batch; this change does not introduce a processor handoff or a second batch. A follow-up change
-  can add that handoff. Commands targeting the `SUSPENDING` marker process normally.
+  can add that handoff. Commands targeting the `SUSPENDING` marker are treated as if the instance
+  were `SUSPENDED`, so they cannot change state that suspend is still walking.
   `Job.SUSPENDED` carries the job's own record, including its variables, so it is not fixed-size,
   but it is the only record suspend writes per job — no activation record alongside it. The
   batch's size scales with the aggregate serialized size of every job the walk suspends, since
