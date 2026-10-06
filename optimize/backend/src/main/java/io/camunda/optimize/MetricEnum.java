@@ -20,7 +20,11 @@ public enum MetricEnum {
       "mediatorErrors", "Counts import errors per mediator, tagged with record type and partition"),
   NEW_PAGE_FETCH_TIME_METRIC(
       "newPageFetchTime",
-      "Records the time spent for fetching next import page from Zeebe Elasticsearch");
+      "Records the time spent for fetching next import page from Zeebe Elasticsearch"),
+  IMPORT_DB_WRITE_FAILURES_METRIC(
+      "dbWriteFailures",
+      "Counts failed attempts to write an import page to the database, the page is retried until"
+          + " it succeeds");
   private static final String IMPORT_METRICS_PREFIX = "optimize.import";
   private final String id;
   private final String name;
