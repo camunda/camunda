@@ -81,7 +81,7 @@ Existing `JDK_JAVA_OPTIONS` values are preserved and only missing flags are appe
 
 Resolution on `start` (`physicaltenants.Resolve`), first match wins:
 1. Tenants declared outside c8run — a user `--config` with `camunda.physical-tenants`, `CAMUNDA_PHYSICALTENANTS_*` environment variables, or `-Dcamunda.physical-tenants.*` in `JAVA_OPTS`. c8run applies nothing and logs a notice. Combining any of these with `--physical-tenants` is an error.
-2. `--physical-tenants a,b` — for this run only, every tenant uses the start login.
+2. `--physical-tenants a,b` — for this run only, every tenant uses the start login. Rejected when `C8RUN_TENANTS_MODE=external`.
 3. The saved tenants file (`C8RUN_TENANTS_FILE`, default `physical-tenants.yaml` next to the local secrets directory), unless `C8RUN_TENANTS_MODE=external`.
 
 IDs are validated against the engine rule (`[a-z0-9]{1,64}`, not `default`) before Java starts. With RDBMS secondary storage (including H2 and an unset type) IDs are limited to 8 characters (`MaxRDBMSIDLength`): table and index names are `<ID>_` plus the schema name, the longest schema name is 54 characters, and PostgreSQL truncates identifiers at 63. `tenants add` checks this before saving, and `start` checks again because the storage type can change. Startup refuses tenants when `CAMUNDA_VERSION` is a parseable version below 8.10.

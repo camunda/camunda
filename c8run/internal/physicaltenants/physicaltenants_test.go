@@ -222,6 +222,13 @@ func TestResolveExternalModeIgnoresStore(t *testing.T) {
 	assert.Empty(t, res.Tenants)
 }
 
+func TestResolveExternalModeRejectsFlag(t *testing.T) {
+	t.Setenv(ModeEnv, "external")
+	res, err := Resolve(ResolveInput{FlagIDs: []string{"sales"}})
+	require.ErrorContains(t, err, "--physical-tenants cannot be used with C8RUN_TENANTS_MODE=external")
+	assert.Empty(t, res.Tenants)
+}
+
 func TestEndpointsFor(t *testing.T) {
 	assert.Equal(t, "http://localhost:8080/operate", EndpointsFor(DefaultID, "http", 8080).Operate)
 	e := EndpointsFor("sales", "https", 9090)
