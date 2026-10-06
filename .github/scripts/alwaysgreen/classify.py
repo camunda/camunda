@@ -35,9 +35,10 @@ from typing import Any, Iterable, Iterator
 PLATFORM_ERROR_MARKER = "internal error when running your job"
 CANCELLED_MARKER = "The operation was canceled"
 
-#: Conclusions GitHub reports for a job it stops before the job runs its steps.
-#: Such a job never reaches `failure`, so a scan for failing jobs cannot see it,
-#: yet when nothing else failed it is the only reason the run went red.
+#: Conclusions GitHub reports for a job it stopped rather than let fail. A job it
+#: could not place on a runner ends this way, so a scan for failing jobs cannot
+#: see it, yet when nothing else failed it is the only reason the run went red.
+#: These are judged by `noise_verdict` on the same evidence as a failing job.
 STALLED_CONCLUSIONS = ("cancelled", "timed_out")
 
 #: Verdicts that must never reach the fix agent.
@@ -57,8 +58,13 @@ def noise_verdict(
     `failure_annotations` are the messages of the job's failure-level check-run
     annotations. A job with no steps *and* no failure annotation carries no
     evidence at all — observed on `Create cluster generation on INT`.
+
+    A stalled conclusion is judged on the same evidence rather than waved
+    through: a job cancelled part-way through a step says so in its annotation
+    and is noise, while one GitHub could not place on a runner says *that*, which
+    is a diagnosis and not noise.
     """
-    if conclusion != "failure":
+    if conclusion != "failure" and conclusion not in STALLED_CONCLUSIONS:
         return None
 
     messages = [m for m in failure_annotations if m]

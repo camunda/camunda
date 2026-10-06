@@ -358,8 +358,9 @@ def _job(name, conclusion, *, steps=()):
     }
 
 
-def _stub_downstream(monkeypatch, *, run_conclusion, jobs, annotations=()):
-    """Serve one downstream run and its single attempt's jobs to `gh_json`."""
+def _stub_downstream(monkeypatch, *, jobs, annotations_by_job=None):
+    """Serve one downstream run, its single attempt's jobs, and their annotations."""
+    annotations_by_job = annotations_by_job or {}
 
     def fake(args, default):
         target = args[-1]
@@ -368,29 +369,58 @@ def _stub_downstream(monkeypatch, *, run_conclusion, jobs, annotations=()):
         return {
             "path": ".github/workflows/playwright_saas_pr_trigger_monorepo.yml",
             "run_attempt": 1,
-            "conclusion": run_conclusion,
         }
 
     monkeypatch.setattr(discover, "gh_json", fake)
-    monkeypatch.setattr(discover, "failure_annotations", lambda url: list(annotations))
+    monkeypatch.setattr(
+        discover,
+        "failure_annotations",
+        lambda url: list(annotations_by_job.get((url or "").rsplit("/", 1)[-1], [])),
+    )
 
 
-def test_a_queued_job_cancelled_on_a_red_run_is_the_evidence(monkeypatch):
+#: What GitHub annotates a job it could never place on a runner with.
+NOT_ACQUIRED = (
+    "The job was not acquired by Runner of type hosted even after multiple attempts"
+)
+
+FINALIZE = "Finalize SaaS E2E Smoke Tests Check"
+
+
+def test_a_queued_job_github_never_placed_is_the_evidence(monkeypatch):
     # The shape that went undispatched: every spec passed, no job reported a
     # failure, and the run is red only because `finalize-check-run` sat queued
-    # until it was cancelled. Withholding it leaves main red with no agent.
+    # until GitHub gave up on it. Withholding leaves main red with no agent.
     _stub_downstream(
         monkeypatch,
-        run_conclusion="failure",
         jobs=[
             _job("Run tests (chromium-v2)", "success"),
-            _job("Finalize SaaS E2E Smoke Tests Check", "cancelled"),
+            _job(FINALIZE, "cancelled"),
         ],
+        annotations_by_job={FINALIZE: [NOT_ACQUIRED]},
     )
     specs = discover.downstream_ci_specs("1")
-    assert [s.test_name for s in specs] == ["Finalize SaaS E2E Smoke Tests Check"]
+    assert [s.test_name for s in specs] == [FINALIZE]
     assert specs[0].file.endswith("playwright_saas_pr_trigger_monorepo.yml")
     assert "cancelled" in specs[0].error
+
+
+def test_a_job_cancelled_part_way_through_a_step_stays_noise(monkeypatch):
+    # Somebody cancelled the run. The job got a runner and ran, so the fallback
+    # picks it up, and only the annotation tells it apart from one that stalled.
+    _stub_downstream(
+        monkeypatch,
+        jobs=[
+            _job(FINALIZE, "cancelled", steps=[("Mark check as passed", "cancelled")])
+        ],
+        annotations_by_job={FINALIZE: ["The operation was canceled."]},
+    )
+    assert discover.downstream_ci_specs("1") == []
+
+
+def test_a_stalled_job_with_nothing_to_show_stays_noise(monkeypatch):
+    _stub_downstream(monkeypatch, jobs=[_job(FINALIZE, "cancelled")])
+    assert discover.downstream_ci_specs("1") == []
 
 
 def test_a_cancelled_job_beside_a_failing_one_is_not_evidence(monkeypatch):
@@ -398,31 +428,19 @@ def test_a_cancelled_job_beside_a_failing_one_is_not_evidence(monkeypatch):
     # the agent at a job that has nothing wrong with it.
     _stub_downstream(
         monkeypatch,
-        run_conclusion="failure",
         jobs=[
             _job("lint", "failure", steps=[("Run eslint", "failure")]),
-            _job("Finalize SaaS E2E Smoke Tests Check", "cancelled"),
+            _job(FINALIZE, "cancelled"),
         ],
+        annotations_by_job={FINALIZE: [NOT_ACQUIRED]},
     )
     specs = discover.downstream_ci_specs("1")
     assert [s.test_name for s in specs] == ["lint"]
     assert specs[0].error == "CI job failed at step: Run eslint"
 
 
-def test_a_cancelled_run_yields_no_evidence(monkeypatch):
-    # Someone cancelled the run by hand; its cancelled jobs diagnose nothing.
-    _stub_downstream(
-        monkeypatch,
-        run_conclusion="cancelled",
-        jobs=[_job("Finalize SaaS E2E Smoke Tests Check", "cancelled")],
-    )
-    assert discover.downstream_ci_specs("1") == []
-
-
 def test_a_failing_job_with_no_steps_and_no_annotation_stays_noise(monkeypatch):
     _stub_downstream(
-        monkeypatch,
-        run_conclusion="failure",
-        jobs=[_job("Create cluster generation on INT", "failure")],
+        monkeypatch, jobs=[_job("Create cluster generation on INT", "failure")]
     )
     assert discover.downstream_ci_specs("1") == []
