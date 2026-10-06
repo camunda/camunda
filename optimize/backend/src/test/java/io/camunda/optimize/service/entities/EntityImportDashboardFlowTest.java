@@ -90,13 +90,19 @@ public class EntityImportDashboardFlowTest {
     final OptimizeIndexNameService indexNameService = mock(OptimizeIndexNameService.class);
     when(indexNameService.getIndexPrefix()).thenReturn("");
 
+    final DataSourceDefinitionAuthorizationService definitionAuthorizationService =
+        mock(DataSourceDefinitionAuthorizationService.class);
+    when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
+            anyString(), any(DefinitionType.class), anyString(), anyList()))
+        .thenReturn(true);
+
     // real services throughout the import flow, only the persistence and lookups are mocked
     final ReportImportService reportImportService =
         new ReportImportService(
             mock(ReportService.class),
             reportWriter,
             definitionService,
-            mock(DataSourceDefinitionAuthorizationService.class),
+            definitionAuthorizationService,
             indexNameService);
     final DashboardService dashboardService =
         new DashboardService(
@@ -135,6 +141,29 @@ public class EntityImportDashboardFlowTest {
         underTest.importEntities(null, exportedEntities);
 
     // then
+    assertDashboardImportedWithRemappedTileAndPreservedFilter(importedEntities);
+  }
+
+  @Test
+  public void shouldImportDashboardWithVariableFilterAsUser() {
+    // given
+    final String originalReportId = IdGenerator.getNextId();
+    final String originalDashboardId = IdGenerator.getNextId();
+    final Set<OptimizeEntityExportDto> exportedEntities =
+        Set.of(
+            exportedReport(originalReportId),
+            exportedDashboardWithVariableFilter(originalDashboardId, originalReportId));
+
+    // when
+    final List<EntityIdResponseDto> importedEntities =
+        underTest.importEntitiesAsUser("testUser", null, exportedEntities);
+
+    // then
+    assertDashboardImportedWithRemappedTileAndPreservedFilter(importedEntities);
+  }
+
+  private void assertDashboardImportedWithRemappedTileAndPreservedFilter(
+      final List<EntityIdResponseDto> importedEntities) {
     assertThat(importedEntities)
         .containsExactlyInAnyOrder(
             new EntityIdResponseDto(NEW_REPORT_ID, EntityType.REPORT),
