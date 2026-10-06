@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -242,5 +243,46 @@ public final class UserTaskSuspensionGateTest {
     Assertions.assertThat(rejection)
         .hasIntent(JobIntent.COMPLETE)
         .hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  public void shouldTerminateSuspendedInstanceWhenCancelingListenerJobCompleted() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String listenerType = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeTaskListener(l -> l.canceling().type(listenerType))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
+    final long listenerJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(listenerType)
+            .getFirst()
+            .getKey();
+
+    // when
+    final Record<JobRecordValue> result = ENGINE.job().withKey(listenerJobKey).complete();
+
+    // then
+    Assertions.assertThat(result).hasIntent(JobIntent.COMPLETED);
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(processInstanceKey)
+                .exists())
+        .isTrue();
   }
 }

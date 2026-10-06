@@ -14,7 +14,10 @@ import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.jspecify.annotations.NullMarked;
@@ -34,6 +37,7 @@ import org.slf4j.Logger;
 public final class SuspensionBehavior {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
+  private static final InstanceKeys UNRESOLVED_INSTANCE_KEYS = new InstanceKeys(-1, -1);
 
   private final ProcessingState processingState;
 
@@ -56,13 +60,18 @@ public final class SuspensionBehavior {
       return passThrough(-1);
     }
 
-    final long processInstanceKey = resolveProcessInstanceKey(command);
+    final InstanceKeys keys = resolveInstanceKeys(command);
+    final long processInstanceKey = keys.processInstanceKey();
     if (processInstanceKey <= 0) {
       return passThrough(processInstanceKey);
     }
 
     final State marker =
         processingState.getSuspensionState().getSuspensionState(processInstanceKey);
+
+    if (marker != null && isTerminating(keys.elementInstanceKey())) {
+      return passThrough(processInstanceKey);
+    }
 
     final SuspensionAction action =
         switch (marker) {
@@ -91,49 +100,59 @@ public final class SuspensionBehavior {
     return new SuspensionResult(SuspensionAction.PROCESS, processInstanceKey, null);
   }
 
-  /**
-   * Resolves the process instance a command targets. Most values carry their own {@code
-   * processInstanceKey}. However, a few other external commands only carry the entity key, so the
-   * persisted entity is consulted. Returns {@code -1} when it can't be resolved.
-   */
-  private long resolveProcessInstanceKey(final TypedRecord<?> command) {
-    if (command.getValue() instanceof final ProcessInstanceRelated processInstanceRelated) {
-      final long processInstanceKey = processInstanceRelated.getProcessInstanceKey();
-      if (processInstanceKey > 0) {
-        return processInstanceKey;
-      }
+  /** Resolves the instance keys from the command value, falling back to state; -1 if unknown. */
+  private InstanceKeys resolveInstanceKeys(final TypedRecord<?> command) {
+    final var value = command.getValue();
+    if (value instanceof final ProcessInstanceRelated processInstanceRelated
+        && processInstanceRelated.getProcessInstanceKey() > 0) {
+      return instanceKeysOf(processInstanceRelated);
     }
 
     final long key = command.getKey();
     return switch (command.getValueType()) {
-      case JOB -> {
-        final var job = processingState.getJobState().getJob(key);
-        yield job != null ? job.getProcessInstanceKey() : -1;
-      }
-      case INCIDENT -> {
-        final var incident = processingState.getIncidentState().getIncidentRecord(key);
-        yield incident != null ? incident.getProcessInstanceKey() : -1;
-      }
-      case USER_TASK -> {
-        final var userTask = processingState.getUserTaskState().getUserTask(key);
-        yield userTask != null ? userTask.getProcessInstanceKey() : -1;
-      }
+      case JOB -> instanceKeysOf(processingState.getJobState().getJob(key));
+      case INCIDENT -> instanceKeysOf(processingState.getIncidentState().getIncidentRecord(key));
+      case USER_TASK -> instanceKeysOf(processingState.getUserTaskState().getUserTask(key));
       case AD_HOC_SUB_PROCESS_INSTRUCTION -> {
-        final var adHocValue = (AdHocSubProcessInstructionRecordValue) command.getValue();
+        final var adHocValue = (AdHocSubProcessInstructionRecordValue) value;
         final var elementInstance =
             processingState
                 .getElementInstanceState()
                 .getInstance(adHocValue.getAdHocSubProcessInstanceKey());
-        yield elementInstance != null ? elementInstance.getValue().getProcessInstanceKey() : -1;
+        if (elementInstance == null) {
+          yield UNRESOLVED_INSTANCE_KEYS;
+        }
+        yield processInstanceOnly(elementInstance.getValue().getProcessInstanceKey());
       }
       case VARIABLE_DOCUMENT -> {
-        final var scopeKey = ((VariableDocumentRecordValue) command.getValue()).getScopeKey();
+        final var scopeKey = ((VariableDocumentRecordValue) value).getScopeKey();
         final var scope = processingState.getElementInstanceState().getInstance(scopeKey);
-        yield scope != null ? scope.getValue().getProcessInstanceKey() : -1;
+        if (scope == null) {
+          yield UNRESOLVED_INSTANCE_KEYS;
+        }
+        yield processInstanceOnly(scope.getValue().getProcessInstanceKey());
       }
-      case AGENT_INSTANCE -> resolveAgentInstanceProcessInstanceKey(command);
-      default -> -1;
+      case AGENT_INSTANCE -> processInstanceOnly(resolveAgentInstanceProcessInstanceKey(command));
+      default -> UNRESOLVED_INSTANCE_KEYS;
     };
+  }
+
+  private static InstanceKeys instanceKeysOf(final @Nullable ProcessInstanceRelated entity) {
+    if (entity == null) {
+      return UNRESOLVED_INSTANCE_KEYS;
+    }
+    final long elementInstanceKey =
+        switch (entity) {
+          case final JobRecordValue job -> job.getElementInstanceKey();
+          case final UserTaskRecordValue userTask -> userTask.getElementInstanceKey();
+          case final IncidentRecordValue incident -> incident.getElementInstanceKey();
+          default -> -1;
+        };
+    return new InstanceKeys(entity.getProcessInstanceKey(), elementInstanceKey);
+  }
+
+  private static InstanceKeys processInstanceOnly(final long processInstanceKey) {
+    return new InstanceKeys(processInstanceKey, -1);
   }
 
   /**
@@ -151,6 +170,19 @@ public final class SuspensionBehavior {
 
     final var agentInstance = processingState.getAgentInstanceState().getRecord(command.getKey());
     return agentInstance != null ? agentInstance.getProcessInstanceKey() : -1;
+  }
+
+  /**
+   * Commands on a terminating element (e.g. a canceling task listener job) are work the termination
+   * waits for, so they must not be blocked.
+   */
+  private boolean isTerminating(final long elementInstanceKey) {
+    if (elementInstanceKey <= 0) {
+      return false;
+    }
+    final var elementInstance =
+        processingState.getElementInstanceState().getInstance(elementInstanceKey);
+    return elementInstance != null && elementInstance.isTerminating();
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -197,4 +229,6 @@ public final class SuspensionBehavior {
    */
   public record SuspensionResult(
       SuspensionAction outcome, long processInstanceKey, @Nullable String rejectionReason) {}
+
+  private record InstanceKeys(long processInstanceKey, long elementInstanceKey) {}
 }
