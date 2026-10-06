@@ -68,6 +68,7 @@ public final class CheckpointCreateProcessor {
       final long checkpointId,
       final long checkpointPosition) {
 
+    final var checkpointRecord = record.getValue();
     final boolean scalingInProgress = scalingStatusSupplier.isScalingInProgress();
 
     // Create backup (either normal or failed based on scaling state)
@@ -76,18 +77,24 @@ public final class CheckpointCreateProcessor {
       backupManager.createFailedBackup(
           checkpointId,
           checkpointPosition,
-          "Cannot create checkpoint while scaling is in progress");
+          "Cannot create checkpoint while scaling is in progress",
+          checkpointRecord.getSnapshotId());
     } else {
       // Get current partition count from routing information if available
       final int currentPartitionCount = partitionCountSupplier.getCurrentPartitionCount();
-      backupManager.takeBackup(checkpointId, checkpointPosition, currentPartitionCount);
+      backupManager.takeBackup(
+          checkpointId,
+          checkpointPosition,
+          currentPartitionCount,
+          checkpointRecord.getSnapshotId());
     }
 
     // Create follow-up record
     final var followupRecord =
         new CheckpointRecord()
             .setCheckpointId(checkpointId)
-            .setCheckpointPosition(checkpointPosition);
+            .setCheckpointPosition(checkpointPosition)
+            .setSnapshotId(checkpointRecord.getSnapshotId());
 
     // Checkpoint should be created even if we don't take a backup for checkpoint-consistency
     appendCheckpointCreatedEvent(record, resultBuilder, followupRecord);
@@ -108,6 +115,7 @@ public final class CheckpointCreateProcessor {
       final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
 
     metrics.ignored();
+    releaseSnapshotReserved(record.getValue());
     // Use the latest checkpoint info in the response for client information
     final var latestCheckpointRecord =
         new CheckpointRecord()
@@ -116,6 +124,13 @@ public final class CheckpointCreateProcessor {
 
     return createFollowUpAndResponse(
         record, CheckpointIntent.IGNORED, latestCheckpointRecord, resultBuilder);
+  }
+
+  private void releaseSnapshotReserved(final CheckpointRecord checkpointRecord) {
+    final var snapshotId = checkpointRecord.getSnapshotId();
+    if (!snapshotId.isEmpty()) {
+      backupManager.releaseSnapshotReservation(checkpointRecord.getCheckpointId(), snapshotId);
+    }
   }
 
   private void appendCheckpointCreatedEvent(

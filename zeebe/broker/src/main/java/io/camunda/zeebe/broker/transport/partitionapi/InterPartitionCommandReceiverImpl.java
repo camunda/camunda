@@ -23,6 +23,10 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.stream.impl.TypedEventRegistry;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.ReflectUtil;
@@ -37,14 +41,22 @@ final class InterPartitionCommandReceiverImpl {
   private final Logger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(15));
   private final Decoder decoder = new Decoder();
   private final LogStreamWriter logStreamWriter;
+  private final PersistedSnapshotStore snapshotStore;
+  private final ConcurrencyControl concurrencyControl;
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
+  private long inFlightCheckpointId = CheckpointState.NO_CHECKPOINT;
 
-  InterPartitionCommandReceiverImpl(final LogStreamWriter logStreamWriter) {
+  InterPartitionCommandReceiverImpl(
+      final LogStreamWriter logStreamWriter,
+      final PersistedSnapshotStore snapshotStore,
+      final ConcurrencyControl concurrencyControl) {
     this.logStreamWriter = logStreamWriter;
+    this.snapshotStore = snapshotStore;
+    this.concurrencyControl = concurrencyControl;
   }
 
-  void handleMessage(final MemberId memberId, final byte[] message) {
+  ActorFuture<Void> handleMessage(final MemberId memberId, final byte[] message) {
     LOG.trace("Received message from {}", memberId);
 
     final var decoded = decoder.decodeMessage(message);
@@ -56,14 +68,42 @@ final class InterPartitionCommandReceiverImpl {
           decoded.metadata.getIntent(),
           memberId,
           decoded.checkpointId);
-      return;
+      return CompletableActorFuture.completed();
     }
 
-    final var checkpointWritten = writeCheckpoint(decoded);
-    if (checkpointWritten.isLeft()) {
-      // It's unsafe to write this record without first writing the checkpoint, bail out early.
-      logCheckpointFailure(memberId, decoded, checkpointWritten);
-      return;
+    if (isNewCheckpoint(decoded)) {
+      return snapshotStore
+          .reserveLatestSnapshot(decoded.checkpointId)
+          .andThen(
+              (snapshotId, error) -> {
+                if (error != null) {
+                  LOG.warn(
+                      "Failed to reserve a snapshot for checkpoint {}",
+                      decoded.checkpointId,
+                      error);
+                }
+                writeCheckpointAndCommand(
+                    memberId, decoded, error == null ? snapshotId : Optional.empty());
+                return CompletableActorFuture.completed();
+              },
+              concurrencyControl);
+    }
+
+    writeCheckpointAndCommand(memberId, decoded, Optional.empty());
+    return CompletableActorFuture.completed();
+  }
+
+  private void writeCheckpointAndCommand(
+      final MemberId memberId, final DecodedMessage decoded, final Optional<String> snapshotId) {
+    if (isNewCheckpoint(decoded)) {
+      final var checkpointWritten = writeCheckpoint(decoded, snapshotId);
+      if (checkpointWritten.isLeft()) {
+        // It's unsafe to write this record without first writing the checkpoint, bail out early.
+        logCheckpointFailure(memberId, decoded, checkpointWritten);
+        return;
+      }
+    } else {
+      releaseSnapshotReservation(decoded.checkpointId, snapshotId);
     }
 
     writeCommand(decoded).ifLeft(failure -> logWriteFailure(memberId, decoded, failure));
@@ -93,12 +133,21 @@ final class InterPartitionCommandReceiverImpl {
         memberId);
   }
 
-  private Either<WriteFailure, Long> writeCheckpoint(final DecodedMessage decoded) {
-    if (decoded.checkpointId <= checkpointId) {
-      // No need to write a new checkpoint create record
-      return Either.right(checkpointId);
-    }
+  private boolean isNewCheckpoint(final DecodedMessage decoded) {
+    return decoded.checkpointId > Math.max(checkpointId, inFlightCheckpointId);
+  }
 
+  private void releaseSnapshotReservation(
+      final long checkpointId, final Optional<String> snapshotId) {
+    snapshotId.ifPresent(id -> snapshotStore.releaseReservation(checkpointId, id));
+  }
+
+  /**
+   * Writes the checkpoint create record, which takes over the snapshot reservation. If the record
+   * isn't written, the reservation is released, as nothing else would release it.
+   */
+  private Either<WriteFailure, Long> writeCheckpoint(
+      final DecodedMessage decoded, final Optional<String> snapshotId) {
     LOG.debug(
         "Received command with checkpoint {}, current checkpoint is {}",
         decoded.checkpointId,
@@ -108,9 +157,26 @@ final class InterPartitionCommandReceiverImpl {
             .recordType(RecordType.COMMAND)
             .intent(CheckpointIntent.CREATE)
             .valueType(ValueType.CHECKPOINT);
-    final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
-    return logStreamWriter.tryWrite(
-        WriteContext.interPartition(), LogAppendEntry.of(metadata, checkpointRecord));
+    final var checkpointRecord =
+        new CheckpointRecord()
+            .setCheckpointId(decoded.checkpointId)
+            .setSnapshotId(snapshotId.orElse(""));
+    final Either<WriteFailure, Long> written;
+    try {
+      written =
+          logStreamWriter.tryWrite(
+              WriteContext.interPartition(), LogAppendEntry.of(metadata, checkpointRecord));
+    } catch (final RuntimeException e) {
+      releaseSnapshotReservation(decoded.checkpointId, snapshotId);
+      throw e;
+    }
+
+    if (written.isRight()) {
+      inFlightCheckpointId = decoded.checkpointId;
+    } else {
+      releaseSnapshotReservation(decoded.checkpointId, snapshotId);
+    }
+    return written;
   }
 
   private Either<WriteFailure, Long> writeCommand(final DecodedMessage decoded) {

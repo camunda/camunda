@@ -8,9 +8,11 @@
 package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -60,6 +63,7 @@ class InProgressBackupImplTest {
             new BackupIdentifierImpl(1, 1, 1),
             10,
             1,
+            Optional.empty(),
             concurrencyControl,
             segmentsDirectory,
             metadataProvider);
@@ -289,6 +293,117 @@ class InProgressBackupImplTest {
     // then
     assertThat(backup.segments().namedFiles())
         .containsExactlyInAnyOrderEntriesOf(Map.of("file1.log", file1, "file2.log", file2));
+  }
+
+  @Test
+  void shouldUseSnapshotReservedForCheckpoint() {
+    // given
+    final var reservedSnapshot = snapshotWith(1L, 5L);
+    onReserve(reservedSnapshot, mock(SnapshotReservation.class));
+    inProgressBackup = backupWithCheckpointSnapshot(reservedSnapshot.getId());
+    when(snapshotStore.getReservedSnapshot(1L, reservedSnapshot.getId()))
+        .thenReturn(TestActorFuture.completedFuture(Optional.of(reservedSnapshot)));
+    mockJournalProviderWithNonEmptySegments();
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).hasValue(reservedSnapshot.getId());
+    verify(snapshotStore, never()).getAvailableSnapshots();
+  }
+
+  @Test
+  void shouldLookUpSnapshotWhenCheckpointSnapshotIsNotReserved() {
+    // given
+    inProgressBackup = backupWithCheckpointSnapshot("not-reserved");
+    when(snapshotStore.getReservedSnapshot(1L, "not-reserved"))
+        .thenReturn(TestActorFuture.completedFuture(Optional.empty()));
+    final var validSnapshot = snapshotWith(1L, 5L);
+    onReserve(validSnapshot, mock(SnapshotReservation.class));
+    setAvailableSnapshots(Set.of(validSnapshot));
+    mockJournalProviderWithNonEmptySegments();
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).hasValue(validSnapshot.getId());
+  }
+
+  @Test
+  void shouldLookUpSnapshotWhenCheckpointSnapshotIsPastCheckpointPosition() {
+    // given - the reserved snapshot includes records after the checkpoint
+    final var invalidSnapshot = snapshotWith(8L, 20L);
+    inProgressBackup = backupWithCheckpointSnapshot(invalidSnapshot.getId());
+    when(snapshotStore.getReservedSnapshot(1L, invalidSnapshot.getId()))
+        .thenReturn(TestActorFuture.completedFuture(Optional.of(invalidSnapshot)));
+    final var validSnapshot = snapshotWith(1L, 5L);
+    onReserve(validSnapshot, mock(SnapshotReservation.class));
+    setAvailableSnapshots(Set.of(validSnapshot, invalidSnapshot));
+    mockJournalProviderWithNonEmptySegments();
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).hasValue(validSnapshot.getId());
+  }
+
+  @Test
+  void shouldReleaseCheckpointReservationWhenClosed() {
+    // given
+    final var reservedSnapshot = snapshotWith(1L, 5L);
+    onReserve(reservedSnapshot, mock(SnapshotReservation.class));
+    inProgressBackup = backupWithCheckpointSnapshot(reservedSnapshot.getId());
+    when(snapshotStore.getReservedSnapshot(1L, reservedSnapshot.getId()))
+        .thenReturn(TestActorFuture.completedFuture(Optional.of(reservedSnapshot)));
+    inProgressBackup.findValidSnapshot().join();
+    inProgressBackup.reserveSnapshot().join();
+
+    // when
+    inProgressBackup.close();
+
+    // then
+    verify(snapshotStore).releaseReservation(1L, reservedSnapshot.getId());
+  }
+
+  @Test
+  void shouldReleaseCheckpointReservationWhenClosedWithoutReservingSnapshot() {
+    // given
+    inProgressBackup = backupWithCheckpointSnapshot("reserved");
+
+    // when
+    inProgressBackup.close();
+
+    // then
+    verify(snapshotStore).releaseReservation(1L, "reserved");
+  }
+
+  @Test
+  void shouldNotReleaseCheckpointReservationWhenCheckpointHasNoSnapshot() {
+    // given
+    setAvailableSnapshots(Set.of());
+    inProgressBackup.findValidSnapshot().join();
+    inProgressBackup.reserveSnapshot().join();
+
+    // when
+    inProgressBackup.close();
+
+    // then
+    verify(snapshotStore, never()).releaseReservation(anyLong(), any());
+  }
+
+  private InProgressBackupImpl backupWithCheckpointSnapshot(final String snapshotId) {
+    return new InProgressBackupImpl(
+        snapshotStore,
+        new BackupIdentifierImpl(1, 1, 1),
+        10,
+        1,
+        Optional.of(snapshotId),
+        concurrencyControl,
+        segmentsDirectory,
+        metadataProvider);
   }
 
   private void setAvailableSnapshots(final Set<PersistedSnapshot> snapshots) {

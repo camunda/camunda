@@ -24,9 +24,12 @@ public interface BackupManager {
    * @param checkpointId id of the backup
    * @param checkpointPosition position of the record until which must be included in the backup.
    * @param partitionCount the current number of partitions to store in the backup
+   * @param snapshotId id of the snapshot reserved for the checkpoint before it was written, or an
+   *     empty string if none was reserved
    * @return an ActorFuture with the result of the backup
    */
-  ActorFuture<Void> takeBackup(long checkpointId, long checkpointPosition, int partitionCount);
+  ActorFuture<Void> takeBackup(
+      long checkpointId, long checkpointPosition, int partitionCount, String snapshotId);
 
   /**
    * Get the status of the backup
@@ -60,12 +63,22 @@ public interface BackupManager {
 
   /**
    * Creates a backup with failed status. This is used when a backup cannot be taken due to system
-   * constraints (e.g., scaling in progress) but the backup entry needs to be recorded.
+   * constraints (e.g., scaling in progress) but the backup entry needs to be recorded. Releases the
+   * snapshot reserved for the checkpoint, as no backup will use it.
    *
    * @param checkpointId id of the backup
    * @param checkpointPosition position of the record until which would have been included in the
    *     backup
    * @param failureReason reason why the backup failed
+   * @param snapshotId id of the snapshot reserved for the checkpoint before it was written, or an
+   *     empty string if none was reserved
    */
-  void createFailedBackup(long checkpointId, long checkpointPosition, String failureReason);
+  void createFailedBackup(
+      long checkpointId, long checkpointPosition, String failureReason, String snapshotId);
+
+  /**
+   * Releases the reservation of a snapshot that was reserved for a checkpoint which does not take a
+   * backup, e.g. because the checkpoint was ignored.
+   */
+  void releaseSnapshotReservation(long checkpointId, String snapshotId);
 }

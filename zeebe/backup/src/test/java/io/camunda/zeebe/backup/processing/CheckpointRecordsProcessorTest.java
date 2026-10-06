@@ -10,6 +10,8 @@ package io.camunda.zeebe.backup.processing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -120,7 +122,7 @@ final class CheckpointRecordsProcessorTest {
 
     // backup is triggered with dynamic partition count
     verify(backupManager, times(1))
-        .takeBackup(checkpointId, checkpointPosition, dynamicPartitionCount.get());
+        .takeBackup(checkpointId, checkpointPosition, dynamicPartitionCount.get(), "");
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -156,7 +158,8 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(eq(checkpointId), eq(checkpointPosition), anyInt());
+    verify(backupManager, never())
+        .takeBackup(eq(checkpointId), eq(checkpointPosition), anyInt(), anyString());
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -189,7 +192,7 @@ final class CheckpointRecordsProcessorTest {
 
     // backup is not triggered
     verify(backupManager, never())
-        .takeBackup(eq(lowerCheckpointId), eq(checkpointPosition + 10), anyInt());
+        .takeBackup(eq(lowerCheckpointId), eq(checkpointPosition + 10), anyInt(), anyString());
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -519,13 +522,15 @@ final class CheckpointRecordsProcessorTest {
 
     // then
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(eq(checkpointId), eq(checkpointPosition), anyInt());
+    verify(backupManager, never())
+        .takeBackup(eq(checkpointId), eq(checkpointPosition), anyInt(), anyString());
     // verify that failed backup is taken
     verify(backupManager, times(1))
         .createFailedBackup(
             checkpointId,
             checkpointPosition,
-            "Cannot create checkpoint while scaling is in progress");
+            "Cannot create checkpoint while scaling is in progress",
+            "");
 
     // rejection response is sent
     assertThat(result.response()).isNotNull();
@@ -534,7 +539,7 @@ final class CheckpointRecordsProcessorTest {
     assertThat(rejectionEvent.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectionEvent.rejectionType()).isEqualTo(RejectionType.INVALID_STATE);
     assertThat(rejectionEvent.rejectionReason())
-        .isEqualTo("Cannot create checkpoint while scaling is in progress");
+        .isEqualTo("Cannot create checkpoint while scaling is in progress", "");
 
     // state is updated
     assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
@@ -559,7 +564,7 @@ final class CheckpointRecordsProcessorTest {
 
     // then - first backup uses first partition count
     verify(backupManager, times(1))
-        .takeBackup(firstCheckpointId, firstCheckpointPosition, firstPartitionCount);
+        .takeBackup(firstCheckpointId, firstCheckpointPosition, firstPartitionCount, "");
 
     // given - change partition count
     final long secondCheckpointId = 2;
@@ -577,6 +582,70 @@ final class CheckpointRecordsProcessorTest {
 
     // then - second backup uses updated partition count
     verify(backupManager, times(1))
-        .takeBackup(secondCheckpointId, secondCheckpointPosition, secondPartitionCount);
+        .takeBackup(secondCheckpointId, secondCheckpointPosition, secondPartitionCount, "");
+  }
+
+  @Test
+  void shouldTakeBackupWithSnapshotReservedForCheckpoint() {
+    // given
+    final var value = new CheckpointRecord().setCheckpointId(1).setSnapshotId("reserved-snapshot");
+    final var record =
+        new MockTypedCheckpointRecord(10, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager).takeBackup(eq(1L), eq(10L), anyInt(), eq("reserved-snapshot"));
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
+    final var created = (CheckpointRecord) result.records().getFirst().value();
+    assertThat(created.getSnapshotId()).isEqualTo("reserved-snapshot");
+  }
+
+  @Test
+  void shouldReleaseSnapshotReservationWhenCheckpointIsIgnored() {
+    // given
+    state.setLatestCheckpointInfo(1, 10);
+    final var value = new CheckpointRecord().setCheckpointId(1).setSnapshotId("reserved-snapshot");
+    final var record =
+        new MockTypedCheckpointRecord(20, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager).releaseSnapshotReservation(1L, "reserved-snapshot");
+  }
+
+  @Test
+  void shouldCreateFailedBackupWithReservedSnapshotWhenScalingInProgress() {
+    // given
+    scalingInProgress.set(true);
+    final var value = new CheckpointRecord().setCheckpointId(1).setSnapshotId("reserved-snapshot");
+    final var record =
+        new MockTypedCheckpointRecord(
+            10, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value, 1, 1);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager).createFailedBackup(eq(1L), eq(10L), any(), eq("reserved-snapshot"));
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
+  }
+
+  @Test
+  void shouldNotReleaseSnapshotReservationWhenCheckpointHasNoSnapshot() {
+    // given
+    state.setLatestCheckpointInfo(1, 10);
+    final var value = new CheckpointRecord().setCheckpointId(1);
+    final var record =
+        new MockTypedCheckpointRecord(20, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
   }
 }

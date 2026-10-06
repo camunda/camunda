@@ -2125,11 +2125,31 @@ final class JsonSerializableToJsonTest {
       {
         "Checkpoint record",
         (Supplier<UnifiedRecordValue>)
+            () ->
+                new CheckpointRecord()
+                    .setCheckpointId(1L)
+                    .setCheckpointPosition(10L)
+                    .setSnapshotId("1-1-1-0-0-123"),
+        """
+        {
+          "checkpointId":1,
+          "checkpointPosition":10,
+          "snapshotId":"1-1-1-0-0-123"
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////// Checkpoint record without snapshot ///////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Checkpoint record without snapshot",
+        (Supplier<UnifiedRecordValue>)
             () -> new CheckpointRecord().setCheckpointId(1L).setCheckpointPosition(10L),
         """
         {
           "checkpointId":1,
-          "checkpointPosition":10
+          "checkpointPosition":10,
+          "snapshotId":""
         }
         """
       },
