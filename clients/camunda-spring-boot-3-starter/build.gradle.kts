@@ -1,4 +1,6 @@
+import org.gradle.process.CommandLineArgumentProvider
 import buildlogic.OptionalDependenciesPomAction
+import buildlogic.micrometerOptionalDependencies
 
 plugins {
   id("buildlogic.client-conventions")
@@ -14,11 +16,9 @@ publishing {
   publications.named<MavenPublication>("maven") {
     pom.withXml(
       OptionalDependenciesPomAction(
-        mapOf(
-          "io.micrometer:micrometer-core" to libs.versions.micrometer.get(),
-          "org.springframework.boot:spring-boot-actuator-autoconfigure" to
-            (extra["springBoot3Version"] as String),
-        )
+        micrometerOptionalDependencies("micrometer-core") +
+          ("org.springframework.boot:spring-boot-actuator-autoconfigure" to
+            (extra["springBoot3Version"] as String))
       )
     )
   }
@@ -75,7 +75,8 @@ val generateJobWorkerPermutations =
     outputs.cacheIf { true }
     classpath = testSourceGenerator.runtimeClasspath
     mainClass.set("io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator")
-    args(generatedTestSourcesDir.get().asFile.absolutePath)
+    val outputDir = generatedTestSourcesDir
+    argumentProviders.add(CommandLineArgumentProvider { listOf(outputDir.get().asFile.absolutePath) })
   }
 
 tasks.named("compileTestJava") { dependsOn(generateJobWorkerPermutations) }

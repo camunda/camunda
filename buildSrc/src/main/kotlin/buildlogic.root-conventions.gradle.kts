@@ -9,6 +9,7 @@
  * Root build conventions for repo-wide formatting.
  */
 
+import buildlogic.skipWhen
 import com.diffplug.gradle.spotless.SpotlessExtension
 import io.camunda.gradle.flags.asEnabledFlag
 
@@ -68,5 +69,5 @@ extensions.configure<SpotlessExtension> {
 }
 
 tasks.withType<com.diffplug.gradle.spotless.SpotlessTask>().configureEach {
-  enabled = !quickly.get()
+  skipWhen(quickly)
 }

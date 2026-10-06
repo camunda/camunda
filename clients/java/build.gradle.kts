@@ -2,6 +2,7 @@ import buildlogic.ClientDiscriminatorArguments
 import buildlogic.GeneratedSourcesJavaExec
 import buildlogic.OpenApiDefaults
 import buildlogic.OptionalDependenciesPomAction
+import buildlogic.micrometerOptionalDependencies
 import buildlogic.filterMavenResources
 import buildlogic.projectVersionToken
 
@@ -15,10 +16,7 @@ publishing {
   publications.named<MavenPublication>("maven") {
     pom.withXml(
       OptionalDependenciesPomAction(
-        mapOf(
-          "io.micrometer:micrometer-core" to libs.versions.micrometer.get(),
-          "io.micrometer:micrometer-commons" to libs.versions.micrometer.get(),
-        )
+        micrometerOptionalDependencies("micrometer-core", "micrometer-commons")
       )
     )
   }

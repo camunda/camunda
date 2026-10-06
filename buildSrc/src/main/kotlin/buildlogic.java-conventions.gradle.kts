@@ -1,3 +1,4 @@
+import buildlogic.skipWhen
 import buildlogic.registerTestPortSlotService
 import buildlogic.requiredVersion
 import com.diffplug.gradle.spotless.SpotlessCheck
@@ -58,7 +59,7 @@ extensions.configure<SpotlessExtension> {
 }
 
 // Maven -Dquickly skips format checks; do the same for the per-module Spotless checks.
-tasks.withType<SpotlessCheck>().configureEach { enabled = !quickly.get() }
+tasks.withType<SpotlessCheck>().configureEach { skipWhen(quickly) }
 
 publishing { publications.create<MavenPublication>("maven") { from(components["java"]) } }
 
@@ -117,7 +118,7 @@ val testPortSlots = registerTestPortSlotService()
 val itPatterns = listOf("**/IT*.class", "**/*IT.class", "**/*ITCase.class")
 
 tasks.withType<Test>().configureEach {
-  enabled = !quickly.get()
+  skipWhen(quickly)
   maxParallelForks = testMaxForks
   retry {
     maxRetries.set(testRetryMaxRetries)
