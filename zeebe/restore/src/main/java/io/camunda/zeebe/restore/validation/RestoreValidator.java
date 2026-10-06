@@ -11,7 +11,6 @@ import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
@@ -154,12 +153,36 @@ public final class RestoreValidator
     final var store =
         requireNonNull(backupStore, "Backup store must be configured to load backups");
     final var partitionCount = backupPartitionCount(store, ids[ids.length - 1]);
-    return awaitResult(
-            FuturesUtil.parTraverse(
-                IntStream.rangeClosed(1, partitionCount).boxed().toList(),
-                partition -> verifyBackupsExist(store, partition, ids)))
-        .stream()
-        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    final var backups =
+        awaitResult(
+                FuturesUtil.parTraverse(
+                    IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+                    partition -> verifyBackupsExist(store, partition, ids)))
+            .stream()
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    for (final var backupId : ids) {
+      verifyBackupPartitionCount(store, backupId, ids[ids.length - 1], partitionCount);
+    }
+    return backups;
+  }
+
+  /**
+   * Every backup to restore must have been taken with the partition count that is restored, the one
+   * of the latest backup. Restoring backups of different partition counts together mixes states
+   * that do not belong together.
+   */
+  private void verifyBackupPartitionCount(
+      final BackupStore store,
+      final long backupId,
+      final long latestBackupId,
+      final int latestPartitionCount) {
+    final var backupPartitionCount = backupPartitionCount(store, backupId);
+    if (backupPartitionCount != latestPartitionCount) {
+      throw new IllegalArgumentException(
+          ("Cannot restore backup %d: it was taken with %d partitions, but backup %d, the latest "
+                  + "to restore, was taken with %d")
+              .formatted(backupId, backupPartitionCount, latestBackupId, latestPartitionCount));
+    }
   }
 
   private CompletableFuture<Entry<Integer, long[]>> verifyBackupsExist(
@@ -269,11 +292,16 @@ public final class RestoreValidator
             .stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
             .findAny()
-            .flatMap(BackupStatus::descriptor)
             .orElseThrow(
                 () ->
                     new NoSuchElementException(
                         "No completed backup found for partition 1 with backup id %d"
+                            .formatted(backupId)))
+            .descriptor()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Backup %d has no descriptor to read its partition count from"
                             .formatted(backupId)))
             .numberOfPartitions();
     if (backupPartitionCount > partitionCount) {
@@ -286,17 +314,25 @@ public final class RestoreValidator
 
   /**
    * The exported positions of the partitions the RDBMS holds, which are the partitions of the
-   * backup to restore: partitions 1 up to the first one without an exported position.
+   * backup to restore: partitions 1 up to the first one without an exported position. Partitions
+   * without one after that are fine, e.g. those a scale-up added after the database was restored to
+   * the backups, but a position after a missing one means the database is inconsistent.
    */
   private Map<Integer, Long> exportedPositions(
       final IntFunction<@Nullable Long> positionSupplier, final int partitionCount) {
     final var positions = new HashMap<Integer, Long>();
+    var firstMissing = 0;
     for (int partition = 1; partition <= partitionCount; partition++) {
       final var position = positionSupplier.apply(partition);
       if (position == null) {
-        break;
+        firstMissing = firstMissing == 0 ? partition : firstMissing;
+      } else if (firstMissing != 0) {
+        throw new IllegalStateException(
+            "The RDBMS holds an exported position for partition %d but none for partition %d"
+                .formatted(partition, firstMissing));
+      } else {
+        positions.put(partition, position);
       }
-      positions.put(partition, position);
     }
     if (positions.isEmpty()) {
       throw new IllegalStateException("No exported position found for partition 1 in RDBMS");
