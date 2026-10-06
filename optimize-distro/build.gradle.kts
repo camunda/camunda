@@ -122,8 +122,13 @@ val distTar =
 
     from(assembleDist) {
       eachFile {
-        if (path == "optimize-startup.sh" || path == "upgrade/upgrade.sh") {
-          permissions { unix(0b111101101) }
+        if (
+          path == "optimize-startup.sh" ||
+            path == "optimize-startup.bat" ||
+            path == "upgrade/upgrade.sh" ||
+            path == "upgrade/upgrade.bat"
+        ) {
+          permissions { unix("0755".toInt(8)) }
         }
       }
     }
@@ -141,8 +146,13 @@ val distZip =
 
     from(assembleDist) {
       eachFile {
-        if (path == "optimize-startup.sh" || path == "upgrade/upgrade.sh") {
-          permissions { unix(0b111101101) }
+        if (
+          path == "optimize-startup.sh" ||
+            path == "optimize-startup.bat" ||
+            path == "upgrade/upgrade.sh" ||
+            path == "upgrade/upgrade.bat"
+        ) {
+          permissions { unix("0755".toInt(8)) }
         }
       }
     }
