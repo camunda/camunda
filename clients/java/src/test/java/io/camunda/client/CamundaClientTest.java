@@ -1074,15 +1074,16 @@ public final class CamundaClientTest {
     builder.withProperties(properties);
 
     // when
-    final CamundaClient client =
+    try (final CamundaClient client =
         builder
             .withClusterId("clusterId")
             .withClientId("clientId")
             .withClientSecret("clientSecret")
-            .build();
+            .build()) {
 
-    // then
-    assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo(tenantId);
+      // then
+      assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo(tenantId);
+    }
   }
 
   @Test
@@ -1092,16 +1093,17 @@ public final class CamundaClientTest {
     final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
 
     // when
-    final CamundaClient client =
+    try (final CamundaClient client =
         builder
             .withClusterId("clusterId")
             .withClientId("clientId")
             .withClientSecret("clientSecret")
             .defaultTenantId(tenantId)
-            .build();
+            .build()) {
 
-    // then
-    assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo(tenantId);
+      // then
+      assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo(tenantId);
+    }
   }
 
   @Test
@@ -1226,16 +1228,17 @@ public final class CamundaClientTest {
     builder.withProperties(properties);
 
     // when
-    final CamundaClient client =
+    try (final CamundaClient client =
         builder
             .withClusterId("clusterId")
             .withClientId("clientId")
             .withClientSecret("clientSecret")
-            .build();
+            .build()) {
 
-    // then
-    assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds())
-        .containsExactlyElementsOf(tenantIdList);
+      // then
+      assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds())
+          .containsExactlyElementsOf(tenantIdList);
+    }
   }
 
   @Test
@@ -1245,17 +1248,18 @@ public final class CamundaClientTest {
     final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
 
     // when
-    final CamundaClient client =
+    try (final CamundaClient client =
         builder
             .withClusterId("clusterId")
             .withClientId("clientId")
             .withClientSecret("clientSecret")
             .defaultJobWorkerTenantIds(tenantIdList)
-            .build();
+            .build()) {
 
-    // then
-    assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds())
-        .containsExactlyElementsOf(tenantIdList);
+      // then
+      assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds())
+          .containsExactlyElementsOf(tenantIdList);
+    }
   }
 
   @Test
