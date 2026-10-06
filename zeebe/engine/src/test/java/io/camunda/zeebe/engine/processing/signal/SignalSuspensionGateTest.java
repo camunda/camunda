@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.signal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -86,6 +87,29 @@ public final class SignalSuspensionGateTest {
 
     // and - the suspended instance's catch event is skipped
     assertThat(catchEventCompleted(suspendedInstanceKey)).isFalse();
+  }
+
+  @Test
+  public void shouldSkipSignalActivationForSuspendingTarget() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String signalName = Strings.newRandomValidBpmnId();
+    final long processInstanceKey =
+        deployAndStartProcessWithSignalCatchEvent(processId, signalName);
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withSignalName(signalName)
+        .await();
+    await().until(ENGINE::hasReachedEnd);
+    ((MutableProcessingState) ENGINE.getProcessingState())
+        .getSuspensionState()
+        .setSuspensionState(processInstanceKey, State.SUSPENDING);
+
+    // when
+    final Record<?> broadcast = ENGINE.signal().withSignalName(signalName).broadcast();
+
+    // then
+    Assertions.assertThat(broadcast).hasIntent(SignalIntent.BROADCASTED);
+    assertThat(catchEventCompleted(processInstanceKey)).isFalse();
   }
 
   @Test
