@@ -240,14 +240,6 @@ val generateDistScripts =
         )
       }
     }
-
-    doLast {
-      destinationDir
-        .resolve(".")
-        .walkTopDown()
-        .filter { it.isFile && !it.name.endsWith(".bat") }
-        .forEach { it.setExecutable(true, false) }
-    }
   }
 
 val copyOpenApiYaml =
@@ -263,18 +255,25 @@ extensions.configure<DistributionDependencyReportExtension> {
   excludedFilePrefixes.addAll(distExcludedFilePrefixes)
 }
 
-val assembleDist =
-  tasks.register<Sync>("assembleDist") {
-    dependsOn(
-      tasks.named("jar"),
-      generateDistReadme,
-      generateDistScripts,
-      copyOpenApiYaml,
-    )
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    into(distDirectory)
+val distScripts =
+  copySpec {
+    from(generateDistScripts) {
+      into("bin")
+      exclude("*.bat")
+      filePermissions { unix("0755".toInt(8)) }
+    }
+    from(generateDistScripts) {
+      into("bin")
+      include("*.bat")
+      // Windows launches .bat files through cmd.exe; Maven packages Camunda's batch files as 0644.
+      filePermissions { unix("0644".toInt(8)) }
+    }
+  }
 
-    from(generateDistScripts) { into("bin") }
+val distContents =
+  copySpec {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    with(distScripts)
     from("src/main/config") { into("config") }
     from(copyOpenApiYaml) { into("config/openapi/v2") }
     from(tasks.named<Jar>("jar")) { into("lib") }
@@ -285,14 +284,18 @@ val assembleDist =
     from(layout.settingsDirectory.dir("licenses"))
     from(layout.settingsDirectory.file("NOTICE.txt"))
     from(generateDistReadme)
+  }
 
-    doLast {
-      destinationDir
-        .resolve("bin")
-        .walkTopDown()
-        .filter { it.isFile && !it.name.endsWith(".bat") }
-        .forEach { it.setExecutable(true, false) }
-    }
+val assembleDist =
+  tasks.register<Sync>("assembleDist") {
+    dependsOn(
+      tasks.named("jar"),
+      generateDistReadme,
+      generateDistScripts,
+      copyOpenApiYaml,
+    )
+    into(distDirectory)
+    with(distContents)
   }
 
 // npm builds only run when producing a dist artifact, not during tests or compilation.
@@ -315,14 +318,7 @@ val distTar =
     archiveExtension.set("tar.gz")
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
-    from(assembleDist) {
-      into("$distName-$distVersion")
-      eachFile {
-        if ((path.startsWith("bin/") || path.contains("/bin/")) && !path.endsWith(".bat")) {
-          permissions { unix(0b111101101) }
-        }
-      }
-    }
+    into("$distName-$distVersion") { with(distContents) }
   }
 
 val distZip =
@@ -334,14 +330,7 @@ val distZip =
     archiveVersion.set(distVersion)
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
-    from(assembleDist) {
-      into("$distName-$distVersion")
-      eachFile {
-        if ((path.startsWith("bin/") || path.contains("/bin/")) && !path.endsWith(".bat")) {
-          permissions { unix(0b111101101) }
-        }
-      }
-    }
+    into("$distName-$distVersion") { with(distContents) }
   }
 
 tasks.named("assemble") {
