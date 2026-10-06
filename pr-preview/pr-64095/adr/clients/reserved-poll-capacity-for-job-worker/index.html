@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Reserve a minimum share of job-worker capacity for the polling path | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Reserve a minimum share of job-worker capacity for the polling path | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Alexandre Janoni"><meta data-rh="true" property="og:description" content="DRI: Alexandre Janoni"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-64095/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-64095/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-64095/assets/js/runtime~main.b64f16dc.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-64095/assets/js/main.34e8cec4.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64095/assets/js/runtime~main.189da45f.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64095/assets/js/main.b6714388.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -49,25 +49,28 @@ locally-parked push thread wins it in microseconds, while the poll must first
 pay a network round-trip before it can even attempt the acquire. So push wins
 nearly every contested slot and poll — the recovery path — is starved.</p>
 <p>We validated this on a cluster A/B: a single streaming worker
-(<code>maxJobsActive=30</code>), oversubscribed (~150 jobs/s created vs ~29/s drained) so
-the worker is pinned at capacity with a live push stream and a standing
-activatable backlog. Two arms differed <strong>only</strong> by the reserved-lane code.
-Broker <code>zeebe_job_events_total</code> gives the delivery split (<code>pushed</code> vs
-<code>activated</code>=poll) at matched offered load (~365 s window):</p>
-<table><thead><tr><th>metric (per s)</th><th style="text-align:right">SHARED (baseline)</th><th style="text-align:right">RESERVED (this ADR)</th></tr></thead><tbody><tr><td>created</td><td style="text-align:right">150.1</td><td style="text-align:right">149.7</td></tr><tr><td>completed (throughput)</td><td style="text-align:right">28.5</td><td style="text-align:right">28.9</td></tr><tr><td>push-delivered</td><td style="text-align:right">140.7</td><td style="text-align:right">118.7</td></tr><tr><td>poll-delivered</td><td style="text-align:right">11.8</td><td style="text-align:right">13.1</td></tr><tr><td><strong>poll share</strong></td><td style="text-align:right"><strong>7.7%</strong></td><td style="text-align:right"><strong>10.0%</strong></td></tr><tr><td>timed out</td><td style="text-align:right">30.1</td><td style="text-align:right">22.3</td></tr></tbody></table>
-<p>A second, load-asymmetric window corroborated the direction (poll share 5.9% vs
-11.0%). The <code>BLOCKED</code>/<code>YIELD</code> counters were large throughout, confirming push is
-frequently unable to deliver and the poll path genuinely matters.</p>
-<p><strong>Reading:</strong> poll starvation is real and measurable — on the shared semaphore
-the poll path wins only ~6–8% of delivered jobs under push contention. It is
-<em>not</em> a throughput cliff: push carries ~90% of delivery and total throughput is
-identical in both arms. The harm is to poll-path liveness — the fairness of the
-recovery/backlog-drain mechanism — not to throughput.</p>
+(<code>maxJobsActive=30</code>, 1 s completion delay), oversubscribed (~150 jobs/s created
+vs ~29/s drained) so the worker is pinned at capacity with a live push stream
+and a standing activatable backlog (<code>latency</code> scenario, Elasticsearch, stable
+VMs). The SHARED arm ran the merge-base on <code>main</code>, which already contains the
+unified accounting from #59632; the STARVATION-GATED arm ran the lane described
+below on top of it, so the arms differ <strong>only</strong> by this change. Broker
+<code>zeebe_job_events_total</code> gives the delivery split (<code>pushed</code> vs
+<code>activated</code>=poll) and the worker&#x27;s <code>camunda_client_worker_job_refused_total</code>
+the polled jobs that found no slot, over one matched 20-minute window per arm
+with no broker, worker or starter restarts:</p>
+<table><thead><tr><th>metric (per s)</th><th style="text-align:right">SHARED (baseline)</th><th style="text-align:right">STARVATION-GATED (this ADR)</th></tr></thead><tbody><tr><td>created</td><td style="text-align:right">150.0</td><td style="text-align:right">150.0</td></tr><tr><td>completed (throughput)</td><td style="text-align:right">28.9</td><td style="text-align:right">28.0</td></tr><tr><td>push-delivered</td><td style="text-align:right">135.5</td><td style="text-align:right">129.0</td></tr><tr><td>poll-delivered</td><td style="text-align:right">8.1</td><td style="text-align:right">19.9</td></tr><tr><td><strong>poll share</strong></td><td style="text-align:right"><strong>5.7%</strong></td><td style="text-align:right"><strong>13.3%</strong></td></tr><tr><td>polled jobs refused</td><td style="text-align:right">8.1</td><td style="text-align:right">13.0</td></tr><tr><td>polled jobs that ran</td><td style="text-align:right">≈0</td><td style="text-align:right">≈6.9</td></tr><tr><td>timed out</td><td style="text-align:right">29.9</td><td style="text-align:right">22.7</td></tr></tbody></table>
+<p><strong>Reading:</strong> poll starvation is real and measurable. On the shared semaphore
+practically every polled job is refused and failed back, so the poll path
+effectively runs nothing under push contention. It is <em>not</em> a throughput
+cliff: push carries most delivery and throughput is the same within noise in
+both arms, because the worker, not delivery, is the bottleneck. The harm is to
+poll-path liveness — the recovery/backlog-drain mechanism — not to throughput.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
-<p>Add a <strong>demand-gated reserved poll lane</strong> to <code>BlockingExecutor</code>, wired on the
-streaming path only. The lane is reserved only while the poll has demand, so a
-streaming worker that is not saturated keeps the full push capacity it had
-before.</p>
+<p>Add a <strong>starvation-gated reserved poll lane</strong> to <code>BlockingExecutor</code>, wired on
+the streaming path only. The lane is reserved only while push is starving the
+poll, so a streaming worker that is not saturated keeps the full push capacity
+it had before.</p>
 <ul>
 <li class=""><code>total = Semaphore(maxJobsActive)</code> remains the single capacity authority.
 <code>freeCapacity()</code>, poll request sizing, and <code>hasNoJobsInFlight()</code> are unchanged,
@@ -85,44 +88,67 @@ is released. Every push takes a budget permit in both modes, so the count of
 pushed jobs in flight stays correct across a change. If push already holds
 more than the smaller budget, the budget goes negative and new pushes wait
 until enough pushed jobs finish; no running job is interrupted.</li>
-<li class="">The worker drives the lane from <code>JobWorkerImpl.onPollSuccess</code>: a response with
-jobs reserves it (a backlog only the poll can drain; refused jobs, which are a
-subset of these, show push took the slots the poll was sized for during the
-round-trip), and an empty response releases it. An empty response already
-starts the stream backoff, so a push-dominated worker that keeps up runs with
-the lane released.</li>
+<li class="">The worker drives the lane from <code>JobWorkerImpl.onPollSuccess</code>: a response
+with refused jobs reserves it, since refusals show push took the slots the
+poll was sized for during the round-trip. An empty response, or three
+responses in a row without a refusal, release it. A failed poll releases it
+too: while polls fail and back off, nothing can take the reserved slots (for
+example when the poll goes over REST and only the gRPC stream works), and the
+next refused poll reserves the lane again. A response with jobs alone is deliberately not a signal: while the lane
+is reserved, the push it keeps out is yielded by the gateway (the client
+stream is not ready) and comes back through the poll, so &quot;the poll returned
+jobs&quot; would keep the lane reserved on its own even for a load push could
+carry. Jobs the broker only hands to pollers (timed out, yielded) get a slot
+without a refusal and so do not reserve the lane either.</li>
+<li class="">Refusals do not show all starvation. When push takes every slot before the
+next poll is due, <code>freeCapacity()</code> is 0 and no poll is sent, so there is no
+response to refuse. The lane then waits for the next poll sent with free
+capacity whose jobs are refused. This gap is accepted; the signal it replaced
+had the same one.</li>
 <li class="">Reservation size = <code>floor(maxJobsActive × 0.25)</code>. <code>floor</code> reserves nothing
 until a whole slot can be spared (<code>N&lt;4→0, N=4→1, N=30→7</code>), which avoids halving
 push at small <code>maxJobsActive</code> (a <code>round</code>-with-minimum-1 policy broke
 <code>shouldNotAskForJobsWhileItCannotRunAnyMore</code> at N=2). The 0.25 fraction is an
-internal constant with no user setting; because the lane only engages under
-poll demand, a worker that is not saturated is unaffected, which removes the
-need for an opt-out.</li>
-<li class="">The non-streaming (poll-only) path passes <code>reserved = 0</code> and is byte-for-byte
-unchanged.</li>
+internal constant with no user setting; because the lane only engages while
+the poll is starved, a worker that is not saturated is unaffected, which
+removes the need for an opt-out.</li>
+<li class="">The non-streaming (poll-only) path passes <code>reserved = 0</code>, so it has no
+behaviour change. Its code path is not untouched: <code>execute()</code> and <code>dispatch()</code>
+changed for every worker to carry the push budget, which is simply absent
+when nothing is reserved.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
 <ul>
-<li class=""><strong>Poll-path liveness is protected.</strong> Poll&#x27;s share of delivery rises from
-~6–8% to ~10–11%, guaranteeing the recovery path reaches its reserved slots
-even under sustained push contention.</li>
-<li class=""><strong>No throughput cost.</strong> At matched load, completed/s is identical (28.5 vs
-28.9) and timeouts are no worse (fewer, in the matched-load window). Reserving
-slots for poll does not reduce total delivery in the oversubscribed regime.
-The A/B ran with an always-reserved lane; in that regime every poll returns
-jobs, so the demand-gated lane stays reserved and behaves the same.</li>
-<li class=""><strong>No change for a streaming worker that is not saturated.</strong> With no backlog
-the poll comes back empty, the lane stays released, and push can fill every
-slot exactly as before. An always-reserved lane would instead cap push at
+<li class=""><strong>Poll-path liveness is protected.</strong> Poll-delivered jobs that actually run
+go from ≈0 to ≈7/s and poll&#x27;s share of delivery from 5.7% to 13.3%, so the
+recovery path reaches its reserved slots even under sustained push
+contention. Timeouts drop by ~24% (29.9 → 22.7/s).</li>
+<li class=""><strong>No throughput cost.</strong> At matched load, completed/s is the same within
+noise (28.9 vs 28.0). In the oversubscribed regime the lane switches off
+after three clean polls and on again at the next refusal; the A/B ran the
+lane with this behaviour. Each switch-on costs the refused jobs of one poll: each
+is failed back to the broker with its retries unchanged (one extra command
+and a WARN log per job) and activated again later. Refusals rose from 8.1 to
+13.0/s in the A/B.</li>
+<li class=""><strong>No change for a streaming worker that is not saturated.</strong> Such a worker
+has a free slot for every polled job, so no poll is refused and the lane is
+never reserved; push can fill every slot exactly as before. This includes
+polls that find timed-out or yielded jobs, which the broker hands only to
+pollers. An always-reserved lane would instead cap push at
 ~75% of <code>maxJobsActive</code> while a slot sits free, block the stream earlier, and
 leave already-pushed jobs waiting until they expire.</li>
 <li class=""><strong>Streaming-only.</strong> Only the streaming builder path sets a non-zero
 reservation; existing poll-only workers are unaffected. There is no user
 setting; the only way to avoid the lane entirely is to disable streaming,
-which is acceptable because the lane is inert without poll demand.</li>
-<li class=""><strong>The lane lags demand by one poll.</strong> It engages after a poll returns jobs and
-disengages after an empty one, so the first contested poll still loses to
-push, and a backlog that drains keeps the lane for one more poll.</li>
+which is acceptable because the lane is inert unless the poll is starved.</li>
+<li class=""><strong>The lane lags starvation by one poll, and the end of it by up to a request
+timeout.</strong> It engages only after a poll&#x27;s jobs were refused, so the first
+contested poll still loses to push. Once contention ends it stays reserved
+until three polls in a row get their jobs without a refusal, an empty poll
+comes back, or a poll fails. Polls that find jobs return quickly, but a long
+poll that finds none returns empty only after the request timeout (10 s by
+default, <code>requestTimeout</code>), so the lane can stay reserved, with push held to
+<code>maxJobsActive − reserved</code>, for up to that long after the backlog drains.</li>
 <li class=""><strong>Moderate severity, honest framing.</strong> Because push masks most of the impact,
 a won&#x27;t-fix remains defensible; this ADR lands the fix as a low-risk liveness
 improvement rather than a throughput fix, and leaves the final call to the
@@ -147,7 +173,7 @@ the round-trip — attacking the root cause directly. Rejected: the poll holds
 those permits for the whole long-poll (up to the request timeout), and on a
 push-dominated worker most polls come back empty, so push is kept out of
 slots that end up unused far more often than with a lane that only engages
-under demand. It would also turn <code>freeCapacity()</code> and <code>hasNoJobsInFlight()</code>
+while the poll is starved. It would also turn <code>freeCapacity()</code> and <code>hasNoJobsInFlight()</code>
 into counts of reservations rather than jobs in flight, undoing the single
 in-flight count from #59632.</li>
 <li class=""><strong>Won&#x27;t-fix.</strong> Defensible on severity (push carries throughput; no cliff).
@@ -161,7 +187,7 @@ alternative the issue explicitly sanctioned.</li>
 <li class="">Prerequisite: camunda/camunda#59632 / PR #63915 (unified worker capacity
 accounting)</li>
 <li class="">Implementation: <code>clients/java/src/main/java/io/camunda/client/impl/worker/BlockingExecutor.java</code>
-(resizable push budget), <code>JobWorkerImpl.java</code> (lane driven by poll demand),
+(resizable push budget), <code>JobWorkerImpl.java</code> (lane driven by refused poll jobs),
 <code>JobWorkerBuilderImpl.java</code> (reservation size, streaming only)</li>
 <li class="">Microbenchmarks:
 <code>microbenchmarks/.../worker/CapacityLaneReservationBenchmark.java</code> (shared vs
