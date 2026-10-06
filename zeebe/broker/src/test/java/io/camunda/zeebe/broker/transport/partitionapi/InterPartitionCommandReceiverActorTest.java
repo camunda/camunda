@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.broker.transport.backupapi.SnapshotTrigger;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -31,7 +32,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.Either;
@@ -73,19 +76,26 @@ final class InterPartitionCommandReceiverActorTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void shouldWriteCheckpointWithLatestSnapshotReservedOnAnotherActor() {
-    // given
+  void shouldWriteCheckpointWithFreshSnapshotReservedOnAnotherActor() {
+    // given - an older snapshot exists, but a fresh one is taken for the checkpoint
     final var snapshotStore =
         new FileBasedSnapshotStore(0, 1, root, path -> Map.of(), new SimpleMeterRegistry());
     actorScheduler.submitActor(snapshotStore).join();
-    final var snapshot = persistSnapshot(snapshotStore);
+    final var olderSnapshot = persistSnapshot(snapshotStore, 1).join().getId();
+    final var freshSnapshot = new CompletableActorFuture<PersistedSnapshot>();
+    final SnapshotTrigger snapshotTrigger =
+        () -> {
+          persistSnapshot(snapshotStore, 2).onComplete(freshSnapshot);
+          return freshSnapshot;
+        };
 
     final var logStreamWriter = mock(LogStreamWriter.class);
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
     final var communication = mock(ClusterCommunicationService.class);
     final var receiver =
-        new InterPartitionCommandReceiverActor(1, communication, logStreamWriter, snapshotStore);
+        new InterPartitionCommandReceiverActor(
+            1, communication, logStreamWriter, snapshotStore, snapshotTrigger, noCheckpointState());
     actorScheduler.submitActor(receiver).join();
 
     final var handler = ArgumentCaptor.forClass(BiConsumer.class);
@@ -103,7 +113,8 @@ final class InterPartitionCommandReceiverActorTest {
         .tryWrite(any(WriteContext.class), written.capture());
     final var checkpoint = (CheckpointRecord) written.getAllValues().getFirst().recordValue();
     assertThat(checkpoint.getCheckpointId()).isEqualTo(17);
-    assertThat(checkpoint.getSnapshotId()).isEqualTo(snapshot);
+    final var snapshot = freshSnapshot.join().getId();
+    assertThat(checkpoint.getSnapshotId()).isEqualTo(snapshot).isNotEqualTo(olderSnapshot);
     assertThat(written.getAllValues().getLast().recordValue()).isInstanceOf(JobRecord.class);
     assertThat(snapshotStore.getReservedSnapshot(17, snapshot).join()).isPresent();
   }
@@ -213,7 +224,13 @@ final class InterPartitionCommandReceiverActorTest {
       final LogStreamWriter logStreamWriter, final PersistedSnapshotStore snapshotStore) {
     final var communication = mock(ClusterCommunicationService.class);
     final var receiver =
-        new InterPartitionCommandReceiverActor(1, communication, logStreamWriter, snapshotStore);
+        new InterPartitionCommandReceiverActor(
+            1,
+            communication,
+            logStreamWriter,
+            snapshotStore,
+            () -> CompletableActorFuture.completed(null),
+            noCheckpointState());
     actorScheduler.submitActor(receiver).join();
 
     final var handler = ArgumentCaptor.forClass(BiConsumer.class);
@@ -224,8 +241,15 @@ final class InterPartitionCommandReceiverActorTest {
         executor.getValue().execute(() -> handler.getValue().accept(new MemberId("0"), message));
   }
 
-  private static String persistSnapshot(final FileBasedSnapshotStore store) {
-    final var transientSnapshot = store.newTransientSnapshot(1, 1, 1, 0).get();
+  private static CheckpointState noCheckpointState() {
+    final var checkpointState = mock(CheckpointState.class);
+    when(checkpointState.getCheckpointId()).thenReturn(CheckpointState.NO_CHECKPOINT);
+    return checkpointState;
+  }
+
+  private static ActorFuture<PersistedSnapshot> persistSnapshot(
+      final FileBasedSnapshotStore store, final long index) {
+    final var transientSnapshot = store.newTransientSnapshot(index, 1, index, 0).get();
     transientSnapshot.take(
         path -> {
           try {
@@ -235,7 +259,7 @@ final class InterPartitionCommandReceiverActorTest {
             throw new UncheckedIOException(e);
           }
         });
-    return transientSnapshot.persist().join().getId();
+    return transientSnapshot.persist();
   }
 
   private static byte[] commandWithCheckpoint(final long checkpointId) {

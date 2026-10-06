@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.protocol.InterPartitionMessageDecoder;
 import io.camunda.zeebe.broker.protocol.MessageHeaderDecoder;
+import io.camunda.zeebe.broker.transport.backupapi.CheckpointSnapshotReserver;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
@@ -26,7 +27,6 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
@@ -39,7 +39,7 @@ final class InterPartitionCommandReceiverImpl {
   private final Logger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(15));
   private final Decoder decoder = new Decoder();
   private final LogStreamWriter logStreamWriter;
-  private final PersistedSnapshotStore snapshotStore;
+  private final CheckpointSnapshotReserver snapshotReserver;
   private final ConcurrencyControl concurrencyControl;
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
@@ -47,10 +47,10 @@ final class InterPartitionCommandReceiverImpl {
 
   InterPartitionCommandReceiverImpl(
       final LogStreamWriter logStreamWriter,
-      final PersistedSnapshotStore snapshotStore,
+      final CheckpointSnapshotReserver snapshotReserver,
       final ConcurrencyControl concurrencyControl) {
     this.logStreamWriter = logStreamWriter;
-    this.snapshotStore = snapshotStore;
+    this.snapshotReserver = snapshotReserver;
     this.concurrencyControl = concurrencyControl;
   }
 
@@ -70,8 +70,8 @@ final class InterPartitionCommandReceiverImpl {
     }
 
     if (isNewCheckpoint(decoded)) {
-      return snapshotStore
-          .reserveLatestSnapshot(decoded.checkpointId)
+      return snapshotReserver
+          .reserveFor(decoded.checkpointId)
           .andThen(
               (snapshotId, error) -> {
                 if (error != null) {
@@ -137,7 +137,7 @@ final class InterPartitionCommandReceiverImpl {
 
   private void releaseSnapshotReservation(
       final long checkpointId, final Optional<String> snapshotId) {
-    snapshotId.ifPresent(id -> snapshotStore.releaseReservation(checkpointId, id));
+    snapshotReserver.release(checkpointId, snapshotId);
   }
 
   /**
