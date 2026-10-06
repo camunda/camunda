@@ -11,11 +11,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.api.BackupStatus;
-import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
@@ -33,14 +29,9 @@ import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -78,7 +69,6 @@ public class RestoreManager implements CloseableSilently {
   private final MeterRegistry meterRegistry;
   @Nullable private final ExporterPositionMapper exporterPositionMapper;
   private final ExecutorService executor;
-  private volatile int restoredPartitionCount;
 
   /** Restores the default physical tenant, configured by {@code configuration} itself. */
   @VisibleForTesting
@@ -119,16 +109,6 @@ public class RestoreManager implements CloseableSilently {
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("zeebe-restore-", 0).factory());
   }
 
-  /**
-   * The partition count of the backups that were restored: partitions {@code 1..n} were restored.
-   * Empty until a restore has completed.
-   */
-  public OptionalInt restoredPartitionCount() {
-    return restoredPartitionCount == 0
-        ? OptionalInt.empty()
-        : OptionalInt.of(restoredPartitionCount);
-  }
-
   public void restore(final long backupId, final boolean validateConfig)
       throws IOException, ExecutionException, InterruptedException {
     restore(new long[] {backupId}, validateConfig);
@@ -163,9 +143,10 @@ public class RestoreManager implements CloseableSilently {
       @Nullable final Instant to,
       final boolean validateConfig)
       throws IOException, ExecutionException, InterruptedException {
-    final var exportedPositions = exportedPositions(positionMapper);
-    final var partitionCount = exportedPositions.size();
-    LOG.info("Exported positions for partitions 1..{}: {}", partitionCount, exportedPositions);
+    final var partitionCount = physicalTenantConfiguration.getCluster().getPartitionsCount();
+
+    final var exportedPositions = exportedPositions(positionMapper, partitionCount).join();
+    LOG.info("Exported positions for all partitions: {}", exportedPositions);
 
     // Load backup metadata for each partition in parallel
     final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
@@ -197,9 +178,7 @@ public class RestoreManager implements CloseableSilently {
   public void restoreTimeRange(
       final @Nullable Instant from, final @Nullable Instant to, final boolean validateConfig)
       throws IOException, ExecutionException, InterruptedException {
-    // Only an RDBMS has exported positions to take the partition count from. Without one, the
-    // backups are the only record of it.
-    final var partitionCount = latestBackupPartitionCount(to);
+    final var partitionCount = physicalTenantConfiguration.getCluster().getPartitionsCount();
 
     // Load backup metadata for each partition in parallel
     final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
@@ -229,66 +208,20 @@ public class RestoreManager implements CloseableSilently {
 
   public void restore(final long[] backupIds, final boolean validateConfig)
       throws IOException, ExecutionException, InterruptedException {
-    // read on the restore executor like the other backup store reads, so a failure surfaces the
-    // same way as one in a partition restore
-    restore(executor.submit(() -> toBackupIdsByPartition(backupIds)).get(), validateConfig);
+    restore(toBackupIdsByPartition(backupIds), validateConfig);
   }
 
   /**
-   * Converts a common array of backup IDs to a map where each partition of the backup uses the same
-   * backup IDs. The partitions of the backup are those recorded in its latest backup, which can be
-   * fewer than the configured partition count when the cluster was scaled up after the backup.
+   * Converts a common array of backup IDs to a map where each partition uses the same backup IDs.
    *
    * @param backupIds the backup IDs to use for all partitions
    * @return a map from partition ID to backup IDs
    */
   private Map<Integer, long[]> toBackupIdsByPartition(final long[] backupIds) {
-    final var partitionCount = backupPartitionCount(Arrays.stream(backupIds).max().orElseThrow());
+    final var partitionCount = physicalTenantConfiguration.getCluster().getPartitionsCount();
     return IntStream.rangeClosed(1, partitionCount)
         .boxed()
         .collect(Collectors.toMap(partition -> partition, partition -> backupIds));
-  }
-
-  /**
-   * The partition count recorded in the latest backup of partition 1 taken at or before {@code to},
-   * or its latest backup if there is no {@code to}.
-   */
-  private int latestBackupPartitionCount(final @Nullable Instant to) {
-    final var latestBackup =
-        RestorePointResolver.latestBackup(loadMetadataForAllPartitions(1).join().getFirst(), to)
-            .orElseThrow(
-                () -> new IllegalStateException("No backup of partition 1 found before " + to));
-    return backupPartitionCount(latestBackup);
-  }
-
-  /**
-   * The partition count recorded in the descriptor of the given backup, on any partition since
-   * every partition's backup records the same count.
-   */
-  private int backupPartitionCount(final long backupId) {
-    final var partitionCount =
-        backupStore
-            .list(
-                new BackupIdentifierWildcardImpl(
-                    Optional.empty(), Optional.empty(), CheckpointPattern.of(backupId)))
-            .join()
-            .stream()
-            .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
-            .findAny()
-            .flatMap(BackupStatus::descriptor)
-            .orElseThrow(
-                () ->
-                    new NoSuchElementException(
-                        "Could not find a completed backup with id %d.".formatted(backupId)))
-            .numberOfPartitions();
-    final var configuredPartitionCount =
-        physicalTenantConfiguration.getCluster().getPartitionsCount();
-    if (partitionCount > configuredPartitionCount) {
-      throw new IllegalArgumentException(
-          "Cannot restore backup %d: it has %d partitions, but only %d are configured"
-              .formatted(backupId, partitionCount, configuredPartitionCount));
-    }
-    return partitionCount;
   }
 
   /**
@@ -328,7 +261,6 @@ public class RestoreManager implements CloseableSilently {
     for (final var result : executor.invokeAll(tasks)) {
       result.get(); // throw exception if any of the tasks failed
     }
-    restoredPartitionCount = partitionCount;
   }
 
   private void restorePartition(
@@ -385,26 +317,24 @@ public class RestoreManager implements CloseableSilently {
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
   }
 
-  /**
-   * The exported positions of the partitions the RDBMS holds, which are the partitions of the
-   * backups to restore: partitions 1 up to the first one without an exported position, at most the
-   * configured partition count.
-   */
-  private Map<Integer, Long> exportedPositions(final ExporterPositionMapper positionMapper) {
-    final var positions = new HashMap<Integer, Long>();
-    final var configuredPartitionCount =
-        physicalTenantConfiguration.getCluster().getPartitionsCount();
-    for (int partition = 1; partition <= configuredPartitionCount; partition++) {
-      final var positionModel = positionMapper.findOne(partition);
-      if (positionModel == null || positionModel.lastExportedPosition() == null) {
-        break;
-      }
-      positions.put(partition, positionModel.lastExportedPosition());
-    }
-    if (positions.isEmpty()) {
-      throw new IllegalArgumentException("No exported position found for partition 1 in RDBMS");
-    }
-    return Map.copyOf(positions);
+  private CompletableFuture<Map<Integer, Long>> exportedPositions(
+      final ExporterPositionMapper positionMapper, final int partitionCount) {
+    return FuturesUtil.parTraverse(
+            IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+            partition ->
+                CompletableFuture.supplyAsync(
+                    () -> {
+                      final var positionModel = positionMapper.findOne(partition);
+                      if (positionModel == null || positionModel.lastExportedPosition() == null) {
+                        throw new IllegalArgumentException(
+                            "No exported position found for partition " + partition + " in RDBMS");
+                      }
+
+                      return Map.entry(partition, positionModel.lastExportedPosition());
+                    },
+                    executor))
+        .thenApply(
+            s -> s.stream().collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue)));
   }
 
   private CompletableFuture<List<BackupMetadata>> loadMetadataForAllPartitions(
