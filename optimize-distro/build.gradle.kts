@@ -74,18 +74,32 @@ val optimizeBackendResources =
     isTransitive = false
   }
 
-val assembleDist =
-  tasks.register<Sync>("assembleDist") {
-    group = "build"
-    description = "Assemble the Camunda Optimize distribution"
-    dependsOn(optimizeDistroResources)
+val optimizeScripts =
+  copySpec {
+    from(optimizeDistroResources) {
+      include(
+        "optimize-startup.sh",
+        "optimize-startup.bat",
+        "upgrade/upgrade.sh",
+        "upgrade/upgrade.bat",
+      )
+      // Preserve Maven's 0755 mode for Optimize's .bat files as well as its .sh files.
+      filePermissions { unix("0755".toInt(8)) }
+    }
+  }
 
-    // Yarn builds only run when producing a dist artifact, not during tests or compilation.
-    dependsOn(":optimize-client:yarnBuild")
+val optimizeContents =
+  copySpec {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    into(layout.buildDirectory.dir("camunda-optimize"))
-
-    from(optimizeDistroResources)
+    from(optimizeDistroResources) {
+      exclude(
+        "optimize-startup.sh",
+        "optimize-startup.bat",
+        "upgrade/upgrade.sh",
+        "upgrade/upgrade.bat",
+      )
+    }
+    with(optimizeScripts)
     from(optimizeBackendJar)
     from(upgradeOptimizeJar) {
       into("upgrade")
@@ -99,13 +113,18 @@ val assembleDist =
       include("localization/**", "logo/**")
       into("config")
     }
+  }
 
-    doLast {
-      destinationDir
-        .walkTopDown()
-        .filter { it.isFile && (it.name == "optimize-startup.sh" || it.name == "upgrade.sh") }
-        .forEach { it.setExecutable(true, false) }
-    }
+val assembleDist =
+  tasks.register<Sync>("assembleDist") {
+    group = "build"
+    description = "Assemble the Camunda Optimize distribution"
+    dependsOn(optimizeDistroResources)
+
+    // Yarn builds only run when producing a dist artifact, not during tests or compilation.
+    dependsOn(":optimize-client:yarnBuild")
+    into(layout.buildDirectory.dir("camunda-optimize"))
+    with(optimizeContents)
   }
 
 val distTar =
@@ -120,18 +139,7 @@ val distTar =
     archiveExtension.set("tar.gz")
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
-    from(assembleDist) {
-      eachFile {
-        if (
-          path == "optimize-startup.sh" ||
-            path == "optimize-startup.bat" ||
-            path == "upgrade/upgrade.sh" ||
-            path == "upgrade/upgrade.bat"
-        ) {
-          permissions { unix("0755".toInt(8)) }
-        }
-      }
-    }
+    with(optimizeContents)
   }
 
 val distZip =
@@ -144,18 +152,7 @@ val distZip =
     archiveClassifier.set("production")
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
-    from(assembleDist) {
-      eachFile {
-        if (
-          path == "optimize-startup.sh" ||
-            path == "optimize-startup.bat" ||
-            path == "upgrade/upgrade.sh" ||
-            path == "upgrade/upgrade.bat"
-        ) {
-          permissions { unix("0755".toInt(8)) }
-        }
-      }
-    }
+    with(optimizeContents)
   }
 
 dependencies {
