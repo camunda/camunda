@@ -108,12 +108,14 @@ func TestTenantsAddPasswordStdin(t *testing.T) {
 
 func TestTenantsRemoveNonInteractiveNeedsYes(t *testing.T) {
 	base := t.TempDir()
-	cmd, out, errOut := testTenantsCommand(t, "", false, "")
+	cmd, _, _ := testTenantsCommand(t, "", false, "")
 	require.NoError(t, cmd.run(base, []string{"add", "a"}))
-	out.Reset()
-	require.NoError(t, cmd.run(base, []string{"remove", "a"}))
-	assert.Contains(t, errOut.String(), "requires --yes")
-	assert.Contains(t, out.String(), "No tenants removed.")
+	assert.ErrorContains(t, cmd.run(base, []string{"remove", "a"}), "requires --yes")
+	assert.ErrorContains(t, cmd.run(base, []string{"reset"}), "requires --yes")
+	path, _ := pt.ResolvePath(base)
+	saved, err := pt.NewStore(path).List()
+	require.NoError(t, err)
+	assert.Len(t, saved, 1, "a refused confirmation must not remove anything")
 	require.NoError(t, cmd.run(base, []string{"remove", "a", "--yes"}))
 	assert.ErrorContains(t, cmd.run(base, []string{"remove", "default", "--yes"}), "cannot be removed")
 }

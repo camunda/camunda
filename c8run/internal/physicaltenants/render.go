@@ -246,7 +246,8 @@ type Resolution struct {
 }
 
 // Resolve decides which tenants this run starts: --physical-tenants wins for this run only,
-// otherwise the persisted tenants. A user --config declaring tenants takes over completely.
+// otherwise the persisted tenants. A user --config declaring tenants takes over completely,
+// and external mode leaves tenants entirely to the user's configuration.
 func Resolve(in ResolveInput) (Resolution, error) {
 	var res Resolution
 	mode, err := Mode()
@@ -269,6 +270,10 @@ func Resolve(in ResolveInput) (Resolution, error) {
 		}
 		res.Notices = append(res.Notices, "Physical tenants are declared through CAMUNDA_PHYSICALTENANTS_* environment variables; tenants managed with `c8run tenants` are not applied.")
 		return res, nil
+	}
+
+	if mode == "external" && len(in.FlagIDs) > 0 {
+		return res, fmt.Errorf("--physical-tenants cannot be used with %s=external; declare camunda.physical-tenants in your --config instead", ModeEnv)
 	}
 
 	var stored []Tenant
