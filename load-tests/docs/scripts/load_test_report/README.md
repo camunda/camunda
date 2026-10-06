@@ -33,10 +33,9 @@ Common options:
 - `--sample-step <dur>`: sample resolution for window summaries. Default: `1m`.
 - `--queries <path>`: YAML query file path. Default: packaged
   `report-queries.yaml`.
-- `--at <time>`: Prometheus query time anchor. The report window ends at this RFC3339
-  or Unix timestamp.
-- `--start <time> --end <time>`: exact reporting window. The duration is derived from
-  the two timestamps.
+- `--start <time>`: start of the reporting window as an RFC3339 or Unix timestamp. The
+  duration is added to it to derive the end time, which must not be in the future.
+  Default: now minus `--duration-seconds`, so the window ends now.
 - `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
 - `--user <user> --password <password>`: basic auth credentials for Prometheus.
 - `--format json|csv|tsv`: output format. Default: `json`.
@@ -60,7 +59,7 @@ Exact historical window, TSV row ready to paste into a spreadsheet:
 ```bash
 uv run load-test-report c8-ck-baseline-20260814 \
   --start 2026-08-14T10:00:00Z \
-  --end 2026-08-14T10:30:00Z \
+  --duration-seconds 1800 \
   --format tsv --no-header
 ```
 
@@ -73,7 +72,7 @@ missing metrics.
 uv run load-test-report c8-ck-base-8736-endurance \
   --queries report-queries-stable-87.yaml \
   --start 2026-08-12T09:00:00Z \
-  --end 2026-08-13T06:00:00Z \
+  --duration-seconds 79200 \
   --format tsv --no-header
 ```
 
@@ -163,8 +162,7 @@ minute, combining a stable rate with finer temporal resolution.
 
 #### Packaged query semantics
 
-The report window ends at `--at`, at `--end` when `--start --end` are provided, or at
-Prometheus's current evaluation time.
+The report window ends with `--start` plus `--duration-seconds`, which is now when `--start` is omitted.
 
 Different column types use that window differently:
 

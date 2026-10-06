@@ -1,5 +1,8 @@
 import io
 import sys
+from datetime import UTC
+from datetime import datetime
+from datetime import timedelta
 from pathlib import Path
 from unittest import mock
 
@@ -56,7 +59,7 @@ def test_should_parse_auth_flags(tmp_path: Path) -> None:
     assert options.queries_file == queries_file
 
 
-def test_should_derive_duration_from_start_and_end(tmp_path: Path) -> None:
+def test_should_derive_end_from_start_and_duration(tmp_path: Path) -> None:
     queries_file = tmp_path / "queries.yaml"
     queries_file.write_text("queries: []", encoding="utf-8")
 
@@ -65,8 +68,8 @@ def test_should_derive_duration_from_start_and_end(tmp_path: Path) -> None:
             "c8-ck-test",
             "--start",
             "2026-08-14T10:00:00Z",
-            "--end",
-            "2026-08-14T10:30:00Z",
+            "--duration-seconds",
+            "1800",
             "--queries",
             str(queries_file),
         ]
@@ -78,14 +81,33 @@ def test_should_derive_duration_from_start_and_end(tmp_path: Path) -> None:
     assert options.end_label == "2026-08-14T10:30:00Z"
 
 
+def test_should_default_to_window_ending_now() -> None:
+    before = datetime.now(UTC).replace(microsecond=0)
+
+    options = parse_args(["c8-ck-test", "--duration-seconds", "1800"])
+
+    after = datetime.now(UTC)
+    start = datetime.strptime(options.start_label, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    end = datetime.strptime(options.end_label, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    assert options.duration_seconds == 1800
+    assert end - start == timedelta(seconds=1800)
+    assert before <= end <= after
+    assert options.time_anchor == options.end_label
+
+
+def test_should_reject_window_ending_in_the_future() -> None:
+    with pytest.raises(ReportError, match="must not end in the future"):
+        parse_args(["c8-ck-test", "--start", "2999-01-01T00:00:00Z"])
+
+
 def test_should_normalize_timezone_less_time_window() -> None:
     options = parse_args(
         [
             "c8-ck-test",
             "--start",
             "2026-08-14T10:00:00",
-            "--end",
-            "2026-08-14T10:30:00",
+            "--duration-seconds",
+            "1800",
         ]
     )
 
@@ -121,12 +143,17 @@ def test_should_reject_out_of_order_prometheus_durations() -> None:
 
 def test_should_reject_unrepresentable_timestamp() -> None:
     with pytest.raises(SystemExit):
-        parse_args(["c8-ck-test", "--at", "999999999999999999999"])
+        parse_args(["c8-ck-test", "--start", "999999999999999999999"])
 
 
 def test_should_reject_fractional_timestamp() -> None:
     with pytest.raises(SystemExit):
-        parse_args(["c8-ck-test", "--at", "2026-08-14T10:00:00.5Z"])
+        parse_args(["c8-ck-test", "--start", "2026-08-14T10:00:00.5Z"])
+
+
+def test_should_reject_wrong_format_timestamp() -> None:
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--start", "2026-08-XXT10:00:00.5Z"])
 
 
 def test_should_use_packaged_default_queries() -> None:
@@ -157,14 +184,70 @@ def test_should_reject_incomplete_basic_auth() -> None:
         auth_headers("user", "")
 
 
+def test_should_reject_unrepresentable_reporting_window_with_no_start() -> None:
+    with pytest.raises(ReportError, match="reporting window is outside the supported timestamp range"):
+        parse_args(
+            [
+                "c8-ck-test",
+                "--duration-seconds",
+                "999999999999999999999",
+            ]
+        )
+
+
 def test_should_reject_unrepresentable_reporting_window() -> None:
     with pytest.raises(ReportError, match="reporting window is outside the supported timestamp range"):
         parse_args(
             [
                 "c8-ck-test",
-                "--at",
+                "--start",
                 "0",
                 "--duration-seconds",
                 "999999999999999999999",
             ]
         )
+
+
+def test_should_reject_negative_duration(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "c8-ck-test",
+                "--start",
+                "2026-08-14T10:00:00",
+                "--duration-seconds",
+                "-1",
+            ]
+        )
+
+    assert "'-1' must be a positive integer" in capsys.readouterr().err
+
+
+def test_should_reject_too_long_namespace(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "a" * 64,
+                "--start",
+                "2026-08-14T10:00:00",
+                "--duration-seconds",
+                "123",
+            ]
+        )
+
+    assert "(max 63 characters; lowercase alphanumeric or '-', and must start and end " in capsys.readouterr().err
+
+
+def test_should_reject_invalid_namespace(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "Invalid_Namespace",
+                "--start",
+                "2026-08-14T10:00:00",
+                "--duration-seconds",
+                "123",
+            ]
+        )
+
+    assert "(max 63 characters; lowercase alphanumeric or '-', and must start and end " in capsys.readouterr().err

@@ -127,7 +127,7 @@ def build_parser() -> argparse.ArgumentParser:
   # Historical window, spreadsheet-friendly TSV:
   uv run load-test-report c8-ck-baseline-20260814 \\
     --start 2026-08-14T10:00:00Z \\
-    --end 2026-08-14T10:30:00Z \\
+    --duration-seconds 1800 \\
     --format tsv --no-header
 
   # CI monitor ingress with basic auth:
@@ -156,13 +156,12 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"YAML query file path. Default: packaged {DEFAULT_QUERIES_FILE.name}.",
     )
     parser.add_argument(
-        "--at",
+        "--start",
         default=None,
         type=parse_epoch,
-        help="Prometheus query time anchor, RFC3339 or Unix timestamp.",
+        help="Start of the reporting window, RFC3339 or Unix timestamp. "
+        "Default: now minus --duration-seconds, so the window ends now.",
     )
-    parser.add_argument("--start", default=None, type=parse_epoch, help="Start of the reporting window.")
-    parser.add_argument("--end", default=None, type=parse_epoch, help="End of the reporting window.")
     parser.add_argument("--endpoint", default="http://localhost:9090", help="Prometheus base URL.")
     parser.add_argument("--user", default="", help="Basic auth user for Prometheus.")
     parser.add_argument("--password", default="", help="Basic auth password for Prometheus.")
@@ -176,32 +175,19 @@ def build_parser() -> argparse.ArgumentParser:
 def parse_args(argv: Sequence[str]) -> Options:
     args = build_parser().parse_args(argv)
     duration_seconds = args.duration_seconds
-    at: datetime | None = args.at
+    now = datetime.now(UTC).replace(microsecond=0)
     start: datetime | None = args.start
-    end: datetime | None = args.end
-    time_anchor = ""
-    start_label = ""
-    end_label = ""
-    if start is not None or end is not None:
-        if start is None or end is None:
-            raise ReportError("--start and --end must be provided together.")
-        if at is not None:
-            raise ReportError("--at cannot be combined with --start/--end.")
-        if end <= start:
-            raise ReportError("--end must be after --start.")
-
-        duration_seconds = int((end - start).total_seconds())
-        start_label = format_epoch(start)
-        end_label = format_epoch(end)
-        time_anchor = end_label
-    elif at is not None:
-        try:
-            start = at - timedelta(seconds=duration_seconds)
-        except OverflowError as error:
-            raise ReportError("reporting window is outside the supported timestamp range") from error
-        start_label = format_epoch(start)
-        end_label = format_epoch(at)
-        time_anchor = end_label
+    try:
+        if start is None:
+            start = now - timedelta(seconds=duration_seconds)
+        end = start + timedelta(seconds=duration_seconds)
+    except OverflowError as error:
+        raise ReportError("reporting window is outside the supported timestamp range") from error
+    if end > now:
+        raise ReportError("reporting window must not end in the future; use an earlier --start or a shorter duration.")
+    start_label = format_epoch(start)
+    end_label = format_epoch(end)
+    time_anchor = end_label
 
     return Options(
         namespace=args.namespace,
