@@ -64,8 +64,8 @@ async function count(index: string, query: object): Promise<number> {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({query}),
   });
-  // The index only appears once Optimize imported the first document.
-  if (response.status === 404) {
+  // The index only appears once Optimize imported the first document, and its shard starts a moment later.
+  if (response.status === 404 || response.status === 503) {
     return 0;
   }
   if (!response.ok) {
