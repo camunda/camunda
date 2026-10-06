@@ -34,7 +34,6 @@ class DatabaseImportJobTest {
   private static final String VARIABLE = ValueType.VARIABLE.name();
 
   private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
-  // each test reports under its own partition, as metrics are global and outlive a test
   private final int partitionId = ThreadLocalRandom.current().nextInt(1_000, Integer.MAX_VALUE);
 
   @BeforeEach
@@ -50,8 +49,12 @@ class DatabaseImportJobTest {
 
   @Test
   void shouldCountEveryFailedWriteOfAnImportPage() {
-    // given - a job that fails twice before its write succeeds
-    final var job = new FailingImportJob(2, partitionId);
+    // given
+    final var job =
+        new FailingImportJob(
+            2,
+            partitionId,
+            new OptimizeRuntimeException("cluster_block_exception index [a] blocked"));
     job.setEntitiesToImport(List.of(mock(OptimizeDto.class)));
     final double errorsBefore = errorCount(ErrorType.CLUSTER_BLOCK);
 
@@ -71,8 +74,31 @@ class DatabaseImportJobTest {
     assertThat(errorCount(ErrorType.CLUSTER_BLOCK)).isEqualTo(errorsBefore + 2);
   }
 
+  @Test
+  void shouldCountUnclassifiedFailedWritesAsUnknownErrors() {
+    // given
+    final var job =
+        new FailingImportJob(1, partitionId, new OptimizeRuntimeException("Request timed out"));
+    job.setEntitiesToImport(List.of(mock(OptimizeDto.class)));
+    final double errorsBefore = errorCount(ErrorType.UNKNOWN);
+
+    // when
+    job.run();
+
+    // then
+    assertThat(
+            registry
+                .get(IMPORT_DB_WRITE_FAILURES_METRIC.getName())
+                .tag(RECORD_TYPE_TAG, VARIABLE)
+                .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
+                .tag(ERROR_TYPE_TAG, ErrorType.UNKNOWN.getValue())
+                .counter()
+                .count())
+        .isEqualTo(1);
+    assertThat(errorCount(ErrorType.UNKNOWN)).isEqualTo(errorsBefore + 1);
+  }
+
   private double errorCount(final ErrorType errorType) {
-    // the error counters are only registered once OptimizeMetrics is first used
     final Counter counter =
         registry.find(ERROR_METRIC.getName()).tag(ERROR_TYPE_TAG, errorType.getValue()).counter();
     return counter == null ? 0 : counter.count();
@@ -80,17 +106,20 @@ class DatabaseImportJobTest {
 
   private static final class FailingImportJob extends DatabaseImportJob<OptimizeDto> {
 
+    private final RuntimeException failure;
     private int failuresLeft;
 
-    private FailingImportJob(final int failures, final int partitionId) {
+    private FailingImportJob(
+        final int failures, final int partitionId, final RuntimeException failure) {
       super(() -> {}, mock(DatabaseClient.class), VARIABLE, partitionId);
       failuresLeft = failures;
+      this.failure = failure;
     }
 
     @Override
     protected void persistEntities(final List<OptimizeDto> newOptimizeEntities) {
       if (failuresLeft-- > 0) {
-        throw new OptimizeRuntimeException("cluster_block_exception index [a] blocked");
+        throw failure;
       }
     }
   }

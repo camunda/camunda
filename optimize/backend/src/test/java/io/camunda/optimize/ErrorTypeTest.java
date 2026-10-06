@@ -31,6 +31,7 @@ class ErrorTypeTest {
     assertThat(ErrorType.NESTED_LIMIT_EXCEEDED.getValue()).isEqualTo("nested_limit_exceeded");
     assertThat(ErrorType.CLUSTER_BLOCK.getValue()).isEqualTo("cluster_block");
     assertThat(ErrorType.REJECTED_EXECUTION.getValue()).isEqualTo("rejected_execution");
+    assertThat(ErrorType.UNKNOWN.getValue()).isEqualTo("unknown");
     assertThat(ErrorType.ELASTICSEARCH_ERROR.getValue()).isEqualTo("elasticsearch_error");
     assertThat(ErrorType.OPENSEARCH_ERROR.getValue()).isEqualTo("opensearch_error");
   }
