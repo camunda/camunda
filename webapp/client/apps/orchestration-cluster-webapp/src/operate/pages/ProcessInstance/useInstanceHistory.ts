@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createContext, useContext, useEffect, useEffectEvent, useRef, useState} from 'react';
+import {createContext, useCallback, useContext, useEffect, useEffectEvent, useMemo, useRef, useState} from 'react';
 import {queryOptions, useQueries, useQueryClient} from '@tanstack/react-query';
 import type {ProcessInstance, QueryElementInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {endpoints} from '#/shared/http/endpoints';
@@ -14,6 +14,28 @@ import {ForbiddenError} from '#/shared/errors';
 import {historySort, instanceRequest} from './processInstance.queries';
 
 type Scope = {key: string; parent?: string; from: number; version: number};
+type HistoryState = {
+	instanceKey: string;
+	scopes: Scope[];
+	visible: boolean;
+	timestamps: boolean;
+	executionCount: boolean;
+	pageError: unknown;
+	scopeErrors: Record<string, unknown>;
+};
+
+function createHistoryState(instanceKey: string): HistoryState {
+	return {
+		instanceKey,
+		scopes: [{key: instanceKey, from: 0, version: 0}],
+		visible: false,
+		timestamps: false,
+		executionCount: false,
+		pageError: null,
+		scopeErrors: {},
+	};
+}
+
 function historyWindowQuery(instance: string, scope: Scope) {
 	return queryOptions({
 		queryKey: ['instanceHistory', instance, scope.key, scope.version, scope.from] as const,
@@ -34,12 +56,30 @@ function historyWindowQuery(instance: string, scope: Scope) {
 function useHistoryController(instance: ProcessInstance) {
 	const instanceKey = instance.processInstanceKey;
 	const client = useQueryClient();
-	const [scopes, setScopes] = useState<Scope[]>([{key: instanceKey, from: 0, version: 0}]);
-	const [visible, setVisible] = useState(false);
-	const [timestamps, setTimestamps] = useState(false);
-	const [executionCount, setExecutionCount] = useState(false);
-	const [pageError, setPageError] = useState<unknown>(null);
-	const [scopeErrors, setScopeErrors] = useState<Record<string, unknown>>({});
+	const [state, setState] = useState(() => createHistoryState(instanceKey));
+	if (state.instanceKey !== instanceKey) {
+		setState(createHistoryState(instanceKey));
+	}
+	const {scopes, visible, timestamps, executionCount, pageError, scopeErrors} = state;
+	const updateState = useCallback(
+		(update: (current: HistoryState) => HistoryState) =>
+			setState((current) => (current.instanceKey === instanceKey ? update(current) : current)),
+		[instanceKey],
+	);
+	const {setScopes, setVisible, setTimestamps, setExecutionCount, setPageError, setScopeErrors} = useMemo(
+		() => ({
+			setScopes: (update: (current: Scope[]) => Scope[]) =>
+				updateState((current) => ({...current, scopes: update(current.scopes)})),
+			setVisible: (visible: boolean) =>
+				updateState((current) => (current.visible === visible ? current : {...current, visible})),
+			setTimestamps: (timestamps: boolean) => updateState((current) => ({...current, timestamps})),
+			setExecutionCount: (executionCount: boolean) => updateState((current) => ({...current, executionCount})),
+			setPageError: (pageError: unknown) => updateState((current) => ({...current, pageError})),
+			setScopeErrors: (update: (current: Record<string, unknown>) => Record<string, unknown>) =>
+				updateState((current) => ({...current, scopeErrors: update(current.scopeErrors)})),
+		}),
+		[updateState],
+	);
 	const version = useRef(0);
 	const lifecycle = useRef({version: 0});
 	const polling = useRef(false);
@@ -63,7 +103,7 @@ function useHistoryController(instance: ProcessInstance) {
 		if (forbiddenError) {
 			void client.cancelQueries({queryKey: ['instanceHistory', instanceKey]}).then(() => setPageError(forbiddenError));
 		}
-	}, [client, forbiddenError, instanceKey]);
+	}, [client, forbiddenError, instanceKey, setPageError]);
 	useEffect(() => {
 		const currentLifecycle = lifecycle.current;
 		if (!visible) {
@@ -90,7 +130,10 @@ function useHistoryController(instance: ProcessInstance) {
 		const recovered = requested.filter((_, index) => results[index]?.status === 'fulfilled');
 		if (recovered.length > 0) {
 			clearScopeErrors(recovered.map((scope) => scope.version));
-			setPageError((error: unknown) => (error instanceof ForbiddenError ? error : null));
+			updateState((current) => ({
+				...current,
+				pageError: current.pageError instanceof ForbiddenError ? current.pageError : null,
+			}));
 		}
 	}
 	const poll = useEffectEvent(async () => {

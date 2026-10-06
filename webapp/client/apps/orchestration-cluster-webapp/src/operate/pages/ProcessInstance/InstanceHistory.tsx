@@ -69,7 +69,7 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 	useEffect(() => {
 		setVisible(xml.isSuccess);
 		return () => setVisible(false);
-	}, [setVisible, xml.isSuccess]);
+	}, [setVisible, xml.isSuccess, processInstanceId]);
 	const root: ElementInstance = {
 		...processInstance,
 		elementId: processInstance.processDefinitionId,

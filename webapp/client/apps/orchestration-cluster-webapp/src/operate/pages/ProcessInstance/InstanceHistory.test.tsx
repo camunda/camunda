@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {useEffect, useState} from 'react';
@@ -30,6 +30,7 @@ import {useInstanceHistory} from './useInstanceHistory';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {processInstanceSearchSchema} from './processInstanceSearch';
 import {InstanceHistory} from './InstanceHistory';
+import {useProcessInstancePage} from './useProcessInstancePage';
 const instance = createProcessInstance();
 const child = createElementInstance();
 const path = '/operate/processes/$processInstanceId/variables';
@@ -43,7 +44,8 @@ function Probe() {
 	const history = useInstanceHistory();
 	const {setVisible} = history;
 	const selection = useProcessInstanceElementSelection();
-	const window = history.windows.get(instance.processInstanceKey);
+	const {processInstanceId} = useProcessInstancePage();
+	const window = history.windows.get(processInstanceId);
 	useEffect(() => {
 		setVisible(true);
 		return () => setVisible(false);
@@ -65,9 +67,9 @@ function Probe() {
 					nestedError: Boolean(history.windows.get(child.elementInstanceKey)?.error),
 				})}
 			</output>
-			<button onClick={() => void history.page(instance.processInstanceKey, 'next')}>Next</button>
-			<button onClick={() => void history.page(instance.processInstanceKey, 'previous')}>Previous</button>
-			<button onClick={() => history.toggle(instance.processInstanceKey)}>Fold</button>
+			<button onClick={() => void history.page(processInstanceId, 'next')}>Next</button>
+			<button onClick={() => void history.page(processInstanceId, 'previous')}>Previous</button>
+			<button onClick={() => history.toggle(processInstanceId)}>Fold</button>
 			<button onClick={() => history.setTimestamps(true)}>Timestamps</button>
 			<button onClick={() => history.toggle(child.elementInstanceKey, instance.processInstanceKey)}>
 				Expand nested
@@ -86,7 +88,6 @@ function Harness({tree = false}: {tree?: boolean}) {
 			<button onClick={() => setShown(!shown)}>Remount</button>
 			<button onClick={() => setId('other')}>Instance</button>
 			<ProcessInstancePageProvider
-				key={id}
 				processInstanceId={id}
 				processInstance={createProcessInstance({processInstanceKey: id})}
 				search={processInstanceSearchSchema.parse(search)}
@@ -176,8 +177,9 @@ describe('InstanceHistory', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Instance'}));
 		await expect.element(screen.getByText(/"timestamps":false/)).toBeVisible();
 	});
-	it('should ignore a late forbidden request after collapse/re-expand', async ({worker}) => {
+	it.for(['collapse', 'instance'])('should ignore a late forbidden request after %s reset', async (reset, {worker}) => {
 		let finish: () => void = () => {};
+		onTestFinished(() => finish());
 		let calls = 0;
 		worker.use(
 			http.post('/v2/element-instances/search', async () => {
@@ -192,8 +194,12 @@ describe('InstanceHistory', () => {
 		);
 		const screen = await renderPage();
 		await expect.poll(() => calls).toBe(1);
-		await userEvent.click(screen.getByRole('button', {name: 'Fold'}));
-		await userEvent.click(screen.getByRole('button', {name: 'Fold'}));
+		if (reset === 'collapse') {
+			await userEvent.click(screen.getByRole('button', {name: 'Fold'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Fold'}));
+		} else {
+			await userEvent.click(screen.getByRole('button', {name: 'Instance'}));
+		}
 		await expect.element(screen.getByText(/"first":/)).toBeVisible();
 		finish();
 		await expect.element(screen.getByText(/"forbidden":false/)).toBeVisible();

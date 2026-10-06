@@ -131,7 +131,6 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 
 	return (
 		<ProcessInstancePageProvider
-			key={processInstanceId}
 			processInstanceId={processInstanceId}
 			processInstance={processInstance}
 			search={search}
