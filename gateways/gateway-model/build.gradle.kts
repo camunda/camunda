@@ -37,7 +37,7 @@ val generateAdvancedModel =
       .withPathSensitivity(PathSensitivity.RELATIVE)
     argumentProviders.add(
       objects.newInstance<GatewayModelGeneratorArguments>().apply {
-        openApiDirectory.set(rootProject.layout.projectDirectory.dir("zeebe/gateway-protocol/src/main/proto/v2"))
+        openApiDirectory.set(layout.settingsDirectory.dir("zeebe/gateway-protocol/src/main/proto/v2"))
         outputDirectory.set(advancedModelOutputDir)
       }
     )

@@ -53,7 +53,7 @@ val runDiscriminatorPostProcessor =
     generatedSourcesDirectory.set(discriminatorOutputDir)
     argumentProviders.add(
       objects.newInstance<ClientDiscriminatorArguments>().apply {
-        openApiDirectory.set(rootProject.layout.projectDirectory.dir("zeebe/gateway-protocol/src/main/proto/v2"))
+        openApiDirectory.set(layout.settingsDirectory.dir("zeebe/gateway-protocol/src/main/proto/v2"))
         generatedOpenApiDirectory.set(openApiGenerateTask.flatMap { it.outputDir })
         outputDirectory.set(discriminatorOutputDir)
       }
