@@ -2,6 +2,7 @@
 //  1. Uses Yarn, not npm (convention uses NpmTask)
 //  2. No webjar packaging — processResources is not wired to copy build output into a JAR
 
+import buildlogic.skipWhen
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.yarn.task.YarnTask
 import io.camunda.gradle.flags.asEnabledFlag
@@ -37,14 +38,14 @@ val skipFrontendBuild =
 
 val yarnInstall =
   tasks.register<YarnTask>("yarnInstall") {
-    enabled = !skipFrontendBuild.get()
+    skipWhen(skipFrontendBuild)
     dependsOn(tasks.named("yarnSetup"))
     args.set(listOf("install"))
   }
 
 val yarnBuild =
   tasks.register<YarnTask>("yarnBuild") {
-    enabled = !skipFrontendBuild.get()
+    skipWhen(skipFrontendBuild)
     dependsOn(yarnInstall)
     args.set(listOf("build"))
   }

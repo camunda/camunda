@@ -1,13 +1,12 @@
 import buildlogic.OptionalDependenciesPomAction
+import buildlogic.micrometerOptionalDependencies
 
 plugins { id("buildlogic.client-conventions") }
 
 publishing {
   publications.named<MavenPublication>("maven") {
     pom.withXml(
-      OptionalDependenciesPomAction(
-        mapOf("io.micrometer:micrometer-core" to libs.versions.micrometer.get())
-      )
+      OptionalDependenciesPomAction(micrometerOptionalDependencies("micrometer-core"))
     )
   }
 }

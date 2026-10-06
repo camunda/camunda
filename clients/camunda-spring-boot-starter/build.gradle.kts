@@ -1,4 +1,6 @@
+import org.gradle.process.CommandLineArgumentProvider
 import buildlogic.OptionalDependenciesPomAction
+import buildlogic.micrometerOptionalDependencies
 
 plugins { id("buildlogic.client-conventions") }
 
@@ -15,8 +17,7 @@ publishing {
             libs.tools.jackson.core.jackson.databind.get().versionConstraint.requiredVersion,
           "tools.jackson.core:jackson-core" to
             libs.tools.jackson.core.jackson.core.get().versionConstraint.requiredVersion,
-          "io.micrometer:micrometer-core" to libs.versions.micrometer.get(),
-        )
+        ) + micrometerOptionalDependencies("micrometer-core")
       )
     )
   }
@@ -67,7 +68,8 @@ val generateJobWorkerPermutations =
     outputs.cacheIf { true }
     classpath = testSourceGenerator.runtimeClasspath
     mainClass.set("io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator")
-    args(generatedTestSourcesDir.get().asFile.absolutePath)
+    val outputDir = generatedTestSourcesDir
+    argumentProviders.add(CommandLineArgumentProvider { listOf(outputDir.get().asFile.absolutePath) })
   }
 
 dependencies {

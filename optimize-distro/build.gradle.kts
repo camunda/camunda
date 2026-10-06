@@ -58,15 +58,19 @@ val optimizeDistroResources =
     into(layout.buildDirectory.dir("generated/optimize-distro"))
   }
 
-val optimizeRuntimeClasspath = configurations.named("runtimeClasspath").get()
+val optimizeRuntimeClasspath = configurations.named("runtimeClasspath")
 val optimizeBackendJar =
-  optimizeRuntimeClasspath.incoming.artifactView {
-    componentFilter { (it as? ProjectComponentIdentifier)?.projectPath == ":optimize-backend" }
-  }.files
+  optimizeRuntimeClasspath.map { classpath ->
+    classpath.incoming.artifactView {
+      componentFilter { (it as? ProjectComponentIdentifier)?.projectPath == ":optimize-backend" }
+    }.files
+  }
 val upgradeOptimizeJar =
-  optimizeRuntimeClasspath.incoming.artifactView {
-    componentFilter { (it as? ProjectComponentIdentifier)?.projectPath == ":upgrade-optimize" }
-  }.files
+  optimizeRuntimeClasspath.map { classpath ->
+    classpath.incoming.artifactView {
+      componentFilter { (it as? ProjectComponentIdentifier)?.projectPath == ":upgrade-optimize" }
+    }.files
+  }
 val optimizeBackendResources =
   configurations.create("optimizeBackendResources") {
     isCanBeConsumed = false

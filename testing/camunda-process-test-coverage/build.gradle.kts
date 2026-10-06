@@ -1,3 +1,4 @@
+import buildlogic.skipWhen
 import com.github.gradle.node.npm.task.NpmTask
 
 plugins {
@@ -23,7 +24,7 @@ val skipFrontendBuild =
 
 val npmTest =
   tasks.register<NpmTask>("npmTest") {
-    enabled = !skipFrontendBuild.get()
+    skipWhen(skipFrontendBuild)
     dependsOn(tasks.named("npmCi"))
     args.set(listOf("test"))
     inputs.files(

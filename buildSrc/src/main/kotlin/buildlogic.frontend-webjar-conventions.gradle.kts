@@ -1,3 +1,4 @@
+import buildlogic.skipWhen
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.npm.task.NpmTask
 import io.camunda.gradle.flags.asEnabledFlag
@@ -46,7 +47,7 @@ val skipFrontendBuild =
 
 val npmVersionPackage =
   tasks.register<NpmTask>("npmVersionPackage") {
-    enabled = !skipFrontendBuild.get()
+    skipWhen(skipFrontendBuild)
     dependsOn(tasks.named("npmSetup"))
     args.set(
       listOf("version", project.version.toString(), "--no-git-tag-version", "--allow-same-version")
@@ -59,7 +60,7 @@ val npmVersionPackage =
 
 val npmCi =
   tasks.register<NpmTask>("npmCi") {
-    enabled = !skipFrontendBuild.get()
+    skipWhen(skipFrontendBuild)
     dependsOn(npmVersionPackage)
     args.set(listOf("ci"))
     inputs.files(
@@ -74,7 +75,7 @@ val npmCi =
 
 val npmBuild =
   tasks.register<NpmTask>("npmBuild") {
-    enabled = !skipFrontendBuild.get()
+    skipWhen(skipFrontendBuild)
     dependsOn(npmCi)
     args.set(listOf("run", "build"))
     inputs
