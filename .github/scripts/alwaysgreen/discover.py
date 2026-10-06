@@ -314,11 +314,17 @@ MAX_ATTEMPT_LOOKBACK = 5
 
 
 def downstream_failing_jobs(downstream_id: str, attempts: int) -> list[dict]:
-    """Failing jobs of the most recent downstream attempt that had any.
+    """Jobs that explain the most recent downstream attempt that has an explanation.
 
     A re-run turns every job of the latest attempt green while the parent run
     keeps the conclusion triage reacted to, so reading only the latest attempt
     silently loses the evidence.
+
+    Within an attempt, a job GitHub stopped rather than let fail counts only when
+    no job actually failed: a cancellation alongside a failure is a consequence
+    of it, not a cause. On its own it is all the run has to say — a run can go
+    red with no failing job at all, which is how a queued job GitHub never placed
+    on a runner reads. The caller still puts it through the noise prefilter.
     """
     for attempt in range(attempts, max(attempts - MAX_ATTEMPT_LOOKBACK, 0), -1):
         data = gh_json(
@@ -329,11 +335,14 @@ def downstream_failing_jobs(downstream_id: str, attempts: int) -> list[dict]:
             ],
             {},
         )
-        failing = [
-            j
-            for j in (data.get("jobs") or [])
-            if isinstance(j, dict) and j.get("conclusion") == "failure"
-        ]
+        jobs = [j for j in (data.get("jobs") or []) if isinstance(j, dict)]
+        failing = [j for j in jobs if j.get("conclusion") == "failure"]
+        if not failing:
+            failing = [
+                j for j in jobs if j.get("conclusion") in classify.STALLED_CONCLUSIONS
+            ]
+            if failing:
+                log(f"downstream: no failing job; {len(failing)} stalled job(s)")
         if failing:
             if attempt != attempts:
                 log(f"downstream re-run since triage; reading attempt {attempt}")
@@ -342,11 +351,15 @@ def downstream_failing_jobs(downstream_id: str, attempts: int) -> list[dict]:
 
 
 def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
-    """Describe the failing jobs of a downstream run whose specs all passed.
+    """Describe the jobs that made a downstream run red though its specs all passed.
 
-    The same noise prefilter as the parent run applies: a downstream job killed
-    by a GitHub platform error or a cancellation carries no evidence and must not
-    reach the agent.
+    The same noise prefilter as the parent run applies, now over stalled jobs
+    too, and it is what separates the two ways a job ends up cancelled. One
+    stopped part-way through a step — because somebody cancelled the run, or
+    because another job failed it out — carries the "operation was canceled"
+    annotation and stays noise. One GitHub could not place on a runner carries
+    "not acquired by Runner of type hosted" instead, which names the defect, so
+    it reaches the agent rather than leaving the run red with nobody dispatched.
     """
     run = gh_json(["api", f"repos/{E2E_REPO}/actions/runs/{downstream_id}"], {})
     workflow_path = run.get("path") or ""
@@ -355,8 +368,9 @@ def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
     specs: list[classify.FailingSpec] = []
     for job in downstream_failing_jobs(downstream_id, int(attempts)):
         steps = job.get("steps") or []
+        conclusion = job.get("conclusion") or "failure"
         verdict = classify.noise_verdict(
-            conclusion="failure",
+            conclusion=conclusion,
             step_count=len(steps),
             failure_annotations=failure_annotations(job.get("check_run_url")),
         )
@@ -367,6 +381,7 @@ def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
             classify.ci_job_spec(
                 job.get("name") or "",
                 workflow_path=workflow_path,
+                conclusion=conclusion,
                 failing_steps=[
                     s.get("name") or ""
                     for s in steps
