@@ -56,10 +56,10 @@ final class ClusterRestoreTest {
         .hasMessageContaining("at least one physical tenant");
   }
 
-  private static Map<String, RestoreSelection> selection(final String... physicalTenantIds) {
-    final Map<String, RestoreSelection> selection = new LinkedHashMap<>();
+  private static Map<String, Map<Integer, long[]>> selection(final String... physicalTenantIds) {
+    final Map<String, Map<Integer, long[]>> selection = new LinkedHashMap<>();
     for (final var physicalTenantId : physicalTenantIds) {
-      selection.put(physicalTenantId, RestoreSelection.ofBackupIds(List.of(1L)));
+      selection.put(physicalTenantId, Map.of(1, new long[] {1L}));
     }
     return selection;
   }

@@ -90,26 +90,26 @@ public final class ClusterRestore {
   }
 
   /**
-   * Restores the physical tenants named in {@code selectionPerTenant}, each from what its own
-   * selection names, and then writes the topology file if this broker is the coordinator.
+   * Restores the physical tenants named in {@code backupIdsPerTenant}, each from its own resolved
+   * backups, and then writes the topology file if this broker is the coordinator.
    *
    * <p>The selection may cover a strict subset of the configured tenants — restoring one tenant of
    * a multi-tenant cluster is a supported operation. What it may not do is name a tenant this
    * cluster has no configuration for: there would be no backup store to read it from and no
    * partition count to restore.
    *
-   * @param selectionPerTenant which backups each targeted physical tenant is restored from
-   * @return the partition count each restored physical tenant's backups were taken with, which is
-   *     the number of partitions restored for it
+   * @param backupIdsPerTenant the backups each targeted physical tenant is restored from, per
+   *     partition. A tenant's partitions are those of its backups, which can be fewer than are
+   *     configured when the cluster was scaled up since.
    */
-  public Map<String, Integer> restore(
-      final Map<String, RestoreSelection> selectionPerTenant,
+  public void restore(
+      final Map<String, Map<Integer, long[]>> backupIdsPerTenant,
       final TargetDataPolicy targetDataPolicy,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     final var unknown =
-        selectionPerTenant.keySet().stream()
+        backupIdsPerTenant.keySet().stream()
             .filter(id -> !targets.containsKey(id))
             .sorted()
             .toList();
@@ -118,19 +118,19 @@ public final class ClusterRestore {
           "Cannot restore physical tenants %s: not configured in this cluster, which has %s"
               .formatted(unknown, targets.keySet().stream().sorted().toList()));
     }
-    if (selectionPerTenant.isEmpty()) {
+    if (backupIdsPerTenant.isEmpty()) {
       throw new IllegalArgumentException(
           "Expected at least one physical tenant to restore, but got none");
     }
 
     final Map<String, Integer> restoredPartitionCounts = new HashMap<>();
-    final var wholeCluster = selectionPerTenant.keySet().containsAll(targets.keySet());
+    final var wholeCluster = backupIdsPerTenant.keySet().containsAll(targets.keySet());
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
     prepareTarget(
-        dataDirectory, selectionPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
+        dataDirectory, backupIdsPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
 
     try {
-      for (final var entry : selectionPerTenant.entrySet()) {
+      for (final var entry : backupIdsPerTenant.entrySet()) {
         final var physicalTenantId = entry.getKey();
         // non-null: every key was checked against targets above
         final var target = requireNonNull(targets.get(physicalTenantId));
@@ -145,9 +145,7 @@ public final class ClusterRestore {
                 target.exporterPositionMapper(),
                 meterRegistry)) {
           manager.restore(entry.getValue(), validateConfig);
-          manager
-              .restoredPartitionCount()
-              .ifPresent(count -> restoredPartitionCounts.put(physicalTenantId, count));
+          restoredPartitionCounts.put(physicalTenantId, entry.getValue().size());
         }
         LOG.info("Successfully restored physical tenant '{}'", physicalTenantId);
       }
@@ -157,14 +155,13 @@ public final class ClusterRestore {
       } else if (configuration.getCluster().getNodeId() == 0) {
         restoreTopologyFile(restoredPartitionCounts);
       }
-      return Map.copyOf(restoredPartitionCounts);
     } catch (final ExecutionException | InterruptedException | RuntimeException e) {
       LOG.error(
           "Failed to restore physical tenants {}. Deleting their data",
-          selectionPerTenant.keySet(),
+          backupIdsPerTenant.keySet(),
           e);
       deleteRestoredData(
-          dataDirectory, selectionPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
+          dataDirectory, backupIdsPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
       throw e;
     }
   }
