@@ -1488,10 +1488,10 @@
   resolved "https://registry.npmjs.org/@csstools/selector-specificity/-/selector-specificity-2.2.0.tgz"
   integrity sha512-+OJ9konv95ClSTOJCmMZqpd5+YGsB2S+x6w3E1oaM8UuR5j8nTNHYSz8c9BEPGDOCMQYIEEGlVPj/VY64iTbGw==
 
-"@cyclonedx/cyclonedx-library@10.1.0":
-  version "10.1.0"
-  resolved "https://registry.yarnpkg.com/@cyclonedx/cyclonedx-library/-/cyclonedx-library-10.1.0.tgz#fd92eb0cf2d295417a4e9a031f5b352a651474c4"
-  integrity sha512-4yq0KTQIA32UHJwFMDeY5xj2asp3Mk5lzx4JRVXLOb0YE8w1KeR61c1m/gJ4sjMXpiiEDfaITVQu8BLUuy7t3A==
+"@cyclonedx/cyclonedx-library@10.3.0":
+  version "10.3.0"
+  resolved "https://registry.yarnpkg.com/@cyclonedx/cyclonedx-library/-/cyclonedx-library-10.3.0.tgz#92ccd1553d64d7c593b1adc31203cba01583d3df"
+  integrity sha512-RIT28sp1U0PCHaaeF3yNRwk6Jig/XJ8UsYAVOMYaHQ+0VVOvsjcp0PTWQFLUqJFF8XMud+Kdq6G+wtDAh+QJFA==
 
 "@date-fns/tz@^1.4.1":
   version "1.5.0"
@@ -14278,12 +14278,12 @@ rolldown@~1.2.11:
     "@rolldown/binding-win32-arm64-msvc" "1.2.12"
     "@rolldown/binding-win32-x64-msvc" "1.2.12"
 
-rollup-plugin-sbom@4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/rollup-plugin-sbom/-/rollup-plugin-sbom-4.0.0.tgz#5c26b5422e8fd5f94d49250ada3e0e405dac4147"
-  integrity sha512-WwAq3ZZRv4He27yyExeV8WWZh4QeSqVnIahpMBGfsDX97bjDh2aBgbFLWp1COuYiBP9iHjeB3oaPMk8V8Dmpjg==
+rollup-plugin-sbom@4.0.1:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/rollup-plugin-sbom/-/rollup-plugin-sbom-4.0.1.tgz#6ddc87bbb38a78d7a38fd61158aa34265bdfa7bc"
+  integrity sha512-gRzuUXt/9MFhQ8+Pf6W/yNmBvUYM7CxgXpO3x4xJOQ3l6c/7O7D/oFPIRsDvqHvxg5DDjlSYkqwshDbv7eMiCQ==
   dependencies:
-    "@cyclonedx/cyclonedx-library" "10.1.0"
+    "@cyclonedx/cyclonedx-library" "10.3.0"
     normalize-package-data "9.0.0"
     packageurl-js "2.0.1"
     spdx-expression-parse "5.0.0"
