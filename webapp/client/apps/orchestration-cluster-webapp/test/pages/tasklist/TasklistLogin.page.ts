@@ -18,10 +18,6 @@ class TasklistLoginPage extends LoginPage {
 		return this.page.goto(`/tasklist${search}`);
 	}
 
-	override get passwordInput() {
-		return this.page.getByLabel(/password/i);
-	}
-
 	get genericErrorHeading() {
 		return this.page.getByRole('heading', {name: 'Something went wrong'});
 	}
