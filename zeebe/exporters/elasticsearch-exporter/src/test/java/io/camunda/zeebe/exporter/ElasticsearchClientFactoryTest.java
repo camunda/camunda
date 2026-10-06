@@ -20,11 +20,12 @@ import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.BasicUserPrincipal;
 import org.apache.hc.client5.http.auth.Credentials;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.impl.BasicEntityDetails;
 import org.apache.hc.core5.http.message.BasicHttpRequest;
-import org.apache.hc.core5.http.protocol.BasicHttpContext;
+import org.apache.hc.core5.http.protocol.HttpCoreContext;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -74,7 +75,8 @@ final class ElasticsearchClientFactoryTest {
     final Credentials credentials =
         providerCaptor.getValue().getCredentials(new AuthScope(null, -1), null);
     assertThat(credentials.getUserPrincipal()).isEqualTo(new BasicUserPrincipal("user"));
-    assertThat(credentials.getPassword()).isEqualTo("password".toCharArray());
+    assertThat(((UsernamePasswordCredentials) credentials).getUserPassword())
+        .isEqualTo("password".toCharArray());
   }
 
   @Test
@@ -94,7 +96,7 @@ final class ElasticsearchClientFactoryTest {
   void shouldApplyRequestInterceptorsInOrder()
       throws IOException, org.apache.hc.core5.http.HttpException {
     // given
-    final var context = new BasicHttpContext();
+    final var context = HttpCoreContext.create();
     final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
 
     // when
@@ -128,6 +130,6 @@ final class ElasticsearchClientFactoryTest {
     // then
     final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
     verify(builder).setIOReactorConfig(captor.capture());
-    assertThat(captor.getValue().isSoKeepalive()).isTrue();
+    assertThat(captor.getValue().isSoKeepAlive()).isTrue();
   }
 }

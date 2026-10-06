@@ -25,7 +25,6 @@ import org.apache.hc.client5.http.cookie.BasicCookieStore;
 import org.apache.hc.client5.http.cookie.CookieStore;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
-import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpEntity;
@@ -70,8 +69,9 @@ public class StatefulRestTemplate extends RestTemplate {
     this.contextPath = contextPath;
     httpClient = HttpClientBuilder.create().build();
     cookieStore = new BasicCookieStore();
-    httpContext = new BasicHttpContext();
-    httpContext.setAttribute(HttpClientContext.COOKIE_STORE, getCookieStore());
+    final var clientContext = HttpClientContext.create();
+    clientContext.setCookieStore(cookieStore);
+    httpContext = clientContext;
     statefulHttpComponentsClientHttpRequestFactory =
         new StatefulHttpComponentsClientHttpRequestFactory(httpClient, httpContext);
     super.setRequestFactory(statefulHttpComponentsClientHttpRequestFactory);

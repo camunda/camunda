@@ -43,7 +43,6 @@ import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
-import org.apache.hc.client5.http.ssl.TrustSelfSignedStrategy;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.reactor.IOReactorConfig;
@@ -90,10 +89,14 @@ public class ElasticsearchClientBuilder {
         final KeyStore truststore = loadCustomTrustStore(configurationService);
 
         if (truststore.size() > 0) {
+          // TrustSelfSignedStrategy is deprecated in favor of pinning the actual certificate in
+          // the truststore, but that would change behavior for configs that opt into trusting any
+          // self-signed cert without providing one; this lambda reproduces its historical
+          // chain.length == 1 semantics without changing that behavior here.
           final TrustStrategy trustStrategy =
               configurationService.getElasticSearchConfiguration().getSecuritySslSelfSigned()
                       == Boolean.TRUE
-                  ? new TrustSelfSignedStrategy()
+                  ? (chain, authType) -> chain.length == 1
                   : null;
           sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
         } else {

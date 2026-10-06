@@ -31,7 +31,7 @@ public class PluginRepositoryInterceptorTest {
     final var apache5Req =
         new org.apache.hc.core5.http.message.BasicHttpRequest("GET", "localhost");
     final var apache5Entity = new org.apache.hc.core5.http.impl.BasicEntityDetails(10, TEXT_HTML);
-    final var apache5Context = new org.apache.hc.core5.http.protocol.BasicHttpContext();
+    final var apache5Context = org.apache.hc.core5.http.protocol.HttpCoreContext.create();
 
     final var interceptor = new PluginRepositoryInterceptor(plugins);
     interceptor.process(apache5Req, apache5Entity, apache5Context);
@@ -51,7 +51,7 @@ public class PluginRepositoryInterceptorTest {
     final var apache5Req =
         new org.apache.hc.core5.http.message.BasicHttpRequest("GET", "localhost");
     final var apache5Entity = new org.apache.hc.core5.http.impl.BasicEntityDetails(10, TEXT_HTML);
-    final var apache5Context = new org.apache.hc.core5.http.protocol.BasicHttpContext();
+    final var apache5Context = org.apache.hc.core5.http.protocol.HttpCoreContext.create();
 
     final var interceptor = PluginRepositoryInterceptor.ofRepository(repository);
     interceptor.process(apache5Req, apache5Entity, apache5Context);
