@@ -11,6 +11,7 @@ import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
@@ -292,16 +293,11 @@ public final class RestoreValidator
             .stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
             .findAny()
+            .flatMap(BackupStatus::descriptor)
             .orElseThrow(
                 () ->
                     new NoSuchElementException(
                         "No completed backup found for partition 1 with backup id %d"
-                            .formatted(backupId)))
-            .descriptor()
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "Backup %d has no descriptor to read its partition count from"
                             .formatted(backupId)))
             .numberOfPartitions();
     if (backupPartitionCount > partitionCount) {

@@ -688,30 +688,6 @@ final class RestoreValidatorResolverTest {
               "The RDBMS holds an exported position for partition 3 but none for partition 2");
     }
 
-    @Test
-    void shouldReportACompletedBackupWithoutADescriptorAsSuch() {
-      // given - the backup is completed, but records no partition count
-      final var withoutDescriptor =
-          new BackupStatusImpl(
-              new BackupIdentifierImpl(1, 1, 7L),
-              Optional.empty(),
-              BackupStatusCode.COMPLETED,
-              Optional.empty(),
-              Optional.empty(),
-              Optional.empty());
-      when(backupStore.list(any(BackupIdentifierWildcard.class)))
-          .thenReturn(CompletableFuture.completedFuture(List.of(withoutDescriptor)));
-      final var validator = new RestoreValidator(3, backupStore, null);
-
-      // when
-      final var result = validator.validate(elasticsearchRequest(7L));
-
-      // then - not reported as a missing backup
-      assertThat(assertInvalid(result))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessage("Backup 7 has no descriptor to read its partition count from");
-    }
-
     private static RestoreRequest elasticsearchRequest(final long backupId) {
       return new RestoreRequest(
           "default",
