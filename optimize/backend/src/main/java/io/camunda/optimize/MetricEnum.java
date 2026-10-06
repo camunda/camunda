@@ -24,15 +24,25 @@ public enum MetricEnum {
   IMPORT_DB_WRITE_FAILURES_METRIC(
       "dbWriteFailures",
       "Counts failed attempts to write an import page to the database, the page is retried until"
-          + " it succeeds");
+          + " it succeeds"),
+  IMPORTED_UNTIL_METRIC(
+      "importedUntil",
+      "Epoch time up to which all exported records of this type and partition are imported",
+      "seconds");
   private static final String IMPORT_METRICS_PREFIX = "optimize.import";
   private final String id;
   private final String name;
   private final String description;
+  private final String baseUnit;
 
   MetricEnum(final String id, final String description) {
+    this(id, description, null);
+  }
+
+  MetricEnum(final String id, final String description, final String baseUnit) {
     this.id = id;
     this.description = description;
+    this.baseUnit = baseUnit;
     name = IMPORT_METRICS_PREFIX + "." + id;
   }
 
@@ -46,5 +56,9 @@ public enum MetricEnum {
 
   public String getDescription() {
     return description;
+  }
+
+  public String getBaseUnit() {
+    return baseUnit;
   }
 }
