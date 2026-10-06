@@ -244,6 +244,86 @@ class RocksDbSharedCacheTest {
   }
 
   @Test
+  void shouldValidateFractionAgainstMemoryMinimum() {
+    // given
+    rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
+    rocksdbCfg.setMemoryFraction(0.15);
+    rocksdbCfg.setMemoryMinimum(DataSize.ofMegabytes(96));
+
+    // when
+    try (final var managementFactoryMock = mockMemoryEnvironment(512L * 1024 * 1024)) {
+      final var throwable = catchThrowable(() -> rocksdbCfg.validateRocksDbMemory(3));
+
+      // then
+      assertThat(throwable).isNull();
+    }
+  }
+
+  @Test
+  void shouldWarnIfFractionMemoryMinimumExceedsTotalSystemMemory() {
+    final var recorder = new RecordingAppender();
+    final var logger = (Logger) LogManager.getLogger(RocksdbCfg.class);
+    recorder.start();
+    logger.addAppender(recorder);
+
+    // given
+    rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
+    rocksdbCfg.setMemoryFraction(0.1);
+    rocksdbCfg.setMemoryMinimum(DataSize.ofMegabytes(2048));
+
+    // when/then
+    try (final var ignored = mockMemoryEnvironment(1024L * 1024 * 1024)) {
+      assertThatNoException().isThrownBy(() -> rocksdbCfg.validateRocksDbMemory(3));
+      assertThat(recorder.getAppendedEvents())
+          .anySatisfy(
+              event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                assertThat(event.getMessage().getFormattedMessage())
+                    .contains("Requested RocksDB memory")
+                    .contains("CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYMINIMUM");
+              });
+    } finally {
+      logger.removeAppender(recorder);
+      recorder.stop();
+    }
+  }
+
+  @Test
+  void shouldIgnoreMemoryMinimumForBrokerStrategy() {
+    // given
+    rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
+    rocksdbCfg.setMemoryLimit(DataSize.ofMegabytes(64));
+    rocksdbCfg.setMemoryMinimum(DataSize.ofMegabytes(96));
+
+    // when
+    try (final var managementFactoryMock = mockMemoryEnvironment(512L * 1024 * 1024)) {
+      final var throwable = catchThrowable(() -> rocksdbCfg.validateRocksDbMemory(3));
+
+      // then
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("per partition to be at least");
+    }
+  }
+
+  @Test
+  void shouldThrowIfMemoryMinimumIsNegative() {
+    // given
+    rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
+    rocksdbCfg.setMemoryMinimum(DataSize.ofMegabytes(-1));
+
+    // when
+    final var throwable =
+        catchThrowable(() -> rocksdbCfg.validateRocksDbMemory(DEFAULT_PARTITION_COUNT));
+
+    // then
+    assertThat(throwable)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected the memoryMinimum for RocksDB FRACTION memory allocation strategy to be at least 0");
+  }
+
+  @Test
   void shouldThrowIfMemoryFractionIsInvalid() {
     // when
     rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
