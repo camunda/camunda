@@ -27,10 +27,10 @@ import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.net.URISyntaxException;
 import java.util.concurrent.Executor;
 import org.apache.hc.core5.http.HttpHost;
 
