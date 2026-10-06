@@ -210,9 +210,13 @@ public final class RestoreValidator
             ? null
             : exportedPositions(exportedPositionSupplier, partitionCount);
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
-    final var metadataByPartition =
-        loadMetadataForAllPartitions(
-            exportedPositions == null ? partitionCount : exportedPositions.size());
+    // Only an RDBMS has exported positions to take the partition count from. Without one, the
+    // backups are the only record of it.
+    final var restoredPartitionCount =
+        exportedPositions == null
+            ? latestBackupPartitionCount(instantTo)
+            : exportedPositions.size();
+    final var metadataByPartition = loadMetadataForAllPartitions(restoredPartitionCount);
     final var restorableBackups =
         RestorePointResolver.resolve(
             metadataByPartition, instantFrom, instantTo, exportedPositions);
@@ -223,18 +227,27 @@ public final class RestoreValidator
   }
 
   /**
-   * The RDBMS must hold exported positions for exactly the partitions the backups to restore were
-   * taken with: the exported positions are what the restore point is resolved against, and what
-   * decides which partitions are restored. A database and backups that disagree on the partitions
-   * do not belong together, e.g. a database that was not restored to the point of the backups.
+   * The partition count recorded in the latest backup of partition 1 taken at or before {@code to},
+   * or its latest backup if there is no {@code to}.
    */
+  private int latestBackupPartitionCount(final @Nullable Instant to) {
+    final var latestBackup =
+        RestorePointResolver.latestBackup(loadMetadataForAllPartitions(1).getFirst(), to)
+            .orElseThrow(
+                () -> new IllegalStateException("No backup of partition 1 found before " + to));
+    return backupPartitionCount(
+        requireNonNull(backupStore, "Backup store must be configured to load backups"),
+        latestBackup);
+  }
+
   private void verifyBackupsHoldTheExportedPartitions(
       final RestorableBackups restorableBackups, final int exportedPartitionCount) {
-    final var store =
-        requireNonNull(backupStore, "Backup store must be configured to load backups");
     final var lastBackup =
         requireNonNull(restorableBackups.backupsByPartitionId().get(1)).getLast().checkpointId();
-    final var backupPartitionCount = backupPartitionCount(store, lastBackup);
+    final var backupPartitionCount =
+        backupPartitionCount(
+            requireNonNull(backupStore, "Backup store must be configured to load backups"),
+            lastBackup);
     if (backupPartitionCount != exportedPartitionCount) {
       throw new IllegalStateException(
           ("Cannot restore: backup %d was taken with %d partitions, but the RDBMS holds exported "
