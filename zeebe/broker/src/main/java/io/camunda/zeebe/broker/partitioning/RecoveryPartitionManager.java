@@ -391,7 +391,7 @@ public final class RecoveryPartitionManager
             return;
           }
           final var partitionDir = partitionDirectory(new PartitionId(partitionGroup, partitionId));
-          CompletableFuture.runAsync(() -> deleteDirectory(partitionDir), executor.get())
+          CompletableFuture.runAsync(() -> deletePartitionDirectory(partitionDir), executor.get())
               .whenCompleteAsync(
                   (ok, error) -> {
                     if (error != null) {
@@ -509,6 +509,18 @@ public final class RecoveryPartitionManager
       return Optional.empty();
     }
     return Optional.of(restoreExecutor);
+  }
+
+  /**
+   * Deletes the partition's directory itself. A partition that is restored gets its directory back
+   * from the restore; one the backup does not hold stays without, rather than keeping an empty one.
+   */
+  private static void deletePartitionDirectory(final Path directory) {
+    try {
+      FileUtil.deleteFolderIfExists(directory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to delete directory " + directory, e);
+    }
   }
 
   private static void deleteDirectory(final Path directory) {

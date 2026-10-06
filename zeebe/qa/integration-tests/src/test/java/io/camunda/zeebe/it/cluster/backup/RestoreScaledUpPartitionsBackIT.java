@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Camunda;
@@ -97,6 +98,18 @@ final class RestoreScaledUpPartitionsBackIT {
                       .hasCompletedChanges(restore)
                       .doesNotHavePendingChanges());
       InProcessRestoreTestUtil.assertRoutesOverPartitions(clusterActuator, BACKUP_PARTITIONS_COUNT);
+
+      // and - every broker keeps the backup's partitions, and no directory for the one above
+      cluster
+          .brokers()
+          .values()
+          .forEach(
+              broker ->
+                  InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+                      broker.getWorkingDirectory(),
+                      DEFAULT_PHYSICAL_TENANT_ID,
+                      BACKUP_PARTITIONS_COUNT,
+                      SCALED_PARTITIONS_COUNT));
 
       // and - every broker routes new instances over the backup's partitions only
       cluster

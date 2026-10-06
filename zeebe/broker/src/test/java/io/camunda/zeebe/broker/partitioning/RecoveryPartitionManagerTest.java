@@ -712,7 +712,7 @@ final class RecoveryPartitionManagerTest {
   class PreRestore {
 
     @Test
-    void shouldDeleteLocalPartitionData(@TempDir final Path tempDir) {
+    void shouldDeleteTheLocalPartitionDirectory(@TempDir final Path tempDir) {
       // given
       final var brokerCfg = new BrokerCfg();
       brokerCfg.getData().setDirectory(tempDir.toString());
@@ -730,7 +730,7 @@ final class RecoveryPartitionManagerTest {
       // then
       await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
       assertThat(future.get()).succeedsWithin(Duration.ofSeconds(10));
-      assertThat(partitionDir).isEmptyDirectory();
+      assertThat(partitionDir).doesNotExist();
     }
 
     @Test
