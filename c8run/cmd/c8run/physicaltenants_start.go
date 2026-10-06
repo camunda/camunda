@@ -74,7 +74,7 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 		return err
 	}
 	for _, notice := range res.Notices {
-		log.Info().Msg(notice)
+		log.Info().Msg(withCLIName(notice, cliName()))
 	}
 	if len(res.Tenants) > 0 && camundaVersion != "" && !physicaltenants.SupportsVersion(camundaVersion) {
 		return fmt.Errorf("physical tenants require Camunda 8.%d or newer, but this c8run bundles Camunda %s. Upgrade c8run, or delete the saved tenants file (`c8run tenants path` shows where) and drop --physical-tenants", physicaltenants.MinCamundaMinor, camundaVersion)

@@ -25,8 +25,11 @@ import (
 )
 
 type tenantsCommand struct {
-	input        io.Reader
-	output       io.Writer
+	input  io.Reader
+	output io.Writer
+	// plainOutput receives values printed verbatim, such as paths, which must
+	// never be rewritten by C8RUN_CLI_NAME. Falls back to output when nil.
+	plainOutput  io.Writer
 	errorOutput  io.Writer
 	isTerminal   func() bool
 	readPassword func() ([]byte, error)
@@ -45,6 +48,7 @@ func newTenantsCommand() *tenantsCommand {
 	return &tenantsCommand{
 		input:        os.Stdin,
 		output:       brandWriter(os.Stdout),
+		plainOutput:  os.Stdout,
 		errorOutput:  brandWriter(os.Stderr),
 		isTerminal:   stdinIsTerminal,
 		readPassword: readSecretFromTerminal,
@@ -64,6 +68,10 @@ func defaultStorageType(baseDir string) (string, error) {
 func (c *tenantsCommand) run(baseDir string, args []string) error {
 	if len(args) == 0 || args[0] == "help" || args[0] == "-h" || args[0] == "--help" {
 		_, _ = fmt.Fprint(c.output, tenantsHelp)
+		if cliName() == "" {
+			// Wrappers delegate only `tenants`, so the aliases are not runnable through them.
+			_, _ = fmt.Fprintln(c.output, "Aliases: c8run pt, c8run physical-tenants.")
+		}
 		return nil
 	}
 	if len(args) == 2 && (args[1] == "help" || args[1] == "-h" || args[1] == "--help") {
@@ -88,7 +96,7 @@ func (c *tenantsCommand) run(baseDir string, args []string) error {
 		if len(args) != 1 {
 			return errors.New("usage: c8run tenants path")
 		}
-		_, _ = fmt.Fprintln(c.output, path)
+		_, _ = fmt.Fprintln(c.plain(), path)
 		return nil
 	}
 	if mode == "external" {
@@ -446,7 +454,6 @@ e.g. "sales" or "team2".
 Tenants are saved for the current OS user and applied on every ` + "`c8run start`" + `.
 Use ` + "`c8run start --physical-tenants a,b`" + ` to run with tenants for one run without saving them.
 
-Aliases: c8run pt, c8run physical-tenants.
 C8RUN_TENANTS_FILE selects another tenants file; relative paths use the current directory.
 C8RUN_TENANTS_MODE defaults to local; external disables these commands so camunda.physical-tenants
 in your --config file is the only source.
@@ -461,4 +468,11 @@ var tenantsCommandHelp = map[string]string{
 	"rm":     "Usage: c8run tenants remove <id> [id...] [--yes]\n",
 	"reset":  "Usage: c8run tenants reset [--yes]\nRemoves all physical tenants and stored tenant logins.\n",
 	"path":   "Usage: c8run tenants path\nShows where physical tenants are saved.\n",
+}
+
+func (c *tenantsCommand) plain() io.Writer {
+	if c.plainOutput != nil {
+		return c.plainOutput
+	}
+	return c.output
 }
