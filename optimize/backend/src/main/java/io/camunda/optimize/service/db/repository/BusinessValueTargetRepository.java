@@ -21,10 +21,19 @@ public interface BusinessValueTargetRepository {
 
   Optional<BusinessValueTargetDto> getByKey(String tenantId, String processDefinitionKey);
 
+  /**
+   * Returns every document that carries a target, across all tenants. Scrolled rather than capped:
+   * the overview sweep decides what to measure from this list, so a truncated result would silently
+   * leave targeted definitions unmeasured.
+   *
+   * <p>Cleared targets are excluded. Clearing rewrites the document with every target field null
+   * rather than deleting it, and such a document carries nothing the sweep can measure or apply.
+   */
   List<BusinessValueTargetDto> scanAll();
 
   /**
-   * Reads the targets belonging to the given tenants.
+   * Reads the targets belonging to the given tenants. Like {@link #scanAll()}, cleared targets are
+   * excluded, so they do not count towards the fetch limit.
    *
    * <p>Passing {@code null} returns every target and is reserved for internal, tenant-agnostic
    * callers. Passing an empty collection returns no targets — a shortcut for callers that have
@@ -34,6 +43,19 @@ public interface BusinessValueTargetRepository {
    */
   List<BusinessValueTargetDto> readByTenants(Collection<String> tenantIds);
 
+<<<<<<< HEAD
+=======
+  /**
+   * Deletes the target documents with the given ids in a single bulk request, as built by {@link
+   * #documentId(String, String)}. A null or empty collection issues no request, matching {@code
+   * bulkUpsert}.
+   *
+   * <p>The list is expected to be bounded by the caller, so no chunking happens here, mirroring
+   * {@code ProcessInstanceRepository#deleteByIds}.
+   */
+  void deleteByIds(List<String> documentIds);
+
+>>>>>>> 2a19ecdb (fix: measure every targeted definition regardless of target count)
   static String documentId(final String tenantId, final String processDefinitionKey) {
     if (StringUtils.isBlank(tenantId)) {
       throw new IllegalArgumentException(
