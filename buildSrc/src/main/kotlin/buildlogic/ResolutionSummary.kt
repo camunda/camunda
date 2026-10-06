@@ -1,9 +1,10 @@
 package buildlogic
 
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.component.ComponentIdentifier
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.artifacts.result.ResolvedArtifactResult
+import org.gradle.api.artifacts.result.ResolvedComponentResult
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 
 /**
@@ -19,18 +20,91 @@ class ResolutionSummary(
   fun isDirect(component: ComponentIdentifier): Boolean = component in directComponents
 
   companion object {
-    fun of(configuration: Configuration): ResolutionSummary {
-      val resolution = configuration.incoming.resolutionResult
+    fun of(root: ResolvedComponentResult): ResolutionSummary {
+      val components = linkedMapOf<ComponentIdentifier, ComponentIdentifier>()
+
+      fun visit(component: ResolvedComponentResult) {
+        if (components.putIfAbsent(component.id, component.id) != null) {
+          return
+        }
+        component.dependencies.filterIsInstance<ResolvedDependencyResult>().forEach {
+          visit(it.selected)
+        }
+      }
+
+      visit(root)
       val directComponents =
-        resolution.root.dependencies
+        root.dependencies
           .filterIsInstance<ResolvedDependencyResult>()
           .map { it.selected.id }
           .toSet()
       return ResolutionSummary(
-        components = resolution.allComponents.map { it.id },
+        components = components.values.toList(),
         directComponents = directComponents,
       )
     }
+  }
+}
+
+data class DependencyReportData(
+  val thirdParty: Map<String, String>,
+  val directThirdParty: List<String>,
+  val internal: List<String>,
+)
+
+fun ResolvedComponentResult.dependencyReportData(projectPath: String): DependencyReportData {
+  val summary = ResolutionSummary.of(this)
+  val thirdParty = linkedMapOf<String, String>()
+  val directThirdParty = sortedSetOf<String>()
+  val internal = sortedSetOf<String>()
+
+  summary.components
+    .mapNotNull { it.classify() }
+    .forEach { component ->
+      when (component) {
+        is ClassifiedComponent.Module -> {
+          if (!component.isBom) {
+            thirdParty[component.coordinate] = component.version
+            if (summary.isDirect(component.identifier)) {
+              directThirdParty.add(component.coordinate)
+            }
+          }
+        }
+        is ClassifiedComponent.Project -> {
+          if (component.projectPath != projectPath) {
+            internal.add(component.projectPath.removePrefix(":"))
+          }
+        }
+      }
+    }
+
+  return DependencyReportData(
+    thirdParty = thirdParty,
+    directThirdParty = directThirdParty.toList(),
+    internal = internal.toList(),
+  )
+}
+
+fun ResolvedComponentResult.distributionReportArtifacts(
+  artifacts: Set<ResolvedArtifactResult>
+): List<DistributionDependencyReportArtifact> {
+  val summary = ResolutionSummary.of(this)
+  return artifacts.map { artifact ->
+    val component = artifact.id.componentIdentifier
+    val classified = component.classify()
+    val coordinate =
+      when (classified) {
+        is ClassifiedComponent.Module ->
+          "${classified.group}:${classified.module}:${classified.version}"
+        is ClassifiedComponent.Project -> classified.coordinate
+        null -> component.displayName
+      }
+    DistributionDependencyReportArtifact(
+      fileName = artifact.file.name,
+      coordinate = coordinate,
+      direct = summary.isDirect(component),
+      internal = classified is ClassifiedComponent.Project,
+    )
   }
 }
 

@@ -33,4 +33,11 @@ dependencies {
   )
   implementation("com.gradleup.shadow:shadow-gradle-plugin:9.4.2")
   implementation("org.gradle:test-retry-gradle-plugin:1.6.6")
+
+  testImplementation(gradleTestKit())
+  testImplementation(platform("org.junit:junit-bom:${pomVersion("version.junit")}"))
+  testImplementation("org.junit.jupiter:junit-jupiter")
+  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+tasks.test { useJUnitPlatform() }
