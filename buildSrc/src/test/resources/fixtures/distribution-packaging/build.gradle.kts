@@ -23,22 +23,19 @@ val camundaContents = copySpec {
   }
 }
 
+val optimizeScriptPaths =
+  setOf(
+    "optimize-startup.sh",
+    "optimize-startup.bat",
+    "upgrade/upgrade.sh",
+    "upgrade/upgrade.bat",
+  )
+
 val optimizeContents = copySpec {
   duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  from("input/optimize") { exclude(optimizeScriptPaths) }
   from("input/optimize") {
-    exclude(
-      "optimize-startup.sh",
-      "optimize-startup.bat",
-      "upgrade/upgrade.sh",
-      "upgrade/upgrade.bat",
-    )
-  }
-  from("input/optimize") {
-    include("optimize-startup.sh", "upgrade/upgrade.sh")
-    filePermissions { unix("0755".toInt(8)) }
-  }
-  from("input/optimize") {
-    include("optimize-startup.bat", "upgrade/upgrade.bat")
+    include(optimizeScriptPaths)
     filePermissions { unix("0755".toInt(8)) }
   }
 }
