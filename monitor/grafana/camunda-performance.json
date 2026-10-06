@@ -2236,7 +2236,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(rate(optimize_import_overallImportTime_seconds_sum{namespace=~\"$namespace\", PARTITION_ID=~\"$partition\"}[$__rate_interval]))\n    /\nsum(rate(optimize_import_overallImportTime_seconds_count{namespace=~\"$namespace\", PARTITION_ID=~\"$partition\"}[$__rate_interval]))",
+                        "expr": "histogram_quantile(0.50, sum by (le) (rate(optimize_import_overallImportTime_seconds_bucket{namespace=~\"$namespace\", PARTITION_ID=~\"$partition\"}[$__rate_interval])))",
                         "instant": false,
                         "legendFormat": "Optimize import",
                         "range": true
