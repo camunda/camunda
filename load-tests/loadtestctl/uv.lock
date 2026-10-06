@@ -263,21 +263,27 @@ name = "loadtestctl"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "pyyaml" },
+]
+
+[package.dev-dependencies]
+dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-ruff" },
-    { name = "pyyaml" },
     { name = "ruff" },
 ]
 
 [package.metadata]
-requires-dist = [
+requires-dist = [{ name = "pyyaml", specifier = ">=6.0.3" }]
+
+[package.metadata.requires-dev]
+dev = [
     { name = "mypy", specifier = ">=2.4.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "pytest-ruff", specifier = ">=0.5" },
-    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "ruff", specifier = ">=0.16.10" },
 ]
 

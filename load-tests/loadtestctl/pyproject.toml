@@ -9,12 +9,7 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
-    "mypy>=2.4.0",
-    "pytest>=9.1.1",
-    "pytest-cov>=7.1.0",
-    "pytest-ruff>=0.5",
     "pyyaml>=6.0.3",
-    "ruff>=0.16.10",
 ]
 
 [project.scripts]
@@ -52,4 +47,13 @@ addopts = [
 
 [tool.mypy]
 strict=true
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "pytest-ruff>=0.5",
+    "ruff>=0.16.10",
+]
 
