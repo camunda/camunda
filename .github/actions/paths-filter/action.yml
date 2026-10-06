@@ -555,6 +555,7 @@ runs:
           - '.ci/db-versions.yml'
         load-test-scripts-change:
           - 'load-tests/docs/scripts/load_test_report/**'
+          - 'load-tests/loadtestctl/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch
