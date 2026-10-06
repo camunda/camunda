@@ -49,7 +49,11 @@ class DatabaseImportJobTest {
   @Test
   void shouldCountEveryFailedWriteOfAnImportPage() {
     // given - a job that fails twice before its write succeeds
-    final var job = new FailingImportJob(2, partitionId);
+    final var job =
+        new FailingImportJob(
+            2,
+            partitionId,
+            new OptimizeRuntimeException("cluster_block_exception index [a] blocked"));
     job.setEntitiesToImport(List.of(mock(OptimizeDto.class)));
 
     // when
@@ -67,19 +71,44 @@ class DatabaseImportJobTest {
         .isEqualTo(2);
   }
 
+  @Test
+  void shouldCountUnclassifiedFailedWritesAsUnknownErrors() {
+    // given
+    final var job =
+        new FailingImportJob(1, partitionId, new OptimizeRuntimeException("Request timed out"));
+    job.setEntitiesToImport(List.of(mock(OptimizeDto.class)));
+
+    // when
+    job.run();
+
+    // then
+    assertThat(
+            registry
+                .get(IMPORT_DB_WRITE_FAILURES_METRIC.getName())
+                .tag(RECORD_TYPE_TAG, VARIABLE)
+                .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
+                .tag(ERROR_TYPE_TAG, ErrorType.UNKNOWN.getValue())
+                .counter()
+                .count())
+        .isEqualTo(1);
+  }
+
   private static final class FailingImportJob extends DatabaseImportJob<OptimizeDto> {
 
+    private final RuntimeException failure;
     private int failuresLeft;
 
-    private FailingImportJob(final int failures, final int partitionId) {
+    private FailingImportJob(
+        final int failures, final int partitionId, final RuntimeException failure) {
       super(() -> {}, mock(DatabaseClient.class), VARIABLE, partitionId);
       failuresLeft = failures;
+      this.failure = failure;
     }
 
     @Override
     protected void persistEntities(final List<OptimizeDto> newOptimizeEntities) {
       if (failuresLeft-- > 0) {
-        throw new OptimizeRuntimeException("cluster_block_exception index [a] blocked");
+        throw failure;
       }
     }
   }

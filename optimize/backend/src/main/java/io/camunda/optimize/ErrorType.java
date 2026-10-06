@@ -20,6 +20,7 @@ public enum ErrorType {
   NESTED_LIMIT_EXCEEDED("nested_limit_exceeded"),
   CLUSTER_BLOCK("cluster_block"),
   REJECTED_EXECUTION("rejected_execution"),
+  UNKNOWN("unknown"),
   ELASTICSEARCH_ERROR("elasticsearch_error"),
   OPENSEARCH_ERROR("opensearch_error");
   private final String value;

@@ -18,6 +18,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 
 public class OptimizeMetrics {
 
@@ -59,12 +60,13 @@ public class OptimizeMetrics {
 
   public static void recordDbWriteFailure(
       final String recordType, final String partitionId, final Throwable failure) {
-    final ErrorType errorType = ErrorType.fromException(failure);
+    final ErrorType errorType =
+        Objects.requireNonNullElse(ErrorType.fromException(failure), ErrorType.UNKNOWN);
     Counter.builder(IMPORT_DB_WRITE_FAILURES_METRIC.getName())
         .description(IMPORT_DB_WRITE_FAILURES_METRIC.getDescription())
         .tag(RECORD_TYPE_TAG, recordType)
         .tag(PARTITION_ID_TAG, partitionId)
-        .tag(ERROR_TYPE_TAG, errorType == null ? "unknown" : errorType.getValue())
+        .tag(ERROR_TYPE_TAG, errorType.getValue())
         .register(Metrics.globalRegistry)
         .increment();
   }
