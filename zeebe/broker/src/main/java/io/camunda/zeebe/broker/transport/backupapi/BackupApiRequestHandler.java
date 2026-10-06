@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.backupapi;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
@@ -56,6 +57,7 @@ public final class BackupApiRequestHandler
       final AtomixServerTransport transport,
       final LogStreamWriter logStreamWriter,
       final BackupManager backupManager,
+      final CheckpointState checkpointState,
       final PersistedSnapshotStore snapshotStore,
       final SnapshotTrigger snapshotTrigger,
       final int partitionId,
@@ -66,7 +68,8 @@ public final class BackupApiRequestHandler
     this.backupManager = backupManager;
     this.partitionId = partitionId;
     this.backupFeatureEnabled = backupFeatureEnabled;
-    snapshotReserver = new CheckpointSnapshotReserver(snapshotStore, snapshotTrigger, actor);
+    snapshotReserver =
+        new CheckpointSnapshotReserver(snapshotStore, snapshotTrigger, checkpointState, actor);
     transport.unsubscribe(partitionId, RequestType.BACKUP);
     transport.subscribe(partitionId, RequestType.BACKUP, this);
   }

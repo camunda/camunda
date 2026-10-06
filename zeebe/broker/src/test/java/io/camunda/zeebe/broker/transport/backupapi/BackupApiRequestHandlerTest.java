@@ -15,6 +15,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.BackupManager;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
@@ -77,6 +79,7 @@ final class BackupApiRequestHandlerTest {
   LogStreamWriter logStreamWriter;
 
   @Mock BackupManager backupManager;
+  @Mock CheckpointState checkpointState;
   @Mock PersistedSnapshotStore snapshotStore;
   @Mock PersistedSnapshot freshSnapshot;
   @Mock SnapshotTrigger snapshotTrigger;
@@ -91,7 +94,14 @@ final class BackupApiRequestHandlerTest {
   void setup() {
     handler =
         new BackupApiRequestHandler(
-            transport, logStreamWriter, backupManager, snapshotStore, snapshotTrigger, 1, true);
+            transport,
+            logStreamWriter,
+            backupManager,
+            checkpointState,
+            snapshotStore,
+            snapshotTrigger,
+            1,
+            true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
 
@@ -522,6 +532,20 @@ final class BackupApiRequestHandlerTest {
     // then
     assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isLeft);
     verify(snapshotStore).releaseReservation(10L, "fresh");
+  }
+
+  @Test
+  void shouldNotTakeSnapshotForCheckpointThatIsNotNewer() {
+    // given - a retried request for the latest checkpoint, which the processor ignores
+    when(checkpointState.getCheckpointId()).thenReturn(10L);
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest());
+
+    // then - the command is still written, so the processor responds as before
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEmpty();
+    verifyNoInteractions(snapshotTrigger, snapshotStore);
   }
 
   private BackupRequest takeBackupRequest() {

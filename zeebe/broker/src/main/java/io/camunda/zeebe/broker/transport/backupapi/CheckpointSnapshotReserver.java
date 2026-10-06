@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -28,22 +29,32 @@ final class CheckpointSnapshotReserver {
 
   private final PersistedSnapshotStore snapshotStore;
   private final SnapshotTrigger snapshotTrigger;
+  private final CheckpointState checkpointState;
   private final ConcurrencyControl concurrencyControl;
 
   CheckpointSnapshotReserver(
       final PersistedSnapshotStore snapshotStore,
       final SnapshotTrigger snapshotTrigger,
+      final CheckpointState checkpointState,
       final ConcurrencyControl concurrencyControl) {
     this.snapshotStore = snapshotStore;
     this.snapshotTrigger = snapshotTrigger;
+    this.checkpointState = checkpointState;
     this.concurrencyControl = concurrencyControl;
   }
 
   /**
    * @return future completed with the id of the snapshot reserved for the checkpoint, or empty if
-   *     no snapshot could be reserved
+   *     the checkpoint needs none or no snapshot could be reserved
    */
   ActorFuture<Optional<String>> reserveFor(final long checkpointId) {
+    // The processor ignores a checkpoint that is not newer than the latest one, e.g. a retried
+    // request, and releases its reservation. This check only saves forcing a snapshot for it: a
+    // stale read costs a reservation that the processor releases again.
+    if (checkpointId <= checkpointState.getCheckpointId()) {
+      return CompletableActorFuture.completed(Optional.empty());
+    }
+
     return snapshotTrigger
         .forceSnapshot()
         .andThen(snapshot -> reserveFreshSnapshot(checkpointId, snapshot), concurrencyControl)
