@@ -29,11 +29,44 @@ class ErrorTypeTest {
     assertThat(ErrorType.VERSION_CONFLICT.getValue()).isEqualTo("version_conflict");
     assertThat(ErrorType.SEARCH_CONTEXT_MISSING.getValue()).isEqualTo("search_context_missing");
     assertThat(ErrorType.NESTED_LIMIT_EXCEEDED.getValue()).isEqualTo("nested_limit_exceeded");
+    assertThat(ErrorType.CLUSTER_BLOCK.getValue()).isEqualTo("cluster_block");
+    assertThat(ErrorType.REJECTED_EXECUTION.getValue()).isEqualTo("rejected_execution");
     assertThat(ErrorType.ELASTICSEARCH_ERROR.getValue()).isEqualTo("elasticsearch_error");
     assertThat(ErrorType.OPENSEARCH_ERROR.getValue()).isEqualTo("opensearch_error");
   }
 
   // ============ fromException() Tests ============
+
+  @Test
+  void shouldDetectBlockedIndexFromFailedBulkItems() {
+    // given
+    final Throwable exception =
+        new OptimizeRuntimeException(
+            "There were failures while performing bulk on Zeebe process instances.\n Message:"
+                + " Update cluster_block_exception index [optimize-process-instance-a_v8] blocked"
+                + " by: [TOO_MANY_REQUESTS/12/disk usage exceeded flood-stage watermark]");
+
+    // when
+    final ErrorType errorType = ErrorType.fromException(exception);
+
+    // then
+    assertThat(errorType).isEqualTo(ErrorType.CLUSTER_BLOCK);
+  }
+
+  @Test
+  void shouldDetectRejectedWritesFromFailedBulkItems() {
+    // given
+    final Throwable exception =
+        new OptimizeRuntimeException(
+            "There were failures while performing bulk on Zeebe variables.\n Message: Update"
+                + " es_rejected_execution_exception rejected execution of coordinating operation");
+
+    // when
+    final ErrorType errorType = ErrorType.fromException(exception);
+
+    // then
+    assertThat(errorType).isEqualTo(ErrorType.REJECTED_EXECUTION);
+  }
 
   @Test
   void shouldReturnNullForNullException() {
