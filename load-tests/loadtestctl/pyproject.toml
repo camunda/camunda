@@ -1,0 +1,23 @@
+[project]
+name = "loadtestctl"
+version = "0.1.0"
+description = "A helper CLI to control and operate on load tests"
+readme = "README.md"
+authors = [
+    { name = "Christopher Kujawa", email = "ChrisKujawa@users.noreply.github.com" },
+    { name = "Jonathan Ballet", email = "65311+multani@users.noreply.github.com"}
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+loadtestctl = "loadtestctl:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.workspace]
+members = [
+    "loadtestctl",
+]
