@@ -641,6 +641,77 @@ final class RestoreValidatorResolverTest {
                   + "positions for 2");
     }
 
+    @Test
+    void shouldRejectBackupsTakenWithDifferentPartitionCounts() {
+      // given - two backups to restore together, the earlier taken with 3 partitions and the latest
+      // with 2: the partitions restored would mix states that do not belong together
+      stubBackupPartitionCount(41L, 3);
+      stubBackupPartitionCount(42L, 2);
+      for (final var partitionId : List.of(1, 2)) {
+        stubBackupExists(partitionId, 41L);
+        stubBackupExists(partitionId, 42L);
+      }
+      final var validator = new RestoreValidator(3, backupStore, null);
+      final var request =
+          new RestoreRequest(
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(List.of(41L, 42L), null, null), "rdbms", false),
+              false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage(
+              "Cannot restore backup 41: it was taken with 3 partitions, but backup 42, the latest "
+                  + "to restore, was taken with 2");
+    }
+
+    @Test
+    void shouldRejectExportedPositionsWithAGap() {
+      // given - positions for partitions 1 and 3 but not 2: the database is inconsistent, unlike
+      // missing positions after the last partition it holds
+      final IntFunction<Long> exportedPositionSupplier =
+          partitionId -> partitionId == 2 ? null : 50L;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequest());
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "The RDBMS holds an exported position for partition 3 but none for partition 2");
+    }
+
+    @Test
+    void shouldReportACompletedBackupWithoutADescriptorAsSuch() {
+      // given - the backup is completed, but records no partition count
+      final var withoutDescriptor =
+          new BackupStatusImpl(
+              new BackupIdentifierImpl(1, 1, 7L),
+              Optional.empty(),
+              BackupStatusCode.COMPLETED,
+              Optional.empty(),
+              Optional.empty(),
+              Optional.empty());
+      when(backupStore.list(any(BackupIdentifierWildcard.class)))
+          .thenReturn(CompletableFuture.completedFuture(List.of(withoutDescriptor)));
+      final var validator = new RestoreValidator(3, backupStore, null);
+
+      // when
+      final var result = validator.validate(elasticsearchRequest(7L));
+
+      // then - not reported as a missing backup
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage("Backup 7 has no descriptor to read its partition count from");
+    }
+
     private static RestoreRequest elasticsearchRequest(final long backupId) {
       return new RestoreRequest(
           "default",
