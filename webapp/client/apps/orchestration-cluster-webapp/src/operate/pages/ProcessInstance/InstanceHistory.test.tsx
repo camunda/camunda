@@ -1,0 +1,293 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {afterEach, describe, expect, vi} from 'vitest';
+import {userEvent} from 'vitest/browser';
+import {cleanup} from 'vitest-browser-react';
+import {useEffect, useState} from 'react';
+import {useRouterState} from '@tanstack/react-router';
+import {HttpResponse, http} from 'msw';
+import {it} from '#/vitest-modules/test-extend';
+import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
+import {
+	createElementInstance,
+	createQueryElementInstancesResponse,
+} from '#/shared-test-modules/api-mocks/element-instances';
+import {
+	mockGetElementInstanceEndpoint,
+	mockQueryElementInstancesEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
+import {useInstanceHistory} from './useInstanceHistory';
+import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
+import {processInstanceSearchSchema} from './processInstanceSearch';
+import {InstanceHistory} from './InstanceHistory';
+const instance = createProcessInstance();
+const child = createElementInstance();
+const path = '/operate/processes/$processInstanceId/variables';
+function renderPage(search = '') {
+	return renderWithRouter(Harness, {
+		path,
+		initialEntry: `/operate/processes/${instance.processInstanceKey}/variables?${search}`,
+	});
+}
+function Probe() {
+	const history = useInstanceHistory();
+	const {setVisible} = history;
+	const selection = useProcessInstanceElementSelection();
+	const window = history.windows.get(instance.processInstanceKey);
+	useEffect(() => {
+		setVisible(true);
+		return () => setVisible(false);
+	}, [setVisible]);
+	return (
+		<>
+			<output>
+				{JSON.stringify({
+					key: selection.resolvedElementInstance?.elementInstanceKey ?? null,
+					count: selection.selectedElementInstanceCount,
+					error: selection.isFetchingElementError,
+					fetching: selection.isFetchingElement,
+					selected: selection.hasSelection,
+					from: window?.scope.from,
+					first: window?.query.data?.items[0]?.elementInstanceKey,
+					forbidden: history.forbidden,
+					timestamps: history.timestamps,
+					nestedReady: history.windows.get(child.elementInstanceKey)?.query.isSuccess ?? false,
+					nestedError: Boolean(history.windows.get(child.elementInstanceKey)?.error),
+				})}
+			</output>
+			<button onClick={() => void history.page(instance.processInstanceKey, 'next')}>Next</button>
+			<button onClick={() => void history.page(instance.processInstanceKey, 'previous')}>Previous</button>
+			<button onClick={() => history.toggle(instance.processInstanceKey)}>Fold</button>
+			<button onClick={() => history.setTimestamps(true)}>Timestamps</button>
+			<button onClick={() => history.toggle(child.elementInstanceKey, instance.processInstanceKey)}>
+				Expand nested
+			</button>
+			<button onClick={() => void history.page(child.elementInstanceKey, 'next')}>Next nested</button>
+			<button onClick={history.retry}>Retry</button>
+		</>
+	);
+}
+function Harness({tree = false}: {tree?: boolean}) {
+	const search = useRouterState({select: (state) => state.location.search});
+	const [id, setId] = useState(instance.processInstanceKey);
+	const [shown, setShown] = useState(true);
+	return (
+		<>
+			<button onClick={() => setShown(!shown)}>Remount</button>
+			<button onClick={() => setId('other')}>Instance</button>
+			<ProcessInstancePageProvider
+				key={id}
+				processInstanceId={id}
+				processInstance={createProcessInstance({processInstanceKey: id})}
+				search={processInstanceSearchSchema.parse(search)}
+			>
+				{shown && (tree ? <InstanceHistory /> : <Probe />)}
+			</ProcessInstancePageProvider>
+		</>
+	);
+}
+describe('InstanceHistory', () => {
+	afterEach(async () => {
+		await cleanup();
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+	});
+	it.for([0, 1, 3, 'key', 'placeholder', 'key-error', 'id-error'])(
+		'should resolve selection without broadening process scope (%s)',
+		async (mode, {worker}) => {
+			const failed = String(mode).endsWith('error');
+			const keyed = typeof mode === 'string' && mode !== 'id-error';
+			const placeholder = mode === 'placeholder';
+			const total = typeof mode === 'number' ? mode : 1;
+			const get = vi.fn(() => (failed ? new HttpResponse(null, {status: 500}) : HttpResponse.json(child)));
+			worker.use(
+				http.get('/v2/element-instances/:key', get),
+				mockQueryElementInstancesEndpoint({
+					successResponse: failed
+						? new HttpResponse(null, {status: 500})
+						: HttpResponse.json(createQueryElementInstancesResponse([child], total)),
+				}),
+			);
+			const screen = await renderPage(
+				`elementId=user-task${keyed ? `&elementInstanceKey=${child.elementInstanceKey}` : ''}${placeholder ? '&isPlaceholder=true' : ''}`,
+			);
+			if (keyed) {
+				screen.queryClient.setQueryData(
+					['selectedElementInstances', instance.processInstanceKey, 'user-task', false],
+					createQueryElementInstancesResponse([createElementInstance({elementInstanceKey: 'cached'})]),
+				);
+			}
+			const count = failed || placeholder ? null : total;
+			const resolved = !failed && !placeholder && (keyed || total === 1) ? `"${child.elementInstanceKey}"` : 'null';
+			await expect
+				.element(screen.getByText(new RegExp(`"count":${count},"error":${failed},"fetching":false,"selected":true`)))
+				.toBeVisible();
+			await expect.element(screen.getByText(new RegExp(`"key":${resolved}`))).toBeVisible();
+			expect(get).toHaveBeenCalledTimes(keyed && !placeholder ? 1 : 0);
+		},
+	);
+	it.for([53, 153])('should use replacement windows with 50-offset stride, total=%i', async (total, {worker}) => {
+		const offsets: number[] = [];
+		worker.use(
+			http.post('/v2/element-instances/search', async ({request}) => {
+				const body = (await request.json()) as {page: {from: number; limit: number}};
+				offsets.push(body.page.from);
+				expect(body.page.limit).toBe(100);
+				return HttpResponse.json(
+					createQueryElementInstancesResponse(
+						Array.from({length: Math.min(100, total - body.page.from)}, (_, index) =>
+							createElementInstance({elementInstanceKey: String(index + body.page.from)}),
+						),
+						total,
+					),
+				);
+			}),
+		);
+		const screen = await renderPage();
+		await expect.element(screen.getByText(/"first":"0"/)).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+		if (total === 153) {
+			await expect.element(screen.getByText(/"from":50,"first":"50"/)).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'Previous'}));
+			await expect.element(screen.getByText(/"from":0,"first":"0"/)).toBeVisible();
+		}
+		expect(offsets).toEqual(total === 53 ? [0] : [0, 50, 0]);
+	});
+	it('should retain windows and controls through remount and reset on instance change', async ({worker}) => {
+		const requests = vi.fn(() => HttpResponse.json(createQueryElementInstancesResponse([child])));
+		worker.use(http.post('/v2/element-instances/search', requests));
+		const screen = await renderPage();
+		await expect.element(screen.getByText(/"first":/)).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Timestamps'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Remount'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Remount'}));
+		await expect.element(screen.getByText(/"timestamps":true/)).toBeVisible();
+		expect(requests).toHaveBeenCalledTimes(1);
+		await userEvent.click(screen.getByRole('button', {name: 'Instance'}));
+		await expect.element(screen.getByText(/"timestamps":false/)).toBeVisible();
+	});
+	it('should ignore a late forbidden request after collapse/re-expand', async ({worker}) => {
+		let finish: () => void = () => {};
+		let calls = 0;
+		worker.use(
+			http.post('/v2/element-instances/search', async () => {
+				if (++calls === 1) {
+					await new Promise<void>((resolve) => {
+						finish = resolve;
+					});
+					return new HttpResponse(null, {status: 403});
+				}
+				return HttpResponse.json(createQueryElementInstancesResponse([child]));
+			}),
+		);
+		const screen = await renderPage();
+		await expect.poll(() => calls).toBe(1);
+		await userEvent.click(screen.getByRole('button', {name: 'Fold'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Fold'}));
+		await expect.element(screen.getByText(/"first":/)).toBeVisible();
+		finish();
+		await expect.element(screen.getByText(/"forbidden":false/)).toBeVisible();
+	});
+	it('should skip hidden polling, recover non-403 errors, and stop on 403', async ({worker}) => {
+		vi.useFakeTimers({toFake: ['setInterval', 'clearInterval']});
+		const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+		let status = 500;
+		const requests = vi.fn(() =>
+			status === 200 ? HttpResponse.json(createQueryElementInstancesResponse()) : new HttpResponse(null, {status}),
+		);
+		worker.use(http.post('/v2/element-instances/search', requests));
+		const screen = await renderPage();
+		await expect.poll(() => requests.mock.calls.length).toBe(1);
+		await vi.advanceTimersByTimeAsync(5000);
+		expect(requests).toHaveBeenCalledTimes(1);
+		hidden.mockReturnValue(false);
+		status = 200;
+		await vi.advanceTimersByTimeAsync(5000);
+		await expect
+			.poll(
+				() =>
+					screen.queryClient.getQueryState([
+						'instanceHistory',
+						instance.processInstanceKey,
+						instance.processInstanceKey,
+						0,
+						0,
+					])?.status,
+			)
+			.toBe('success');
+		status = 403;
+		await vi.advanceTimersByTimeAsync(5000);
+		await expect.element(screen.getByText(/"forbidden":true/)).toBeVisible();
+		await vi.advanceTimersByTimeAsync(15000);
+		expect(requests).toHaveBeenCalledTimes(3);
+	});
+	it.for(['poll', 'retry'])('should clear only recovered nested paging errors after %s', async (recovery, {worker}) => {
+		vi.useFakeTimers({toFake: ['setInterval', 'clearInterval']});
+		worker.use(
+			http.post('/v2/element-instances/search', async ({request}) => {
+				const {filter, page} = (await request.json()) as {
+					filter: {elementInstanceScopeKey: string};
+					page: {from: number};
+				};
+				if (filter.elementInstanceScopeKey === instance.processInstanceKey) {
+					return HttpResponse.json(
+						createQueryElementInstancesResponse([createElementInstance({...child, type: 'SUB_PROCESS'})]),
+					);
+				}
+				if (page.from === 50) {
+					return new HttpResponse(null, {status: 500});
+				}
+				return HttpResponse.json(
+					createQueryElementInstancesResponse(
+						Array.from({length: 100}, (_, index) =>
+							createElementInstance({elementInstanceKey: String(index), state: 'COMPLETED'}),
+						),
+						151,
+					),
+				);
+			}),
+		);
+		const screen = await renderPage();
+		await expect.element(screen.getByText(/"first":/)).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Expand nested'}));
+		await expect.element(screen.getByText(/"nestedReady":true/)).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Next nested'}));
+		await expect.element(screen.getByText(/"nestedError":true/)).toBeVisible();
+		if (recovery === 'poll') {
+			await vi.advanceTimersByTimeAsync(5000);
+		} else {
+			await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
+		}
+		await expect.element(screen.getByText(/"nestedError":false/)).toBeVisible();
+	});
+	it('should render root and controls and clear selection while enrichment stays optional', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryElementInstancesResponse([child])),
+			}),
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(child)}),
+		);
+		const screen = await renderWithRouter(() => <Harness tree />, {
+			path,
+			initialEntry: `/operate/processes/${instance.processInstanceKey}/variables?elementId=task&elementInstanceKey=${child.elementInstanceKey}&isPlaceholder=true&isMultiInstanceBody=true&anchorElementId=anchor&tenantId=tenant`,
+		});
+		await expect.element(screen.getByRole('button', {name: 'My Process'})).toBeVisible();
+		expect(screen.getByRole('button', {name: 'My Process'}).element().getBoundingClientRect().height).toBe(32);
+		await userEvent.click(screen.getByText('Execution count'));
+		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).toBeChecked();
+		await userEvent.click(screen.getByRole('button', {name: 'My Process'}));
+		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant'});
+	});
+});

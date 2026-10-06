@@ -357,6 +357,12 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	getElementInstance: (elementInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getElementInstance.getUrl({elementInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getElementInstance.method,
+		}),
+
 	queryAgentInstances: (body: QueryAgentInstancesRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.queryAgentInstances.getUrl()), {
 			...BASE_REQUEST_OPTIONS,

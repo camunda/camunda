@@ -21,9 +21,11 @@ import {
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
+	mockQueryElementInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
+import {createQueryElementInstancesResponse} from '#/shared-test-modules/api-mocks/element-instances';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {
@@ -71,6 +73,7 @@ function getProcessInstancePageHandlers({
 	processXml?: string;
 } = {}) {
 	return [
+		mockQueryElementInstancesEndpoint({successResponse: HttpResponse.json(createQueryElementInstancesResponse())}),
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(currentUser)}),
 		mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(processInstance)}),
 		mockQueryProcessDefinitionsEndpoint({successResponse: HttpResponse.json(processDefinitions)}),

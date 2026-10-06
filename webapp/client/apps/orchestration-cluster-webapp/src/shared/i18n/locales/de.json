@@ -1079,6 +1079,22 @@
 				}
 			},
 			"processInstance": {
+				"history": {
+					"title": "Instanzhistorie",
+					"tabs": "Prozessinstanz-Registerkarten",
+					"variables": "Variablen",
+					"incidents": "Vorfälle",
+					"details": "Details",
+					"timestamps": "Enddatum",
+					"executionCount": "Ausführungsanzahl",
+					"multiInstance": " (Multi-Instanz)",
+					"expand": "{{name}} aufklappen",
+					"collapse": "{{name}} zuklappen",
+					"migrated": "Migriert {{date}}",
+					"forbidden": "Sie haben keine Berechtigung, die Instanzhistorie anzuzeigen",
+					"error": "Die Instanzhistorie konnte nicht geladen werden. Bitte aktualisieren Sie die Seite.",
+					"anchorError": "Die Ad-hoc-Instanz konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut."
+				},
 				"diagram": {
 					"downloadXml": "XML herunterladen",
 					"panelLabel": "Prozessinstanzdiagramm",

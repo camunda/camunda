@@ -11,6 +11,7 @@ import type {
 	GetProcessInstanceWaitStateStatisticsResponseBody,
 	ProcessInstance,
 	QueryProcessInstanceIncidentsResponseBody,
+	QueryElementInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {ForbiddenError} from '#/shared/errors';
@@ -19,6 +20,18 @@ import {endpoints} from '#/shared/http/endpoints';
 import {isInstanceRunning, shouldPollProcessInstance} from '#/operate/shared/utils/processInstance';
 
 const POLLING_INTERVAL_MS = 5000;
+const historySort = [
+	{field: 'startDate', order: 'desc'},
+	{field: 'elementInstanceKey', order: 'desc'},
+] satisfies QueryElementInstancesRequestBody['sort'];
+
+async function instanceRequest<T>(input: Request, signal: AbortSignal): Promise<T> {
+	const {response, error} = await request(new Request(input, {signal}));
+	if (error !== null) {
+		throw mapQueryError(error);
+	}
+	return response.json();
+}
 
 function processInstanceQuery(processInstanceKey: string) {
 	return queryOptions({
@@ -97,6 +110,8 @@ function useProcessInstanceWaitStateStatistics(processInstance: ProcessInstance)
 }
 
 export {
+	historySort,
+	instanceRequest,
 	processInstanceQuery,
 	processInstanceIncidentsCountQuery,
 	processInstanceWaitStateStatisticsQuery,
