@@ -155,18 +155,23 @@ public class RestoreApp implements ApplicationRunner {
 
     final PostRestoreActionContext postRestoreActionContext;
     if (!preRestoreActionResult.skipRestore()) {
-      restore(clusterRestore, selectionPerTenant);
+      final var restoredPartitionCounts = restore(clusterRestore, selectionPerTenant);
       postRestoreActionContext =
           new PostRestoreActionContext(
               restoreId,
               configuration.getCluster().getNodeId(),
               false,
-              selectionPerTenant.keySet());
+              selectionPerTenant.keySet(),
+              restoredPartitionCounts);
     } else {
       LOG.info("Skipping restore: {}", preRestoreActionResult.message());
       postRestoreActionContext =
           new PostRestoreActionContext(
-              restoreId, configuration.getCluster().getNodeId(), true, selectionPerTenant.keySet());
+              restoreId,
+              configuration.getCluster().getNodeId(),
+              true,
+              selectionPerTenant.keySet(),
+              Map.of());
     }
     // We have to run post restore anyway even if post restore action decided to skip restore,
     // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
@@ -211,19 +216,21 @@ public class RestoreApp implements ApplicationRunner {
     return targets;
   }
 
-  private void restore(
+  private Map<String, Integer> restore(
       final ClusterRestore clusterRestore, final Map<String, RestoreSelection> selectionPerTenant)
       throws IOException, ExecutionException, InterruptedException {
     LOG.info(
         "Starting to restore physical tenants {} with the following configuration: {}",
         selectionPerTenant,
         restoreConfiguration);
-    clusterRestore.restore(
-        selectionPerTenant,
-        arguments.targetDataPolicy(),
-        restoreConfiguration.validateConfig(),
-        restoreConfiguration.ignoreFilesInTarget());
+    final var restoredPartitionCounts =
+        clusterRestore.restore(
+            selectionPerTenant,
+            arguments.targetDataPolicy(),
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
     LOG.info("Successfully restored physical tenants {}", selectionPerTenant.keySet());
+    return restoredPartitionCounts;
   }
 
   /**
@@ -304,12 +311,17 @@ public class RestoreApp implements ApplicationRunner {
    *     validation checks these and no others: a run restoring one tenant of a multi-tenant cluster
    *     leaves the rest as they were, and demanding restored data for them would fail every partial
    *     restore.
+   * @param restoredPartitionCounts the number of partitions restored for each of those tenants, the
+   *     partition count of their backups. Post-restore validation expects restored data for no more
+   *     partitions than that, even when the configuration holds more. Empty when the restore was
+   *     skipped, which leaves the configured partition count in effect.
    */
   public record PostRestoreActionContext(
       String restoreId,
       int nodeId,
       boolean skippedRestore,
-      Set<String> restoredPhysicalTenantIds) {}
+      Set<String> restoredPhysicalTenantIds,
+      Map<String, Integer> restoredPartitionCounts) {}
 
   public interface PreRestoreAction {
     PreRestoreActionResult beforeRestore(final String restoreId, int nodeId)
