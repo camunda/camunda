@@ -10,6 +10,7 @@ import {useEffect, useState, type Dispatch, type ReactNode, type SetStateAction}
 import {useMachine} from '@xstate/react';
 import {useTranslation} from 'react-i18next';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useNavigate} from '@tanstack/react-router';
 import {DataTableSkeleton, SkeletonText} from '@carbon/react';
 import type {
 	BatchOperationItem,
@@ -142,8 +143,11 @@ const InstancesTable: React.FC<Props> = ({
 	} = useProcessInstancesSearch(search, mode !== 'batch-modification');
 	const selection = useProcessInstancesSelection(search, processInstances, totalCount, hasMoreTotalItems);
 	const queryClient = useQueryClient();
-	const [operation, send] = useMachine(processBulkOperationMachine, {input: {queryClient}});
-	const [modification, sendModification] = useMachine(processBulkOperationMachine, {input: {queryClient}});
+	const navigate = useNavigate();
+	const [operation, send] = useMachine(processBulkOperationMachine, {input: {queryClient, navigate}});
+	const [modification, sendModification] = useMachine(processBulkOperationMachine, {
+		input: {queryClient, navigate},
+	});
 	const isSubmitting = operation.matches('submitting') || modification.matches('submitting');
 	const {acceptedKey, acceptedIdentity} = operation.context;
 	const {reset, filterIdentity} = selection;

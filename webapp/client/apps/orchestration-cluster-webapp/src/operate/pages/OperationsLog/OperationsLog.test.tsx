@@ -43,6 +43,14 @@ const PROCESS_DEFINITIONS = HttpResponse.json(
 
 const NO_DECISION_DEFINITIONS = HttpResponse.json(createQueryDecisionDefinitionsResponse());
 const OPERATIONS_LOG_PATH = '/operate/operations-log';
+const BASEPATH_CASES = [
+	{basepath: '', expectedPathPrefix: ''},
+	{basepath: '/camunda', expectedPathPrefix: '/camunda'},
+	{
+		basepath: '/camunda/physical-tenants/tenant-a',
+		expectedPathPrefix: '/camunda/physical-tenants/tenant-a',
+	},
+] as const;
 const AUDIT_LOG_ERROR = new HttpResponse(null, {status: 500});
 const DECISION_LOOKUP_ERROR = new HttpResponse(null, {status: 503});
 const DECISION_LOG = createAuditLog({
@@ -489,33 +497,36 @@ describe('<OperationsLog />', () => {
 			.toBeVisible();
 	});
 
-	it('should render a batch operation link for BATCH entity types', async ({worker}) => {
-		worker.use(
-			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-			mockQueryAuditLogsEndpoint({
-				successResponse: HttpResponse.json(
-					createQueryAuditLogsResponse({
-						items: [
-							createAuditLog({
-								auditLogKey: '789',
-								entityType: 'BATCH',
-								operationType: 'CANCEL',
-								batchOperationKey: 'batch-123',
-								batchOperationType: 'CANCEL_PROCESS_INSTANCE',
-							}),
-						],
-					}),
-				),
-			}),
-		);
+	it.for(BASEPATH_CASES)(
+		'should render a batch operation link for BATCH entity types with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}, {worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryAuditLogsResponse({
+							items: [
+								createAuditLog({
+									auditLogKey: '789',
+									entityType: 'BATCH',
+									operationType: 'CANCEL',
+									batchOperationKey: 'batch-123',
+									batchOperationType: 'CANCEL_PROCESS_INSTANCE',
+								}),
+							],
+						}),
+					),
+				}),
+			);
 
-		const screen = await renderPage();
+			const screen = await renderPage({basepath});
 
-		await expect
-			.element(screen.getByRole('link', {name: 'View batch operation batch-123'}))
-			.toHaveAttribute('href', '/operate/batch-operations/batch-123');
-	});
+			await expect
+				.element(screen.getByRole('link', {name: 'View batch operation batch-123'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/batch-operations/batch-123`);
+		},
+	);
 
 	it.for([
 		{basepath: '', expectedPathPrefix: ''},
@@ -593,39 +604,42 @@ describe('<OperationsLog />', () => {
 		},
 	);
 
-	it('should render a decision instance link for DECISION entity types', async ({worker}) => {
-		worker.use(
-			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-			mockQueryDecisionDefinitionsEndpoint({
-				successResponse: HttpResponse.json(
-					createQueryDecisionDefinitionsResponse({
-						items: [createDecisionDefinition({decisionDefinitionKey: '888', name: 'My Decision'})],
-					}),
-				),
-			}),
-			mockQueryAuditLogsEndpoint({
-				successResponse: HttpResponse.json(
-					createQueryAuditLogsResponse({
-						items: [
-							createAuditLog({
-								auditLogKey: '123',
-								entityKey: '888',
-								entityType: 'DECISION',
-								operationType: 'EVALUATE',
-								decisionDefinitionKey: '888',
-							}),
-						],
-					}),
-				),
-			}),
-		);
+	it.for(BASEPATH_CASES)(
+		'should render a decision instance link for DECISION entity types with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}, {worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryDecisionDefinitionsResponse({
+							items: [createDecisionDefinition({decisionDefinitionKey: '888', name: 'My Decision'})],
+						}),
+					),
+				}),
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryAuditLogsResponse({
+							items: [
+								createAuditLog({
+									auditLogKey: '123',
+									entityKey: '888',
+									entityType: 'DECISION',
+									operationType: 'EVALUATE',
+									decisionDefinitionKey: '888',
+								}),
+							],
+						}),
+					),
+				}),
+			);
 
-		const screen = await renderPage();
+			const screen = await renderPage({basepath});
 
-		await expect
-			.element(screen.getByRole('link', {name: 'View decision instance 888'}))
-			.toHaveAttribute('href', '/operate/decisions/888');
-	});
+			await expect
+				.element(screen.getByRole('link', {name: 'View decision instance 888'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/decisions/888`);
+		},
+	);
 
 	it('should open the details modal when the comment button is clicked', async ({worker}) => {
 		worker.use(
