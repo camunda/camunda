@@ -1045,6 +1045,21 @@
 					"calledDecisionError": "Impossible de trouver les instances de décision appelées"
 				},
 				"title": "Instance de processus Operate",
+				"operations": {
+					"actions": "Actions",
+					"retrying": "Nouvelle tentative...",
+					"canceling": "Annulation...",
+					"deleting": "Suppression...",
+					"suspending": "Suspension...",
+					"resuming": "Reprise...",
+					"successful": "Réussi",
+					"failed": "Échec",
+					"retryScheduled": "Les incidents sont programmés pour une nouvelle tentative",
+					"cancelScheduled": "L'instance est programmée pour annulation",
+					"suspended": "Instance suspendue",
+					"resumed": "Instance reprise",
+					"stateNotReached": "L'instance de processus n'a pas atteint l'état {{state}}"
+				},
 				"pageTitle": "Operate : Instance de processus {{processInstanceId}} de {{name}}",
 				"notFoundNotificationTitle": "L'instance {{processInstanceId}} n'a pas pu être trouvée",
 				"breadcrumb": {

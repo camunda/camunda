@@ -1042,6 +1042,21 @@
 					"calledDecisionError": "No se pudieron encontrar las instancias de decisión llamadas"
 				},
 				"title": "Instancia de proceso de Operate",
+				"operations": {
+					"actions": "Acciones",
+					"retrying": "Reintentando...",
+					"canceling": "Cancelando...",
+					"deleting": "Eliminando...",
+					"suspending": "Suspendiendo...",
+					"resuming": "Reanudando...",
+					"successful": "Correcto",
+					"failed": "Error",
+					"retryScheduled": "Los incidentes están programados para reintento",
+					"cancelScheduled": "La instancia está programada para cancelación",
+					"suspended": "Instancia suspendida",
+					"resumed": "Instancia reanudada",
+					"stateNotReached": "La instancia de proceso no ha alcanzado el estado {{state}}"
+				},
 				"pageTitle": "Operate: Instancia de proceso {{processInstanceId}} de {{name}}",
 				"notFoundNotificationTitle": "No se pudo encontrar la instancia {{processInstanceId}}",
 				"breadcrumb": {
