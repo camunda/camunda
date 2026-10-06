@@ -74,15 +74,18 @@ val optimizeBackendResources =
     isTransitive = false
   }
 
+val optimizeScriptPaths =
+  setOf(
+    "optimize-startup.sh",
+    "optimize-startup.bat",
+    "upgrade/upgrade.sh",
+    "upgrade/upgrade.bat",
+  )
+
 val optimizeScripts =
   copySpec {
     from(optimizeDistroResources) {
-      include(
-        "optimize-startup.sh",
-        "optimize-startup.bat",
-        "upgrade/upgrade.sh",
-        "upgrade/upgrade.bat",
-      )
+      include(optimizeScriptPaths)
       // Preserve Maven's 0755 mode for Optimize's .bat files as well as its .sh files.
       filePermissions { unix("0755".toInt(8)) }
     }
@@ -92,12 +95,7 @@ val optimizeContents =
   copySpec {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(optimizeDistroResources) {
-      exclude(
-        "optimize-startup.sh",
-        "optimize-startup.bat",
-        "upgrade/upgrade.sh",
-        "upgrade/upgrade.bat",
-      )
+      exclude(optimizeScriptPaths)
     }
     with(optimizeScripts)
     from(optimizeBackendJar)
