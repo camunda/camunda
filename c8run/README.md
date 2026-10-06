@@ -55,6 +55,8 @@ To run with tenants for one start only, without saving them (useful in CI), use 
 
 `./c8run tenants path` shows where tenants are saved; `C8RUN_TENANTS_FILE` selects another file. If your `--config` already declares `camunda.physical-tenants`, c8run uses it as-is and does not apply its saved tenants. Set `C8RUN_TENANTS_MODE=external` to disable the `tenants` commands entirely.
 
+Tools that wrap c8run, such as `c8ctl cluster`, can set `C8RUN_CLI_NAME` to the command users type, for example `C8RUN_CLI_NAME="c8ctl cluster"`. c8run then shows that name in help output and in command hints such as `c8ctl cluster tenants list`. When the variable is unset, output names `c8run`.
+
 ### Limitations
 
 - Physical tenants require Camunda 8.10 or newer. On older versions every `tenants` command is refused; `./c8run tenants path` still shows the saved file if you need to delete it.
