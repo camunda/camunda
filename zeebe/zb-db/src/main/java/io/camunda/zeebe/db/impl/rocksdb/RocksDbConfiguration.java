@@ -13,6 +13,7 @@ public final class RocksDbConfiguration {
 
   public static final long DEFAULT_MEMORY_LIMIT = 512 * 1024 * 1024L;
   public static final double DEFAULT_MEMORY_FRACTION = 0.1;
+  public static final long DEFAULT_MEMORY_MINIMUM = 0;
   public static final int DEFAULT_UNLIMITED_MAX_OPEN_FILES = -1;
   public static final int DEFAULT_MAX_WRITE_BUFFER_NUMBER = 6;
   public static final int DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE = 3;
@@ -49,6 +50,7 @@ public final class RocksDbConfiguration {
   private boolean statisticsEnabled = DEFAULT_STATISTICS_ENABLED;
   private long memoryLimit = DEFAULT_MEMORY_LIMIT;
   private double memoryFraction = DEFAULT_MEMORY_FRACTION;
+  private long memoryMinimum = DEFAULT_MEMORY_MINIMUM;
   private int maxWriteBufferNumber = DEFAULT_MAX_WRITE_BUFFER_NUMBER;
   private int minWriteBufferNumberToMerge = DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE;
   private boolean walDisabled = DEFAULT_WAL_DISABLED;
@@ -177,6 +179,15 @@ public final class RocksDbConfiguration {
 
   public RocksDbConfiguration setMemoryFraction(final double memoryFraction) {
     this.memoryFraction = memoryFraction;
+    return this;
+  }
+
+  public long getMemoryMinimum() {
+    return memoryMinimum;
+  }
+
+  public RocksDbConfiguration setMemoryMinimum(final long memoryMinimum) {
+    this.memoryMinimum = memoryMinimum;
     return this;
   }
 
