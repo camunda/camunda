@@ -26,7 +26,6 @@ extensions.configure<PublishingExtension> {
   }
 }
 
-afterEvaluate {
-  val sourceSet = sourceSets.named(publishedTestJar.sourceSetName.get()).get()
-  testsJar.configure { from(sourceSet.output) }
+testsJar.configure {
+  from(publishedTestJar.sourceSetName.flatMap { sourceSets.named(it) }.map { it.output })
 }
