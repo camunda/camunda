@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_hot_warm_cold" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="hotWarmCold" name="Hot, warm and cold instances" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>toSplit</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="toSplit" sourceRef="start" targetRef="split" />
+    <bpmn:exclusiveGateway id="split" default="hot">
+      <bpmn:incoming>toSplit</bpmn:incoming>
+      <bpmn:outgoing>cold</bpmn:outgoing>
+      <bpmn:outgoing>warm</bpmn:outgoing>
+      <bpmn:outgoing>hot</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="cold" sourceRef="split" targetRef="park">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=modulo(businessKey, 4) = 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="warm" sourceRef="split" targetRef="wait">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=modulo(businessKey, 4) = 1</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="hot" sourceRef="split" targetRef="join" />
+    <bpmn:intermediateCatchEvent id="park">
+      <bpmn:incoming>cold</bpmn:incoming>
+      <bpmn:outgoing>parked</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="parked" sourceRef="park" targetRef="join" />
+    <bpmn:intermediateCatchEvent id="wait">
+      <bpmn:incoming>warm</bpmn:incoming>
+      <bpmn:outgoing>waited</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="waited" sourceRef="wait" targetRef="join" />
+    <bpmn:exclusiveGateway id="join">
+      <bpmn:incoming>hot</bpmn:incoming>
+      <bpmn:incoming>parked</bpmn:incoming>
+      <bpmn:incoming>waited</bpmn:incoming>
+      <bpmn:outgoing>toTask</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="toTask" sourceRef="join" targetRef="task" />
+    <bpmn:serviceTask id="task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="benchmark-task" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>toTask</bpmn:incoming>
+      <bpmn:outgoing>toEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="toEnd" sourceRef="task" targetRef="end" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>toEnd</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>
