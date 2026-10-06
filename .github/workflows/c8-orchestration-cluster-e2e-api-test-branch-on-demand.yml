@@ -24,6 +24,8 @@ defaults:
 jobs:
   validate-branch:
     runs-on: ubuntu-latest
+    # Unshallowed checkout plus seven branch fetches.
+    timeout-minutes: 15
     outputs:
       base: ${{ steps.detect-base.outputs.base }}
     steps:
@@ -41,20 +43,43 @@ jobs:
           echo "Branch '$branch_name' exists."
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Base detection counts commits back to each candidate's
+          # merge-base, which a shallow clone cannot answer.
+          fetch-depth: 0
 
       - name: Detect base branch
         id: detect-base
+        env:
+          BRANCH: ${{ github.event.inputs.branch }}
         run: |
-          branch="${{ github.event.inputs.branch }}"
-          echo "Detecting base branch for input branch: $branch"
-          git fetch origin stable/8.6 stable/8.7 stable/8.8 main "$branch"
-          base="main"
-          for candidate in stable/8.6 stable/8.7 stable/8.8 main; do
-            if git merge-base --is-ancestor origin/$candidate origin/$branch; then
+          set -euo pipefail
+          echo "Detecting base branch for input branch: $BRANCH"
+          # Most specific first, so a branch cut exactly where a stable line
+          # forked resolves to that stable line rather than its ancestor.
+          candidates=(stable/8.10 stable/8.9 stable/8.8 stable/8.7 stable/8.6 main)
+          git fetch origin "${candidates[@]}" "$BRANCH"
+
+          base=""
+          best=""
+          for candidate in "${candidates[@]}"; do
+            if ! merge_base=$(git merge-base "origin/$candidate" "origin/$BRANCH"); then
+              echo "  $candidate: no common history, skipping"
+              continue
+            fi
+            distance=$(git rev-list --count "$merge_base..origin/$BRANCH")
+            echo "  $candidate: forked at ${merge_base:0:9}, $distance commit(s) since"
+            if [[ -z "$best" || "$distance" -lt "$best" ]]; then
+              best="$distance"
               base="$candidate"
-              break
             fi
           done
+
+          if [[ -z "$base" ]]; then
+            echo "Error: no candidate branch shares history with '$BRANCH'." >&2
+            exit 1
+          fi
+
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
