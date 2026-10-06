@@ -1108,6 +1108,21 @@
 					"calledDecisionError": "Failed to resolve called decision instances"
 				},
 				"title": "Operate Process Instance",
+				"operations": {
+					"actions": "Actions",
+					"retrying": "Retrying...",
+					"canceling": "Canceling...",
+					"deleting": "Deleting...",
+					"suspending": "Suspending...",
+					"resuming": "Resuming...",
+					"successful": "Successful",
+					"failed": "Failed",
+					"retryScheduled": "Incidents are scheduled for retry",
+					"cancelScheduled": "Instance is scheduled for cancellation",
+					"suspended": "Instance suspended",
+					"resumed": "Instance resumed",
+					"stateNotReached": "Process instance has not reached {{state}} state"
+				},
 				"pageTitle": "Operate: Process Instance {{processInstanceId}} of {{name}}",
 				"notFoundNotificationTitle": "Instance {{processInstanceId}} could not be found",
 				"breadcrumb": {

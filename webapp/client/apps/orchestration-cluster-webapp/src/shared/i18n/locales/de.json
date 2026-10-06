@@ -1096,6 +1096,21 @@
 					"calledDecisionError": "Aufgerufene Entscheidungsinstanzen konnten nicht ermittelt werden"
 				},
 				"title": "Operate Prozessinstanz",
+				"operations": {
+					"actions": "Aktionen",
+					"retrying": "Wird erneut versucht...",
+					"canceling": "Wird abgebrochen...",
+					"deleting": "Wird gelöscht...",
+					"suspending": "Wird angehalten...",
+					"resuming": "Wird fortgesetzt...",
+					"successful": "Erfolgreich",
+					"failed": "Fehlgeschlagen",
+					"retryScheduled": "Incidents sind zur Wiederholung vorgemerkt",
+					"cancelScheduled": "Instanz ist zum Abbruch vorgemerkt",
+					"suspended": "Instanz angehalten",
+					"resumed": "Instanz fortgesetzt",
+					"stateNotReached": "Prozessinstanz hat den Zustand {{state}} noch nicht erreicht"
+				},
 				"pageTitle": "Operate: Prozessinstanz {{processInstanceId}} von {{name}}",
 				"notFoundNotificationTitle": "Instanz {{processInstanceId}} konnte nicht gefunden werden",
 				"breadcrumb": {

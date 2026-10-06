@@ -10,6 +10,7 @@ import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {t} from 'i18next';
 import {ProcessInstance, ProcessInstancePending} from '#/operate/pages/ProcessInstance/ProcessInstance';
 import {InstanceDiagram} from '#/operate/pages/ProcessInstance/InstanceDiagram';
+import {ProcessInstanceOperations} from '#/operate/pages/ProcessInstance/ProcessInstanceOperations/ProcessInstanceOperations';
 import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
 import {validateProcessInstanceRouteSearch} from '#/operate/pages/ProcessInstance/processInstanceSearch';
 import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
@@ -49,6 +50,7 @@ const Route = createFileRoute('/_carbon/_auth/operate/processes/$processInstance
 				search={Route.useSearch()}
 				topPanel={<InstanceDiagram />}
 				bottomPanel={<Outlet />}
+				headerOperations={<ProcessInstanceOperations key={processInstanceId} />}
 			/>
 		);
 	},
