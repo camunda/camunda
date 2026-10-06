@@ -76,6 +76,7 @@ jobs:
       load-test-setup-changes: ${{ steps.filter.outputs.load-test-setup-changes }}
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
+      load-test-k6-changes: ${{ steps.filter.outputs.load-test-k6-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -287,6 +288,40 @@ jobs:
           echo "  git diff golden/    # review the change"
           echo "  git add golden/ && git commit -m 'test: update golden files'"
           echo "Or apply the 'generate-golden' label. Renovate PRs touching load-tests/setup/** are handled automatically."
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  load-test-k6-prettier:
+    if: needs.detect-changes.outputs.load-test-k6-changes == 'true'
+    name: "Load Test / Lint k6 Scripts"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: load-tests/setup/charts/load-test-setup/k6
+          max_attempts: "2"
+          timeout_minutes: "3"
+      - name: Check formatting
+        run: make -C load-tests/setup/charts/load-test-setup/k6 check
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2805,6 +2840,7 @@ jobs:
       - junit-vintage-check
       - load-test-golden-tests
       - load-test-helm-lockfile
+      - load-test-k6-prettier
       - maven-spotless-linter
       - openapi-lint
       - openapi-x-added-in-version-check
