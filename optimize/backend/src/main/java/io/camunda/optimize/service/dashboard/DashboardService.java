@@ -500,7 +500,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     deleteDashboard(dashboardId, dashboardDefinitionDto);
   }
 
-  public void validateDashboardFilters(
+  void validateDashboardFilters(
       final String userId,
       final List<DashboardFilterDto<?>> availableFilters,
       final List<DashboardReportTileDto> reportsInDashboard) {

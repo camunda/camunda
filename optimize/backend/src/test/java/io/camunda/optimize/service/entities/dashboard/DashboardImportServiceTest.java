@@ -10,12 +10,7 @@ package io.camunda.optimize.service.entities.dashboard;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
@@ -50,9 +45,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 public class DashboardImportServiceTest {
 
-  private static final String USER_ID = "testUser";
-
-  private final ProcessVariableService processVariableService = mock(ProcessVariableService.class);
   private DashboardImportService underTest;
 
   @BeforeEach
@@ -66,7 +58,7 @@ public class DashboardImportServiceTest {
         new DashboardService(
             mock(DashboardWriter.class),
             mock(DashboardReader.class),
-            processVariableService,
+            mock(ProcessVariableService.class),
             mock(ReportService.class),
             mock(AuthorizedCollectionService.class),
             mock(AbstractIdentityService.class),
@@ -93,28 +85,8 @@ public class DashboardImportServiceTest {
                         List.of()))));
 
     // when / then
-    assertThatCode(() -> underTest.validateAllDashboardsOrFail(USER_ID, List.of(dashboard)))
-        .doesNotThrowAnyException();
-    verify(processVariableService, never())
-        .getVariableNamesForAuthorizedReports(anyString(), anyList());
-  }
-
-  @Test
-  public void shouldNotRequireVariableFilterToExistInReportsWhenValidatingWithoutUser() {
-    // given
-    final DashboardDefinitionExportDto dashboard =
-        dashboardWithFilters(
-            List.of(
-                variableFilter(
-                    new DashboardStringVariableFilterDataDto(
-                        "myVariable",
-                        new DashboardVariableFilterSubDataDto(null, List.of(), true),
-                        List.of()))));
-
-    // when / then
     assertThatCode(() -> underTest.validateAllDashboardsOrFail(List.of(dashboard)))
         .doesNotThrowAnyException();
-    verify(processVariableService, never()).getVariableNamesForAuthorizedReports(any(), anyList());
   }
 
   @Test
@@ -131,7 +103,7 @@ public class DashboardImportServiceTest {
                         null))));
 
     // when / then
-    assertThatThrownBy(() -> underTest.validateAllDashboardsOrFail(USER_ID, List.of(dashboard)))
+    assertThatThrownBy(() -> underTest.validateAllDashboardsOrFail(List.of(dashboard)))
         .isInstanceOf(OptimizeImportFileInvalidException.class)
         .hasMessageContaining("invalid filters")
         .hasMessageContaining("Filter subdata cannot be supplied");
@@ -144,7 +116,7 @@ public class DashboardImportServiceTest {
         dashboardWithFilters(List.of(new DashboardVariableFilterDto()));
 
     // when / then
-    assertThatThrownBy(() -> underTest.validateAllDashboardsOrFail(USER_ID, List.of(dashboard)))
+    assertThatThrownBy(() -> underTest.validateAllDashboardsOrFail(List.of(dashboard)))
         .isInstanceOf(OptimizeImportFileInvalidException.class)
         .hasMessageContaining("invalid filters")
         .hasMessageContaining("All filters need to supply Filter data");
@@ -166,7 +138,7 @@ public class DashboardImportServiceTest {
                         List.of()))));
 
     // when / then
-    assertThatThrownBy(() -> underTest.validateAllDashboardsOrFail(USER_ID, List.of(dashboard)))
+    assertThatThrownBy(() -> underTest.validateAllDashboardsOrFail(List.of(dashboard)))
         .isInstanceOf(OptimizeImportFileInvalidException.class)
         .hasMessageContaining("invalid filters")
         .hasMessageContaining("require a variable name");
