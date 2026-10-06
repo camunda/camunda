@@ -14,6 +14,10 @@ inputs:
     description: 'Whether there are any failures or cancellations in the workflow'
     required: false
     default: 'false'
+  jobs_file:
+    description: 'Optional JSON file ({"jobs": [...]}, Jobs API format) with the jobs to report. When unset, missing or empty, the action reports the failed and cancelled jobs of the run'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -45,6 +49,7 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
+        JOBS_FILE: ${{ inputs.jobs_file }}
       run: |
         set +e  # Don't fail the script on errors
 
@@ -55,16 +60,22 @@ runs:
         echo -e "## 🔍 CI Failure Analysis\n\n" | tee -a "$COMMENT_FILE"
         echo -e "GHA workflow run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n" | tee -a "$COMMENT_FILE"
 
-        # Get all jobs from the current workflow run
-        JOBS_JSON=$(gh api \
-          --paginate \
-          -H "Accept: application/vnd.github+json" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100" \
-          | jq -s '{jobs: map(.jobs) | add}')
+        if [ -n "$JOBS_FILE" ] && [ -s "$JOBS_FILE" ]; then
+          # The caller already selected the jobs to report
+          JOBS_JSON=$(cat "$JOBS_FILE")
+          UNSUCCESSFUL_JOBS=$(echo "$JOBS_JSON" | jq -r '.jobs[].id')
+        else
+          # Get all jobs from the current workflow run
+          JOBS_JSON=$(gh api \
+            --paginate \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100" \
+            | jq -s '{jobs: map(.jobs) | add}')
 
-        # Filter unsuccessful jobs (failure, cancelled)
-        UNSUCCESSFUL_JOBS=$(echo "$JOBS_JSON" | jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "cancelled") | .id')
+          # Filter unsuccessful jobs (failure, cancelled)
+          UNSUCCESSFUL_JOBS=$(echo "$JOBS_JSON" | jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "cancelled") | .id')
+        fi
 
         if [ -z "$UNSUCCESSFUL_JOBS" ]; then
           echo "ℹ️ No unsuccessful jobs found." | tee -a "$COMMENT_FILE"
@@ -82,7 +93,7 @@ runs:
         for JOB_ID in $UNSUCCESSFUL_JOBS; do
           JOB_INFO=$(echo "$JOBS_JSON" | jq -r ".jobs[] | select(.id == $JOB_ID)")
           JOB_NAME=$(echo "$JOB_INFO" | jq -r '.name')
-          JOB_CONCLUSION=$(echo "$JOB_INFO" | jq -r '.conclusion')
+          JOB_CONCLUSION=$(echo "$JOB_INFO" | jq -r '.conclusion // .status')
           JOB_URL=$(echo "$JOB_INFO" | jq -r '.html_url')
 
           echo "### 📋 GHA job: \`$JOB_NAME\` (${JOB_CONCLUSION})" | tee -a "$COMMENT_FILE"
