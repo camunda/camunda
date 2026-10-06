@@ -313,12 +313,19 @@ def saas_candidate(run_id: str, base_ref: str, job_name: str, workdir: Path) -> 
 MAX_ATTEMPT_LOOKBACK = 5
 
 
-def downstream_failing_jobs(downstream_id: str, attempts: int) -> list[dict]:
-    """Failing jobs of the most recent downstream attempt that had any.
+def downstream_failing_jobs(
+    downstream_id: str, attempts: int, *, allow_stalled: bool = False
+) -> list[dict]:
+    """Jobs that explain the most recent downstream attempt that has an explanation.
 
     A re-run turns every job of the latest attempt green while the parent run
     keeps the conclusion triage reacted to, so reading only the latest attempt
     silently loses the evidence.
+
+    `allow_stalled` falls back to the jobs GitHub stopped before they ran, which
+    is the only evidence a run leaves when a job is cancelled while queued. The
+    fallback is per attempt and applies only when that attempt had no failing
+    job: a cancellation alongside a failure is a consequence of it, not a cause.
     """
     for attempt in range(attempts, max(attempts - MAX_ATTEMPT_LOOKBACK, 0), -1):
         data = gh_json(
@@ -329,11 +336,14 @@ def downstream_failing_jobs(downstream_id: str, attempts: int) -> list[dict]:
             ],
             {},
         )
-        failing = [
-            j
-            for j in (data.get("jobs") or [])
-            if isinstance(j, dict) and j.get("conclusion") == "failure"
-        ]
+        jobs = [j for j in (data.get("jobs") or []) if isinstance(j, dict)]
+        failing = [j for j in jobs if j.get("conclusion") == "failure"]
+        if not failing and allow_stalled:
+            failing = [
+                j for j in jobs if j.get("conclusion") in classify.STALLED_CONCLUSIONS
+            ]
+            if failing:
+                log(f"downstream: no failing job; {len(failing)} stalled job(s)")
         if failing:
             if attempt != attempts:
                 log(f"downstream re-run since triage; reading attempt {attempt}")
@@ -342,31 +352,46 @@ def downstream_failing_jobs(downstream_id: str, attempts: int) -> list[dict]:
 
 
 def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
-    """Describe the failing jobs of a downstream run whose specs all passed.
+    """Describe the jobs that made a downstream run red though its specs all passed.
 
-    The same noise prefilter as the parent run applies: a downstream job killed
-    by a GitHub platform error or a cancellation carries no evidence and must not
-    reach the agent.
+    The same noise prefilter as the parent run applies to a job that failed: one
+    killed by a GitHub platform error or by a cancellation mid-step carries no
+    evidence and must not reach the agent.
+
+    A job GitHub stopped before it ran is exempt from that prefilter, and only
+    reachable at all when the run itself concluded `failure`. It has no step and
+    no annotation to show, so the prefilter would read it as evidence-free and
+    withhold the whole surface — but a job cancelled while queued is itself the
+    diagnosis, and withholding it leaves the run red with nobody dispatched.
+    Gating on the run's own conclusion keeps a deliberately cancelled run out.
     """
     run = gh_json(["api", f"repos/{E2E_REPO}/actions/runs/{downstream_id}"], {})
     workflow_path = run.get("path") or ""
     attempts = run.get("run_attempt") or 1
 
     specs: list[classify.FailingSpec] = []
-    for job in downstream_failing_jobs(downstream_id, int(attempts)):
+    jobs = downstream_failing_jobs(
+        downstream_id,
+        int(attempts),
+        allow_stalled=run.get("conclusion") == "failure",
+    )
+    for job in jobs:
         steps = job.get("steps") or []
-        verdict = classify.noise_verdict(
-            conclusion="failure",
-            step_count=len(steps),
-            failure_annotations=failure_annotations(job.get("check_run_url")),
-        )
-        if verdict:
-            log(f"downstream noise ({verdict}): {job.get('name')}")
-            continue
+        conclusion = job.get("conclusion") or "failure"
+        if conclusion not in classify.STALLED_CONCLUSIONS:
+            verdict = classify.noise_verdict(
+                conclusion="failure",
+                step_count=len(steps),
+                failure_annotations=failure_annotations(job.get("check_run_url")),
+            )
+            if verdict:
+                log(f"downstream noise ({verdict}): {job.get('name')}")
+                continue
         specs.append(
             classify.ci_job_spec(
                 job.get("name") or "",
                 workflow_path=workflow_path,
+                conclusion=conclusion,
                 failing_steps=[
                     s.get("name") or ""
                     for s in steps

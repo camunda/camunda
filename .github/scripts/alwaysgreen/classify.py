@@ -35,6 +35,11 @@ from typing import Any, Iterable, Iterator
 PLATFORM_ERROR_MARKER = "internal error when running your job"
 CANCELLED_MARKER = "The operation was canceled"
 
+#: Conclusions GitHub reports for a job it stops before the job runs its steps.
+#: Such a job never reaches `failure`, so a scan for failing jobs cannot see it,
+#: yet when nothing else failed it is the only reason the run went red.
+STALLED_CONCLUSIONS = ("cancelled", "timed_out")
+
 #: Verdicts that must never reach the fix agent.
 NOISE_PLATFORM = "platform-flake"
 NOISE_CANCELLED = "cancelled"
@@ -432,7 +437,11 @@ class FailingSpec:
 
 
 def ci_job_spec(
-    job_name: str, *, workflow_path: str, failing_steps: Iterable[str]
+    job_name: str,
+    *,
+    workflow_path: str,
+    failing_steps: Iterable[str],
+    conclusion: str = "failure",
 ) -> FailingSpec:
     """Represent a failing CI job as a spec, for a run that had no failing test.
 
@@ -440,16 +449,21 @@ def ci_job_spec(
     one: `file` is the workflow that owns the job, which is the file the fix has
     to change. `statuses` is a single failed attempt, so `deterministic` is True
     and a CI bug is never mistaken for flakiness and "fixed" with a longer wait.
+
+    `conclusion` names how the job ended, so a stalled job says so instead of
+    claiming a failure it never reported.
     """
     steps = [s for s in failing_steps if s]
+    if steps:
+        error = f"CI job failed at step: {', '.join(steps)}"
+    elif conclusion in STALLED_CONCLUSIONS:
+        error = f"CI job ended as {conclusion} without recording a failing step"
+    else:
+        error = "CI job failed with no failing step recorded"
     return FailingSpec(
         file=workflow_path,
         test_name=job_leaf_name(job_name),
-        error=(
-            f"CI job failed at step: {', '.join(steps)}"
-            if steps
-            else "CI job failed with no failing step recorded"
-        ),
+        error=error,
         attempts=1,
         statuses=["failed"],
     )

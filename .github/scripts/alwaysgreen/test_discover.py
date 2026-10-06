@@ -342,3 +342,87 @@ def test_resolve_blame_for_ref_uses_the_refs_own_tip_commit(monkeypatch):
 
     assert blame.author == "stable-author"
     assert blame.pr_number == 9
+
+
+# ---------------------------------------------------------------------------
+# Downstream CI evidence
+# ---------------------------------------------------------------------------
+
+
+def _job(name, conclusion, *, steps=()):
+    return {
+        "name": name,
+        "conclusion": conclusion,
+        "check_run_url": f"https://api.github.com/repos/x/check-runs/{name}",
+        "steps": [{"name": n, "conclusion": c} for n, c in steps],
+    }
+
+
+def _stub_downstream(monkeypatch, *, run_conclusion, jobs, annotations=()):
+    """Serve one downstream run and its single attempt's jobs to `gh_json`."""
+
+    def fake(args, default):
+        target = args[-1]
+        if "/jobs" in target:
+            return {"jobs": list(jobs)}
+        return {
+            "path": ".github/workflows/playwright_saas_pr_trigger_monorepo.yml",
+            "run_attempt": 1,
+            "conclusion": run_conclusion,
+        }
+
+    monkeypatch.setattr(discover, "gh_json", fake)
+    monkeypatch.setattr(discover, "failure_annotations", lambda url: list(annotations))
+
+
+def test_a_queued_job_cancelled_on_a_red_run_is_the_evidence(monkeypatch):
+    # The shape that went undispatched: every spec passed, no job reported a
+    # failure, and the run is red only because `finalize-check-run` sat queued
+    # until it was cancelled. Withholding it leaves main red with no agent.
+    _stub_downstream(
+        monkeypatch,
+        run_conclusion="failure",
+        jobs=[
+            _job("Run tests (chromium-v2)", "success"),
+            _job("Finalize SaaS E2E Smoke Tests Check", "cancelled"),
+        ],
+    )
+    specs = discover.downstream_ci_specs("1")
+    assert [s.test_name for s in specs] == ["Finalize SaaS E2E Smoke Tests Check"]
+    assert specs[0].file.endswith("playwright_saas_pr_trigger_monorepo.yml")
+    assert "cancelled" in specs[0].error
+
+
+def test_a_cancelled_job_beside_a_failing_one_is_not_evidence(monkeypatch):
+    # The cancellation follows from the failure, so naming it too would dispatch
+    # the agent at a job that has nothing wrong with it.
+    _stub_downstream(
+        monkeypatch,
+        run_conclusion="failure",
+        jobs=[
+            _job("lint", "failure", steps=[("Run eslint", "failure")]),
+            _job("Finalize SaaS E2E Smoke Tests Check", "cancelled"),
+        ],
+    )
+    specs = discover.downstream_ci_specs("1")
+    assert [s.test_name for s in specs] == ["lint"]
+    assert specs[0].error == "CI job failed at step: Run eslint"
+
+
+def test_a_cancelled_run_yields_no_evidence(monkeypatch):
+    # Someone cancelled the run by hand; its cancelled jobs diagnose nothing.
+    _stub_downstream(
+        monkeypatch,
+        run_conclusion="cancelled",
+        jobs=[_job("Finalize SaaS E2E Smoke Tests Check", "cancelled")],
+    )
+    assert discover.downstream_ci_specs("1") == []
+
+
+def test_a_failing_job_with_no_steps_and_no_annotation_stays_noise(monkeypatch):
+    _stub_downstream(
+        monkeypatch,
+        run_conclusion="failure",
+        jobs=[_job("Create cluster generation on INT", "failure")],
+    )
+    assert discover.downstream_ci_specs("1") == []
