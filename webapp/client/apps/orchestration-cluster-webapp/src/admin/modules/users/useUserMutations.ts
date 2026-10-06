@@ -20,7 +20,7 @@ import {request, requestErrorSchema} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
-import {patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
+import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
 import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
 
 async function getErrorMessage(error: unknown): Promise<string | undefined> {
@@ -72,16 +72,9 @@ function userMatchesFilter(user: User, filter: QueryUsersRequestBody['filter']):
 	return pattern === undefined || user.username.includes(pattern.replaceAll('*', ''));
 }
 
-// Only insert into a page that is both searched for this user and not already full - a full page
-// may need an item pushed onto the next page, which a purely optimistic update cannot do safely.
 function canInsertUser(user: User, queryKey: QueryKey, currentItemCount: number): boolean {
 	const body = queryKey[1] as QueryUsersRequestBody | undefined;
-	if (!userMatchesFilter(user, body?.filter)) {
-		return false;
-	}
-
-	const limit = body?.page?.limit;
-	return limit === undefined || currentItemCount < limit;
+	return userMatchesFilter(user, body?.filter) && isFirstPageWithRoom(body?.page, currentItemCount);
 }
 
 function useUserMutations() {

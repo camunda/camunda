@@ -58,6 +58,24 @@ function patchListCaches<TItem>(
 	}
 }
 
+type ListQueryPage = {from?: number; limit?: number; before?: string; after?: string};
+
+/**
+ * Whether a brand-new item can be optimistically inserted into the page a list query requested:
+ * only the first page, and only while it has room. On any other page the item may belong to a
+ * neighbouring page, and on a full one it would push an item onto the next page - neither of
+ * which a purely optimistic update can place safely.
+ */
+function isFirstPageWithRoom(page: ListQueryPage | undefined, currentItemCount: number): boolean {
+	if (page === undefined) {
+		return true;
+	}
+	if (page.from || page.before !== undefined || page.after !== undefined) {
+		return false;
+	}
+	return page.limit === undefined || currentItemCount < page.limit;
+}
+
 type RemoveFromListCachesOptions<TItem> = {
 	/** Partial query key every cached list query to patch shares, e.g. `['users']`. */
 	queryKeyPrefix: QueryKey;
@@ -90,4 +108,4 @@ function removeFromListCaches<TItem>(
 	}
 }
 
-export {patchListCaches, removeFromListCaches};
+export {isFirstPageWithRoom, patchListCaches, removeFromListCaches};

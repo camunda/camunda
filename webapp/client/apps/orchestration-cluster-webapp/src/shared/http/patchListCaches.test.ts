@@ -8,7 +8,7 @@
 
 import {QueryClient, QueryObserver, type QueryKey} from '@tanstack/react-query';
 import {describe, expect, it} from 'vitest';
-import {patchListCaches, removeFromListCaches} from './patchListCaches';
+import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from './patchListCaches';
 
 type Item = {id: string; name: string};
 
@@ -312,5 +312,27 @@ describe('removeFromListCaches', () => {
 
 		// then
 		expect(queryClient.getQueryData(['items', {page: 1}])).toEqual({items: [], page: {totalItems: 0}});
+	});
+});
+
+describe('isFirstPageWithRoom', () => {
+	it('should allow inserting when no page was requested', () => {
+		expect(isFirstPageWithRoom(undefined, 50)).toBe(true);
+	});
+
+	it('should allow inserting into the first page while it has room', () => {
+		expect(isFirstPageWithRoom({from: 0, limit: 20}, 19)).toBe(true);
+		expect(isFirstPageWithRoom({limit: 20}, 0)).toBe(true);
+	});
+
+	it('should reject inserting into a full page', () => {
+		expect(isFirstPageWithRoom({from: 0, limit: 20}, 20)).toBe(false);
+	});
+
+	it('should reject inserting into any page after the first', () => {
+		// given a last page that is not full, where a new item may still belong to an earlier page
+		expect(isFirstPageWithRoom({from: 20, limit: 20}, 3)).toBe(false);
+		expect(isFirstPageWithRoom({after: 'cursor', limit: 20}, 3)).toBe(false);
+		expect(isFirstPageWithRoom({before: 'cursor', limit: 20}, 3)).toBe(false);
 	});
 });
