@@ -19,11 +19,6 @@ loadtestctl = "loadtestctl.cli:main"
 requires = ["uv_build>=0.12.23,<0.13.0"]
 build-backend = "uv_build"
 
-[tool.uv.workspace]
-members = [
-    "loadtestctl",
-]
-
 [tool.ruff]
 line-length = 120
 target-version = "py313"
