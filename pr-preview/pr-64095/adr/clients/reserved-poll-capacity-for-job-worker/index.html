@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Reserve a minimum share of job-worker capacity for the polling path | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Reserve a minimum share of job-worker capacity for the polling path | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Alexandre Janoni"><meta data-rh="true" property="og:description" content="DRI: Alexandre Janoni"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-64095/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-64095/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-64095/assets/js/runtime~main.189da45f.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-64095/assets/js/main.700869f6.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64095/assets/js/runtime~main.6ef683a3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64095/assets/js/main.1612ac47.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -94,11 +94,12 @@ poll was sized for during the round-trip. An empty response, or three
 responses in a row without a refusal, release it. A failed poll releases it
 too: while polls fail and back off, nothing can take the reserved slots (for
 example when the poll goes over REST and only the gRPC stream works), and the
-next refused poll reserves the lane again. A response with jobs alone is deliberately not a signal: while the lane
-is reserved, the push it keeps out is yielded by the gateway (the client
-stream is not ready) and comes back through the poll, so &quot;the poll returned
-jobs&quot; would keep the lane reserved on its own even for a load push could
-carry. Jobs the broker only hands to pollers (timed out, yielded) get a slot
+next refused poll reserves the lane again. A response with jobs alone is
+deliberately not a signal: while the lane is reserved, the push it keeps out
+fails at the gateway (the client stream is not ready), the broker yields the
+job back to activatable, and it comes back through the poll, so &quot;the poll
+returned jobs&quot; would keep the lane reserved on its own even for a load push
+could carry. Jobs the broker only hands to pollers (timed out, yielded) get a slot
 without a refusal and so do not reserve the lane either.</li>
 <li class="">Refusals do not show all starvation. When push takes every slot before the
 next poll is due, <code>freeCapacity()</code> is 0 and no poll is sent, so there is no
@@ -123,11 +124,13 @@ when nothing is reserved.</li>
 go from ≈0 to ≈7/s and poll&#x27;s share of delivery from 5.7% to 13.3%, so the
 recovery path reaches its reserved slots even under sustained push
 contention. Timeouts drop by ~24% (29.9 → 22.7/s).</li>
-<li class=""><strong>No throughput cost.</strong> At matched load, completed/s is the same within
-noise (28.9 vs 28.0). In the oversubscribed regime the lane switches off
+<li class=""><strong>No measurable throughput cost.</strong> At matched load, completed/s was 3%
+lower (28.9 vs 28.0) in a single 20-minute window per arm; the earlier
+always-reserved A/B moved the other way (28.5 vs 28.9), so neither is read
+as a real difference. In the oversubscribed regime the lane switches off
 after three clean polls and on again at the next refusal; the A/B ran the
-lane with this behaviour. Each switch-on costs the refused jobs of one poll: each
-is failed back to the broker with its retries unchanged (one extra command
+lane with this behaviour. Each switch-on costs the refused jobs of one poll:
+each is failed back to the broker with its retries unchanged (one extra command
 and a WARN log per job) and activated again later. Refusals rose from 8.1 to
 13.0/s in the A/B.</li>
 <li class=""><strong>No change for a streaming worker that is not saturated.</strong> Such a worker
