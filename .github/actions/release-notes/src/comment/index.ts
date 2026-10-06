@@ -41,7 +41,7 @@ export function renderStickyComment(gate: GateOutcome): string {
     .filter((check) => check.outcome === 'fail')
     .map((check) => `**${check.label}**\n${check.reasons.map((reason) => `- ${reason}`).join('\n')}`)
     .join('\n\n');
-  const footer = `[Causes and fixes](${GATE_DOCS_URL}) · advisory, does not block merge`;
+  const footer = `[Causes and fixes](${GATE_DOCS_URL}) · fix this to turn the check green`;
   return `${STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${footer}\n`;
 }
 
