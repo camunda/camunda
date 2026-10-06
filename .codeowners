@@ -296,7 +296,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/assign-urgency-to-issue* @camunda/core-features
 /.github/workflows/operate-playwright.yml @camunda/core-features
 /.github/workflows/ci-operate.yml @camunda/core-features
-/.github/workflows/ci-webapp-client.yml @camunda/core-features
+/.github/workflows/ci-webapp-client.yml @camunda/orchestration-cluster-webapps
 /.github/workflows/ci-webapp-run-ut-reuseable.yml @camunda/core-features
 /.github/workflows/ci-optimize.yml @camunda/core-features
 /.github/workflows/optimize-*.yml @camunda/core-features
