@@ -13,7 +13,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
+import io.camunda.identity.sdk.authentication.exception.InvalidClaimException;
+import io.camunda.identity.sdk.authentication.exception.TokenExpiredException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
@@ -122,13 +123,13 @@ class OptimizeBearerPermissionFilterTest {
   }
 
   @Test
-  void shouldPassThroughWhenTheTokenCannotBeFreshlyVerified() throws Exception {
+  void shouldPassThroughWhenTheTokenHasExpiredSinceTheChainVerifiedIt() throws Exception {
     // given
     final Jwt jwt = jwtWithClaims(Map.of("preferred_username", "noopt"));
     authenticateWith(jwt);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(CamundaAuthentication.of(b -> b.user("noopt")));
-    doThrow(new TokenVerificationException("token expired"))
+    doThrow(new TokenExpiredException(new RuntimeException("token expired")))
         .when(tokenService)
         .verifyAccessToken("raw-token-value");
 
@@ -137,6 +138,26 @@ class OptimizeBearerPermissionFilterTest {
 
     // then
     verify(chain).doFilter(request, response);
+  }
+
+  @Test
+  void shouldReject401WhenAUserTokenLacksTheOptimizeApiAudience() throws Exception {
+    // given: on Keycloak, a user without the Optimize role gets a token without the Optimize API
+    // audience, so the verification fails before the permission check
+    final Jwt jwt = jwtWithClaims(Map.of("preferred_username", "noopt"));
+    authenticateWith(jwt);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("noopt")));
+    doThrow(new InvalidClaimException(new RuntimeException("missing audience optimize-api")))
+        .when(tokenService)
+        .verifyAccessToken("raw-token-value");
+
+    // when
+    filter.doFilter(request, response, chain);
+
+    // then
+    verify(response).sendError(HttpServletResponse.SC_UNAUTHORIZED);
+    verifyNoInteractions(chain);
   }
 
   @Test

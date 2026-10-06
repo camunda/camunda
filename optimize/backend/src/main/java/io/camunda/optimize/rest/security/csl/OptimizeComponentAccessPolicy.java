@@ -15,12 +15,11 @@ import io.camunda.security.api.model.Either;
  * asks Management Identity for the Optimize permission, CCSaaS reads the organization role from the
  * token claims. It is asked on every request, so access ends when the grant is revoked.
  *
- * <p>Implementations answer right not only when access is granted but also when the decision cannot
- * be made, for example because the access token can no longer be verified: the security chain
- * rejects such a request on its own terms, and denying it here would lock out a user for a reason
- * that is not about their permissions. A revoked user therefore keeps API access while their access
- * token cannot be verified, at most for its remaining lifetime, and is denied on the next web app
- * request, which renews the token.
+ * <p>An implementation that verifies the access token also answers right when the token has
+ * expired: the webapp chain renews it, and denying here would lock out a user for a reason that is
+ * not about their permissions. A revoked user therefore keeps API access until the token is
+ * renewed, at most for its remaining lifetime, and is denied on the next web app request. Any other
+ * verification failure is a denial.
  */
 public interface OptimizeComponentAccessPolicy {
 
