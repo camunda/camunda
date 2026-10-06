@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -487,6 +488,70 @@ public final class AdHocSubProcessSharedJoinTest {
   }
 
   @Test
+  public void shouldMigrateSharedJoinWaitingForExecutionListener() {
+    // given
+    final String targetProcessId = processId + "-target";
+    final Consumer<AdHocSubProcessBuilder> adHocSubProcessModel =
+        adHocSubProcess -> {
+          adHocSubProcess.zeebeActiveElementsCollectionExpression("[\"task1\",\"task2\"]");
+          adHocSubProcess
+              .manualTask("task1")
+              .parallelGateway("join")
+              .zeebeStartExecutionListener(jobType)
+              .manualTask("task3");
+          adHocSubProcess.manualTask("task2").connectTo("join");
+        };
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "source.bpmn",
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .adHocSubProcess(AD_HOC_SUB_PROCESS_ELEMENT_ID, adHocSubProcessModel)
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                "target.bpmn",
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .adHocSubProcess(AD_HOC_SUB_PROCESS_ELEMENT_ID, adHocSubProcessModel)
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(p -> p.getBpmnProcessId().equals(targetProcessId))
+            .findFirst()
+            .orElseThrow()
+            .getProcessDefinitionKey();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(jobType)
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction(AD_HOC_SUB_PROCESS_ELEMENT_ID, AD_HOC_SUB_PROCESS_ELEMENT_ID)
+        .addMappingInstruction("join", "join")
+        .migrate();
+    ENGINE.job().ofInstance(processInstanceKey).withType(jobType).complete();
+
+    // then
+    assertThat(recordsUntilCompleted(processInstanceKey))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("join", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("task3", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(targetProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
   public void shouldResolveIncidentOnSharedInclusiveJoin() {
     // given
     final long processInstanceKey =
@@ -638,6 +703,81 @@ public final class AdHocSubProcessSharedJoinTest {
             tuple("interrupted", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED))
         .doesNotContain(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldRejectMigrationWhenTargetJoinIsNoLongerShared() {
+    // given
+    final String targetProcessId = processId + "-target";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "source.bpmn",
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .adHocSubProcess(
+                        AD_HOC_SUB_PROCESS_ELEMENT_ID,
+                        adHocSubProcess -> {
+                          adHocSubProcess.zeebeActiveElementsCollectionExpression(
+                              "[\"task1\",\"task2\"]");
+                          adHocSubProcess
+                              .manualTask("task1")
+                              .sequenceFlowId("toJoin1")
+                              .parallelGateway("join")
+                              .manualTask("task3");
+                          adHocSubProcess
+                              .serviceTask("task2", t -> t.zeebeJobType(jobType))
+                              .connectTo("join");
+                        })
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                "target.bpmn",
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .adHocSubProcess(
+                        AD_HOC_SUB_PROCESS_ELEMENT_ID,
+                        adHocSubProcess -> {
+                          // the join is only reached from task1, so it's not shared anymore
+                          final var task1 = adHocSubProcess.manualTask("task1");
+                          task1
+                              .sequenceFlowId("toJoin1")
+                              .parallelGateway("join")
+                              .manualTask("task3");
+                          task1.manualTask("other").connectTo("join");
+                          adHocSubProcess.serviceTask("task2", t -> t.zeebeJobType(jobType));
+                        })
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(p -> p.getBpmnProcessId().equals(targetProcessId))
+            .findFirst()
+            .orElseThrow()
+            .getProcessDefinitionKey();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    awaitTokenAtJoin(processInstanceKey);
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction(AD_HOC_SUB_PROCESS_ELEMENT_ID, AD_HOC_SUB_PROCESS_ELEMENT_ID)
+            .addMappingInstruction("task2", "task2")
+            .addMappingInstruction("join", "join")
+            .addMappingInstruction("toJoin1", "toJoin1")
+            .expectRejection()
+            .migrate();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("changes whether it joins the paths of multiple ad-hoc activities");
   }
 
   @Test

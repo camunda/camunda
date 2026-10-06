@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.requireNoConcurrentCommandForGateway;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.requireNoMultipleActiveSequenceFlowsMappedToSameTarget;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.requireNonNullTargetSequenceFlowId;
+import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.requireUnchangedSharedJoin;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.requireValidGatewayMapping;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.requireValidTargetIncomingFlowCount;
 
@@ -126,6 +127,8 @@ public class ProcessInstanceMigrationSequenceFlowBehavior {
                       .getProcess()
                       .getElementById(targetGatewayId, ExecutableFlowNode.class);
               requireValidTargetIncomingFlowCount(sourceGateway, targetGateway, processInstanceKey);
+              requireUnchangedSharedJoin(
+                  elementInstance, sourceGateway, targetGateway, processInstanceKey);
               requireNonNullTargetSequenceFlowId(
                   activeFlow, sourceElementIdToTargetElementId, processInstanceKey);
 
