@@ -8,7 +8,12 @@ authors = [
     { name = "Jonathan Ballet", email = "65311+multani@users.noreply.github.com"}
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "pyyaml>=6.0.3",
+    "ruff>=0.16.10",
+]
 
 [project.scripts]
 loadtestctl = "loadtestctl:main"
@@ -21,3 +26,28 @@ build-backend = "uv_build"
 members = [
     "loadtestctl",
 ]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = [
+    "--cov=load_test_report",
+    "--cov-branch",
+    "--cov-report=html",
+    "--cov-report=term",
+    "--ruff",
+    "--ruff-format",
+]
+
+[tool.mypy]
+strict=true
+
