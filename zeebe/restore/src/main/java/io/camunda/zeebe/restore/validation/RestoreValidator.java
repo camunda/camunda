@@ -11,6 +11,7 @@ import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
@@ -30,6 +31,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -151,6 +153,7 @@ public final class RestoreValidator
     final var ids = backupIds.stream().mapToLong(Long::longValue).sorted().toArray();
     final var store =
         requireNonNull(backupStore, "Backup store must be configured to load backups");
+    final var partitionCount = backupPartitionCount(store, ids[ids.length - 1]);
     return awaitResult(
             FuturesUtil.parTraverse(
                 IntStream.rangeClosed(1, partitionCount).boxed().toList(),
@@ -207,26 +210,58 @@ public final class RestoreValidator
             ? null
             : exportedPositions(exportedPositionSupplier, partitionCount);
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
-    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount);
+    final var metadataByPartition =
+        loadMetadataForAllPartitions(
+            exportedPositions == null ? partitionCount : exportedPositions.size());
     return RestorePointResolver.resolve(
         metadataByPartition, instantFrom, instantTo, exportedPositions);
   }
 
+  /**
+   * The partition count recorded in the descriptor of the given backup, on any partition since
+   * every partition's backup records the same count, rejected if the group holds fewer partitions.
+   */
+  private int backupPartitionCount(final BackupStore store, final long backupId) {
+    final var backupPartitionCount =
+        awaitResult(
+                store.list(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.empty(), Optional.empty(), CheckpointPattern.of(backupId))))
+            .stream()
+            .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
+            .findAny()
+            .flatMap(BackupStatus::descriptor)
+            .orElseThrow(
+                () ->
+                    new NoSuchElementException(
+                        "No completed backup found with backup id %d".formatted(backupId)))
+            .numberOfPartitions();
+    if (backupPartitionCount > partitionCount) {
+      throw new IllegalArgumentException(
+          "Cannot restore backup %d: it has %d partitions, but the partition group only has %d"
+              .formatted(backupId, backupPartitionCount, partitionCount));
+    }
+    return backupPartitionCount;
+  }
+
+  /**
+   * The exported positions of the partitions the RDBMS holds, which are the partitions of the
+   * backup to restore: partitions 1 up to the first one without an exported position.
+   */
   private Map<Integer, Long> exportedPositions(
       final IntFunction<@Nullable Long> positionSupplier, final int partitionCount) {
-    return IntStream.rangeClosed(1, partitionCount)
-        .boxed()
-        .collect(
-            Collectors.toUnmodifiableMap(
-                partition -> partition,
-                partition -> {
-                  final var position = positionSupplier.apply(partition);
-                  if (position == null) {
-                    throw new IllegalStateException(
-                        "No exported position found for partition " + partition + " in RDBMS");
-                  }
-                  return position;
-                }));
+    final var positions = new HashMap<Integer, Long>();
+    for (int partition = 1; partition <= partitionCount; partition++) {
+      final var position = positionSupplier.apply(partition);
+      if (position == null) {
+        break;
+      }
+      positions.put(partition, position);
+    }
+    if (positions.isEmpty()) {
+      throw new IllegalStateException("No exported position found for partition 1 in RDBMS");
+    }
+    return Map.copyOf(positions);
   }
 
   private List<BackupMetadata> loadMetadataForAllPartitions(final int partitionCount) {

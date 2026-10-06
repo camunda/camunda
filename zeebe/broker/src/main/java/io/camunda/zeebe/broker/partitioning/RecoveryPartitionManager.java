@@ -35,7 +35,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.restore.PartitionRestoreService;
-import io.camunda.zeebe.restore.ValidatePartitionCount;
+import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -533,8 +533,7 @@ public final class RecoveryPartitionManager
               brokerInfo.getNodeId(),
               new RocksDBSnapshotFileInfoProvider(),
               registry);
-      restoreService.restore(
-          backupIds, new ValidatePartitionCount(brokerCfg.getCluster().getPartitionsCount()));
+      restoreService.restore(backupIds, BackupValidator.none());
     } catch (final Exception e) {
       throw new CompletionException("Failed to restore partition %s".formatted(metadata.id()), e);
     } finally {

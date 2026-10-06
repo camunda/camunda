@@ -19,6 +19,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupMetadata;
@@ -109,17 +110,38 @@ final class RestoreValidatorResolverTest {
         .thenReturn(CompletableFuture.completedFuture(Optional.of(serialize(metadata))));
   }
 
-  private void stubBackupExists(final long backupId) {
-    final var status =
-        new BackupStatusImpl(
-            new BackupIdentifierImpl(1, 1, backupId),
-            Optional.empty(),
-            BackupStatusCode.COMPLETED,
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty());
+  private void stubBackupExists(final long backupId, final int partitionCount) {
     when(backupStore.list(any(BackupIdentifierWildcard.class)))
-        .thenReturn(CompletableFuture.completedFuture(List.of(status)));
+        .thenReturn(
+            CompletableFuture.completedFuture(List.of(completedBackup(backupId, partitionCount))));
+  }
+
+  /** Stubs the backup the validator reads the partition count to restore from. */
+  private void stubBackupPartitionCount(final long backupId, final int partitionCount) {
+    final var anyPartition =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), CheckpointPattern.of(backupId));
+    when(backupStore.list(anyPartition))
+        .thenReturn(
+            CompletableFuture.completedFuture(List.of(completedBackup(backupId, partitionCount))));
+  }
+
+  private static BackupStatusImpl completedBackup(final long backupId, final int partitionCount) {
+    return new BackupStatusImpl(
+        new BackupIdentifierImpl(1, 1, backupId),
+        Optional.of(
+            new BackupDescriptorImpl(
+                Optional.empty(),
+                OptionalLong.empty(),
+                100L,
+                partitionCount,
+                "8.10.0",
+                CHECKPOINT_TIMESTAMP,
+                CheckpointType.SCHEDULED_BACKUP)),
+        BackupStatusCode.COMPLETED,
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
   }
 
   private void stubNoBackupExists() {
@@ -429,7 +451,7 @@ final class RestoreValidatorResolverTest {
     @Test
     void shouldResolveSameBackupIdsForEveryPartitionWhenBackupIdsAreExplicit() {
       // given - no range metadata (e.g. continuous backups disabled), only an ad-hoc backup taken
-      stubBackupExists(42L);
+      stubBackupExists(42L, 3);
       final var validator = new RestoreValidator(3, backupStore, null);
       final var request =
           new RestoreRequest(
@@ -471,6 +493,7 @@ final class RestoreValidatorResolverTest {
     @ValueSource(strings = {"elasticsearch", "opensearch"})
     void shouldBroadcastExplicitBackupIdToAllPartitions(final String databaseType) {
       // given
+      stubBackupPartitionCount(1L, 2);
       stubBackupExists(1, 1L);
       stubBackupExists(2, 1L);
       final var validator = new RestoreValidator(2, backupStore, null);
@@ -512,6 +535,7 @@ final class RestoreValidatorResolverTest {
     @Test
     void shouldRejectWhenBackupIsMissingForAPartition() {
       // given - partition 2 has no completed backup for the requested id
+      stubBackupPartitionCount(1L, 2);
       stubBackupExists(1, 1L);
       stubBackupMissing(2, 1L);
       final var validator = new RestoreValidator(2, backupStore, null);
@@ -528,6 +552,66 @@ final class RestoreValidatorResolverTest {
       // then
       assertThat(assertInvalid(result))
           .hasMessage("No completed backup found for partition 2 with backup id 1");
+    }
+  }
+
+  @Nested
+  final class PartitionCountFromBackup {
+
+    @Test
+    void shouldRestoreOnlyThePartitionsOfTheBackupWhenTheBackupIdIsExplicit() {
+      // given - the group holds 3 partitions, but the backup was taken with 2
+      stubBackupPartitionCount(7L, 2);
+      stubBackupExists(1, 7L);
+      stubBackupExists(2, 7L);
+      final var validator = new RestoreValidator(3, backupStore, null);
+
+      // when
+      final var result = validator.validate(elasticsearchRequest(7L));
+
+      // then
+      assertValid(result, Map.of(1, new long[] {7L}, 2, new long[] {7L}), false);
+    }
+
+    @Test
+    void shouldRejectABackupWithMorePartitionsThanTheGroup() {
+      // given - no broker holds partition 3, so nothing could restore it
+      stubBackupPartitionCount(7L, 3);
+      final var validator = new RestoreValidator(2, backupStore, null);
+
+      // when
+      final var result = validator.validate(elasticsearchRequest(7L));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("it has 3 partitions, but the partition group only has 2");
+    }
+
+    @Test
+    void shouldRestoreOnlyThePartitionsTheRdbmsHoldsForATimeRange() {
+      // given - the group holds 3 partitions, but the RDBMS only holds exported positions for 2,
+      // the partitions of the backup to restore. Partition 3's metadata is not stubbed, so the
+      // validator must not look it up.
+      stubMetadata(1, singleCheckpointMetadata(1));
+      stubMetadata(2, singleCheckpointMetadata(2));
+      final IntFunction<Long> exportedPositionSupplier =
+          partitionId -> partitionId <= 2 ? 50L : null;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequest());
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
+    private static RestoreRequest elasticsearchRequest(final long backupId) {
+      return new RestoreRequest(
+          "default",
+          new TenantRestoreArguments(
+              new RestoreParameters(List.of(backupId), null, null), "elasticsearch", false),
+          false);
     }
   }
 }

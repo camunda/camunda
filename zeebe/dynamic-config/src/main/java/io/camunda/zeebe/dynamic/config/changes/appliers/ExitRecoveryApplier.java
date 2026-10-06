@@ -27,11 +27,10 @@ import java.util.function.UnaryOperator;
  *
  * <p>Writes one field of one member: {@link #init} returns {@link UnaryOperator#identity()}, and
  * {@link #apply()} sets only {@code memberId}'s own mode to {@link Mode#PROCESSING}. {@code
- * RestoreRequestTransformer} relies on that scoping to give every broker its own mode change,
- * ordered after the restores of the partitions that broker holds and nothing else, so brokers leave
- * recovery concurrently rather than at a cluster-wide barrier. A write added here that reached
- * another member, or the group as a whole, would need dependency edges there ordering it against
- * the other brokers' mode changes.
+ * RestoreRequestTransformer} relies on that scoping to give every broker its own mode change, all
+ * released at once by the routing state update and left unordered against each other. A write added
+ * here that reached another member, or the group as a whole, would need dependency edges there
+ * ordering it against the other brokers' mode changes.
  */
 public final class ExitRecoveryApplier implements PartitionGroupConfigurationChangeApplier {
 
