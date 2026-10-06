@@ -433,6 +433,7 @@ class BackupMultiPartitionTest {
     backupStatusRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     final BrokerClient brokerClient = cluster.anyGateway().bean(BrokerClient.class);
     Awaitility.await()
+        .atMost(30, TimeUnit.SECONDS)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
