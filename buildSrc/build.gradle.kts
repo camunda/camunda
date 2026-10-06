@@ -17,12 +17,15 @@ fun pomVersion(key: String): String = resolvePomProperty(key, pomVersions)
 
 plugins { `kotlin-dsl` }
 
+val assertjAssertionsGeneratorVersion = pomVersion("version.assertj-assertions-generator")
+
 repositories {
   gradlePluginPortal()
   mavenCentral()
 }
 
 dependencies {
+  compileOnly("org.assertj:assertj-assertions-generator:$assertjAssertionsGeneratorVersion")
   implementation("io.camunda.gradle:pom-resolution:0.0.0")
   implementation("com.diffplug.spotless:spotless-plugin-gradle:8.8.0")
   implementation("com.github.node-gradle:gradle-node-plugin:7.1.0")
