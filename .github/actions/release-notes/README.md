@@ -17,8 +17,8 @@ The rest of this file is about the gate.
 
 ## Why this exists
 
-Linking a PR to a tracked issue is currently optional and unvalidated, so
-features and fixes silently vanish from release notes (epic #53605, root
+Linking a PR to a tracked issue used to be optional and unvalidated, so
+features and fixes silently vanished from release notes (epic #53605, root
 cause 4). The fix is to enforce the link at PR time using the **exact same
 parser** the generator later uses to attribute PRs.
 
@@ -135,7 +135,7 @@ re-runs never stack duplicates (`src/comment`):
 
 The body is deliberately terse — the failing reasons and a link to
 [Causes and fixes](https://camunda.github.io/camunda/ci/#release-notes-pr-gate).
-Everything else (why the rule exists, the full cause list, the rollout state)
+Everything else (why the rule exists, the full cause list, the rollout history)
 lives in the docs rather than being restated on every failing PR.
 
 Comment sync is best-effort: an API failure is logged and never fails the gate.
