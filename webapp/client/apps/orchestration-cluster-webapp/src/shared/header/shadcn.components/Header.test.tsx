@@ -48,7 +48,7 @@ describe('<Header /> (V2)', () => {
 		);
 
 		await expect.element(screen.getByRole('banner')).toBeVisible();
-		await expect.element(screen.getByText('Non-Production License')).toBeVisible();
+		await expect.element(screen.getByText('Non-production license', {exact: true})).toBeVisible();
 		await expect.element(screen.getByText('Non-commercial license')).toBeVisible();
 		await expect.element(screen.getByRole('navigation', {name: 'Camunda context'})).toBeVisible();
 		await expect.element(screen.getByRole('link', {name: 'Tasklist'})).toHaveAttribute('href', '/tasklist');
