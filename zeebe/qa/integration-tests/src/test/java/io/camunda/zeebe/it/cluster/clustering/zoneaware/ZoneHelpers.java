@@ -333,6 +333,17 @@ public class ZoneHelpers {
         .collect(Collectors.toSet());
   }
 
+  /**
+   * The members assigned to each of {@code physicalTenantId}'s partitions, keyed by partition id,
+   * as reported by the physical-tenant-scoped cluster topology. Snapshot it before and after an
+   * operation to assert that the operation left the tenant's assignment untouched.
+   */
+  public static Map<Integer, Set<MemberId>> assignedMembersByPartition(
+      final ClusterActuator actuator, final String physicalTenantId) {
+    return replicasByPartition(actuator, physicalTenantId).entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().keySet()));
+  }
+
   /** The members holding each of {@code physicalTenantId}'s partitions, keyed by partition id. */
   private static Map<Integer, Map<MemberId, PartitionState>> replicasByPartition(
       final ClusterActuator actuator, final String physicalTenantId) {

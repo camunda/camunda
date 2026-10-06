@@ -25,7 +25,6 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -184,7 +183,15 @@ final class MultiPhysicalTenantZoneFailureFailbackIT {
 
       // then - every tenant's topology is complete and healthy again, with the replacement zone-A
       // broker hosting a replica
-      TENANTS_LIST.forEach(this::awaitTenantTopologyComplete);
+      TENANTS_LIST.forEach(
+          tenant ->
+              TENANTS.awaitTopologyComplete(
+                  cluster.availableGateway(),
+                  tenant,
+                  RECOVERED_BROKERS_COUNT,
+                  PARTITIONS_COUNT,
+                  REPLICATION_FACTOR,
+                  Duration.ofSeconds(90)));
       TENANTS_LIST.forEach(
           tenant ->
               ZoneHelpers.assertPartitionsAssignedPerZoneLayout(
@@ -217,23 +224,6 @@ final class MultiPhysicalTenantZoneFailureFailbackIT {
               "physical tenant '%s' remains writable after zone '%s' is force-removed",
               physicalTenantId, ZONE_A)
           .doesNotThrowAnyException();
-    }
-  }
-
-  // reuses the per-physical-tenant topology endpoint, the same public contract clients rely on,
-  // matching PhysicalTenantRejoinIT's approach to asserting recovery
-  private void awaitTenantTopologyComplete(final String physicalTenantId) {
-    try (final var client =
-        TENANTS.newClientBuilder(cluster.availableGateway(), physicalTenantId).build()) {
-      Awaitility.await(
-              "physical tenant '%s' has a complete, healthy topology after zone '%s' is added back"
-                  .formatted(physicalTenantId, ZONE_A))
-          .atMost(Duration.ofSeconds(90))
-          .ignoreExceptions()
-          .untilAsserted(
-              () ->
-                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                      .isComplete(RECOVERED_BROKERS_COUNT, PARTITIONS_COUNT, REPLICATION_FACTOR));
     }
   }
 

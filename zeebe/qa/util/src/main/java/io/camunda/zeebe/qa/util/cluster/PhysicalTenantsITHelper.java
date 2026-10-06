@@ -15,6 +15,7 @@ import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,6 +63,7 @@ public final class PhysicalTenantsITHelper {
   public static final String DEFAULT_TENANT_ID = "default";
 
   private static final Duration ADMIN_READY_TIMEOUT = Duration.ofSeconds(30);
+  private static final Duration TOPOLOGY_COMPLETE_TIMEOUT = Duration.ofSeconds(60);
 
   private final Map<String, TenantSpec> tenants;
 
@@ -259,6 +261,51 @@ public final class PhysicalTenantsITHelper {
         .ignoreExceptions()
         .untilAsserted(
             () -> assertThat(admin.newUsersSearchRequest().send().join().items()).isNotNull());
+  }
+
+  /**
+   * Same as {@link #awaitTopologyComplete(TestGateway, String, int, int, int, Duration)}, with a
+   * default timeout of 60 seconds.
+   */
+  public void awaitTopologyComplete(
+      final TestGateway<?> gateway,
+      final String tenantId,
+      final int brokersCount,
+      final int partitionsCount,
+      final int replicationFactor) {
+    awaitTopologyComplete(
+        gateway,
+        tenantId,
+        brokersCount,
+        partitionsCount,
+        replicationFactor,
+        TOPOLOGY_COMPLETE_TIMEOUT);
+  }
+
+  /**
+   * Waits until the physical-tenant-scoped topology reported by {@code gateway} for {@code
+   * tenantId} is complete: every partition has a healthy leader and the expected replicas. A
+   * non-default tenant's Raft groups are not covered by the {@code @TestZeebe} extension's
+   * readiness wait, which only looks at the gateway's unscoped topology, so tests must wait on them
+   * explicitly. Transient errors (e.g. a tenant whose partitions are still being provisioned) are
+   * tolerated until the timeout.
+   */
+  public void awaitTopologyComplete(
+      final TestGateway<?> gateway,
+      final String tenantId,
+      final int brokersCount,
+      final int partitionsCount,
+      final int replicationFactor,
+      final Duration timeout) {
+    try (final var client = newClientBuilder(gateway, tenantId).build()) {
+      Awaitility.await("physical tenant '%s' has a complete topology".formatted(tenantId))
+          .atMost(timeout)
+          .ignoreExceptions()
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                      .isComplete(brokersCount, partitionsCount, replicationFactor));
+    }
   }
 
   /**
