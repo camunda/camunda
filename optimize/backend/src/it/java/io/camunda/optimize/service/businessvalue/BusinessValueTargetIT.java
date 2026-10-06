@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.businessvalue;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
@@ -18,6 +19,7 @@ import io.camunda.optimize.service.util.importing.ZeebeConstants;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -158,6 +160,44 @@ class BusinessValueTargetIT extends AbstractBrokerlessZeebeCCSMIT {
 
     // then
     assertThat(all).containsExactlyInAnyOrder(a, b, c);
+  }
+
+  /**
+   * The overview sweep decides what to measure from {@code scanAll}, so a result truncated at the
+   * fetch limit silently leaves every target past it unmeasured. Exercised against the real store
+   * because the scroll is built per backend, and only a real response pages.
+   */
+  @Test
+  void shouldScanEveryTargetPastTheFetchLimit() {
+    // given more targets than a single page returns
+    final int targetCount = LIST_FETCH_LIMIT + 1;
+    IntStream.range(0, targetCount)
+        .forEach(i -> writer.upsertTarget(target("process-" + i, DEFAULT_TENANT, null, 50)));
+
+    // when
+    final List<BusinessValueTargetDto> all = repository.scanAll();
+
+    // then
+    assertThat(all).hasSize(targetCount);
+  }
+
+  /**
+   * Clearing a target rewrites its document with every target field null rather than deleting it.
+   * Both reads leave those documents out, so a history of cleared targets does not count towards
+   * the read limit or reach the sweep.
+   */
+  @Test
+  void shouldLeaveClearedTargetsOutOfScanAndTenantRead() {
+    // given one live target and one that was set and then cleared
+    final BusinessValueTargetDto live = target(PROCESS_KEY, DEFAULT_TENANT, 28_800_000L, 85);
+    writer.upsertTarget(live);
+    writer.upsertTarget(target("hr-onboarding", DEFAULT_TENANT, 3_600_000L, 50));
+    writer.upsertTarget(target("hr-onboarding", DEFAULT_TENANT, null, null));
+
+    // when / then
+    assertThat(repository.scanAll()).containsExactly(live);
+    assertThat(repository.readByTenants(List.of(DEFAULT_TENANT))).containsExactly(live);
+    assertThat(repository.readByTenants(null)).containsExactly(live);
   }
 
   private BusinessValueTargetDto target(

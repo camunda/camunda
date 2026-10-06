@@ -34,6 +34,7 @@ import io.camunda.optimize.service.db.repository.es.BusinessValueTargetRepositor
 import io.camunda.optimize.service.db.repository.os.BusinessValueTargetRepositoryOS;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
 import java.util.List;
 import java.util.function.Function;
@@ -55,7 +56,8 @@ class BusinessValueTargetRepositoryTest {
     // given
     final OptimizeElasticsearchClient esClient = mock(OptimizeElasticsearchClient.class);
     final BusinessValueTargetRepositoryES repository =
-        new BusinessValueTargetRepositoryES(esClient, new ObjectMapper());
+        new BusinessValueTargetRepositoryES(
+            esClient, new ObjectMapper(), mock(ConfigurationService.class));
 
     // when
     final List<BusinessValueTargetDto> targets = repository.readByTenants(List.of());
@@ -93,7 +95,8 @@ class BusinessValueTargetRepositoryTest {
     // when / then
     assertThatThrownBy(
             () ->
-                new BusinessValueTargetRepositoryES(esClient, new ObjectMapper())
+                new BusinessValueTargetRepositoryES(
+                        esClient, new ObjectMapper(), mock(ConfigurationService.class))
                     .readByTenants(List.of("tenant-a")))
         .isInstanceOf(OptimizeRuntimeException.class)
         .hasMessageContaining("LIST_FETCH_LIMIT");
@@ -133,9 +136,13 @@ class BusinessValueTargetRepositoryTest {
 
     // when -- null means "nothing to delete" rather than throwing, matching bulkUpsert
     final List<String> noIds = null;
-    new BusinessValueTargetRepositoryES(esClient, new ObjectMapper()).deleteByIds(noIds);
+    new BusinessValueTargetRepositoryES(
+            esClient, new ObjectMapper(), mock(ConfigurationService.class))
+        .deleteByIds(noIds);
     new BusinessValueTargetRepositoryOS(osClient, indexNameService).deleteByIds(noIds);
-    new BusinessValueTargetRepositoryES(esClient, new ObjectMapper()).deleteByIds(List.of());
+    new BusinessValueTargetRepositoryES(
+            esClient, new ObjectMapper(), mock(ConfigurationService.class))
+        .deleteByIds(List.of());
     new BusinessValueTargetRepositoryOS(osClient, indexNameService).deleteByIds(List.of());
 
     // then
@@ -157,7 +164,8 @@ class BusinessValueTargetRepositoryTest {
         .thenReturn(List.of("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME));
 
     // when
-    new BusinessValueTargetRepositoryES(esClient, new ObjectMapper())
+    new BusinessValueTargetRepositoryES(
+            esClient, new ObjectMapper(), mock(ConfigurationService.class))
         .deleteByIds(List.of("tenant-a::process-1", "tenant-b::process-2"));
 
     // then
