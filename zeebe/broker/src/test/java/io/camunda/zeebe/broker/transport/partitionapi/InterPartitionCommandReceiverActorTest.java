@@ -57,14 +57,14 @@ import org.mockito.ArgumentCaptor;
  */
 final class InterPartitionCommandReceiverActorTest {
 
+  @TempDir Path root;
+
   @AutoClose
   private final ActorScheduler actorScheduler =
       ActorScheduler.newActorScheduler()
           .setCpuBoundActorThreadCount(1)
           .setIoBoundActorThreadCount(1)
           .build();
-
-  @TempDir Path root;
 
   @BeforeEach
   void setUp() {

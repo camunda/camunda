@@ -31,6 +31,8 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
   private static final long CHECKPOINT_ID = 10L;
   private static final long OTHER_CHECKPOINT_ID = 11L;
 
+  @TempDir Path root;
+
   @AutoClose
   private final ActorScheduler actorScheduler =
       ActorScheduler.newActorScheduler()
@@ -38,7 +40,6 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
           .setIoBoundActorThreadCount(1)
           .build();
 
-  @TempDir Path root;
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private FileBasedSnapshotStore store;
 
