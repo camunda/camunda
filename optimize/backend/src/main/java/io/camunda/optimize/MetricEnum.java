@@ -28,7 +28,15 @@ public enum MetricEnum {
   IMPORTED_UNTIL_METRIC(
       "importedUntil",
       "Epoch time up to which all exported records of this type and partition are imported",
-      "seconds");
+      "seconds"),
+  FETCH_PAGE_SIZE_METRIC(
+      "fetchPageSize",
+      "Page size used to fetch Zeebe records, reduced after failed fetches and gradually restored"),
+  MAX_PAGE_SIZE_METRIC("maxPageSize", "Configured maximum page size of Zeebe record fetches"),
+  CONFIGURED_PARTITIONS_METRIC(
+      "configuredPartitions", "Number of Zeebe partitions Optimize is configured to import from"),
+  ZEEBE_INDEX_MISSING_METRIC(
+      "zeebeIndexMissing", "Counts fetches that found no Zeebe record index to read from");
   private static final String IMPORT_METRICS_PREFIX = "optimize.import";
   private final String id;
   private final String name;
