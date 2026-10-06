@@ -15,6 +15,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/camunda/camunda/c8run/internal/cliname"
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/jre"
 	"github.com/camunda/camunda/c8run/internal/overrides"
@@ -376,7 +377,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 
 	if err := ensurePortAvailable(settings.Port); err != nil {
 		log.Error().Err(err).Int("port", settings.Port).Msg("Camunda Run port is unavailable")
-		fmt.Printf("Port %d is already in use. Stop the other service or run `c8run start --port <free-port>`.\n", settings.Port)
+		fmt.Print(cliname.Rewrite(fmt.Sprintf("Port %d is already in use. Stop the other service or run `c8run start --port <free-port>`.\n", settings.Port)))
 		os.Exit(1)
 	}
 
@@ -583,10 +584,10 @@ func (s *StartupHandler) startTenantConnectors(ctx context.Context, stop context
 	name := "Connectors (" + tenant.ID + ")"
 	pidPath := TenantConnectorsPidPath(parentDir, tenant.ID)
 	failed := func() {
-		log.Warn().Str("tenant", tenant.ID).Msg(
+		log.Warn().Str("tenant", tenant.ID).Msg(cliname.Rewrite(
 			"Connectors for this physical tenant did not start; Camunda keeps running. " +
 				"See log/connectors-" + tenant.ID + ".log, or disable them with `c8run tenants remove " + tenant.ID +
-				"` followed by `c8run tenants add " + tenant.ID + " --no-connectors`.")
+				"` followed by `c8run tenants add " + tenant.ID + " --no-connectors`."))
 	}
 	s.ProcessHandler.AttemptToStartProcess(pidPath, name, func() {
 		cmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, state.ProcessInfo.Connectors.Version, state.Settings.Port)

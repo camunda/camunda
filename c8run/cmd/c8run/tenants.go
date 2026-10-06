@@ -25,8 +25,11 @@ import (
 )
 
 type tenantsCommand struct {
-	input        io.Reader
-	output       io.Writer
+	input  io.Reader
+	output io.Writer
+	// plainOutput receives values printed verbatim, such as paths, which must
+	// never be rewritten by C8RUN_CLI_NAME. Falls back to output when nil.
+	plainOutput  io.Writer
 	errorOutput  io.Writer
 	isTerminal   func() bool
 	readPassword func() ([]byte, error)
@@ -44,8 +47,9 @@ func newTenantsCommand() *tenantsCommand {
 	}
 	return &tenantsCommand{
 		input:        os.Stdin,
-		output:       os.Stdout,
-		errorOutput:  os.Stderr,
+		output:       brandWriter(os.Stdout),
+		plainOutput:  os.Stdout,
+		errorOutput:  brandWriter(os.Stderr),
 		isTerminal:   stdinIsTerminal,
 		readPassword: readSecretFromTerminal,
 		port:         port,
@@ -63,7 +67,11 @@ func defaultStorageType(baseDir string) (string, error) {
 
 func (c *tenantsCommand) run(baseDir string, args []string) error {
 	if len(args) == 0 || args[0] == "help" || args[0] == "-h" || args[0] == "--help" {
-		_, _ = fmt.Fprint(c.output, tenantsHelp)
+		help := tenantsHelp
+		if cliName() == "" {
+			help += tenantsHelpAliases
+		}
+		_, _ = fmt.Fprint(c.output, help+tenantsHelpFooter)
 		return nil
 	}
 	if len(args) == 2 && (args[1] == "help" || args[1] == "-h" || args[1] == "--help") {
@@ -88,7 +96,7 @@ func (c *tenantsCommand) run(baseDir string, args []string) error {
 		if len(args) != 1 {
 			return errors.New("usage: c8run tenants path")
 		}
-		_, _ = fmt.Fprintln(c.output, path)
+		_, _ = fmt.Fprintln(c.plain(), path)
 		return nil
 	}
 	if mode == "external" {
@@ -334,7 +342,11 @@ func (c *tenantsCommand) remove(baseDir string, store *pt.Store, args []string) 
 			return errors.New("the default physical tenant cannot be removed")
 		}
 	}
-	if !c.confirm(confirmed, fmt.Sprintf("Remove physical tenant(s) %s?", strings.Join(ids, ", "))) {
+	ok, err := c.confirm(confirmed, fmt.Sprintf("Remove physical tenant(s) %s?", strings.Join(ids, ", ")))
+	if err != nil {
+		return err
+	}
+	if !ok {
 		_, _ = fmt.Fprintln(c.output, "No tenants removed.")
 		return nil
 	}
@@ -352,7 +364,11 @@ func (c *tenantsCommand) reset(baseDir string, store *pt.Store, args []string) e
 	if len(args) > 0 && !confirmed {
 		return errors.New("usage: c8run tenants reset [--yes]")
 	}
-	if !c.confirm(confirmed, "Remove all physical tenants and their stored logins?") {
+	ok, err := c.confirm(confirmed, "Remove all physical tenants and their stored logins?")
+	if err != nil {
+		return err
+	}
+	if !ok {
 		_, _ = fmt.Fprintln(c.output, "No tenants removed.")
 		return nil
 	}
@@ -364,21 +380,22 @@ func (c *tenantsCommand) reset(baseDir string, store *pt.Store, args []string) e
 	return nil
 }
 
-func (c *tenantsCommand) confirm(confirmed bool, question string) bool {
+// confirm returns an error when no prompt is possible so scripts cannot mistake a
+// skipped removal for success; a user answering "no" is not an error.
+func (c *tenantsCommand) confirm(confirmed bool, question string) (bool, error) {
 	if confirmed {
-		return true
+		return true, nil
 	}
 	if !c.isTerminal() {
-		_, _ = fmt.Fprintln(c.errorOutput, "Non-interactive use requires --yes.")
-		return false
+		return false, errors.New("non-interactive use requires --yes")
 	}
 	_, _ = fmt.Fprintf(c.errorOutput, "%s [y/N]: ", question)
 	answer, err := bufio.NewReader(c.input).ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
-		return false
+		return false, fmt.Errorf("read confirmation: %w", err)
 	}
 	answer = strings.TrimSpace(answer)
-	return strings.EqualFold(answer, "y") || strings.EqualFold(answer, "yes")
+	return strings.EqualFold(answer, "y") || strings.EqualFold(answer, "yes"), nil
 }
 
 func (c *tenantsCommand) printRestartHint(baseDir, verb string, count int) {
@@ -437,8 +454,12 @@ e.g. "sales" or "team2".
 Tenants are saved for the current OS user and applied on every ` + "`c8run start`" + `.
 Use ` + "`c8run start --physical-tenants a,b`" + ` to run with tenants for one run without saving them.
 
-Aliases: c8run pt, c8run physical-tenants.
-C8RUN_TENANTS_FILE selects another tenants file; relative paths use the current directory.
+`
+
+// tenantsHelpAliases is omitted under a wrapper, which delegates only `tenants`.
+const tenantsHelpAliases = "Aliases: c8run pt, c8run physical-tenants.\n"
+
+const tenantsHelpFooter = `C8RUN_TENANTS_FILE selects another tenants file; relative paths use the current directory.
 C8RUN_TENANTS_MODE defaults to local; external disables these commands so camunda.physical-tenants
 in your --config file is the only source.
 Requires Camunda 8.10 or newer.
@@ -452,4 +473,11 @@ var tenantsCommandHelp = map[string]string{
 	"rm":     "Usage: c8run tenants remove <id> [id...] [--yes]\n",
 	"reset":  "Usage: c8run tenants reset [--yes]\nRemoves all physical tenants and stored tenant logins.\n",
 	"path":   "Usage: c8run tenants path\nShows where physical tenants are saved.\n",
+}
+
+func (c *tenantsCommand) plain() io.Writer {
+	if c.plainOutput != nil {
+		return c.plainOutput
+	}
+	return c.output
 }

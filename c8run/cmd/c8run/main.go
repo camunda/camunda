@@ -101,8 +101,23 @@ Docs & Support:
 `
 
 func usage(exitcode int) {
-	fmt.Printf(helpTemplate, os.Args[0])
+	fmt.Print(usageText(os.Args[0], cliName()))
 	os.Exit(exitcode)
+}
+
+// usageText renders the help template, preferring a wrapper's configured CLI
+// name over the executable path.
+func usageText(executable, name string) string {
+	if name == "" {
+		name = executable
+	}
+	return fmt.Sprintf(helpTemplate, name)
+}
+
+// exitWithError prints err with c8run commands rewritten for a wrapper and exits.
+func exitWithError(err error) {
+	fmt.Println(withCLIName(err.Error(), cliName()))
+	os.Exit(1)
 }
 
 type stringSliceFlag []string
@@ -226,19 +241,16 @@ func initialize(baseCommand string, baseDir string) *types.State {
 
 	settings, startupURLProvided, err := getBaseCommandSettings(baseCommand)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		exitWithError(err)
 	}
 
 	applySecondaryStorageDefaults(baseDir, &settings)
 	if err := applyEffectiveRuntimeSettings(&settings); err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		exitWithError(err)
 	}
 	if baseCommand == "start" {
 		if err := applyPhysicalTenants(baseDir, camundaVersion, &settings); err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
+			exitWithError(err)
 		}
 	}
 	settings.StartupMarkerPath = startupurl.MarkerPath(baseDir)
@@ -252,8 +264,7 @@ func initialize(baseCommand string, baseDir string) *types.State {
 			vendor = rdbmsVendorFromURL(url)
 		}
 		if err := ensureDriversAvailable(baseDir, camundaVersion, vendor, settings.ExtraDrivers); err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
+			exitWithError(err)
 		}
 	}
 
@@ -269,8 +280,7 @@ func initialize(baseCommand string, baseDir string) *types.State {
 
 	err = validateKeystore(settings, baseDir)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		exitWithError(err)
 	}
 
 	processInfo := types.Processes{
@@ -527,21 +537,22 @@ func main() {
 
 	baseCommand, err := getBaseCommand()
 	if err != nil {
-		log.Err(err).Msg("There is an issue with getting the base command")
+		// Plain text: wrappers (c8ctl) match this message to suggest an upgrade.
+		fmt.Fprintln(os.Stderr, withCLIName(err.Error()+" (run `c8run help` for usage)", cliName()))
 		os.Exit(1)
 	}
 
 	baseDir, _ := os.Getwd()
 	if baseCommand == "tenants" {
 		if err := newTenantsCommand().run(baseDir, os.Args[2:]); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, withCLIName(err.Error(), cliName()))
 			os.Exit(1)
 		}
 		return
 	}
 	if baseCommand == "secrets" {
 		if err := newSecretsCommand().run(baseDir, os.Args[2:]); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, withCLIName(err.Error(), cliName()))
 			os.Exit(1)
 		}
 		return
@@ -617,9 +628,9 @@ func main() {
 	select {
 	case <-workDone:
 		if len(state.NotReadyTenants) > 0 {
-			fmt.Fprintf(os.Stderr, "\nCamunda is running, but physical tenant(s) %s did not become ready.\n"+
+			fmt.Fprint(os.Stderr, withCLIName(fmt.Sprintf("\nCamunda is running, but physical tenant(s) %s did not become ready.\n"+
 				"Check log/camunda.log for physical tenant errors, fix them, then run `./c8run stop && ./c8run start`.\n",
-				strings.Join(state.NotReadyTenants, ", "))
+				strings.Join(state.NotReadyTenants, ", ")), cliName()))
 			os.Exit(1)
 		}
 		log.Info().Msg("All processes are running and healthy, exiting script...")
