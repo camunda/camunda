@@ -487,20 +487,35 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     deleteDashboard(dashboardId, dashboardDefinitionDto);
   }
 
-  public void validateDashboardFilters(
+  void validateDashboardFilters(
       final String userId,
       final List<DashboardFilterDto<?>> availableFilters,
       final List<DashboardReportTileDto> reportsInDashboard) {
-    if (!CollectionUtils.isEmpty(availableFilters)) {
-      final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
-          availableFilters.stream()
-              .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
-      validateFiltersHaveData(availableFilters);
-      validateDateAndStateFilters(filtersByClass);
-      validateIdentityFilters(filtersByClass);
-      validateVariableFilters(filtersByClass);
-      validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
+    validateDashboardFilterStructure(availableFilters);
+    validateVariableFiltersExistInReports(
+        userId, reportsInDashboard, groupFiltersByClass(availableFilters));
+  }
+
+  /** Validates the filters without needing the dashboard's reports to be stored yet. */
+  public void validateDashboardFilterStructure(final List<DashboardFilterDto<?>> availableFilters) {
+    if (CollectionUtils.isEmpty(availableFilters)) {
+      return;
     }
+    final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
+        groupFiltersByClass(availableFilters);
+    validateFiltersHaveData(availableFilters);
+    validateDateAndStateFilters(filtersByClass);
+    validateIdentityFilters(filtersByClass);
+    validateVariableFilters(filtersByClass);
+  }
+
+  private Map<String, List<DashboardFilterDto<?>>> groupFiltersByClass(
+      final List<DashboardFilterDto<?>> availableFilters) {
+    if (CollectionUtils.isEmpty(availableFilters)) {
+      return Map.of();
+    }
+    return availableFilters.stream()
+        .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
   }
 
   private List<DashboardDefinitionRestDto> getDashboardDefinitionsInCollectionAsService(
@@ -597,6 +612,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                 (DashboardVariableFilterDataDto) variableFilter.getData();
             if (filterData == null) {
               throw new BadRequestException("Variable dashboard filters require additional data");
+            }
+            if (StringUtils.isBlank(filterData.getName())) {
+              throw new InvalidDashboardVariableFilterException(
+                  "Variable dashboard filters require a variable name");
             }
             final VariableType variableType = filterData.getType();
             if ((variableType.equals(VariableType.DATE)
