@@ -92,6 +92,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -3044,6 +3045,43 @@ final class JsonSerializableToJsonTest {
                   "index": 10,
                   "tenantId": "<default>",
                   "storageOrdinal": 9
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// SuspensionBatchRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "SuspensionBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new SuspensionBatchRecord()
+                    .setProcessInstanceKey(123L)
+                    .setProcessDefinitionKey(234L)
+                    .setIndexKey(456L)
+                    .setParentKey(345L)
+                    .setStorageOrdinal(1001),
+        """
+                {
+                  "processInstanceKey": 123,
+                  "processDefinitionKey": 234,
+                  "indexKey": 456,
+                  "parentKey": 345,
+                  "storageOrdinal": 1001
+                }
+                """
+      },
+      {
+        "Empty SuspensionBatchRecord",
+        (Supplier<UnifiedRecordValue>) SuspensionBatchRecord::new,
+        """
+                {
+                  "processInstanceKey": -1,
+                  "processDefinitionKey": -1,
+                  "indexKey": -1,
+                  "parentKey": -1,
+                  "storageOrdinal": 0
                 }
                 """
       },
