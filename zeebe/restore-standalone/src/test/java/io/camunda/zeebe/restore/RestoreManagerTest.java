@@ -11,6 +11,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.Checkpoint;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -18,6 +22,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -64,6 +71,21 @@ final class RestoreManagerTest {
             new Checkpoint(
                 CheckpointType.MANUAL_BACKUP, 6, from.plusSeconds(240).toEpochMilli(), 600, 501)),
         List.of(new BackupRange(4, 6)));
+
+    // The latest backup of partition 1 records the partition count to restore
+    backupStore.save(
+        new BackupImpl(
+            new BackupIdentifierImpl(0, 1, 3),
+            new BackupDescriptorImpl(
+                Optional.empty(),
+                OptionalLong.empty(),
+                300,
+                2,
+                "8.10.0",
+                from.plusSeconds(120),
+                CheckpointType.MANUAL_BACKUP),
+            new NamedFileSetImpl(Map.of()),
+            new NamedFileSetImpl(Map.of())));
 
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
