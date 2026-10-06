@@ -132,26 +132,26 @@ Reliability Radar dashboard groups open issues by area, so an unlabeled issue is
 
 | Area label             | Use when the issue is about                                                  |
 |------------------------|------------------------------------------------------------------------------|
-| `area/performance`     | latency, throughput, CPU, memory or allocation overhead, scalability limits  |
-| `area/reliability`     | data loss, crashes, stuck or non-recovering behavior, recovery from failures |
-| `area/resilience`      | surviving and degrading gracefully under faults or overload                  |
-| `area/observability`   | metrics, logging, tracing, health checks, diagnosability gaps                |
-| `area/security`        | vulnerabilities, authentication, authorization, secrets handling             |
-| `area/ux`              | user experience of the UI, CLI, or API ergonomics                            |
-| `area/test`            | adding or extending test coverage                                            |
-| `area/build`           | build pipeline, Maven settings, CI                                           |
-| `area/maintainability` | refactoring, cleanup, code health                                            |
-| `area/project`         | project management: PR templates, editor config, repository conventions      |
+| `area/ai`              | AI-related features and tooling                                              |
+| `area/backend`         | backend code and services                                                    |
 | `area/bpmn-support`    | supporting BPMN symbols                                                      |
+| `area/build`           | build pipeline, Maven settings, CI                                           |
 | `area/dmn`             | the DMN engine or specification                                              |
+| `area/dx`              | developer experience                                                         |
 | `area/feel`            | the FEEL engine or specification                                             |
 | `area/frontend`        | frontend code and UI implementation                                          |
-| `area/backend`         | backend code and services                                                    |
-| `area/load-tests`      | load tests, benchmarks, and the load-test tooling                            |
-| `area/dx`              | developer experience                                                         |
 | `area/infra`           | infrastructure and environments                                              |
+| `area/load-tests`      | load tests, benchmarks, and the load-test tooling                            |
+| `area/maintainability` | refactoring, cleanup, code health                                            |
 | `area/metrics`         | metric definitions and dashboards (`area/observability` for broader gaps)    |
-| `area/ai`              | AI-related features and tooling                                              |
+| `area/observability`   | metrics, logging, tracing, health checks, diagnosability gaps                |
+| `area/performance`     | latency, throughput, CPU, memory or allocation overhead, scalability limits  |
+| `area/project`         | project management: PR templates, editor config, repository conventions      |
+| `area/reliability`     | data loss, crashes, stuck or non-recovering behavior, recovery from failures |
+| `area/resilience`      | surviving and degrading gracefully under faults or overload                  |
+| `area/security`        | vulnerabilities, authentication, authorization, secrets handling             |
+| `area/test`            | adding or extending test coverage                                            |
+| `area/ux`              | user experience of the UI, CLI, or API ergonomics                            |
 
 - The table can lag behind the repository. Check the live set with
   `gh label list --repo camunda/camunda --search area/ --limit 100` and use any `area/*` label that
