@@ -1134,6 +1134,35 @@ public final class CamundaClientTest {
   }
 
   @Test
+  public void shouldSetTenantSettingsFromConfigurationWithCloudClientBuilder() {
+    // given
+    final String tenantId = "test-tenant";
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+    try (final CamundaClient source =
+        CamundaClient.newClientBuilder()
+            .defaultTenantId(tenantId)
+            .defaultJobWorkerTenantIds(tenantIdList)
+            .build()) {
+      final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+      builder.withConfiguration(source.getConfiguration());
+
+      // when
+      try (final CamundaClient client =
+          builder
+              .withClusterId("clusterId")
+              .withClientId("clientId")
+              .withClientSecret("clientSecret")
+              .build()) {
+
+        // then
+        assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo(tenantId);
+        assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds())
+            .containsExactlyElementsOf(tenantIdList);
+      }
+    }
+  }
+
+  @Test
   public void shouldSetDefaultJobWorkerTenantFilterWithCloudClientBuilder() {
     final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
 
