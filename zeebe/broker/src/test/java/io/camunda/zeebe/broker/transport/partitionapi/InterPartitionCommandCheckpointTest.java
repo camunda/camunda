@@ -15,6 +15,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -24,6 +25,9 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.broker.transport.backupapi.CheckpointSnapshotReserver;
+import io.camunda.zeebe.broker.transport.backupapi.SnapshotTrigger;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
@@ -40,6 +44,7 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
@@ -58,28 +63,74 @@ final class InterPartitionCommandCheckpointTest {
   private final LogStreamWriter logStreamWriter;
   private final InterPartitionCommandSenderImpl sender;
   private final PersistedSnapshotStore snapshotStore;
+  private final SnapshotTrigger snapshotTrigger;
   private final InterPartitionCommandReceiverImpl receiver;
 
   InterPartitionCommandCheckpointTest(
       @Mock final ClusterCommunicationService communicationService,
       @Mock(answer = Answers.RETURNS_SELF) final LogStreamWriter logStreamWriter,
-      @Mock final PersistedSnapshotStore snapshotStore) {
+      @Mock final PersistedSnapshotStore snapshotStore,
+      @Mock final SnapshotTrigger snapshotTrigger,
+      @Mock final CheckpointState checkpointState) {
     this.communicationService = communicationService;
     this.logStreamWriter = logStreamWriter;
     this.snapshotStore = snapshotStore;
+    this.snapshotTrigger = snapshotTrigger;
 
     sender = new InterPartitionCommandSenderImpl(communicationService, LEGACY_TOPIC_PREFIX);
     sender.setCurrentLeader(1, MemberId.from("2"));
+    final var concurrencyControl = new TestConcurrencyControl();
     receiver =
         new InterPartitionCommandReceiverImpl(
-            logStreamWriter, snapshotStore, new TestConcurrencyControl());
+            logStreamWriter,
+            new CheckpointSnapshotReserver(
+                snapshotStore, snapshotTrigger, checkpointState, concurrencyControl),
+            concurrencyControl);
+    lenient()
+        .when(checkpointState.getLatestCheckpointId())
+        .thenReturn(CheckpointState.NO_CHECKPOINT);
+    // no fresh snapshot is taken unless a test says so, so the latest one is reserved
+    lenient()
+        .when(snapshotTrigger.forceSnapshot())
+        .thenReturn(CompletableActorFuture.completed(null));
     lenient()
         .when(snapshotStore.reserveLatestSnapshot(anyLong()))
         .thenReturn(CompletableActorFuture.completed(Optional.empty()));
   }
 
   @Test
-  void shouldReserveLatestSnapshotForNewCheckpoint() {
+  void shouldReserveFreshSnapshotForNewCheckpoint() {
+    // given
+    when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.right(1L));
+    final var freshSnapshot = mock(PersistedSnapshot.class);
+    when(freshSnapshot.getId()).thenReturn("fresh");
+    when(snapshotTrigger.forceSnapshot())
+        .thenReturn(CompletableActorFuture.completed(freshSnapshot));
+    when(snapshotStore.reserveSnapshot(anyLong(), any()))
+        .thenReturn(CompletableActorFuture.completed(null));
+    sender.setCheckpointInfo(17, CheckpointType.SCHEDULED_BACKUP);
+
+    // when
+    sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
+
+    // then
+    final var io = inOrder(snapshotTrigger, snapshotStore, logStreamWriter);
+    io.verify(snapshotTrigger).forceSnapshot();
+    io.verify(snapshotStore).reserveSnapshot(17L, "fresh");
+    io.verify(logStreamWriter)
+        .tryWrite(
+            any(WriteContext.class),
+            matchesCheckpoint(17, CheckpointType.SCHEDULED_BACKUP, "fresh"));
+    io.verify(logStreamWriter)
+        .tryWrite(
+            any(WriteContext.class),
+            matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
+    verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
+  }
+
+  @Test
+  void shouldReserveLatestSnapshotIfNoFreshSnapshotIsTaken() {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
@@ -116,6 +167,7 @@ final class InterPartitionCommandCheckpointTest {
     // then
     verify(logStreamWriter)
         .tryWrite(any(WriteContext.class), matchesCheckpoint(17, CheckpointType.MARKER, ""));
+    verify(snapshotTrigger, never()).forceSnapshot();
     verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
   }
 
@@ -185,6 +237,7 @@ final class InterPartitionCommandCheckpointTest {
     verify(logStreamWriter, times(1))
         .tryWrite(
             any(WriteContext.class), matchesCheckpoint(17, CheckpointType.MANUAL_BACKUP, "latest"));
+    verify(snapshotTrigger, times(1)).forceSnapshot();
     verify(snapshotStore, times(1)).reserveLatestSnapshot(anyLong());
   }
 
@@ -317,6 +370,7 @@ final class InterPartitionCommandCheckpointTest {
             any(WriteContext.class),
             matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
     verifyNoMoreInteractions(logStreamWriter);
+    verify(snapshotTrigger, never()).forceSnapshot();
     verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
     verify(snapshotStore, never()).releaseReservation(anyLong(), any());
   }
@@ -338,6 +392,7 @@ final class InterPartitionCommandCheckpointTest {
             any(WriteContext.class),
             matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
     verifyNoMoreInteractions(logStreamWriter);
+    verify(snapshotTrigger, never()).forceSnapshot();
     verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
     verify(snapshotStore, never()).releaseReservation(anyLong(), any());
   }
