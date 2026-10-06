@@ -79,12 +79,21 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
+
+  /**
+   * Search engines whose schema an exporter in this broker has already found ready. The schema is
+   * shared by every partition and only changes with an upgrade, which restarts the broker, so it is
+   * checked once per broker rather than each time a partition's exporter opens, which happens at
+   * every leader change and loads every index mapping from the search engine.
+   */
+  private static final Set<String> SCHEMA_READY = ConcurrentHashMap.newKeySet();
 
   private Controller controller;
   private ExporterConfiguration configuration;
@@ -146,10 +155,14 @@ public class CamundaExporter implements Exporter {
       setupExporterResources();
       searchEngineClient = clientAdapter.getSearchEngineClient();
 
-      try (final var schemaManager = createSchemaManager()) {
-        if (!schemaManager.isSchemaReadyForUse()) {
-          throw new ExporterException("Schema is not ready for use");
+      final var schema = schemaKey();
+      if (!SCHEMA_READY.contains(schema)) {
+        try (final var schemaManager = createSchemaManager()) {
+          if (!schemaManager.isSchemaReadyForUse()) {
+            throw new ExporterException("Schema is not ready for use");
+          }
         }
+        SCHEMA_READY.add(schema);
       }
 
       writer = createBatchWriter();
@@ -296,6 +309,17 @@ public class CamundaExporter implements Exporter {
                 provider.getProcessCache(),
                 context.clock())
             .build();
+  }
+
+  private String schemaKey() {
+    final var connect = configuration.getConnect();
+    return connect.getTypeEnum()
+        + "|"
+        + connect.getUrl()
+        + "|"
+        + connect.getUrls()
+        + "|"
+        + connect.getIndexPrefix();
   }
 
   private SchemaManager createSchemaManager() {

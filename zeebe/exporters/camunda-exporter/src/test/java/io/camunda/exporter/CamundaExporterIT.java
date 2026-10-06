@@ -511,6 +511,29 @@ final class CamundaExporterIT {
   }
 
   @TestTemplate
+  void shouldNotCheckSchemaAgainOnceAnotherPartitionFoundItReady(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
+    createSchemas(config);
+    final var p1Exporter = new CamundaExporter();
+    p1Exporter.configure(getContextFromConfig(config, 1));
+    p1Exporter.open(new ExporterTestController());
+    for (final var index : clientAdapter.getAllIndicesAsNode(testPrefix).keySet()) {
+      clientAdapter.deleteIndex(index);
+    }
+
+    // when
+    final var p2Exporter = new CamundaExporter();
+    p2Exporter.configure(getContextFromConfig(config, 2));
+
+    // then
+    assertThatNoException().isThrownBy(() -> p2Exporter.open(new ExporterTestController()));
+  }
+
+  @TestTemplate
   void shouldFailToOpenWhenSchemaMissingThenOpenAfterSchemaCreationAndExport(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
