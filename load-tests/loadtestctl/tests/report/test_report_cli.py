@@ -8,14 +8,14 @@ from unittest import mock
 
 import pytest
 
-import load_test_report
-from load_test_report.cli import build_parser
-from load_test_report.cli import parse_args
-from load_test_report.cli import run
-from load_test_report.errors import ReportError
-from load_test_report.prometheus import auth_headers
+import loadtestctl.report
+from loadtestctl.report.cli import build_parser
+from loadtestctl.report.cli import parse_args
+from loadtestctl.report.cli import run
+from loadtestctl.report.errors import ReportError
+from loadtestctl.report.prometheus import auth_headers
 
-PROJECT_DIR = Path(load_test_report.__file__).resolve().parent
+PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
 
 
 def test_should_build_parser() -> None:

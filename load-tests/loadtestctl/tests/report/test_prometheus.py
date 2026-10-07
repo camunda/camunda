@@ -10,11 +10,11 @@ from urllib.request import Request
 import pytest
 from pydantic import ValidationError
 
-from load_test_report import prometheus
-from load_test_report.errors import MissingMetric
-from load_test_report.errors import PrometheusError
-from load_test_report.prometheus import PrometheusClient
-from load_test_report.prometheus import PrometheusResponse
+from loadtestctl.report import prometheus
+from loadtestctl.report.errors import MissingMetric
+from loadtestctl.report.errors import PrometheusError
+from loadtestctl.report.prometheus import PrometheusClient
+from loadtestctl.report.prometheus import PrometheusResponse
 
 
 class FakeHttpResponse:
