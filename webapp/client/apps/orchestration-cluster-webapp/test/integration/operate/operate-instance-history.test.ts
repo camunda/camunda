@@ -6,13 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
+import {queryElementInstancesRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {test, expect} from '#/pw-modules/test-extend';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
-import {mockQueryElementInstancesEndpoint, mockGetElementInstanceEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockQueryElementInstancesEndpoint,
+	mockGetElementInstanceEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 
 test('should select history instances from a direct tenant URL and clear only selection from the root', async ({
 	network,
@@ -50,6 +55,91 @@ test('should select history instances from a direct tenant URL and clear only se
 	expect(new URL(page.url()).searchParams.get('elementInstanceKey')).toBe(JSON.stringify(element.elementInstanceKey));
 	await operateProcessInstancePage.historyTree.getByText('My Process', {exact: true}).click();
 	await expect(page).toHaveURL(`/operate/processes/${instance.processInstanceKey}/details?tenantId=tenant-a`);
+});
+
+test('should navigate and expand history with one keyboard tab stop without changing selection on focus', async ({
+	network,
+	page,
+	operateProcessInstancePage,
+}) => {
+	const instance = createProcessInstance({processInstanceKey: '2251799813851000', state: 'COMPLETED'});
+	const subprocess = createElementInstance({
+		processInstanceKey: instance.processInstanceKey,
+		elementInstanceKey: '2251799813851001',
+		elementId: 'subprocess',
+		elementName: 'Subprocess',
+		type: 'SUB_PROCESS',
+		state: 'COMPLETED',
+	});
+	const leaf = createElementInstance({
+		processInstanceKey: instance.processInstanceKey,
+		elementInstanceKey: '2251799813851002',
+		elementId: 'leaf',
+		elementName: 'Leaf',
+		state: 'COMPLETED',
+	});
+	const nested = createElementInstance({
+		processInstanceKey: instance.processInstanceKey,
+		elementInstanceKey: '2251799813851003',
+		elementId: 'nested',
+		elementName: 'Nested',
+		state: 'COMPLETED',
+	});
+	network.use(...processInstanceHeaderHandlers(instance));
+	network.use(
+		mockGetProcessDefinitionXmlEndpoint({
+			successResponse: HttpResponse.text(
+				'<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"><process id="my-process"><subProcess id="subprocess"><userTask id="nested"/></subProcess><userTask id="leaf"/></process></definitions>',
+			),
+		}),
+		mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(leaf)}),
+		http.post('*/v2/element-instances/search', async ({request}) => {
+			const body = queryElementInstancesRequestBodySchema.parse(await request.json());
+			return HttpResponse.json(
+				createPaginatedResponse({
+					items: body.filter?.elementInstanceScopeKey === subprocess.elementInstanceKey ? [nested] : [subprocess, leaf],
+				}),
+			);
+		}),
+	);
+	await operateProcessInstancePage.goto(instance.processInstanceKey, '/variables?tenantId=tenant-a');
+	const root = operateProcessInstancePage.historyItem('My Process');
+	const sub = operateProcessInstancePage.historyItem('Subprocess');
+	const leafItem = operateProcessInstancePage.historyItem('Leaf');
+	await expect(leafItem).toBeVisible();
+	await root.focus();
+	await page.keyboard.press('ArrowDown');
+	await expect(sub).toBeFocused();
+	await page.keyboard.press('ArrowRight');
+	await expect(sub).toHaveAttribute('aria-expanded', 'true');
+	const nestedItem = operateProcessInstancePage.historyItem('Nested');
+	await expect(nestedItem).toBeVisible();
+	await page.keyboard.press('ArrowRight');
+	await expect(nestedItem).toBeFocused();
+	await page.keyboard.press('ArrowLeft');
+	await expect(sub).toBeFocused();
+	await page.keyboard.press('ArrowLeft');
+	await expect(sub).toHaveAttribute('aria-expanded', 'false');
+	await expect(nestedItem).not.toBeVisible();
+	await page.keyboard.press('ArrowDown');
+	await expect(leafItem).toBeFocused();
+	await page.keyboard.press('Home');
+	await expect(root).toBeFocused();
+	await page.keyboard.press('End');
+	await expect(leafItem).toBeFocused();
+	await page.keyboard.press('ArrowUp');
+	await expect(sub).toBeFocused();
+	await expect(operateProcessInstancePage.historyNavigationTree.locator('[tabindex="0"]')).toHaveCount(1);
+	await expect(page).toHaveURL(`/operate/processes/${instance.processInstanceKey}/variables?tenantId=tenant-a`);
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('link', {name: 'Variables', exact: true})).toBeFocused();
+	await page.keyboard.press('Shift+Tab');
+	await expect(sub).toBeFocused();
+	await page.keyboard.press('End');
+	await page.keyboard.press('Enter');
+	await expect(leafItem).toHaveAttribute('aria-selected', 'true');
+	await expect(page).toHaveURL(new RegExp(`/details\\?.*elementInstanceKey=%22${leaf.elementInstanceKey}%22`));
+	expect(new URL(page.url()).searchParams.get('tenantId')).toBe('tenant-a');
 });
 
 test('should keep selection across mobile history tabs and restore the desktop split', async ({

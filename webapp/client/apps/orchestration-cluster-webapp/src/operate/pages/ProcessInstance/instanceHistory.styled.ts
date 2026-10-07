@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {Button} from '@carbon/react';
+import {TreeNode} from '@carbon/react';
 import {styles} from '@carbon/type';
 
 const HistoryPanel = styled.section`
@@ -31,82 +31,54 @@ const HistoryScroll = styled.div`
 	flex: 1;
 	min-height: 0;
 `;
-const HistoryChildren = styled.ul`
-	list-style: none;
-	padding: 0;
-	margin: 0;
+// Mirrors the legacy Operate tree: the label spans the full row (Carbon offsets it with a negative margin),
+// so the state icon sits in a fixed gutter, the caret and leaf icons are shifted by one spacing-05 step and
+// selected rows keep the active left bar even after focus moves away.
+const HistoryTreeNode = styled(TreeNode)`
+	> .cds--tree-node__label {
+		height: 2rem;
+		> .cds--tree-parent-node__toggle {
+			flex-shrink: 0;
+			margin-inline-start: var(--cds-spacing-05);
+		}
+		> .cds--tree-node__label__details {
+			inline-size: 100%;
+		}
+	}
+	&.cds--tree-node--selected > .cds--tree-node__label::before {
+		position: absolute;
+		inset-block-start: 0;
+		inset-inline-start: 0;
+		block-size: 100%;
+		inline-size: 4px;
+		background-color: var(--cds-interactive);
+		content: '';
+	}
 `;
-const HistoryRow = styled.div<{$selected: boolean; $depth: number; $foldable: boolean}>`
-	position: relative;
+const HistoryIcon = styled.span<{$leaf: boolean}>`
+	display: flex;
+	flex-shrink: 0;
+	margin-inline-start: ${({$leaf}) => ($leaf ? 'var(--cds-spacing-05)' : '0')};
+`;
+// Overflow stays inside the bar so Carbon never wraps the label in its ellipsis tooltip button.
+const HistoryBar = styled.span`
 	display: flex;
 	align-items: center;
-	min-height: 32px;
-	height: 32px;
-	padding-inline-start: ${({$depth, $foldable}) =>
-		`calc(${$foldable ? 2 : 3} * var(--cds-spacing-05) + ${$depth} * var(--cds-spacing-06))`};
-	background: ${({$selected}) => ($selected ? 'var(--cds-layer-selected-01)' : 'transparent')};
-	color: var(--cds-text-secondary);
-	&:hover {
-		background: ${({$selected}) => ($selected ? 'var(--cds-layer-selected-hover-01)' : 'var(--cds-layer-hover-01)')};
-		color: var(--cds-text-primary);
-	}
-	&:focus-within {
-		outline: 2px solid var(--cds-focus);
-		outline-offset: -2px;
-	}
-	${({$selected}) =>
-		$selected &&
-		`
-			color: var(--cds-text-primary);
-			&::before {
-				position: absolute;
-				inset-block: 0;
-				inset-inline-start: 0;
-				width: 4px;
-				background: var(--cds-interactive);
-				content: '';
-			}
-		`}
+	gap: var(--cds-spacing-05);
+	inline-size: 100%;
+	min-inline-size: 0;
+	overflow: hidden;
 `;
 const HistoryState = styled.span`
 	position: absolute;
+	inset-block: 0;
 	inset-inline-start: var(--cds-spacing-05);
 	display: flex;
 	align-items: center;
 `;
-const HistoryToggle = styled(Button)`
-	width: 24px;
-	min-width: 24px;
-	padding-inline: var(--cds-spacing-02) 0;
-	justify-content: flex-start;
-	&:focus {
-		outline: none;
-		box-shadow: none;
-	}
-`;
-const RowSelection = styled.button`
-	display: flex;
-	align-items: center;
-	gap: calc(var(--cds-spacing-03) + var(--cds-spacing-02));
-	border: 0;
-	background: transparent;
-	color: inherit;
-	font: inherit;
-	cursor: pointer;
-	text-align: left;
-	padding: 3px var(--cds-spacing-05) 3px 0;
-	flex: 0 1 auto;
-	min-width: 0;
-	height: 32px;
-	svg {
-		flex-shrink: 0;
-	}
-	&:focus {
-		outline: none;
-	}
-`;
 const HistoryName = styled.span`
 	min-width: 0;
+	margin-inline-start: var(--cds-spacing-03);
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
@@ -116,7 +88,6 @@ const HistoryMetadata = styled.span`
 	align-items: center;
 	gap: var(--cds-spacing-05);
 	flex-shrink: 0;
-	padding-inline-end: var(--cds-spacing-05);
 `;
 const HistoryTimestamp = styled.span`
 	${styles.label01}
@@ -124,6 +95,9 @@ const HistoryTimestamp = styled.span`
 	background: var(--cds-layer-02);
 	border-radius: 2px;
 	white-space: nowrap;
+`;
+const HistoryStatus = styled.li`
+	padding-inline-start: var(--cds-spacing-05);
 `;
 const BottomPanel = styled.div`
 	height: 100%;
@@ -160,14 +134,14 @@ export {
 	HistoryPanel,
 	HistoryHeader,
 	HistoryScroll,
-	HistoryChildren,
-	HistoryRow,
+	HistoryTreeNode,
+	HistoryIcon,
+	HistoryBar,
 	HistoryState,
-	HistoryToggle,
-	RowSelection,
 	HistoryName,
 	HistoryMetadata,
 	HistoryTimestamp,
+	HistoryStatus,
 	BottomPanel,
 	TabPanel,
 };

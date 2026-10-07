@@ -40,10 +40,8 @@ test('should keep the history tree and responsive tabs accessible', async ({
 	await operateProcessInstancePage.goto(instance.processInstanceKey, '/variables');
 	await expect(operateProcessInstancePage.historyTree).toBeVisible();
 	await expect(operateProcessInstancePage.historyTree.getByText('Review invoice', {exact: true})).toBeVisible();
-	await operateProcessInstancePage.historyTree.getByRole('button', {name: 'Review invoice', exact: true}).click();
-	await expect(
-		operateProcessInstancePage.historyTree.getByRole('button', {name: 'Review invoice', exact: true}),
-	).toHaveAttribute('aria-pressed', 'true');
+	await operateProcessInstancePage.historyItem('Review invoice').click();
+	await expect(operateProcessInstancePage.historyItem('Review invoice')).toHaveAttribute('aria-selected', 'true');
 	await operateProcessInstancePage.historyTree.getByText('End date', {exact: true}).click();
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
 	await page.setViewportSize({width: 800, height: 768});

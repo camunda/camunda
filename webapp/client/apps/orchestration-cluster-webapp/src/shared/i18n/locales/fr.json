@@ -1091,8 +1091,6 @@
 					"timestamps": "Date de fin",
 					"executionCount": "Nombre d'exécutions",
 					"multiInstance": " (Multi-instance)",
-					"expand": "Développer {{name}}",
-					"collapse": "Réduire {{name}}",
 					"migrated": "Migrée {{date}}",
 					"forbidden": "Vous n’avez pas l’autorisation de consulter l’historique de l’instance",
 					"error": "Impossible de récupérer l’historique de l’instance. Veuillez actualiser la page.",

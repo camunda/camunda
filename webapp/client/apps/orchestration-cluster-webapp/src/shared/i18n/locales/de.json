@@ -1088,8 +1088,6 @@
 					"timestamps": "Enddatum",
 					"executionCount": "Ausführungsanzahl",
 					"multiInstance": " (Multi-Instanz)",
-					"expand": "{{name}} aufklappen",
-					"collapse": "{{name}} zuklappen",
 					"migrated": "Migriert {{date}}",
 					"forbidden": "Sie haben keine Berechtigung, die Instanzhistorie anzuzeigen",
 					"error": "Die Instanzhistorie konnte nicht geladen werden. Bitte aktualisieren Sie die Seite.",

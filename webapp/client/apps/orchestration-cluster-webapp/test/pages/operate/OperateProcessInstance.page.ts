@@ -46,6 +46,14 @@ class OperateProcessInstancePage extends BasePage {
 		return this.page.getByRole('region', {name: 'Instance History', exact: true});
 	}
 
+	get historyNavigationTree() {
+		return this.historyTree.getByRole('tree');
+	}
+
+	historyItem(label: string) {
+		return this.historyNavigationTree.getByRole('treeitem', {name: label, exact: true});
+	}
+
 	get historyTab() {
 		return this.page.getByRole('link', {name: 'Instance History', exact: true});
 	}

@@ -241,15 +241,15 @@ describe('<ProcessInstance />', () => {
 			initialEntry: `/operate/processes/${instance.processInstanceKey}/variables?elementId=task-1&elementInstanceKey=2251799813685281&anchorElementId=task-1&isMultiInstanceBody=true&isPlaceholder=false&tenantId=tenant-a`,
 		});
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'My Process'})).toBeVisible();
+		await expect.element(screen.getByRole('treeitem', {name: 'My Process'})).toBeVisible();
 		await userEvent.click(screen.getByText('End date', {exact: true}));
 		await userEvent.click(screen.getByText('Execution count', {exact: true}));
 		await expect.element(screen.getByRole('switch', {name: 'End date'})).toBeChecked();
 		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).toBeChecked();
-		const historyTop = screen.getByRole('button', {name: 'My Process'}).element().getBoundingClientRect().top;
+		const historyTop = screen.getByRole('treeitem', {name: 'My Process'}).element().getBoundingClientRect().top;
 		await userEvent.wheel(screen.getByRole('region', {name: 'Instance History'}), {delta: {y: 500}});
 		await expect
-			.poll(() => screen.getByRole('button', {name: 'My Process'}).element().getBoundingClientRect().top)
+			.poll(() => screen.getByRole('treeitem', {name: 'My Process'}).element().getBoundingClientRect().top)
 			.toBeLessThan(historyTop);
 		screen.queryClient.setQueryData(['processInstance', next.processInstanceKey], next);
 		screen.queryClient.setQueryData(
@@ -264,12 +264,12 @@ describe('<ProcessInstance />', () => {
 			search: true,
 		});
 
-		await expect.element(screen.getByRole('button', {name: 'Next Process'})).toBeVisible();
+		await expect.element(screen.getByRole('treeitem', {name: 'Next Process'})).toBeVisible();
 		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant-a'});
 		await expect.element(screen.getByRole('switch', {name: 'End date'})).not.toBeChecked();
 		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).not.toBeChecked();
 		await expect
-			.poll(() => screen.getByRole('button', {name: 'Next Process'}).element().getBoundingClientRect().top)
+			.poll(() => screen.getByRole('treeitem', {name: 'Next Process'}).element().getBoundingClientRect().top)
 			.toBe(historyTop);
 	});
 

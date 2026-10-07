@@ -12,6 +12,8 @@ import {cleanup} from 'vitest-browser-react';
 import {useEffect, useState} from 'react';
 import {useRouterState} from '@tanstack/react-router';
 import {HttpResponse, http} from 'msw';
+import type {SetupWorker} from 'msw/browser';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
@@ -36,6 +38,66 @@ import {endpoints} from '#/shared/http/endpoints';
 const instance = createProcessInstance();
 const child = createElementInstance();
 const path = '/operate/processes/$processInstanceId/variables';
+const subprocess = createElementInstance({
+	elementId: 'subprocess',
+	elementInstanceKey: '2251799813800101',
+	elementName: 'Subprocess',
+	type: 'SUB_PROCESS',
+	state: 'COMPLETED',
+});
+const leaf = createElementInstance({
+	elementId: 'leaf',
+	elementInstanceKey: '2251799813800102',
+	elementName: 'Leaf',
+	state: 'TERMINATED',
+});
+const nested = createElementInstance({
+	elementId: 'nested',
+	elementInstanceKey: '2251799813800103',
+	elementName: 'Nested',
+	hasIncident: true,
+});
+function row(item: Element) {
+	return item.querySelector<HTMLElement>(':scope > .cds--tree-node__label')!;
+}
+function toggle(item: Element) {
+	return row(item).querySelector<HTMLElement>(':scope > .cds--tree-parent-node__toggle')!;
+}
+function icon(item: Element) {
+	return row(item).querySelector<HTMLElement>('[data-testid="element-instance-icon"]')!;
+}
+function renderTree(
+	worker: SetupWorker,
+	search = '',
+	rootItems: ElementInstance[] = [subprocess, leaf],
+	controls = false,
+) {
+	worker.use(
+		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+		mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createQueryElementInstancesResponse())}),
+		mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(leaf)}),
+		http.post(endpoints.queryElementInstances({}).url, async ({request}) => {
+			const {filter} = (await request.json()) as {filter: {elementInstanceScopeKey?: string}};
+			return HttpResponse.json(
+				createQueryElementInstancesResponse(
+					filter.elementInstanceScopeKey === instance.processInstanceKey ? rootItems : [nested],
+				),
+			);
+		}),
+	);
+	return renderWithRouter(() => <Harness tree controls={controls} />, {
+		path,
+		initialEntry: `/operate/processes/${instance.processInstanceKey}/variables${search ? `?${search}` : ''}`,
+	});
+}
+function CollapseControl() {
+	const history = useInstanceHistory();
+	return (
+		<button type="button" onClick={() => history.toggle(subprocess.elementInstanceKey, instance.processInstanceKey)}>
+			Collapse subprocess
+		</button>
+	);
+}
 function renderPage(search = '') {
 	return renderWithRouter(Harness, {
 		path,
@@ -92,7 +154,7 @@ function Probe() {
 		</>
 	);
 }
-function Harness({tree = false}: {tree?: boolean}) {
+function Harness({tree = false, controls = false}: {tree?: boolean; controls?: boolean}) {
 	const search = useRouterState({select: (state) => state.location.search});
 	const [id, setId] = useState(instance.processInstanceKey);
 	const [shown, setShown] = useState(true);
@@ -108,6 +170,7 @@ function Harness({tree = false}: {tree?: boolean}) {
 				search={processInstanceSearchSchema.parse(search)}
 			>
 				{shown && (tree ? <InstanceHistory /> : <Probe />)}
+				{controls && <CollapseControl />}
 			</ProcessInstancePageProvider>
 		</>
 	);
@@ -368,11 +431,12 @@ describe('InstanceHistory', () => {
 			path,
 			initialEntry: `/operate/processes/${instance.processInstanceKey}/variables?elementId=task&elementInstanceKey=${child.elementInstanceKey}&isPlaceholder=true&isMultiInstanceBody=true&anchorElementId=anchor&tenantId=tenant`,
 		});
-		await expect.element(screen.getByRole('button', {name: 'My Process'})).toBeVisible();
-		expect(screen.getByRole('button', {name: 'My Process'}).element().getBoundingClientRect().height).toBe(32);
+		const rootItem = screen.getByRole('treeitem', {name: 'My Process'});
+		await expect.element(rootItem).toBeVisible();
+		expect(row(rootItem.element()).getBoundingClientRect().height).toBe(32);
 		await userEvent.click(screen.getByText('Execution count'));
 		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).toBeChecked();
-		await userEvent.click(screen.getByRole('button', {name: 'My Process'}));
+		await userEvent.click(row(rootItem.element()));
 		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant'});
 	});
 	it('should retry XML before reading disabled history and wait for successful recovery', async ({worker}) => {
@@ -403,79 +467,153 @@ describe('InstanceHistory', () => {
 
 		xmlStatus = 200;
 		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
-		await expect.element(screen.getByRole('button', {name: 'My Process'})).toBeVisible();
+		await expect.element(screen.getByRole('treeitem', {name: 'My Process'})).toBeVisible();
 		expect(historyReads).toHaveBeenCalledTimes(1);
 	});
 	it('should preserve legacy state gutters, indentation, row focus and selected-item highlighting', async ({
 		worker,
 	}) => {
-		const subprocess = createElementInstance({
-			elementInstanceKey: '2251799813800101',
-			elementName: 'Subprocess',
-			type: 'SUB_PROCESS',
-			state: 'COMPLETED',
-		});
-		const leaf = createElementInstance({
-			elementInstanceKey: '2251799813800102',
-			elementName: 'Leaf',
-			state: 'TERMINATED',
-		});
-		const nested = createElementInstance({
-			elementInstanceKey: '2251799813800103',
-			elementName: 'Nested',
-			hasIncident: true,
-		});
-		worker.use(
-			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
-			mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createQueryElementInstancesResponse())}),
-			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(leaf)}),
-			http.post(endpoints.queryElementInstances({}).url, async ({request}) => {
-				const {filter} = (await request.json()) as {filter: {elementInstanceScopeKey: string}};
-				return HttpResponse.json(
-					createQueryElementInstancesResponse(
-						filter.elementInstanceScopeKey === instance.processInstanceKey ? [subprocess, leaf] : [nested],
-					),
-				);
-			}),
-		);
-		const screen = await renderWithRouter(() => <Harness tree />, {
-			path,
-			initialEntry: `/operate/processes/${instance.processInstanceKey}/variables`,
-		});
-		const rootButton = screen.getByRole('button', {name: 'My Process'});
-		const subprocessButton = screen.getByRole('button', {name: 'Subprocess', exact: true});
-		const leafButton = screen.getByRole('button', {name: 'Leaf', exact: true});
-		await expect.element(leafButton).toBeVisible();
+		const screen = await renderTree(worker);
+		const tree = screen.getByRole('tree', {name: 'Instance History'});
+		const rootItem = screen.getByRole('treeitem', {name: 'My Process'});
+		const subprocessItem = screen.getByRole('treeitem', {name: 'Subprocess', exact: true});
+		const leafItem = screen.getByRole('treeitem', {name: 'Leaf', exact: true});
+		await expect.element(leafItem).toBeVisible();
 		const origin = screen.getByRole('region', {name: 'Instance History'}).element().getBoundingClientRect().left;
 		const x = (element: Element) => element.getBoundingClientRect().left - origin;
 		expect(x(screen.getByTestId('ACTIVE-icon').element())).toBe(16);
-		expect(x(screen.getByRole('button', {name: 'Collapse My Process'}).element())).toBe(32);
-		expect(x(rootButton.getByTestId('element-instance-icon').element())).toBe(56);
-		expect(x(subprocessButton.getByTestId('element-instance-icon').element())).toBe(80);
-		expect(x(leafButton.getByTestId('element-instance-icon').element())).toBe(72);
-		await userEvent.click(screen.getByRole('button', {name: 'Expand Subprocess'}));
-		const nestedButton = screen.getByRole('button', {name: 'Nested', exact: true});
-		await expect.element(nestedButton).toBeVisible();
+		expect(x(toggle(rootItem.element()))).toBe(32);
+		expect(x(icon(rootItem.element()))).toBe(56);
+		expect(x(icon(subprocessItem.element()))).toBe(80);
+		expect(x(icon(leafItem.element()))).toBe(72);
+		await userEvent.click(toggle(subprocessItem.element()));
+		const nestedItem = screen.getByRole('treeitem', {name: 'Nested', exact: true});
+		await expect.element(nestedItem).toBeVisible();
+		await expect.element(subprocessItem).toHaveAttribute('aria-expanded', 'true');
+		expect(screen.router.state.location.search).toEqual({});
 		expect(x(screen.getByTestId('INCIDENT-icon').element())).toBe(16);
-		expect(x(nestedButton.getByTestId('element-instance-icon').element())).toBe(96);
+		expect(x(icon(nestedItem.element()))).toBe(96);
+		expect(tree.element().querySelectorAll('button')).toHaveLength(0);
 
-		await userEvent.click(leafButton);
-		await expect.element(leafButton).toHaveFocus();
-		await expect.element(leafButton).toHaveAttribute('aria-pressed', 'true');
-		const leafItem = screen.getByRole('listitem').filter({hasText: /Leaf/, hasNotText: /My Process/});
-		const row = leafItem.element().firstElementChild;
-		if (!row) {
-			throw new Error('Expected a history row');
-		}
-		expect(getComputedStyle(row).outlineWidth).toBe('2px');
-		expect(getComputedStyle(row).outlineColor).toBe('rgb(15, 98, 254)');
-		expect(getComputedStyle(row, '::before').width).toBe('4px');
-		expect(getComputedStyle(row, '::before').backgroundColor).toBe('rgb(15, 98, 254)');
-		expect(leafButton.element().getBoundingClientRect().height).toBe(32);
+		await userEvent.click(leafItem);
+		await expect.element(leafItem).toHaveFocus();
+		await expect.element(leafItem).toHaveAttribute('aria-selected', 'true');
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({elementId: leaf.elementId});
+		const leafRow = row(leafItem.element());
+		expect(getComputedStyle(leafRow).outlineWidth).toBe('2px');
+		expect(getComputedStyle(leafRow).outlineColor).toBe('rgb(15, 98, 254)');
+		expect(getComputedStyle(leafRow, '::before').width).toBe('4px');
+		expect(getComputedStyle(leafRow, '::before').backgroundColor).toBe('rgb(15, 98, 254)');
+		expect(leafRow.getBoundingClientRect().height).toBe(32);
 		await userEvent.click(screen.getByText('End date', {exact: true}));
-		await expect.element(leafButton).not.toHaveFocus();
-		expect(getComputedStyle(row).outlineStyle).toBe('none');
-		expect(getComputedStyle(row, '::before').width).toBe('4px');
+		await expect.element(leafItem).not.toHaveFocus();
+		expect(getComputedStyle(leafRow).outlineStyle).toBe('none');
+		expect(getComputedStyle(leafRow, '::before').width).toBe('4px');
+		await expect.element(rootItem).toHaveAttribute('aria-selected', 'false');
+	});
+	it('should highlight every visible instance for an element-only selection', async ({worker}) => {
+		const screen = await renderTree(worker, `elementId=${leaf.elementId}`, [
+			leaf,
+			createElementInstance({...leaf, elementInstanceKey: '2251799813800104', elementName: 'Leaf again'}),
+		]);
+		const first = screen.getByRole('treeitem', {name: 'Leaf', exact: true});
+		const second = screen.getByRole('treeitem', {name: 'Leaf again', exact: true});
+		await expect.element(second).toHaveAttribute('aria-selected', 'true');
+		await expect.element(first).toHaveAttribute('aria-selected', 'true');
+		await expect.element(screen.getByRole('treeitem', {name: 'My Process'})).toHaveAttribute('aria-selected', 'false');
+		expect(getComputedStyle(row(second.element()), '::before').width).toBe('4px');
+	});
+	it('should navigate the native tree with a single roving tab stop without selecting on focus', async ({worker}) => {
+		const screen = await renderTree(worker);
+		const tree = screen.getByRole('tree', {name: 'Instance History'});
+		const rootItem = screen.getByRole('treeitem', {name: 'My Process'});
+		const subprocessItem = screen.getByRole('treeitem', {name: 'Subprocess', exact: true});
+		const leafItem = screen.getByRole('treeitem', {name: 'Leaf', exact: true});
+		const nestedItem = screen.getByRole('treeitem', {name: 'Nested', exact: true});
+		await expect.element(leafItem).toBeVisible();
+		await expect.element(rootItem).toHaveAttribute('aria-expanded', 'true');
+		await expect.element(subprocessItem).toHaveAttribute('aria-expanded', 'false');
+		await expect.element(leafItem).not.toHaveAttribute('aria-expanded');
+		const tabStops = () =>
+			Array.from(tree.element().querySelectorAll('[tabindex="0"]'), (element) => element.getAttribute('aria-label'));
+		expect(tabStops()).toEqual(['My Process']);
+
+		screen.getByRole('switch', {name: 'Execution count'}).element().focus();
+		await userEvent.tab();
+		await expect.element(rootItem).toHaveFocus();
+		await userEvent.keyboard('{ArrowDown}');
+		await expect.element(subprocessItem).toHaveFocus();
+		expect(tabStops()).toEqual(['Subprocess']);
+		const focusedRow = row(subprocessItem.element());
+		expect(getComputedStyle(focusedRow).outlineWidth).toBe('2px');
+		expect(getComputedStyle(focusedRow).outlineColor).toBe('rgb(15, 98, 254)');
+		expect(focusedRow.getBoundingClientRect().height).toBe(32);
+
+		await userEvent.keyboard('{ArrowRight}');
+		await expect.element(subprocessItem).toHaveAttribute('aria-expanded', 'true');
+		await expect.element(nestedItem).toBeVisible();
+		await expect.element(subprocessItem).toHaveFocus();
+		await userEvent.keyboard('{ArrowRight}');
+		await expect.element(nestedItem).toHaveFocus();
+		await userEvent.keyboard('{ArrowLeft}');
+		await expect.element(subprocessItem).toHaveFocus();
+		await userEvent.keyboard('{ArrowLeft}');
+		await expect.element(subprocessItem).toHaveAttribute('aria-expanded', 'false');
+		await expect.element(nestedItem).not.toBeInTheDocument();
+		await userEvent.keyboard('{ArrowLeft}');
+		await expect.element(rootItem).toHaveFocus();
+		await userEvent.keyboard('{End}');
+		await expect.element(leafItem).toHaveFocus();
+		await userEvent.keyboard('{ArrowUp}');
+		await expect.element(subprocessItem).toHaveFocus();
+		await userEvent.keyboard('{Home}');
+		await expect.element(rootItem).toHaveFocus();
+		await userEvent.keyboard('{End}');
+		expect(screen.router.state.location.search).toEqual({});
+		await expect.element(rootItem).toHaveAttribute('aria-selected', 'true');
+		await expect.element(leafItem).toHaveAttribute('aria-selected', 'false');
+
+		await userEvent.tab({shift: true});
+		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).toHaveFocus();
+		await userEvent.tab();
+		await expect.element(leafItem).toHaveFocus();
+		expect(tabStops()).toEqual(['Leaf']);
+
+		await userEvent.keyboard(' ');
+		await expect
+			.poll(() => screen.router.state.location.search)
+			.toEqual({elementId: leaf.elementId, elementInstanceKey: leaf.elementInstanceKey});
+		await expect.element(leafItem).toHaveAttribute('aria-selected', 'true');
+		await expect.element(leafItem).toHaveFocus();
+		await userEvent.keyboard('{ArrowUp}{Enter}');
+		await expect
+			.poll(() => screen.router.state.location.search)
+			.toEqual({elementId: subprocess.elementId, elementInstanceKey: subprocess.elementInstanceKey});
+		await expect.element(subprocessItem).toHaveAttribute('aria-expanded', 'true');
+		await expect.element(subprocessItem).toHaveAttribute('aria-selected', 'true');
+		await expect.element(subprocessItem).toHaveAttribute('aria-current', 'true');
+		await expect.element(leafItem).toHaveAttribute('aria-selected', 'false');
+		await userEvent.keyboard('{Home}{Enter}');
+		await expect.poll(() => screen.router.state.location.search).toEqual({});
+		await expect.element(rootItem).toHaveAttribute('aria-selected', 'true');
+		await expect.element(rootItem).toHaveAttribute('aria-expanded', 'false');
+		await expect.element(leafItem).not.toBeInTheDocument();
+	});
+	it('should move focus to the nearest visible ancestor when the focused item disappears', async ({worker}) => {
+		const screen = await renderTree(worker, '', undefined, true);
+		const subprocessItem = screen.getByRole('treeitem', {name: 'Subprocess', exact: true});
+		await expect.element(subprocessItem).toBeVisible();
+		await userEvent.click(toggle(subprocessItem.element()));
+		const nestedItem = screen.getByRole('treeitem', {name: 'Nested', exact: true});
+		await userEvent.click(nestedItem);
+		await expect.element(nestedItem).toHaveFocus();
+		screen
+			.getByRole('button', {name: 'Collapse subprocess'})
+			.element()
+			.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+		await expect.element(nestedItem).not.toBeInTheDocument();
+		await expect.element(subprocessItem).toHaveFocus();
+		expect(subprocessItem.element().tabIndex).toBe(0);
 	});
 	it('should retain 32px history rows for long labels and timestamps in a narrow panel', async ({worker}) => {
 		const label = 'Long history element label with several words '.repeat(10).trim();
@@ -498,10 +636,11 @@ describe('InstanceHistory', () => {
 			),
 			{path, initialEntry: `/operate/processes/${instance.processInstanceKey}/variables`},
 		);
-		const rowButton = screen.getByRole('button', {name: label, exact: true});
-		await expect.element(rowButton).toBeVisible();
-		expect(rowButton.element().getBoundingClientRect().height).toBe(32);
+		const item = screen.getByRole('treeitem', {name: label, exact: true});
+		await expect.element(item).toBeVisible();
+		expect(row(item.element()).getBoundingClientRect().height).toBe(32);
 		await userEvent.click(screen.getByText('End date', {exact: true}));
-		expect(rowButton.element().getBoundingClientRect().height).toBe(32);
+		expect(row(item.element()).getBoundingClientRect().height).toBe(32);
+		expect(screen.getByRole('tree').element().querySelectorAll('button')).toHaveLength(0);
 	});
 });

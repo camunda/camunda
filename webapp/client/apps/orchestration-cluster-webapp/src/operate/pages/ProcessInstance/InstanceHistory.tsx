@@ -6,13 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useRef} from 'react';
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	type ComponentProps,
+	type FocusEvent,
+	type RefCallback,
+} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {ActionableNotification, Toggle, InlineNotification, SkeletonText, Tag} from '@carbon/react';
-import {CaretDown, CaretRight} from '@carbon/react/icons';
+import {
+	ActionableNotification,
+	FeatureFlags,
+	Toggle,
+	InlineNotification,
+	SkeletonText,
+	Tag,
+	TreeView,
+} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import type {ElementInstance, QueryBatchOperationItemsResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
-import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {endpoints} from '#/shared/http/endpoints';
 import {ForbiddenError} from '#/shared/errors';
 import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
@@ -28,15 +46,16 @@ import {
 	HistoryPanel,
 	HistoryHeader,
 	HistoryScroll,
-	HistoryRow,
+	HistoryTreeNode,
+	HistoryIcon,
+	HistoryBar,
 	HistoryState,
-	HistoryToggle,
-	HistoryChildren,
-	RowSelection,
 	HistoryName,
 	HistoryMetadata,
 	HistoryTimestamp,
+	HistoryStatus,
 } from './instanceHistory.styled';
+const ROW_HEIGHT = 32;
 const foldable = new Set([
 	'PROCESS',
 	'MULTI_INSTANCE_BODY',
@@ -45,12 +64,44 @@ const foldable = new Set([
 	'AD_HOC_SUB_PROCESS',
 	'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
 ]);
+type TabStop = {id: string; ancestors: string[]};
+const NodeIconContext = createContext<{businessObject?: BusinessObject; root: boolean; leaf: boolean}>({
+	root: false,
+	leaf: false,
+});
+function nodeId(key: string) {
+	return `instance-history-${key}`;
+}
+// Carbon renders the icon slot itself; the legacy layout ignores Carbon's icon class and offsets leaf icons.
+function NodeIcon() {
+	const {businessObject, root, leaf} = useContext(NodeIconContext);
+	return (
+		<HistoryIcon $leaf={leaf}>
+			<ElementInstanceIcon businessObject={businessObject} root={root} />
+		</HistoryIcon>
+	);
+}
+// InfiniteScroller observes the rows of the element it receives, so hand it the tree node's child group.
+function HistoryTreeItem({ref, ...props}: ComponentProps<typeof HistoryTreeNode> & {ref?: RefCallback<Element>}) {
+	const observeGroup = useCallback(
+		(node: HTMLElement | null) => ref?.(node?.querySelector(':scope > [role="group"]') ?? null),
+		[ref],
+	);
+	return <HistoryTreeNode {...props} ref={ref ? observeGroup : undefined} />;
+}
 function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 	const {processInstance, processInstanceId} = useProcessInstancePage();
 	const {t} = useTranslation();
 	const history = useInstanceHistory();
+	const selection = useProcessInstanceElementSelection();
 	const xml = useDiagramXml(processInstance.processDefinitionKey);
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const [tabStop, setTabStop] = useState<TabStop>();
+	const focus = useRef<{within: boolean; element: HTMLElement | null; target: string}>({
+		within: false,
+		element: null,
+		target: '',
+	});
 	const migration = useQuery({
 		queryKey: ['instanceLastMigration', processInstanceId],
 		queryFn: async ({signal}) => {
@@ -87,6 +138,70 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 		state: processInstance.state === 'SUSPENDED' ? 'ACTIVE' : processInstance.state,
 		incidentKey: null,
 	};
+	const rootId = nodeId(processInstanceId);
+	const visible = new Set<string>();
+	const selected: string[] = [];
+	(function collect(item: ElementInstance) {
+		const id = nodeId(item.elementInstanceKey);
+		visible.add(id);
+		if (
+			item === root
+				? !selection.hasSelection
+				: selection.isSelected(item.elementId, item.elementInstanceKey, item.type === 'MULTI_INSTANCE_BODY')
+		) {
+			selected.push(id);
+		}
+		if (foldable.has(item.type)) {
+			history.windows.get(item.elementInstanceKey)?.query.data?.items.forEach(collect);
+		}
+	})(root);
+	const focusTarget = [tabStop?.id, ...(tabStop?.ancestors ?? [])].find((id) => id && visible.has(id)) ?? rootId;
+	useEffect(() => {
+		focus.current.target = focusTarget;
+		const {within, element} = focus.current;
+		if (within && element && !element.isConnected && document.activeElement === document.body) {
+			document.getElementById(focusTarget)?.focus();
+		}
+		// Carbon's TreeView makes its first node tabbable after every render; keep a single roving tab stop.
+		scrollRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]').forEach((item) => {
+			item.tabIndex = item.id === focusTarget ? 0 : -1;
+		});
+	});
+	function handleFocus(event: FocusEvent<HTMLDivElement>) {
+		const item = event.target;
+		if (item.getAttribute('role') !== 'treeitem') {
+			return;
+		}
+		const ancestors: string[] = [];
+		for (
+			let parent = item.parentElement?.closest('[role="treeitem"]');
+			parent;
+			parent = parent.parentElement?.closest('[role="treeitem"]')
+		) {
+			ancestors.push(parent.id);
+		}
+		focus.current.within = true;
+		focus.current.element = item;
+		setTabStop({id: item.id, ancestors});
+	}
+	function handleBlur(event: FocusEvent<HTMLDivElement>) {
+		const next = event.relatedTarget;
+		if (next && event.currentTarget.contains(next)) {
+			return;
+		}
+		if (next) {
+			focus.current.within = false;
+			return;
+		}
+		const item = event.target;
+		setTimeout(() => {
+			if (item.isConnected) {
+				focus.current.within = false;
+			} else if (focus.current.within && document.activeElement === document.body) {
+				document.getElementById(focus.current.target)?.focus();
+			}
+		});
+	}
 	const rootQuery = history.windows.get(processInstanceId)?.query;
 	const error = xml.error ?? history.pageError ?? rootQuery?.error;
 	const forbidden = history.forbidden || error instanceof ForbiddenError;
@@ -142,15 +257,23 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 			) : xml.isPending || rootQuery?.isPending ? (
 				<SkeletonText />
 			) : (
-				<HistoryScroll ref={scrollRef}>
-					<HistoryChildren>
-						<HistoryNode
-							item={root}
-							scrollRef={scrollRef}
-							migrationDate={migration.data}
-							businessObjects={xml.data?.businessObjects}
-						/>
-					</HistoryChildren>
+				<HistoryScroll ref={scrollRef} onFocus={handleFocus} onBlur={handleBlur}>
+					<FeatureFlags enableTreeviewControllable>
+						<TreeView
+							label={t('operate.processInstance.history.title')}
+							hideLabel
+							selected={selected}
+							active={selected[0] ?? ''}
+						>
+							<HistoryNode
+								item={root}
+								scrollRef={scrollRef}
+								focusTarget={focusTarget}
+								migrationDate={migration.data}
+								businessObjects={xml.data?.businessObjects}
+							/>
+						</TreeView>
+					</FeatureFlags>
 				</HistoryScroll>
 			)}
 		</HistoryPanel>
@@ -160,40 +283,37 @@ function HistoryNode({
 	item,
 	parent,
 	scrollRef,
+	focusTarget,
 	migrationDate,
 	businessObjects,
-	depth = 0,
 }: {
 	item: ElementInstance;
 	parent?: string;
 	scrollRef: React.RefObject<HTMLElement | null>;
+	focusTarget: string;
 	migrationDate?: string | null;
 	businessObjects?: BusinessObjects;
-	depth?: number;
 }) {
 	const history = useInstanceHistory();
 	const selection = useProcessInstanceElementSelection();
 	const {t} = useTranslation();
 	const key = item.elementInstanceKey;
+	const id = nodeId(key);
 	const root = item.type === 'PROCESS';
-	const window = history.windows.get(key);
-	const rowRef = useRef<HTMLDivElement>(null);
-	const selectionRef = useRef<HTMLButtonElement>(null);
+	const isFoldable = foldable.has(item.type);
+	const window = isFoldable ? history.windows.get(key) : undefined;
+	const businessObject = businessObjects?.[item.elementId];
+	const icon = useMemo(() => ({businessObject, root, leaf: !isFoldable}), [businessObject, root, isFoldable]);
 	const label =
 		(item.elementName ?? item.elementId) +
 		(item.type === 'MULTI_INSTANCE_BODY' ? t('operate.processInstance.history.multiInstance') : '');
 	async function page(direction: 'next' | 'previous', compensate: (distance: number) => void) {
 		const count = await history.page(key, direction);
 		if (count > 0) {
-			compensate(count * (direction === 'previous' ? 32 : (rowRef.current?.getBoundingClientRect().height ?? 32)));
+			compensate(count * ROW_HEIGHT);
 		}
 	}
-	const selected = root
-		? !selection.hasSelection
-		: selection.isSelected(item.elementId, key, item.type === 'MULTI_INSTANCE_BODY');
-	const isFoldable = foldable.has(item.type);
 	function select() {
-		selectionRef.current?.focus();
 		if (root) {
 			selection.clearSelection();
 		} else {
@@ -203,77 +323,80 @@ function HistoryNode({
 			);
 		}
 	}
-	return (
-		<li>
-			<HistoryRow ref={rowRef} $selected={selected} $depth={depth} $foldable={isFoldable} onClick={select}>
-				<HistoryState>
-					<StateIcon state={item.hasIncident ? 'INCIDENT' : item.state} size={16} />
-				</HistoryState>
-				{isFoldable && (
-					<HistoryToggle
-						kind="ghost"
-						size="sm"
-						hasIconOnly
-						renderIcon={window ? CaretDown : CaretRight}
-						iconDescription={t(
-							window ? 'operate.processInstance.history.collapse' : 'operate.processInstance.history.expand',
-							{name: label},
-						)}
-						aria-expanded={Boolean(window)}
-						onClick={(event) => {
-							event.stopPropagation();
-							history.toggle(key, parent);
-						}}
-					/>
-				)}
-				<RowSelection ref={selectionRef} type="button" aria-pressed={selected}>
-					<ElementInstanceIcon businessObject={businessObjects?.[item.elementId]} root={root} />
+	const showMetadata = (root && migrationDate) || (history.timestamps && item.endDate);
+	const treeItem = (
+		<HistoryTreeItem
+			id={id}
+			aria-label={label}
+			tabIndex={id === focusTarget ? 0 : -1}
+			renderIcon={NodeIcon}
+			onSelect={select}
+			{...(isFoldable && {isExpanded: Boolean(window), onToggle: () => history.toggle(key, parent)})}
+			label={
+				<HistoryBar>
+					<HistoryState>
+						<StateIcon state={item.hasIncident ? 'INCIDENT' : item.state} size={16} />
+					</HistoryState>
 					<HistoryName>{label}</HistoryName>
-				</RowSelection>
-				{((root && migrationDate) || (history.timestamps && item.endDate)) && (
-					<HistoryMetadata>
-						{root && migrationDate && (
-							<Tag type="green">
-								{t('operate.processInstance.history.migrated', {date: formatTimestamp(migrationDate)})}
-							</Tag>
-						)}
-						{history.timestamps && item.endDate && <HistoryTimestamp>{formatTimestamp(item.endDate)}</HistoryTimestamp>}
-					</HistoryMetadata>
-				)}
-			</HistoryRow>
-			{window && (
-				<div>
-					{window.query.isPending ? (
-						<SkeletonText />
-					) : window.query.isError || window.error ? (
-						<InlineNotification
-							kind="error"
-							lowContrast
-							hideCloseButton
-							title={t('operate.processInstance.history.error')}
+					{showMetadata && (
+						<HistoryMetadata>
+							{root && migrationDate && (
+								<Tag type="green">
+									{t('operate.processInstance.history.migrated', {date: formatTimestamp(migrationDate)})}
+								</Tag>
+							)}
+							{history.timestamps && item.endDate && (
+								<HistoryTimestamp>{formatTimestamp(item.endDate)}</HistoryTimestamp>
+							)}
+						</HistoryMetadata>
+					)}
+				</HistoryBar>
+			}
+		>
+			{isFoldable ? (
+				<>
+					{window?.query.data?.items.map((child) => (
+						<HistoryNode
+							key={child.elementInstanceKey}
+							item={child}
+							parent={key}
+							scrollRef={scrollRef}
+							focusTarget={focusTarget}
+							businessObjects={businessObjects}
 						/>
-					) : null}
-					<InfiniteScroller
-						scrollableContainerRef={scrollRef}
-						onVerticalScrollEndReach={(compensate) => void page('next', compensate)}
-						onVerticalScrollStartReach={(compensate) => void page('previous', compensate)}
-					>
-						<HistoryChildren>
-							{window.query.data?.items.map((child) => (
-								<HistoryNode
-									key={child.elementInstanceKey}
-									item={child}
-									parent={key}
-									scrollRef={scrollRef}
-									businessObjects={businessObjects}
-									depth={depth + 1}
+					))}
+					{window && (window.query.isPending || window.query.isError || window.error) ? (
+						<HistoryStatus role="none">
+							{window.query.isPending ? (
+								<SkeletonText />
+							) : (
+								<InlineNotification
+									kind="error"
+									lowContrast
+									hideCloseButton
+									title={t('operate.processInstance.history.error')}
 								/>
-							))}
-						</HistoryChildren>
-					</InfiniteScroller>
-				</div>
+							)}
+						</HistoryStatus>
+					) : null}
+				</>
+			) : undefined}
+		</HistoryTreeItem>
+	);
+	return (
+		<NodeIconContext value={icon}>
+			{isFoldable ? (
+				<InfiniteScroller
+					scrollableContainerRef={scrollRef}
+					onVerticalScrollEndReach={(compensate) => void page('next', compensate)}
+					onVerticalScrollStartReach={(compensate) => void page('previous', compensate)}
+				>
+					{treeItem}
+				</InfiniteScroller>
+			) : (
+				treeItem
 			)}
-		</li>
+		</NodeIconContext>
 	);
 }
 export {InstanceHistory};

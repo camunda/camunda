@@ -1100,8 +1100,6 @@
 					"timestamps": "End date",
 					"executionCount": "Execution count",
 					"multiInstance": " (Multi Instance)",
-					"expand": "Expand {{name}}",
-					"collapse": "Collapse {{name}}",
 					"migrated": "Migrated {{date}}",
 					"forbidden": "You do not have permission to view instance history",
 					"error": "Instance history could not be fetched. Please refresh.",
