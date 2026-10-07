@@ -41,12 +41,13 @@ if [[ "$returnCode" != 0 ]]; then
 fi
 printf "\nTest: test --config flag\n"
 
-#PREFIX="$(curl localhost:9600/actuator/configprops | jq '.contexts.camunda.beans.["camunda-io.camunda.configuration.Camunda"].properties.data.secondaryStorage.elasticsearch.indexPrefix')"
-#echo $PREFIX
-#if [[ "$PREFIX" != "\"extra-prefix-zeebe-record\"" ]]; then
-#        echo "test failed"
-#        exit 1
-#fi
+PREFIX="$(curl --silent --show-error --fail localhost:9600/actuator/configprops \
+        | jq -r '[.contexts[] | .beans["camunda-io.camunda.configuration.Camunda"].properties.data.secondaryStorage.rdbms.prefix // empty] | first // empty')"
+echo "$PREFIX"
+if [[ "$PREFIX" != "C8RUN_E2E_" ]]; then
+        echo "test failed: expected the RDBMS prefix from e2e_tests/prefix-config.yaml"
+        exit 1
+fi
 
 printf "\nTest: centralized secret resolution\n"
 
