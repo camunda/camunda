@@ -665,11 +665,8 @@ public final class RecoveryPartitionManager
    */
   private List<PartitionMetadata> localPartitions() {
     final var localMemberId = localMemberId();
-    // The default physical tenant's partition distribution is the only one stored in dynamic
-    // config; other physical tenants derive their distribution by rewriting the group on every
-    // PartitionId.
     return clusterConfigurationService
-        .getPartitionDistribution(partitionGroup)
+        .getCurrentPartitionDistribution(partitionGroup)
         .partitions()
         .stream()
         .filter(p -> p.members().contains(localMemberId))

@@ -28,8 +28,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Verifies that an in-process restore of a backup taken with fewer partitions than the cluster's
- * dynamic configuration holds routes the cluster over the backup's partitions only.
+ * Verifies that an in-process restore routes the cluster as the backup did, across a scale up of
+ * the partitions either before or after the backup is taken.
+ *
+ * <p>A backup taken with fewer partitions than the cluster's dynamic configuration holds routes the
+ * cluster over the backup's partitions only. A backup taken after a scale up keeps correlating
+ * messages over the partitions from before that scale up, as the cluster did when it was taken.
  *
  * <p>The backup is taken with {@value #BACKUP_PARTITIONS_COUNT} partitions, then the cluster is
  * scaled up to {@value #SCALED_PARTITIONS_COUNT}. The restore must not reject the backup over the
@@ -119,6 +123,65 @@ final class RestoreScaledUpPartitionsBackIT {
               broker ->
                   InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
                       broker, PROCESS_ID, BACKUP_PARTITIONS_COUNT));
+
+      // and - the state from the backup is restored
+      InProcessRestoreTestUtil.awaitJobsOfInstancesActivatable(
+          client, JOB_TYPE, backedUpInstanceKeys);
+    }
+  }
+
+  @Test
+  void shouldKeepTheBackupsMessageCorrelationWhenRestoringAScaledUpCluster() {
+    try (final var cluster =
+            TestCluster.builder()
+                .withBrokersCount(BROKERS_COUNT)
+                .withPartitionsCount(BACKUP_PARTITIONS_COUNT)
+                .withReplicationFactor(BROKERS_COUNT)
+                .withEmbeddedGateway(true)
+                .withBrokerConfig(broker -> configureBroker(broker.unifiedConfig()))
+                .build()
+                .start()
+                .awaitCompleteTopology();
+        final var client = cluster.newClientBuilder().build()) {
+
+      // given - the cluster is scaled up, so it handles requests over every partition while it
+      // still correlates messages over the partitions from before the scale up
+      final var clusterActuator = ClusterActuator.of(cluster.availableGateway());
+      InProcessRestoreTestUtil.scaleUpPartitions(
+          clusterActuator, SCALED_PARTITIONS_COUNT, BROKERS_COUNT);
+      InProcessRestoreTestUtil.assertRoutesOverPartitions(
+          clusterActuator, SCALED_PARTITIONS_COUNT, BACKUP_PARTITIONS_COUNT);
+
+      // and - a backup of the scaled up cluster with a pending job on each of its partitions
+      final var backedUpInstanceKeys =
+          InProcessRestoreTestUtil.deployAndCreateInstancesOnEveryPartition(
+              client, PROCESS_ID, JOB_TYPE, SCALED_PARTITIONS_COUNT);
+      takeSnapshotOnAllBrokers(cluster);
+      takeBackup(BackupActuator.of(cluster.availableGateway()));
+
+      final var toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
+      Awaitility.await("cluster transitions to RECOVERING")
+          .timeout(Duration.ofSeconds(60))
+          .untilAsserted(
+              () ->
+                  ClusterActuatorAssert.assertThat(clusterActuator)
+                      .hasCompletedChanges(toRecovering)
+                      .doesNotHavePendingChanges());
+
+      // when
+      final var restore = InProcessRestoreTestUtil.triggerRestore(client, BACKUP_ID);
+
+      // then - the cluster routes as it did when the backup was taken, rather than correlating
+      // messages over every partition as a freshly initialized cluster would
+      Awaitility.await("restore change plan completes")
+          .timeout(Duration.ofMinutes(2))
+          .untilAsserted(
+              () ->
+                  ClusterActuatorAssert.assertThat(clusterActuator)
+                      .hasCompletedChanges(restore)
+                      .doesNotHavePendingChanges());
+      InProcessRestoreTestUtil.assertRoutesOverPartitions(
+          clusterActuator, SCALED_PARTITIONS_COUNT, BACKUP_PARTITIONS_COUNT);
 
       // and - the state from the backup is restored
       InProcessRestoreTestUtil.awaitJobsOfInstancesActivatable(

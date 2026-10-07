@@ -109,7 +109,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     final var metadata1 = localPartitionMetadata(PARTITION_ID);
     final var metadata2 = localPartitionMetadata(PARTITION_ID_2);
     final var clusterConfigurationService = mock(ClusterConfigurationService.class);
-    when(clusterConfigurationService.getPartitionDistribution(any()))
+    when(clusterConfigurationService.getCurrentPartitionDistribution(any()))
         .thenReturn(new PartitionDistribution(Set.of(metadata1, metadata2)));
     when(clusterConfigurationService.getCurrentClusterConfiguration())
         .thenReturn(CurrentClusterConfiguration.uninitialized());

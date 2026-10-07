@@ -324,15 +324,15 @@ public final class PartitionManagerImpl
         memberPartitions.stream()
             .map(
                 partitionMetadata -> {
-                  final var initialPartitionConfig =
+                  final var partitionConfig =
                       clusterConfigurationService
-                          .getInitialClusterConfiguration()
+                          .getCurrentClusterConfiguration()
                           .partitionGroup(partitionGroup)
                           .members()
                           .get(localMemberId)
                           .getPartition(partitionMetadata.id().number())
                           .config();
-                  return bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
+                  return bootstrapPartition(partitionMetadata, partitionConfig, false);
                 })
             .collect(new ActorFutureCollector<>(concurrencyControl));
     concurrencyControl.runOnCompletion(
@@ -814,17 +814,10 @@ public final class PartitionManagerImpl
     return membershipService.getLocalMember().id();
   }
 
-  /**
-   * Resolves the partitions of this partition group that the local broker is a member of, according
-   * to the current partition distribution.
-   */
   private List<PartitionMetadata> localPartitions() {
     final var localMemberId = localMemberId();
-    // The default physical tenant's partition distribution is the only one stored in dynamic
-    // config; other physical tenants derive their distribution by rewriting the group on every
-    // PartitionId.
     return clusterConfigurationService
-        .getPartitionDistribution(partitionGroup)
+        .getCurrentPartitionDistribution(partitionGroup)
         .partitions()
         .stream()
         .filter(p -> p.members().contains(localMemberId))

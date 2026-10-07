@@ -677,11 +677,22 @@ public final class InProcessRestoreTestUtil {
   /** Asserts the cluster routes requests and correlates messages over {@code partitionCount}. */
   static void assertRoutesOverPartitions(
       final ClusterActuator clusterActuator, final int partitionCount) {
+    assertRoutesOverPartitions(clusterActuator, partitionCount, partitionCount);
+  }
+
+  /**
+   * Asserts the cluster routes requests over {@code requestPartitionCount} and correlates messages
+   * over {@code messageCorrelationPartitionCount}, as it does after a scale up.
+   */
+  static void assertRoutesOverPartitions(
+      final ClusterActuator clusterActuator,
+      final int requestPartitionCount,
+      final int messageCorrelationPartitionCount) {
     final var routing = clusterActuator.getTopology().getRouting();
     assertThat(routing).isNotNull();
-    assertThat(routing.getRequestHandling()).isEqualTo(requestHandlingOver(partitionCount));
+    assertThat(routing.getRequestHandling()).isEqualTo(requestHandlingOver(requestPartitionCount));
     assertThat(routing.getMessageCorrelation())
-        .isEqualTo(new MessageCorrelationHashMod("HashMod", partitionCount));
+        .isEqualTo(new MessageCorrelationHashMod("HashMod", messageCorrelationPartitionCount));
   }
 
   /**

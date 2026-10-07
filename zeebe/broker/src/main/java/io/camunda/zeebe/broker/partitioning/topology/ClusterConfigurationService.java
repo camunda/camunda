@@ -21,10 +21,12 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 public interface ClusterConfigurationService extends AsyncClosable {
@@ -96,6 +98,20 @@ public interface ClusterConfigurationService extends AsyncClosable {
    * (e.g., partitions in {@code JOINING} state during scale-up).
    */
   CurrentClusterConfiguration getCurrentClusterConfiguration();
+
+  /**
+   * Returns the partition distribution of the given physical tenant according to the {@link
+   * #getCurrentClusterConfiguration() current cluster configuration}.
+   */
+  default PartitionDistribution getCurrentPartitionDistribution(final String physicalTenantId) {
+    final var config = getCurrentClusterConfiguration();
+    if (config == null) {
+      return PartitionDistribution.NO_PARTITIONS;
+    }
+    return new PartitionDistribution(
+        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(config)
+            .getOrDefault(physicalTenantId, Set.of()));
+  }
 
   /**
    * Returns the number of partitions assigned to the given member that are currently in the {@code

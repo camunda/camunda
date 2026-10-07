@@ -46,6 +46,8 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhas
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
@@ -466,14 +468,29 @@ final class RestoreRequestTransformerTest {
 
   private static CurrentClusterConfiguration clusterWithDefaultGroup(
       final Map<MemberId, BrokerPartitionState> members) {
+    return clusterWithDefaultGroup(members, Optional.empty());
+  }
+
+  private static CurrentClusterConfiguration clusterWithDefaultGroup(
+      final Map<MemberId, BrokerPartitionState> members,
+      final Optional<RoutingState> routingState) {
     return new CurrentClusterConfiguration(
         CurrentClusterConfiguration.INITIAL_VERSION,
         globalConfiguration(members.keySet()),
         Map.of(
             DEFAULT_PHYSICAL_TENANT_ID,
             new PartitionGroupConfiguration(
-                1, 0, members, Optional.empty(), Optional.empty(), Optional.empty())),
+                1, 0, members, routingState, Optional.empty(), Optional.empty())),
         PhasedChangeState.empty());
+  }
+
+  private static RoutingState routingStateUpdateOf(final List<Phase> phases) {
+    final var graph = graphOf(phases);
+    return idsOf(graph, UpdateRoutingState.class).stream()
+        .map(id -> ((UpdateRoutingState) graph.operations().get(id).operation()).routingState())
+        .flatMap(Optional::stream)
+        .findFirst()
+        .orElseThrow();
   }
 
   private static CurrentClusterConfiguration clusterWithoutPartitionGroups() {
@@ -678,6 +695,56 @@ final class RestoreRequestTransformerTest {
                 assertThat(graph.operations().get(modeChange).dependsOn())
                     .describedAs("dependencies of a mode change")
                     .containsExactlyElementsOf(updateRoutingState));
+  }
+
+  @Test
+  void shouldKeepTheMessageCorrelationOfAClusterScaledUpBeforeTheBackup() {
+    // given - the cluster was scaled up from 1 to 2 partitions before the backup was taken, so it
+    // handles requests over both while it still correlates messages over the first one only. The
+    // engine never changes message correlation, so the backup correlates messages the same way.
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.right(
+                        new RestoreResolvedRequest(
+                            Map.of(1, new long[] {1L}, 2, new long[] {1L}), false)))));
+    final var scaledUp = new RoutingState(4, new AllPartitions(2), new HashMod(1));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(Map.of(MEMBER, recovering(1, 2)), Optional.of(scaledUp)));
+
+    // then - requests are handled over the backup's partitions, messages still correlate over one
+    EitherAssert.assertThat(result).isRight();
+    assertThat(routingStateUpdateOf(result.get()))
+        .returns(new AllPartitions(2), RoutingState::requestHandling)
+        .returns(new HashMod(1), RoutingState::messageCorrelation);
+  }
+
+  @Test
+  void shouldKeepTheMessageCorrelationWhenRestoringABackupFromBeforeAScaleUp() {
+    // given - the backup was taken with 1 partition, before the cluster was scaled up to 2
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.right(new RestoreResolvedRequest(Map.of(1, new long[] {1L}), false)))));
+    final var scaledUp = new RoutingState(4, new AllPartitions(2), new HashMod(1));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(Map.of(MEMBER, recovering(1, 2)), Optional.of(scaledUp)));
+
+    // then - requests are handled over the backup's single partition only
+    EitherAssert.assertThat(result).isRight();
+    assertThat(routingStateUpdateOf(result.get()))
+        .returns(new AllPartitions(1), RoutingState::requestHandling)
+        .returns(new HashMod(1), RoutingState::messageCorrelation);
   }
 
   @Test
