@@ -140,8 +140,6 @@ runs:
     # Secrets are imported only if current workflow run is not related to a fork PR
     if: steps.is-fork.outputs.is-fork != 'true'
     id: secrets
-    # Retries hashicorp/vault-action through transient network/setup failures (INC-8449). The pin
-    # for hashicorp/vault-action itself lives in that action, not here.
     uses: ./.github/actions/vault-action-with-retry
     with:
       url: ${{ inputs.vault-address }}
@@ -149,13 +147,13 @@ runs:
       roleId: ${{ inputs.vault-role-id }}
       secretId: ${{ inputs.vault-secret-id }}
       secrets: |
-        secret/data/github.com/organizations/camunda NEXUS_PSW | CI_ACCOUNT_PASSWORD;
-        secret/data/github.com/organizations/camunda NEXUS_USR | CI_ACCOUNT_USERNAME;
-        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | DOCKERHUB_TOKEN;
-        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | DOCKERHUB_USERNAME;
-        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | MINIMUS_TOKEN;
-        secret/data/products/camunda/ci/harbor username | HARBOR_USERNAME;
-        secret/data/products/camunda/ci/harbor password | HARBOR_PASSWORD
+        secret/data/github.com/organizations/camunda NEXUS_PSW | ci-account-password;
+        secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
+        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
+        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
+        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
+        secret/data/products/camunda/ci/harbor username | harbor-username;
+        secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Setup Java
     # Retries setup-java through transient network/setup failures (INC-7417). The pin for
     # setup-java itself lives in that action, not here.
@@ -190,8 +188,8 @@ runs:
       CAMUNDA_NEXUS_MAVEN_SERVER: >-
         [{
           "id": "camunda-nexus",
-          "username": "${{ env.CI_ACCOUNT_USERNAME }}",
-          "password": "${{ env.CI_ACCOUNT_PASSWORD }}"
+          "username": "${{ fromJSON(steps.secrets.outputs.secrets || '{}').ci-account-username }}",
+          "password": "${{ fromJSON(steps.secrets.outputs.secrets || '{}').ci-account-password }}"
         }]
       # Avoid rate limiting on repo.maven.apache.org by mirroring central via Google's
       # public Maven Central mirror. Applies to all artifacts (deps, plugins, extensions, BOM).
@@ -265,8 +263,8 @@ runs:
       )
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ env.DOCKERHUB_USERNAME }}
-      DOCKER_PASSWORD: ${{ env.DOCKERHUB_TOKEN }}
+      DOCKER_USERNAME: ${{ fromJSON(steps.secrets.outputs.secrets).dockerhub-username }}
+      DOCKER_PASSWORD: ${{ fromJSON(steps.secrets.outputs.secrets).dockerhub-token }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
@@ -281,8 +279,8 @@ runs:
       inputs.harbor == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ env.HARBOR_USERNAME }}
-      DOCKER_PASSWORD: ${{ env.HARBOR_PASSWORD }}
+      DOCKER_USERNAME: ${{ fromJSON(steps.secrets.outputs.secrets).harbor-username }}
+      DOCKER_PASSWORD: ${{ fromJSON(steps.secrets.outputs.secrets).harbor-password }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
@@ -298,7 +296,7 @@ runs:
       inputs.minimus == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_PASSWORD: ${{ env.MINIMUS_TOKEN }}
+      DOCKER_PASSWORD: ${{ fromJSON(steps.secrets.outputs.secrets).minimus-token }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
