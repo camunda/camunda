@@ -123,6 +123,9 @@ jobs:
       it-database-type: ${{ matrix.it-database-type }}
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
       use-shared-distball: true
+      # This job isn't PR/merge-blocking, so it can take more job budget and longer failsafe timeout
+      timeout-minutes: 25
+      failsafe-timeout-seconds: 1020
 
   search-history-tests:
     name: "Search History Tests / ${{ matrix.database-name }}"

@@ -408,6 +408,7 @@ jobs:
             -Dfailsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
             -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
             -DfailIfNoTests=false
+            -Dfailsafe.timeout=4800
 
       - name: Record tested combination
         if: success() && !contains(matrix.client, 'SNAPSHOT') && !contains(matrix.server, 'SNAPSHOT')
