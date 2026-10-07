@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
@@ -60,7 +61,7 @@ class ZeebeProcessInstanceSubEntityImportServiceTest {
   }
 
   private static final class TestProcessInstanceSubEntityImportService
-      extends ZeebeProcessInstanceSubEntityImportService<Object> {
+      extends ZeebeProcessInstanceSubEntityImportService<ZeebeVariableRecordDto> {
 
     private TestProcessInstanceSubEntityImportService(
         final ConfigurationService configurationService,
@@ -79,7 +80,7 @@ class ZeebeProcessInstanceSubEntityImportServiceTest {
 
     @Override
     List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
-        final List<Object> records) {
+        final List<ZeebeVariableRecordDto> records) {
       return List.of();
     }
   }

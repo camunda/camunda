@@ -8,6 +8,7 @@
 package io.camunda.optimize;
 
 import static io.camunda.optimize.MetricEnum.ERROR_METRIC;
+import static io.camunda.optimize.MetricEnum.IMPORT_DB_WRITE_FAILURES_METRIC;
 import static io.camunda.optimize.MetricEnum.OVERALL_IMPORT_TIME_METRIC;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -73,6 +74,20 @@ public final class OptimizeMetrics {
         .tag(RECORD_TYPE_TAG, recordType)
         .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
         .register(Metrics.globalRegistry);
+  }
+
+  public static void recordDbWriteFailure(
+      final String recordType, final String partitionId, final Throwable failure) {
+    final ErrorType errorType =
+        Objects.requireNonNullElse(ErrorType.fromException(failure), ErrorType.UNKNOWN);
+    Counter.builder(IMPORT_DB_WRITE_FAILURES_METRIC.getName())
+        .description(IMPORT_DB_WRITE_FAILURES_METRIC.getDescription())
+        .tag(RECORD_TYPE_TAG, recordType)
+        .tag(PARTITION_ID_TAG, partitionId)
+        .tag(ERROR_TYPE_TAG, errorType.getValue())
+        .register(Metrics.globalRegistry)
+        .increment();
+    recordError(errorType);
   }
 
   /**
