@@ -460,6 +460,36 @@ const mockDeleteUserEndpoint = createEndpointMock({
 	method: endpoints.deleteUser.method,
 });
 
+const mockQueryAuthorizationsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryAuthorizations.getUrl(),
+	method: endpoints.queryAuthorizations.method,
+});
+
+const mockGetAuthorizationEndpoint = createEndpointMock({
+	endpoint: endpoints.getAuthorization.getUrl({authorizationKey: ':authorizationKey'}),
+	method: endpoints.getAuthorization.method,
+});
+
+const mockCreateAuthorizationEndpoint = createEndpointMock({
+	endpoint: endpoints.createAuthorization.getUrl(),
+	method: endpoints.createAuthorization.method,
+});
+
+const mockDeleteAuthorizationEndpoint = createEndpointMock({
+	endpoint: endpoints.deleteAuthorization.getUrl({authorizationKey: ':authorizationKey'}),
+	method: endpoints.deleteAuthorization.method,
+});
+
+const mockQueryRolesEndpoint = createEndpointMock({
+	endpoint: endpoints.queryRoles.getUrl(),
+	method: endpoints.queryRoles.method,
+});
+
+const mockQueryGroupsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryGroups.getUrl(),
+	method: endpoints.queryGroups.method,
+});
+
 export {
 	mockCreateCancellationBatchOperationEndpoint,
 	mockCreateMigrationBatchOperationEndpoint,
@@ -531,6 +561,12 @@ export {
 	mockUpdateMappingRuleEndpoint,
 	mockDeleteMappingRuleEndpoint,
 	mockQueryUsersEndpoint,
+	mockQueryAuthorizationsEndpoint,
+	mockGetAuthorizationEndpoint,
+	mockCreateAuthorizationEndpoint,
+	mockDeleteAuthorizationEndpoint,
+	mockQueryRolesEndpoint,
+	mockQueryGroupsEndpoint,
 	mockGetUserEndpoint,
 	mockCreateUserEndpoint,
 	mockUpdateUserEndpoint,

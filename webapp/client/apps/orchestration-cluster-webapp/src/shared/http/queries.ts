@@ -48,10 +48,18 @@ import type {
 	QueryGlobalTaskListenersRequestBody,
 	QueryGlobalTaskListenersResponseBody,
 	GlobalTaskListener,
+	Authorization,
+	QueryAuthorizationsRequestBody,
+	QueryAuthorizationsResponseBody,
+	QueryRolesRequestBody,
+	QueryRolesResponseBody,
+	QueryGroupsRequestBody,
+	QueryGroupsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
+import {parseAdminClientConfig, type AdminClientConfig} from './adminClientConfig';
 
 const DEFAULT_MAX_ITEM_PER_PAGE = 50;
 
@@ -97,6 +105,12 @@ const queryKeys = {
 	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
 		['searchGlobalTaskListeners', body] as const,
 	globalTaskListener: (id: string) => ['globalTaskListener', id] as const,
+	queryAuthorizations: (body: QueryAuthorizationsRequestBody) => ['queryAuthorizations', body] as const,
+	getAuthorization: (authorization: Pick<Authorization, 'authorizationKey'>) =>
+		['getAuthorization', authorization] as const,
+	queryRoles: (body: QueryRolesRequestBody) => ['queryRoles', body] as const,
+	queryGroups: (body: QueryGroupsRequestBody) => ['queryGroups', body] as const,
+	adminClientConfig: () => ['adminClientConfig'] as const,
 };
 
 const queries = {
@@ -558,6 +572,68 @@ const queries = {
 					throw mapQueryError(error);
 				}
 				return response.json();
+			},
+		}),
+
+	queryAuthorizations: (body: QueryAuthorizationsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryAuthorizations(body),
+			queryFn: async (): Promise<QueryAuthorizationsResponseBody> => {
+				const {response, error} = await request(endpoints.queryAuthorizations(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getAuthorization: (authorization: Pick<Authorization, 'authorizationKey'>) =>
+		queryOptions({
+			queryKey: queryKeys.getAuthorization(authorization),
+			queryFn: async (): Promise<Authorization> => {
+				const {response, error} = await request(endpoints.getAuthorization(authorization));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryRoles: (body: QueryRolesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryRoles(body),
+			queryFn: async (): Promise<QueryRolesResponseBody> => {
+				const {response, error} = await request(endpoints.queryRoles(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryGroups: (body: QueryGroupsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryGroups(body),
+			queryFn: async (): Promise<QueryGroupsResponseBody> => {
+				const {response, error} = await request(endpoints.queryGroups(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	// Fixed for the lifetime of the server, so it is fetched once per session.
+	adminClientConfig: () =>
+		queryOptions({
+			queryKey: queryKeys.adminClientConfig(),
+			staleTime: Infinity,
+			queryFn: async (): Promise<AdminClientConfig> => {
+				const {response, error} = await request(endpoints.getAdminClientConfig());
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return parseAdminClientConfig(await response.text());
 			},
 		}),
 } as const;
