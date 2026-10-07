@@ -462,7 +462,7 @@ jobs:
         id: medic-token
         if: always()
         continue-on-error: true
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
@@ -475,8 +475,8 @@ jobs:
           owner: camunda
           repositories: team-test-automation
 
-      # Lands beside the tooling checkout rather than in it. The agent works in $ws_dir,
-      # so nothing here is staged or committed by the fix it produces.
+      # `path` is relative to $GITHUB_WORKSPACE, so this lands INSIDE the tooling
+      # checkout. Harmless only because the agent edits and commits in $ws_dir, never here.
       - name: Check out the medic resolver
         id: medic-src
         if: ${{ always() && steps.medic-token.outcome == 'success' }}
