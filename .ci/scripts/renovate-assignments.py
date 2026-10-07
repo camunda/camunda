@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 REPO = "camunda/camunda"
 RENOVATE_BOT = "renovate[bot]"
+RENOVATE_APPROVE_BOT = "renovate-approve[bot]"
 DAYS_THRESHOLD = 7
 STALE_LABEL = "stale"
 DRY_RUN = os.environ.get("DRY_RUN", "true").lower() in ("true", "1", "yes")
@@ -37,6 +38,12 @@ COMMENT_TEMPLATE = (
     "Please review and process it according to our Renovate PR Handling policy: "
     "https://camunda.github.io/camunda/processes/#dri-responsibilities\n\n"
     "Thank you!"
+)
+
+DISMISS_APPROVAL_MESSAGE = (
+    "This Renovate PR is assigned to a DRI for manual changes, "
+    "so the automated approval is dismissed and a human approval is required. "
+    "See https://camunda.github.io/camunda/processes/#dri-responsibilities"
 )
 
 REMINDER_COMMENT_DETECTION_LINE = "reminder about your assigned Renovate PR"
@@ -147,6 +154,22 @@ def post_dri_comment(pr_number, assignee):
     resp = requests.post(url, headers=headers, json={"body": comment})
     resp.raise_for_status()
     print(f"Posted DRI comment on PR #{pr_number} mentioning @{assignee}")
+
+def dismiss_renovate_approval(pr_number):
+    url = f"https://api.github.com/repos/{REPO}/pulls/{pr_number}/reviews?per_page=100"
+    resp = requests.get(url, headers=headers)
+    resp.raise_for_status()
+    for review in resp.json():
+        if review['user']['login'] != RENOVATE_APPROVE_BOT or review['state'] != "APPROVED":
+            continue
+        review_id = review['id']
+        if DRY_RUN:
+            print(f"[DRY-RUN] Would dismiss review {review_id} by {RENOVATE_APPROVE_BOT} on PR #{pr_number}")
+            continue
+        dismiss_url = f"https://api.github.com/repos/{REPO}/pulls/{pr_number}/reviews/{review_id}/dismissals"
+        dismiss_resp = requests.put(dismiss_url, headers=headers, json={"message": DISMISS_APPROVAL_MESSAGE})
+        dismiss_resp.raise_for_status()
+        print(f"Dismissed review {review_id} by {RENOVATE_APPROVE_BOT} on PR #{pr_number}")
 
 def add_label_to_pr(pr_number, label):
     if DRY_RUN:
@@ -386,6 +409,8 @@ def main():
         if not assigned:
             print(f"PR #{pr['number']} not assigned reviewer (no area label match)")
             continue
+
+        dismiss_renovate_approval(pr_number)
 
         # Check if PR needs a reminder for assigned user
         assignee, assignment_age_days, has_reminder = check_dri_assignment_status(pr_number)

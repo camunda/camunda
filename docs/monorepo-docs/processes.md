@@ -75,6 +75,8 @@ To identify potential overloads of one group there are views with breakdowns ava
 
 We use a [daily GitHub Actions workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/renovate-daily.yml) to execute the [assignment logic script](https://github.com/camunda/camunda/blob/main/.ci/scripts/renovate-assignments.py) automatically. Actions and PR comments are done via a GitHub App.
 
+When a DRI is assigned, the script dismisses the approval from `renovate-approve[bot]`, so that changes pushed by the DRI require a human approval before merging.
+
 ### DRI Responsibilities
 
 The DRI for an open Renovate PR is responsible for addressing the dependency upgrade and getting it merged in a timely manner. They are expected to:
