@@ -466,6 +466,7 @@ func TestProbeWaitsForSecondaryStorage(t *testing.T) {
 	u, _ := url.Parse(server.URL)
 	port, _ := strconv.Atoi(u.Port())
 	results := Probe(context.Background(), types.C8RunSettings{Port: port, PhysicalTenants: []types.PhysicalTenant{{ID: "a"}}}, 2, 200*time.Millisecond)
+	require.Equal(t, int32(2), calls.Load(), "the probe retries after a 503")
 	assert.False(t, results[0].Ready, "a tenant whose storage answers 503 is not ready")
 	assert.Contains(t, results[0].Err, "secondary storage is not ready", "an attempt cut off by the probe deadline keeps the readiness error")
 }
