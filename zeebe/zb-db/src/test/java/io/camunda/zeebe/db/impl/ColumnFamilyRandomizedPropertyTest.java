@@ -191,7 +191,7 @@ public class ColumnFamilyRandomizedPropertyTest {
       try {
         modify(columnFamily).accept(dbKey, dbValue);
       } catch (final RuntimeException e) {
-        assertThat(e).hasRootCauseInstanceOf(ZeebeDbInconsistentException.class);
+        assertThat(e).isInstanceOf(ZeebeDbInconsistentException.class);
       }
     }
 
