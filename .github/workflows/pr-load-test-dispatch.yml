@@ -69,8 +69,8 @@ jobs:
             [benchmark-none]=none
             [benchmark-none-grpc]=none
           )
-          # Benchmarks run over REST unless the label is listed here. Only storages with a daily
-          # gRPC leg get a gRPC label, so the comparison always has a matching reference.
+          # Labels that are not in this list use REST. Only storages with a daily gRPC run get a
+          # gRPC label. Without a daily run of the same setup, the comparison is not correct.
           declare -A label_to_protocol=(
             [benchmark-grpc]=grpc
             [benchmark-none-grpc]=grpc
