@@ -18,13 +18,15 @@ type CreateEndpointMockParams<Method extends RequestMethod> = {
 	method: Method | (string & {});
 };
 
+/**
+ * A promise-like holds the response until it resolves, so a test can assert a pending state
+ * before releasing it instead of racing a fixed delay.
+ */
+type ResponseDelay = DelayMode | number | PromiseLike<unknown>;
+
 type SuccessMockParams = {
 	successResponse: Response;
-	/**
-	 * A promise holds the response until it resolves, so a test can assert a pending state
-	 * before releasing it instead of racing a fixed delay.
-	 */
-	delay?: DelayMode | number | Promise<unknown>;
+	delay?: ResponseDelay;
 	/**
 	 * Handle only the first matching request. Use carefully: our apps poll frequently,
 	 * so a background poll may consume it before the intended request.
@@ -36,11 +38,7 @@ type PayloadMockParams<Schema extends z.ZodType> = {
 	schema: Schema;
 	failureResponse: Response;
 	successResponse: Response;
-	/**
-	 * A promise holds the response until it resolves, so a test can assert a pending state
-	 * before releasing it instead of racing a fixed delay.
-	 */
-	delay?: DelayMode | number | Promise<unknown>;
+	delay?: ResponseDelay;
 	/**
 	 * Handle only the first matching request. Use carefully: our apps poll frequently,
 	 * so a background poll may consume it before the intended request.
@@ -63,7 +61,7 @@ function createEndpointMock<Method extends RequestMethod>({
 }: CreateEndpointMockParams<Method>): MockEndpoint<Method> {
 	return (params: SuccessMockParams | PayloadMockParams<z.ZodType>) => {
 		const resolver = async ({request}: {request: Request}) => {
-			if (params.delay instanceof Promise) {
+			if (typeof params.delay === 'object') {
 				await params.delay;
 			} else if (params.delay) {
 				await mswDelay(params.delay);
