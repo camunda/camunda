@@ -42,6 +42,16 @@ X-CSRF-TOKEN: {{csrf_token}}
 
     const setCookieHeaders = response.headers.valuesOf("Set-Cookie") || [];
 
+    const rotatedCsrfToken = response.headers.valueOf("X-CSRF-TOKEN");
+    const rotatedCsrfCookie = setCookieHeaders
+        .find(cookie => cookie.startsWith("X-CSRF-TOKEN="))
+        ?.split(";", 1)[0]
+        ?.substring("X-CSRF-TOKEN=".length);
+    if (rotatedCsrfToken && rotatedCsrfCookie) {
+      client.global.set("csrf_token", rotatedCsrfToken);
+      client.global.set("csrf_cookie", rotatedCsrfCookie);
+    }
+
     const sessionCookie = setCookieHeaders
         .find(cookie => cookie.startsWith("camunda-session="))
         ?.split(";", 1)[0]

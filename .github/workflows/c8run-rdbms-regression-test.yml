@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - "c8run/**"
+      - "qa/http/c8run-tests/**"
   workflow_dispatch:
     inputs:
       branch:
