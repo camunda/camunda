@@ -1260,6 +1260,10 @@ function assetOnlyDependencyBumps(prs) {
     }
     return new Set(bumps.filter((pr) => !visible.has(pr)));
 }
+/** A `deps:` PR with no linked issue whose body yielded no package table — still one line in the changelog. */
+function isUnparsedBump(pr) {
+    return pr.section === 'Dependency updates' && pr.issueNumbers.length === 0 && (pr.dependencies?.length ?? 0) === 0;
+}
 function renderDependencyPointer({ packageCount, version }, others) {
     const noun = packageCount === 1 ? 'dependency update is' : 'dependency updates are';
     return `${packageCount} ${others ? 'other ' : ''}${noun} listed in the full changelog, \`CHANGELOG-${version}.md\`.`;
@@ -1399,7 +1403,11 @@ function collapseDependencies(prs) {
  *  never dropped. Each step is a whole category: a half-listed section reads as
  *  a complete one. */
 const DROP_STEPS = [
-    { name: 'dependency updates without a linked issue', drops: (prs) => assetOnlyDependencyBumps(prs) },
+    {
+        name: 'dependency updates without a linked issue',
+        // All or none: a bump whose body has no parseable table (e.g. a c8run version bump) goes with the rest.
+        drops: (prs) => new Set([...assetOnlyDependencyBumps(prs), ...prs.filter((pr) => isUnparsedBump(pr) && !pr.breaking)]),
+    },
     { name: 'Maintenance', drops: (prs) => new Set(prs.filter((pr) => pr.section === 'Maintenance' && !pr.breaking)) },
     { name: 'Reverts', drops: (prs) => new Set(prs.filter((pr) => pr.section === 'Reverts' && !pr.breaking)) },
     {
@@ -1425,7 +1433,8 @@ function fitCustomerBody(assetPrs, link, options) {
     const dropped = [];
     const banner = truncationBanner(options);
     const render = (prs) => {
-        const packageCount = new Set(assetPrs.filter((pr) => isDependencyBump(pr) && !prs.includes(pr)).flatMap(packagesOf)).size;
+        const left = assetPrs.filter((pr) => !prs.includes(pr));
+        const packageCount = new Set(left.filter(isDependencyBump).flatMap(packagesOf)).size + left.filter(isUnparsedBump).length;
         return renderSectionedBody(prs, link, packageCount > 0 ? { packageCount, version: options.version } : undefined);
     };
     const withBanner = (body) => (remaining.length < assetPrs.length ? `${banner}\n\n${body}` : body);
