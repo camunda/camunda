@@ -86,6 +86,7 @@ public class Starter implements CommandLineRunner {
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
   private final ConnectionMonitor connectionMonitor;
+  private final StarterLivenessIndicator livenessIndicator;
   private final WebClient.Builder webClientBuilder;
   private final ObjectMapper objectMapper;
   private final AtomicLong businessKey = new AtomicLong(0);
@@ -110,6 +111,7 @@ public class Starter implements CommandLineRunner {
       final MeterRegistry registry,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
+      final StarterLivenessIndicator livenessIndicator,
       final WebClient.Builder webClientBuilder,
       final ObjectMapper objectMapper,
       final ApplicationContext applicationContext) {
@@ -120,6 +122,7 @@ public class Starter implements CommandLineRunner {
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
+    this.livenessIndicator = livenessIndicator;
     this.webClientBuilder = webClientBuilder;
     this.objectMapper = objectMapper;
 
@@ -138,6 +141,7 @@ public class Starter implements CommandLineRunner {
   @Override
   public void run(final String... args) {
     connectionMonitor.awaitAndPrintTopology();
+    livenessIndicator.recordStarted();
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
@@ -189,6 +193,7 @@ public class Starter implements CommandLineRunner {
     }
 
     runFinished.set(1);
+    livenessIndicator.recordFinished();
     LOG.info(
         "Starter finished. Total process instance start requests submitted: {}",
         processInstancesSubmittedCounter == null
@@ -342,6 +347,7 @@ public class Starter implements CommandLineRunner {
           requestFuture.whenComplete(
               (noop, error) -> {
                 inFlight.release();
+                livenessIndicator.recordResult(error);
                 final long durationNanos = System.nanoTime() - startTime;
                 responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                 resultMetrics.record(error);
