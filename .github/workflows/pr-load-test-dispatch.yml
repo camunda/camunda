@@ -56,18 +56,19 @@ jobs:
           set -euo pipefail
 
           # Benchmark label -> secondary-storage-type mapping.
-          # NOTE: 'benchmark' (no suffix) is historically the elasticsearch trigger.
+          # The labels are shared with main, where they are named benchmark-<storage>-<protocol>.
+          # This branch has no protocol selection and runs the load-tester default, which is REST.
           declare -A label_to_db=(
-            [benchmark]=elasticsearch
-            [benchmark-opensearch]=opensearch
-            [benchmark-postgresql]=postgresql
-            [benchmark-none]=none
+            [benchmark-elasticsearch-rest]=elasticsearch
+            [benchmark-opensearch-rest]=opensearch
+            [benchmark-postgresql-rest]=postgresql
+            [benchmark-none-rest]=none
 
             # Following RDBMS dbs are not yet supported in 8.9
-            #[benchmark-mysql]=mysql
-            #[benchmark-mariadb]=mariadb
-            #[benchmark-mssql]=mssql
-            #[benchmark-oracle]=oracle
+            #[benchmark-mysql-rest]=mysql
+            #[benchmark-mariadb-rest]=mariadb
+            #[benchmark-mssql-rest]=mssql
+            #[benchmark-oracle-rest]=oracle
           )
 
           entries=()
