@@ -120,7 +120,7 @@ func probeOne(ctx context.Context, client *http.Client, settings types.C8RunSett
 				case http.StatusServiceUnavailable:
 					result.Err += " (its secondary storage is not ready; check log/camunda.log for schema errors)"
 				}
-			} else {
+			} else if result.Err == "" || ctx.Err() == nil {
 				result.Err = err.Error()
 			}
 			select {

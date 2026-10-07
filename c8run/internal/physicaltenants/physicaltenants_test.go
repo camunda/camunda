@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -421,14 +422,14 @@ func TestProbeTreatsAuthRejectionAsReady(t *testing.T) {
 	port, _ := strconv.Atoi(u.Port())
 
 	oidc := types.C8RunSettings{Port: port, OIDC: true, PhysicalTenants: []types.PhysicalTenant{{ID: "sales"}, {ID: "missing"}}}
-	results := Probe(context.Background(), oidc, 2, 10*time.Millisecond)
+	results := Probe(context.Background(), oidc, 2, 200*time.Millisecond)
 	assert.True(t, results[0].Ready, "under OIDC a 401 still proves the tenant is up")
 	assert.True(t, results[0].Unverified, "but storage readiness is not claimed")
 	assert.Contains(t, results[0].Warning, "OIDC")
 	assert.False(t, results[1].Ready, "an unknown tenant is a 404")
 
 	basic := types.C8RunSettings{Port: port, PhysicalTenants: []types.PhysicalTenant{{ID: "sales", Username: "alice"}}}
-	results = Probe(context.Background(), basic, 1, 10*time.Millisecond)
+	results = Probe(context.Background(), basic, 1, 200*time.Millisecond)
 	assert.True(t, results[0].Ready)
 	assert.True(t, results[0].Unverified)
 	assert.Contains(t, results[0].Warning, "login for alice was rejected")
@@ -449,19 +450,24 @@ func TestResolveFailsWhenPortsAreExhausted(t *testing.T) {
 }
 
 func TestProbeWaitsForSecondaryStorage(t *testing.T) {
-	calls := 0
+	var calls atomic.Int32
+	release := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
 		assert.True(t, strings.HasSuffix(r.URL.Path, "/process-definitions/search"))
-		calls++
+		if calls.Add(1) > 1 {
+			<-release
+			return
+		}
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}))
 	defer server.Close()
+	defer close(release)
 	u, _ := url.Parse(server.URL)
 	port, _ := strconv.Atoi(u.Port())
-	results := Probe(context.Background(), types.C8RunSettings{Port: port, PhysicalTenants: []types.PhysicalTenant{{ID: "a"}}}, 2, 10*time.Millisecond)
+	results := Probe(context.Background(), types.C8RunSettings{Port: port, PhysicalTenants: []types.PhysicalTenant{{ID: "a"}}}, 2, 200*time.Millisecond)
 	assert.False(t, results[0].Ready, "a tenant whose storage answers 503 is not ready")
-	assert.Contains(t, results[0].Err, "secondary storage is not ready")
+	assert.Contains(t, results[0].Err, "secondary storage is not ready", "an attempt cut off by the probe deadline keeps the readiness error")
 }
 
 func TestRenderRejectsUnknownStorageType(t *testing.T) {
