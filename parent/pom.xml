@@ -94,6 +94,7 @@
     <version.netty>4.2.18.Final</version.netty>
     <version.objenesis>3.6</version.objenesis>
     <version.opentelemetry>1.66.0</version.opentelemetry>
+    <version.opentelemetry-semconv>1.41.1</version.opentelemetry-semconv>
     <version.opensearch.client>2.17.0</version.opensearch.client>
     <version.opensearch-java>3.7.0</version.opensearch-java>
     <!-- renovate: datasource=docker depName=opensearchproject/opensearch -->
@@ -1194,6 +1195,12 @@
         <version>${version.opentelemetry}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.opentelemetry.semconv</groupId>
+        <artifactId>opentelemetry-semconv</artifactId>
+        <version>${version.opentelemetry-semconv}</version>
       </dependency>
 
       <dependency>
