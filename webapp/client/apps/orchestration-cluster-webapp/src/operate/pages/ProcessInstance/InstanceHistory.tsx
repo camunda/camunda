@@ -129,8 +129,9 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 					onActionButtonClick={() => {
 						if (xml.isError) {
 							void xml.refetch();
+						} else {
+							history.retry();
 						}
-						history.retry();
 					}}
 				/>
 			) : xml.isPending || rootQuery?.isPending ? (

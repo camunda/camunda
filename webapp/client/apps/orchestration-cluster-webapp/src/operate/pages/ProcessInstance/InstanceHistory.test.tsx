@@ -32,6 +32,7 @@ import {processInstanceSearchSchema} from './processInstanceSearch';
 import {InstanceHistory} from './InstanceHistory';
 import {useProcessInstancePage} from './useProcessInstancePage';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {endpoints} from '#/shared/http/endpoints';
 const instance = createProcessInstance();
 const child = createElementInstance();
 const path = '/operate/processes/$processInstanceId/variables';
@@ -215,6 +216,7 @@ describe('InstanceHistory', () => {
 			if (status === 403) {
 				await expect.element(screen.getByText(/"forbidden":true/)).toBeVisible();
 				await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+				await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
 				await vi.advanceTimersByTimeAsync(15000);
 				expect(rootReads).toBe(1);
 			} else {
@@ -372,5 +374,36 @@ describe('InstanceHistory', () => {
 		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).toBeChecked();
 		await userEvent.click(screen.getByRole('button', {name: 'My Process'}));
 		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant'});
+	});
+	it('should retry XML before reading disabled history and wait for successful recovery', async ({worker}) => {
+		let xmlStatus = 500;
+		let xmlReads = 0;
+		const historyReads = vi.fn(() => HttpResponse.json(createQueryElementInstancesResponse()));
+		worker.use(
+			http.get(endpoints.getProcessDefinitionXml({processDefinitionKey: instance.processDefinitionKey}).url, () => {
+				xmlReads++;
+				return xmlStatus === 200 ? HttpResponse.text('') : new HttpResponse(null, {status: xmlStatus});
+			}),
+			http.post(endpoints.queryElementInstances({}).url, historyReads),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryElementInstancesResponse()),
+			}),
+		);
+		const screen = await renderWithRouter(() => <Harness tree />, {
+			path,
+			initialEntry: `/operate/processes/${instance.processInstanceKey}/variables`,
+		});
+		await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
+		expect(historyReads).not.toHaveBeenCalled();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
+		await expect.poll(() => xmlReads).toBe(2);
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+		expect(historyReads).not.toHaveBeenCalled();
+
+		xmlStatus = 200;
+		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
+		await expect.element(screen.getByRole('button', {name: 'My Process'})).toBeVisible();
+		expect(historyReads).toHaveBeenCalledTimes(1);
 	});
 });

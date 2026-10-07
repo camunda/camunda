@@ -83,10 +83,11 @@ function useHistoryController(instance: ProcessInstance) {
 			setTimestamps: (timestamps: boolean) => updateState((current) => ({...current, timestamps})),
 			setExecutionCount: (executionCount: boolean) => updateState((current) => ({...current, executionCount})),
 			setPageError: (pageError: unknown) =>
-				updateState((current) => ({
-					...current,
-					pageError: current.pageError instanceof ForbiddenError ? current.pageError : pageError,
-				})),
+				updateState((current) =>
+					current.pageError instanceof ForbiddenError || Object.is(current.pageError, pageError)
+						? current
+						: {...current, pageError},
+				),
 			setScopeErrors: (update: (current: Record<string, unknown>) => Record<string, unknown>) =>
 				updateState((current) => ({...current, scopeErrors: update(current.scopeErrors)})),
 		}),
@@ -112,9 +113,9 @@ function useHistoryController(instance: ProcessInstance) {
 	}, [client, instanceKey]);
 	useEffect(() => {
 		if (forbiddenError) {
-			void client.cancelQueries({queryKey: ['instanceHistory', instanceKey]}).then(() => setPageError(forbiddenError));
+			void client.cancelQueries({queryKey: ['instanceHistory', instanceKey]});
 		}
-	}, [client, forbiddenError, instanceKey, setPageError]);
+	}, [client, forbiddenError, instanceKey]);
 	useEffect(() => {
 		const currentLifecycle = lifecycle.current;
 		if (!visible) {
@@ -248,6 +249,9 @@ function useHistoryController(instance: ProcessInstance) {
 		pageError,
 		handleForbidden: setPageError,
 		retry: () => {
+			if (!visible || forbidden) {
+				return;
+			}
 			setPageError(null);
 			void refreshScopes(scopes, (scope) => windows.get(scope.key)!.query.refetch({throwOnError: true}));
 		},
