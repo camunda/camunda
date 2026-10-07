@@ -111,6 +111,10 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     final var clusterConfigurationService = mock(ClusterConfigurationService.class);
     when(clusterConfigurationService.getCurrentPartitionDistribution(any()))
         .thenReturn(new PartitionDistribution(Set.of(metadata1, metadata2)));
+    when(clusterConfigurationService.getLatestPartitionDistribution(any()))
+        .thenReturn(
+            CompletableActorFuture.completed(
+                new PartitionDistribution(Set.of(metadata1, metadata2))));
     when(clusterConfigurationService.getCurrentClusterConfiguration())
         .thenReturn(CurrentClusterConfiguration.uninitialized());
 
