@@ -55,6 +55,12 @@ public class ProcessInstanceCreationHelper {
       "Expected to find process definition with process ID '%s', but none found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION =
       "Expected to find process definition with process ID '%s' and version '%d', but none found";
+  private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION_TAG =
+      "Expected to find process definition with process ID '%s' and version tag '%s', but none found";
+  private static final String ERROR_MESSAGE_VERSION_AND_VERSION_TAG =
+      "Expected to create process instance by either version or version tag, but both were provided: version '%d', version tag '%s'";
+  private static final String ERROR_MESSAGE_VERSION_TAG_WITH_KEY =
+      "Expected to create process instance by either process definition key or version tag, but both were provided: key '%d', version tag '%s'";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_KEY =
       "Expected to find process definition with key '%d', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
@@ -102,14 +108,33 @@ public class ProcessInstanceCreationHelper {
       final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
 
+    final String versionTag = record.getVersionTag();
+
     final Either<Rejection, DeployedProcess> process;
     if (bpmnProcessId.capacity() > 0) {
-      if (record.getVersion() >= 0) {
+      if (!versionTag.isEmpty() && record.getVersion() >= 0) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                String.format(
+                    ERROR_MESSAGE_VERSION_AND_VERSION_TAG, record.getVersion(), versionTag)));
+      } else if (!versionTag.isEmpty()) {
+        process = getProcess(bpmnProcessId, versionTag, record.getTenantId());
+      } else if (record.getVersion() >= 0) {
         process = getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
       } else {
         process = getProcess(bpmnProcessId, record.getTenantId());
       }
     } else if (record.getProcessDefinitionKey() >= 0) {
+      if (!versionTag.isEmpty()) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                String.format(
+                    ERROR_MESSAGE_VERSION_TAG_WITH_KEY,
+                    record.getProcessDefinitionKey(),
+                    versionTag)));
+      }
       process = getProcess(record.getProcessDefinitionKey(), record.getTenantId());
     } else {
       return Either.left(
@@ -184,6 +209,23 @@ public class ProcessInstanceCreationHelper {
                   ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION,
                   bufferAsString(bpmnProcessId),
                   version)));
+    }
+  }
+
+  private Either<Rejection, DeployedProcess> getProcess(
+      final DirectBuffer bpmnProcessId, final String versionTag, final String tenantId) {
+    final DeployedProcess process =
+        processState.getProcessByProcessIdAndVersionTag(bpmnProcessId, versionTag, tenantId);
+    if (process != null) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              String.format(
+                  ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION_TAG,
+                  bufferAsString(bpmnProcessId),
+                  versionTag)));
     }
   }
 
