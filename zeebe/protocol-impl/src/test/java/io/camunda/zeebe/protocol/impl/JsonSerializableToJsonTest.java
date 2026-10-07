@@ -1879,7 +1879,8 @@ final class JsonSerializableToJsonTest {
                   .setTags(Set.of("tag1", "tag2"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setStorageOrdinal(storageOrdinal)
-                  .setBusinessId(businessId);
+                  .setBusinessId(businessId)
+                  .setVersionTag("v1.0");
             },
         """
                 {
@@ -1902,6 +1903,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 3,
                   "storageOrdinal": 6,
                   "businessId": "business-id-456",
+                  "versionTag": "v1.0",
                   "elementInstanceKey": -1
                 }
                 """
@@ -1929,6 +1931,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "storageOrdinal": 0,
                   "businessId": "",
+                  "versionTag": "",
                   "elementInstanceKey": -1
                 }
                 """
