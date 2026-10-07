@@ -1,4 +1,4 @@
-# description: Creates a load test when a PR is labeled with 'benchmark'. Deploys with
+# description: Creates a load test when a PR gets a benchmark label (benchmark-<storage>-<protocol>). Deploys with
 #              scenario 'max', then runs two independent post-deploy paths:
 #                - profile path: wait 30 min, run async-profiler, post flamegraph comment
 #                - metrics path: wait 30 min, scrape PR + daily metrics over a 30 min window,
@@ -15,7 +15,7 @@ on:
   workflow_call:
     inputs:
       label:
-        description: 'PR label that triggered this benchmark (e.g., benchmark, benchmark-postgresql)'
+        description: 'PR label that triggered this benchmark (e.g., benchmark-elasticsearch-rest, benchmark-none-grpc)'
         required: true
         type: string
       ref:

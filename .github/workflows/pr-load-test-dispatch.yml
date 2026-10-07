@@ -13,7 +13,7 @@
 #   synchronize: all currently-labeled DBs (restarts all benchmarks)
 #   closed:      all currently-labeled DBs (cleanup for all)
 #
-# Job-level concurrency (keyed on matrix.db + PR) ensures:
+# Job-level concurrency (keyed on matrix.db + matrix.protocol + PR) ensures:
 #   - adding/removing a label for one DB never cancels a benchmark for another DB
 #   - pushing a commit restarts each labeled DB's benchmark independently
 #   - unlabeling a DB cancels its in-progress run; the reusable pipeline then runs cleanup
@@ -55,33 +55,29 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Benchmark label -> secondary-storage-type mapping.
-          # NOTE: 'benchmark' (no suffix) is historically the elasticsearch trigger.
-          declare -A label_to_db=(
-            [benchmark]=elasticsearch
-            [benchmark-grpc]=elasticsearch
-            [benchmark-opensearch]=opensearch
-            [benchmark-postgresql]=postgresql
-            [benchmark-mysql]=mysql
-            [benchmark-mariadb]=mariadb
-            [benchmark-mssql]=mssql
-            [benchmark-oracle]=oracle
-            [benchmark-none]=none
-            [benchmark-none-grpc]=none
-          )
-          # Labels that are not in this list use REST. Only storages with a daily gRPC run get a
-          # gRPC label. Without a daily run of the same setup, the comparison is not correct.
-          declare -A label_to_protocol=(
-            [benchmark-grpc]=grpc
-            [benchmark-none-grpc]=grpc
+          # Benchmark label -> "<secondary-storage-type> <protocol>". gRPC labels exist only for the
+          # storages with a daily gRPC run. Without a daily run of the same setup, the comparison is
+          # not correct.
+          declare -A label_to_setup=(
+            [benchmark-elasticsearch-rest]="elasticsearch rest"
+            [benchmark-elasticsearch-grpc]="elasticsearch grpc"
+            [benchmark-opensearch-rest]="opensearch rest"
+            [benchmark-postgresql-rest]="postgresql rest"
+            [benchmark-mysql-rest]="mysql rest"
+            [benchmark-mariadb-rest]="mariadb rest"
+            [benchmark-mssql-rest]="mssql rest"
+            [benchmark-oracle-rest]="oracle rest"
+            [benchmark-none-rest]="none rest"
+            [benchmark-none-grpc]="none grpc"
           )
 
           entries=()
           add_entry() {
             local label="$1"
-            local db="${label_to_db[$label]:-}"
-            local protocol="${label_to_protocol[$label]:-rest}"
-            if [[ -n "$db" ]]; then
+            local setup="${label_to_setup[$label]:-}"
+            if [[ -n "$setup" ]]; then
+              local db protocol
+              read -r db protocol <<< "$setup"
               entries+=("{\"label\":\"${label}\",\"db\":\"${db}\",\"protocol\":\"${protocol}\"}")
             else
               echo "::warning title=Unknown Benchmark Label::Label '$label' is not a recognized benchmark trigger. Ignoring."
