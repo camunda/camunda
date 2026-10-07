@@ -13,7 +13,7 @@
 #   synchronize: all currently-labeled DBs (restarts all benchmarks)
 #   closed:      all currently-labeled DBs (cleanup for all)
 #
-# Job-level concurrency (keyed on matrix.db + PR) ensures:
+# Job-level concurrency (keyed on matrix.db + matrix.protocol + PR) ensures:
 #   - adding/removing a label for one DB never cancels a benchmark for another DB
 #   - pushing a commit restarts each labeled DB's benchmark independently
 #   - unlabeling a DB cancels its in-progress run; the reusable pipeline then runs cleanup
@@ -55,25 +55,30 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Benchmark label -> secondary-storage-type mapping.
-          # NOTE: 'benchmark' (no suffix) is historically the elasticsearch trigger.
-          declare -A label_to_db=(
-            [benchmark]=elasticsearch
-            [benchmark-opensearch]=opensearch
-            [benchmark-postgresql]=postgresql
-            [benchmark-mysql]=mysql
-            [benchmark-mariadb]=mariadb
-            [benchmark-mssql]=mssql
-            [benchmark-oracle]=oracle
-            [benchmark-none]=none
+          # Benchmark label -> "<secondary-storage-type> <protocol>". gRPC labels exist only for the
+          # storages with a daily gRPC run. Without a daily run of the same setup, the comparison is
+          # not correct.
+          declare -A label_to_setup=(
+            [benchmark-elasticsearch-rest]="elasticsearch rest"
+            [benchmark-elasticsearch-grpc]="elasticsearch grpc"
+            [benchmark-opensearch-rest]="opensearch rest"
+            [benchmark-postgresql-rest]="postgresql rest"
+            [benchmark-mysql-rest]="mysql rest"
+            [benchmark-mariadb-rest]="mariadb rest"
+            [benchmark-mssql-rest]="mssql rest"
+            [benchmark-oracle-rest]="oracle rest"
+            [benchmark-none-rest]="none rest"
+            [benchmark-none-grpc]="none grpc"
           )
 
           entries=()
           add_entry() {
             local label="$1"
-            local db="${label_to_db[$label]:-}"
-            if [[ -n "$db" ]]; then
-              entries+=("{\"label\":\"${label}\",\"db\":\"${db}\"}")
+            local setup="${label_to_setup[$label]:-}"
+            if [[ -n "$setup" ]]; then
+              local db protocol
+              read -r db protocol <<< "$setup"
+              entries+=("{\"label\":\"${label}\",\"db\":\"${db}\",\"protocol\":\"${protocol}\"}")
             else
               echo "::warning title=Unknown Benchmark Label::Label '$label' is not a recognized benchmark trigger. Ignoring."
             fi
@@ -108,14 +113,14 @@ jobs:
           echo "Generated matrix: $matrix"
 
   benchmark:
-    name: Benchmark (${{ matrix.db }})
+    name: Benchmark (${{ matrix.db }}, ${{ matrix.protocol }})
     needs: dispatch
     if: needs.dispatch.outputs.any == 'true'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.dispatch.outputs.matrix) }}
     concurrency:
-      group: pr-benchmark-${{ matrix.db }}-${{ github.event.pull_request.number }}
+      group: pr-benchmark-${{ matrix.db }}-${{ matrix.protocol }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     permissions:
       actions: read # list daily workflow runs and artifacts
@@ -127,4 +132,5 @@ jobs:
     with:
       label: ${{ matrix.label }}
       secondary-storage-type: ${{ matrix.db }}
+      protocol: ${{ matrix.protocol }}
       ref: ${{ github.event.pull_request.head.ref }}
