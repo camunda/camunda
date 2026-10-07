@@ -272,6 +272,87 @@ public final class CallActivityTest {
   }
 
   @Test
+  public void shouldResolveVersionTagExpressionForBindingTypeVersionTag() {
+    // given
+    final var parentProcess =
+        parentProcess(
+            builder ->
+                builder.zeebeBindingType(ZeebeBindingType.versionTag).zeebeVersionTag("=tag"));
+    final var childProcessV1 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
+            .versionTag("v1.0")
+            .startEvent()
+            .endEvent()
+            .done();
+    final var childProcessV2 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
+            .versionTag("v2.0")
+            .startEvent()
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource("wf-parent.bpmn", parentProcess).deploy();
+    final var deploymentV1 =
+        ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcessV1).deploy();
+    ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcessV2).deploy();
+    final var deployedChildProcessV1 = deploymentV1.getValue().getProcessesMetadata().getFirst();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariable("tag", "v1.0")
+            .create();
+
+    // then
+    Assertions.assertThat(getChildInstanceOf(processInstanceKey))
+        .hasVersion(deployedChildProcessV1.getVersion())
+        .hasProcessDefinitionKey(deployedChildProcessV1.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldResolveVersionTagExpressionInCallActivityScope() {
+    // given
+    final var parentProcess =
+        parentProcess(
+            builder ->
+                builder
+                    .zeebeBindingType(ZeebeBindingType.versionTag)
+                    .zeebeInputExpression("\"v2.0\"", "tag")
+                    .zeebeVersionTag("=tag"));
+    final var childProcessV1 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
+            .versionTag("v1.0")
+            .startEvent()
+            .endEvent()
+            .done();
+    final var childProcessV2 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
+            .versionTag("v2.0")
+            .startEvent()
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource("wf-parent.bpmn", parentProcess).deploy();
+    ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcessV1).deploy();
+    final var deploymentV2 =
+        ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcessV2).deploy();
+    final var deployedChildProcessV2 = deploymentV2.getValue().getProcessesMetadata().getFirst();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariable("tag", "v1.0")
+            .create();
+
+    // then
+    Assertions.assertThat(getChildInstanceOf(processInstanceKey))
+        .hasVersion(deployedChildProcessV2.getVersion())
+        .hasProcessDefinitionKey(deployedChildProcessV2.getProcessDefinitionKey());
+  }
+
+  @Test
   public void shouldHaveReferenceToParentInstance() {
     // given
     deployDefaultParentAndChildProcess();
