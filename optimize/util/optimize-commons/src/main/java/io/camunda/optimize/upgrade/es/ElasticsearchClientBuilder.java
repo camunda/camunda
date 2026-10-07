@@ -22,6 +22,7 @@ import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration
 import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.search.connect.util.SecurityUtil;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,7 +37,6 @@ import java.util.Map;
 import java.util.Optional;
 import javax.net.ssl.SSLContext;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
@@ -204,7 +204,7 @@ public class ElasticsearchClientBuilder {
         && configurationService.getElasticSearchConfiguration().getSecurityPassword() != null) {
       credentialsProvider = new BasicCredentialsProvider();
       credentialsProvider.setCredentials(
-          new AuthScope(null, -1),
+          SecurityUtil.ANY_AUTH_SCOPE,
           new UsernamePasswordCredentials(
               configurationService.getElasticSearchConfiguration().getSecurityUsername(),
               configurationService

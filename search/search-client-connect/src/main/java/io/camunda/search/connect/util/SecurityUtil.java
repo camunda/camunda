@@ -18,12 +18,15 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import javax.net.ssl.SSLContext;
+import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class SecurityUtil {
+
+  public static final AuthScope ANY_AUTH_SCOPE = new AuthScope(null, -1);
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SecurityUtil.class);
 
@@ -66,7 +69,7 @@ public final class SecurityUtil {
   private static Certificate loadCertificateFromPath(final String certificatePath) {
     final Certificate cert;
 
-    try (var bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
+    try (final var bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {

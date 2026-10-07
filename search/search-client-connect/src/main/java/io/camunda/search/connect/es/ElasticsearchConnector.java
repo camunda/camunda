@@ -24,7 +24,6 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
-import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -264,7 +263,8 @@ public final class ElasticsearchConnector {
 
     final var credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        new AuthScope(null, -1), new UsernamePasswordCredentials(username, password.toCharArray()));
+        SecurityUtil.ANY_AUTH_SCOPE,
+        new UsernamePasswordCredentials(username, password.toCharArray()));
     builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
