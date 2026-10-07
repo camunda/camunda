@@ -6,7 +6,7 @@ C8Run always loads `configuration/application.yaml` first via `--spring.config.a
 
 If `--config` points to a directory, a trailing slash is added automatically so Spring Boot loads all YAML files inside it. If it points to a file, no slash is added. This directory-detection logic lives in `cmd/c8run/main.go` for startup config path building.
 
-The shutdown handler (`internal/shutdown/shutdownhandler.go`) also handles directory config paths, but for a different purpose: it reads config files directly to determine the active RDBMS URL. When given a directory path it resolves `application.yaml` inside it. These are parallel concerns — a change to one does not mechanically require a change to the other, but both must agree on how a directory config path maps to a file.
+To decide values before Java starts (secondary storage type, RDBMS URL, authentication method, Connectors credentials, H2 cleanup), c8run reads the same sources through `internal/springconfig`: `Paths` lists the config files Spring loads, highest precedence first, and `Value` returns a property from `-D` in `JAVA_OPTS`, then `JDK_JAVA_OPTIONS`, then the environment variable, then the first of those files that sets it. Startup and shutdown share this code, so they always agree.
 
 ## JAVA_HOME Resolution Fallback Chain
 
@@ -28,9 +28,10 @@ Changes to this chain must ensure all fallback paths still produce a valid binar
 2. The active RDBMS URL resolves to an in-memory H2 connection (`jdbc:h2:mem`)
 
 The RDBMS URL is resolved in this precedence order (first match wins):
-1. `CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL` environment variable
-2. User-provided `--config` file (if supplied)
-3. `configuration/application.yaml`
+1. `-Dcamunda.data.secondary-storage.rdbms.url` in `JAVA_OPTS`, then in `JDK_JAVA_OPTIONS`
+2. `CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL` or `CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL` environment variable
+3. User-provided `--config` file (if supplied)
+4. `configuration/application.yaml`
 
 **File-based H2 (`jdbc:h2:file:*`) does NOT trigger deletion.** Only in-memory H2 is cleaned up on stop.
 
@@ -38,7 +39,7 @@ If the version string is empty, deletion is skipped with a warning. The version 
 
 ## YAML Config Parsing Resilience
 
-If a config YAML file cannot be parsed, the shutdown handler logs a warning and continues searching remaining config files rather than failing. This allows graceful fallback when one config is malformed or empty.
+If a config file cannot be read or parsed, `springconfig.Value` skips it and continues with the remaining config files rather than failing. This allows graceful fallback when one config is malformed or empty.
 
 ## RDBMS Driver Detection
 

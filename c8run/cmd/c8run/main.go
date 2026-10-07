@@ -244,10 +244,7 @@ func initialize(baseCommand string, baseDir string) *types.State {
 		exitWithError(err)
 	}
 
-	applySecondaryStorageDefaults(baseDir, &settings)
-	if err := applyEffectiveRuntimeSettings(&settings); err != nil {
-		exitWithError(err)
-	}
+	applyConfigSettings(baseDir, &settings)
 	if baseCommand == "start" {
 		if err := applyPhysicalTenants(baseDir, camundaVersion, &settings); err != nil {
 			exitWithError(err)
@@ -255,15 +252,9 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	}
 	settings.StartupMarkerPath = startupurl.MarkerPath(baseDir)
 
-	if strings.EqualFold(settings.SecondaryStorageType, "rdbms") && settings.ResolvedConfigPath != "" {
-		var vendor string
-		url, err := detectRdbmsURLFromConfig(settings.ResolvedConfigPath)
-		if err != nil {
-			log.Debug().Err(err).Msg("Unable to detect RDBMS URL from configuration")
-		} else {
-			vendor = rdbmsVendorFromURL(url)
-		}
-		if err := ensureDriversAvailable(baseDir, camundaVersion, vendor, settings.ExtraDrivers); err != nil {
+	if strings.EqualFold(settings.SecondaryStorageType, "rdbms") {
+		url, _ := springconfig.Value(settings.ConfigPaths, "camunda.data.secondary-storage.rdbms.url")
+		if err := ensureDriversAvailable(baseDir, camundaVersion, rdbmsVendorFromURL(url), settings.ExtraDrivers); err != nil {
 			exitWithError(err)
 		}
 	}
@@ -301,130 +292,12 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	}
 }
 
-func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings) {
-	configPaths := resolveConfigPaths(baseDir, settings.Config)
-	// Store the ordered config sources (highest precedence first) so later stages can
-	// evaluate effective settings with the same precedence Spring applies at startup.
-	settings.ConfigPaths = configPaths
-
-	var secondaryType string
-	var configSource string
-	for _, path := range configPaths {
-		// We only expect one active config; use the first file where the type is defined
-		typeFromConfig, err := detectSecondaryStorageType(path)
-		if err != nil {
-			log.Debug().Err(err).Str("config", path).Msg("Unable to read configuration for secondary storage type")
-			continue
-		}
-		if typeFromConfig != "" {
-			secondaryType = typeFromConfig
-			configSource = path
-			settings.ResolvedConfigPath = path
-			break
-		}
-	}
-
-	settings.SecondaryStorageType = strings.TrimSpace(secondaryType)
-	if settings.SecondaryStorageType == "" {
-		// Nothing configured, keep the distribution defaults.
-		return
-	}
-
-	event := log.Debug().
-		Str("secondaryStorage.type", settings.SecondaryStorageType)
-	if configSource != "" {
-		event = event.Str("config", configSource)
-	}
-	event.Msg("Resolved secondary storage type from configuration")
-}
-
-func resolveConfigPaths(baseDir string, userConfig string) []string {
-	var paths []string
-	if userConfig != "" {
-		candidate := filepath.Join(baseDir, userConfig)
-		if _, err := os.Stat(candidate); err == nil {
-			// Every file Spring loads from the location, in Spring's precedence order.
-			paths = append(paths, springconfig.FilesIn(candidate)...)
-		}
-	}
-	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
-	paths = append(paths, defaultConfig)
-	return paths
-}
-
-// detectSecondaryStorageType reads camunda.data.secondary-storage.type (or the camelCase
-// secondaryStorage spelling Spring also binds) through the shared Spring config loader, so YAML
-// and .properties files, flat dotted keys and ${VAR:default} placeholders all resolve the way
-// Spring resolves them. A directory is read in Spring's file precedence.
-func detectSecondaryStorageType(path string) (string, error) {
-	if _, err := os.Stat(path); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", nil
-		}
-		return "", err
-	}
-	for _, file := range springconfig.FilesIn(path) {
-		ext := strings.ToLower(filepath.Ext(file))
-		if ext != ".yaml" && ext != ".yml" && ext != ".properties" {
-			continue
-		}
-		if _, err := os.Stat(file); err != nil {
-			continue
-		}
-		root, ok := springconfig.Load(file)
-		if !ok {
-			return "", fmt.Errorf("unable to parse %s", file)
-		}
-		if value := storageTypeFromMap(root); value != "" {
-			return value, nil
-		}
-	}
-	return "", nil
-}
-
-func storageTypeFromMap(root map[string]any) string {
-	for _, section := range []string{"secondary-storage", "secondaryStorage"} {
-		if typ, ok := springconfig.Lookup(root, "camunda", "data", section, "type"); ok {
-			if value, ok := typ.(string); ok && strings.TrimSpace(value) != "" {
-				return strings.TrimSpace(value)
-			}
-		}
-	}
-	return ""
-}
-
-func detectRdbmsURLFromConfig(path string) (string, error) {
-	if _, err := os.Stat(path); err != nil {
-		return "", err
-	}
-	root, ok := springconfig.Load(path)
-	if !ok {
-		return "", fmt.Errorf("unable to parse %s", path)
-	}
-	return extractRdbmsURLFromMap(root), nil
-}
-
-func extractRdbmsURLFromMap(root map[string]any) string {
-	camunda, ok := root["camunda"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	data, ok := camunda["data"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	secondary, ok := data["secondary-storage"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	rdbms, ok := secondary["rdbms"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	if url, ok := rdbms["url"].(string); ok {
-		return strings.TrimSpace(url)
-	}
-	return ""
+func applyConfigSettings(baseDir string, settings *types.C8RunSettings) {
+	settings.ConfigPaths = springconfig.Paths(baseDir, settings.Config)
+	settings.SecondaryStorageType, _ = springconfig.Value(settings.ConfigPaths, "camunda.data.secondary-storage.type")
+	method, _ := springconfig.Value(settings.ConfigPaths, "camunda.security.authentication.method")
+	settings.OIDC = strings.EqualFold(method, "oidc")
+	log.Debug().Str("secondaryStorage.type", settings.SecondaryStorageType).Msg("Resolved secondary storage type from configuration")
 }
 
 func rdbmsVendorFromURL(url string) string {
