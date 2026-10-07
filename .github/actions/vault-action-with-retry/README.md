@@ -3,8 +3,8 @@
 ## Intro
 
 Runs [`hashicorp/vault-action`](https://github.com/hashicorp/vault-action), retrying up to three
-times. Logging into Vault and reading secrets goes over the network, and a transient failure there
-used to fail the whole job (INC-8449).
+times, so a transient network failure while logging into Vault or reading secrets does not fail the
+whole job.
 
 Retries in a workflow are normally shell-command-only
 ([`nick-fields/retry`](https://github.com/nick-fields/retry), as used by
@@ -33,9 +33,13 @@ See [Notes](#notes) for what that means when you edit this action.
 
 ### Outputs
 
-None. Prefer the environment variables that `hashicorp/vault-action` exports. They continue to
-propagate out of this composite action, which is what callers such as [`setup-build`](../setup-build)
-consume.
+| Output  |                                         Description                                         |
+|---------|---------------------------------------------------------------------------------------------|
+| secrets | JSON map of all secrets read, keyed by the output names in `secrets`; parse with `fromJSON` |
+
+Secrets are **not** exported as environment variables (`exportEnv: false`). An exported secret is
+visible to every later step in the job, including third-party actions, whereas an output reaches
+only the steps that explicitly reference it.
 
 ## Notes
 
@@ -53,6 +57,9 @@ consume.
 - **A failed attempt still emits its error annotations.** `continue-on-error` absorbs the *step*, but
   the annotation is already published to the check run and annotations have no notion of being
   absorbed — so a green job can carry red annotations from this action.
+- **Guard `fromJSON` when this action can be skipped.** A skipped step has an empty `secrets`
+  output and `fromJSON('')` fails the expression. Use `fromJSON(steps.<id>.outputs.secrets || '{}')`
+  in steps that run regardless.
 - No failure classification: a genuine configuration error (bad credentials, a wrong Vault URL, an
   invalid `secrets` mapping) costs all three attempts before the job reports red.
 
@@ -62,18 +69,19 @@ consume.
 steps:
   - uses: actions/checkout@v6
   - uses: ./.github/actions/vault-action-with-retry
+    id: secrets
     with:
       url: ${{ inputs.vault-address }}
       method: approle
       roleId: ${{ inputs.vault-role-id }}
       secretId: ${{ inputs.vault-secret-id }}
       secrets: |
-        secret/data/github.com/organizations/camunda NEXUS_PSW | CI_ACCOUNT_PASSWORD;
-        secret/data/github.com/organizations/camunda NEXUS_USR | CI_ACCOUNT_USERNAME
+        secret/data/github.com/organizations/camunda NEXUS_PSW | ci-account-password;
+        secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username
 
-  - name: Use imported secret from env
+  - name: Use imported secret
+    env:
+      CI_ACCOUNT_USERNAME: ${{ fromJSON(steps.secrets.outputs.secrets).ci-account-username }}
     run: echo "Configured user is ${CI_ACCOUNT_USERNAME}"
 ```
 
-Most jobs should not call this directly — [`setup-build`](../setup-build) is the main caller, along
-with the rest of the build bootstrap.
