@@ -122,6 +122,9 @@ jobs:
   smoke-install:
     name: Smoke Install
     needs: sanitize-branch-name
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -141,8 +144,8 @@ jobs:
     name: Verify Install
     needs: [sanitize-branch-name, smoke-install]
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
@@ -154,7 +157,7 @@ jobs:
     if: always()
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
@@ -170,6 +173,9 @@ jobs:
   smoke-upgrade-install:
     name: Smoke Upgrade - Install (base ref)
     needs: sanitize-branch-name
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -185,8 +191,8 @@ jobs:
     name: Verify Upgrade Install
     needs: [sanitize-branch-name, smoke-upgrade-install]
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
@@ -195,6 +201,9 @@ jobs:
   smoke-upgrade-update:
     name: Smoke Upgrade - Update (PR ref)
     needs: [sanitize-branch-name, verify-upgrade-install]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -210,8 +219,8 @@ jobs:
     name: Verify Upgrade Update
     needs: [sanitize-branch-name, smoke-upgrade-update]
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
@@ -223,7 +232,7 @@ jobs:
     if: always()
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:

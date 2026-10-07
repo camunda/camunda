@@ -54,6 +54,9 @@ jobs:
   release-load-test-8-7:
     needs: [versions]
     name: Release load test (stable/8.7)
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.7
     secrets: inherit
     with:
@@ -63,6 +66,9 @@ jobs:
   release-load-test-8-8:
     needs: [versions]
     name: Release load test (stable/8.8)
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.8
     secrets: inherit
     with:
@@ -72,6 +78,9 @@ jobs:
   release-load-test-8-9:
     needs: [versions]
     name: Release load test (stable/8.9)
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.9
     secrets: inherit
     with:
@@ -81,6 +90,9 @@ jobs:
   release-load-test-8-10:
     needs: [versions]
     name: Release load test (stable/8.10)
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.10
     secrets: inherit
     with:
@@ -90,6 +102,9 @@ jobs:
   release-load-test-main:
     needs: [versions]
     name: Release load test (main)
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-release-load-test.yaml
     secrets: inherit
     with:
@@ -102,6 +117,9 @@ jobs:
     name: Verify and cleanup (stable/8.7)
     needs: [release-load-test-8-7]
     if: always()
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
@@ -111,6 +129,9 @@ jobs:
     name: Verify and cleanup (stable/8.8)
     needs: [release-load-test-8-8]
     if: always()
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
@@ -120,6 +141,9 @@ jobs:
     name: Verify and cleanup (stable/8.9)
     needs: [release-load-test-8-9]
     if: always()
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
@@ -129,6 +153,9 @@ jobs:
     name: Verify and cleanup (stable/8.10)
     needs: [release-load-test-8-10]
     if: always()
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:
@@ -138,6 +165,9 @@ jobs:
     name: Verify and cleanup (main)
     needs: [release-load-test-main]
     if: always()
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
     secrets: inherit
     with:

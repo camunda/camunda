@@ -117,6 +117,11 @@ jobs:
     concurrency:
       group: pr-benchmark-${{ matrix.db }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
+    permissions:
+      actions: read # list daily workflow runs and artifacts
+      contents: read
+      id-token: write # Teleport cluster auth
+      pull-requests: write # post benchmark comments
     uses: ./.github/workflows/camunda-pr-load-test.yaml
     secrets: inherit
     with:

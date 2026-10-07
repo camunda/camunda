@@ -106,6 +106,9 @@ jobs:
   create-load-test:
     name: Create release load test
     needs: sanitize-inputs
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:

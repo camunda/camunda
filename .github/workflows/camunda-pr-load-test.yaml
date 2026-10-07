@@ -100,6 +100,9 @@ jobs:
     if: >
       (github.event.action == 'labeled' && github.event.label.name == inputs.label) ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, inputs.label))
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -114,7 +117,7 @@ jobs:
     needs: [sanitize-branch-name, create-benchmark]
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
@@ -148,6 +151,9 @@ jobs:
   run-profiling:
     name: Run Profiling
     needs: [sanitize-branch-name, await-benchmark]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
@@ -187,6 +193,7 @@ jobs:
   get-pr-metrics:
     name: Collect PR namespace metrics
     needs: [sanitize-branch-name, await-benchmark]
+    permissions: {}
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
@@ -197,6 +204,7 @@ jobs:
     name: Collect daily-on-main metrics
     needs: resolve-daily-namespace
     if: needs.resolve-daily-namespace.outputs.daily-namespace != ''
+    permissions: {}
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
@@ -307,7 +315,7 @@ jobs:
     if: ${{ !cancelled() && needs.comment-comparison-pr.result == 'success' }}
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
@@ -407,7 +415,7 @@ jobs:
       (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, inputs.label))
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:

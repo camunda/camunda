@@ -328,7 +328,7 @@ jobs:
     name: Calculate Image Tag
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     outputs:
       image-tag: ${{ inputs.orchestration-tag != '' && inputs.orchestration-tag || (inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag) }}
     steps:
@@ -368,9 +368,7 @@ jobs:
     if: ${{ inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    permissions: {}
     env:
       CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
     steps:
@@ -454,9 +452,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: calculate-image-tag
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    permissions: {}
     env:
       IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
     steps:
@@ -512,9 +508,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: calculate-image-tag
-    permissions:
-      contents: read
-      id-token: write
+    permissions: {}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -563,8 +557,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      id-token: write # Teleport cluster auth
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

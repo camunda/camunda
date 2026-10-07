@@ -48,7 +48,7 @@ jobs:
     needs: detect-versions
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.detect-versions.outputs.matrix) }}

@@ -47,7 +47,7 @@ jobs:
     name: Collect test data
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     outputs:
       image-tag: ${{ steps.data.outputs.image-tag }}
       week-id: ${{ steps.data.outputs.week-id }}
@@ -83,9 +83,7 @@ jobs:
     if: ${{ inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    permissions: {}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -155,9 +153,7 @@ jobs:
     if: ${{ inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    permissions: {}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -199,6 +195,9 @@ jobs:
       needs.test-data.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -219,6 +218,9 @@ jobs:
       needs.test-data.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -230,6 +232,9 @@ jobs:
 
   setup-realistic-test:
     name: Realistic load test
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     needs:
@@ -282,6 +287,9 @@ jobs:
   weekly-8-7:
     name: Weekly load test (stable/8.7)
     needs: test-data
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: camunda/camunda/.github/workflows/camunda-load-test.yml@stable/8.7
     secrets: inherit
     with:
@@ -293,6 +301,9 @@ jobs:
   weekly-8-8:
     name: Weekly load test (stable/8.8)
     needs: test-data
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: camunda/camunda/.github/workflows/camunda-load-test.yml@stable/8.8
     secrets: inherit
     with:
@@ -304,6 +315,9 @@ jobs:
   weekly-8-9:
     name: Weekly load test (stable/8.9)
     needs: test-data
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: camunda/camunda/.github/workflows/camunda-load-test.yml@stable/8.9
     secrets: inherit
     with:
@@ -315,6 +329,9 @@ jobs:
   weekly-8-10:
     name: Weekly load test (stable/8.10)
     needs: test-data
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: camunda/camunda/.github/workflows/camunda-load-test.yml@stable/8.10
     secrets: inherit
     with:
@@ -339,7 +356,7 @@ jobs:
       - weekly-8-10
     if: failure()
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
