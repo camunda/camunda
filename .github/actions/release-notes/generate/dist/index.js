@@ -1190,9 +1190,6 @@ exports.render = render;
 /** Bumped deliberately on any output-shape change, so a consumer never
  *  silently misreads a shape it wasn't built for. */
 exports.SCHEMA_VERSION = '2.0.0';
-/** Names the gate's mechanism, not a change — hence renamed in the customer body. */
-const OPT_OUT_SECTION = 'Changes without a tracked issue';
-const CUSTOMER_OPT_OUT_SECTION = 'Other changes';
 const SECTION_ORDER = [
     'Features',
     'Bug Fixes',
@@ -1200,7 +1197,6 @@ const SECTION_ORDER = [
     'Documentation',
     'Dependency updates',
     'Reverts',
-    OPT_OUT_SECTION,
     'Maintenance', // asset-only, so last — never reached in the customer body
     'Uncategorized',
 ];
@@ -1223,10 +1219,7 @@ function oversizedCustomerBodyWarning(customerBody) {
         ? `Customer-facing body is ${customerBody.length} characters, over GitHub's ${exports.RELEASE_BODY_LIMIT}-character release body limit — publishing it will fail.`
         : undefined;
 }
-/** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr) {
-    if (pr.attributionSource === 'optOut')
-        return OPT_OUT_SECTION;
     return pr.section ?? 'Uncategorized';
 }
 function entryKeyFor(pr) {
@@ -1300,7 +1293,7 @@ function toEntries(prs) {
     });
     return [...entries, ...collapseDependencies(prs.filter(isDependencyBump))];
 }
-function renderSectionedBody(prs, link, dependencyPointer, renamedSections = {}) {
+function renderSectionedBody(prs, link, dependencyPointer) {
     const entries = toEntries(prs);
     const groups = new Map();
     for (const entry of entries) {
@@ -1319,7 +1312,7 @@ function renderSectionedBody(prs, link, dependencyPointer, renamedSections = {})
         const pointer = name === 'Dependency updates' && dependencyPointer ? dependencyPointer : undefined;
         if (list.length === 0 && !pointer)
             continue;
-        lines.push(`## ${renamedSections[name] ?? name}`, '', ...list.map((entry) => renderLine(entry, link)));
+        lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry, link)));
         if (pointer)
             lines.push(...(list.length > 0 ? [''] : []), renderDependencyPointer(pointer, list.length > 0));
         lines.push('');
@@ -1445,7 +1438,7 @@ function render(all, options) {
     const assetPrs = all.filter((pr) => pr.section !== null);
     // `/pull/N` and `/issues/N` redirect to each other, so one URL form serves both.
     const link = (number) => options.repository ? `[#${number}](https://github.com/${options.repository}/pull/${number})` : `#${number}`;
-    const customerBody = renderSectionedBody(customerPrs, link, packageCount > 0 ? { packageCount, version: options.version } : undefined, { [OPT_OUT_SECTION]: CUSTOMER_OPT_OUT_SECTION });
+    const customerBody = renderSectionedBody(customerPrs, link, packageCount > 0 ? { packageCount, version: options.version } : undefined);
     const fullAsset = renderSectionedBody(assetPrs, link);
     const prsByIssue = new Map(); // insertion-ordered: issues come out in walk order
     for (const pr of all) {

@@ -467,14 +467,13 @@ Section order (also the output order):
 
 ```
 Features · Bug Fixes · Performance · Documentation · Dependency updates · Reverts ·
-Changes without a tracked issue · Maintenance · Uncategorized
+Maintenance · Uncategorized
 ```
 
 Breaking changes are additionally hoisted into a `## Breaking changes` section at the top.
 A grouped dependency entry is breaking if any contributing pull request is marked breaking.
-An opt-out pull request is grouped under `Changes without a tracked issue`, never under its type's
-section. The customer body shows that section as `Other changes` — the gate's mechanism means nothing to
-a reader of the release. Every `#N` is a link to `https://github.com/<owner>/<repo>/pull/N` (GitHub
+An opt-out pull request is grouped by its title type like any other — having no tracked issue says
+nothing about what the change is. Every `#N` is a link to `https://github.com/<owner>/<repo>/pull/N` (GitHub
 redirects it to `/issues/N` for an issue), because the full asset and the step summary don't autolink
 the way a release body does.
 
