@@ -198,3 +198,27 @@ func TestShouldDeleteDataDirReadsPropertiesInConfigDirectory(t *testing.T) {
 	settings := types.C8RunSettings{SecondaryStorageType: "rdbms", ConfigPaths: springconfig.Paths(baseDir, "cfg")}
 	require.True(t, shouldDeleteDataDir(settings))
 }
+
+func TestShouldDeleteDataDirFollowsConfigPrecedence(t *testing.T) {
+	for _, key := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS", "CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL", "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL"} {
+		unsetEnv(t, key)
+	}
+	baseDir := t.TempDir()
+	writeConfig(t, filepath.Join(baseDir, "my-config", "application.yaml"), `
+camunda:
+  data:
+    secondary-storage:
+      rdbms:
+        url: jdbc:postgresql://localhost:5432/camunda
+`)
+	writeConfig(t, filepath.Join(baseDir, "configuration", "application.yaml"), `
+camunda:
+  data:
+    secondary-storage:
+      rdbms:
+        url: jdbc:h2:mem:foo
+`)
+	settings := types.C8RunSettings{SecondaryStorageType: "rdbms", ConfigPaths: springconfig.Paths(baseDir, "my-config")}
+
+	require.False(t, shouldDeleteDataDir(settings), "the user config's PostgreSQL URL wins over the default in-memory H2 URL")
+}
