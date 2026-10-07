@@ -31,6 +31,7 @@
     <!-- maven plugin versions -->
     <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.jib>3.5.2</plugin.version.jib>
+    <docker.registry>registry.camunda.cloud/team-reliability-testing</docker.registry>
   </properties>
 
   <dependencies>
@@ -366,7 +367,7 @@
                 <image>eclipse-temurin:21</image>
               </from>
               <to>
-                <image>gcr.io/zeebe-io/starter:SNAPSHOT</image>
+                <image>${docker.registry}/starter:SNAPSHOT</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>
@@ -392,7 +393,7 @@
                 <image>eclipse-temurin:21</image>
               </from>
               <to>
-                <image>gcr.io/zeebe-io/worker:SNAPSHOT</image>
+                <image>${docker.registry}/worker:SNAPSHOT</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>
