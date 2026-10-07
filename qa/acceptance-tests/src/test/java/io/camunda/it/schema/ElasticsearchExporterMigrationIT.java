@@ -8,16 +8,11 @@
 package io.camunda.it.schema;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
-import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import io.camunda.container.volume.CamundaVolume;
 import io.camunda.webapps.schema.SupportedVersions;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-import org.apache.hc.core5.http.HttpHost;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -51,9 +46,7 @@ class ElasticsearchExporterMigrationIT {
 
   private Network network;
   private ElasticsearchContainer esContainer;
-  private Rest5ClientTransport transport;
   private ElasticsearchClient esClient;
-  private Rest5Client restClient;
   private ExporterMigrationTestHelper testHelper;
 
   @BeforeEach
@@ -74,17 +67,8 @@ class ElasticsearchExporterMigrationIT {
             .withEnv("action.destructive_requires_name", "false");
     esContainer.start();
 
-    try {
-      restClient =
-          Rest5Client.builder(HttpHost.create(HTTP_PREFIX + esContainer.getHttpHostAddress()))
-              .build();
-    } catch (final URISyntaxException e) {
-      throw new IllegalArgumentException("Error building Elasticsearch host", e);
-    }
-    transport = new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
-    esClient = new ElasticsearchClient(transport);
-
     final String containerAddress = HTTP_PREFIX + esContainer.getHttpHostAddress();
+    esClient = ElasticsearchClient.of(b -> b.host(containerAddress));
     testHelper =
         new ExporterMigrationTestHelper(
             esClient, ES_NETWORK_ALIAS, network, containerAddress, dataDir, LOG);
@@ -92,8 +76,8 @@ class ElasticsearchExporterMigrationIT {
 
   @AfterEach
   void tearDown() throws Exception {
-    if (restClient != null) {
-      restClient.close();
+    if (esClient != null) {
+      esClient.close();
     }
     if (esContainer != null) {
       esContainer.stop();
