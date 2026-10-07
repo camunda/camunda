@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, onTestFinished, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {useQuery} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
@@ -122,6 +122,15 @@ function mockViewport(isCollapsed: boolean) {
 	};
 }
 
+function holdResponse() {
+	let release!: () => void;
+	const held = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	onTestFinished(release);
+	return {held, release};
+}
+
 async function execute(screen: Awaited<ReturnType<typeof renderOperations>>, action: string, key: string) {
 	await userEvent.click(screen.getByRole('button', {name: `${action} Instance ${key}`}));
 	if (action === 'Cancel') {
@@ -182,6 +191,7 @@ describe('<ProcessInstanceOperations />', () => {
 		async ({action, state, pending, success, mock}, {worker}) => {
 			mockViewport(false);
 			const instance = createInstance(state);
+			const command = holdResponse();
 			const requests: Request[] = [];
 			const onRequest = ({request}: {request: Request}) => {
 				if (request.method !== 'GET') {
@@ -196,7 +206,7 @@ describe('<ProcessInstanceOperations />', () => {
 							action === 'Retry'
 								? HttpResponse.json({batchOperationKey: 'retry-batch'}, {status: 202})
 								: new HttpResponse(null, {status: 204}),
-						delay: 200,
+						delay: command.held,
 					}),
 					mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
 					mockGetProcessInstanceEndpoint({
@@ -206,6 +216,7 @@ describe('<ProcessInstanceOperations />', () => {
 				const screen = await renderOperations(instance, {basepath: '/deployment'});
 				await execute(screen, action, instance.processInstanceKey);
 				await expect.element(screen.getByText(pending)).toBeVisible();
+				command.release();
 				if (action === 'Delete') {
 					await expect.poll(() => notificationsStore.notifications[0]?.title).toBe(success);
 				} else {
@@ -333,14 +344,19 @@ describe('<ProcessInstanceOperations />', () => {
 		async ({action, state, target, mock}, {worker}) => {
 			mockViewport(false);
 			const instance = createInstance(state);
+			const targetRead = holdResponse();
 			worker.use(
 				mock({successResponse: new HttpResponse(null, {status: 204})}),
 				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance), once: true}),
-				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: target})}),
+				mockGetProcessInstanceEndpoint({
+					successResponse: HttpResponse.json({...instance, state: target}),
+					delay: targetRead.held,
+				}),
 			);
 			const screen = await renderOperations(instance);
 			await execute(screen, action, instance.processInstanceKey);
 			await expect.element(screen.getByText(action === 'Suspend' ? 'Suspending...' : 'Resuming...')).toBeVisible();
+			targetRead.release();
 			await expect
 				.element(screen.getByText(action === 'Suspend' ? 'Instance suspended' : 'Instance resumed'))
 				.toBeVisible();
@@ -359,8 +375,9 @@ describe('<ProcessInstanceOperations />', () => {
 	}) => {
 		const setCollapsed = mockViewport(true);
 		const instance = createInstance('ACTIVE');
+		const command = holdResponse();
 		worker.use(
-			mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 500}),
+			mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: command.held}),
 			mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: 'SUSPENDED'})}),
 		);
 		const screen = await renderOperations(instance);
@@ -373,6 +390,7 @@ describe('<ProcessInstanceOperations />', () => {
 		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).toBeEnabled();
 		setCollapsed(false);
 		await expect.element(screen.getByText('Suspending...')).toBeVisible();
+		command.release();
 		await expect.element(screen.getByText('Instance suspended')).toBeVisible();
 	});
 

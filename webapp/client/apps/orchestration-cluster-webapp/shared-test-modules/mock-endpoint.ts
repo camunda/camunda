@@ -20,7 +20,11 @@ type CreateEndpointMockParams<Method extends RequestMethod> = {
 
 type SuccessMockParams = {
 	successResponse: Response;
-	delay?: DelayMode | number;
+	/**
+	 * A promise holds the response until it resolves, so a test can assert a pending state
+	 * before releasing it instead of racing a fixed delay.
+	 */
+	delay?: DelayMode | number | Promise<unknown>;
 	/**
 	 * Handle only the first matching request. Use carefully: our apps poll frequently,
 	 * so a background poll may consume it before the intended request.
@@ -32,7 +36,11 @@ type PayloadMockParams<Schema extends z.ZodType> = {
 	schema: Schema;
 	failureResponse: Response;
 	successResponse: Response;
-	delay?: DelayMode | number;
+	/**
+	 * A promise holds the response until it resolves, so a test can assert a pending state
+	 * before releasing it instead of racing a fixed delay.
+	 */
+	delay?: DelayMode | number | Promise<unknown>;
 	/**
 	 * Handle only the first matching request. Use carefully: our apps poll frequently,
 	 * so a background poll may consume it before the intended request.
@@ -55,7 +63,9 @@ function createEndpointMock<Method extends RequestMethod>({
 }: CreateEndpointMockParams<Method>): MockEndpoint<Method> {
 	return (params: SuccessMockParams | PayloadMockParams<z.ZodType>) => {
 		const resolver = async ({request}: {request: Request}) => {
-			if (params.delay) {
+			if (params.delay instanceof Promise) {
+				await params.delay;
+			} else if (params.delay) {
 				await mswDelay(params.delay);
 			}
 
