@@ -15,8 +15,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Node;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import io.camunda.search.connect.util.SecurityUtil;
 import java.io.IOException;
-import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.BasicUserPrincipal;
 import org.apache.hc.client5.http.auth.Credentials;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
@@ -73,7 +73,7 @@ final class ElasticsearchClientFactoryTest {
     final var providerCaptor = ArgumentCaptor.forClass(CredentialsProvider.class);
     Mockito.verify(builder).setDefaultCredentialsProvider(providerCaptor.capture());
     final Credentials credentials =
-        providerCaptor.getValue().getCredentials(new AuthScope(null, -1), null);
+        providerCaptor.getValue().getCredentials(SecurityUtil.ANY_AUTH_SCOPE, null);
     assertThat(credentials.getUserPrincipal()).isEqualTo(new BasicUserPrincipal("user"));
     assertThat(((UsernamePasswordCredentials) credentials).getUserPassword())
         .isEqualTo("password".toCharArray());

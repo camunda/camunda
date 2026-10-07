@@ -13,11 +13,11 @@ import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
@@ -112,7 +112,7 @@ final class ElasticsearchClientFactory {
       final ElasticsearchExporterConfiguration config, final HttpAsyncClientBuilder builder) {
     final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        new AuthScope(null, -1),
+        SecurityUtil.ANY_AUTH_SCOPE,
         new UsernamePasswordCredentials(
             config.getAuthentication().getUsername(),
             config.getAuthentication().getPassword().toCharArray()));
