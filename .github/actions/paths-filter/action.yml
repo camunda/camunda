@@ -288,6 +288,15 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-scripts.outputs.load-test-scripts-change == 'true'
       }}
+  load-test-k6-changes:
+    description: Output whether the load-test k6 scripts formatting check should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-scripts.outputs.load-test-k6-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -556,6 +565,8 @@ runs:
         load-test-scripts-change:
           - 'load-tests/docs/scripts/load_test_report/**'
           - 'load-tests/loadtestctl/**'
+        load-test-k6-change:
+          - 'load-tests/setup/charts/load-test-setup/k6/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch

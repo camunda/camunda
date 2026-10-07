@@ -105,3 +105,9 @@ The file `camunda-scheduled-release-load-tests.yml` uses hardcoded release tags
 per stable branch. Patch releases do not require updates. When reviewing PRs that
 create a new minor version (e.g., 8.10) or deprecate a stable branch, verify that
 this workflow is updated accordingly.
+
+## k6 scripts
+
+When editing k6 scripts under `load-tests/setup/charts/load-test-setup/k6/scripts`:
+
+- Format the JavaScript files with: `make -C load-tests/setup/charts/load-test-setup/k6 fmt`
