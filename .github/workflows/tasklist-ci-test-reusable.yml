@@ -98,6 +98,10 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
+      # zeebe-client-java comes in transitively via zeebe-test-container, so -am neither builds nor orders it.
+      # Install it first so a fresh version bump does not depend on the SNAPSHOT being on Nexus yet.
+      - name: Build Zeebe Client Java
+        run: ./mvnw -B -T1C -DskipTests -DskipChecks install -pl clients/java-deprecated -am -PskipFrontendBuild
       - name: Build Camunda (scoped)
         id: build-camunda
         run: ./mvnw -B -T1C -DskipTests -DskipChecks install -pl tasklist/qa/integration-tests -am -PskipFrontendBuild
