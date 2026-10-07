@@ -7,7 +7,7 @@
  */
 
 import React, {useState} from 'react';
-import {Responsive, WidthProvider} from 'react-grid-layout';
+import {Responsive, WidthProvider} from 'react-grid-layout/legacy';
 import classnames from 'classnames';
 
 import {DashboardTile} from './DashboardTile';

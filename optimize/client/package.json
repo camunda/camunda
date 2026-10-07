@@ -145,6 +145,7 @@
     ],
     "moduleNameMapper": {
       "\\.(css|scss)$": "<rootDir>/src/__mocks__/styleMock.js",
+      "^react-grid-layout/legacy$": "react-grid-layout/dist/legacy.js",
       "^@camunda/design-system$": "<rootDir>/src/__mocks__/designSystemMock.js",
       "^react-dom((\\/.*)?)$": "react-dom-18$1",
       "^react((\\/.*)?)$": "react-18$1",
