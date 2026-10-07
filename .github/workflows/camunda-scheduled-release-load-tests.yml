@@ -41,7 +41,7 @@ jobs:
     secrets: inherit
     with:
       name: schedule-release-8-7-x
-      tag: '8.7.37'
+      tag: '8.7.43'
 
   release-load-test-8-8:
     name: Release load test (stable/8.8)
@@ -49,7 +49,7 @@ jobs:
     secrets: inherit
     with:
       name: schedule-release-8-8-x
-      tag: '8.8.35'
+      tag: '8.8.41'
 
   release-load-test-8-9:
     name: Release load test (stable/8.9)
@@ -57,7 +57,7 @@ jobs:
     secrets: inherit
     with:
       name: schedule-release-8-9-x
-      tag: '8.9.16'
+      tag: '8.9.23'
 
   release-load-test-8-10:
     name: Release load test (stable/8.10)
@@ -65,7 +65,7 @@ jobs:
     secrets: inherit
     with:
       name: schedule-release-8-10-x
-      tag: '8.10.0-alpha4'
+      tag: '8.10.1'
 
   release-load-test-main:
     name: Release load test (main)
@@ -73,10 +73,7 @@ jobs:
     secrets: inherit
     with:
       name: schedule-release-main
-      # main tracks its own release line's latest published pre-release (8.10 alpha), not
-      # stable/8.9's tag — there is no 8.10 stable yet. Bump this to the newest 8.10.0-alphaN
-      # as new alphas are cut.
-      tag: '8.10.0-alpha4'
+      tag: '8.10.1'
 
   # Verify and cleanup jobs — one per branch, run in parallel.
   # Each job waits for pods + gateway connectivity, then deletes the namespace.
@@ -175,11 +172,11 @@ jobs:
                   type: mrkdwn
                   text: |-
                     *Tested versions:*
-                    • stable/8.7: `8.7.37` (${{ needs.verify-and-cleanup-8-7.result }})
-                    • stable/8.8: `8.8.35` (${{ needs.verify-and-cleanup-8-8.result }})
-                    • stable/8.9: `8.9.16` (${{ needs.verify-and-cleanup-8-9.result }})
-                    • stable/8.10: `8.10.0-alpha4` (${{ needs.verify-and-cleanup-8-10.result }})
-                    • main: `8.10.0-alpha4` (${{ needs.verify-and-cleanup-main.result }})
+                    • stable/8.7: `8.7.43` (${{ needs.verify-and-cleanup-8-7.result }})
+                    • stable/8.8: `8.8.41` (${{ needs.verify-and-cleanup-8-8.result }})
+                    • stable/8.9: `8.9.23` (${{ needs.verify-and-cleanup-8-9.result }})
+                    • stable/8.10: `8.10.1` (${{ needs.verify-and-cleanup-8-10.result }})
+                    • main: `8.10.1` (${{ needs.verify-and-cleanup-main.result }})
 
               - type: context
                 elements:
