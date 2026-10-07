@@ -150,12 +150,15 @@ and the
 In
 [`camunda-scheduled-release-load-tests.yml`](../../.github/workflows/camunda-scheduled-release-load-tests.yml):
 
-- Add a `release-load-test-$VERSION_TAG` job. Pin it to the branch's current patch tag.
+- Add a `v$VERSION_TAG` output to the `versions` job. Set it to the
+  branch's current patch tag.
   **Note**: this current patch tag can still be an *alpha* version when the stable branch is created.
+- Add a `release-load-test-$VERSION_TAG` job that reads `needs.versions.outputs.v$VERSION_TAG`.
 - Add the matching `verify-and-cleanup-$VERSION_TAG` job.
 - Add `verify-and-cleanup-$VERSION_TAG` to the `notify-on-success` and `notify-on-failure` jobs' `needs:`
   lists and to their `if:` success/failure conditions.
-- Add the branch to the Slack "Tested versions" message in both notifications.
+- Add the branch to the Slack "Tested versions" message in both notifications. In
+  `notify-on-success`, read the tag from `needs.versions.outputs.v$VERSION_TAG`.
 
 **Example:** [PR #61002](https://github.com/camunda/camunda/pull/61002):
 [`release-load-test-8-10`](https://github.com/camunda/camunda/blob/ef9285267a5556b6f16bd8bb74e263dffb8defc6/.github/workflows/camunda-scheduled-release-load-tests.yml#L62-L68),
@@ -171,7 +174,7 @@ actually run on the next scheduled trigger.
 ### Update the release tag
 
 `main` no longer tracks the branched-off version. Bump the `release-load-test-main` tag to the
-next alpha line (for example `8.11.0-alphaN`).
+next alpha line (for example `8.11.0-alphaN`) in the `main` output of the `versions` job.
 
 ## Reference PRs
 
