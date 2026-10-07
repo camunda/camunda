@@ -163,6 +163,11 @@ get_jobs_with_timeoutminutes_higher_than(jobInput, max_timeout) = jobs_without_t
     }
 }
 
+is_scheduled_release_load_tests_versions_job(job_id) {
+    input.name == "Scheduled Camunda Release Load Tests"
+    job_id == "versions"
+}
+
 get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
     jobs_without_cihealth := { job_id |
         job := jobInput[job_id]
@@ -192,7 +197,8 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         # dependent observer job natively instead of maintaining whitelist.
         job_id != "collect-stale-backports"
         job_id != "compute-matrix"
-
+        # static outputs only
+        not is_scheduled_release_load_tests_versions_job(job_id)
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
         not job.uses
