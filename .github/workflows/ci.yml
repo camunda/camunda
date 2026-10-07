@@ -1181,7 +1181,7 @@ jobs:
       contents: read
     outputs:
       ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
-      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+      elasticsearch-9: ${{ steps.db-versions.outputs.elasticsearch-9 }}
       opensearch-3: ${{ steps.db-versions.outputs.opensearch-3 }}
     steps:
       - uses: actions/checkout@v7
@@ -1283,9 +1283,9 @@ jobs:
             it-database-type: "rdbms_h2"
             database-image-version: ""
           - database-type: "elasticsearch"
-            database-name: "ES 8.x"
+            database-name: "ES 9.x"
             it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-9 }}"
             # Points the PT at a genuinely separate ES instance (db/docker-compose.yml's
             # elasticsearch-tenant service) instead of the default tenant's cluster.
             physical-tenant-elasticsearch-url: "http://localhost:9201"
@@ -1329,9 +1329,9 @@ jobs:
             it-database-type: "rdbms_h2"
             database-image-version: ""
           - database-type: "elasticsearch"
-            database-name: "ES 8.x"
+            database-name: "ES 9.x"
             it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-9 }}"
             physical-tenant-elasticsearch-url: "http://localhost:9201"
           - database-type: "opensearch"
             database-name: "OS 3.x"
@@ -1369,9 +1369,9 @@ jobs:
             it-database-type: "rdbms_h2"
             database-image-version: ""
           - database-type: "elasticsearch"
-            database-name: "ES 8.x"
+            database-name: "ES 9.x"
             it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-9 }}"
             physical-tenant-elasticsearch-url: "http://localhost:9201"
           - database-type: "opensearch"
             database-name: "OS 3.x"
@@ -1871,7 +1871,7 @@ jobs:
           - 5000:5000
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
-      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-8 }}
+      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-9 }}
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
