@@ -147,12 +147,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       return;
 
     } else if (marker == State.SUSPENDING || marker == State.SUSPENDED) {
-      // Race window: SUSPEND already deleted the message-side subscription, but this CORRELATE
-      // was already in flight. Reject to release the message-side lock — another active
-      // subscriber can then correlate, or the message returns 404. RESUMING must fall through;
-      // see onSuspended() below.
-      // Checked last so a stale or duplicate correlate goes through those paths instead, without
-      // releasing a live replacement's correlation lock.
+      // Release stale correlation locks for suspending/suspended states
       if (subscription.isOpening()) {
         closeLateHandshake(subscription, record.getSubscriptionKey());
       }
