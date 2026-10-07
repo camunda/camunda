@@ -11,10 +11,6 @@ import type { DependencyUpdate } from '../categorize';
  *  silently misreads a shape it wasn't built for. */
 export const SCHEMA_VERSION = '2.0.0';
 
-/** Names the gate's mechanism, not a change — hence renamed in the customer body. */
-const OPT_OUT_SECTION = 'Changes without a tracked issue';
-const CUSTOMER_OPT_OUT_SECTION = 'Other changes';
-
 const SECTION_ORDER = [
   'Features',
   'Bug Fixes',
@@ -22,7 +18,6 @@ const SECTION_ORDER = [
   'Documentation',
   'Dependency updates',
   'Reverts',
-  OPT_OUT_SECTION,
   'Maintenance', // asset-only, so last — never reached in the customer body
   'Uncategorized',
 ];
@@ -93,9 +88,7 @@ export function oversizedCustomerBodyWarning(customerBody: string): string | und
     : undefined;
 }
 
-/** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr: RenderPrInput): string {
-  if (pr.attributionSource === 'optOut') return OPT_OUT_SECTION;
   return pr.section ?? 'Uncategorized';
 }
 
@@ -199,7 +192,6 @@ function renderSectionedBody(
   prs: readonly RenderPrInput[],
   link: (number: number) => string,
   dependencyPointer?: DependencyPointer,
-  renamedSections: Readonly<Record<string, string>> = {},
 ): string {
   const entries = toEntries(prs);
   const groups = new Map<string, RenderEntry[]>();
@@ -219,7 +211,7 @@ function renderSectionedBody(
     const list = groups.get(name) ?? [];
     const pointer = name === 'Dependency updates' && dependencyPointer ? dependencyPointer : undefined;
     if (list.length === 0 && !pointer) continue;
-    lines.push(`## ${renamedSections[name] ?? name}`, '', ...list.map((entry) => renderLine(entry, link)));
+    lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry, link)));
     if (pointer) lines.push(...(list.length > 0 ? [''] : []), renderDependencyPointer(pointer, list.length > 0));
     lines.push('');
   }
@@ -363,7 +355,6 @@ export function render(all: readonly RenderPrInput[], options: RenderOptions): R
     customerPrs,
     link,
     packageCount > 0 ? { packageCount, version: options.version } : undefined,
-    { [OPT_OUT_SECTION]: CUSTOMER_OPT_OUT_SECTION },
   );
   const fullAsset = renderSectionedBody(assetPrs, link);
 
