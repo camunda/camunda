@@ -23,9 +23,6 @@
 # ────────────────────────────────────────────────────────────────────────────────
 
 elasticsearch:
-  es8:
-    # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
-    - '8.19.16'
   es9:
     # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
     - '9.4.5'

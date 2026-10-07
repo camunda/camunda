@@ -43,7 +43,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+      elasticsearch-9: ${{ steps.db-versions.outputs.elasticsearch-9 }}
     steps:
       - uses: actions/checkout@v7
       - name: Read DB versions
@@ -124,7 +124,7 @@ jobs:
 
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.read-versions.outputs.elasticsearch-8 }}
+        image: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.read-versions.outputs.elasticsearch-9 }}
         env:
           discovery.type: single-node
           cluster.name: "ci-${{ matrix.case }}"
