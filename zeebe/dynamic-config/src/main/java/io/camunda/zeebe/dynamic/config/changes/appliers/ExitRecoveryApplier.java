@@ -14,8 +14,6 @@ import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
-import io.camunda.zeebe.dynamic.config.state.RoutingState;
-import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -76,43 +74,9 @@ public final class ExitRecoveryApplier implements PartitionGroupConfigurationCha
     // Already PROCESSING: this can happen if the node restarted while applying this operation.
     // To ensure that the configuration change can make progress, we do not treat this as an
     // error.
-    return Either.right(this::withoutUnroutedPartitions);
-  }
-
-  /**
-   * {@code group} without the local member's partitions above the count the group routes requests
-   * over, once that routing is stable. Read from {@code group} when applied, not when planned, so
-   * that it sees the routing a restore has just written.
-   */
-  private PartitionGroupConfiguration withoutUnroutedPartitions(
-      final PartitionGroupConfiguration group) {
-    final var routedPartitionCount =
-        group
-            .routingState()
-            .map(RoutingState::requestHandling)
-            .filter(AllPartitions.class::isInstance)
-            .map(AllPartitions.class::cast)
-            .map(AllPartitions::partitionCount);
-    final var localBroker = group.getMember(memberId);
-    if (routedPartitionCount.isEmpty() || localBroker == null) {
-      return group;
-    }
-    final var unrouted =
-        localBroker.partitions().keySet().stream()
-            .filter(partitionId -> partitionId > routedPartitionCount.get())
-            .toList();
-    if (unrouted.isEmpty()) {
-      return group;
-    }
-    return group.updateMember(
-        memberId,
-        broker -> {
-          var updated = broker;
-          for (final var partitionId : unrouted) {
-            updated = updated.removePartition(partitionId);
-          }
-          return updated;
-        });
+    // Read from the group when applied, not when planned, so that it sees the routing a restore
+    // has just written
+    return Either.right(group -> group.withoutUnroutedPartitions(memberId));
   }
 
   @Override
