@@ -5,38 +5,23 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestShouldDeleteDataDirUsesEnvOverride(t *testing.T) {
 	t.Setenv("CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL", " jdbc:h2:mem:testdb ")
-	baseDir := t.TempDir()
-
 	settings := types.C8RunSettings{SecondaryStorageType: "rdbms"}
-	processes := types.Processes{
-		Camunda: types.Process{
-			Version: "8.9.0",
-			PidPath: filepath.Join(baseDir, "camunda.process"),
-		},
-	}
 
-	require.True(t, shouldDeleteDataDir(settings, processes))
+	require.True(t, shouldDeleteDataDir(settings))
 }
 
 func TestShouldDeleteDataDirIgnoresNonH2EnvOverride(t *testing.T) {
 	t.Setenv("CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL", "jdbc:postgres://localhost")
-	baseDir := t.TempDir()
-
 	settings := types.C8RunSettings{SecondaryStorageType: "rdbms"}
-	processes := types.Processes{
-		Camunda: types.Process{
-			Version: "8.9.0",
-			PidPath: filepath.Join(baseDir, "camunda.process"),
-		},
-	}
 
-	require.False(t, shouldDeleteDataDir(settings, processes))
+	require.False(t, shouldDeleteDataDir(settings))
 }
 
 func TestShouldDeleteDataDirUsesCustomConfigDirectory(t *testing.T) {
@@ -54,20 +39,10 @@ camunda:
 
 	settings := types.C8RunSettings{
 		SecondaryStorageType: "rdbms",
-		Config:               "my-config",
+		ConfigPaths:          springconfig.Paths(baseDir, "my-config"),
 	}
 
-	processes := types.Processes{
-		Camunda: types.Process{
-			Version: "8.9.0",
-			PidPath: filepath.Join(baseDir, "camunda.process"),
-		},
-	}
-
-	url, err := detectRdbmsURL(configPath)
-	require.NoError(t, err)
-	require.Equal(t, "jdbc:h2:mem:foo", url)
-	require.True(t, shouldDeleteDataDir(settings, processes))
+	require.True(t, shouldDeleteDataDir(settings))
 }
 
 func TestShouldDeleteDataDirSkipsForDefaultFileBasedConfig(t *testing.T) {
@@ -82,54 +57,32 @@ camunda:
         url: jdbc:h2:file:./foo
 `)
 
-	settings := types.C8RunSettings{SecondaryStorageType: "rdbms"}
-	processes := types.Processes{
-		Camunda: types.Process{
-			Version: "8.9.0",
-			PidPath: filepath.Join(baseDir, "camunda.process"),
-		},
-	}
+	settings := types.C8RunSettings{SecondaryStorageType: "rdbms", ConfigPaths: springconfig.Paths(baseDir, "")}
 
-	url, err := detectRdbmsURL(defaultConfig)
-	require.NoError(t, err)
-	require.Equal(t, "jdbc:h2:file:./foo", url)
-	require.False(t, shouldDeleteDataDir(settings, processes))
+	require.False(t, shouldDeleteDataDir(settings))
 }
 
 func TestShouldDeleteDataDirHandlesMissingOrMalformedConfig(t *testing.T) {
 	unsetEnv(t, "CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL")
 	baseDir := t.TempDir()
-	settings := types.C8RunSettings{SecondaryStorageType: "rdbms"}
-	processes := types.Processes{
-		Camunda: types.Process{
-			Version: "8.9.0",
-			PidPath: filepath.Join(baseDir, "camunda.process"),
-		},
-	}
+	settings := types.C8RunSettings{SecondaryStorageType: "rdbms", ConfigPaths: springconfig.Paths(baseDir, "")}
 
-	require.False(t, shouldDeleteDataDir(settings, processes), "missing config should not trigger deletion")
+	require.False(t, shouldDeleteDataDir(settings), "missing config should not trigger deletion")
 
 	malformedConfig := filepath.Join(baseDir, "configuration", "application.yaml")
 	writeConfig(t, malformedConfig, ":\n  bad yaml")
 
-	require.False(t, shouldDeleteDataDir(settings, processes), "malformed config should not trigger deletion")
+	require.False(t, shouldDeleteDataDir(settings), "malformed config should not trigger deletion")
 }
 
 func TestShouldDeleteDataDirSkipsWhenSecondaryStorageNotExplicitlySet(t *testing.T) {
 	t.Setenv("CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL", "jdbc:h2:mem:foo")
-	baseDir := t.TempDir()
 	settings := types.C8RunSettings{SecondaryStorageType: ""}
-	processes := types.Processes{
-		Camunda: types.Process{
-			Version: "8.9.0",
-			PidPath: filepath.Join(baseDir, "camunda.process"),
-		},
-	}
 
-	require.False(t, shouldDeleteDataDir(settings, processes))
+	require.False(t, shouldDeleteDataDir(settings))
 
 	settings = types.C8RunSettings{SecondaryStorageType: "elasticsearch"}
-	require.False(t, shouldDeleteDataDir(settings, processes))
+	require.False(t, shouldDeleteDataDir(settings))
 }
 
 func TestDeleteDataDirRemovesH2Data(t *testing.T) {
@@ -240,9 +193,6 @@ func TestShouldDeleteDataDirReadsPropertiesInConfigDirectory(t *testing.T) {
 	require.NoError(t, os.MkdirAll(cfg, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(cfg, "application.properties"),
 		[]byte("camunda.data.secondary-storage.rdbms.url=jdbc:h2:mem:testdb\n"), 0o644))
-	paths := resolveConfigPaths(baseDir, "cfg")
-	require.Equal(t, filepath.Join(cfg, "application.properties"), paths[0])
-	url, err := detectRdbmsURL(paths[0])
-	require.NoError(t, err)
-	require.Equal(t, "jdbc:h2:mem:testdb", url)
+	settings := types.C8RunSettings{SecondaryStorageType: "rdbms", ConfigPaths: springconfig.Paths(baseDir, "cfg")}
+	require.True(t, shouldDeleteDataDir(settings))
 }

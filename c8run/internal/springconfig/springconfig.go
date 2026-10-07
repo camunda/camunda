@@ -13,6 +13,7 @@ package springconfig
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -55,32 +56,73 @@ func FilesIn(location string) []string {
 // ActiveProfiles returns spring.profiles.active from JVM options, the environment, or the
 // base files of a config directory, in that precedence.
 func ActiveProfiles(location string) []string {
-	for _, source := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS"} {
-		value, found := "", false
-		for _, opt := range strings.Fields(os.Getenv(source)) {
-			if prefix := "-Dspring.profiles.active="; strings.HasPrefix(opt, prefix) {
-				value, found = strings.TrimPrefix(opt, prefix), true
-			}
-		}
-		if found {
-			return splitProfiles(value)
-		}
-	}
-	if value := os.Getenv("SPRING_PROFILES_ACTIVE"); value != "" {
-		return splitProfiles(value)
-	}
+	var files []string
 	for _, name := range DirectoryFiles {
-		root, ok := Load(filepath.Join(location, name))
+		files = append(files, filepath.Join(location, name))
+	}
+	value, _ := Value(files, "spring.profiles.active")
+	return splitProfiles(value)
+}
+
+func Paths(baseDir, userConfig string) []string {
+	var paths []string
+	if userConfig != "" {
+		candidate := filepath.Join(baseDir, userConfig)
+		if _, err := os.Stat(candidate); err == nil {
+			paths = append(paths, FilesIn(candidate)...)
+		}
+	}
+	return append(paths, filepath.Join(baseDir, "configuration", "application.yaml"))
+}
+
+func Value(paths []string, property string) (string, bool) {
+	for _, source := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS"} {
+		if value := systemProperty(os.Getenv(source), property); value != "" {
+			return value, true
+		}
+	}
+	env := strings.ToUpper(strings.ReplaceAll(property, ".", "_"))
+	for _, name := range []string{strings.ReplaceAll(env, "-", ""), strings.ReplaceAll(env, "-", "_")} {
+		if value := strings.TrimSpace(os.Getenv(name)); value != "" {
+			return value, true
+		}
+	}
+	keys := strings.Split(property, ".")
+	for _, path := range paths {
+		root, ok := Load(path)
 		if !ok {
 			continue
 		}
-		if value, ok := Lookup(root, "spring", "profiles", "active"); ok {
-			if s, ok := value.(string); ok && s != "" {
-				return splitProfiles(s)
+		if value, ok := Lookup(root, keys...); ok {
+			if s := scalar(value); s != "" {
+				return s, true
 			}
 		}
 	}
-	return nil
+	return "", false
+}
+
+func systemProperty(options, property string) string {
+	value := ""
+	for _, option := range strings.Fields(options) {
+		name, v, ok := strings.Cut(option, "=")
+		if ok && strings.HasPrefix(name, "-D") && canonical(name[2:]) == canonical(property) {
+			value = strings.TrimSpace(v)
+		}
+	}
+	return value
+}
+
+func scalar(value any) string {
+	switch value.(type) {
+	case nil, map[string]any, []any:
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(value))
+}
+
+func canonical(name string) string {
+	return strings.ToLower(strings.ReplaceAll(name, "-", ""))
 }
 
 func splitProfiles(value string) []string {
@@ -168,7 +210,15 @@ func Lookup(root map[string]any, keys ...string) (any, bool) {
 			return nil, false
 		}
 		if current, ok = m[key]; !ok {
-			return nil, false
+			for k, v := range m {
+				if canonical(k) == canonical(key) {
+					current, ok = v, true
+					break
+				}
+			}
+			if !ok {
+				return nil, false
+			}
 		}
 	}
 	return current, true

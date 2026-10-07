@@ -420,12 +420,9 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
 	if strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
-		event := log.Info().
-			Str("secondaryStorage.type", settings.SecondaryStorageType)
-		if settings.ResolvedConfigPath != "" {
-			event = event.Str("config", settings.ResolvedConfigPath)
-		}
-		event.Msg("C8Run will use the configured external Elasticsearch instance; no local Elasticsearch process is bundled or managed")
+		log.Info().
+			Str("secondaryStorage.type", settings.SecondaryStorageType).
+			Msg("C8Run will use the configured external Elasticsearch instance; no local Elasticsearch process is bundled or managed")
 	}
 
 	printSystemInformation(javaVersion, javaHome, javaOpts, !settings.DisableConnectors)
