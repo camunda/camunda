@@ -455,6 +455,50 @@ final class MigrationStatusAggregatorTest {
     aggregator.close();
   }
 
+  @Test
+  void shouldNotRetainAnythingPerPollOnAProviderThatStaysHung() throws Exception {
+    // given - a provider that never answers while the test runs
+    final var release = new CountDownLatch(1);
+    final var stuck =
+        new MigrationStatusProvider() {
+          @Override
+          public String conditionName() {
+            return "stuck";
+          }
+
+          @Override
+          public Map<String, MigrationConditionStatus> getMigrationStatus() {
+            try {
+              release.await(30, TimeUnit.SECONDS);
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            return Map.of("default", migrated("done"));
+          }
+        };
+    final var aggregator = new MigrationStatusAggregator(List.of(stuck), Duration.ofMillis(20));
+
+    try {
+      // when - many polls each give up on the same hung call
+      for (int i = 0; i < 40; i++) {
+        aggregator.aggregateAsync().get(10, TimeUnit.SECONDS);
+      }
+
+      // then - the hung call carries one observer and no waiting polls, not one per poll
+      final var call = aggregator.runningCall(0);
+      assertThat(call.dependentsOfCall()).isLessThanOrEqualTo(1);
+      // A poll drops its waiter just after its result is delivered, so give that a moment.
+      final var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+      while (call.waitingPolls() != 0 && System.nanoTime() < deadline) {
+        Thread.onSpinWait();
+      }
+      assertThat(call.waitingPolls()).isZero();
+    } finally {
+      release.countDown();
+      aggregator.close();
+    }
+  }
+
   private static MigrationConditionStatus migrated(final String detail) {
     return new MigrationConditionStatus(MigrationState.MIGRATED, detail);
   }

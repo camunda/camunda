@@ -40,14 +40,14 @@ import org.slf4j.LoggerFactory;
  */
 public class MigrationStatusAggregator implements AutoCloseable {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MigrationStatusAggregator.class);
-
   /**
    * How long one poll waits for a single provider. It sits above the 5s budget that the
    * broker-facing providers give themselves, so their per-tenant partial answers are not discarded
    * by this timer racing them.
    */
   static final Duration DEFAULT_PROVIDER_TIMEOUT = Duration.ofSeconds(7);
+
+  private static final Logger LOG = LoggerFactory.getLogger(MigrationStatusAggregator.class);
 
   private final List<MigrationStatusProvider> providers;
   private final Duration providerTimeout;
@@ -56,9 +56,9 @@ public class MigrationStatusAggregator implements AutoCloseable {
   private final Set<String> knownPhysicalTenantIds = ConcurrentHashMap.newKeySet();
 
   private final Object pollLock = new Object();
-  // The task last started for each provider, by index. While one is still running, polls wait on
+  // The call last started for each provider, by index. While one is still running, polls wait on
   // it instead of starting another, so a hung provider holds one thread and not one per poll.
-  private final List<CompletableFuture<Map<String, MigrationConditionStatus>>> runningTasks;
+  private final List<ProviderCall> runningCalls;
   private CompletableFuture<Map<String, Map<String, MigrationConditionStatus>>> inFlightPoll;
 
   public MigrationStatusAggregator(final List<MigrationStatusProvider> providers) {
@@ -86,8 +86,8 @@ public class MigrationStatusAggregator implements AutoCloseable {
     this.providerTimeout = providerTimeout;
     this.executor = executor;
     this.ownsExecutor = ownsExecutor;
-    runningTasks = new ArrayList<>();
-    providers.forEach(provider -> runningTasks.add(null));
+    runningCalls = new ArrayList<>();
+    providers.forEach(provider -> runningCalls.add(null));
   }
 
   /** Blocks the calling thread, for at most about the provider timeout, until the poll is done. */
@@ -149,18 +149,17 @@ public class MigrationStatusAggregator implements AutoCloseable {
 
   private CompletableFuture<Map<String, MigrationConditionStatus>> pollProvider(final int index) {
     final var provider = providers.get(index);
-    var task = runningTasks.get(index);
-    if (task == null || task.isDone()) {
-      task = CompletableFuture.supplyAsync(() -> safeGetMigrationStatus(provider), executor);
-      runningTasks.set(index, task);
+    var call = runningCalls.get(index);
+    if (call == null || call.isDone()) {
+      call =
+          new ProviderCall(
+              CompletableFuture.supplyAsync(() -> safeGetMigrationStatus(provider), executor));
+      runningCalls.set(index, call);
     }
-    // The timeout applies to a copy, so giving up on a poll does not complete the task itself.
-    return task.copy()
-        .orTimeout(providerTimeout.toMillis(), TimeUnit.MILLISECONDS)
+    return call.awaitFor(providerTimeout)
         .exceptionally(
             error -> {
-              if (error instanceof TimeoutException
-                  || error.getCause() instanceof TimeoutException) {
+              if (error instanceof TimeoutException) {
                 LOG.warn(
                     "Upgrade-readiness provider '{}' gave no answer within {}; reporting UNKNOWN.",
                     provider.conditionName(),
@@ -173,6 +172,13 @@ public class MigrationStatusAggregator implements AutoCloseable {
               }
               return Map.of();
             });
+  }
+
+  /** The call of the aggregator at {@code index}, for tests. */
+  ProviderCall runningCall(final int index) {
+    synchronized (pollLock) {
+      return runningCalls.get(index);
+    }
   }
 
   private Map<String, Map<String, MigrationConditionStatus>> merge(
@@ -238,6 +244,64 @@ public class MigrationStatusAggregator implements AutoCloseable {
             ignored ->
                 new MigrationConditionStatus(
                     MigrationState.UNKNOWN, "no status reported for this poll"));
+      }
+    }
+  }
+
+  /**
+   * One call to a provider, and the polls currently waiting on it.
+   *
+   * <p>A poll waits on a future of its own, which is removed from here once the poll has an answer
+   * or gives up. The call itself carries a single completion observer, however many polls give up
+   * on it. Attaching a timed copy of the call per poll instead would leave one dependent, and its
+   * timeout exception, on a hung call for every poll until the call finishes.
+   */
+  static final class ProviderCall {
+
+    private final CompletableFuture<Map<String, MigrationConditionStatus>> call;
+    private final Set<CompletableFuture<Map<String, MigrationConditionStatus>>> waiters =
+        ConcurrentHashMap.newKeySet();
+
+    ProviderCall(final CompletableFuture<Map<String, MigrationConditionStatus>> call) {
+      this.call = call;
+      call.whenComplete(
+          (statuses, error) -> new ArrayList<>(waiters).forEach(w -> finish(w, statuses, error)));
+    }
+
+    boolean isDone() {
+      return call.isDone();
+    }
+
+    CompletableFuture<Map<String, MigrationConditionStatus>> awaitFor(final Duration timeout) {
+      final var waiter = new CompletableFuture<Map<String, MigrationConditionStatus>>();
+      waiters.add(waiter);
+      // The call may have finished before the waiter was registered; then nothing would complete
+      // it.
+      if (call.isDone()) {
+        call.whenComplete((statuses, error) -> finish(waiter, statuses, error));
+      }
+      waiter.orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
+      waiter.whenComplete((statuses, error) -> waiters.remove(waiter));
+      return waiter;
+    }
+
+    /** Dependents the call itself holds. It stays at one however many polls have given up on it. */
+    int dependentsOfCall() {
+      return call.getNumberOfDependents();
+    }
+
+    int waitingPolls() {
+      return waiters.size();
+    }
+
+    private static void finish(
+        final CompletableFuture<Map<String, MigrationConditionStatus>> waiter,
+        final Map<String, MigrationConditionStatus> statuses,
+        final Throwable error) {
+      if (error != null) {
+        waiter.completeExceptionally(error);
+      } else {
+        waiter.complete(statuses);
       }
     }
   }
