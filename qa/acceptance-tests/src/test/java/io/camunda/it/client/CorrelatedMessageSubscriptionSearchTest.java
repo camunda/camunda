@@ -44,7 +44,8 @@ public class CorrelatedMessageSubscriptionSearchTest {
     startProcessInstanceWithMessage(camundaClient, "Start");
     startProcessInstanceWithMessage(camundaClient, "Start2");
     waitForProcessInstancesToStart(camundaClient, 2);
-    waitForMessageSubscriptions(camundaClient, 6);
+    waitForMessageSubscriptions(
+        camundaClient, f -> f.messageName(m -> m.in("Test1", "Test2", "Test3")), 6);
 
     IntStream.range(1, 4)
         .forEach(

@@ -1116,7 +1116,10 @@ public class ProcessInstanceSearchTest {
     // then:
     final boolean isCompatibility =
         "compatibility".equals(System.getProperty("camunda.test.preferred.extension"));
-    if (isCompatibility) {
+    // 8.9.0-8.9.5 servers still use the old not-exists query, which returns no matches
+    final boolean isOldNotExistsServer =
+        System.getProperty("camunda.compatibility.test.version", "").matches("8\\.9\\.[0-5]");
+    if (isCompatibility && !isOldNotExistsServer) {
       assertThat(result.items().size()).isEqualTo(6);
     } else {
       assertThat(result.items().size()).isEqualTo(0);

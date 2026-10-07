@@ -31,6 +31,7 @@ import java.util.stream.StreamSupport;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @CompatibilityTest
@@ -183,6 +184,10 @@ class VariableSearchTest {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = "camunda.compatibility.test.version",
+      matches = "8\\.9\\.(?:[0-9]|1[0-9])",
+      disabledReason = "Variable $notIn search fails on 8.9.0-8.9.19 (see #56959)")
   void shouldQueryByValueFilterNotIn() {
     // StringProperty has no $notIn method yet, so exercise it via a raw HTTP request.
     final var response =
