@@ -34,7 +34,7 @@
 
     {
       // Fit into .ci/scripts/renovate-assignments.py
-      matchFileNames: ["load-tests/**"],
+      matchFileNames: ["load-tests/**", ".github/workflows/*load-test*"],
       addLabels: ["area/load-tests"]
     },
 
@@ -83,17 +83,18 @@
 
     {
       // Bump the release tags tested by the scheduled release load tests ; keep the same major.minor
-      matchFileNames: [
-        ".github/workflows/camunda-scheduled-release-load-tests.yml",
-      ],
-      matchDatasources: [
-        "docker",
-      ],
-      matchPackageNames: [
-        "docker.io/camunda/camunda",
-      ],
+      matchFileNames: [".github/workflows/camunda-scheduled-release-load-tests.yml"],
       allowedVersions: "<= {{{major}}}.{{{minor}}}",
-      addLabels: ["area/load-tests"],
+      // Once a week, to limit the number of update PRs ; it is fine to not be fully up to date
+      schedule: ["* 0-8 * * 1"],
+    },
+
+    {
+      // The 'main' scheduled release load test follows the newest tag, including pre-releases
+      matchFileNames: [".github/workflows/camunda-scheduled-release-load-tests.yml"],
+      matchDepTypes: ["main"],
+      ignoreUnstable: false,
+      allowedVersions: "/.*/",
     },
 
     {

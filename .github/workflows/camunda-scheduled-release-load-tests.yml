@@ -41,7 +41,7 @@ jobs:
       v8-9: '8.9.23'
       # renovate: datasource=docker depName=docker.io/camunda/camunda
       v8-10: '8.10.1'
-      # renovate: datasource=docker depName=docker.io/camunda/camunda
+      # renovate: datasource=docker depName=docker.io/camunda/camunda depType=main
       main: '8.10.1'
     steps:
       - run: 'true' # a job requires at least one step
