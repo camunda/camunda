@@ -219,7 +219,7 @@ public final class BpmnVariableMappingBehavior {
           propagateVariables(
               context,
               element,
-              getVariableScopeKey(context),
+              context.getFlowScopeKey(),
               localVariables,
               outputVariableBehavior,
               false);
@@ -303,14 +303,6 @@ public final class BpmnVariableMappingBehavior {
             .getInstance(context.getElementInstanceKey())
             .getMultiInstanceLoopCounter()
         > 0;
-  }
-
-  private long getVariableScopeKey(final BpmnElementContext context) {
-    final var elementInstanceKey = context.getElementInstanceKey();
-
-    // an inner multi-instance activity needs to read from/write to its own scope
-    // to access the input and output element variables
-    return isMultiInstanceActivity(context) ? elementInstanceKey : context.getFlowScopeKey();
   }
 
   private boolean isConnectedToEventBasedGateway(final ExecutableFlowNode element) {
