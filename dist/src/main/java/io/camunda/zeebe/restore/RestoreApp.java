@@ -147,6 +147,12 @@ public class RestoreApp implements ApplicationRunner {
         arguments.selectionPerPhysicalTenant(physicalTenantConfigurations.physicalTenantIds());
     final var backupIdsPerTenant = validateParameters(selectionPerTenant);
     final var restoredPartitionCounts = partitionCounts(backupIdsPerTenant);
+    final var recreatesTopology =
+        ClusterRestore.shouldRewriteTopologyFile(
+            arguments.targetDataPolicy(),
+            selectionPerTenant
+                .keySet()
+                .containsAll(physicalTenantConfigurations.physicalTenantIds()));
 
     final var restoreId = getRestoreId(selectionPerTenant);
     final var preRestoreActionResult =
@@ -163,7 +169,8 @@ public class RestoreApp implements ApplicationRunner {
               configuration.getCluster().getNodeId(),
               false,
               selectionPerTenant.keySet(),
-              restoredPartitionCounts);
+              restoredPartitionCounts,
+              recreatesTopology);
     } else {
       LOG.info("Skipping restore: {}", preRestoreActionResult.message());
       postRestoreActionContext =
@@ -172,7 +179,8 @@ public class RestoreApp implements ApplicationRunner {
               configuration.getCluster().getNodeId(),
               true,
               selectionPerTenant.keySet(),
-              restoredPartitionCounts);
+              restoredPartitionCounts,
+              recreatesTopology);
     }
     // We have to run post restore anyway even if post restore action decided to skip restore,
     // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
@@ -330,13 +338,17 @@ public class RestoreApp implements ApplicationRunner {
    * @param restoredPartitionCounts the number of partitions restored for each of those tenants, the
    *     partition count of their backups. Post-restore validation expects restored data for no more
    *     partitions than that, even when the configuration holds more.
+   * @param recreatedTopology whether the restore recreated the topology for the restored partition
+   *     counts, which then also decide which partitions each broker holds, rather than the
+   *     configured ones
    */
   public record PostRestoreActionContext(
       String restoreId,
       int nodeId,
       boolean skippedRestore,
       Set<String> restoredPhysicalTenantIds,
-      Map<String, Integer> restoredPartitionCounts) {}
+      Map<String, Integer> restoredPartitionCounts,
+      boolean recreatedTopology) {}
 
   public interface PreRestoreAction {
     PreRestoreActionResult beforeRestore(final String restoreId, int nodeId)

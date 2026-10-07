@@ -408,6 +408,21 @@ final class ClusterRestoreTest {
     }
 
     @Test
+    void shouldGenerateTheTopologyForMorePartitionsThanConfiguredWhenTheBackupHoldsThem(
+        @TempDir final Path dir) throws IOException {
+      // given - the configuration still holds the partition count the cluster was created with,
+      // while the backup was taken after the cluster was scaled up
+      final var clusterRestore = clusterRestore(dir, Map.of("default", RESTORED));
+
+      // when
+      clusterRestore.restoreTopologyFile(Map.of("default", SCALED_UP));
+
+      // then - the fresh topology holds every partition of the backup
+      assertThat(read(dir).partitionGroup("default").getMember(LOCAL_MEMBER).partitions().keySet())
+          .containsExactlyInAnyOrder(1, 2, 3, 4, 5);
+    }
+
+    @Test
     void shouldKeepEveryPartitionWhenTheBackupHoldsThemAll(@TempDir final Path dir)
         throws IOException {
       // given
