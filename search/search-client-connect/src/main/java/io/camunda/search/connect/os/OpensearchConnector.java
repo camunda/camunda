@@ -22,7 +22,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
-import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
@@ -246,7 +245,7 @@ public final class OpensearchConnector {
 
     final var credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        new AuthScope(null, -1),
+        SecurityUtil.ANY_AUTH_SCOPE,
         new UsernamePasswordCredentials(
             configuration.getUsername(), configuration.getPassword().toCharArray()));
 

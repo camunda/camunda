@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter.opensearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.SearchClientConnectException;
 import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.AuthenticationConfiguration;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.ProxyConfiguration;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.SecurityConfiguration;
@@ -18,7 +19,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import javax.net.ssl.SSLContext;
-import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
@@ -219,7 +219,7 @@ public final class OpensearchConnector {
 
     final var credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        new AuthScope(null, -1),
+        SecurityUtil.ANY_AUTH_SCOPE,
         new UsernamePasswordCredentials(
             configuration.getUsername(), configuration.getPassword().toCharArray()));
 
