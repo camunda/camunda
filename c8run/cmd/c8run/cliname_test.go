@@ -9,10 +9,12 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"testing"
 
 	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,4 +90,26 @@ func TestPathOutputIsNotRewritten(t *testing.T) {
 	tcmd.output, tcmd.plainOutput = brandWriter(&branded), &plain
 	require.NoError(t, tcmd.run(t.TempDir(), []string{"path"}))
 	assert.Contains(t, plain.String(), tenantsFile)
+}
+
+func TestPathWarningPrintsDirectoriesVerbatim(t *testing.T) {
+	t.Setenv(cliNameEnv, "c8ctl cluster")
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("APPDATA", filepath.Join(home, "AppData"))
+	defaultDir, err := localsecrets.DefaultDirectory()
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(defaultDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(defaultDir, "OLD_SECRET"), []byte("x"), 0o600))
+	dir := filepath.Join(t.TempDir(), "c8run secrets")
+	t.Setenv("C8RUN_SECRETS_DIR", dir)
+
+	cmd, _, _ := testSecretsCommand("", false)
+	var branded, plain bytes.Buffer
+	cmd.errorOutput, cmd.plainErrorOutput = brandWriter(&branded), &plain
+	require.NoError(t, cmd.run(t.TempDir(), []string{"list"}))
+	assert.Contains(t, plain.String(), "platform-default directory also contains entries")
+	assert.Contains(t, plain.String(), "  "+dir+"\n")
+	assert.Empty(t, branded.String())
 }
