@@ -52,7 +52,7 @@ jobs:
     name: Collect benchmark data
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     outputs:
       benchmark: ${{ steps.data.outputs.benchmark }}
     steps:
@@ -91,7 +91,7 @@ jobs:
     needs: benchmark-data
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     strategy:
       fail-fast: false
       matrix:
@@ -137,7 +137,6 @@ jobs:
     if: always()
     timeout-minutes: 10
     permissions:
-      actions: read
       contents: read
     steps:
       # Runs first, before any step below writes metrics-*.json/variants.json into
@@ -219,9 +218,8 @@ jobs:
     if: needs.aggregate-metrics.result == 'success'
     timeout-minutes: 15 # covers auth, artifact downloads, and the full retry budget for the GCS upload
     permissions:
-      actions: read
       contents: read
-      id-token: write
+      id-token: write # GCP WIF auth
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -285,7 +283,7 @@ jobs:
       (github.event_name != 'workflow_dispatch' || inputs.post-to-slack == true)
     timeout-minutes: 5
     permissions:
-      actions: read
+      actions: read # list run artifacts via API
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -353,7 +351,7 @@ jobs:
     needs: [ run-variant, aggregate-metrics, upload-results-to-gcs, notify-results ]
     if: failure()
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

@@ -101,7 +101,7 @@ jobs:
     name: Setup
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -122,7 +122,7 @@ jobs:
     needs: setup
     if: needs.setup.result == 'success'
     timeout-minutes: 20
-    permissions: { }
+    permissions: {}
     steps:
       - name: Wait for warmup period
         run: sleep "${WARMUP_SECONDS}"
@@ -135,7 +135,7 @@ jobs:
     if: needs.warmup.result == 'success'
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
@@ -159,7 +159,7 @@ jobs:
     needs: setup
     if: needs.setup.result == 'success'
     timeout-minutes: 195
-    permissions: { }
+    permissions: {}
     outputs:
       soak_end_epoch: ${{ steps.timing.outputs.soak_end_epoch }}
     steps:
@@ -175,9 +175,7 @@ jobs:
     name: Collect metrics
     needs: [ setup, soak ]
     if: needs.soak.result == 'success' && needs.setup.result == 'success'
-    permissions:
-      contents: read
-      id-token: write
+    permissions: {}
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
@@ -196,7 +194,7 @@ jobs:
     needs: [ collect-metrics, soak ]
     if: always() && needs.collect-metrics.result == 'success'
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     steps:
       - name: Write variant metrics manifest
         env:
@@ -238,7 +236,7 @@ jobs:
     if: always()
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:

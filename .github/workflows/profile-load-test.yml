@@ -111,8 +111,8 @@ jobs:
     # timeout.
     timeout-minutes: 90
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write # Teleport cluster auth
     strategy:
       fail-fast: false
       matrix:
