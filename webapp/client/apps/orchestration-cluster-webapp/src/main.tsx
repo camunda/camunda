@@ -35,6 +35,11 @@ declare module '@tanstack/react-router' {
 	interface Register {
 		router: typeof router;
 	}
+
+	interface StaticDataRouteOption {
+		/** Renders the route full screen, without the app header and sidebar. */
+		hideAppChrome?: boolean;
+	}
 }
 
 const rootElement = document.getElementById('app')!;
