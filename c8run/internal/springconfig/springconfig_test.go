@@ -122,6 +122,8 @@ func TestValueReadsEveryConfigShape(t *testing.T) {
 		"flat dotted YAML key":    {"flat.yaml", "camunda.data.secondary-storage.type: elasticsearch\n", "elasticsearch"},
 		"placeholder default":     {"placeholder.yaml", "camunda:\n  data:\n    secondary-storage:\n      type: ${C8RUN_TEST_STORAGE:elasticsearch}\n", "elasticsearch"},
 		"camelCase YAML":          {"camel.yaml", "camunda:\n  data:\n    secondaryStorage:\n      type: opensearch\n", "opensearch"},
+		"underscore YAML":         {"underscore.yaml", "camunda:\n  data:\n    secondary_storage:\n      type: opensearch\n", "opensearch"},
+		"underscore properties":   {"underscore.properties", "camunda.data.secondary_storage.type=elasticsearch\n", "elasticsearch"},
 		"camelCase properties":    {"camel.properties", "camunda.data.secondaryStorage.type=elasticsearch\n", "elasticsearch"},
 		"kebab-case properties":   {"kebab.properties", "camunda.data.secondary-storage.type=rdbms\n", "rdbms"},
 		"no storage type present": {"empty.yaml", "camunda:\n  data: {}\n", ""},
