@@ -132,7 +132,7 @@ func (s *ShutdownHandler) stopProcess(pidPath string) error {
 
 func shouldDeleteDataDir(settings types.C8RunSettings) bool {
 	// Only consider deletion when using H2 (default) secondary storage.
-	if settings.SecondaryStorageType == "" || strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+	if !strings.EqualFold(settings.SecondaryStorageType, "rdbms") {
 		return false
 	}
 
