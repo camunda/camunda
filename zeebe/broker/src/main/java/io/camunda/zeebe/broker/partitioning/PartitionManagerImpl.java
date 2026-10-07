@@ -39,6 +39,7 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -313,38 +314,9 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> start() {
-    final var localMemberId = localMemberId();
-    final var memberPartitions = localPartitions();
-
-    healthCheckService.registerBootstrapPartitions(partitionGroup, memberPartitions);
-    clusterConfigurationService.registerPartitionChangeExecutors(partitionGroup, this, this);
-
-    final var result = concurrencyControl.<Void>createFuture();
-    final var started =
-        memberPartitions.stream()
-            .map(
-                partitionMetadata -> {
-                  final var partitionConfig =
-                      clusterConfigurationService
-                          .getCurrentClusterConfiguration()
-                          .partitionGroup(partitionGroup)
-                          .members()
-                          .get(localMemberId)
-                          .getPartition(partitionMetadata.id().number())
-                          .config();
-                  return bootstrapPartition(partitionMetadata, partitionConfig, false);
-                })
-            .collect(new ActorFutureCollector<>(concurrencyControl));
-    concurrencyControl.runOnCompletion(
-        started,
-        (ok, error) -> {
-          if (error != null) {
-            result.completeExceptionally(error);
-          } else {
-            result.complete(null);
-          }
-        });
-    return result;
+    return clusterConfigurationService
+        .getLatestClusterConfiguration()
+        .andThen(this::startPartitions, concurrencyControl);
   }
 
   @Override
@@ -364,6 +336,40 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
+            result.complete(null);
+          }
+        });
+    return result;
+  }
+
+  private ActorFuture<Void> startPartitions(final CurrentClusterConfiguration configuration) {
+    final var localMemberId = localMemberId();
+    final var memberPartitions = localPartitions(configuration);
+
+    healthCheckService.registerBootstrapPartitions(partitionGroup, memberPartitions);
+    clusterConfigurationService.registerPartitionChangeExecutors(partitionGroup, this, this);
+
+    final var result = concurrencyControl.<Void>createFuture();
+    final var started =
+        memberPartitions.stream()
+            .map(
+                partitionMetadata -> {
+                  final var partitionConfig =
+                      configuration
+                          .partitionGroup(partitionGroup)
+                          .members()
+                          .get(localMemberId)
+                          .getPartition(partitionMetadata.id().number())
+                          .config();
+                  return bootstrapPartition(partitionMetadata, partitionConfig, false);
+                })
+            .collect(new ActorFutureCollector<>(concurrencyControl));
+    concurrencyControl.runOnCompletion(
+        started,
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
             result.complete(null);
           }
         });
@@ -814,10 +820,10 @@ public final class PartitionManagerImpl
     return membershipService.getLocalMember().id();
   }
 
-  private List<PartitionMetadata> localPartitions() {
+  /** The partitions of this group that the local broker holds in the given configuration. */
+  private List<PartitionMetadata> localPartitions(final CurrentClusterConfiguration configuration) {
     final var localMemberId = localMemberId();
-    return clusterConfigurationService
-        .getCurrentPartitionDistribution(partitionGroup)
+    return ClusterConfigurationService.partitionDistributionOf(configuration, partitionGroup)
         .partitions()
         .stream()
         .filter(p -> p.members().contains(localMemberId))

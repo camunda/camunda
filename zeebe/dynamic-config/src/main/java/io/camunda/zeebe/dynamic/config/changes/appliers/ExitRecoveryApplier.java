@@ -14,6 +14,8 @@ import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -25,10 +27,17 @@ import java.util.function.UnaryOperator;
  * legacy {@code ExitRecoveryApplier} in {@code changes/}, which this does not replace or modify.
  * See {@link EnterRecoveryApplier} for the cluster-lifecycle vs. per-group-mode split rationale.
  *
- * <p>Writes one field of one member: {@link #init} returns {@link UnaryOperator#identity()}, and
- * {@link #apply()} sets only {@code memberId}'s own mode to {@link Mode#PROCESSING}. {@code
- * RestoreRequestTransformer} relies on that scoping to give every broker its own mode change, all
- * released at once by the routing state update and left unordered against each other. A write added
+ * <p>Writes only {@code memberId}'s own entry. {@link #apply()} sets its mode to {@link
+ * Mode#PROCESSING}, and {@link #init} drops the partitions the group does not route over, which a
+ * restore from a backup with fewer partitions leaves behind: they hold no data and must not be
+ * started empty when the broker leaves recovery. That drop happens in {@link #init} rather than
+ * {@link #apply()} because {@code apply()} is what starts the partitions, from the configuration as
+ * it is by then. It only applies to a stable routing, {@code AllPartitions(n)}: while a scale up
+ * adds partitions the routing is unstable, and a broker leaving recovery without a restore holds
+ * exactly the partitions it routes over, so neither is affected.
+ *
+ * <p>{@code RestoreRequestTransformer} relies on that scoping to give every broker its own mode
+ * change, ordered after the routing state update and unordered against each other. A write added
  * here that reached another member, or the group as a whole, would need dependency edges there
  * ordering it against the other brokers' mode changes.
  */
@@ -67,7 +76,43 @@ public final class ExitRecoveryApplier implements PartitionGroupConfigurationCha
     // Already PROCESSING: this can happen if the node restarted while applying this operation.
     // To ensure that the configuration change can make progress, we do not treat this as an
     // error.
-    return Either.right(UnaryOperator.identity());
+    return Either.right(this::withoutUnroutedPartitions);
+  }
+
+  /**
+   * {@code group} without the local member's partitions above the count the group routes requests
+   * over, once that routing is stable. Read from {@code group} when applied, not when planned, so
+   * that it sees the routing a restore has just written.
+   */
+  private PartitionGroupConfiguration withoutUnroutedPartitions(
+      final PartitionGroupConfiguration group) {
+    final var routedPartitionCount =
+        group
+            .routingState()
+            .map(RoutingState::requestHandling)
+            .filter(AllPartitions.class::isInstance)
+            .map(AllPartitions.class::cast)
+            .map(AllPartitions::partitionCount);
+    final var localBroker = group.getMember(memberId);
+    if (routedPartitionCount.isEmpty() || localBroker == null) {
+      return group;
+    }
+    final var unrouted =
+        localBroker.partitions().keySet().stream()
+            .filter(partitionId -> partitionId > routedPartitionCount.get())
+            .toList();
+    if (unrouted.isEmpty()) {
+      return group;
+    }
+    return group.updateMember(
+        memberId,
+        broker -> {
+          var updated = broker;
+          for (final var partitionId : unrouted) {
+            updated = updated.removePartition(partitionId);
+          }
+          return updated;
+        });
   }
 
   @Override
