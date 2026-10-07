@@ -175,6 +175,27 @@ public final class CallActivityIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentWithEvaluatedVersionTagIfNoProcessHasIt() {
+    // given
+    final var processInstanceKey =
+        createInstanceWithVersionTagExpression(Map.of("versionTagVariable", "v9"));
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to call process with BPMN process id '%s' and version tag '%s', but no such process found. \
+            To resolve this incident, deploy a process with the given process id and version tag.\
+            """
+                .formatted(childProcessId, "v9"));
+  }
+
+  @Test
   public void shouldCreateIncidentIfProcessHasNoNoneStartEvent() {
     // given
     ENGINE
@@ -260,6 +281,74 @@ public final class CallActivityIncidentTest {
             "Expected the process id expression '"
                 + PROCESS_ID_VARIABLE
                 + "' on call activity 'call' to be STRING, but was NUMBER.");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfVersionTagVariableIsMissingAndResolveAfterSettingIt() {
+    // given
+    final var processInstanceKey = createInstanceWithVersionTagExpression(Map.of());
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    // then
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Expected result of the expression 'versionTagVariable' to be 'STRING', but was 'NULL'. \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'versionTagVariable'""");
+    assertNoChildCreatedBefore(processInstanceKey, incident);
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("versionTagVariable", "v1.0"))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withParentProcessInstanceKey(processInstanceKey)
+                .withBpmnProcessId(childProcessId)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldCreateIncidentIfVersionTagVariableIsNotAStringAndResolveAfterFixingIt() {
+    // given
+    final var processInstanceKey =
+        createInstanceWithVersionTagExpression(Map.of("versionTagVariable", 123));
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    // then
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression 'versionTagVariable' to be 'STRING', but was 'NUMBER'.");
+    assertNoChildCreatedBefore(processInstanceKey, incident);
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("versionTagVariable", "v1.0"))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withParentProcessInstanceKey(processInstanceKey)
+                .withBpmnProcessId(childProcessId)
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -735,6 +824,45 @@ public final class CallActivityIncidentTest {
     // then - the child is created with the business id re-evaluated from the migrated definition
     Assertions.assertThat(getChildProcessInstance(processInstanceKey).getValue())
         .hasBusinessId("migrated-business-id");
+  }
+
+  private long createInstanceWithVersionTagExpression(final Map<String, Object> variables) {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-child.bpmn",
+            Bpmn.createExecutableProcess(childProcessId)
+                .versionTag("v1.0")
+                .startEvent()
+                .endEvent()
+                .done())
+        .withXmlResource(
+            "wf-parent-version-tag.bpmn",
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .callActivity(
+                    "call",
+                    c ->
+                        c.zeebeProcessId(childProcessId)
+                            .zeebeBindingType(ZeebeBindingType.versionTag)
+                            .zeebeVersionTag("=versionTagVariable"))
+                .done())
+        .deploy();
+    return ENGINE
+        .processInstance()
+        .ofBpmnProcessId(parentProcessId)
+        .withVariables(variables)
+        .create();
+  }
+
+  private static void assertNoChildCreatedBefore(
+      final long processInstanceKey, final Record<IncidentRecordValue> incident) {
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= incident.getPosition())
+                .processInstanceRecords()
+                .withParentProcessInstanceKey(processInstanceKey))
+        .isEmpty();
   }
 
   private void deployParentWithChildBusinessId(final String businessId) {
