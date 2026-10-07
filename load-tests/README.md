@@ -354,7 +354,7 @@ Example values from a past release:
 
 > [!NOTE]
 >
-> The scheduled release load test workflow uses hardcoded release tags per branch. Update `.github/workflows/camunda-scheduled-release-load-tests.yml` manually when the tested patch versions change.
+> The scheduled release load test workflow pins a release tag per branch in its `versions` job. Renovate bumps the patch version. Update `.github/workflows/camunda-scheduled-release-load-tests.yml` manually for a new minor version.
 
 #### Daily smoke tests
 

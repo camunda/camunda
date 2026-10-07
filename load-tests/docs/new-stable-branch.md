@@ -150,8 +150,8 @@ and the
 In
 [`camunda-scheduled-release-load-tests.yml`](../../.github/workflows/camunda-scheduled-release-load-tests.yml):
 
-- Add a `v$VERSION_TAG` output to the `versions` job. Set it to the
-  branch's current patch tag.
+- Add a `v$VERSION_TAG` output to the `versions` job, with the same `# renovate:` comment as the
+  other outputs. Set it to the branch's current patch tag.
   **Note**: this current patch tag can still be an *alpha* version when the stable branch is created.
 - Add a `release-load-test-$VERSION_TAG` job that reads `needs.versions.outputs.v$VERSION_TAG`.
 - Add the matching `verify-and-cleanup-$VERSION_TAG` job.

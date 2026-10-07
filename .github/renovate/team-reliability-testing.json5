@@ -82,6 +82,21 @@
     },
 
     {
+      // Bump the release tags tested by the scheduled release load tests ; keep the same major.minor
+      matchFileNames: [
+        ".github/workflows/camunda-scheduled-release-load-tests.yml",
+      ],
+      matchDatasources: [
+        "docker",
+      ],
+      matchPackageNames: [
+        "docker.io/camunda/camunda",
+      ],
+      allowedVersions: "<= {{{major}}}.{{{minor}}}",
+      addLabels: ["area/load-tests"],
+    },
+
+    {
       // Disable Renovate from the load test private registry until we have a dedicated working configuration for them.
       matchDatasources: [
         "docker",
