@@ -106,6 +106,8 @@ jobs:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ inputs.ref }}
       scenario: 'max'
+      # Pinned so the run matches the daily variant resolve-daily.py compares it with.
+      load-test-load: '--set global.preferRest.enabled=true'
       secondary-storage-type: ${{ needs.sanitize-branch-name.outputs.storage-type }}
       reuse-tag: ${{ inputs.reuse-tag }}
 
@@ -157,7 +159,7 @@ jobs:
 
   resolve-daily-namespace:
     name: Resolve last completed daily-on-main run
-    needs: await-benchmark
+    needs: [sanitize-branch-name, await-benchmark]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -165,6 +167,7 @@ jobs:
       actions: 'read'   # list the daily workflow's runs + their artifacts
     env:
       GH_TOKEN: ${{ github.token }}
+      SECONDARY_STORAGE_TYPE: ${{ needs.sanitize-branch-name.outputs.storage-type }}
     outputs:
       daily-namespace: ${{ steps.find.outputs.namespace }}
       daily-at: ${{ steps.find.outputs.at }}
