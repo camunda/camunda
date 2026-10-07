@@ -19,7 +19,7 @@ type Props = {
 
 const DateLabel: React.FC<Props> = ({date, relativeLabel, absoluteLabel, icon, align = 'top-start'}) => (
 	<LabelWithTooltip
-		title={
+		screenReaderText={
 			['week', 'months', 'years'].includes(date.relative.resolution)
 				? `${absoluteLabel} ${date.relative.speech}`
 				: `${relativeLabel} ${date.relative.speech}`
@@ -33,7 +33,7 @@ const DateLabel: React.FC<Props> = ({date, relativeLabel, absoluteLabel, icon, a
 		align={align}
 	>
 		{icon}
-		{date.relative.text}
+		<span className="truncate">{date.relative.text}</span>
 	</LabelWithTooltip>
 );
 
