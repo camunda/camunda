@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="date-time-decision" name="date time decision" namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="dateTime" name="dateTime">
+    <variable name="dateTime" typeRef="Any" />
+    <informationRequirement id="inputReq">
+      <requiredInput href="#input" />
+    </informationRequirement>
+    <literalExpression>
+      <text>date and time(input)</text>
+    </literalExpression>
+  </decision>
+  <inputData id="input" name="input">
+    <variable name="input" typeRef="Any" />
+  </inputData>
+</definitions>

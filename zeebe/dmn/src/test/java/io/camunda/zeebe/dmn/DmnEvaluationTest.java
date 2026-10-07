@@ -22,12 +22,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class DmnEvaluationTest {
 
   private static final String VALID_DRG = "/drg-force-user.dmn";
   private static final String IDENTITY_DRG = "/identity-decision.dmn";
+  private static final String DATE_TIME_DRG = "/date-time-decision.dmn";
 
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
@@ -189,6 +191,31 @@ class DmnEvaluationTest {
       assertThat(result.getOutput())
           .describedAs("Expect that a successful result has a message pack output")
           .isEqualTo(encodedValue);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      "2020-04-01T10:31:10@Europe/Berlin,2020-04-01T10:31:10+02:00",
+      "2020-04-01T10:31:10@GMT,2020-04-01T10:31:10Z",
+      "2020-04-01T10:31:10Z,2020-04-01T10:31:10Z",
+      "2020-04-01T10:31:10+02:00,2020-04-01T10:31:10+02:00"
+    })
+    @DisplayName("Should return a date-time output without a zone id")
+    void shouldReturnDateTimeOutputWithoutZoneId(final String input, final String expected) {
+      // given
+      final var inputStream = getClass().getResourceAsStream(DATE_TIME_DRG);
+      final var parsedDrg = decisionEngine.parse(inputStream);
+
+      // when
+      final var result =
+          decisionEngine.evaluateDecisionById(
+              parsedDrg,
+              "dateTime",
+              new VariablesContext(Map.of("input", asMsgPack("\"" + input + "\""))));
+
+      // then
+      assertThat(result.isFailure()).describedAs(result.getFailureMessage()).isFalse();
+      assertThat(result.getOutput()).isEqualTo(asMsgPack("\"" + expected + "\""));
     }
   }
 }
