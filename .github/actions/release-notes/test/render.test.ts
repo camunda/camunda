@@ -644,6 +644,16 @@ test('if even the undroppable sections do not fit, trailing entries are cut and 
   assert.ok((result.auditJson as { warnings: string[] }).warnings.some((line) => line.includes('the last 1 entries')));
 });
 
+test('a bump without a parseable package table is dropped with the other bumps, and counted in the pointer', () => {
+  // given — a c8run-style `deps:` PR whose body has no table, beside 40 parsed bumps
+  const unparsed = pr({ number: 5, title: 'deps: update c8run versions to 8.9.22', section: 'Dependency updates', attributionSource: 'botExempt', issueNumbers: [] });
+  const result = render(overLimit([unparsed]), { version: '8.10.0', allowUnattributed: false });
+
+  // then — all or none: no bump line survives, and the pointer counts the c8run line too
+  assert.doesNotMatch(result.customerBody, /c8run|filler0/);
+  assert.match(result.customerBody, /## Dependency updates\n\n41 dependency updates are listed in the full changelog/);
+});
+
 test('a dependency PR that delivers an issue stays in the customer body — a CVE fix is customer news', () => {
   // given
   const result = render([bump(4, { issueNumbers: [400], title: 'deps: bump pkg4 to fix CVE' })], {
