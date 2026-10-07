@@ -11,7 +11,6 @@
 package springconfig
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -226,19 +225,12 @@ func Lookup(root map[string]any, keys ...string) (any, bool) {
 
 func parseProperties(content []byte) map[string]any {
 	root := map[string]any{}
-	scanner := bufio.NewScanner(bytes.NewReader(content))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "!") {
+	for _, line := range propertyLines(string(content)) {
+		key, raw := splitProperty(line)
+		if key == "" {
 			continue
 		}
-		index := strings.IndexAny(line, "=:")
-		if index <= 0 {
-			continue
-		}
-		key := strings.TrimSpace(line[:index])
-		raw := strings.TrimSpace(line[index+1:])
-		raw = ResolvePlaceholders(raw)
+		raw = ResolvePlaceholders(strings.TrimSpace(raw))
 		var value any = raw
 		if b, err := strconv.ParseBool(raw); err == nil {
 			value = b
@@ -246,6 +238,84 @@ func parseProperties(content []byte) map[string]any {
 		set(root, strings.Split(key, "."), value)
 	}
 	return root
+}
+
+func propertyLines(content string) []string {
+	var lines []string
+	var current strings.Builder
+	continuing := false
+	for _, natural := range strings.Split(strings.NewReplacer("\r\n", "\n", "\r", "\n").Replace(content), "\n") {
+		natural = strings.TrimLeft(natural, " \t\f")
+		if !continuing && (natural == "" || natural[0] == '#' || natural[0] == '!') {
+			continue
+		}
+		if backslashes := len(natural) - len(strings.TrimRight(natural, "\\")); backslashes%2 == 1 {
+			current.WriteString(natural[:len(natural)-1])
+			continuing = true
+			continue
+		}
+		current.WriteString(natural)
+		lines = append(lines, current.String())
+		current.Reset()
+		continuing = false
+	}
+	if current.Len() > 0 {
+		lines = append(lines, current.String())
+	}
+	return lines
+}
+
+func splitProperty(line string) (string, string) {
+	end := len(line)
+	for i := 0; i < len(line); i++ {
+		if line[i] == '\\' {
+			i++
+			continue
+		}
+		if strings.IndexByte("=: \t\f", line[i]) >= 0 {
+			end = i
+			break
+		}
+	}
+	rest := strings.TrimLeft(line[end:], " \t\f")
+	if rest != "" && (rest[0] == '=' || rest[0] == ':') {
+		rest = strings.TrimLeft(rest[1:], " \t\f")
+	}
+	return unescapeProperty(line[:end]), unescapeProperty(rest)
+}
+
+func unescapeProperty(s string) string {
+	if !strings.Contains(s, "\\") {
+		return s
+	}
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		if s[i] != '\\' || i+1 == len(s) {
+			b.WriteByte(s[i])
+			continue
+		}
+		i++
+		switch s[i] {
+		case 't':
+			b.WriteByte('\t')
+		case 'n':
+			b.WriteByte('\n')
+		case 'r':
+			b.WriteByte('\r')
+		case 'f':
+			b.WriteByte('\f')
+		case 'u':
+			if code, err := strconv.ParseUint(s[i+1:min(i+5, len(s))], 16, 32); err == nil && i+5 <= len(s) {
+				b.WriteRune(rune(code))
+				i += 4
+			} else {
+				b.WriteByte('u')
+			}
+		default:
+			b.WriteByte(s[i])
+		}
+	}
+	return b.String()
 }
 
 func expandDottedKeys(in map[string]any) map[string]any {
