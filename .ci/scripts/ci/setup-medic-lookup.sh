@@ -74,6 +74,20 @@ resolve_test_source_file() {
     # Input: fully qualified test class name, e.g. io.camunda.foo.BarTest
     # Output: prints a single repo-relative path or empty string.
     local fqcn="$1"
+
+    if [[ "${fqcn}" == *.ts || "${fqcn}" == *.tsx ]]; then
+        local webapp_dir="webapp/client/apps/orchestration-cluster-webapp"
+        local candidate
+        for candidate in "${webapp_dir}/${fqcn}" "${webapp_dir}/test/${fqcn}"; do
+            if [[ -f "${candidate}" ]]; then
+                echo "${candidate}"
+                return 0
+            fi
+        done
+        echo ""
+        return 0
+    fi
+
     # Strip nested class suffix (e.g. OuterClass$InnerClass -> OuterClass)
     local outer_fqcn="${fqcn%%\$*}"
     local rel_test_path="${outer_fqcn//./\/}.java"
