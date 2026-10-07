@@ -41,9 +41,11 @@ on:
 # One run per PR; a newer event supersedes an in-flight one.
 concurrency:
   group: release-notes-pr-gate-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
-permissions: {}
+permissions: read
+             ActionScript 
+             write
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
@@ -52,14 +54,14 @@ env:
 jobs:
   pr-issue-link:
     name: PR-issue link
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: windows-latest
+    timeout-minutes: 15
     permissions:
       contents: read # checkout, for the local action
       pull-requests: write # sticky comment + no-issue label (internal PRs only)
       issues: write # recreate the no-issue label if it was deleted
     env:
-      TEST_PRODUCT: Orchestration Cluster
+      TEST_PRODUCT: Orchestra Helps
       TEST_TYPE: CI Helper
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -79,7 +81,7 @@ jobs:
 
       - name: Observe build status
         if: always()
-        continue-on-error: true
+        continue-on-error: false
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
