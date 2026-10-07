@@ -8,8 +8,8 @@
 
 import {useEffect, useRef} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {ActionableNotification, Button, Toggle, InlineNotification, SkeletonText, Tag} from '@carbon/react';
-import {ChevronDown, ChevronRight} from '@carbon/react/icons';
+import {ActionableNotification, Toggle, InlineNotification, SkeletonText, Tag} from '@carbon/react';
+import {CaretDown, CaretRight} from '@carbon/react/icons';
 import {useTranslation} from 'react-i18next';
 import type {ElementInstance, QueryBatchOperationItemsResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
@@ -29,6 +29,8 @@ import {
 	HistoryHeader,
 	HistoryScroll,
 	HistoryRow,
+	HistoryState,
+	HistoryToggle,
 	HistoryChildren,
 	RowSelection,
 } from './instanceHistory.styled';
@@ -157,12 +159,14 @@ function HistoryNode({
 	scrollRef,
 	migrationDate,
 	businessObjects,
+	depth = 0,
 }: {
 	item: ElementInstance;
 	parent?: string;
 	scrollRef: React.RefObject<HTMLElement | null>;
 	migrationDate?: string | null;
 	businessObjects?: BusinessObjects;
+	depth?: number;
 }) {
 	const history = useInstanceHistory();
 	const selection = useProcessInstanceElementSelection();
@@ -171,6 +175,7 @@ function HistoryNode({
 	const root = item.type === 'PROCESS';
 	const window = history.windows.get(key);
 	const rowRef = useRef<HTMLDivElement>(null);
+	const selectionRef = useRef<HTMLButtonElement>(null);
 	const label =
 		(item.elementName ?? item.elementId) +
 		(item.type === 'MULTI_INSTANCE_BODY' ? t('operate.processInstance.history.multiInstance') : '');
@@ -183,38 +188,43 @@ function HistoryNode({
 	const selected = root
 		? !selection.hasSelection
 		: selection.isSelected(item.elementId, key, item.type === 'MULTI_INSTANCE_BODY');
+	const isFoldable = foldable.has(item.type);
+	function select() {
+		selectionRef.current?.focus();
+		if (root) {
+			selection.clearSelection();
+		} else {
+			void selection.selectElementInstance(
+				item,
+				item.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE' ? window?.query.data?.items[0]?.elementId : undefined,
+			);
+		}
+	}
 	return (
 		<li>
-			<HistoryRow ref={rowRef} $selected={selected}>
-				{foldable.has(item.type) && (
-					<Button
+			<HistoryRow ref={rowRef} $selected={selected} $depth={depth} $foldable={isFoldable} onClick={select}>
+				<HistoryState>
+					<StateIcon state={item.hasIncident ? 'INCIDENT' : item.state} size={16} />
+				</HistoryState>
+				{isFoldable && (
+					<HistoryToggle
 						kind="ghost"
 						size="sm"
 						hasIconOnly
-						renderIcon={window ? ChevronDown : ChevronRight}
+						renderIcon={window ? CaretDown : CaretRight}
 						iconDescription={t(
 							window ? 'operate.processInstance.history.collapse' : 'operate.processInstance.history.expand',
 							{name: label},
 						)}
 						aria-expanded={Boolean(window)}
-						onClick={() => history.toggle(key, parent)}
+						onClick={(event) => {
+							event.stopPropagation();
+							history.toggle(key, parent);
+						}}
 					/>
 				)}
-				<RowSelection
-					aria-pressed={selected}
-					onClick={() => {
-						if (root) {
-							selection.clearSelection();
-						} else {
-							void selection.selectElementInstance(
-								item,
-								item.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE' ? window?.query.data?.items[0]?.elementId : undefined,
-							);
-						}
-					}}
-				>
+				<RowSelection ref={selectionRef} type="button" aria-pressed={selected}>
 					<ElementInstanceIcon businessObject={businessObjects?.[item.elementId]} root={root} />
-					<StateIcon state={item.hasIncident ? 'INCIDENT' : item.state} size={16} />
 					<span>{label}</span>
 					{root && migrationDate && (
 						<Tag type="green">
@@ -249,6 +259,7 @@ function HistoryNode({
 									parent={key}
 									scrollRef={scrollRef}
 									businessObjects={businessObjects}
+									depth={depth + 1}
 								/>
 							))}
 						</HistoryChildren>

@@ -12,7 +12,7 @@ import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-ins
 import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
-import {mockQueryElementInstancesEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockQueryElementInstancesEndpoint, mockGetElementInstanceEndpoint} from '#/shared-test-modules/mock-handlers';
 
 test('should keep the history tree and responsive tabs accessible', async ({
 	network,
@@ -34,10 +34,15 @@ test('should keep the history tree and responsive tabs accessible', async ({
 		mockQueryElementInstancesEndpoint({
 			successResponse: HttpResponse.json(createPaginatedResponse({items: [element]})),
 		}),
+		mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(element)}),
 	);
 	await operateProcessInstancePage.goto(instance.processInstanceKey, '/variables');
 	await expect(operateProcessInstancePage.historyTree).toBeVisible();
 	await expect(operateProcessInstancePage.historyTree.getByText('Review invoice', {exact: true})).toBeVisible();
+	await operateProcessInstancePage.historyTree.getByRole('button', {name: 'Review invoice', exact: true}).click();
+	await expect(
+		operateProcessInstancePage.historyTree.getByRole('button', {name: 'Review invoice', exact: true}),
+	).toHaveAttribute('aria-pressed', 'true');
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
 	await page.setViewportSize({width: 800, height: 768});
 	await operateProcessInstancePage.historyTab.click();
