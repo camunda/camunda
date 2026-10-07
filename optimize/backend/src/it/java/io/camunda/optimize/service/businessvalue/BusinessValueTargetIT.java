@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.businessvalue;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_VALUE_TARGET_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,10 +17,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.target
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import io.camunda.optimize.service.db.writer.BusinessValueTargetWriter;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -168,11 +169,15 @@ class BusinessValueTargetIT extends AbstractBrokerlessZeebeCCSMIT {
    * because the scroll is built per backend, and only a real response pages.
    */
   @Test
-  void shouldScanEveryTargetPastTheFetchLimit() {
-    // given more targets than a single page returns
+  void shouldScanEveryTargetPastTheFetchLimit() throws IOException {
+    // given more targets than a single page returns, seeded in one bulk request
     final int targetCount = LIST_FETCH_LIMIT + 1;
-    IntStream.range(0, targetCount)
-        .forEach(i -> writer.upsertTarget(target("process-" + i, DEFAULT_TENANT, null, 50)));
+    databaseIntegrationTestExtension.insertTestDocuments(
+        targetCount,
+        BUSINESS_VALUE_TARGET_INDEX_NAME,
+        "{\"processDefinitionKey\":\"process-%d\",\"tenantId\":\""
+            + DEFAULT_TENANT
+            + "\",\"automationRateTargetPct\":50}");
 
     // when
     final List<BusinessValueTargetDto> all = repository.scanAll();
