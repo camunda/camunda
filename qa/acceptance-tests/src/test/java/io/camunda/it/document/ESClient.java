@@ -19,36 +19,24 @@ import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.snapshot.Repository;
 import co.elastic.clients.elasticsearch.snapshot.RestoreRequest;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
-import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import org.apache.hc.core5.http.HttpHost;
 
 public class ESClient implements DocumentClient {
 
-  final Rest5Client restClient;
   final ElasticsearchClient esClient;
   private final Executor executor;
 
   public ESClient(final String url, final Executor executor) {
-    try {
-      restClient = Rest5Client.builder(HttpHost.create(url)).build();
-    } catch (final URISyntaxException e) {
-      throw new IllegalArgumentException("Error in url: " + url, e);
-    }
     this.executor = executor;
-    esClient =
-        new ElasticsearchClient(new Rest5ClientTransport(restClient, new JacksonJsonpMapper()));
+    esClient = ElasticsearchClient.of(b -> b.host(url));
   }
 
   @Override
@@ -200,6 +188,6 @@ public class ESClient implements DocumentClient {
 
   @Override
   public void close() throws Exception {
-    restClient.close();
+    esClient.close();
   }
 }
