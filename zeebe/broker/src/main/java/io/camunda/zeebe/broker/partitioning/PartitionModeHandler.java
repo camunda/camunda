@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning;
 
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -149,12 +150,20 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
                         .formatted(partitionGroup, mode)));
             return;
           }
-          final var expectedPartitions = expectedLocalPartitionIds();
-          if (expectedPartitions.isEmpty()) {
-            result.complete(Set.of());
-            return;
-          }
-          pollPartitionsReady(expectedPartitions, mode, result);
+          concurrencyControl.runOnCompletion(
+              clusterConfigurationService().getLatestPartitionDistribution(partitionGroup),
+              (distribution, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+                final var expectedPartitions = localPartitionIds(distribution);
+                if (expectedPartitions.isEmpty()) {
+                  result.complete(Set.of());
+                  return;
+                }
+                pollPartitionsReady(expectedPartitions, mode, result);
+              });
         });
     return result;
   }
@@ -323,13 +332,10 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
   }
 
   /** The ids of the partitions of this group that the local member replicates. */
-  private Set<Integer> expectedLocalPartitionIds() {
+  private Set<Integer> localPartitionIds(final PartitionDistribution distribution) {
     final var localMemberId =
         brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
-    return clusterConfigurationService()
-        .getCurrentPartitionDistribution(partitionGroup)
-        .partitions()
-        .stream()
+    return distribution.partitions().stream()
         .filter(partition -> partition.members().contains(localMemberId))
         .map(partition -> partition.id().number())
         .collect(Collectors.toSet());

@@ -108,6 +108,19 @@ public interface ClusterConfigurationService extends AsyncClosable {
   }
 
   /**
+   * Returns the partition distribution of the given physical tenant according to the {@link
+   * #getLatestClusterConfiguration() latest cluster configuration}, which unlike {@link
+   * #getCurrentPartitionDistribution(String)} reflects a change applied just before.
+   */
+  default ActorFuture<PartitionDistribution> getLatestPartitionDistribution(
+      final String physicalTenantId) {
+    return getLatestClusterConfiguration()
+        .thenApply(
+            configuration -> partitionDistributionOf(configuration, physicalTenantId),
+            Runnable::run);
+  }
+
+  /**
    * The partition distribution of the given physical tenant in {@code configuration}, e.g. one
    * fetched with {@link #getLatestClusterConfiguration()}, which unlike {@link
    * #getCurrentClusterConfiguration()} cannot lag behind a change applied just before.
