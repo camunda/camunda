@@ -1331,18 +1331,20 @@ describe('<InstancesTable />', () => {
 
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 
-		// Advance one retry delay at a time rather than jumping the full 31s at once, so each
-		// retry's fetch has a full tick to resolve before the next one is scheduled — a single
-		// large jump can race ahead of that chain instead of driving all 30 retries.
-		for (let i = 0; i < 31; i++) {
-			await vi.advanceTimersByTimeAsync(1000);
-		}
-
+		// Each retry's fetch resolves through MSW in real time, which fake timers cannot advance.
+		// Advancing on every poll attempt keeps stepping the clock until all 30 retries have run,
+		// however long the fetches take, instead of assuming each finished within a fixed step.
 		await expect
-			.poll(() => screen.getByText('Failed to suspend process instance').elements().length, {timeout: 10000})
+			.poll(
+				async () => {
+					await vi.advanceTimersByTimeAsync(1000);
+					return screen.getByText('Failed to suspend process instance').elements().length;
+				},
+				{timeout: 30_000},
+			)
 			.toBeGreaterThan(0);
 		await expect.element(screen.getByTestId('operation-spinner')).not.toBeInTheDocument();
-	});
+	}, 40_000);
 
 	it('should disable an action and show a spinner while that operation is active', async ({worker}) => {
 		worker.use(
