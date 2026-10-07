@@ -70,6 +70,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -94,6 +95,15 @@ public class CamundaExporter implements Exporter {
    * every leader change and loads every index mapping from the search engine.
    */
   private static final Set<String> SCHEMA_READY = ConcurrentHashMap.newKeySet();
+
+  /**
+   * Search engines whose schema an exporter in this broker has checked while being configured.
+   * Followers configure their exporters when the broker starts, so checking there moves the cost
+   * off a restarted broker's first leader change. It is tried once, so that an unreachable search
+   * engine delays the start of at most one partition; the check on open still covers a schema that
+   * was not ready yet.
+   */
+  private static final Set<String> SCHEMA_CHECKED_ON_CONFIGURE = ConcurrentHashMap.newKeySet();
 
   private Controller controller;
   private ExporterConfiguration configuration;
@@ -155,14 +165,8 @@ public class CamundaExporter implements Exporter {
       setupExporterResources();
       searchEngineClient = clientAdapter.getSearchEngineClient();
 
-      final var schema = schemaKey();
-      if (!SCHEMA_READY.contains(schema)) {
-        try (final var schemaManager = createSchemaManager()) {
-          if (!schemaManager.isSchemaReadyForUse()) {
-            throw new ExporterException("Schema is not ready for use");
-          }
-        }
-        SCHEMA_READY.add(schema);
+      if (!isSchemaReady()) {
+        throw new ExporterException("Schema is not ready for use");
       }
 
       writer = createBatchWriter();
@@ -274,6 +278,10 @@ public class CamundaExporter implements Exporter {
       // to ensure that we can create the clients,
       // connect and make use of the configuration given
       setupExporterResources();
+      if (partitionId >= Protocol.START_PARTITION_ID
+          && SCHEMA_CHECKED_ON_CONFIGURE.add(schemaKey())) {
+        checkSchemaOnConfigure();
+      }
     } finally {
       // afterward we need to clean up all the resources
       // as we only wanted to verify the setup and the exporter
@@ -309,6 +317,29 @@ public class CamundaExporter implements Exporter {
                 provider.getProcessCache(),
                 context.clock())
             .build();
+  }
+
+  private void checkSchemaOnConfigure() {
+    searchEngineClient = clientAdapter.getSearchEngineClient();
+    try {
+      isSchemaReady();
+    } catch (final Exception e) {
+      LOG.debug("Failed to check the schema while configuring; will check again on open", e);
+    }
+  }
+
+  private boolean isSchemaReady() {
+    final var schema = schemaKey();
+    if (SCHEMA_READY.contains(schema)) {
+      return true;
+    }
+    try (final var schemaManager = createSchemaManager()) {
+      if (!schemaManager.isSchemaReadyForUse()) {
+        return false;
+      }
+    }
+    SCHEMA_READY.add(schema);
+    return true;
   }
 
   private String schemaKey() {

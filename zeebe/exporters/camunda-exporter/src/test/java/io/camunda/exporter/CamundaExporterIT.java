@@ -534,6 +534,26 @@ final class CamundaExporterIT {
   }
 
   @TestTemplate
+  void shouldCheckSchemaWhenConfiguredForAPartition(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
+    createSchemas(config);
+    final var exporter = new CamundaExporter();
+
+    // when
+    exporter.configure(getContextFromConfig(config, 1));
+    for (final var index : clientAdapter.getAllIndicesAsNode(testPrefix).keySet()) {
+      clientAdapter.deleteIndex(index);
+    }
+
+    // then
+    assertThatNoException().isThrownBy(() -> exporter.open(new ExporterTestController()));
+  }
+
+  @TestTemplate
   void shouldFailToOpenWhenSchemaMissingThenOpenAfterSchemaCreationAndExport(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
