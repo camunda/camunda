@@ -62,6 +62,11 @@ causing CI failures across multiple jobs, workflows, or branches.
    - If a non-essential step (e.g. a license scan, a non-blocking smoke test) is the only thing
      failing, consider temporarily disabling it rather than blocking all merges — see [Temporarily
      Disable Tests To Lessen Impact](#temporarily-disable-tests-to-lessen-impact).
+   - Keep workarounds in our workflows bounded in complexity and effort. Retries for network
+     errors and timeouts for network operations (e.g. `git checkout`) are fine. If a workaround
+     needs substantial or fragile logic, decide against it and accept the upstream outage, because
+     that logic has to be maintained long after the outage is gone. For example, see [why we do not
+     map GitHub API job names to workflow YAML job keys](./ci.md#github-api-job-names-vs-workflow-job-keys).
 4. **Communicate status.** Note in the incident channel/ticket which dependency is affected, a
    link to its status page, and whether resolution is outside our control (external service) or
    needs the Infra team (Nexus). This avoids duplicate investigation by other engineers hitting the
