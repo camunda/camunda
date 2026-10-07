@@ -515,7 +515,7 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 	processInfo := state.ProcessInfo
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
 		connectorsCmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
-		connectorsCmd.Env = connectorsEnv(connectorsCmd.Env)
+		connectorsCmd.Env = defaultConnectorsEnv(connectorsCmd.Env, state.Settings.ConnectorsPort)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
 		if err != nil {
@@ -523,7 +523,7 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 			return
 		}
 	}, func() error {
-		return health.QueryConnectors(ctx, "Connectors", startupHealthCheckRetries)
+		return health.QueryConnectorsOnPort(ctx, "Connectors", state.Settings.ConnectorsPort, startupHealthCheckRetries)
 	}, connectorsFailed)
 
 	// Tenant runtimes start and are health-checked concurrently, so one slow or broken
@@ -570,6 +570,14 @@ func connectorsEnv(env []string) []string {
 		env = os.Environ()
 	}
 	return physicaltenants.ScrubTenantEnv(env)
+}
+
+func defaultConnectorsEnv(env []string, port int) []string {
+	env = connectorsEnv(env)
+	if port != health.DefaultConnectorsPort {
+		env = append(env, "SERVER_PORT="+strconv.Itoa(port))
+	}
+	return env
 }
 
 // TenantConnectorsPidPath is the PID file of a physical tenant's connectors runtime.

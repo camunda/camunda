@@ -101,7 +101,7 @@ Each tenant gets its own local file secret store in `tenant-secrets/<id>` next t
 
 Tenants and their passwords live in one document, so every change is a single atomic rename and no crash (including SIGKILL) can leave them disagreeing. Changes are serialized with a file lock (`<tenants file>.lock`); reads take no lock and create nothing. Duplicate IDs in the file are rejected. Tenant readiness probes run concurrently under one shared deadline.
 
-Per-tenant connectors reuse `ConnectorsCmd` and append `SERVER_PORT` and `CAMUNDA_CLIENT_PHYSICALTENANTID` (plus `CAMUNDA_CLIENT_AUTH_*` when the API is protected). PID files are `connectors-<id>.process`; `stop` stops every `connectors-*.process`. Ports start at 8087, skip the Camunda port and c8run's fixed ports (8086, 9600, 26500-26502), and skip ports in use on any interface.
+Per-tenant connectors reuse `ConnectorsCmd` and append `SERVER_PORT` and `CAMUNDA_CLIENT_PHYSICALTENANTID` (plus `CAMUNDA_CLIENT_AUTH_*` when the API is protected). PID files are `connectors-<id>.process`; `stop` stops every `connectors-*.process`. Ports start at 8087, skip the Camunda port, the `--connectors-port` port and c8run's fixed ports (9600, 26500-26502), and skip ports in use on any interface.
 
 c8run-managed tenants require `C8RUN_SECRETS_MODE=local`; in external mode startup fails with guidance, because tenants would otherwise inherit one shared external store.
 

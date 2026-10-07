@@ -144,6 +144,8 @@ C8Run automatically starts the connectors runtime through Spring Boot's `Propert
 
 If you want to run your own connectors runtime, start C8Run with `./c8run start --disable-connectors` to skip launching the bundled connectors jar.
 
+To run the bundled connectors runtime on a port other than `8086`, use `./c8run start --connectors-port <port>`.
+
 ### Headless startup
 
 To start C8Run without opening a browser window (for example, in a headless dev environment or an autostart script), use `./c8run start --no-browser`. A headless start also leaves the quickstart marker untouched, so the next regular (non-headless) start still shows the quickstart URL instead of jumping straight to Operate.

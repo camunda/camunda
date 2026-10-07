@@ -32,11 +32,11 @@ Do not change this version gate without verifying both launcher paths still work
 
 The `--port` flag changes the main web/REST port. If the user did not set `CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS`, Connectors defaults to the selected Camunda port.
 
-**Connectors health port is always `8086`** — it is hardcoded and not affected by `--port`.
+**The Connectors port defaults to `8086`.** Set it with `--connectors-port`; `--port` does not change it. This one port serves both the inbound Connectors API and the Connectors health endpoint.
 
 ## Health Check Timeout
 
-Startup health checks use 24 retries with a 14-second delay between attempts (~5.6 minutes total). If Camunda does not become healthy within this window, C8Run reports failure. Connectors health checks are not yet implemented — the check currently returns success immediately without querying port 8086.
+Startup health checks use 24 retries with a 14-second delay between attempts (~5.6 minutes total). If Camunda does not become healthy within this window, C8Run reports failure. Each Connectors runtime is checked the same way on its own port. If one does not become healthy, C8Run logs a warning and Camunda keeps running.
 
 ## Startup URL and Quickstart Marker
 

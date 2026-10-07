@@ -14,6 +14,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
@@ -80,6 +81,7 @@ Options:
   --keystorePassword <pw>  Password for the provided keystore
   --no-browser              Start Camunda 8 Run without opening a browser window
   --port <number>           Set the main Camunda port (default: 8080)
+  --connectors-port <port>  Set the bundled Connectors port (default: 8086)
   --log-level <level>       Set log level (e.g., info, debug)
   --physical-tenants <ids>  Start extra physical tenants for this run only (e.g. sales,hr)
 
@@ -177,6 +179,9 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, erro
 		if err := validatePort(settings.Port); err != nil {
 			return settings, startupURLProvided, err
 		}
+		if settings.ConnectorsPort < 1 || settings.ConnectorsPort > 65535 {
+			return settings, startupURLProvided, fmt.Errorf("--connectors-port must be between 1 and 65535 (got %d)", settings.ConnectorsPort)
+		}
 		ids, err := physicaltenants.ParseIDList(settings.PhysicalTenantsFlag)
 		if err != nil {
 			return settings, startupURLProvided, fmt.Errorf("--physical-tenants: %w", err)
@@ -213,6 +218,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.Var((*stringSliceFlag)(&settings.ExtraDrivers), "extra-driver", "Path to a JDBC driver jar to copy into the Camunda lib directory (repeatable).")
 	startFlagSet.BoolVar(&settings.Detached, "detached", false, "Starts Camunda Run as a detached process")
 	startFlagSet.IntVar(&settings.Port, "port", 8080, "Port to run Camunda on")
+	startFlagSet.IntVar(&settings.ConnectorsPort, "connectors-port", health.DefaultConnectorsPort, "Port to run the bundled Connectors on")
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")

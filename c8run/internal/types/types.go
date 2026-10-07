@@ -21,6 +21,7 @@ type C8RunSettings struct {
 	DisableConnectors    bool
 	NoBrowser            bool
 	Port                 int
+	ConnectorsPort       int
 	Keystore             string
 	KeystorePassword     string
 	LogLevel             string
