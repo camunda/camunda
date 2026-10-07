@@ -37,6 +37,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
@@ -51,6 +52,9 @@ public final class JobWorkerBuilderImpl
   public static final Duration DEFAULT_STREAM_TIMEOUT = Duration.ofHours(8);
   public static final Duration DEFAULT_STREAM_INACTIVITY_TIMEOUT = Duration.ofMinutes(10);
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
+  // Fraction of a streaming worker's capacity kept for its poll path while the push path starves
+  // the poll. See reservedPollCapacity.
+  private static final float RESERVED_POLL_FRACTION = 0.25f;
   private final JobClient jobClient;
   private final ScheduledExecutorService scheduledExecutor;
   private final ExecutorService jobHandlingExecutor;
@@ -270,14 +274,14 @@ public final class JobWorkerBuilderImpl
               System::nanoTime,
               metrics,
               withLease);
-      jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
+      jobExecutor = newJobExecutor(jobHandlingExecutor, maxJobsActive, timeout, true);
     } else {
       jobStreamer = JobStreamer.noop();
       // A worker without job push still bounds its work through the executor, so its poll sizing
       // and its close condition read one and the same capacity count as a streaming worker does.
       // Nothing else takes capacity here, so a poll sized to the free capacity always fits and the
       // executor never actually refuses a job.
-      jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
+      jobExecutor = newJobExecutor(jobHandlingExecutor, maxJobsActive, timeout, false);
     }
 
     final JobWorkerImpl jobWorker =
@@ -319,5 +323,24 @@ public final class JobWorkerBuilderImpl
 
   private List<String> getTenantIds() {
     return customTenantIds.isEmpty() ? defaultTenantIds : customTenantIds;
+  }
+
+  // A streaming worker's push path reaches a freed slot in microseconds while its poll path only
+  // reacts a network round-trip later, so under sustained push the poll — the only path that drains
+  // the ACTIVATABLE backlog and recovers timed-out jobs — is starved of slots. Reserving a small
+  // share of the capacity for the poll, while the poll is starved, gives the backlog a way in.
+  // Using the floor of the fraction reserves nothing until the worker has enough slots to spare a
+  // whole one. Package-private so builder tests can pin the reservation boundary.
+  static int reservedPollCapacity(final int maxJobsActive) {
+    return (int) Math.floor(maxJobsActive * RESERVED_POLL_FRACTION);
+  }
+
+  private static BlockingExecutor newJobExecutor(
+      final Executor jobHandlingExecutor,
+      final int maxJobsActive,
+      final Duration timeout,
+      final boolean streaming) {
+    final int reserved = streaming ? reservedPollCapacity(maxJobsActive) : 0;
+    return new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout, reserved);
   }
 }

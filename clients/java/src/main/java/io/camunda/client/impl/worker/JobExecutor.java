@@ -68,4 +68,14 @@ interface JobExecutor extends Executor {
    * @param listener the callback to run when capacity frees up
    */
   default void onCapacityAvailable(final Runnable listener) {}
+
+  /**
+   * Tells the executor whether the poll path is being starved of slots by the push path, so it can
+   * keep part of its capacity out of reach of the push path while it is. An executor that does not
+   * distinguish the two paths ignores this, which is why the default does nothing.
+   *
+   * @param reserved true to keep the reserved slots for the poll path, false to let the push path
+   *     use every slot
+   */
+  default void reservePollLane(final boolean reserved) {}
 }

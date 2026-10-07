@@ -34,6 +34,7 @@ import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandSte
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import java.io.Closeable;
@@ -42,7 +43,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.Level;
@@ -52,9 +55,12 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
+import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -137,6 +143,82 @@ class JobWorkerBuilderImplTest {
         // then
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("timeout must be not zero");
+  }
+
+  @ParameterizedTest(name = "maxJobsActive={0} reserves {1} poll slots")
+  @CsvSource({
+    // a worker reserves nothing until it has four slots to spare a whole one (floor of 0.25)
+    "1, 0",
+    "2, 0",
+    "3, 0",
+    "4, 1",
+    "5, 1",
+    "7, 1",
+    "8, 2",
+    "30, 7",
+    "100, 25"
+  })
+  void shouldReserveFlooredFractionOfCapacityForThePollPath(
+      final int maxJobsActive, final int expectedReserved) {
+    // given / when - then the streaming reservation is the floor of the fixed fraction, so a wrong
+    // boundary (for example reserving one slot at maxJobsActive below four, or none at four) would
+    // fail here instead of silently disabling or over-reserving the poll lane
+    assertThat(JobWorkerBuilderImpl.reservedPollCapacity(maxJobsActive))
+        .isEqualTo(expectedReserved);
+  }
+
+  @Test
+  void shouldGiveOnlyAStreamingWorkerAPollLane() {
+    // given a streaming and a non-streaming worker with four slots, whose job handling threads
+    // never finish a job, so every job they start keeps its slot
+    final JobWorker streaming = openWorkerWithStuckHandlers(true);
+    final JobWorker nonStreaming = openWorkerWithStuckHandlers(false);
+
+    // when both reserve the poll lane, as a starved poll would ask for, and the push path takes
+    // three slots on each
+    // then the streaming worker keeps its last slot for the poll, while the non-streaming one has
+    // no lane to reserve and lets the job take its last slot
+    assertThat(streaming)
+        .extracting("executor")
+        .isInstanceOfSatisfying(
+            BlockingExecutor.class,
+            executor -> {
+              executor.reservePollLane(true);
+              for (int i = 0; i < 3; i++) {
+                executor.execute(() -> {});
+              }
+              assertThatThrownBy(() -> executor.execute(() -> {}))
+                  .isInstanceOf(RejectedExecutionException.class);
+            });
+    assertThat(nonStreaming)
+        .extracting("executor")
+        .isInstanceOfSatisfying(
+            BlockingExecutor.class,
+            executor -> {
+              executor.reservePollLane(true);
+              for (int i = 0; i < 4; i++) {
+                executor.execute(() -> {});
+              }
+              assertThat(executor.freeCapacity()).isZero();
+            });
+  }
+
+  private JobWorker openWorkerWithStuckHandlers(final boolean streamEnabled) {
+    // a scheduler that never runs, so the worker's own polls cannot move its poll lane
+    final JobWorkerBuilderImpl builder =
+        new JobWorkerBuilderImpl(
+            zeebeClientConfig,
+            jobClient,
+            new DeterministicScheduler(),
+            mock(ExecutorService.class),
+            closeables);
+    return builder
+        .jobType("type")
+        .handler((c, j) -> {})
+        .timeout(Duration.ofMillis(50))
+        .maxJobsActive(4)
+        .streamEnabled(streamEnabled)
+        .open();
   }
 
   @Test

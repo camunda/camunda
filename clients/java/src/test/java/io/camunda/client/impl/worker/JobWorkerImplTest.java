@@ -96,10 +96,14 @@ final class JobWorkerImplTest {
   private static final long SLOW_POLL_DELAY_IN_MS = 1_000L;
   // keeps the keys of pushed jobs apart from those of the polled ones
   private static final long STREAMED_JOB_KEY_OFFSET = 100L;
+  private static final long STARVING_PUSH_JOB_KEY_OFFSET = 900L;
   private static final Duration SLOW_POLL_THRESHOLD = Duration.ofMillis(SLOW_POLL_DELAY_IN_MS / 2);
   private static final int MAX_JOBS_ACTIVE = 4;
   private static final long POLL_INTERVAL_IN_MS = 50L;
   private static final Duration JOB_TIMEOUT = Duration.ofMinutes(5);
+  // How long a push waits for a slot before it is refused, short so a refused push does not hold up
+  // a test that runs it on its own thread.
+  private static final Duration PUSH_WAIT = Duration.ofMillis(50);
   // A clock frozen in time: a job measured against a positive timeout is always still within it.
   private static final LongSupplier WITHIN_ACTIVATION = () -> 0L;
 
@@ -1249,6 +1253,276 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldLetPushedJobsUseEverySlotWhileThePollFindsNoBacklog() {
+    // given a streaming worker that could reserve one of its four slots for the poll, whose poll
+    // comes back empty, as it does for a worker that keeps up with the jobs pushed to it
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, PUSH_WAIT, 1);
+
+    try (final JobWorkerImpl ignored =
+        streamingWorkerWith(scheduler, poller, handlers, streamer, executor)) {
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      poller.handOverJobs(Collections.emptyList());
+
+      // when the broker pushes as many jobs as the worker has slots
+      for (int i = 0; i < MAX_JOBS_ACTIVE; i++) {
+        streamer.push(STREAMED_JOB_KEY_OFFSET + i);
+      }
+
+      // then every one of them takes a slot and runs: with no backlog for the poll to drain,
+      // nothing is kept back from the push path
+      assertThat(executor.freeCapacity()).isZero();
+      handlerThreads.runQueued();
+      assertThat(handlers.getRanJobKeys())
+          .containsExactly(
+              STREAMED_JOB_KEY_OFFSET,
+              STREAMED_JOB_KEY_OFFSET + 1,
+              STREAMED_JOB_KEY_OFFSET + 2,
+              STREAMED_JOB_KEY_OFFSET + 3);
+    }
+  }
+
+  @Test
+  void shouldRunAPolledJobInTheReservedSlotOncePushedJobsCrowdThePollOut() {
+    // given a streaming worker with one of its four slots reservable for the poll
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, PUSH_WAIT, 1);
+
+    try (final JobWorkerImpl ignored =
+        streamingWorkerWith(scheduler, poller, handlers, streamer, executor)) {
+      // and a poll sized to every slot, whose slots pushed jobs take while it is on the wire, so
+      // the jobs it brings back are refused: the starvation the reserved lane is there to stop
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      for (int i = 0; i < MAX_JOBS_ACTIVE; i++) {
+        streamer.push(STREAMED_JOB_KEY_OFFSET + i);
+      }
+      poller.handOverJobs(TestData.jobs(2));
+      assertThat(executor.freeCapacity()).isZero();
+
+      // when a pushed job finishes, which frees a slot and sends a poll for it, and the broker
+      // pushes another job before that poll comes back with a job from the backlog
+      handlerThreads.runNext(1);
+      assertThat(poller.getLastRequestedJobCount()).isEqualTo(1);
+      final long latePushedJobKey = STREAMED_JOB_KEY_OFFSET + MAX_JOBS_ACTIVE;
+      streamer.push(latePushedJobKey);
+      final long polledJobKey = 200L;
+      poller.handOverJobs(Collections.singletonList(TestData.job(polledJobKey)));
+
+      // then the polled job got the freed slot rather than the pushed one, since the refusals told
+      // the worker the poll is starved
+      handlerThreads.runQueued();
+      assertThat(handlers.getRanJobKeys()).contains(polledJobKey).doesNotContain(latePushedJobKey);
+    }
+  }
+
+  @Test
+  void shouldNotReserveThePollLaneForAPollWhoseJobsAllGotASlot() {
+    // given a streaming worker with one of its four slots reservable for the poll
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, PUSH_WAIT, 1);
+
+    try (final JobWorkerImpl ignored =
+        streamingWorkerWith(scheduler, poller, handlers, streamer, executor)) {
+      // when a poll returns a job that gets a slot, for example one that timed out elsewhere,
+      // which the broker only hands to pollers and never pushes
+      answerThePoll(scheduler, poller, TestData.jobs(1));
+      handlerThreads.runQueued();
+
+      // then nothing is kept back from the push path, since the poll was not starved
+      for (int i = 0; i < MAX_JOBS_ACTIVE; i++) {
+        streamer.push(STREAMED_JOB_KEY_OFFSET + i);
+      }
+      assertThat(executor.freeCapacity()).isZero();
+    }
+  }
+
+  @Test
+  void shouldReleaseThePollLaneOnlyOnTheThirdPollInARowWithoutRefusal() {
+    // given a streaming worker with one of its four slots reservable for the poll, whose poll was
+    // starved, so the push path is kept to three slots
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, PUSH_WAIT, 1);
+
+    try (final JobWorkerImpl ignored =
+        streamingWorkerWith(scheduler, poller, handlers, streamer, executor)) {
+      reservePollLaneThroughRefusals(scheduler, poller, streamer, handlerThreads);
+
+      // when the next two polls get their slot, which is what the reserved lane is for
+      answerAPollWithoutRefusal(scheduler, poller, handlerThreads, 200L);
+      final int keptAfterOnePoll = slotsKeptFromThePushPath(streamer, executor, handlerThreads);
+      answerAPollWithoutRefusal(scheduler, poller, handlerThreads, 201L);
+      final int keptAfterTwoPolls = slotsKeptFromThePushPath(streamer, executor, handlerThreads);
+
+      // then the lane stays reserved: a poll or two that got their slot do not show the contention
+      // is over, and releasing the lane right away would let the push path starve the poll again
+      assertThat(keptAfterOnePoll).isEqualTo(1);
+      assertThat(keptAfterTwoPolls).isEqualTo(1);
+
+      // and the third poll in a row that gets its slot gives the push path every slot back
+      answerAPollWithoutRefusal(scheduler, poller, handlerThreads, 202L);
+      assertThat(slotsKeptFromThePushPath(streamer, executor, handlerThreads)).isZero();
+    }
+  }
+
+  @Test
+  void shouldCountThePollsWithoutRefusalAgainAfterARefusal() {
+    // given a streaming worker with one of its four slots reservable for the poll, whose poll was
+    // starved, and whose next two polls got their slot, one short of releasing the lane
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, PUSH_WAIT, 1);
+
+    try (final JobWorkerImpl ignored =
+        streamingWorkerWith(scheduler, poller, handlers, streamer, executor)) {
+      reservePollLaneThroughRefusals(scheduler, poller, streamer, handlerThreads);
+      answerAPollWithoutRefusal(scheduler, poller, handlerThreads, 200L);
+      answerAPollWithoutRefusal(scheduler, poller, handlerThreads, 201L);
+
+      // when the poll is starved again, then gets its slot twice more
+      reservePollLaneThroughRefusals(scheduler, poller, streamer, handlerThreads);
+      answerAPollWithoutRefusal(scheduler, poller, handlerThreads, 202L);
+      answerAPollWithoutRefusal(scheduler, poller, handlerThreads, 203L);
+
+      // then the lane stays reserved: the refusal shows the contention is back, so the polls that
+      // got their slot before it no longer count towards releasing the lane
+      assertThat(slotsKeptFromThePushPath(streamer, executor, handlerThreads)).isEqualTo(1);
+    }
+  }
+
+  @Test
+  void shouldGiveThePushPathEverySlotBackOnceThePollComesBackEmpty() {
+    // given a streaming worker with one of its four slots reservable for the poll, whose poll was
+    // starved, so the push path is kept to three slots
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, PUSH_WAIT, 1);
+
+    try (final JobWorkerImpl ignored =
+        streamingWorkerWith(scheduler, poller, handlers, streamer, executor)) {
+      reservePollLaneThroughRefusals(scheduler, poller, streamer, handlerThreads);
+      for (int i = 0; i < MAX_JOBS_ACTIVE; i++) {
+        streamer.push(STREAMED_JOB_KEY_OFFSET + i);
+      }
+      assertThat(executor.freeCapacity()).isEqualTo(1);
+
+      // when the next poll finds the backlog drained
+      answerThePoll(scheduler, poller, Collections.emptyList());
+
+      // then the push path can take the slot that was kept for the poll
+      final long nextPushedJobKey = STREAMED_JOB_KEY_OFFSET + MAX_JOBS_ACTIVE;
+      streamer.push(nextPushedJobKey);
+      assertThat(executor.freeCapacity()).isZero();
+      handlerThreads.runQueued();
+      assertThat(handlers.getRanJobKeys()).contains(nextPushedJobKey);
+    }
+  }
+
+  @Test
+  void shouldGiveThePushPathEverySlotBackWhenAPollFails() {
+    // given a streaming worker with one of its four slots reservable for the poll, whose poll was
+    // starved, so the push path is kept to three slots
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, PUSH_WAIT, 1);
+
+    try (final JobWorkerImpl ignored =
+        streamingWorkerWith(scheduler, poller, handlers, streamer, executor)) {
+      reservePollLaneThroughRefusals(scheduler, poller, streamer, handlerThreads);
+
+      // when the next poll fails, for example because only the poll's REST path is down while the
+      // gRPC stream keeps pushing
+      poller.failPoll(new StatusRuntimeException(Status.UNAVAILABLE));
+
+      // then the push path can take the slot kept for the poll, since no poll can fill it while
+      // polls fail
+      for (int i = 0; i < MAX_JOBS_ACTIVE; i++) {
+        streamer.push(STREAMED_JOB_KEY_OFFSET + i);
+      }
+      assertThat(executor.freeCapacity()).isZero();
+    }
+  }
+
+  @Test
+  void shouldGiveThePushPathEverySlotBackWhenThePollOnlyFindsJobsThePushPathOverflowed() {
+    // given a streaming worker with one of its four slots reservable for the poll, whose poll was
+    // starved, so the push path is kept to three slots
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, PUSH_WAIT, 1);
+
+    try (final JobWorkerImpl ignored =
+        streamingWorkerWith(scheduler, poller, handlers, streamer, executor)) {
+      reservePollLaneThroughRefusals(scheduler, poller, streamer, handlerThreads);
+
+      // when the broker pushes as many jobs as the worker has slots, a load the push path could
+      // carry on its own, for several rounds; whenever the lane keeps the last push out, the broker
+      // yields that job, and the poll on the wire finds it, without a single refusal
+      final int rounds = 5;
+      long nextKey = STREAMED_JOB_KEY_OFFSET;
+      for (int round = 0; round < rounds; round++) {
+        for (int i = 0; i < MAX_JOBS_ACTIVE; i++) {
+          streamer.push(nextKey + i);
+        }
+        final boolean lastPushWasKeptOut = executor.freeCapacity() > 0;
+        if (lastPushWasKeptOut) {
+          final long yieldedJobKey = nextKey + MAX_JOBS_ACTIVE - 1;
+          answerThePoll(scheduler, poller, Collections.singletonList(TestData.job(yieldedJobKey)));
+        }
+        handlerThreads.runQueued();
+        nextKey += MAX_JOBS_ACTIVE;
+      }
+
+      // then the lane is released, since the poll was not starved anymore: the jobs it found were
+      // only the ones the lane itself kept from the push path, so the push path gets every slot
+      // back
+      // for the same load
+      final List<Long> lastPushedJobKeys = new ArrayList<>();
+      for (int i = 0; i < MAX_JOBS_ACTIVE; i++) {
+        streamer.push(nextKey + i);
+        lastPushedJobKeys.add(nextKey + i);
+      }
+      handlerThreads.runQueued();
+      assertThat(handlers.getRanJobKeys()).containsAll(lastPushedJobKeys);
+    }
+  }
+
+  @Test
   void shouldBoundANonStreamingWorkerToItsMaxJobsActive() {
     // given a non-streaming worker whose handlers all block, so every slot it has is taken
     final int maxJobsActive = 4;
@@ -1300,6 +1574,28 @@ final class JobWorkerImplTest {
     }
   }
 
+  private JobWorkerImpl streamingWorkerWith(
+      final ScheduledExecutorService scheduler,
+      final JobPoller poller,
+      final JobRunnableFactory handlers,
+      final JobStreamer streamer,
+      final JobExecutor executor) {
+    return new JobWorkerImpl(
+        MAX_JOBS_ACTIVE,
+        scheduler,
+        Duration.ofMillis(POLL_INTERVAL_IN_MS),
+        Mockito.mock(JobClient.class),
+        handlers,
+        poller,
+        streamer,
+        delay -> delay,
+        delay -> delay,
+        JobWorkerMetrics.noop(),
+        executor,
+        new TestNanoClock(),
+        JOB_TIMEOUT);
+  }
+
   private JobWorkerImpl workerWith(
       final ScheduledExecutorService scheduler,
       final JobPoller poller,
@@ -1344,6 +1640,67 @@ final class JobWorkerImplTest {
               }
             })
         .start();
+  }
+
+  /**
+   * Starves a poll the way the reserved lane is there to stop, so the worker reserves it: the poll
+   * goes out sized to every slot, pushed jobs take those slots while it is on the wire, and the
+   * jobs it brings back are refused. Every slot is free again afterwards, with the next poll on the
+   * wire.
+   */
+  private static void reservePollLaneThroughRefusals(
+      final DeterministicScheduler scheduler,
+      final RecordingJobPoller poller,
+      final RecordingJobStreamer streamer,
+      final BusyHandlerThreads handlerThreads) {
+    if (!poller.hasPollInFlight()) {
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+    }
+    for (int i = 0; i < MAX_JOBS_ACTIVE; i++) {
+      streamer.push(STARVING_PUSH_JOB_KEY_OFFSET + i);
+    }
+    poller.handOverJobs(TestData.jobs(2));
+    handlerThreads.runQueued();
+    assertThat(poller.hasPollInFlight()).as("the next poll is on the wire").isTrue();
+  }
+
+  /** Answers the poll on the wire with the given jobs, sending one first if none is out. */
+  private static void answerThePoll(
+      final DeterministicScheduler scheduler,
+      final RecordingJobPoller poller,
+      final List<ActivatedJob> jobs) {
+    if (!poller.hasPollInFlight()) {
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+    }
+    assertThat(poller.hasPollInFlight()).as("a poll is on the wire").isTrue();
+    poller.handOverJobs(jobs);
+  }
+
+  /** Answers the poll on the wire with one job that fits, and lets it finish. */
+  private static void answerAPollWithoutRefusal(
+      final DeterministicScheduler scheduler,
+      final RecordingJobPoller poller,
+      final BusyHandlerThreads handlerThreads,
+      final long jobKey) {
+    answerThePoll(scheduler, poller, Collections.singletonList(TestData.job(jobKey)));
+    handlerThreads.runQueued();
+  }
+
+  /**
+   * Pushes a job for every slot and returns how many slots the push path could not take, which is
+   * the size of the reserved poll lane. The pushed jobs finish afterwards, so every slot is free
+   * again.
+   */
+  private static int slotsKeptFromThePushPath(
+      final RecordingJobStreamer streamer,
+      final BlockingExecutor executor,
+      final BusyHandlerThreads handlerThreads) {
+    for (int i = 0; i < MAX_JOBS_ACTIVE; i++) {
+      streamer.push(STREAMED_JOB_KEY_OFFSET + i);
+    }
+    final int keptSlots = executor.freeCapacity();
+    handlerThreads.runQueued();
+    return keptSlots;
   }
 
   private Integer lastRequestedJobCount() {
@@ -1515,10 +1872,12 @@ final class JobWorkerImplTest {
   private static final class RecordingJobPoller implements JobPoller {
     private final JsonMapper jsonMapper = new CamundaObjectMapper();
     private final AtomicInteger pollCount = new AtomicInteger();
+    private final AtomicInteger answeredPollCount = new AtomicInteger();
     private final AtomicInteger lastRequestedJobCount = new AtomicInteger();
     private final AtomicReference<Consumer<io.camunda.client.api.response.ActivatedJob>>
         jobConsumer = new AtomicReference<>();
     private final AtomicReference<IntConsumer> doneCallback = new AtomicReference<>();
+    private final AtomicReference<Consumer<Throwable>> errorCallback = new AtomicReference<>();
 
     @Override
     public void poll(
@@ -1531,6 +1890,7 @@ final class JobWorkerImplTest {
       lastRequestedJobCount.set(maxJobsToActivate);
       this.jobConsumer.set(jobConsumer);
       this.doneCallback.set(doneCallback);
+      this.errorCallback.set(errorCallback);
     }
 
     private int getPollCount() {
@@ -1541,7 +1901,12 @@ final class JobWorkerImplTest {
       return lastRequestedJobCount.get();
     }
 
+    private boolean hasPollInFlight() {
+      return pollCount.get() > answeredPollCount.get();
+    }
+
     private void handOverJobs(final List<ActivatedJob> jobs) {
+      answeredPollCount.incrementAndGet();
       CompletableFuture.completedFuture(jobs)
           .thenApply(
               activatedJobs -> {
@@ -1550,6 +1915,11 @@ final class JobWorkerImplTest {
                 doneCallback.get().accept(activatedJobs.size());
                 return null;
               });
+    }
+
+    private void failPoll(final Throwable error) {
+      answeredPollCount.incrementAndGet();
+      errorCallback.get().accept(error);
     }
   }
 
