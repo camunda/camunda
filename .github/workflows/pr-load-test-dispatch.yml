@@ -124,9 +124,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.dispatch.outputs.matrix) }}
     concurrency:
-      # Only gRPC gets a suffix, like the namespace. A REST run that started before this key changed
-      # must still be cancelled by the next event for its namespace.
-      group: pr-benchmark-${{ matrix.db }}${{ matrix.protocol == 'grpc' && '-grpc' || '' }}-${{ github.event.pull_request.number }}
+      group: pr-benchmark-${{ matrix.db }}-${{ matrix.protocol }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     uses: ./.github/workflows/camunda-pr-load-test.yaml
     secrets: inherit
