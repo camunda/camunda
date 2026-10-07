@@ -81,8 +81,10 @@ func TestShouldDeleteDataDirSkipsWhenSecondaryStorageNotExplicitlySet(t *testing
 
 	require.False(t, shouldDeleteDataDir(settings))
 
-	settings = types.C8RunSettings{SecondaryStorageType: "elasticsearch"}
-	require.False(t, shouldDeleteDataDir(settings))
+	for _, storage := range []string{"elasticsearch", "opensearch", "none"} {
+		settings = types.C8RunSettings{SecondaryStorageType: storage}
+		require.False(t, shouldDeleteDataDir(settings), storage)
+	}
 }
 
 func TestDeleteDataDirRemovesH2Data(t *testing.T) {
