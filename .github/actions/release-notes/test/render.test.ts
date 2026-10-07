@@ -232,13 +232,21 @@ test('multi-release delivery idempotency: the earlier release never says Release
   assert.match(laterEntry!.text, /Released in 8\.8\.6/);
 });
 
-test('an internal-only section is present in the full asset but absent from the customer body', () => {
-  const result = render([pr({ number: 30, section: 'Maintenance', visibility: 'internal', title: 'ci: bump runner' })], {
-    version: '8.8.30',
-    allowUnattributed: false,
-  });
-  assert.doesNotMatch(result.customerBody, /#30/);
-  assert.match(result.fullAsset, /#30/);
+test('when everything fits, the release description is the full asset — nothing is held back for being internal', () => {
+  // given — an internal Maintenance PR, a kind/task-tracked fix and an unattributed fix
+  const result = render(
+    [
+      pr({ number: 30, section: 'Maintenance', visibility: 'internal', title: 'ci: bump runner', issueNumbers: [] }),
+      pr({ number: 31, section: 'Bug Fixes', visibility: 'internal', title: 'Tidy retries', issueNumbers: [310] }),
+      pr({ number: 32, section: 'Bug Fixes', title: 'fix: x', issueNumbers: [], attributionSource: 'unattributed' }),
+    ],
+    { version: '8.8.30', allowUnattributed: true, unattributedReason: 'test' },
+  );
+
+  // then
+  assert.equal(result.customerBody, result.fullAsset);
+  assert.match(result.customerBody, /#30[\s\S]*#31[\s\S]*#32|#31[\s\S]*#32[\s\S]*#30/);
+  assert.doesNotMatch(result.customerBody, /truncated/);
 });
 
 test('emptyCustomerBodyWarning: no warning when there was no attributed work at all', () => {
@@ -253,15 +261,13 @@ test('emptyCustomerBodyWarning: warns when work was attributed but the body is e
   assert.ok(emptyCustomerBodyWarning(true, '')?.includes('Customer-facing body is empty'));
 });
 
-test('an empty customer body warns when pull requests WERE attributed — a maintenance-only release still deserves a look', () => {
+test('a maintenance-only release still gets a non-empty description, since nothing is held back', () => {
   const result = render([pr({ number: 30, section: 'Maintenance', visibility: 'internal', title: 'ci: bump runner' })], {
     version: '8.8.30',
     allowUnattributed: false,
   });
-  assert.equal(result.customerBody, '');
-  assert.ok(
-    (result.auditJson as { warnings: string[] }).warnings.some((line) => line.includes('Customer-facing body is empty')),
-  );
+  assert.match(result.customerBody, /#30/);
+  assert.deepEqual((result.auditJson as { warnings: string[] }).warnings, []);
 });
 
 test('an empty customer body from a genuinely empty release (nothing attributed) does not warn', () => {
@@ -355,9 +361,7 @@ test('an issue whose PRs span sections lands once, in the most customer-visible 
   assert.equal(asset.split('\n').filter((line) => line.startsWith('- ')).length, 1);
 });
 
-test('the customer body names only the PRs it may show; the full asset names every contributor', () => {
-  // The visibility filter decides which PRs an entry may cite, not just which
-  // entries exist — a maintenance PR number in customer notes is noise.
+test('an entry names every contributing PR in both bodies', () => {
   const delivering = [
     pr({ number: 101, title: 'Add agent history API', section: 'Maintenance', visibility: 'internal', issueNumbers: [55] }),
     pr({ number: 102, title: 'Add agent history API', section: 'Features', issueNumbers: [55], closesIssueNumbers: [55] }),
@@ -367,7 +371,7 @@ test('the customer body names only the PRs it may show; the full asset names eve
   const result = render(delivering, { version: '8.8.38', allowUnattributed: false });
 
   // then
-  assert.match(result.customerBody, /- Add agent history API \(#55\) — #102$/m);
+  assert.match(result.customerBody, /- Add agent history API \(#55\) — #101, #102$/m);
   assert.match(result.fullAsset, /- Add agent history API \(#55\) — #101, #102$/m);
 });
 
@@ -578,18 +582,66 @@ function bump(number: number, overrides: Partial<RenderPrInput> = {}): RenderPrI
   });
 }
 
-test('issue-less dependency bumps are full-asset only, and the customer body points there instead', () => {
-  // given — a minor's bot bumps would push the customer body past GitHub's 125,000-char limit
-  const result = render([pr({ number: 1 }), bump(2), bump(3)], { version: '8.10.0', allowUnattributed: false });
+/** Pads a release past GitHub's limit: one near-limit entry plus `count` issue-less bumps, so
+ *  that dropping the bumps (and adding the banner and pointer) is what brings it back under. */
+function overLimit(prs: RenderPrInput[], count = 40): RenderPrInput[] {
+  const filler = pr({ number: 900, title: 'x'.repeat(RELEASE_BODY_LIMIT - 800), issueNumbers: [900] });
+  const bumps = Array.from({ length: count }, (_, i) => bump(1000 + i, { dependencies: [{ name: `filler${i}`, from: '1.0', to: '2.0' }] }));
+  return [filler, ...prs, ...bumps];
+}
+
+test('over the limit, issue-less dependency bumps are dropped first and replaced by a pointer', () => {
+  // given — a release too big for GitHub, with a Maintenance PR that should survive the first drop
+  const maintenance = pr({ number: 2, section: 'Maintenance', visibility: 'internal', title: 'ci: bump runner', issueNumbers: [] });
+  const result = render(overLimit([maintenance]), { version: '8.10.0', allowUnattributed: false, repository: 'camunda/camunda' });
 
   // then
-  assert.doesNotMatch(result.customerBody, /pkg2|pkg3/);
-  assert.match(
-    result.customerBody,
-    /\n\n## Dependency updates\n\n2 dependency updates are listed in the full changelog, `CHANGELOG-8\.10\.0\.md`\.$/,
+  assert.ok(result.customerBody.length <= RELEASE_BODY_LIMIT);
+  assert.doesNotMatch(result.customerBody, /filler0/);
+  assert.match(result.customerBody, /\n\n40 dependency updates are listed in the full changelog, `CHANGELOG-8\.10\.0\.md`\./);
+  assert.match(result.customerBody, /## Maintenance/);
+  assert.match(result.fullAsset, /- filler0: 1\.0 → 2\.0/);
+});
+
+test('the truncation banner names the real asset URL and is counted against the limit', () => {
+  const result = render(overLimit([]), { version: '8.10.0', allowUnattributed: false, repository: 'camunda/camunda' });
+
+  assert.ok(
+    result.customerBody.startsWith(
+      '> [!WARNING]\n> The release notes are truncated, for full list of changes please download the full assets from [here](https://github.com/camunda/camunda/releases/download/8.10.0/CHANGELOG-8.10.0.md).',
+    ),
   );
-  assert.match(result.fullAsset, /## Dependency updates\n\n- pkg2: 1\.0 → 2\.0 \(#2\)\n- pkg3: 1\.0 → 2\.0 \(#3\)/);
-  assert.doesNotMatch(result.fullAsset, /listed in the full changelog/);
+  assert.ok(result.customerBody.length <= RELEASE_BODY_LIMIT);
+  assert.ok((result.auditJson as { warnings: string[] }).warnings.some((line) => line.includes('truncated')));
+});
+
+test('drops go in priority order: Maintenance only after dependency bumps, Reverts after Maintenance', () => {
+  // given — filler so large that dropping the bumps alone is not enough
+  const filler = pr({ number: 900, title: 'x'.repeat(RELEASE_BODY_LIMIT - 700), issueNumbers: [900] });
+  const maintenance = pr({ number: 2, section: 'Maintenance', visibility: 'internal', title: `ci: ${'m'.repeat(900)}`, issueNumbers: [] });
+  const revert = pr({ number: 3, section: 'Reverts', title: 'revert: y', issueNumbers: [] });
+  const result = render([filler, maintenance, revert, bump(4)], { version: '8.10.0', allowUnattributed: false });
+
+  // then — bump and Maintenance are gone, the smaller Revert section still fits
+  assert.doesNotMatch(result.customerBody, /pkg4|## Maintenance/);
+  assert.match(result.customerBody, /## Reverts/);
+  assert.match(result.customerBody, /truncated/);
+});
+
+test('a breaking change is never dropped, whatever its section', () => {
+  const filler = pr({ number: 900, title: 'x'.repeat(RELEASE_BODY_LIMIT - 700), issueNumbers: [900] });
+  const breakingMaintenance = pr({ number: 2, section: 'Maintenance', visibility: 'internal', title: 'ci: breaking', issueNumbers: [], breaking: true });
+  const result = render([filler, breakingMaintenance, ...overLimit([]).slice(1)], { version: '8.10.0', allowUnattributed: false });
+
+  assert.match(result.customerBody, /## Breaking changes\n\n- ci: breaking \(#2\)/);
+});
+
+test('if even the undroppable sections do not fit, trailing entries are cut and the banner stays', () => {
+  const result = render([pr({ number: 1, title: 'x'.repeat(RELEASE_BODY_LIMIT) })], { version: '8.10.0', allowUnattributed: false });
+
+  assert.ok(result.customerBody.startsWith('> [!WARNING]'));
+  assert.ok(result.customerBody.length <= RELEASE_BODY_LIMIT);
+  assert.ok((result.auditJson as { warnings: string[] }).warnings.some((line) => line.includes('the last 1 entries')));
 });
 
 test('a dependency PR that delivers an issue stays in the customer body — a CVE fix is customer news', () => {
@@ -604,66 +656,50 @@ test('a dependency PR that delivers an issue stays in the customer body — a CV
   assert.doesNotMatch(result.customerBody, /listed in the full changelog/);
 });
 
-test('every bump of a package that one breaking bump touched stays in the customer body, so its range does not split', () => {
+test('every bump of a package that one breaking bump touched stays in the description, so its range does not split', () => {
   // given — #5 is breaking, #6 bumps the same package later, #7 an unrelated one
   const result = render(
-    [
+    overLimit([
       bump(6, { dependencies: [{ name: 'shared', from: '2.0', to: '3.0' }] }),
       bump(5, { breaking: true, dependencies: [{ name: 'shared', from: '1.0', to: '2.0' }] }),
       bump(7),
-    ],
+    ]),
     { version: '8.10.0', allowUnattributed: false },
   );
 
   // then
-  assert.match(result.customerBody, /^## Breaking changes\n\n- shared: 1\.0 → 3\.0 \(#6, #5\)/);
+  assert.match(result.customerBody, /## Breaking changes\n\n- shared: 1\.0 → 3\.0 \(#6, #5\)/);
   assert.doesNotMatch(result.customerBody, /pkg7/);
-  assert.match(result.customerBody, /## Dependency updates\n\n- shared: 1\.0 → 3\.0 \(#6, #5\)\n\n1 other dependency update is listed/);
+  assert.match(result.customerBody, /## Dependency updates\n\n- shared: 1\.0 → 3\.0 \(#6, #5\)\n\n41 other dependency updates are listed/);
 });
 
 test('a bump sharing a package with a kept bump is kept too, transitively, so no range splits', () => {
   // given — #5 is breaking on `shared`; #6 bumps `shared` and `other`; #4 bumps only `other`
   const result = render(
-    [
+    overLimit([
       bump(6, { dependencies: [{ name: 'shared', from: '2.0', to: '3.0' }, { name: 'other', from: '2.0', to: '3.0' }] }),
       bump(5, { breaking: true, dependencies: [{ name: 'shared', from: '1.0', to: '2.0' }] }),
       bump(4, { dependencies: [{ name: 'other', from: '1.0', to: '2.0' }] }),
-    ],
+    ]),
     { version: '8.10.0', allowUnattributed: false },
   );
 
   // then
   assert.match(result.customerBody, /- other: 1\.0 → 3\.0 \(#6, #4\)/);
-  assert.doesNotMatch(result.customerBody, /listed in the full changelog/);
 });
 
 test('the full-changelog pointer counts packages, not pull requests', () => {
   // given — two pull requests bumping the same package are one line in the full changelog
   const result = render(
-    [bump(9, { dependencies: [{ name: 'pkg', from: '2.0', to: '3.0' }] }), bump(8, { dependencies: [{ name: 'pkg', from: '1.0', to: '2.0' }] })],
+    overLimit([bump(9, { dependencies: [{ name: 'pkg', from: '2.0', to: '3.0' }] }), bump(8, { dependencies: [{ name: 'pkg', from: '1.0', to: '2.0' }] })]),
     { version: '8.10.0', allowUnattributed: false },
   );
 
-  // then
-  assert.match(result.customerBody, /1 dependency update is listed in the full changelog/);
+  // then — 40 filler packages plus `pkg`
+  assert.match(result.customerBody, /41 dependency updates are listed in the full changelog/);
 });
 
-test('a customer body over the release body limit is flagged in audit.json', () => {
-  // given
-  const result = render([pr({ number: 1, title: 'x'.repeat(RELEASE_BODY_LIMIT) })], {
-    version: '8.10.0',
-    allowUnattributed: false,
-  });
-
-  // then
-  const { warnings } = result.auditJson as { warnings: string[] };
-  assert.ok(warnings.some((warning) => warning.includes('release body limit')));
-});
-
-test('a release of only bot bumps still gets a non-empty customer body pointing at the full changelog', () => {
+test('a release of only bot bumps lists them when they fit', () => {
   const result = render([bump(8)], { version: '8.9.23', allowUnattributed: false });
-  assert.equal(
-    result.customerBody,
-    '## Dependency updates\n\n1 dependency update is listed in the full changelog, `CHANGELOG-8.9.23.md`.',
-  );
+  assert.equal(result.customerBody, '## Dependency updates\n\n- pkg8: 1.0 → 2.0 (#8)');
 });

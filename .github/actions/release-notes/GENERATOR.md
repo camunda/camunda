@@ -55,9 +55,9 @@ touches the release. Publishing is the separate cutover work unit (#57714).
 
 |   Step output   |                                                               Contents                                                               |
 |-----------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| `customer-body` | The curated body: customer-visible sections only, unattributed bucket excluded. This is what goes in the GitHub release description. |
+| `customer-body` | The release description: everything in the full asset, or — if that exceeds GitHub's 125,000-character limit — a truncated version with a warning banner (§ 6). |
 
-Both bodies are also written to the job's step summary, so a reviewer can see the customer body and
+Both outputs are also written to the job's step summary, so a reviewer can see the customer body and
 the full asset side by side without downloading anything.
 
 Every JSON output carries `schemaVersion` (currently `2.0.0`), so a consumer cannot silently misread
@@ -356,8 +356,9 @@ about who the change is for. A CI gate lands as `feat:`, a flaky-test repair as 
 folder marker as `docs:` — and each then reads to a customer as a feature, a bug fix and a
 documentation change. The audience is recorded only on the issue, and only there: a delivering pull
 request carries no `kind/*` label of its own. So an entry whose linked issues are **all**
-`kind/task` or `kind/epic` is forced to `internal` — kept in the full asset, hidden from the
-customer body, never dropped, with a warning naming the label that did it.
+`kind/task` or `kind/epic` is forced to `internal` — still listed, but dropped from the release
+description before any customer-facing entry if it must be truncated (§ 6), with a warning naming the
+label that did it.
 
 Hidden only when *every* linked issue is internal. One pull request routinely closes a customer bug
 and a QA task together — 8.9.19's #61857 closed both `kind/bug` #61719 and `kind/task` #56995 — and
@@ -366,7 +367,7 @@ no issue at all is never hidden: absence is not a signal.
 
 The `kind/*` label is read from at most **20** labels per issue (GraphQL's page size); an issue with
 more carries `labelsTruncated` and produces a warning, since a `kind/*` label past the cap would
-otherwise leak internal work into the customer body with no signal that anything was missed.
+otherwise be kept in a truncated release description with no signal that anything was missed.
 
 `SECTION_BY_TYPE` above is keyed on the same `TITLE_TYPES` tuple the PR-gate lints against
 (`src/title/index.ts`), so a new commitlint type is a compile error here until it is routed to a
@@ -477,25 +478,36 @@ nothing about what the change is. Every `#N` is a link to `https://github.com/<o
 redirects it to `/issues/N` for an issue), because the full asset and the step summary don't autolink
 the way a release body does.
 
-The two bodies differ by audience:
+The two outputs are the same list of changes with one difference: the **release description** (the
+`customer-body` output) must fit GitHub's release body limit, the **full asset**
+(`CHANGELOG-<version>.md`) has none.
 
-|                             |          Customer body (`customer-body` output)           | Full asset (`CHANGELOG-<version>.md`) |
-|-----------------------------|-----------------------------------------------------------|---------------------------------------|
-| `Maintenance`               | excluded                                                  | included                              |
-| issue-less dependency bumps | excluded, replaced by one line pointing at the full asset | included                              |
-| unattributed bucket         | excluded                                                  | included                              |
-| pull request citations      | only the ones it may show                                 | every contributor                     |
+**Everything is shown unless it does not fit.** A GitHub release body is capped at 125,000 characters,
+whether set through the API or pasted in the web editor, which silently cuts a longer paste. On 8.10.0
+the body would have been 143,151 characters, ~43k of it bot dependency bumps. So the release
+description starts as the whole full asset. Only if that is over the limit are categories dropped,
+one at a time and in this order, until it fits:
 
-**Dependency bumps and the release body limit.** A GitHub release body is capped at 125,000
-characters, whether set through the API or pasted in the web editor; the editor silently cuts a longer
-paste. On 8.10.0 the customer body was 143,151 characters, ~43k of it bot dependency bumps. So a bump
-with no linked issue goes to the full asset only, and the customer body's `Dependency updates` section
-ends with one line saying how many packages were left out (`N dependency updates are listed in the full
-changelog, CHANGELOG-<version>.md.`, "N other …" when the section also lists bumps). Two kinds stay in
-the customer body: a dependency pull request that delivers an issue (a CVE fix is customer news), and
-every bump of a package that any breaking bump touched — transitively, so a kept bump's other packages
-keep all their bumps too and no version range is split between the two outputs. This buys headroom, not
-a guarantee: a customer body still over the limit is flagged in the log and `audit.json`.
+1. dependency updates without a linked issue — replaced by one line saying how many packages were left
+   out (`N dependency updates are listed in the full changelog, CHANGELOG-<version>.md.`, "N other …"
+   when the section also lists bumps). A bump sharing a package with a breaking bump is kept, so no
+   version range is split;
+2. `Maintenance`;
+3. `Reverts`;
+4. changes tracked only by internal issues (`kind/task`, `kind/epic`);
+5. changes without an attributed issue (the `unattributed` bucket);
+6. `Documentation`.
+
+A breaking change is never dropped. If everything droppable is gone and the body is still too long,
+entries are cut from the end. Whenever anything was dropped or cut, the body starts with
+
+```
+> [!WARNING]
+> The release notes are truncated, for full list of changes please download the full assets from [here](<asset URL>).
+```
+
+where the URL is `https://github.com/<owner>/<repo>/releases/download/<version>/CHANGELOG-<version>.md`.
+The banner is counted against the limit, and `audit.json` records what was dropped.
 
 **The unattributed guard.** If any pull request landed in the `unattributed`/`resolutionFailed` bucket,
 the job **fails by default**. Every output is still written first — `audit.json`'s whole purpose is
