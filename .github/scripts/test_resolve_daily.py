@@ -116,12 +116,43 @@ class TestCandidateDates:
         assert all(dates[i] > dates[i + 1] for i in range(len(dates) - 1))
 
 
+class TestDailyVariant:
+    @pytest.mark.parametrize("protocol", ["rest", "grpc"])
+    def test_no_secondary_storage_compares_with_the_none_variant(self, protocol):
+        assert r.daily_variant("none", protocol) == f"none-{protocol}"
+
+    @pytest.mark.parametrize("storage", ["elasticsearch", "opensearch", "postgresql", ""])
+    @pytest.mark.parametrize("protocol", ["rest", "grpc"])
+    def test_any_other_storage_compares_with_the_elasticsearch_variant(self, storage, protocol):
+        assert r.daily_variant(storage, protocol) == protocol
+
+    @pytest.mark.parametrize("storage", ["elasticsearch", "none"])
+    @pytest.mark.parametrize("protocol", ["rest", "grpc"])
+    def test_every_variant_has_a_soak_job_label(self, storage, protocol):
+        assert r.daily_variant(storage, protocol) in r.VARIANT_LABELS
+
+
 class TestSoakStartedAt:
+    @pytest.mark.parametrize("variant, job_name", [
+        ("grpc", "gRPC / Soak"),
+        ("rest", "REST / Soak"),
+        ("none-grpc", "None-gRPC / Soak"),
+        ("none-rest", "None-REST / Soak"),
+    ])
+    def test_selects_the_soak_job_of_the_variant(self, variant, job_name):
+        # given
+        with mock.patch.object(r, "gh", return_value="2026-07-01T02:45:00Z\n") as gh:
+            # when
+            r.soak_started_at("123", variant)
+        # then: the jq filter matches only that variant's soak job
+        jq_filter = gh.call_args.args[0][-1]
+        assert f'startswith("{job_name}")' in jq_filter
+
     def test_returns_timestamp_on_success(self):
         # given: gh returns a clean timestamp with trailing newline
         with mock.patch.object(r, "gh", return_value="2026-07-01T02:45:00Z\n"):
             # when
-            result = r.soak_started_at("123")
+            result = r.soak_started_at("123", "rest")
         # then
         assert result == "2026-07-01T02:45:00Z"
 
@@ -129,7 +160,7 @@ class TestSoakStartedAt:
         # given: gh CLI exits non-zero
         with mock.patch.object(r, "gh", return_value=None):
             # when
-            result = r.soak_started_at("123")
+            result = r.soak_started_at("123", "rest")
         # then
         assert result is None
 
@@ -137,7 +168,7 @@ class TestSoakStartedAt:
         # given: gh succeeds but returns empty output (job not yet started)
         with mock.patch.object(r, "gh", return_value=""):
             # when
-            result = r.soak_started_at("123")
+            result = r.soak_started_at("123", "rest")
         # then
         assert result is None
 
@@ -145,7 +176,7 @@ class TestSoakStartedAt:
         # given: jq emits "null" for non-matching jobs before the soak job
         with mock.patch.object(r, "gh", return_value="null\n2026-07-01T02:45:00Z\n"):
             # when
-            result = r.soak_started_at("123")
+            result = r.soak_started_at("123", "rest")
         # then: null line skipped, real value returned
         assert result == "2026-07-01T02:45:00Z"
 
@@ -153,7 +184,7 @@ class TestSoakStartedAt:
         # given: soak job is absent from the run (e.g. setup failed before it started)
         with mock.patch.object(r, "gh", return_value="null\nnull\n"):
             # when
-            result = r.soak_started_at("123")
+            result = r.soak_started_at("123", "rest")
         # then
         assert result is None
 
@@ -210,18 +241,29 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value=self._SOAK_START), \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=self._BENCHMARK):
             # when
-            result = r.resolve(self._NOW)
+            result = r.resolve(self._NOW, "rest")
         # then: anchor = 02:45:00 + 900s (warmup) + 1800s (window) = 03:30:00
         assert result is not None
         namespace, anchor = result
         assert anchor == "2026-07-01T03:30:00Z"
-        assert namespace == f"c8-{self._BENCHMARK}"
+        assert namespace == f"c8-{self._BENCHMARK}-rest"
+
+    def test_namespace_carries_the_variant_suffix(self):
+        # given
+        with mock.patch.object(r, "find_run_id", return_value="42"), \
+             mock.patch.object(r, "soak_started_at", return_value=self._SOAK_START) as soak, \
+             mock.patch.object(r, "benchmark_from_artifacts", return_value=self._BENCHMARK):
+            # when
+            namespace, _ = r.resolve(self._NOW, "none-rest")
+        # then
+        assert namespace == f"c8-{self._BENCHMARK}-none-rest"
+        soak.assert_called_once_with("42", "none-rest")
 
     def test_returns_none_when_no_run_found_for_any_candidate(self):
         # given: no completed run exists for any candidate date
         with mock.patch.object(r, "find_run_id", return_value=None):
             # when / then
-            assert r.resolve(self._NOW) is None
+            assert r.resolve(self._NOW, "rest") is None
 
     def test_skips_candidate_missing_soak_time(self):
         # given: run found but soak job has no started_at (e.g. job was cancelled)
@@ -229,7 +271,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value=None), \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=self._BENCHMARK):
             # when / then
-            assert r.resolve(self._NOW) is None
+            assert r.resolve(self._NOW, "rest") is None
 
     def test_skips_candidate_missing_artifact(self):
         # given: run found but metrics artifact has expired or was never uploaded
@@ -237,7 +279,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value=self._SOAK_START), \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=None):
             # when / then
-            assert r.resolve(self._NOW) is None
+            assert r.resolve(self._NOW, "rest") is None
 
     def test_skips_candidate_with_unparseable_timestamp(self):
         # given: soak.started_at is present but not a valid ISO-8601 timestamp
@@ -245,7 +287,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value="not-a-timestamp"), \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=self._BENCHMARK):
             # when / then
-            assert r.resolve(self._NOW) is None
+            assert r.resolve(self._NOW, "rest") is None
 
     def test_falls_back_to_next_candidate_on_no_run(self):
         """First candidate has no run ID; resolver must try the next one."""
@@ -260,7 +302,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value=self._SOAK_START), \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=self._BENCHMARK):
             # when
-            result = r.resolve(self._NOW)
+            result = r.resolve(self._NOW, "rest")
         # then: succeeded after falling back to the second candidate
         assert result is not None
         assert len(calls) == 2
@@ -278,7 +320,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value=self._SOAK_START), \
              mock.patch.object(r, "benchmark_from_artifacts", side_effect=artifact_side_effect):
             # when
-            result = r.resolve(self._NOW)
+            result = r.resolve(self._NOW, "rest")
         # then: succeeded after falling back to the second candidate
         assert result is not None
         assert len(calls) == 2

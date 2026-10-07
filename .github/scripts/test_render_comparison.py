@@ -1,10 +1,11 @@
-"""Unit tests for render-comparison.py (daily_window_start).
+"""Unit tests for render-comparison.py.
 
 Run with:
     pytest .github/scripts/test_render_comparison.py
 """
 
 import importlib.util
+import json
 import os
 import sys
 from datetime import datetime, timedelta
@@ -59,3 +60,35 @@ class TestDailyWindowStart:
         # then: window_start = soak_start + warmup (the first steady-state second)
         expected = (start_dt + timedelta(seconds=warmup_s)).strftime("%Y-%m-%dT%H:%M:%SZ")
         assert window_start == expected
+
+
+class TestOptimalMetrics:
+    _OPTIMAL = os.path.join(
+        os.path.dirname(__file__), "..", "..", "load-tests", "docs", "scripts", "optimal.json"
+    )
+
+    def _load(self):
+        with open(self._OPTIMAL, encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_storage_without_override_uses_the_base_values(self):
+        # given
+        optimal = self._load()
+        # when
+        metrics = rc.optimal_metrics(optimal, "elasticsearch")
+        # then
+        assert metrics == optimal["metrics"]
+
+    def test_no_secondary_storage_expects_the_higher_rate(self):
+        # when
+        metrics = rc.optimal_metrics(self._load(), "none")
+        # then: 500 PI/s over the 1800 s window, as the max scenario starts without storage
+        assert metrics["completed-pi-rate-per-second"]["expected"] == 500
+        assert metrics["process-instances-completed"]["expected"] == 900_000
+        assert metrics["data-availability"]["expected"] is None
+
+    def test_override_keeps_the_base_tolerance(self):
+        # when
+        metrics = rc.optimal_metrics(self._load(), "none")
+        # then
+        assert metrics["throughput-per-second"]["tolerance-percent"] == 5
