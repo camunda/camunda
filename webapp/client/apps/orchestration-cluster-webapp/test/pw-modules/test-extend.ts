@@ -11,18 +11,18 @@ import {defineNetworkFixture, type NetworkFixture} from '@msw/playwright';
 import type {AnyHandler} from 'msw';
 import AxeBuilder from '@axe-core/playwright';
 import {LoginPage} from '#/pages/Login.page';
-import {TasklistIndexPage} from '#/pages/TasklistIndex.page';
-import {TasklistProcessesPage} from '#/pages/TasklistProcesses.page';
-import {TaskDetailPage} from '#/pages/TaskDetail.page';
-import {OperateIndexPage} from '#/pages/OperateIndex.page';
-import {OperateBatchOperationsPage} from '#/pages/OperateBatchOperations.page';
-import {OperateProcessesPage} from '#/pages/OperateProcesses.page';
-import {OperateDecisionsPage} from '#/pages/OperateDecisions.page';
-import {AdminIndexPage} from '#/pages/AdminIndex.page';
+import {TasklistIndexPage} from '#/pages/tasklist/TasklistIndex.page';
+import {TasklistProcessesPage} from '#/pages/tasklist/TasklistProcesses.page';
+import {TaskDetailPage} from '#/pages/tasklist/TaskDetail.page';
+import {OperateIndexPage} from '#/pages/operate/OperateIndex.page';
+import {OperateBatchOperationsPage} from '#/pages/operate/OperateBatchOperations.page';
+import {OperateProcessesPage} from '#/pages/operate/OperateProcesses.page';
+import {OperateDecisionsPage} from '#/pages/operate/OperateDecisions.page';
+import {AdminIndexPage} from '#/pages/admin/AdminIndex.page';
 import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
 import {ComponentAccessDeniedPage} from '#/pages/ComponentAccessDenied.page';
-import {TasklistLoginPage} from '#/pages/TasklistLogin.page';
+import {TasklistLoginPage} from '#/pages/tasklist/TasklistLogin.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;

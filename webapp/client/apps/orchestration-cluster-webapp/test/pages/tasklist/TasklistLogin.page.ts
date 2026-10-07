@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {LoginPage} from './Login.page';
+import {LoginPage} from '#/pages/Login.page';
 
 class TasklistLoginPage extends LoginPage {
 	override async goto(redirect?: string) {
