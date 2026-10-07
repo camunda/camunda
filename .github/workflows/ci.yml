@@ -1513,8 +1513,20 @@ jobs:
       - name: Check for bypass label
         id: bypass
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Stale on re-runs: reflects labels at trigger time, not now.
+          PAYLOAD_HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:flaky-test-bypass') }}
         run: |
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci:flaky-test-bypass') }}" == "true" ]]; then
+          # Re-runs reuse the original event payload, so prefer the live labels.
+          if live_labels="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --paginate --jq '.[].name')"; then
+            if grep -qxF 'ci:flaky-test-bypass' <<< "$live_labels"; then has_label=true; else has_label=false; fi
+          else
+            echo "::warning::Could not read live PR labels; falling back to the event payload."
+            has_label="$PAYLOAD_HAS_LABEL"
+          fi
+          if [[ "$has_label" == "true" ]]; then
             echo "::notice::Bypass label 'ci:flaky-test-bypass' detected — sticky entries will be cleared via bypass."
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
