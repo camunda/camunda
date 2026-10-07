@@ -100,6 +100,7 @@ def load_inputs() -> dict:
         "daily_at": os.environ.get("DAILY_AT", ""),
         "duration_seconds": int(os.environ.get("DURATION_SECONDS", "0")),
         "storage_type": os.environ.get("STORAGE_TYPE", ""),
+        "protocol": os.environ.get("PROTOCOL", ""),
         "queries": queries_doc["queries"],
         "optimal_metrics": optimal.get("metrics", {}),
         "results": safe_json_parse(os.environ.get("PR_RESULTS_JSON"), "Current"),
@@ -138,8 +139,8 @@ def daily_window_start(daily_at: str, duration_seconds: int) -> str | None:
 
 
 def render_body(ctx: dict) -> str:
-    storage = ctx["storage_type"]
-    heading = f"## 📈 Load Test Metrics - {storage}" if storage else "## 📈 Load Test Metrics"
+    setup = " - ".join(part for part in (ctx["storage_type"], ctx.get("protocol", "")) if part)
+    heading = f"## 📈 Load Test Metrics - {setup}" if setup else "## 📈 Load Test Metrics"
     daily_at = ctx["daily_at"]
     window_start = daily_window_start(daily_at, ctx["duration_seconds"])
     daily_line = (

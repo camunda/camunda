@@ -59,6 +59,7 @@ jobs:
           # NOTE: 'benchmark' (no suffix) is historically the elasticsearch trigger.
           declare -A label_to_db=(
             [benchmark]=elasticsearch
+            [benchmark-grpc]=elasticsearch
             [benchmark-opensearch]=opensearch
             [benchmark-postgresql]=postgresql
             [benchmark-mysql]=mysql
@@ -66,14 +67,22 @@ jobs:
             [benchmark-mssql]=mssql
             [benchmark-oracle]=oracle
             [benchmark-none]=none
+            [benchmark-none-grpc]=none
+          )
+          # Benchmarks run over REST unless the label is listed here. Only storages with a daily
+          # gRPC leg get a gRPC label, so the comparison always has a matching reference.
+          declare -A label_to_protocol=(
+            [benchmark-grpc]=grpc
+            [benchmark-none-grpc]=grpc
           )
 
           entries=()
           add_entry() {
             local label="$1"
             local db="${label_to_db[$label]:-}"
+            local protocol="${label_to_protocol[$label]:-rest}"
             if [[ -n "$db" ]]; then
-              entries+=("{\"label\":\"${label}\",\"db\":\"${db}\"}")
+              entries+=("{\"label\":\"${label}\",\"db\":\"${db}\",\"protocol\":\"${protocol}\"}")
             else
               echo "::warning title=Unknown Benchmark Label::Label '$label' is not a recognized benchmark trigger. Ignoring."
             fi
@@ -108,18 +117,19 @@ jobs:
           echo "Generated matrix: $matrix"
 
   benchmark:
-    name: Benchmark (${{ matrix.db }})
+    name: Benchmark (${{ matrix.db }}, ${{ matrix.protocol }})
     needs: dispatch
     if: needs.dispatch.outputs.any == 'true'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.dispatch.outputs.matrix) }}
     concurrency:
-      group: pr-benchmark-${{ matrix.db }}-${{ github.event.pull_request.number }}
+      group: pr-benchmark-${{ matrix.db }}-${{ matrix.protocol }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     uses: ./.github/workflows/camunda-pr-load-test.yaml
     secrets: inherit
     with:
       label: ${{ matrix.label }}
       secondary-storage-type: ${{ matrix.db }}
+      protocol: ${{ matrix.protocol }}
       ref: ${{ github.event.pull_request.head.ref }}
