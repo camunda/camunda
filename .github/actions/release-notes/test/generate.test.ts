@@ -131,7 +131,7 @@ for (const allowUnattributed of [false, true]) {
     assert.deepEqual(result.labels.issues, []);
     assert.deepEqual(result.comments.entries, []);
     assert.deepEqual(result.audit.overrides.map((entry) => entry.number), allowUnattributed ? [1] : []);
-    assert.equal(result.customerBody, '');
+    assert.equal(result.customerBody, result.fullAsset);
     assert.match(result.fullAsset, /fix: correct retries \(\[#1\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/1\)\)/);
     assert.doesNotMatch(result.fullAsset, /4777|private-tracker|Local issue/);
     assert.equal(result.calls.some((call) => Object.values(call.variables).includes(4777)), false);
@@ -190,8 +190,7 @@ for (const newerIsBot of [false, true]) {
     assert.deepEqual(result.changelog.prs.map((pr) => pr.number), [10, 20]);
     assert.deepEqual(result.labels.pullRequests, [10, 20]);
     assert.deepEqual(result.audit.overrides.map((entry) => entry.number), [newerIsBot ? 20 : 10]);
-    // Issue-less bumps are full-asset only; the customer body points there instead.
-    assert.doesNotMatch(result.customerBody, /pkg:/);
-    assert.match(result.customerBody, /^1 dependency update is listed in the full changelog/m);
+    // Nothing is over the limit, so the release description carries the same bump line as the asset.
+    assert.equal(result.customerBody, result.fullAsset);
   });
 }

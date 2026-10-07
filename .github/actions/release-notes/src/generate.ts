@@ -249,7 +249,7 @@ async function run(): Promise<void> {
     );
     if (internalKind) {
       issueFactsWarnings.push(
-        `PR #${entry.renderPr.number}: linked issue is ${internalKind} — kept in the full asset, hidden from the customer body.`,
+        `PR #${entry.renderPr.number}: linked issue is ${internalKind} — dropped from the release description only if it has to be truncated to fit.`,
       );
     }
     for (const issueNumber of entry.renderPr.issueNumbers) {

@@ -140,7 +140,7 @@ const SECTION_BY_TYPE = {
     style: 'Maintenance',
     merge: null,
 };
-/** The one section hidden from the customer-facing body — still in the full asset. */
+/** The section marked internal — the second thing dropped from the release description if it must be truncated. */
 const INTERNAL_SECTION = 'Maintenance';
 /** A customer must never see these, whatever the delivering PR's title says
  *  — the conventional-commit type describes the CHANGE, not the audience. */
@@ -497,7 +497,7 @@ async function run() {
             continue;
         const internalKind = (0, categorize_1.hiddenFromCustomerBody)(entry.renderPr.issueNumbers.map((issueNumber) => issueFacts.get(issueNumber)?.labels ?? []));
         if (internalKind) {
-            issueFactsWarnings.push(`PR #${entry.renderPr.number}: linked issue is ${internalKind} — kept in the full asset, hidden from the customer body.`);
+            issueFactsWarnings.push(`PR #${entry.renderPr.number}: linked issue is ${internalKind} — dropped from the release description only if it has to be truncated to fit.`);
         }
         for (const issueNumber of entry.renderPr.issueNumbers) {
             if (issueFacts.get(issueNumber)?.labelsTruncated) {
@@ -1394,6 +1394,71 @@ function collapseDependencies(prs) {
         delivered: true,
     }));
 }
+/** What may be dropped from the release description, least valuable first, when
+ *  everything together would not fit GitHub's body limit. A breaking change is
+ *  never dropped. Each step is a whole category: a half-listed section reads as
+ *  a complete one. */
+const DROP_STEPS = [
+    { name: 'dependency updates without a linked issue', drops: (prs) => assetOnlyDependencyBumps(prs) },
+    { name: 'Maintenance', drops: (prs) => new Set(prs.filter((pr) => pr.section === 'Maintenance' && !pr.breaking)) },
+    { name: 'Reverts', drops: (prs) => new Set(prs.filter((pr) => pr.section === 'Reverts' && !pr.breaking)) },
+    {
+        name: 'changes tracked only by internal issues (kind/task, kind/epic)',
+        drops: (prs) => new Set(prs.filter((pr) => pr.visibility === 'internal' && !pr.breaking)),
+    },
+    { name: 'changes without an attributed issue', drops: (prs) => new Set(prs.filter((pr) => isUnattributed(pr) && !pr.breaking)) },
+    { name: 'Documentation', drops: (prs) => new Set(prs.filter((pr) => pr.section === 'Documentation' && !pr.breaking)) },
+];
+function truncationBanner(options) {
+    const assetUrl = options.repository
+        ? `https://github.com/${options.repository}/releases/download/${options.version}/CHANGELOG-${options.version}.md`
+        : undefined;
+    const where = assetUrl ? `[here](${assetUrl})` : 'the release assets';
+    return `> [!WARNING]\n> The release notes are truncated, for full list of changes please download the full assets from ${where}.`;
+}
+/** The release description: everything, unless that exceeds GitHub's limit — then
+ *  categories are dropped in DROP_STEPS order until it fits, with a warning banner
+ *  (counted against the limit) pointing at the full asset. If even the
+ *  undroppable sections do not fit, trailing entries are cut. */
+function fitCustomerBody(assetPrs, link, options) {
+    let remaining = assetPrs;
+    const dropped = [];
+    const banner = truncationBanner(options);
+    const render = (prs) => {
+        const packageCount = new Set(assetPrs.filter((pr) => isDependencyBump(pr) && !prs.includes(pr)).flatMap(packagesOf)).size;
+        return renderSectionedBody(prs, link, packageCount > 0 ? { packageCount, version: options.version } : undefined);
+    };
+    const withBanner = (body) => (remaining.length < assetPrs.length ? `${banner}\n\n${body}` : body);
+    let body = render(remaining);
+    for (const step of DROP_STEPS) {
+        if (withBanner(body).length <= exports.RELEASE_BODY_LIMIT)
+            return { body: withBanner(body), dropped, cutEntries: 0 };
+        const doomed = step.drops(remaining);
+        if (doomed.size === 0)
+            continue;
+        remaining = remaining.filter((pr) => !doomed.has(pr));
+        dropped.push(step.name);
+        body = render(remaining);
+    }
+    if (withBanner(body).length <= exports.RELEASE_BODY_LIMIT)
+        return { body: withBanner(body), dropped, cutEntries: 0 };
+    // Last resort: what is left is breaking changes, features, fixes and performance. Cut from the end.
+    const lines = body.split('\n');
+    let cutEntries = 0;
+    while (lines.length > 0 && `${banner}\n\n${lines.join('\n')}`.length > exports.RELEASE_BODY_LIMIT) {
+        if (lines.pop().startsWith('- '))
+            cutEntries++;
+    }
+    while (lines.length > 0 && (lines[lines.length - 1] === '' || lines[lines.length - 1].startsWith('## ')))
+        lines.pop();
+    return { body: `${banner}\n\n${lines.join('\n')}`, dropped, cutEntries };
+}
+function truncationWarning(dropped, cutEntries) {
+    if (dropped.length === 0 && cutEntries === 0)
+        return undefined;
+    const parts = [...dropped, ...(cutEntries > 0 ? [`the last ${cutEntries} entries`] : [])];
+    return `Release description exceeded GitHub's ${exports.RELEASE_BODY_LIMIT}-character body limit and was truncated; dropped: ${parts.join(', ')}. The full list is only in the CHANGELOG asset.`;
+}
 /** One comment per issue, not per PR that touched it — the marker is keyed
  *  on `<version>:issue-<N>`, so two PRs sharing an issue must aggregate into
  *  one row or the marker collision drops one silently on publish. */
@@ -1431,15 +1496,11 @@ function render(all, options) {
     const guardFailed = unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason);
     const failureReason = guardFailed ? describeGuardFailure(unattributed) : undefined;
     const unattributedReason = options.unattributedReason ?? '';
-    const customerVisible = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
-    const assetOnly = assetOnlyDependencyBumps(customerVisible);
-    const customerPrs = customerVisible.filter((pr) => !assetOnly.has(pr));
-    const packageCount = new Set([...assetOnly].flatMap(packagesOf)).size;
     const assetPrs = all.filter((pr) => pr.section !== null);
     // `/pull/N` and `/issues/N` redirect to each other, so one URL form serves both.
     const link = (number) => options.repository ? `[#${number}](https://github.com/${options.repository}/pull/${number})` : `#${number}`;
-    const customerBody = renderSectionedBody(customerPrs, link, packageCount > 0 ? { packageCount, version: options.version } : undefined);
     const fullAsset = renderSectionedBody(assetPrs, link);
+    const { body: customerBody, dropped, cutEntries } = fitCustomerBody(assetPrs, link, options);
     const prsByIssue = new Map(); // insertion-ordered: issues come out in walk order
     for (const pr of all) {
         for (const issueNumber of pr.issueNumbers) {
@@ -1455,7 +1516,11 @@ function render(all, options) {
     // Only recorded when the override actually let the guard pass — else a plain
     // failure would look identical to an approved exception in this file.
     const overrides = guardFailed ? [] : unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
-    const bodyWarnings = [emptyCustomerBodyWarning(prs.length > 0, customerBody), oversizedCustomerBodyWarning(customerBody)];
+    const bodyWarnings = [
+        emptyCustomerBodyWarning(prs.length > 0, customerBody),
+        oversizedCustomerBodyWarning(customerBody),
+        truncationWarning(dropped, cutEntries),
+    ];
     const warnings = [...(options.warnings ?? []), ...bodyWarnings.filter((warning) => warning !== undefined)];
     return {
         customerBody,
