@@ -34,7 +34,7 @@ jobs:
       contents: read
     outputs:
       ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
-      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+      elasticsearch-9: ${{ steps.db-versions.outputs.elasticsearch-9 }}
       opensearch-3: ${{ steps.db-versions.outputs.opensearch-3 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -69,9 +69,9 @@ jobs:
       matrix:
         include:
           - database-type: "elasticsearch"
-            database-name: "ES 8.x"
+            database-name: "ES 9.x"
             it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-9 }}"
           - database-type: "opensearch"
             database-name: "OS 3.x"
             it-database-type: "os"
@@ -101,9 +101,9 @@ jobs:
       matrix:
         include:
           - database-type: "elasticsearch"
-            database-name: "ES 8.x"
+            database-name: "ES 9.x"
             it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-9 }}"
           - database-type: "opensearch"
             database-name: "OS 3.x"
             it-database-type: "os"

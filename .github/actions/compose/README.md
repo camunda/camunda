@@ -2,7 +2,7 @@
 
 ## Intro
 
-The action is used ease the use of docker-compose for running dependencies like elasticsearch for tests. Based on the provided compose file it launches its contents and blocks GHA until the containers are considered healthy.
+The action is used to ease the use of docker-compose for running dependencies like elasticsearch for tests. Based on the provided compose file it launches its contents and blocks GHA until the containers are considered healthy.
 
 It also allows running multiple instances of elasticsearch by defining a project_name.
 
@@ -28,7 +28,7 @@ steps:
     compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
     project_name: elasticsearch
   env:
-    ELASTIC_VERSION: 8.19.11
+    ELASTIC_VERSION: 9.5.5
     ELASTIC_JVM_MEMORY: 1
     ELASTIC_HTTP_PORT: 9200
 ```
