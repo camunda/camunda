@@ -40,17 +40,26 @@ describe('<PriorityLabel />', () => {
 		await expect.element(screen.getByText('Low', {exact: true})).toBeVisible();
 	});
 
-	it('should show "Priority: Critical" as the title attribute for critical priority', async () => {
+	it('should expose "Priority: Critical" to screen readers for critical priority', async () => {
 		const screen = await render(<PriorityLabel priority={80} />, {wrapper: Wrapper});
 
-		await expect.element(screen.getByTitle('Priority: Critical')).toBeVisible();
+		await expect.element(screen.getByText('Priority: Critical')).toBeInTheDocument();
 	});
 
-	it('should show the long "Priority: High" label as tooltip content on hover', async () => {
+	it('should not render a native title attribute', async () => {
+		const screen = await render(<PriorityLabel priority={80} />, {wrapper: Wrapper});
+
+		expect(screen.container.querySelector('[title]')).toBeNull();
+	});
+
+	it('should show the "Priority" title and the priority type as tooltip content on hover', async () => {
 		const screen = await render(<PriorityLabel priority={60} />, {wrapper: Wrapper});
 
-		await userEvent.hover(screen.getByTitle('Priority: High'));
+		await userEvent.hover(screen.getByText('High', {exact: true}));
 
-		await expect.element(screen.getByText('Priority: High')).toBeVisible();
+		const tooltip = screen.getByRole('tooltip');
+
+		await expect.element(tooltip).toMatchTextContent('Priority');
+		await expect.element(tooltip).toMatchTextContent('High');
 	});
 });

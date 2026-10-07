@@ -7,6 +7,7 @@
  */
 
 import {ChevronDown, ChevronUp, ChevronsUp, Equal} from '@camunda/design-system/icons';
+import {useTranslation} from 'react-i18next';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
 import {LabelWithTooltip, type Align} from './LabelWithTooltip';
 
@@ -23,11 +24,22 @@ const ICON_MAPPINGS = {
 };
 
 const PriorityLabel: React.FC<Props> = ({priority, align = 'top-end'}) => {
+	const {t} = useTranslation();
 	const priorityLabel = getPriorityLabel(priority);
 	const PriorityIcon = ICON_MAPPINGS[priorityLabel.key];
 
 	return (
-		<LabelWithTooltip title={priorityLabel.long} content={priorityLabel.long} align={align}>
+		<LabelWithTooltip
+			screenReaderText={priorityLabel.long}
+			content={
+				<div className="flex flex-col gap-1">
+					<span className="font-medium">{t('tasklist.taskDetailsPriorityLabel')}</span>
+					<span>{priorityLabel.short}</span>
+				</div>
+			}
+			align={align}
+			className="shrink-0"
+		>
 			<PriorityIcon className="size-4 shrink-0" data-testid={`${priorityLabel.key}-priority-icon`} aria-hidden />
 			{priorityLabel.short}
 		</LabelWithTooltip>

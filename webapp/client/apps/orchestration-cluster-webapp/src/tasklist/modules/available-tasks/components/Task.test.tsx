@@ -30,6 +30,23 @@ const baseProps: TaskProps = {
 	currentUser,
 };
 
+const BorderBox = () => <style>{'*, *::before, *::after {box-sizing: border-box}'}</style>;
+
+/**
+ * Elements sticking out of the card, either by their box or by their content spilling
+ * out visibly. Content that is clipped (truncated) is not reported.
+ */
+const getOverflowingElements = (card: Element) => {
+	const containerRight = (card.closest('article') ?? card).getBoundingClientRect().right;
+
+	return [card, ...card.querySelectorAll('*')].filter((element) => {
+		const spillsOut =
+			getComputedStyle(element).overflowX === 'visible' && element.scrollWidth > element.clientWidth + 1;
+
+		return element.getBoundingClientRect().right > containerRight + 1 || spillsOut;
+	});
+};
+
 const TestTask: React.FC<Partial<TaskProps>> = (props) => <Task {...baseProps} {...props} />;
 
 describe('<Task />', () => {
@@ -98,6 +115,58 @@ describe('<Task />', () => {
 		await expect.element(screen.getByText('High')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Medium')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Low')).not.toBeInTheDocument();
+	});
+
+	it('should keep all labels inside the card when the assignee name is very long', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{width: 280}}>
+					<BorderBox />
+					<TestTask
+						assignee="a.very.long.assignee.username@example-company.com"
+						priority={80}
+						dueDate="2030-01-06T12:00:00.000Z"
+					/>
+				</div>
+			),
+			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/other-task'},
+		);
+
+		const card = screen.getByRole('link').element();
+		expect(getOverflowingElements(card)).toEqual([]);
+	});
+
+	it('should keep the card within its width when the names are very long', async () => {
+		const longValue = 'unbrokenvalue'.repeat(12);
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{width: 280}}>
+					<BorderBox />
+					<TestTask displayName={longValue} processDisplayName={longValue} businessId={longValue} />
+				</div>
+			),
+			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/other-task'},
+		);
+
+		const card = screen.getByRole('link').element();
+
+		expect(getOverflowingElements(card)).toEqual([]);
+	});
+
+	it('should keep the card within its width when the panel is very narrow', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{width: 120}}>
+					<BorderBox />
+					<TestTask dueDate="2030-01-06T12:00:00.000Z" assignee="john.doe" priority={80} />
+				</div>
+			),
+			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/other-task'},
+		);
+
+		const card = screen.getByRole('link').element();
+
+		expect(getOverflowingElements(card)).toEqual([]);
 	});
 
 	it.for([
