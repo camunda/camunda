@@ -193,29 +193,20 @@ public final class BpmnVariableMappingBehavior {
         return Either.left(resolveResult.getLeft());
       }
 
-      final var isMultiInstanceActivity =
-          elementInstanceState.getInstance(elementInstanceKey).getMultiInstanceLoopCounter() > 0;
-      if (isMultiInstanceActivity) {
-        return propagateVariablesMultiInstance(
-            context,
-            element,
-            getVariableScopeKey(context),
-            resolveResult.get(),
-            outputVariableBehavior);
-      } else {
-        return propagateVariables(
-            context,
-            element,
-            getVariableScopeKey(context),
-            resolveResult.get(),
-            outputVariableBehavior);
-      }
+      final boolean isMultiInstanceActivity = isMultiInstanceActivity(context);
+      return propagateVariables(
+          context,
+          element,
+          isMultiInstanceActivity ? context.getElementInstanceKey() : context.getFlowScopeKey(),
+          resolveResult.get(),
+          outputVariableBehavior,
+          isMultiInstanceActivity);
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default
       final Either<Failure, Void> variableEither =
           propagateVariables(
-              context, element, elementInstanceKey, variables, outputVariableBehavior);
+              context, element, elementInstanceKey, variables, outputVariableBehavior, true);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -230,7 +221,8 @@ public final class BpmnVariableMappingBehavior {
               element,
               getVariableScopeKey(context),
               localVariables,
-              outputVariableBehavior);
+              outputVariableBehavior,
+              false);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -243,47 +235,33 @@ public final class BpmnVariableMappingBehavior {
       final ExecutableFlowNode element,
       final long scopeKey,
       final DirectBuffer result,
-      final VariableBehavior outputVariableBehavior) {
+      final VariableBehavior outputVariableBehavior,
+      final boolean propagateUnmodifiedVariables) {
     final ProcessInstanceRecord record = context.getRecordValue();
     try {
-      outputVariableBehavior.mergeDocument(
-          scopeKey,
-          record.getProcessDefinitionKey(),
-          record.getProcessInstanceKey(),
-          context.getRootProcessInstanceKey(),
-          context.getStorageOrdinal(),
-          context.getBpmnProcessId(),
-          context.getTenantId(),
-          result);
+      if (propagateUnmodifiedVariables) {
+        outputVariableBehavior.mergeDocumentWithPropagationOfUnmodifiedVariable(
+            scopeKey,
+            record.getProcessDefinitionKey(),
+            record.getProcessInstanceKey(),
+            context.getRootProcessInstanceKey(),
+            context.getStorageOrdinal(),
+            context.getBpmnProcessId(),
+            context.getTenantId(),
+            result);
+      } else {
+        outputVariableBehavior.mergeDocument(
+            scopeKey,
+            record.getProcessDefinitionKey(),
+            record.getProcessInstanceKey(),
+            context.getRootProcessInstanceKey(),
+            context.getStorageOrdinal(),
+            context.getBpmnProcessId(),
+            context.getTenantId(),
+            result);
+      }
       return Either.right(null);
-    } catch (final ValidationException e) {
-      return Either.left(
-          new Failure(
-              String.format(
-                  "Failed to merge variables for element '%s' with key '%d': %s",
-                  element.getId(), context.getElementInstanceKey(), e.getMessage()),
-              ErrorType.IO_MAPPING_ERROR));
-    }
-  }
 
-  private @NonNull Either<Failure, Void> propagateVariablesMultiInstance(
-      final BpmnElementContext context,
-      final ExecutableFlowNode element,
-      final long scopeKey,
-      final DirectBuffer result,
-      final VariableBehavior outputVariableBehavior) {
-    final ProcessInstanceRecord record = context.getRecordValue();
-    try {
-      outputVariableBehavior.mergeDocumentForMultiInstance(
-          scopeKey,
-          record.getProcessDefinitionKey(),
-          record.getProcessInstanceKey(),
-          context.getRootProcessInstanceKey(),
-          context.getStorageOrdinal(),
-          context.getBpmnProcessId(),
-          context.getTenantId(),
-          result);
-      return Either.right(null);
     } catch (final ValidationException e) {
       return Either.left(
           new Failure(
@@ -320,14 +298,19 @@ public final class BpmnVariableMappingBehavior {
     }
   }
 
+  private boolean isMultiInstanceActivity(final BpmnElementContext context) {
+    return elementInstanceState
+            .getInstance(context.getElementInstanceKey())
+            .getMultiInstanceLoopCounter()
+        > 0;
+  }
+
   private long getVariableScopeKey(final BpmnElementContext context) {
     final var elementInstanceKey = context.getElementInstanceKey();
 
     // an inner multi-instance activity needs to read from/write to its own scope
     // to access the input and output element variables
-    final var isMultiInstanceActivity =
-        elementInstanceState.getInstance(elementInstanceKey).getMultiInstanceLoopCounter() > 0;
-    return isMultiInstanceActivity ? elementInstanceKey : context.getFlowScopeKey();
+    return isMultiInstanceActivity(context) ? elementInstanceKey : context.getFlowScopeKey();
   }
 
   private boolean isConnectedToEventBasedGateway(final ExecutableFlowNode element) {
