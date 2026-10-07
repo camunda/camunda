@@ -117,6 +117,8 @@ class PartitionManagerStepTest {
           .thenReturn(mockClusterConfiguration);
       when(clusterConfigurationService.getCurrentClusterConfiguration())
           .thenReturn(mockClusterConfiguration);
+      when(clusterConfigurationService.getLatestClusterConfiguration())
+          .thenReturn(CompletableActorFuture.completed(mockClusterConfiguration));
       final var memberState = BrokerPartitionState.initialize(Map.of()).setMode(Mode.PROCESSING);
       final var partitionGroup =
           PartitionGroupConfiguration.empty(1).addMember(MemberId.from("0"), memberState);

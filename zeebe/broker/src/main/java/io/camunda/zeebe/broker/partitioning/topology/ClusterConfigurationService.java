@@ -104,12 +104,21 @@ public interface ClusterConfigurationService extends AsyncClosable {
    * #getCurrentClusterConfiguration() current cluster configuration}.
    */
   default PartitionDistribution getCurrentPartitionDistribution(final String physicalTenantId) {
-    final var config = getCurrentClusterConfiguration();
-    if (config == null) {
+    return partitionDistributionOf(getCurrentClusterConfiguration(), physicalTenantId);
+  }
+
+  /**
+   * The partition distribution of the given physical tenant in {@code configuration}, e.g. one
+   * fetched with {@link #getLatestClusterConfiguration()}, which unlike {@link
+   * #getCurrentClusterConfiguration()} cannot lag behind a change applied just before.
+   */
+  static PartitionDistribution partitionDistributionOf(
+      final @Nullable CurrentClusterConfiguration configuration, final String physicalTenantId) {
+    if (configuration == null) {
       return PartitionDistribution.NO_PARTITIONS;
     }
     return new PartitionDistribution(
-        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(config)
+        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(configuration)
             .getOrDefault(physicalTenantId, Set.of()));
   }
 

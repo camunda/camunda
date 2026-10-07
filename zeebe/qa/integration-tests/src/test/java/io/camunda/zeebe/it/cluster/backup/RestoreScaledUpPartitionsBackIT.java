@@ -189,6 +189,72 @@ final class RestoreScaledUpPartitionsBackIT {
     }
   }
 
+  @Test
+  void shouldKeepTheScaledUpPartitionsWhenLeavingRecoveryWithoutARestore() {
+    try (final var cluster =
+            TestCluster.builder()
+                .withBrokersCount(BROKERS_COUNT)
+                .withPartitionsCount(BACKUP_PARTITIONS_COUNT)
+                .withReplicationFactor(BROKERS_COUNT)
+                .withEmbeddedGateway(true)
+                .withBrokerConfig(broker -> configureBroker(broker.unifiedConfig()))
+                .build()
+                .start()
+                .awaitCompleteTopology();
+        final var client = cluster.newClientBuilder().build()) {
+
+      // given - a cluster scaled up while running, with a pending job on each of its partitions
+      final var clusterActuator = ClusterActuator.of(cluster.availableGateway());
+      InProcessRestoreTestUtil.scaleUpPartitions(
+          clusterActuator, SCALED_PARTITIONS_COUNT, BROKERS_COUNT);
+      final var instanceKeys =
+          InProcessRestoreTestUtil.deployAndCreateInstancesOnEveryPartition(
+              client, PROCESS_ID, JOB_TYPE, SCALED_PARTITIONS_COUNT);
+
+      final var toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
+      Awaitility.await("cluster transitions to RECOVERING")
+          .timeout(Duration.ofSeconds(60))
+          .untilAsserted(
+              () ->
+                  ClusterActuatorAssert.assertThat(clusterActuator)
+                      .hasCompletedChanges(toRecovering)
+                      .doesNotHavePendingChanges());
+
+      // when - the cluster leaves recovery again without restoring anything
+      final var toProcessing = InProcessRestoreTestUtil.changeMode(client, "PROCESSING", false);
+
+      // then - leaving recovery drops only partitions the group does not route over, and a
+      // completed scale up routes over every partition, so none is dropped
+      Awaitility.await("cluster transitions to PROCESSING")
+          .timeout(Duration.ofMinutes(2))
+          .untilAsserted(
+              () ->
+                  ClusterActuatorAssert.assertThat(clusterActuator)
+                      .hasCompletedChanges(toProcessing)
+                      .doesNotHavePendingChanges());
+      InProcessRestoreTestUtil.assertRoutesOverPartitions(
+          clusterActuator, SCALED_PARTITIONS_COUNT, BACKUP_PARTITIONS_COUNT);
+      cluster
+          .brokers()
+          .values()
+          .forEach(
+              broker ->
+                  ClusterActuatorAssert.assertThat(clusterActuator)
+                      .brokerHasPartition(
+                          Integer.parseInt(broker.nodeId().id()), SCALED_PARTITIONS_COUNT));
+
+      // and - every partition keeps processing, including the one added by the scale up
+      cluster
+          .brokers()
+          .values()
+          .forEach(
+              broker ->
+                  InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+                      broker, PROCESS_ID, SCALED_PARTITIONS_COUNT));
+      InProcessRestoreTestUtil.awaitJobsOfInstancesActivatable(client, JOB_TYPE, instanceKeys);
+    }
+  }
+
   private void takeSnapshotOnAllBrokers(final TestCluster cluster) {
     cluster
         .brokers()
