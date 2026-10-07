@@ -451,6 +451,14 @@ jobs:
           cd "${ws_dir}"
           claude -p "$prompt" --dangerously-skip-permissions
 
+      # Resolved from the same rotation schedule @test-automation-team-medic is rendered
+      # from, so the reviewer tagged below is whoever that handle points at today.
+      - name: Resolve the test-automation medic
+        id: medic
+        if: always()
+        continue-on-error: true
+        uses: camunda/team-test-automation/.github/actions/resolve-medic@4ba23b2dfa0029dc5a640fc8e24e78844ca0aa06 # camunda/team-test-automation#186
+
       - name: Request review and label PRs
         if: always()
         env:
@@ -459,6 +467,9 @@ jobs:
           DEFAULT_REPO: ${{ github.repository }}
           BASE_REF: ${{ inputs.base_ref }}
           KEY_LABEL: alwaysgreen-key:${{ inputs.base_ref }}:${{ inputs.surface }}
+          # Keyed on `found`, not on the login, so no sentinel value reaches `gh` as a handle.
+          MEDIC_LOGIN: ${{ steps.medic.outputs.found == 'true' && steps.medic.outputs.login || '' }}
+          MEDIC_NAME: ${{ steps.medic.outputs.full_name }}
         run: |
           set -euo pipefail
           [ -f /tmp/fix-meta.json ] || { echo "no fix-meta.json"; exit 0; }
@@ -512,6 +523,26 @@ jobs:
               fi
             elif [ -n "${BLAME_REVIEWER}" ]; then
               echo "blame_relevant is not true in fix-meta.json -- skipping review request for ${BLAME_REVIEWER} on ${repo}#${num} (zeroth check ruled them out, or no verdict was recorded)"
+            fi
+
+            # Unscoped, and warn-only: the medic routes the fix wherever it landed, and a
+            # reviewer request is not worth failing an otherwise good run over.
+            if [ -n "${MEDIC_LOGIN}" ]; then
+              if gh pr edit "$num" --repo "$repo" --add-reviewer "${MEDIC_LOGIN}"; then
+                # Exit 0 is not proof: GitHub drops a request naming the PR's own author
+                # without erroring, so the result is read back rather than assumed.
+                if gh pr view "$num" --repo "$repo" --json reviewRequests \
+                     --jq '.reviewRequests[] | .login // empty' 2>/dev/null \
+                     | grep -qxF "${MEDIC_LOGIN}"; then
+                  echo "review requested from the medic ${MEDIC_NAME} (${MEDIC_LOGIN}) on ${repo}#${num}"
+                else
+                  echo "::warning::the request for the medic ${MEDIC_LOGIN} on ${repo}#${num} was accepted but is not recorded on the PR"
+                fi
+              else
+                echo "::warning::could not request review from the medic ${MEDIC_LOGIN} on ${repo}#${num}"
+              fi
+            else
+              echo "::warning::no medic resolved for today -- ${repo}#${num} gets no medic reviewer; check the rotation schedule in team-test-automation"
             fi
           done
 
@@ -569,6 +600,7 @@ jobs:
           SURFACE: ${{ inputs.surface }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           JOB_STATUS: ${{ job.status }}
+          MEDIC_USERGROUP: ${{ steps.medic.outputs.slack_usergroup }}
         run: |
           set -euo pipefail
           # ctx unpacks the bundle, but it may never have run.
@@ -589,6 +621,9 @@ jobs:
           if [ "${pr_count}" -gt 0 ]; then
             links=$(jq -r '[.prs[] | "<\(.url // "")|PR #\(.number)>"] | join("  ")' /tmp/fix-meta.json)
             text=":white_check_mark: *${SURFACE}* — ${links}"
+            # Slack only notifies on <!subteam^ID>; a literal @handle in text pings nobody.
+            [ -z "${MEDIC_USERGROUP}" ] \
+              || text="${text}"$'\n'"cc <!subteam^${MEDIC_USERGROUP}> — on shift for this"
           elif [ "${JOB_STATUS}" = "failure" ] && [ "${pr_count}" -lt 0 ]; then
             text=":x: *${SURFACE}* — agent failed before producing a verdict, no fix applied"
           else
