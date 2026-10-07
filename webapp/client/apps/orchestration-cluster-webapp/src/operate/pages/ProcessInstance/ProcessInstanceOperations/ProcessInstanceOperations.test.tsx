@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, onTestFinished, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {useQuery} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
@@ -14,6 +14,7 @@ import {cleanup} from 'vitest-browser-react';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {holdResponse} from '#/vitest-modules/hold-response';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {
@@ -120,15 +121,6 @@ function mockViewport(isCollapsed: boolean) {
 		query.matches = matches;
 		listeners.forEach((listener) => listener());
 	};
-}
-
-function holdResponse() {
-	let release!: () => void;
-	const held = new Promise<void>((resolve) => {
-		release = resolve;
-	});
-	onTestFinished(release);
-	return {held, release};
 }
 
 async function execute(screen: Awaited<ReturnType<typeof renderOperations>>, action: string, key: string) {
@@ -347,6 +339,7 @@ describe('<ProcessInstanceOperations />', () => {
 			const targetRead = holdResponse();
 			worker.use(
 				mock({successResponse: new HttpResponse(null, {status: 204})}),
+				// Rendering reads the instance from initialData, so the operation's first state read takes this `once` GET.
 				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance), once: true}),
 				mockGetProcessInstanceEndpoint({
 					successResponse: HttpResponse.json({...instance, state: target}),

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup, render} from 'vitest-browser-react';
 import {
@@ -27,6 +27,7 @@ import {z} from 'zod';
 import type {ProcessInstance as ProcessInstanceData} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {holdResponse} from '#/vitest-modules/hold-response';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createAgentInstance} from '#/shared-test-modules/api-mocks/agent-instances';
 import {createProcessDefinitionStatistic} from '#/shared-test-modules/api-mocks/process-definition-statistics';
@@ -215,11 +216,7 @@ describe('<InstanceDiagram />', () => {
 	});
 
 	it('should show a spinner while loading the XML', async ({worker}) => {
-		let releaseXml!: () => void;
-		const pendingXml = new Promise<void>((resolve) => {
-			releaseXml = resolve;
-		});
-		onTestFinished(releaseXml);
+		const {held: pendingXml, release: releaseXml} = holdResponse();
 		worker.use(
 			http.get(endpoints.getProcessDefinitionXml({processDefinitionKey: '2251799813685279'}).url, async () => {
 				await pendingXml;
@@ -737,18 +734,8 @@ describe('<InstanceDiagram />', () => {
 	it.for(['', '/camunda'] as const)(
 		'should ignore a double click on the previous instance while the next instance loads with basepath "%s"',
 		async (basepath, {worker}) => {
-			let releaseLoader: () => void = () => {};
-			const pendingLoader = new Promise<void>((resolve) => {
-				releaseLoader = resolve;
-			});
-			let releaseElementResponse: () => void = () => {};
-			const pendingElementResponse = new Promise<void>((resolve) => {
-				releaseElementResponse = resolve;
-			});
-			onTestFinished(() => {
-				releaseElementResponse();
-				releaseLoader();
-			});
+			const {held: pendingLoader, release: releaseLoader} = holdResponse();
+			const {held: pendingElementResponse, release: releaseElementResponse} = holdResponse();
 			let oldInstanceRequests = 0;
 			worker.use(
 				http.post(
