@@ -105,7 +105,7 @@ final class PartitionModeHandlerAwaitModeChangeApplierTest {
                         1,
                         LOCAL_MEMBER))
             .collect(Collectors.toSet());
-    when(clusterConfigurationService.getPartitionDistribution(any()))
+    when(clusterConfigurationService.getCurrentPartitionDistribution(any()))
         .thenReturn(new PartitionDistribution(metadata));
   }
 

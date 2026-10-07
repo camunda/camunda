@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRouti
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.util.Either;
 import java.util.HashSet;
@@ -96,7 +97,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
                   .formatted(request.physicalTenantId())));
     }
     final var members = recoveringMembers(partitionGroup);
-    return restorePlan(members);
+    return restorePlan(members, partitionGroup.routingState());
   }
 
   /**
@@ -105,7 +106,8 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    * validator did not resolve a selection for, is mapped to a request failure.
    */
   private Either<Exception, OperationGraph> restorePlan(
-      final SortedMap<MemberId, Set<Integer>> partitionsPerMember) {
+      final SortedMap<MemberId, Set<Integer>> partitionsPerMember,
+      final Optional<RoutingState> currentRoutingState) {
     final var validator = registry.getValidator(request.physicalTenantId(), RestoreRequest.class);
     if (validator.isEmpty()) {
       return Either.left(new InternalError("A validator is required but not present"));
@@ -116,7 +118,8 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     }
     try {
       return Either.right(
-          restoreGraph(partitionsPerMember, (RestoreResolvedRequest) resolved.get()));
+          restoreGraph(
+              partitionsPerMember, (RestoreResolvedRequest) resolved.get(), currentRoutingState));
     } catch (final Exception e) {
       return Either.left(mapFailure(e));
     }
@@ -164,8 +167,9 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    *       is still wiping its own copy of {@code k}. What makes leaving these unordered safe is
    *       that neither step writes the group configuration — see {@code PartitionPreRestoreApplier}
    *       and {@code PartitionRestoreApplier}, which both apply {@code UnaryOperator.identity()}.
-   *   <li>{@code updateRoutingState} — every wipe and every restore. Routes the group over the
-   *       partition count of the backup, so a partition the backup does not hold is only wiped.
+   *   <li>{@code updateRoutingState} — every wipe and every restore. Routes the group's requests
+   *       over the partition count of the backup, so a partition the backup does not hold is only
+   *       wiped, and keeps its message correlation.
    *   <li>{@code modeChange(m)} — {@code updateRoutingState}.
    *   <li>{@code awaitModeChange(m)} — every mode change and <em>every</em> restore. This one is
    *       deliberately a cluster-wide barrier: awaiting the transition observes the group as a
@@ -188,7 +192,8 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    */
   private static OperationGraph restoreGraph(
       final SortedMap<MemberId, Set<Integer>> partitionsPerMember,
-      final RestoreResolvedRequest resolved) {
+      final RestoreResolvedRequest resolved,
+      final Optional<RoutingState> currentRoutingState) {
     final var builder = OperationGraph.builder();
     final var schemaInitialization =
         builder.add(new SchemaInitializationOperation(partitionsPerMember.firstKey()));
@@ -231,7 +236,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
         builder.add(
             new UpdateRoutingState(
                 partitionsPerMember.firstKey(),
-                Optional.of(RoutingState.initializeWithPartitionCount(resolved.backups().size()))),
+                Optional.of(restoredRoutingState(currentRoutingState, resolved.backups().size()))),
             restoreIo);
 
     final SortedMap<MemberId, OperationId> modeChanges = new TreeMap<>();
@@ -260,6 +265,13 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
 
     builder.add(new UpdateIncarnationNumberOperation(partitionsPerMember.firstKey()), awaits);
     return builder.build();
+  }
+
+  private static RoutingState restoredRoutingState(
+      final Optional<RoutingState> currentRoutingState, final int partitionCount) {
+    return currentRoutingState
+        .map(current -> current.withRequestHandling(ignored -> new AllPartitions(partitionCount)))
+        .orElseGet(() -> RoutingState.initializeWithPartitionCount(partitionCount));
   }
 
   /** The partitions each member holds that the backup holds too, i.e. those to restore. */

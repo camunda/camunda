@@ -327,7 +327,7 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
     final var localMemberId =
         brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
     return clusterConfigurationService()
-        .getPartitionDistribution(partitionGroup)
+        .getCurrentPartitionDistribution(partitionGroup)
         .partitions()
         .stream()
         .filter(partition -> partition.members().contains(localMemberId))
