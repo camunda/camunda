@@ -133,7 +133,12 @@ if [[ "${CHECK_CONNECTORS:-0}" == "1" ]]; then
         printf "\nTest: other connectors runtimes do not take %s jobs\n" "$tenant"
         pid_file="${C8RUN_DIR:?C8RUN_DIR is required with CHECK_CONNECTORS=1}/connectors-$tenant.process"
         [[ -f "$pid_file" ]] || fail "no connectors runtime for $tenant ($pid_file missing)"
-        kill "$(head -1 "$pid_file")"
+        pid="$(head -1 "$pid_file")"
+        if command -v taskkill >/dev/null 2>&1; then
+                taskkill //F //T //PID "$pid" >/dev/null
+        else
+                kill "$pid"
+        fi
         sleep 5
         status="$(run_connector 15000)"
         [[ "$status" != "200" ]] || fail "a connectors runtime of another tenant completed a $tenant job"

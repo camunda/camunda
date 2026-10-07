@@ -374,6 +374,28 @@ jobs:
         run: ./api_tests.sh
         working-directory: .\c8run\e2e_tests
 
+      - name: Restart c8run with a physical tenant (own user, own secrets, authorizations on)
+        shell: bash
+        run: |
+          ./c8run.exe stop
+          cp ../../e2e_tests/physical-tenants-auth.yaml .
+          printf '%s' 'pt1-e2e-password' | ./c8run.exe tenants add pt1 --username alice --password-stdin
+          printf '%s' 'pt1-only-secret-value' | ./c8run.exe secrets --tenant pt1 set C8RUN_E2E_SECRET --stdin
+          ./c8run.exe start --no-browser --config physical-tenants-auth.yaml
+        working-directory: ${{ env.C8RUN_E2E_DIR }}
+
+      - name: Run physical tenant isolation test
+        shell: bash
+        run: ./physical_tenants_tests.sh
+        env:
+          PHYSICAL_TENANT: pt1
+          C8RUN_AUTH: alice:pt1-e2e-password
+          C8RUN_DEFAULT_AUTH: demo:demo
+          TENANT_SECRET_VALUE: pt1-only-secret-value
+          CHECK_CONNECTORS: "1"
+          C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
+        working-directory: .\c8run\e2e_tests
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: camunda8-run-build-windows
