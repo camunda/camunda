@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
@@ -124,8 +125,68 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"2020-04-01T10:31:10+02:00\""));
+  }
+
+  @CsvSource({
+    "2020-04-01T10:31:10@Europe/Berlin,2020-04-01T10:31:10+02:00",
+    "2020-01-15T10:31:10@Europe/Berlin,2020-01-15T10:31:10+01:00",
+    "2020-04-01T10:31:10.123@America/New_York,2020-04-01T10:31:10.123-04:00",
+    "2020-04-01T10:31:10@GMT,2020-04-01T10:31:10Z",
+    "2020-04-01T10:31:10@UTC,2020-04-01T10:31:10Z",
+    "2020-04-01T10:31:10Z,2020-04-01T10:31:10Z",
+    "2020-04-01T10:31:10+02:00,2020-04-01T10:31:10+02:00"
+  })
+  @ParameterizedTest
+  public void shouldSerializeDateTimeWithoutZoneId(final String dateTime, final String expected) {
+    // when
+    final var evaluationResult = evaluateExpression("=date and time(\"" + dateTime + "\")");
+
+    // then
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.DATE_TIME);
     assertThat(evaluationResult.toBuffer())
-        .isEqualTo(asMsgPack("\"2020-04-01T10:31:10+02:00[Europe/Berlin]\""));
+        .describedAs(
+            "Expected <%s> but was <%s>",
+            expected, BufferUtil.bufferAsString(evaluationResult.toBuffer()))
+        .isEqualTo(asMsgPack("\"" + expected + "\""));
+  }
+
+  @CsvSource({
+    "GMT,2026-09-29T12:31:01.641Z",
+    "UTC,2026-09-29T12:31:01.641Z",
+    "Europe/Berlin,2026-09-29T14:31:01.641+02:00",
+    "America/New_York,2026-09-29T08:31:01.641-04:00"
+  })
+  @ParameterizedTest
+  public void shouldSerializeNowWithoutZoneId(final String clockZone, final String expected) {
+    // given
+    final var instant = Instant.parse("2026-09-29T12:31:01.641Z");
+    final var language =
+        ExpressionLanguageFactory.createExpressionLanguage(
+            () -> instant.atZone(ZoneId.of(clockZone)));
+
+    // when
+    final var evaluationResult = evaluateExpression(language, "=now()");
+
+    // then
+    assertThat(evaluationResult.toBuffer())
+        .describedAs(
+            "Expected <%s> but was <%s>",
+            expected, BufferUtil.bufferAsString(evaluationResult.toBuffer()))
+        .isEqualTo(asMsgPack("\"" + expected + "\""));
+  }
+
+  @Test
+  public void shouldSerializeDateTimeWithoutZoneIdInContextAndList() {
+    // when
+    final var evaluationResult =
+        evaluateExpression(
+            "={x: date and time(\"2020-04-01T10:31:10@Europe/Berlin\"),"
+                + " y: [date and time(\"2020-04-01T10:31:10@GMT\")]}");
+
+    // then
+    assertThat(evaluationResult.toBuffer())
+        .isEqualTo(asMsgPack("{'x':\"2020-04-01T10:31:10+02:00\",'y':[\"2020-04-01T10:31:10Z\"]}"));
   }
 
   @Test
@@ -283,9 +344,13 @@ public class EvaluationResultTest {
   }
 
   private EvaluationResult evaluateExpression(final String expression) {
-    final var parseExpression = expressionLanguage.parseExpression(expression);
-    final var evaluationResult =
-        expressionLanguage.evaluateExpression(parseExpression, name -> null);
+    return evaluateExpression(expressionLanguage, expression);
+  }
+
+  private EvaluationResult evaluateExpression(
+      final ExpressionLanguage language, final String expression) {
+    final var parseExpression = language.parseExpression(expression);
+    final var evaluationResult = language.evaluateExpression(parseExpression, name -> null);
 
     assertThat(evaluationResult.isFailure())
         .describedAs(evaluationResult.getFailureMessage())

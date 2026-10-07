@@ -9,7 +9,7 @@ package io.camunda.zeebe.feel.impl;
 
 import static io.camunda.zeebe.feel.impl.Loggers.LOGGER;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME;
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.ArrayDeque;
@@ -133,7 +133,7 @@ public class FeelToMessagePackTransformer {
       case final ValLocalTime time -> writeStringValue(time.value().toString());
       case final ValDate date -> writeStringValue(date.value().toString());
       case final ValDateTime dateTime ->
-          writeStringValue(ISO_ZONED_DATE_TIME.format(dateTime.value()));
+          writeStringValue(ISO_OFFSET_DATE_TIME.format(dateTime.value()));
       case final ValLocalDateTime dateTime ->
           writeStringValue(ISO_LOCAL_DATE_TIME.format(dateTime.value()));
       case final ValDayTimeDuration duration -> writeStringValue(duration.toString());

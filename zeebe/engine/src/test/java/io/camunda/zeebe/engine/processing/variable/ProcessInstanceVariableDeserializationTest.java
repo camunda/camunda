@@ -92,9 +92,11 @@ public final class ProcessInstanceVariableDeserializationTest {
         "date and time(\"2025-11-21T15:00:00+01:00\")",
         "date and time(%s)".formatted(VARIABLE_SERIALIZED)
       },
+      // the serialized value has an offset but no zone id, so the zone is applied again before
+      // comparing
       {
         "date and time(\"2025-11-21T15:00:00@Europe/Berlin\")",
-        "date and time(%s)".formatted(VARIABLE_SERIALIZED)
+        "date and time(date and time(%s), \"Europe/Berlin\")".formatted(VARIABLE_SERIALIZED)
       },
       {"date(\"2025-11-21\")", "date(%s)".formatted(VARIABLE_SERIALIZED)},
       {"time(\"15:00:00\")", "time(%s)".formatted(VARIABLE_SERIALIZED)},
