@@ -277,15 +277,13 @@ test('a non-empty customer body never triggers the empty-body warning', () => {
   assert.deepEqual((result.auditJson as { warnings: string[] }).warnings, []);
 });
 
-test('a no-issue (opt-out) customer-visible PR renders under "Other changes" in the customer body and "Changes without a tracked issue" in the full asset', () => {
+test('a no-issue (opt-out) customer-visible PR renders under its title-type section, not a section of its own', () => {
   const result = render(
     [pr({ number: 40, title: 'fix: x', section: 'Bug Fixes', attributionSource: 'optOut', issueNumbers: [] })],
     { version: '8.8.30', allowUnattributed: false },
   );
-  assert.match(result.customerBody, /## Other changes/);
-  assert.doesNotMatch(result.customerBody, /Changes without a tracked issue/);
-  assert.match(result.fullAsset, /## Changes without a tracked issue/);
-  assert.match(result.customerBody, /#40/);
+  assert.match(result.customerBody, /## Bug Fixes\n\n- fix: x \(#40\)/);
+  assert.doesNotMatch(result.customerBody, /tracked issue|Other changes/);
 });
 
 test('with a repository, every issue and PR number in both bodies is a link; without one they stay plain', () => {
@@ -314,12 +312,11 @@ test('with a repository, every issue and PR number in both bodies is a link; wit
   assert.match(plain.customerBody, /\(#55\) — #7/);
 });
 
-test('a bot-exempt PR (e.g. renovate) renders under its normal type section, NOT "Changes without a tracked issue" — the exemption is structural, not a declaration', () => {
+test('a bot-exempt PR (e.g. renovate) renders under its normal type section — the exemption is structural, not a declaration', () => {
   const result = render(
     [pr({ number: 41, title: 'deps: bump foo', section: 'Dependency updates', attributionSource: 'botExempt', issueNumbers: [] })],
     { version: '8.8.30', allowUnattributed: false },
   );
-  assert.doesNotMatch(result.customerBody, /Changes without a tracked issue/);
   assert.match(result.customerBody, /## Dependency updates/);
   assert.match(result.customerBody, /#41/);
 });
