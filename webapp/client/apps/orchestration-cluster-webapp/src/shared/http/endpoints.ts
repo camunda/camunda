@@ -67,6 +67,11 @@ import {
 	type CreateGlobalTaskListenerRequestBody,
 	type UpdateGlobalTaskListenerRequestBody,
 	type QueryGlobalTaskListenersRequestBody,
+	type Authorization,
+	type CreateAuthorizationRequestBody as ApiCreateAuthorizationRequestBody,
+	type QueryAuthorizationsRequestBody,
+	type QueryRolesRequestBody,
+	type QueryGroupsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -82,6 +87,13 @@ type CreateDocumentMetadata = {
 
 type CreateProcessInstanceRequestBody = Omit<ApiCreateProcessInstanceRequestBody, 'variables'> & {
 	variables?: Record<string, unknown>;
+};
+
+// The generated create body predates `resourcePropertyName`, which USER_TASK authorizations send
+// instead of a resource ID, and types permissions more strictly than the server's permission map.
+type CreateAuthorizationRequestBody = Omit<ApiCreateAuthorizationRequestBody, 'permissionTypes'> & {
+	permissionTypes: string[];
+	resourcePropertyName?: string | null;
 };
 
 type CreateDocumentsFileEntry = {
@@ -833,11 +845,32 @@ const endpoints = {
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
+	queryAuthorizations: (body: QueryAuthorizationsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryAuthorizations.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryAuthorizations.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
 
 	updateGlobalTaskListener: ({id, ...body}: Pick<GlobalTaskListener, 'id'> & UpdateGlobalTaskListenerRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.updateGlobalTaskListener.getUrl({id: encodeURIComponent(id)})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.updateGlobalTaskListener.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	getAuthorization: ({authorizationKey}: Pick<Authorization, 'authorizationKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getAuthorization.getUrl({authorizationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getAuthorization.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createAuthorization: (body: CreateAuthorizationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createAuthorization.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createAuthorization.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
@@ -847,6 +880,37 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.deleteGlobalTaskListener.method,
 		}),
+
+	deleteAuthorization: ({authorizationKey}: Pick<Authorization, 'authorizationKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteAuthorization.getUrl({authorizationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteAuthorization.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryRoles: (body: QueryRolesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryRoles.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryRoles.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryGroups: (body: QueryGroupsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryGroups.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryGroups.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	// Served as `window.clientConfig = {...};` by the Admin client config controller.
+	getAdminClientConfig: () =>
+		new Request(getFullURL('/admin/config.js'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'GET',
+		}),
 };
 
 export {endpoints};
+export type {CreateAuthorizationRequestBody};
