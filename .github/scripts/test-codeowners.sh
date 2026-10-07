@@ -328,53 +328,53 @@ echo ""
 echo "── .claude/skills overrides ──"
 
 assert_owner \
-  ".claude/skills/engine-expert/ → core-features (overrides orchestration-cluster)" \
-  ".claude/skills/engine-expert/SKILL.md" \
+  ".agents/skills/engine-expert/ → core-features (overrides orchestration-cluster)" \
+  ".agents/skills/engine-expert/SKILL.md" \
   "@camunda/core-features"
 
 assert_owner \
-  ".claude/skills/frontend-feature/ → orchestration-cluster-webapps" \
-  ".claude/skills/frontend-feature/SKILL.md" \
+  ".agents/skills/frontend-feature/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-feature/SKILL.md" \
   "@camunda/orchestration-cluster-webapps"
 
 assert_owner \
-  ".claude/skills/frontend-integration-test/ → orchestration-cluster-webapps" \
-  ".claude/skills/frontend-integration-test/SKILL.md" \
+  ".agents/skills/frontend-integration-test/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-integration-test/SKILL.md" \
   "@camunda/orchestration-cluster-webapps"
 
 assert_owner \
-  ".claude/skills/frontend-operate-migrator/ → orchestration-cluster-webapps" \
-  ".claude/skills/frontend-operate-migrator/SKILL.md" \
+  ".agents/skills/frontend-operate-migrator/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-operate-migrator/SKILL.md" \
   "@camunda/orchestration-cluster-webapps"
 
 assert_owner \
-  ".claude/skills/frontend-unit-test/ → orchestration-cluster-webapps" \
-  ".claude/skills/frontend-unit-test/SKILL.md" \
+  ".agents/skills/frontend-unit-test/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-unit-test/SKILL.md" \
   "@camunda/orchestration-cluster-webapps"
 
 assert_owner \
-  ".claude/skills/operate-engineering-loop/ → operate-admin-pod" \
-  ".claude/skills/operate-engineering-loop/SKILL.md" \
+  ".agents/skills/operate-engineering-loop/ → operate-admin-pod" \
+  ".agents/skills/operate-engineering-loop/SKILL.md" \
   "@camunda/operate-admin-pod"
 
 assert_owner \
-  ".claude/skills/operate-frontend/ → operate-admin-pod" \
-  ".claude/skills/operate-frontend/SKILL.md" \
+  ".agents/skills/operate-frontend/ → operate-admin-pod" \
+  ".agents/skills/operate-frontend/SKILL.md" \
   "@camunda/operate-admin-pod"
 
 assert_owner \
-  ".claude/skills/tasklist-frontend/ → employee-engagement-tasklist" \
-  ".claude/skills/tasklist-frontend/SKILL.md" \
+  ".agents/skills/tasklist-frontend/ → employee-engagement-tasklist" \
+  ".agents/skills/tasklist-frontend/SKILL.md" \
   "@camunda/employee-engagement-tasklist"
 
 assert_owner \
-  ".claude/skills/load-test-ops/ → reliability-testing (overrides orchestration-cluster)" \
-  ".claude/skills/load-test-ops/SKILL.md" \
+  ".agents/skills/load-test-ops/ → reliability-testing (overrides orchestration-cluster)" \
+  ".agents/skills/load-test-ops/SKILL.md" \
   "@camunda/reliability-testing"
 
 assert_owner \
-  ".claude/skills/ci-validation/ → engineering-operations (overrides orchestration-cluster)" \
-  ".claude/skills/ci-validation/SKILL.md" \
+  ".agents/skills/ci-validation/ → engineering-operations (overrides orchestration-cluster)" \
+  ".agents/skills/ci-validation/SKILL.md" \
   "@camunda/engineering-operations"
 
 # ── webapp/client → frontend pods ─────────────────────────────────────────────

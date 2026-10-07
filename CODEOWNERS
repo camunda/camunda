@@ -169,38 +169,38 @@
 # AI Assistant Instructions
 /CLAUDE.md      @camunda/orchestration-cluster
 /AGENTS.md      @camunda/orchestration-cluster
-/.claude/skills/README.md    @camunda/orchestration-cluster
-/.claude/skills/create-issue/ @camunda/orchestration-cluster
-/.claude/skills/grill-me/    @camunda/orchestration-cluster
-/.claude/skills/load-test-ops/ @camunda/reliability-testing
+/.agents/skills/README.md    @camunda/orchestration-cluster
+/.agents/skills/create-issue/ @camunda/orchestration-cluster
+/.agents/skills/grill-me/    @camunda/orchestration-cluster
+/.agents/skills/load-test-ops/ @camunda/reliability-testing
 
 # CI skills
-/.claude/skills/act-testing/**                   @camunda/engineering-operations
-/.claude/skills/agentic-workflows/**             @camunda/engineering-operations
-/.claude/skills/ci-fix-failure/**                @camunda/engineering-operations
-/.claude/skills/ci-incident/**                   @camunda/engineering-operations
-/.claude/skills/ci-push-workflow-health/**       @camunda/engineering-operations
-/.claude/skills/ci-runner-utilization/**         @camunda/engineering-operations
-/.claude/skills/ci-scheduled-workflow-health/**  @camunda/engineering-operations
-/.claude/skills/ci-security-compliance/**        @camunda/engineering-operations
-/.claude/skills/ci-validation/**                 @camunda/engineering-operations
-/.claude/skills/ci-workflow-authoring/**         @camunda/engineering-operations
+/.agents/skills/act-testing/**                   @camunda/engineering-operations
+/.agents/skills/agentic-workflows/**             @camunda/engineering-operations
+/.agents/skills/ci-fix-failure/**                @camunda/engineering-operations
+/.agents/skills/ci-incident/**                   @camunda/engineering-operations
+/.agents/skills/ci-push-workflow-health/**       @camunda/engineering-operations
+/.agents/skills/ci-runner-utilization/**         @camunda/engineering-operations
+/.agents/skills/ci-scheduled-workflow-health/**  @camunda/engineering-operations
+/.agents/skills/ci-security-compliance/**        @camunda/engineering-operations
+/.agents/skills/ci-validation/**                 @camunda/engineering-operations
+/.agents/skills/ci-workflow-authoring/**         @camunda/engineering-operations
 
 # Engine-expert skill
-/.claude/skills/engine-expert/  @korthout @camunda/core-features
+/.agents/skills/engine-expert/  @korthout @camunda/core-features
 
 # Experience FE frontend skills
-/.claude/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
-/.claude/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
-/.claude/skills/frontend-operate-migrator/ @camunda/orchestration-cluster-webapps
-/.claude/skills/frontend-unit-test/        @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-operate-migrator/ @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-unit-test/        @camunda/orchestration-cluster-webapps
 
 # Operate frontend skills
-/.claude/skills/operate-engineering-loop/ @camunda/operate-admin-pod
-/.claude/skills/operate-frontend/         @camunda/operate-admin-pod
+/.agents/skills/operate-engineering-loop/ @camunda/operate-admin-pod
+/.agents/skills/operate-frontend/         @camunda/operate-admin-pod
 
 # Tasklist frontend skills
-/.claude/skills/tasklist-frontend/ @camunda/employee-engagement-tasklist
+/.agents/skills/tasklist-frontend/ @camunda/employee-engagement-tasklist
 
 #################
 ## Camunda Ex  ##

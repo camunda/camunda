@@ -89,6 +89,7 @@
               <exclude>.github/instructions/**/*.md</exclude>
               <exclude>.claude/agents/**/*.md</exclude>
               <exclude>.claude/skills/**/*.md</exclude>
+              <exclude>.agents/skills/**/*.md</exclude>
               <exclude>.github/agents/**/*.md</exclude>
               <exclude>.github/workflows/**/*.md</exclude>
               <exclude>load-tests/skills/**/*.md</exclude>
