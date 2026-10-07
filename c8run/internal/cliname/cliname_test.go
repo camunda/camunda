@@ -32,6 +32,11 @@ func TestRewriteAs(t *testing.T) {
 	}
 }
 
+func TestRewriteAsUsesNameLiterally(t *testing.T) {
+	assert.Equal(t, "`/opt/$TOOLS/c8ctl cluster physical-tenants list`", RewriteAs("`c8run physical-tenants list`", "/opt/$TOOLS/c8ctl cluster"))
+	assert.Equal(t, "`x${1}$$y stop`", RewriteAs("`c8run stop`", "x${1}$$y"))
+}
+
 func TestNameTrimsWhitespace(t *testing.T) {
 	t.Setenv(Env, "  c8ctl cluster \n")
 	assert.Equal(t, "c8ctl cluster", Name())
