@@ -355,7 +355,7 @@ jobs:
 
       - name: Run c8run
         timeout-minutes: 3
-        run: bash -c './c8run.exe start'
+        run: bash -c './c8run.exe start --config ../../e2e_tests/prefix-config.yaml'
         working-directory: ${{ env.C8RUN_E2E_DIR }}
         shell: bash
 

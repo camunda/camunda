@@ -68,19 +68,14 @@ What runs:
 
 This layer owns no UI assertions. Browser coverage lives in Layer 2, where QA owns the page objects — duplicating locators here only produced drift, since a UI change in `webapp/` does not trigger this workflow.
 
-**RDBMS setup:** c8run starts with `--config e2e_tests/prefix-config.yaml`, which configures H2 file-based as the secondary storage. This is the only layer that passes an explicit config file.
+**RDBMS setup:** the extracted distribution starts with `--config ../../e2e_tests/prefix-config.yaml`, which adds an RDBMS table prefix to the bundled H2 file-based default. `api_tests.sh` reads the prefix back from the actuator `configprops` endpoint, so the test fails when `--config` is not applied. This is the only layer that passes an explicit config file.
 
 ```yaml
 camunda:
   data:
     secondary-storage:
-      type: rdbms
       rdbms:
-        url: jdbc:h2:file:./camunda-data/h2db
-        username: sa
-        password:
-        flushInterval: PT0.5S
-        queueSize: 1000
+        prefix: C8RUN_E2E_
 ```
 
 Linux/macOS use the `.github/actions/setup-c8run` composite action to build and start c8run. Windows builds `c8run.exe` from source and starts it inline.
