@@ -69,9 +69,10 @@ lookupTeamMedic["General"]="General Test, requires investigation"
 
 
 resolve_test_source_file() {
-    # Resolves a Java test class FQCN to the exact repo-relative test source file path.
+    # Resolves a JUnit test class name to the exact repo-relative test source file path.
     #
-    # Input: fully qualified test class name, e.g. io.camunda.foo.BarTest
+    # Input: Java FQCN (e.g. io.camunda.foo.BarTest) or webapp spec path
+    #        (e.g. src/operate/foo/Bar.test.tsx, a11y/foo.test.ts)
     # Output: prints a single repo-relative path or empty string.
     local fqcn="$1"
 
