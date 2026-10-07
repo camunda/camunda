@@ -21,6 +21,8 @@ import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 
 public class SearchIndexRequestTransformerTest {
 
@@ -53,10 +55,24 @@ public class SearchIndexRequestTransformerTest {
     assertThat(result.document()).isEqualTo(doc);
   }
 
+  @ParameterizedTest
+  @NullAndEmptySource
+  public void shouldNotSendRoutingWhenNoneIsGiven(final String routing) {
+    // given
+    final SearchIndexRequest<TestDocument> searchIndexRequest =
+        SearchIndexRequest.of(
+            b -> b.id("foo").index("bar").routing(routing).document(new TestDocument("test")));
+
+    // when
+    final var result = requestTransformer.apply(searchIndexRequest);
+
+    // then
+    assertThat(result.routing()).isEmpty();
+  }
+
   @Test
   public void shouldCreateIndexResponse() {
     // given
-    final var doc = new TestDocument("bar");
     final IndexResponse indexResponse =
         IndexResponse.of(
             b ->
