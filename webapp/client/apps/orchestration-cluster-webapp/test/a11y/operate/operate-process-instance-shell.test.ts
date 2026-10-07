@@ -26,6 +26,8 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockQueryElementInstancesEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
@@ -70,6 +72,8 @@ test('should have no accessibility violations on the process instance shell page
 			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
 		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_XML)}),
+		mockQueryElementInstancesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+		mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
 	);
 
 	await page.goto(`/operate/processes/${PROCESS_INSTANCE_ID}`);

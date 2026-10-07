@@ -41,6 +41,34 @@ class OperateProcessInstancePage extends BasePage {
 	get delete() {
 		return this.confirmation.getByRole('button', {name: 'Delete', exact: true});
 	}
+
+	get historyTree() {
+		return this.page.getByRole('region', {name: 'Instance History', exact: true});
+	}
+
+	get historyNavigationTree() {
+		return this.historyTree.getByRole('tree');
+	}
+
+	historyItem(label: string) {
+		return this.historyNavigationTree.getByRole('treeitem', {name: label, exact: true});
+	}
+
+	get historyTab() {
+		return this.page.getByRole('link', {name: 'Instance History', exact: true});
+	}
+
+	get timestamps() {
+		return this.page.getByRole('switch', {name: 'End date', exact: true});
+	}
+
+	get executionCount() {
+		return this.page.getByRole('switch', {name: 'Execution count', exact: true});
+	}
+
+	get historyRetry() {
+		return this.page.getByRole('button', {name: 'Try again', exact: true});
+	}
 }
 
 export {OperateProcessInstancePage};

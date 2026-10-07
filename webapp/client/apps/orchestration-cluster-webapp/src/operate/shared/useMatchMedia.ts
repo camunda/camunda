@@ -26,4 +26,8 @@ function isWidthBelowBreakpoint(name: keyof typeof breakpoints): string {
 	return `(max-width: ${breakpoints[name].width})`;
 }
 
-export {useMatchMedia, isWidthBelowBreakpoint};
+function isWidthAboveBreakpoint(name: keyof typeof breakpoints): string {
+	return `(min-width: ${breakpoints[name].width})`;
+}
+
+export {useMatchMedia, isWidthBelowBreakpoint, isWidthAboveBreakpoint};

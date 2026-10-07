@@ -101,8 +101,12 @@ const InfiniteScroller: FC<Props> = ({
 	}, [scrollableContainerRef]);
 
 	const observedContainerRef = useCallback(
-		(node: HTMLElement) => {
+		(node: HTMLElement | null) => {
 			if (node === null) {
+				intersectionObserver.current?.disconnect();
+				mutationObserver.current?.disconnect();
+				intersectionObserver.current = null;
+				mutationObserver.current = null;
 				return;
 			}
 			if (intersectionObserver.current === null) {

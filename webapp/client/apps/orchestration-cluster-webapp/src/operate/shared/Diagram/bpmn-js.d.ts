@@ -32,6 +32,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
 		| 'SubProcess'
 		| 'AdHocSubProcess'
 		| 'ServiceTask'
+		| 'Task'
 		| 'UserTask'
 		| 'BusinessRuleTask'
 		| 'ScriptTask'
@@ -70,6 +71,8 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
 		triggeredByEvent?: boolean;
 		$instanceOf?: (type: string) => boolean;
 		isForCompensation?: boolean;
+		get?: (property: string) => unknown;
+		'zeebe:modelerTemplateIcon'?: string;
 		targetRef?: BusinessObject;
 	};
 

@@ -1201,6 +1201,20 @@
 				}
 			},
 			"processInstance": {
+				"history": {
+					"title": "Instance History",
+					"tabs": "Process instance tabs",
+					"variables": "Variables",
+					"incidents": "Incidents",
+					"details": "Details",
+					"timestamps": "End date",
+					"executionCount": "Execution count",
+					"multiInstance": " (Multi Instance)",
+					"migrated": "Migrated {{date}}",
+					"forbidden": "You do not have permission to view instance history",
+					"error": "Instance history could not be fetched. Please refresh.",
+					"anchorError": "Could not select the ad-hoc instance. Please try again."
+				},
 				"diagram": {
 					"downloadXml": "Download XML",
 					"panelLabel": "Process instance diagram",

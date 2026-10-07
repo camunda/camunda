@@ -1189,6 +1189,20 @@
 				}
 			},
 			"processInstance": {
+				"history": {
+					"title": "Historial de la instancia",
+					"tabs": "Pestañas de la instancia de proceso",
+					"variables": "Variables",
+					"incidents": "Incidentes",
+					"details": "Detalles",
+					"timestamps": "Fecha de finalización",
+					"executionCount": "Número de ejecuciones",
+					"multiInstance": " (Multiinstancia)",
+					"migrated": "Migrada {{date}}",
+					"forbidden": "No tiene permiso para ver el historial de la instancia",
+					"error": "No se pudo obtener el historial de la instancia. Actualice la página.",
+					"anchorError": "No se pudo seleccionar la instancia ad hoc. Inténtelo de nuevo."
+				},
 				"diagram": {
 					"downloadXml": "Descargar XML",
 					"panelLabel": "Diagrama de instancia de proceso",

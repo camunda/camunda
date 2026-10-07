@@ -41,6 +41,11 @@ function hasProcessInstanceSelection({elementId, elementInstanceKey}: ProcessIns
 	return Boolean(elementId || elementInstanceKey);
 }
 
+function getProcessInstanceSelection(search: ProcessInstanceSearch): ProcessInstanceSelection {
+	const {elementId, elementInstanceKey, isMultiInstanceBody, isPlaceholder, anchorElementId} = search;
+	return {elementId, elementInstanceKey, isMultiInstanceBody, isPlaceholder, anchorElementId};
+}
+
 function getDefaultProcessInstanceTab(
 	processInstance: Pick<ProcessInstance, 'hasIncident'>,
 	selection: ProcessInstanceSelection,
@@ -69,6 +74,7 @@ export {
 	processInstanceSearchSchema,
 	validateProcessInstanceRouteSearch,
 	hasProcessInstanceSelection,
+	getProcessInstanceSelection,
 	getDefaultProcessInstanceTab,
 	getProcessInstanceTabPath,
 };

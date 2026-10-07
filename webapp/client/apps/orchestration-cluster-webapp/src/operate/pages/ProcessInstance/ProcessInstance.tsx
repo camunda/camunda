@@ -17,7 +17,7 @@ import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import permissionDeniedIconUrl from '#/operate/assets/permission-denied.svg';
 import {useCallHierarchy} from '#/operate/shared/Operations/Operations.queries';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
-import {ProcessInstanceContext} from './useProcessInstancePage';
+import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {ProcessInstanceHeaderSkeleton} from './ProcessInstanceHeaderSkeleton';
 import {ProcessInstanceBreadcrumb} from './ProcessInstanceBreadcrumb';
@@ -130,19 +130,10 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 	}
 
 	return (
-		<ProcessInstanceContext
-			value={{
-				processInstanceId,
-				processInstance,
-				search,
-				selection: {
-					elementId: search.elementId,
-					elementInstanceKey: search.elementInstanceKey,
-					isMultiInstanceBody: search.isMultiInstanceBody,
-					isPlaceholder: search.isPlaceholder,
-					anchorElementId: search.anchorElementId,
-				},
-			}}
+		<ProcessInstancePageProvider
+			processInstanceId={processInstanceId}
+			processInstance={processInstance}
+			search={search}
 		>
 			<Container>
 				<VisuallyHiddenH1>{t('operate.processInstance.title')}</VisuallyHiddenH1>
@@ -158,7 +149,7 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 					bottomPanel={bottomPanel ?? <div />}
 				/>
 			</Container>
-		</ProcessInstanceContext>
+		</ProcessInstancePageProvider>
 	);
 };
 
