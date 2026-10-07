@@ -10,6 +10,7 @@ package springconfig
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -155,4 +156,27 @@ func TestPathsListsEveryFileSpringLoadsFromTheDefaultDirectory(t *testing.T) {
 		filepath.Join(configuration, "application.properties"),
 		filepath.Join(configuration, "application.yaml"),
 	}, Paths(base, "user.yaml"))
+}
+
+func TestLoadReadsJavaPropertiesSyntax(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "application.properties")
+	require.NoError(t, os.WriteFile(path, []byte(`camunda.data.secondary-storage.rdbms.url=jdbc\:h2\:mem\:camunda
+camunda.data.secondary-storage.type rdbms
+camunda.security.authentication.method = \
+    oidc
+  ! camunda.mcp.enabled=false
+camunda.mcp.enabled: true
+`), 0o644))
+
+	root, ok := Load(path)
+	require.True(t, ok)
+	for keys, want := range map[string]any{
+		"camunda.data.secondary-storage.rdbms.url": "jdbc:h2:mem:camunda",
+		"camunda.data.secondary-storage.type":      "rdbms",
+		"camunda.security.authentication.method":   "oidc",
+		"camunda.mcp.enabled":                      true,
+	} {
+		got, _ := Lookup(root, strings.Split(keys, ".")...)
+		assert.Equal(t, want, got, keys)
+	}
 }
