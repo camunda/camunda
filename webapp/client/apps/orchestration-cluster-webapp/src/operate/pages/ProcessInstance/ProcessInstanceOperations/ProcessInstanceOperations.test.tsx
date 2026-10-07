@@ -544,32 +544,36 @@ describe('<ProcessInstanceOperations />', () => {
 		},
 	);
 
-	it.for([
-		{preference: 'unified', isCollapsed: false},
-		{preference: 'legacy', isCollapsed: true},
-	] as const)(
-		'should skip the migration helper hidden by the $preference preference with collapsed=$isCollapsed',
-		async ({preference, isCollapsed}) => {
-			mockViewport(isCollapsed);
-			if (preference === 'unified') {
-				storeStateLocally('operate.hideMigrationHelperModal', true);
-			} else {
-				localStorage.setItem('sharedState', JSON.stringify({hideMigrationHelperModal: true}));
-			}
-			const instance = createInstance('ACTIVE');
-			const screen = await renderOperations(instance);
+	it.for(
+		(['shown', 'hidden by the unified preference', 'hidden by the legacy preference'] as const).flatMap((helper) =>
+			(['header button', 'Actions menu'] as const).map((layout) => ({helper, layout})),
+		),
+	)('should hand the instance to the wizard from the $layout when the helper is $helper', async ({helper, layout}) => {
+		mockViewport(layout === 'Actions menu');
+		if (helper === 'hidden by the unified preference') {
+			storeStateLocally('operate.hideMigrationHelperModal', true);
+		} else if (helper === 'hidden by the legacy preference') {
+			localStorage.setItem('sharedState', JSON.stringify({hideMigrationHelperModal: true}));
+		}
+		const instance = createInstance('ACTIVE');
+		const screen = await renderOperations(instance);
 
-			if (isCollapsed) {
-				await userEvent.click(screen.getByRole('button', {name: 'Actions'}));
-				await userEvent.click(screen.getByRole('menuitem', {name: 'Migrate'}));
-			} else {
-				await userEvent.click(screen.getByRole('button', {name: `Migrate Instance ${instance.processInstanceKey}`}));
-			}
-
-			await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/processes');
-			expect(screen.router.state.location.state.operateInstanceMigration?.processInstanceKey).toBe(
-				instance.processInstanceKey,
+		if (layout === 'Actions menu') {
+			await userEvent.click(screen.getByRole('button', {name: 'Actions'}));
+			await userEvent.click(screen.getByRole('menuitem', {name: 'Migrate'}));
+		} else {
+			await userEvent.click(screen.getByRole('button', {name: `Migrate Instance ${instance.processInstanceKey}`}));
+		}
+		if (helper === 'shown') {
+			await userEvent.click(
+				screen.getByRole('dialog', {name: 'Migrate process instance versions'}).getByRole('button', {name: 'Continue'}),
+				{force: true},
 			);
-		},
-	);
+		}
+
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/processes');
+		expect(screen.router.state.location.state.operateInstanceMigration).toMatchObject({
+			processInstanceKey: instance.processInstanceKey,
+		});
+	});
 });

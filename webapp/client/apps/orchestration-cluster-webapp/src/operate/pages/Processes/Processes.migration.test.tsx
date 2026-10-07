@@ -1162,6 +1162,68 @@ describe('Processes migration', () => {
 			await expect.element(screen.getByText('Migration step 1 - mapping elements')).not.toBeInTheDocument();
 		});
 
+		it('should keep the hand-over in its tenant when another tenant shares the definition ID', async ({worker}) => {
+			sessionStorage.setItem(
+				'clientConfig',
+				JSON.stringify(
+					createSystemConfiguration({
+						deployment: {...createSystemConfiguration().deployment, isMultiTenancyEnabled: true},
+					}),
+				),
+			);
+			const otherTenantVersion = createProcessDefinition({
+				processDefinitionId: 'my_simple_process',
+				processDefinitionKey: 'other-tenant-key',
+				name: 'Invoice process',
+				version: 4,
+				tenantId: 'tenant-b',
+			});
+			mockPage(worker, {xmlByKey: {...XML_BY_KEY, 'other-tenant-key': BPMN_XML}});
+			worker.use(
+				mockCurrentUserEndpoint({
+					successResponse: HttpResponse.json(
+						createCurrentUser({
+							tenants: [
+								{tenantId: 'tenant-a', name: 'Tenant A', description: null},
+								{tenantId: 'tenant-b', name: 'Tenant B', description: null},
+							],
+						}),
+					),
+				}),
+				mockQueryProcessDefinitionsByFilterEndpoint({
+					getResponse: (filter) =>
+						HttpResponse.json(
+							createQueryProcessDefinitionsResponse({
+								items: (filter?.isLatestVersion
+									? [FLIGHT_REGISTRATION]
+									: [SOURCE, PREVIOUS_TARGET, LATEST_TARGET, otherTenantVersion]
+								).filter(({tenantId}) => filter?.tenantId === undefined || tenantId === filter.tenantId),
+							}),
+						),
+				}),
+			);
+			const screen = await openFromInstance();
+
+			await expect.element(screen.getByRole('combobox', {name: 'Target Version'})).toHaveTextContent('3Open menu');
+			await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+			await expect
+				.element(screen.getByText(/^You are about to migrate/))
+				.toHaveTextContent(
+					'You are about to migrate 1 process instance from the process definition: Invoice process - version 1 to the process definition: Invoice process - version 3',
+				);
+
+			await userEvent.click(screen.getByRole('button', {name: 'Exit migration'}));
+			await userEvent.click(screen.getByRole('dialog', {name: 'Exit migration'}).getByRole('button', {name: 'Exit'}));
+			await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Invoice process');
+			screen.router.history.back();
+			await expect.poll(() => screen.router.state.location.pathname).toBe(INSTANCE_PATH);
+			screen.router.history.forward();
+
+			await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Invoice process');
+			await expect.element(screen.getByText('Migration step 1 - mapping elements')).not.toBeInTheDocument();
+			expect(screen.router.state.location.search).toEqual({...SOURCE_SEARCH, tenantId: 'tenant-a'});
+		});
+
 		it('should ask before returning to the instance', async ({worker}) => {
 			mockPage(worker);
 			const screen = await openFromInstance();
