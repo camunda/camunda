@@ -270,7 +270,16 @@ public class SearchClientAdapter {
       final String id, final String routing, final String index, final Class<T> classType)
       throws IOException {
     if (elsClient != null) {
-      return elsClient.get(r -> r.id(id).routing(routing).index(index), classType).source();
+      return elsClient
+          .get(
+              r -> {
+                r.id(id).index(index);
+                // a null or empty routing is sent by the ES 9 client as an empty routing= parameter
+                // instead of being omitted
+                return routing == null || routing.isEmpty() ? r : r.routing(routing);
+              },
+              classType)
+          .source();
     } else if (osClient != null) {
       return osClient.get(r -> r.id(id).routing(routing).index(index), classType).source();
     }
@@ -287,7 +296,11 @@ public class SearchClientAdapter {
       throws IOException {
     if (elsClient != null) {
       return elsClient
-          .index(i -> i.index(index).id(id).routing(routing).document(document))
+          .index(
+              i -> {
+                i.index(index).id(id).document(document);
+                return routing == null || routing.isEmpty() ? i : i.routing(routing);
+              })
           .result()
           .jsonValue();
     } else if (osClient != null) {

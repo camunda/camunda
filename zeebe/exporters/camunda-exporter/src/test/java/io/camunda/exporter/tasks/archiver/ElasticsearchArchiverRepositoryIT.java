@@ -979,7 +979,12 @@ final class ElasticsearchArchiverRepositoryIT {
   private <T extends TDocument> void index(
       final String index, final T document, final String routing) {
     try {
-      testClient.index(b -> b.index(index).document(document).id(document.id()).routing(routing));
+      testClient.index(
+          b -> {
+            b.index(index).document(document).id(document.id());
+            // a null or empty routing is sent by the ES 9 client as an empty routing= parameter
+            return routing == null || routing.isEmpty() ? b : b.routing(routing);
+          });
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
