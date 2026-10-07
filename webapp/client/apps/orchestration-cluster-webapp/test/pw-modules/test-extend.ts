@@ -31,6 +31,7 @@ import {AdminUsersPage} from '#/pages/AdminUsers.page';
 import {AdminUserDetailPage} from '#/pages/AdminUserDetail.page';
 import {AdminClusterVariablesPage} from '#/pages/admin/AdminClusterVariables.page';
 import {AdminGlobalTaskListenersPage} from '#/pages/admin/AdminGlobalTaskListeners.page';
+import {AdminAuthorizationsPage} from '#/pages/admin/AdminAuthorizations.page';
 import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
 import {ComponentAccessDeniedPage} from '#/pages/ComponentAccessDenied.page';
@@ -62,6 +63,7 @@ type Fixtures = {
 	adminUserDetailPage: AdminUserDetailPage;
 	adminClusterVariablesPage: AdminClusterVariablesPage;
 	adminGlobalTaskListenersPage: AdminGlobalTaskListenersPage;
+	adminAuthorizationsPage: AdminAuthorizationsPage;
 	notFoundPage: NotFoundPage;
 	forbiddenPage: ForbiddenPage;
 	componentAccessDeniedPage: ComponentAccessDeniedPage;
@@ -128,6 +130,9 @@ const test = base.extend<Fixtures>({
 	},
 	adminGlobalTaskListenersPage: async ({page}, use) => {
 		await use(new AdminGlobalTaskListenersPage(page));
+	},
+	adminAuthorizationsPage: async ({page}, use) => {
+		await use(new AdminAuthorizationsPage(page));
 	},
 	adminOperationsLogPage: async ({page}, use) => {
 		await use(new AdminOperationsLogPage(page));
