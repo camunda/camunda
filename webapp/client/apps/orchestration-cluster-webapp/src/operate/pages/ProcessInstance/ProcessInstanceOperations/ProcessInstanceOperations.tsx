@@ -8,7 +8,7 @@
 
 import {useMemo, useState} from 'react';
 import {Button, MenuButton, MenuItem} from '@carbon/react';
-import {Error, Pause, Play, RetryFailed} from '@carbon/react/icons';
+import {Error, MigrateAlt, Pause, Play, RetryFailed} from '@carbon/react/icons';
 import {useMachine} from '@xstate/react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
@@ -16,6 +16,10 @@ import {useTranslation} from 'react-i18next';
 import {CancelConfirmationModal} from '#/operate/shared/Operations/CancelConfirmationModal';
 import {DeleteConfirmationModal} from '#/operate/shared/Operations/DeleteConfirmationModal';
 import {isWidthBelowBreakpoint, useMatchMedia} from '#/operate/shared/useMatchMedia';
+import {MigrationHelperModal} from '#/operate/pages/Processes/MigrationHelperModal';
+import {isMigrationHelperHidden} from '#/operate/pages/Processes/migrationHelperPreference';
+import {getInstanceMigrationLocation} from '#/operate/pages/Processes/instanceMigration';
+import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
 import {useProcessInstancePage} from '../useProcessInstancePage';
 import {processInstanceHeaderOperationMachine, type HeaderAction} from './processInstanceHeaderOperationMachine';
 import {FitContentInlineLoading} from './styled';
@@ -49,8 +53,10 @@ function ProcessInstanceOperations({isModificationModeEnabled = false}: Props) {
 	const {processInstance} = useProcessInstancePage();
 	const {processInstanceKey, state, hasIncident} = processInstance;
 	const {t} = useTranslation();
+	const navigate = useNavigate();
 	const isCollapsed = useMatchMedia(isWidthBelowBreakpoint('xlg'));
 	const [confirmation, setConfirmation] = useState<'cancel' | 'delete' | null>(null);
+	const [isMigrationHelperOpen, setIsMigrationHelperOpen] = useState(false);
 	const [menuTarget, setMenuTarget] = useState<HTMLDivElement | null>(null);
 	const retry = useHeaderOperation('retry', processInstanceKey);
 	const cancel = useHeaderOperation('cancel', processInstanceKey);
@@ -59,6 +65,7 @@ function ProcessInstanceOperations({isModificationModeEnabled = false}: Props) {
 	const resume = useHeaderOperation('resume', processInstanceKey);
 
 	const isRunning = state === 'ACTIVE' || state === 'SUSPENDED';
+	const canMigrate = ENABLE_PROCESS_MIGRATION && state === 'ACTIVE';
 	const operations = useMemo(
 		() =>
 			state === 'ACTIVE'
@@ -141,6 +148,31 @@ function ProcessInstanceOperations({isModificationModeEnabled = false}: Props) {
 		});
 	}, [operations, isCollapsed, isRunning, processInstanceKey, t]);
 
+	const enterMigration = () => void navigate(getInstanceMigrationLocation(processInstance));
+	const openMigration = () => {
+		if (isMigrationHelperHidden()) {
+			enterMigration();
+		} else {
+			setIsMigrationHelperOpen(true);
+		}
+	};
+	const migrateLabel = t('operate.processes.migration.migrate');
+	const migrateTitle = t('operate.shared.operations.migrateTitle', {processInstanceKey});
+	const migrateControl = !canMigrate ? null : isCollapsed ? (
+		<MenuItem label={migrateLabel} renderIcon={MigrateAlt} onClick={openMigration} />
+	) : (
+		<Button
+			kind="ghost"
+			renderIcon={MigrateAlt}
+			title={migrateTitle}
+			aria-label={migrateTitle}
+			size="sm"
+			onClick={openMigration}
+		>
+			{migrateLabel}
+		</Button>
+	);
+
 	if (isModificationModeEnabled) {
 		return null;
 	}
@@ -157,9 +189,23 @@ function ProcessInstanceOperations({isModificationModeEnabled = false}: Props) {
 					menuAlignment="bottom-end"
 				>
 					{controls}
+					{migrateControl}
 				</MenuButton>
 			) : (
-				controls
+				<>
+					{controls}
+					{migrateControl}
+				</>
+			)}
+			{isMigrationHelperOpen && canMigrate && (
+				<MigrationHelperModal
+					open
+					onClose={() => setIsMigrationHelperOpen(false)}
+					onSubmit={() => {
+						setIsMigrationHelperOpen(false);
+						enterMigration();
+					}}
+				/>
 			)}
 			{confirmation === 'cancel' && isRunning && (
 				<CancelConfirmationModal

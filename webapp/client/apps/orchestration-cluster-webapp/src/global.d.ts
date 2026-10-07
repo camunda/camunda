@@ -12,6 +12,16 @@ declare module '@tanstack/history' {
 		operateDecisionFocus?: {decisionInstanceKey: string} | 'list';
 		operateVariableFilterDraft?: {name: string; value: string};
 		operateVariableFilterOpenedFromList?: true;
+		operateInstanceMigration?: Pick<
+			import('@camunda/camunda-api-zod-schemas/8.11').ProcessInstance,
+			| 'processInstanceKey'
+			| 'processDefinitionKey'
+			| 'processDefinitionId'
+			| 'processDefinitionName'
+			| 'processDefinitionVersion'
+			| 'processDefinitionVersionTag'
+			| 'tenantId'
+		>;
 	}
 }
 

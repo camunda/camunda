@@ -10,6 +10,11 @@ import {HttpResponse} from 'msw';
 import {test, expect} from '#/pw-modules/test-extend';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
+import {
+	createProcessDefinition,
+	createQueryProcessDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/process-definitions';
+import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 import {
 	mockGetProcessInstanceEndpoint,
@@ -19,6 +24,8 @@ import {
 	mockSuspendProcessInstanceEndpoint,
 	mockResumeProcessInstanceEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
+	mockGetProcessDefinitionStatisticsEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 
 test('should retry, suspend, resume and cancel from a direct tenant-aware instance URL', async ({
@@ -165,4 +172,75 @@ test('should retain root cancellation guidance and collapsed keyboard focus', as
 		'/operate/processes/2251799813691005',
 	);
 	await expect(operateProcessInstancePage.apply).not.toBeVisible();
+});
+
+test('should hand an active instance to the migration wizard without keeping it across exit or reload', async ({
+	network,
+	page,
+	operateProcessInstancePage,
+	operateProcessesPage,
+}) => {
+	const instance = createProcessInstance({
+		processInstanceKey: '2251799813691006',
+		processDefinitionKey: '123',
+		processDefinitionId: 'my_simple_process',
+		processDefinitionName: 'Invoice process',
+		processDefinitionVersion: 1,
+		tenantId: 'tenant-a',
+	});
+	const key = instance.processInstanceKey;
+	const migrationStep = (step: string) => page.getByText(`Migration step ${step}`);
+	network.use(...processInstanceHeaderHandlers(instance));
+	network.use(
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessDefinitionsResponse({
+					items: [1, 2].map((version) =>
+						createProcessDefinition({
+							processDefinitionId: 'my_simple_process',
+							processDefinitionKey: String(122 + version),
+							name: 'Invoice process',
+							version,
+							tenantId: 'tenant-a',
+						}),
+					),
+				}),
+			),
+		}),
+		mockGetProcessDefinitionStatisticsEndpoint({
+			successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+		}),
+	);
+	page.on('dialog', (dialog) => void dialog.accept());
+
+	await test.step('enter the wizard from the instance and stay when navigating back', async () => {
+		await operateProcessInstancePage.goto(key);
+		await operateProcessInstancePage.action('Migrate', key).click();
+		await operateProcessInstancePage.confirmation.getByRole('button', {name: 'Continue'}).click();
+		await expect(migrationStep('1 - mapping elements')).toBeVisible();
+		await expect(page).toHaveURL(
+			/\/operate\/processes\?active=true&incidents=true&suspended=true&completed=false&canceled=false&process=my_simple_process&version=1&tenantId=tenant-a$/,
+		);
+		await page.goBack();
+		await page.getByRole('dialog', {name: 'Leave Migration Mode'}).getByRole('button', {name: 'Stay'}).click();
+		await expect(migrationStep('1 - mapping elements')).toBeVisible();
+	});
+
+	await test.step('exit to the source list', async () => {
+		await page.getByRole('button', {name: 'Exit migration'}).click();
+		await page.getByRole('dialog', {name: 'Exit migration'}).getByRole('button', {name: 'Exit'}).click();
+		await expect(operateProcessesPage.processCombobox).toHaveValue('Invoice process');
+		await expect(migrationStep('1 - mapping elements')).not.toBeVisible();
+	});
+
+	await test.step('reload the summary into the source list', async () => {
+		await page.goBack();
+		await operateProcessInstancePage.action('Migrate', key).click();
+		await operateProcessInstancePage.confirmation.getByRole('button', {name: 'Continue'}).click();
+		await page.getByRole('button', {name: 'Next'}).click();
+		await expect(migrationStep('2 - confirm')).toBeVisible();
+		await page.reload();
+		await expect(operateProcessesPage.processCombobox).toHaveValue('Invoice process');
+		await expect(migrationStep('2 - confirm')).not.toBeVisible();
+	});
 });

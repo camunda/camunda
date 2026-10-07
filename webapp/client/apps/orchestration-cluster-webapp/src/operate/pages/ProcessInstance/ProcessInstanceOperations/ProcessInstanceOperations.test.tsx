@@ -27,6 +27,7 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {authenticationStore} from '#/shared/auth/authentication.store';
+import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {ProcessInstanceContext} from '../useProcessInstancePage';
 import {processInstanceQuery} from '../processInstance.queries';
@@ -146,8 +147,8 @@ describe('<ProcessInstanceOperations />', () => {
 	});
 
 	it.for([
-		{state: 'ACTIVE', hasIncident: true, actions: ['Retry', 'Suspend', 'Cancel']},
-		{state: 'ACTIVE', hasIncident: false, actions: ['Suspend', 'Cancel']},
+		{state: 'ACTIVE', hasIncident: true, actions: ['Retry', 'Suspend', 'Cancel', 'Migrate']},
+		{state: 'ACTIVE', hasIncident: false, actions: ['Suspend', 'Cancel', 'Migrate']},
 		{state: 'SUSPENDED', hasIncident: true, actions: ['Resume', 'Cancel']},
 		{state: 'SUSPENDED', hasIncident: false, actions: ['Resume', 'Cancel']},
 		{state: 'COMPLETED', hasIncident: true, actions: ['Delete']},
@@ -160,7 +161,7 @@ describe('<ProcessInstanceOperations />', () => {
 			mockViewport(false);
 			const instance = createInstance(state, hasIncident);
 			const screen = await renderOperations(instance);
-			for (const {action} of ACTIONS) {
+			for (const action of [...ACTIONS.map(({action}) => action), 'Migrate']) {
 				const button = screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`});
 				if (actions.some((name) => name === action)) {
 					await expect.element(button).toBeEnabled();
@@ -168,7 +169,7 @@ describe('<ProcessInstanceOperations />', () => {
 					await expect.element(button).not.toBeInTheDocument();
 				}
 			}
-			await expect.element(screen.getByRole('button', {name: /Modify|Migrate/})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: /Modify/})).not.toBeInTheDocument();
 		},
 	);
 
@@ -390,8 +391,11 @@ describe('<ProcessInstanceOperations />', () => {
 			} else {
 				await userEvent.tab();
 				await userEvent.keyboard('{Enter}');
-				for (const label of state === 'ACTIVE' ? ['Retry', 'Suspend', 'Cancel'] : ['Resume', 'Cancel']) {
+				for (const label of state === 'ACTIVE' ? ['Retry', 'Suspend', 'Cancel', 'Migrate'] : ['Resume', 'Cancel']) {
 					await expect.element(screen.getByRole('menuitem', {name: label})).toBeEnabled();
+				}
+				if (state === 'SUSPENDED') {
+					await expect.element(screen.getByRole('menuitem', {name: 'Migrate'})).not.toBeInTheDocument();
 				}
 				await userEvent.keyboard('{Escape}');
 				await expect.element(screen.getByRole('button', {name: 'Actions'})).toHaveFocus();
@@ -479,6 +483,93 @@ describe('<ProcessInstanceOperations />', () => {
 			await expect
 				.element(screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`}))
 				.toBeEnabled();
+		},
+	);
+
+	it.for([
+		{multiTenancy: 'disabled', isMultiTenancyEnabled: false, tenantId: undefined},
+		{multiTenancy: 'enabled', isMultiTenancyEnabled: true, tenantId: 'tenant-a'},
+	])(
+		'should explain migration before handing the instance to the wizard with multi-tenancy $multiTenancy',
+		async ({isMultiTenancyEnabled, tenantId}) => {
+			sessionStorage.setItem(
+				'clientConfig',
+				JSON.stringify(
+					createSystemConfiguration({deployment: {...createSystemConfiguration().deployment, isMultiTenancyEnabled}}),
+				),
+			);
+			mockViewport(false);
+			const instance = createProcessInstance({
+				...createInstance('ACTIVE'),
+				processDefinitionKey: 'invoice-key',
+				processDefinitionId: 'invoice',
+				processDefinitionName: 'Invoice',
+				processDefinitionVersion: 2,
+				processDefinitionVersionTag: 'v2',
+			});
+			const screen = await renderOperations(instance);
+			const migrate = screen.getByRole('button', {name: `Migrate Instance ${instance.processInstanceKey}`});
+
+			await userEvent.click(migrate);
+			const helper = screen.getByRole('dialog', {name: 'Migrate process instance versions'});
+			await expect.element(helper).toBeVisible();
+			await userEvent.click(helper.getByRole('button', {name: 'Cancel'}));
+
+			await expect.element(helper).not.toBeInTheDocument();
+			expect(screen.router.state.location.pathname).toBe(`/operate/processes/${instance.processInstanceKey}/variables`);
+
+			await userEvent.click(migrate);
+			await userEvent.click(helper.getByRole('button', {name: 'Continue'}), {force: true});
+
+			await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/processes');
+			expect(screen.router.state.location.search).toEqual({
+				active: true,
+				incidents: true,
+				suspended: true,
+				completed: false,
+				canceled: false,
+				process: 'invoice',
+				version: 2,
+				tenantId,
+			});
+			expect(screen.router.state.location.state.operateInstanceMigration).toEqual({
+				processInstanceKey: instance.processInstanceKey,
+				processDefinitionKey: 'invoice-key',
+				processDefinitionId: 'invoice',
+				processDefinitionName: 'Invoice',
+				processDefinitionVersion: 2,
+				processDefinitionVersionTag: 'v2',
+				tenantId: 'tenant-a',
+			});
+		},
+	);
+
+	it.for([
+		{preference: 'unified', isCollapsed: false},
+		{preference: 'legacy', isCollapsed: true},
+	] as const)(
+		'should skip the migration helper hidden by the $preference preference with collapsed=$isCollapsed',
+		async ({preference, isCollapsed}) => {
+			mockViewport(isCollapsed);
+			if (preference === 'unified') {
+				storeStateLocally('operate.hideMigrationHelperModal', true);
+			} else {
+				localStorage.setItem('sharedState', JSON.stringify({hideMigrationHelperModal: true}));
+			}
+			const instance = createInstance('ACTIVE');
+			const screen = await renderOperations(instance);
+
+			if (isCollapsed) {
+				await userEvent.click(screen.getByRole('button', {name: 'Actions'}));
+				await userEvent.click(screen.getByRole('menuitem', {name: 'Migrate'}));
+			} else {
+				await userEvent.click(screen.getByRole('button', {name: `Migrate Instance ${instance.processInstanceKey}`}));
+			}
+
+			await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/processes');
+			expect(screen.router.state.location.state.operateInstanceMigration?.processInstanceKey).toBe(
+				instance.processInstanceKey,
+			);
 		},
 	);
 });

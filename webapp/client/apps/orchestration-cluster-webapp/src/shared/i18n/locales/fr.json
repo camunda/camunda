@@ -1378,6 +1378,7 @@
 					"retryTitle": "Réessayer l'instance {{processInstanceKey}}",
 					"cancelTitle": "Annuler l'instance {{processInstanceKey}}",
 					"modifyTitle": "Modifier l'instance {{processInstanceKey}}",
+					"migrateTitle": "Migrer l'instance {{processInstanceKey}}",
 					"deleteTitle": "Supprimer l'instance {{processInstanceKey}}",
 					"suspendTitle": "Suspendre l'instance {{processInstanceKey}}",
 					"resumeTitle": "Reprendre l'instance {{processInstanceKey}}",
