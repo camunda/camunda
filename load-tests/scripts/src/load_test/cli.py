@@ -347,6 +347,37 @@ async def get_admin_user(ctx: AuthContext) -> User:
 
     return user
 
+async def get_keycloak_admin_user(ctx: AuthContext) -> User:
+    secret = "keycloak-admin-user"
+
+    cmd = [
+        "kubectl",
+        "--namespace",
+        ctx.namespace,
+        "get",
+        "secret",
+        secret,
+        "-o",
+        r"jsonpath={.data}",
+    ]
+    logger.debug(
+        f"Retrieving client secret from Kubernetes secret {ctx.client_secret_name}..."
+    )
+    data = await run(*cmd)
+
+    config = yaml.safe_load(data.stdout)
+
+    # TODO: this assumes a single user
+    if config is None:
+        raise RuntimeError(f"Unable to get config map from {shlex.join(cmd)}")
+
+    username = base64.decodebytes(config["username"].encode("utf-8")).decode("utf-8")
+    password = base64.decodebytes(config["password"].encode("utf-8")).decode("utf-8")
+
+    user = User(username=username, password=password, roles=[])
+
+    return user
+
 
 @main.command("tunnel")
 @click.option("-V", "--cluster-version", default="latest")
@@ -361,6 +392,7 @@ async def async_cmd_tunnel(
     print = console.print
 
     user = await get_admin_user(ctx)
+    keycloak_user = await get_keycloak_admin_user(ctx)
 
     async def wait_for() -> None:
         await wait_url(ctx.oauth_url)
@@ -379,6 +411,14 @@ async def async_cmd_tunnel(
         print("* Open Identity:            http://localhost:8080/admin")
         print("* Open Optimize:            http://localhost:8083")
         print("* Open Management Identity: http://localhost:8084")
+
+        print()
+        print("## Keycloak")
+        print()
+        print(f"  - Admin Username: [bold]{keycloak_user.username}[/bold]")
+        print(f"  - Admin Password: [bold]{keycloak_user.password}[/bold]")
+        print()
+        print("* Open Keycloak:            http://localhost:18080")
         print()
         print("Close the tunnel with C-c")
         await asyncio.sleep(3600 * 24 * 365)  # sleep for a year, until interrupted
