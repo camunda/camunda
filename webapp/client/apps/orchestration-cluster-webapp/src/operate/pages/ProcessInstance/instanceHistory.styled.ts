@@ -8,6 +8,7 @@
 
 import styled from 'styled-components';
 import {Button} from '@carbon/react';
+import {styles} from '@carbon/type';
 
 const HistoryPanel = styled.section`
 	height: 100%;
@@ -40,6 +41,7 @@ const HistoryRow = styled.div<{$selected: boolean; $depth: number; $foldable: bo
 	display: flex;
 	align-items: center;
 	min-height: 32px;
+	height: 32px;
 	padding-inline-start: ${({$depth, $foldable}) =>
 		`calc(${$foldable ? 2 : 3} * var(--cds-spacing-05) + ${$depth} * var(--cds-spacing-06))`};
 	background: ${({$selected}) => ($selected ? 'var(--cds-layer-selected-01)' : 'transparent')};
@@ -93,14 +95,35 @@ const RowSelection = styled.button`
 	cursor: pointer;
 	text-align: left;
 	padding: 3px var(--cds-spacing-05) 3px 0;
-	flex: 1;
+	flex: 0 1 auto;
 	min-width: 0;
+	height: 32px;
 	svg {
 		flex-shrink: 0;
 	}
 	&:focus {
 		outline: none;
 	}
+`;
+const HistoryName = styled.span`
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+`;
+const HistoryMetadata = styled.span`
+	display: inline-flex;
+	align-items: center;
+	gap: var(--cds-spacing-05);
+	flex-shrink: 0;
+	padding-inline-end: var(--cds-spacing-05);
+`;
+const HistoryTimestamp = styled.span`
+	${styles.label01}
+	padding: 0 var(--cds-spacing-03);
+	background: var(--cds-layer-02);
+	border-radius: 2px;
+	white-space: nowrap;
 `;
 const BottomPanel = styled.div`
 	height: 100%;
@@ -142,6 +165,9 @@ export {
 	HistoryState,
 	HistoryToggle,
 	RowSelection,
+	HistoryName,
+	HistoryMetadata,
+	HistoryTimestamp,
 	BottomPanel,
 	TabPanel,
 };

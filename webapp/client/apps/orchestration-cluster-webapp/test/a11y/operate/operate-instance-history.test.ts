@@ -28,6 +28,7 @@ test('should keep the history tree and responsive tabs accessible', async ({
 		elementId: 'task-1',
 		elementName: 'Review invoice',
 		state: 'COMPLETED',
+		endDate: '2026-01-15T10:01:00.000Z',
 	});
 	network.use(...processInstanceHeaderHandlers(instance));
 	network.use(
@@ -43,6 +44,7 @@ test('should keep the history tree and responsive tabs accessible', async ({
 	await expect(
 		operateProcessInstancePage.historyTree.getByRole('button', {name: 'Review invoice', exact: true}),
 	).toHaveAttribute('aria-pressed', 'true');
+	await operateProcessInstancePage.historyTree.getByText('End date', {exact: true}).click();
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
 	await page.setViewportSize({width: 800, height: 768});
 	await operateProcessInstancePage.historyTab.click();

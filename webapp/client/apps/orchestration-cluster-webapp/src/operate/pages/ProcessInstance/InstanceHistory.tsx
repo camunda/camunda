@@ -33,6 +33,9 @@ import {
 	HistoryToggle,
 	HistoryChildren,
 	RowSelection,
+	HistoryName,
+	HistoryMetadata,
+	HistoryTimestamp,
 } from './instanceHistory.styled';
 const foldable = new Set([
 	'PROCESS',
@@ -225,14 +228,18 @@ function HistoryNode({
 				)}
 				<RowSelection ref={selectionRef} type="button" aria-pressed={selected}>
 					<ElementInstanceIcon businessObject={businessObjects?.[item.elementId]} root={root} />
-					<span>{label}</span>
-					{root && migrationDate && (
-						<Tag type="green">
-							{t('operate.processInstance.history.migrated', {date: formatTimestamp(migrationDate)})}
-						</Tag>
-					)}
-					{history.timestamps && item.endDate && <Tag type="gray">{formatTimestamp(item.endDate)}</Tag>}
+					<HistoryName>{label}</HistoryName>
 				</RowSelection>
+				{((root && migrationDate) || (history.timestamps && item.endDate)) && (
+					<HistoryMetadata>
+						{root && migrationDate && (
+							<Tag type="green">
+								{t('operate.processInstance.history.migrated', {date: formatTimestamp(migrationDate)})}
+							</Tag>
+						)}
+						{history.timestamps && item.endDate && <HistoryTimestamp>{formatTimestamp(item.endDate)}</HistoryTimestamp>}
+					</HistoryMetadata>
+				)}
 			</HistoryRow>
 			{window && (
 				<div>

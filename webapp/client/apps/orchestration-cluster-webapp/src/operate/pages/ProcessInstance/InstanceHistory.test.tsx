@@ -477,4 +477,31 @@ describe('InstanceHistory', () => {
 		expect(getComputedStyle(row).outlineStyle).toBe('none');
 		expect(getComputedStyle(row, '::before').width).toBe('4px');
 	});
+	it('should retain 32px history rows for long labels and timestamps in a narrow panel', async ({worker}) => {
+		const label = 'Long history element label with several words '.repeat(10).trim();
+		worker.use(
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createQueryElementInstancesResponse())}),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstancesResponse([
+						createElementInstance({elementName: label, endDate: '2026-01-15T10:01:00.000Z'}),
+					]),
+				),
+			}),
+		);
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{width: '320px'}}>
+					<Harness tree />
+				</div>
+			),
+			{path, initialEntry: `/operate/processes/${instance.processInstanceKey}/variables`},
+		);
+		const rowButton = screen.getByRole('button', {name: label, exact: true});
+		await expect.element(rowButton).toBeVisible();
+		expect(rowButton.element().getBoundingClientRect().height).toBe(32);
+		await userEvent.click(screen.getByText('End date', {exact: true}));
+		expect(rowButton.element().getBoundingClientRect().height).toBe(32);
+	});
 });
