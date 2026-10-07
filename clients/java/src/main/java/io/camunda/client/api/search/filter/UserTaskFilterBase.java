@@ -356,4 +356,12 @@ public interface UserTaskFilterBase extends SearchRequestFilter {
    * @return the updated filter
    */
   UserTaskFilterBase dueDate(final Consumer<DateTimeProperty> dueDate);
+
+  /**
+   * Filters user tasks by whether they are suspended.
+   *
+   * @param isSuspended the suspended flag of the user task
+   * @return the updated filter
+   */
+  UserTaskFilterBase isSuspended(final Boolean isSuspended);
 }

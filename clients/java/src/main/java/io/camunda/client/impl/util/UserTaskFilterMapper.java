@@ -33,6 +33,7 @@ public final class UserTaskFilterMapper {
     final UserTaskFilterFields target = new UserTaskFilterFields();
 
     target.setState(filter.getState());
+    target.setIsSuspended(filter.getIsSuspended());
     target.setAssignee(filter.getAssignee());
     target.setBusinessId(filter.getBusinessId());
     target.setPriority(filter.getPriority());

@@ -1033,6 +1033,84 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapIsSuspendedForUserTask() {
+    // given
+    final var entity =
+        new UserTaskEntity(
+            123L, // userTaskKey
+            "userTask1", // elementId
+            "User Task", // name
+            "processId", // processDefinitionId
+            "Process Name", // processName
+            OffsetDateTime.now(), // creationDate
+            null, // completionDate
+            null, // assignee
+            UserTaskState.CREATED, // state
+            null, // formKey
+            789L, // processDefinitionKey
+            456L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "business-1", // businessId
+            111L, // elementInstanceKey
+            "tenant", // tenantId
+            null, // dueDate
+            null, // followUpDate
+            null, // candidateGroups
+            null, // candidateUsers
+            null, // externalFormReference
+            1, // processDefinitionVersion
+            null, // customHeaders
+            50, // priority
+            null, // tags
+            true); // suspended
+
+    // when
+    final var response = SearchQueryResponseMapper.toUserTask(entity);
+
+    // then
+    assertThat(response.getIsSuspended()).isTrue();
+  }
+
+  @Test
+  void shouldMapIsSuspendedFalseForUserTask() {
+    // given
+    final var entity =
+        new UserTaskEntity(
+            123L, // userTaskKey
+            "userTask1", // elementId
+            "User Task", // name
+            "processId", // processDefinitionId
+            "Process Name", // processName
+            OffsetDateTime.now(), // creationDate
+            null, // completionDate
+            null, // assignee
+            UserTaskState.CREATED, // state
+            null, // formKey
+            789L, // processDefinitionKey
+            456L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "business-1", // businessId
+            111L, // elementInstanceKey
+            "tenant", // tenantId
+            null, // dueDate
+            null, // followUpDate
+            null, // candidateGroups
+            null, // candidateUsers
+            null, // externalFormReference
+            1, // processDefinitionVersion
+            null, // customHeaders
+            50, // priority
+            null, // tags
+            false); // suspended
+
+    // when
+    final var response = SearchQueryResponseMapper.toUserTask(entity);
+
+    // then
+    assertThat(response.getIsSuspended()).isFalse();
+  }
+
+  @Test
   void shouldMapNullRootProcessInstanceKeyForIncident() {
     // given
     final var entity =

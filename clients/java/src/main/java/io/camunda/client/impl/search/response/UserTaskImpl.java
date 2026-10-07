@@ -51,6 +51,7 @@ public class UserTaskImpl implements UserTask {
   private final Integer processDefinitionVersion;
   private final Map<String, String> customHeaders;
   private final Integer priority;
+  private final Boolean isSuspended;
   private final Set<String> tags;
 
   public UserTaskImpl(final UserTaskResult item) {
@@ -78,6 +79,7 @@ public class UserTaskImpl implements UserTask {
     processDefinitionVersion = item.getProcessDefinitionVersion();
     customHeaders = item.getCustomHeaders();
     priority = item.getPriority();
+    isSuspended = item.getIsSuspended();
     tags = item.getTags();
   }
 
@@ -199,6 +201,11 @@ public class UserTaskImpl implements UserTask {
   @Override
   public Integer getPriority() {
     return priority;
+  }
+
+  @Override
+  public Boolean isSuspended() {
+    return isSuspended;
   }
 
   @Override

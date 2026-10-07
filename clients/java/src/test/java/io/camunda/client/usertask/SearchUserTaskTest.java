@@ -149,6 +149,16 @@ public final class SearchUserTaskTest extends ClientRestTest {
     assertThat(request.getFilter().getState().get$Eq()).isEqualTo(UserTaskStateEnum.COMPLETED);
   }
 
+  @Test
+  void shouldSearchUserTaskByIsSuspended() {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.isSuspended(true)).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getIsSuspended()).isTrue();
+  }
+
   static Stream<Arguments> provideStateFilters() {
     return Stream.of(
         stateFilterCase(
@@ -771,6 +781,24 @@ public final class SearchUserTaskTest extends ClientRestTest {
     assertThat(filter.get$Or()).hasSize(2);
     assertThat(filter.get$Or().get(0).getCandidateGroup().get$Eq()).isEqualTo("groupA");
     assertThat(filter.get$Or().get(1).getCandidateUser().get$Eq()).isEqualTo("user2");
+  }
+
+  @Test
+  void shouldSearchUserTaskByIsSuspendedInOrFilters() {
+    // when
+    client
+        .newUserTaskSearchRequest()
+        .filter(
+            f -> f.orFilters(Arrays.asList(f1 -> f1.isSuspended(true), f2 -> f2.assignee("user1"))))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    final UserTaskFilter filter = request.getFilter();
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getIsSuspended()).isTrue();
+    assertThat(filter.get$Or().get(1).getIsSuspended()).isNull();
   }
 
   @Test
