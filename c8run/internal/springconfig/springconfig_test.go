@@ -138,3 +138,21 @@ func TestValueReadsEveryConfigShape(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "rdbms", got, "a file that does not set the key falls through to the next one")
 }
+
+func TestPathsListsEveryFileSpringLoadsFromTheDefaultDirectory(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	t.Setenv("SPRING_PROFILES_ACTIVE", "")
+	base := t.TempDir()
+	configuration := filepath.Join(base, "configuration")
+	require.NoError(t, os.MkdirAll(configuration, 0o755))
+	for _, name := range []string{"application.yaml", "application.properties"} {
+		require.NoError(t, os.WriteFile(filepath.Join(configuration, name), nil, 0o644))
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(base, "user.yaml"), nil, 0o644))
+	assert.Equal(t, []string{
+		filepath.Join(base, "user.yaml"),
+		filepath.Join(configuration, "application.properties"),
+		filepath.Join(configuration, "application.yaml"),
+	}, Paths(base, "user.yaml"))
+}

@@ -72,7 +72,7 @@ func Paths(baseDir, userConfig string) []string {
 			paths = append(paths, FilesIn(candidate)...)
 		}
 	}
-	return append(paths, filepath.Join(baseDir, "configuration", "application.yaml"))
+	return append(paths, FilesIn(filepath.Join(baseDir, "configuration"))...)
 }
 
 func Value(paths []string, property string) (string, bool) {
