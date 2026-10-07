@@ -85,6 +85,7 @@ final class SequentialRebalanceRunnerTest {
           (int) OBSERVATIONS_UNTIL_ELECTION_TIMEOUT);
 
   private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+  private final ClusterRebalanceMetrics metrics = new ClusterRebalanceMetrics(registry);
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
   private final TestConcurrencyControl executor = new TestConcurrencyControl(true);
   private final Map<String, Map<Integer, MemberId>> leaders = new HashMap<>();
@@ -1397,7 +1398,7 @@ final class SequentialRebalanceRunnerTest {
         executor,
         partitionLeaders,
         transfers,
-        new ClusterRebalanceMetrics(registry),
+        metrics,
         LEADER_WAIT_TIMEOUT,
         TEST_CONFIGURATION,
         TEST_HEARTBEAT_INTERVAL,
@@ -1411,7 +1412,7 @@ final class SequentialRebalanceRunnerTest {
         control,
         partitionLeaders,
         transfers,
-        new ClusterRebalanceMetrics(registry),
+        metrics,
         LEADER_WAIT_TIMEOUT,
         TEST_CONFIGURATION,
         TEST_HEARTBEAT_INTERVAL,
@@ -1464,7 +1465,7 @@ final class SequentialRebalanceRunnerTest {
             executor,
             partitionLeaders,
             transfers,
-            new ClusterRebalanceMetrics(registry),
+            metrics,
             leaderWaitTimeout,
             TEST_CONFIGURATION,
             TEST_HEARTBEAT_INTERVAL,
