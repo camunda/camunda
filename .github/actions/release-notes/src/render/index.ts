@@ -11,6 +11,10 @@ import type { DependencyUpdate } from '../categorize';
  *  silently misreads a shape it wasn't built for. */
 export const SCHEMA_VERSION = '2.0.0';
 
+/** Names the gate's mechanism, not a change — hence renamed in the customer body. */
+const OPT_OUT_SECTION = 'Changes without a tracked issue';
+const CUSTOMER_OPT_OUT_SECTION = 'Other changes';
+
 const SECTION_ORDER = [
   'Features',
   'Bug Fixes',
@@ -18,7 +22,7 @@ const SECTION_ORDER = [
   'Documentation',
   'Dependency updates',
   'Reverts',
-  'Changes without a tracked issue',
+  OPT_OUT_SECTION,
   'Maintenance', // asset-only, so last — never reached in the customer body
   'Uncategorized',
 ];
@@ -47,6 +51,9 @@ export interface RenderOptions {
   readonly version: string;
   readonly allowUnattributed: boolean;
   readonly unattributedReason?: string;
+  /** "owner/repo". When set, every `#N` in the two bodies becomes a link — the
+   *  full asset and the step summary don't autolink the way a release body does. */
+  readonly repository?: string;
   /** Every audit line the run produced, in walk order — logged too, but a
    *  log isn't an artifact downstream can read, diff, or archive. */
   readonly warnings?: readonly string[];
@@ -88,7 +95,7 @@ export function oversizedCustomerBodyWarning(customerBody: string): string | und
 
 /** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr: RenderPrInput): string {
-  if (pr.attributionSource === 'optOut') return 'Changes without a tracked issue';
+  if (pr.attributionSource === 'optOut') return OPT_OUT_SECTION;
   return pr.section ?? 'Uncategorized';
 }
 
@@ -188,7 +195,12 @@ function toEntries(prs: readonly RenderPrInput[]): RenderEntry[] {
   return [...entries, ...collapseDependencies(prs.filter(isDependencyBump))];
 }
 
-function renderSectionedBody(prs: readonly RenderPrInput[], dependencyPointer?: DependencyPointer): string {
+function renderSectionedBody(
+  prs: readonly RenderPrInput[],
+  link: (number: number) => string,
+  dependencyPointer?: DependencyPointer,
+  renamedSections: Readonly<Record<string, string>> = {},
+): string {
   const entries = toEntries(prs);
   const groups = new Map<string, RenderEntry[]>();
   for (const entry of entries) {
@@ -200,25 +212,25 @@ function renderSectionedBody(prs: readonly RenderPrInput[], dependencyPointer?: 
   const lines: string[] = [];
   const breaking = entries.filter((entry) => entry.breaking);
   if (breaking.length > 0) {
-    lines.push('## Breaking changes', '', ...breaking.map((entry) => renderLine(entry)), '');
+    lines.push('## Breaking changes', '', ...breaking.map((entry) => renderLine(entry, link)), '');
   }
   const orderedNames = [...SECTION_ORDER, ...[...groups.keys()].filter((name) => !SECTION_ORDER.includes(name))];
   for (const name of orderedNames) {
     const list = groups.get(name) ?? [];
     const pointer = name === 'Dependency updates' && dependencyPointer ? dependencyPointer : undefined;
     if (list.length === 0 && !pointer) continue;
-    lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry)));
+    lines.push(`## ${renamedSections[name] ?? name}`, '', ...list.map((entry) => renderLine(entry, link)));
     if (pointer) lines.push(...(list.length > 0 ? [''] : []), renderDependencyPointer(pointer, list.length > 0));
     lines.push('');
   }
   return lines.join('\n').trim();
 }
 
-function renderLine(entry: RenderEntry): string {
-  const prs = entry.prNumbers.map((n) => `#${n}`).join(', ');
+function renderLine(entry: RenderEntry, link: (number: number) => string): string {
+  const prs = entry.prNumbers.map(link).join(', ');
   if (entry.issueNumbers.length === 0) return `- ${entry.title} (${prs})`;
   const partial = entry.delivered ? '' : ' (partially delivered)'; // issue still OPEN — work landed, issue didn't finish
-  return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}${partial}`;
+  return `- ${entry.title} (${entry.issueNumbers.map(link).join(', ')}) — ${prs}${partial}`;
 }
 
 /** Dotted-numeric versions compare numerically; a digest/sha/date tag has no order and returns null. */
@@ -344,11 +356,16 @@ export function render(all: readonly RenderPrInput[], options: RenderOptions): R
   const packageCount = new Set([...assetOnly].flatMap(packagesOf)).size;
   const assetPrs = all.filter((pr) => pr.section !== null);
 
+  // `/pull/N` and `/issues/N` redirect to each other, so one URL form serves both.
+  const link = (number: number) =>
+    options.repository ? `[#${number}](https://github.com/${options.repository}/pull/${number})` : `#${number}`;
   const customerBody = renderSectionedBody(
     customerPrs,
+    link,
     packageCount > 0 ? { packageCount, version: options.version } : undefined,
+    { [OPT_OUT_SECTION]: CUSTOMER_OPT_OUT_SECTION },
   );
-  const fullAsset = renderSectionedBody(assetPrs);
+  const fullAsset = renderSectionedBody(assetPrs, link);
 
   const prsByIssue = new Map<number, RenderPrInput[]>(); // insertion-ordered: issues come out in walk order
   for (const pr of all) {

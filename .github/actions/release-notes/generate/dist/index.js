@@ -520,6 +520,7 @@ async function run() {
         version: input.targetVersion,
         allowUnattributed: input.allowUnattributed,
         unattributedReason: input.unattributedReason,
+        repository: `${input.owner}/${input.repo}`,
         warnings: auditWarnings,
     });
     // Same conditions render() already folded into audit.json — surfaced here
@@ -540,9 +541,9 @@ async function run() {
     core.setOutput('customer-body', result.customerBody);
     await core.summary // both bodies, written even when the unattributed guard trips, never skipped on failure
         .addHeading(`Release notes — ${input.targetVersion}`, 2)
-        .addHeading('Customer-facing body', 3)
+        .addHeading('Release description (customer-facing)', 3)
         .addRaw(result.customerBody)
-        .addHeading('Full asset (includes internal-only sections)', 3)
+        .addHeading(`CHANGELOG-${input.targetVersion}.md — release asset, also lists internal-only sections`, 3)
         .addRaw(result.fullAsset)
         .write();
     if (result.failureReason)
@@ -1189,6 +1190,9 @@ exports.render = render;
 /** Bumped deliberately on any output-shape change, so a consumer never
  *  silently misreads a shape it wasn't built for. */
 exports.SCHEMA_VERSION = '2.0.0';
+/** Names the gate's mechanism, not a change — hence renamed in the customer body. */
+const OPT_OUT_SECTION = 'Changes without a tracked issue';
+const CUSTOMER_OPT_OUT_SECTION = 'Other changes';
 const SECTION_ORDER = [
     'Features',
     'Bug Fixes',
@@ -1196,7 +1200,7 @@ const SECTION_ORDER = [
     'Documentation',
     'Dependency updates',
     'Reverts',
-    'Changes without a tracked issue',
+    OPT_OUT_SECTION,
     'Maintenance', // asset-only, so last — never reached in the customer body
     'Uncategorized',
 ];
@@ -1222,7 +1226,7 @@ function oversizedCustomerBodyWarning(customerBody) {
 /** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr) {
     if (pr.attributionSource === 'optOut')
-        return 'Changes without a tracked issue';
+        return OPT_OUT_SECTION;
     return pr.section ?? 'Uncategorized';
 }
 function entryKeyFor(pr) {
@@ -1296,7 +1300,7 @@ function toEntries(prs) {
     });
     return [...entries, ...collapseDependencies(prs.filter(isDependencyBump))];
 }
-function renderSectionedBody(prs, dependencyPointer) {
+function renderSectionedBody(prs, link, dependencyPointer, renamedSections = {}) {
     const entries = toEntries(prs);
     const groups = new Map();
     for (const entry of entries) {
@@ -1307,7 +1311,7 @@ function renderSectionedBody(prs, dependencyPointer) {
     const lines = [];
     const breaking = entries.filter((entry) => entry.breaking);
     if (breaking.length > 0) {
-        lines.push('## Breaking changes', '', ...breaking.map((entry) => renderLine(entry)), '');
+        lines.push('## Breaking changes', '', ...breaking.map((entry) => renderLine(entry, link)), '');
     }
     const orderedNames = [...SECTION_ORDER, ...[...groups.keys()].filter((name) => !SECTION_ORDER.includes(name))];
     for (const name of orderedNames) {
@@ -1315,19 +1319,19 @@ function renderSectionedBody(prs, dependencyPointer) {
         const pointer = name === 'Dependency updates' && dependencyPointer ? dependencyPointer : undefined;
         if (list.length === 0 && !pointer)
             continue;
-        lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry)));
+        lines.push(`## ${renamedSections[name] ?? name}`, '', ...list.map((entry) => renderLine(entry, link)));
         if (pointer)
             lines.push(...(list.length > 0 ? [''] : []), renderDependencyPointer(pointer, list.length > 0));
         lines.push('');
     }
     return lines.join('\n').trim();
 }
-function renderLine(entry) {
-    const prs = entry.prNumbers.map((n) => `#${n}`).join(', ');
+function renderLine(entry, link) {
+    const prs = entry.prNumbers.map(link).join(', ');
     if (entry.issueNumbers.length === 0)
         return `- ${entry.title} (${prs})`;
     const partial = entry.delivered ? '' : ' (partially delivered)'; // issue still OPEN — work landed, issue didn't finish
-    return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}${partial}`;
+    return `- ${entry.title} (${entry.issueNumbers.map(link).join(', ')}) — ${prs}${partial}`;
 }
 /** Dotted-numeric versions compare numerically; a digest/sha/date tag has no order and returns null. */
 function versionKey(value) {
@@ -1439,8 +1443,10 @@ function render(all, options) {
     const customerPrs = customerVisible.filter((pr) => !assetOnly.has(pr));
     const packageCount = new Set([...assetOnly].flatMap(packagesOf)).size;
     const assetPrs = all.filter((pr) => pr.section !== null);
-    const customerBody = renderSectionedBody(customerPrs, packageCount > 0 ? { packageCount, version: options.version } : undefined);
-    const fullAsset = renderSectionedBody(assetPrs);
+    // `/pull/N` and `/issues/N` redirect to each other, so one URL form serves both.
+    const link = (number) => options.repository ? `[#${number}](https://github.com/${options.repository}/pull/${number})` : `#${number}`;
+    const customerBody = renderSectionedBody(customerPrs, link, packageCount > 0 ? { packageCount, version: options.version } : undefined, { [OPT_OUT_SECTION]: CUSTOMER_OPT_OUT_SECTION });
+    const fullAsset = renderSectionedBody(assetPrs, link);
     const prsByIssue = new Map(); // insertion-ordered: issues come out in walk order
     for (const pr of all) {
         for (const issueNumber of pr.issueNumbers) {

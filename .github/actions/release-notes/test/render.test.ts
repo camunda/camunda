@@ -277,13 +277,41 @@ test('a non-empty customer body never triggers the empty-body warning', () => {
   assert.deepEqual((result.auditJson as { warnings: string[] }).warnings, []);
 });
 
-test('a no-issue (opt-out) customer-visible PR renders under "Changes without a tracked issue", not its type section', () => {
+test('a no-issue (opt-out) customer-visible PR renders under "Other changes" in the customer body and "Changes without a tracked issue" in the full asset', () => {
   const result = render(
     [pr({ number: 40, title: 'fix: x', section: 'Bug Fixes', attributionSource: 'optOut', issueNumbers: [] })],
     { version: '8.8.30', allowUnattributed: false },
   );
-  assert.match(result.customerBody, /## Changes without a tracked issue/);
+  assert.match(result.customerBody, /## Other changes/);
+  assert.doesNotMatch(result.customerBody, /Changes without a tracked issue/);
+  assert.match(result.fullAsset, /## Changes without a tracked issue/);
   assert.match(result.customerBody, /#40/);
+});
+
+test('with a repository, every issue and PR number in both bodies is a link; without one they stay plain', () => {
+  // given a PR delivering an issue, plus an issue-less dependency bump in the full asset
+  const prs = [
+    pr({ number: 7, title: 'Add thing', issueNumbers: [55] }),
+    pr({
+      number: 8,
+      title: 'deps: bump foo',
+      section: 'Dependency updates',
+      attributionSource: 'botExempt',
+      issueNumbers: [],
+      dependencies: [{ name: 'foo', from: '1.0', to: '1.1' }],
+    }),
+  ];
+
+  // when
+  const linked = render(prs, { version: '8.8.30', allowUnattributed: false, repository: 'camunda/camunda' });
+  const plain = render(prs, { version: '8.8.30', allowUnattributed: false });
+
+  // then
+  const issue = '[#55](https://github.com/camunda/camunda/pull/55)';
+  const pull = '[#7](https://github.com/camunda/camunda/pull/7)';
+  assert.match(linked.customerBody, new RegExp(`\\(${issue.replace(/[[\]().]/g, '\\$&')}\\) — ${pull.replace(/[[\]().]/g, '\\$&')}`));
+  assert.match(linked.fullAsset, /- foo: 1\.0 → 1\.1 \(\[#8\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/8\)\)/);
+  assert.match(plain.customerBody, /\(#55\) — #7/);
 });
 
 test('a bot-exempt PR (e.g. renovate) renders under its normal type section, NOT "Changes without a tracked issue" — the exemption is structural, not a declaration', () => {
