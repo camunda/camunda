@@ -30,6 +30,7 @@ import {AdminMappingRulesPage} from '#/pages/admin/AdminMappingRules.page';
 import {AdminUsersPage} from '#/pages/AdminUsers.page';
 import {AdminUserDetailPage} from '#/pages/AdminUserDetail.page';
 import {AdminClusterVariablesPage} from '#/pages/admin/AdminClusterVariables.page';
+import {AdminGlobalTaskListenersPage} from '#/pages/admin/AdminGlobalTaskListeners.page';
 import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
 import {ComponentAccessDeniedPage} from '#/pages/ComponentAccessDenied.page';
@@ -60,6 +61,7 @@ type Fixtures = {
 	adminUsersPage: AdminUsersPage;
 	adminUserDetailPage: AdminUserDetailPage;
 	adminClusterVariablesPage: AdminClusterVariablesPage;
+	adminGlobalTaskListenersPage: AdminGlobalTaskListenersPage;
 	notFoundPage: NotFoundPage;
 	forbiddenPage: ForbiddenPage;
 	componentAccessDeniedPage: ComponentAccessDeniedPage;
@@ -123,6 +125,9 @@ const test = base.extend<Fixtures>({
 	},
 	adminClusterVariablesPage: async ({page}, use) => {
 		await use(new AdminClusterVariablesPage(page));
+	},
+	adminGlobalTaskListenersPage: async ({page}, use) => {
+		await use(new AdminGlobalTaskListenersPage(page));
 	},
 	adminOperationsLogPage: async ({page}, use) => {
 		await use(new AdminOperationsLogPage(page));

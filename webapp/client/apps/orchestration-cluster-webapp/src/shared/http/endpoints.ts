@@ -63,6 +63,10 @@ import {
 	type UpdateClusterVariableRequestBody,
 	type QueryClusterVariablesRequestBody,
 	type QueryTenantsRequestBody,
+	type GlobalTaskListener,
+	type CreateGlobalTaskListenerRequestBody,
+	type UpdateGlobalTaskListenerRequestBody,
+	type QueryGlobalTaskListenersRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -725,6 +729,14 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.searchGlobalTaskListeners.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.searchGlobalTaskListeners.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
 	getClusterVariable: ({name, scope, tenantId}: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) => {
 		const encodedName = encodeURIComponent(name);
 		return new Request(
@@ -805,6 +817,35 @@ const endpoints = {
 			method: unifiedAPIEndpoints.queryTenants.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getGlobalTaskListener: ({id}: Pick<GlobalTaskListener, 'id'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getGlobalTaskListener.getUrl({id: encodeURIComponent(id)})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getGlobalTaskListener.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createGlobalTaskListener: (body: CreateGlobalTaskListenerRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createGlobalTaskListener.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createGlobalTaskListener.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	updateGlobalTaskListener: ({id, ...body}: Pick<GlobalTaskListener, 'id'> & UpdateGlobalTaskListenerRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateGlobalTaskListener.getUrl({id: encodeURIComponent(id)})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateGlobalTaskListener.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteGlobalTaskListener: ({id}: Pick<GlobalTaskListener, 'id'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteGlobalTaskListener.getUrl({id: encodeURIComponent(id)})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteGlobalTaskListener.method,
 		}),
 };
 

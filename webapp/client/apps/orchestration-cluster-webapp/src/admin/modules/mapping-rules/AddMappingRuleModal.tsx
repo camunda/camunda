@@ -23,7 +23,7 @@ import {
 import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useMappingRuleMutations} from './useMappingRuleMutations';
 import {isDuplicateMappingRuleIdError} from './isDuplicateMappingRuleIdError';
-import {isValidMappingRuleId} from './isValidMappingRuleId';
+import {isValidId} from '#/admin/modules/shared/identifierPattern';
 
 type FormValues = MappingRule;
 
@@ -78,7 +78,7 @@ const AddMappingRuleModal: React.FC<Props> = ({isOpen, onClose}) => {
 						validate={({mappingRuleId, name, claimName, claimValue}) => ({
 							mappingRuleId: !mappingRuleId
 								? t('admin.mappingRules.mappingRuleIdRequiredError')
-								: isValidMappingRuleId(mappingRuleId)
+								: isValidId(mappingRuleId)
 									? undefined
 									: t('admin.mappingRules.mappingRuleIdInvalidError'),
 							name: name ? undefined : t('admin.mappingRules.mappingRuleNameRequiredError'),
