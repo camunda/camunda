@@ -125,6 +125,11 @@ public final class ClusterRestore {
 
     final Map<String, Integer> restoredPartitionCounts = new HashMap<>();
     final var wholeCluster = backupIdsPerTenant.keySet().containsAll(targets.keySet());
+    final var recreateTopology = shouldRewriteTopologyFile(targetDataPolicy, wholeCluster);
+    // A recreated topology places the partitions of the backups, so their data has to be restored
+    // to the brokers it places them on; otherwise the existing placement of the configuration holds
+    final var placementPartitionCounts =
+        recreateTopology ? partitionCountsOf(backupIdsPerTenant) : configuredPartitionCounts();
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
     prepareTarget(
         dataDirectory, backupIdsPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
@@ -140,7 +145,11 @@ public final class ClusterRestore {
                 configuration,
                 physicalTenantId,
                 target.configuration(),
-                localPartitionsOf(configuration, physicalTenantConfigurations(), physicalTenantId),
+                localPartitionsOf(
+                    configuration,
+                    physicalTenantConfigurations(),
+                    placementPartitionCounts,
+                    physicalTenantId),
                 target.backupStore().get(),
                 target.exporterPositionMapper(),
                 meterRegistry)) {
@@ -150,7 +159,7 @@ public final class ClusterRestore {
         LOG.info("Successfully restored physical tenant '{}'", physicalTenantId);
       }
 
-      if (!shouldRewriteTopologyFile(targetDataPolicy, wholeCluster)) {
+      if (!recreateTopology) {
         updateTopologyFile(restoredPartitionCounts);
       } else if (configuration.getCluster().getNodeId() == 0) {
         restoreTopologyFile(restoredPartitionCounts);
@@ -274,26 +283,23 @@ public final class ClusterRestore {
    */
   @VisibleForTesting
   void restoreTopologyFile() throws IOException {
-    restoreTopologyFile(Map.of());
+    restoreTopologyFile(configuredPartitionCounts());
   }
 
   /**
-   * @param restoredPartitionCounts the partition count each restored tenant's backups were taken
-   *     with; the topology holds no partitions above it
+   * @param partitionCounts the partition count of each tenant, that of the backups it was restored
+   *     from; the topology is generated for these partitions rather than the configured ones
    */
-  void restoreTopologyFile(final Map<String, Integer> restoredPartitionCounts) throws IOException {
+  void restoreTopologyFile(final Map<String, Integer> partitionCounts) throws IOException {
     LOG.info("Restoring topology file");
     final var file =
         Path.of(configuration.getData().getDirectory())
             .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
     final var generated =
         StaticConfigurationGenerator.getStaticConfiguration(
-                configuration, physicalTenantConfigurations(), COORDINATOR_ID)
+                configuration, physicalTenantConfigurations(), partitionCounts, COORDINATOR_ID)
             .generateCurrentClusterConfiguration();
-    final var restored =
-        withRestorePlan(
-            withoutPartitionsAbove(generated, restoredPartitionCounts, member -> true),
-            generated.partitionGroups().keySet());
+    final var restored = withRestorePlan(generated, generated.partitionGroups().keySet());
 
     PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer()).update(restored);
     LOG.info(
@@ -457,17 +463,53 @@ public final class ClusterRestore {
       final BrokerCfg configuration,
       final Map<String, BrokerCfg> physicalTenantConfigurations,
       final String physicalTenantId) {
+    return localPartitionsOf(
+        configuration,
+        physicalTenantConfigurations,
+        configuredPartitionCounts(physicalTenantConfigurations),
+        physicalTenantId);
+  }
+
+  /**
+   * The partitions of {@code physicalTenantId} that the local broker replicates when every tenant
+   * has the given partition count, as in a topology recreated for the partition counts of the
+   * backups. See {@link #localPartitionsOf(BrokerCfg, Map, String)} for why every tenant counts.
+   */
+  static Set<PartitionMetadata> localPartitionsOf(
+      final BrokerCfg configuration,
+      final Map<String, BrokerCfg> physicalTenantConfigurations,
+      final Map<String, Integer> partitionCounts,
+      final String physicalTenantId) {
     final var cluster = configuration.getCluster();
     final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
     final var distribution =
         new PartitionDistribution(
             StaticConfigurationGenerator.getStaticConfiguration(
-                    configuration, physicalTenantConfigurations, localMember)
+                    configuration, physicalTenantConfigurations, partitionCounts, localMember)
                 .generatePartitionDistribution());
     return distribution.partitions().stream()
         .filter(partition -> partition.id().group().equals(physicalTenantId))
         .filter(partition -> partition.members().contains(localMember))
         .collect(Collectors.toUnmodifiableSet());
+  }
+
+  /** The partition count of the backups of each tenant. */
+  static Map<String, Integer> partitionCountsOf(
+      final Map<String, Map<Integer, long[]>> backupIdsPerTenant) {
+    return backupIdsPerTenant.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size()));
+  }
+
+  private Map<String, Integer> configuredPartitionCounts() {
+    return configuredPartitionCounts(physicalTenantConfigurations());
+  }
+
+  private static Map<String, Integer> configuredPartitionCounts(
+      final Map<String, BrokerCfg> physicalTenantConfigurations) {
+    return physicalTenantConfigurations.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey, entry -> entry.getValue().getCluster().getPartitionsCount()));
   }
 
   private Map<String, BrokerCfg> physicalTenantConfigurations() {
