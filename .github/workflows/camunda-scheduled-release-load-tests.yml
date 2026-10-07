@@ -25,7 +25,8 @@ env:
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
 jobs:
-  # Single definition of the tested release tags, referenced through `needs.versions.outputs`.
+  # Single definition of the tested release tags. Job outputs are used instead of `env` because
+  # the `env` context is not available in `jobs.<id>.with` of reusable workflow calls.
   versions:
     name: Tested versions
     runs-on: ubuntu-latest
