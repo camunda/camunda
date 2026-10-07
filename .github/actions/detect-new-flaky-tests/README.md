@@ -381,7 +381,10 @@ See `.github/workflows/ci.yml` `detect-new-flaky-tests` job. Key steps:
    `git log -L`).
 2. **Build `ran-jobs-json`** from `needs.<job>.result` values (any value
    other than `skipped`).
-3. **Read bypass label** from `pull_request.labels`.
+3. **Read bypass label** from the PR's live labels (`gh api`), falling back
+   to `pull_request.labels` if the call fails. The event payload is frozen at
+   trigger time, so only the live read lets a label added later work on a
+   re-run.
 4. **Query BigQuery** only when this run produced new flakes.
 5. **Invoke the composite action** with all of the above plus
    `head-sha`, `base-ref`, `blocking: 'true'`.
