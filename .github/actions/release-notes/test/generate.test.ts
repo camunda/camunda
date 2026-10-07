@@ -132,7 +132,7 @@ for (const allowUnattributed of [false, true]) {
     assert.deepEqual(result.comments.entries, []);
     assert.deepEqual(result.audit.overrides.map((entry) => entry.number), allowUnattributed ? [1] : []);
     assert.equal(result.customerBody, '');
-    assert.match(result.fullAsset, /fix: correct retries \(#1\)/);
+    assert.match(result.fullAsset, /fix: correct retries \(\[#1\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/1\)\)/);
     assert.doesNotMatch(result.fullAsset, /4777|private-tracker|Local issue/);
     assert.equal(result.calls.some((call) => Object.values(call.variables).includes(4777)), false);
   });
@@ -155,7 +155,7 @@ test('should keep same-repository native references alongside foreign ones', (t)
   assert.equal(result.changelog.prs[0]!.attributionSource, 'closingIssuesReferences');
   assert.deepEqual(result.labels.issues, [100]);
   assert.deepEqual(result.comments.entries.map((entry) => entry.issueNumber), [100]);
-  assert.match(result.customerBody, /Local issue 100 \(#100\)/);
+  assert.match(result.customerBody, /Local issue 100 \(\[#100\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/100\)\)/);
   assert.doesNotMatch(result.fullAsset, /4777|private-tracker/);
 });
 
@@ -172,7 +172,7 @@ test('should retain a dependency PR breaking-change label in both Markdown outpu
   // then
   assert.equal(result.changelog.prs[0]!.breaking, true);
   for (const body of [result.customerBody, result.fullAsset]) {
-    assert.match(body, /^## Breaking changes\n\n- pkg: 1\.0 → 2\.0 \(#1\)/);
+    assert.match(body, /^## Breaking changes\n\n- pkg: 1\.0 → 2\.0 \(\[#1\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/1\)\)/);
     assert.match(body, /## Dependency updates/);
   }
 });
@@ -186,7 +186,7 @@ for (const newerIsBot of [false, true]) {
     ]);
 
     // then
-    assert.match(result.fullAsset, /- pkg: 1\.0 → 3\.0 \(#10, #20\)$/m);
+    assert.match(result.fullAsset, /- pkg: 1\.0 → 3\.0 \(\[#10\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/10\), \[#20\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/20\)\)$/m);
     assert.deepEqual(result.changelog.prs.map((pr) => pr.number), [10, 20]);
     assert.deepEqual(result.labels.pullRequests, [10, 20]);
     assert.deepEqual(result.audit.overrides.map((entry) => entry.number), [newerIsBot ? 20 : 10]);
