@@ -84,11 +84,8 @@ jobs:
           author="${AUTHOR}"
           db_type="${DB_TYPE}"
           pr_number="${PR_NUMBER}"
-          # Only gRPC gets a suffix. Thus a gRPC benchmark can run next to the REST benchmark of the
-          # same storage, and REST benchmarks that run now keep the namespace their cleanup uses.
-          suffix=""
-          [[ "${PROTOCOL}" == "grpc" ]] && suffix="-grpc"
-          echo "namespace=c8-${author}-pr-${pr_number}-${db_type}${suffix}" >> "$GITHUB_OUTPUT"
+          # The protocol suffix lets a REST and a gRPC benchmark of the same storage run side by side.
+          echo "namespace=c8-${author}-pr-${pr_number}-${db_type}-${PROTOCOL}" >> "$GITHUB_OUTPUT"
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           AUTHOR: ${{ steps.sanitize-author.outputs.branch_name }}
