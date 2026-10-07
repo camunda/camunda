@@ -319,7 +319,9 @@ function HistoryNode({
 		} else {
 			void selection.selectElementInstance(
 				item,
-				item.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE' ? window?.query.data?.items[0]?.elementId : undefined,
+				item.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE' && window?.scope.from === 0
+					? window.query.data?.items[0]?.elementId
+					: undefined,
 			);
 		}
 	}

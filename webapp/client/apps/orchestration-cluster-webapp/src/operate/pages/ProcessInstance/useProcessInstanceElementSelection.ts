@@ -114,7 +114,7 @@ function useResolvedSelection(
 						endpoints.queryElementInstances({
 							filter: {elementInstanceScopeKey: instance.elementInstanceKey},
 							sort: historySort,
-							page: {limit: 1},
+							page: {from: 0, limit: 1},
 						}),
 						current.controller.signal,
 					);

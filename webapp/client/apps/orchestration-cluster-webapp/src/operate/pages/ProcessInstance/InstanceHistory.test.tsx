@@ -13,7 +13,7 @@ import {useEffect, useState} from 'react';
 import {useRouterState} from '@tanstack/react-router';
 import {HttpResponse, http} from 'msw';
 import type {SetupWorker} from 'msw/browser';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
+import {queryElementInstancesRequestBodySchema, type ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
@@ -131,6 +131,7 @@ function Probe() {
 					nestedError: Boolean(history.windows.get(child.elementInstanceKey)?.error),
 					ready: window?.query.isSuccess,
 					historyError: window?.query.isError,
+					firstState: window?.query.data?.items[0]?.state,
 				})}
 			</output>
 			<button onClick={() => void history.page(processInstanceId, 'next')}>Next</button>
@@ -158,15 +159,17 @@ function Harness({tree = false, controls = false}: {tree?: boolean; controls?: b
 	const search = useRouterState({select: (state) => state.location.search});
 	const [id, setId] = useState(instance.processInstanceKey);
 	const [shown, setShown] = useState(true);
+	const [isCompleted, setCompleted] = useState(false);
 	return (
 		<>
 			<button onClick={() => setShown(!shown)}>Remount</button>
+			<button onClick={() => setCompleted(true)}>Complete</button>
 			<button onClick={() => setId(id === instance.processInstanceKey ? 'other' : instance.processInstanceKey)}>
 				Instance
 			</button>
 			<ProcessInstancePageProvider
 				processInstanceId={id}
-				processInstance={createProcessInstance({processInstanceKey: id})}
+				processInstance={createProcessInstance({processInstanceKey: id, state: isCompleted ? 'COMPLETED' : 'ACTIVE'})}
 				search={processInstanceSearchSchema.parse(search)}
 			>
 				{shown && (tree ? <InstanceHistory /> : <Probe />)}
@@ -323,10 +326,104 @@ describe('InstanceHistory', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Remount'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Remount'}));
 		await expect.element(screen.getByText(/"timestamps":true/)).toBeVisible();
-		expect(requests).toHaveBeenCalledTimes(1);
+		await expect.poll(() => requests.mock.calls.length).toBe(2);
 		await userEvent.click(screen.getByRole('button', {name: 'Instance'}));
 		await expect.element(screen.getByText(/"timestamps":false/)).toBeVisible();
 	});
+	it('should refresh cached windows when hidden history reopens after completion', async ({worker}) => {
+		let completed = false;
+		const requests = vi.fn(() =>
+			HttpResponse.json(
+				createQueryElementInstancesResponse([createElementInstance({state: completed ? 'COMPLETED' : 'ACTIVE'})]),
+			),
+		);
+		worker.use(http.post(endpoints.queryElementInstances({}).url, requests));
+		const screen = await renderPage();
+		await expect.element(screen.getByText(/"firstState":"ACTIVE"/)).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Remount'}));
+		completed = true;
+		await userEvent.click(screen.getByRole('button', {name: 'Complete'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Remount'}));
+		await expect.element(screen.getByText(/"firstState":"COMPLETED"/)).toBeVisible();
+		expect(requests).toHaveBeenCalledTimes(2);
+	});
+	it.for([false, true])(
+		'should anchor ad-hoc scopes to their first child rather than a replacement window (paged: %s)',
+		async (paged, {worker}) => {
+			const scope = createElementInstance({
+				elementInstanceKey: '2251799813900100',
+				elementName: 'Ad-hoc scope',
+				type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+			});
+			const lookups: number[] = [];
+			worker.use(
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+				mockQueryBatchOperationItemsEndpoint({
+					successResponse: HttpResponse.json(createQueryElementInstancesResponse()),
+				}),
+				mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(scope)}),
+				http.post(endpoints.queryElementInstances({}).url, async ({request}) => {
+					const body = queryElementInstancesRequestBodySchema.parse(await request.json());
+					if (body.filter?.elementInstanceScopeKey === instance.processInstanceKey) {
+						return HttpResponse.json(createQueryElementInstancesResponse([scope]));
+					}
+					const from = body.page?.from ?? 0;
+					if (body.page?.limit === 1) {
+						lookups.push(from);
+					}
+					return HttpResponse.json(
+						createQueryElementInstancesResponse(
+							Array.from({length: body.page?.limit ?? 100}, (_, index) =>
+								createElementInstance({
+									elementInstanceKey: String(2251799813910000 + from + index),
+									elementId: from + index === 0 ? 'first-child' : `child-${from + index}`,
+									elementName: from + index === 0 ? 'first-child' : `child-${from + index}`,
+								}),
+							),
+							153,
+						),
+					);
+				}),
+			);
+			function Actions() {
+				const history = useInstanceHistory();
+				return <button onClick={() => void history.page(scope.elementInstanceKey, 'next')}>Page scope</button>;
+			}
+			function Page() {
+				const search = useRouterState({select: (state) => state.location.search});
+				return (
+					<ProcessInstancePageProvider
+						processInstanceId={instance.processInstanceKey}
+						processInstance={instance}
+						search={processInstanceSearchSchema.parse(search)}
+					>
+						<InstanceHistory />
+						<Actions />
+					</ProcessInstancePageProvider>
+				);
+			}
+			const screen = await renderWithRouter(Page, {
+				path,
+				initialEntry: `/operate/processes/${instance.processInstanceKey}/variables`,
+			});
+			const item = screen.getByRole('treeitem', {name: 'Ad-hoc scope', exact: true});
+			await expect.element(item).toBeVisible();
+			await userEvent.click(
+				screen.getByRole('treeitem', {name: 'My Process', exact: true}).getByText('My Process', {exact: true}),
+			);
+			await userEvent.keyboard('{ArrowDown}{ArrowRight}');
+			await expect.element(screen.getByRole('treeitem', {name: 'first-child', exact: true})).toBeVisible();
+			if (paged) {
+				await userEvent.click(screen.getByRole('button', {name: 'Page scope'}));
+				await expect.element(screen.getByRole('treeitem', {name: 'child-50', exact: true})).toBeVisible();
+			}
+			await userEvent.click(item.getByText('Ad-hoc scope', {exact: true}));
+			await expect
+				.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).anchorElementId)
+				.toBe('first-child');
+			expect(lookups).toEqual(paged ? [0] : []);
+		},
+	);
 	it.for(['collapse', 'instance'])('should ignore a late forbidden request after %s reset', async (reset, {worker}) => {
 		let finish: () => void = () => {};
 		onTestFinished(() => finish());

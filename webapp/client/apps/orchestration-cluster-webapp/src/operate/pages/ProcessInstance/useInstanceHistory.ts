@@ -109,8 +109,16 @@ function useHistoryController(instance: ProcessInstance) {
 		scopes.map((scope, index) => [scope.key, {scope, query: queries[index]!, error: scopeErrors[scope.version]}]),
 	);
 	useEffect(() => {
-		void client.invalidateQueries({queryKey: ['instanceHistory', instanceKey]});
-	}, [client, instanceKey]);
+		if (!forbidden) {
+			void client.invalidateQueries(
+				{
+					queryKey: ['instanceHistory', instanceKey],
+					refetchType: visible ? 'active' : 'none',
+				},
+				{cancelRefetch: false},
+			);
+		}
+	}, [client, instanceKey, visible, forbidden]);
 	useEffect(() => {
 		if (forbiddenError) {
 			void client.cancelQueries({queryKey: ['instanceHistory', instanceKey]});
