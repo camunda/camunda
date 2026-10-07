@@ -2,7 +2,6 @@ import argparse
 import re
 import sys
 from collections.abc import Mapping
-from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC
 from datetime import datetime
@@ -115,28 +114,32 @@ def existing_queries_file(value: str | Path) -> Path:
     raise argparse.ArgumentTypeError(f"'{value}' must be an existing YAML file.")
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="load-test-report",
-        description="Build a wide load-test report from Prometheus.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""Examples:
+REPORT_EPILOG = """Examples:
   # Port-forwarded Prometheus, JSON output:
-  uv run load-test-report c8-ck-baseline-20260814 --duration-seconds 1800
+  uv run loadtestctl report c8-ck-baseline-20260814 --duration-seconds 1800
 
   # Historical window, spreadsheet-friendly TSV:
-  uv run load-test-report c8-ck-baseline-20260814 \\
+  uv run loadtestctl report c8-ck-baseline-20260814 \\
     --start 2026-08-14T10:00:00Z \\
     --duration-seconds 1800 \\
     --format tsv --no-header
 
   # CI monitor ingress with basic auth:
-  uv run load-test-report c8-ck-baseline-20260814 \\
+  uv run loadtestctl report c8-ck-baseline-20260814 \\
     --duration-seconds 1800 \\
     --endpoint https://ci-monitor.benchmark.camunda.cloud \\
     --user "$PROM_USER" \\
     --password "$PROM_PASS" \\
-    --format csv > /tmp/load-test-report.csv""",
+    --format csv > /tmp/load-test-report.csv"""
+
+
+def add_parser(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
+    parser = subparsers.add_parser(
+        "report",
+        help="Build a wide load-test report from Prometheus.",
+        description="Build a wide load-test report from Prometheus.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=REPORT_EPILOG,
     )
     parser.add_argument("namespace", type=type_namespace, help="Exact load-test namespace.")
     parser.add_argument(
@@ -169,11 +172,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--no-header", action="store_true", help="Omit the CSV/TSV header row.")
     parser.add_argument("--missing-value", default="NaN", help="CSV/TSV placeholder for missing metrics.")
     parser.add_argument("--output", default="", help="Write output to a file instead of stdout.")
-    return parser
+    parser.set_defaults(handler=execute)
 
 
-def parse_args(argv: Sequence[str]) -> Options:
-    args = build_parser().parse_args(argv)
+def build_options(args: argparse.Namespace) -> Options:
     duration_seconds = args.duration_seconds
     now = datetime.now(UTC).replace(microsecond=0)
     start: datetime | None = args.start
@@ -217,9 +219,9 @@ def query_substitutions(options: Options) -> Mapping[str, str]:
     }
 
 
-def run(argv: Sequence[str]) -> int:
+def execute(args: argparse.Namespace) -> int:
     try:
-        options = parse_args(argv)
+        options = build_options(args)
         client = PrometheusClient(
             options.endpoint,
             options.basic_auth_user,
@@ -238,15 +240,9 @@ def run(argv: Sequence[str]) -> int:
         else:
             print(rendered)
         return 0
-    except SystemExit as error:
-        return int(error.code) if isinstance(error.code, int) else 1
     except ValidationError as error:
         print(f"Error: query document is invalid: {error}", file=sys.stderr)
         return 1
     except ReportError as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
-
-
-def main() -> None:
-    sys.exit(run(sys.argv[1:]))

@@ -5,10 +5,10 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from helpers import run
 
 import loadtestctl.report
 from loadtestctl.report.cli import Options
-from loadtestctl.report.cli import run
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.prometheus import PrometheusResponse
 from loadtestctl.report.queries import QueriesDocument

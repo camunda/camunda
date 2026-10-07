@@ -7,21 +7,22 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from helpers import parse_args
+from helpers import run
 
 import loadtestctl.report
-from loadtestctl.report.cli import build_parser
-from loadtestctl.report.cli import parse_args
-from loadtestctl.report.cli import run
+from loadtestctl.cli import build_parser
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.prometheus import auth_headers
 
 PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
 
 
-def test_should_build_parser() -> None:
-    parser = build_parser()
+def test_should_register_report_subcommand() -> None:
+    args = build_parser().parse_args(["report", "c8-ck-test"])
 
-    assert parser.prog == "load-test-report"
+    assert args.command == "report"
+    assert args.namespace == "c8-ck-test"
 
 
 def test_should_return_argparse_exit_code_for_help() -> None:

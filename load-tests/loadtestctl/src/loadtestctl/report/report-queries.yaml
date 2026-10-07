@@ -1,9 +1,9 @@
-# Packaged Camunda 8.8+ query set for load-test-report.
+# Packaged Camunda 8.8+ query set for loadtestctl report.
 #
 # Current orchestration cluster layout plus common load-test metrics.
 # Pass --queries <path> to use one custom file with the same top-level `queries:` schema.
 #
-# Variables are substituted by load-test-report before this file is decoded:
+# Variables are substituted by loadtestctl report before this file is decoded:
 #   $NAMESPACE       the exact load-test namespace, e.g. c8-ck-baseline-20260814.
 #   $DURATION_S      the report window duration with an `s` suffix, e.g. 600s.
 #   $RATE_INTERVAL   the short --rate-interval used for dashboard-style rate samples.

@@ -1,11 +1,11 @@
 from pathlib import Path
 
 import pytest
+from helpers import parse_args
 from pydantic import ValidationError
 
 import loadtestctl.report
 from loadtestctl.report.cli import Options
-from loadtestctl.report.cli import parse_args
 from loadtestctl.report.cli import query_substitutions
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.queries import QueriesDocument
