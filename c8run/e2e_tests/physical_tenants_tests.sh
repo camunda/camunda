@@ -60,18 +60,22 @@ grpc_status() {
         rm -f "$frame"
 }
 
-printf "\nTest: gRPC Camunda-Physical-Tenant header routes to %s\n" "$tenant"
-status="$(grpc_status "$auth" "$tenant")"
-[[ "$status" == "0" ]] || fail "gRPC call to $tenant returned grpc-status '$status'"
+if curl --version | grep -qw HTTP2; then
+        printf "\nTest: gRPC Camunda-Physical-Tenant header routes to %s\n" "$tenant"
+        status="$(grpc_status "$auth" "$tenant")"
+        [[ "$status" == "0" ]] || fail "gRPC call to $tenant returned grpc-status '$status'"
 
-printf "\nTest: gRPC rejects an unknown physical tenant\n"
-status="$(grpc_status "$auth" doesnotexist)"
-[[ "$status" != "0" ]] || fail "gRPC call to an unknown tenant succeeded"
+        printf "\nTest: gRPC rejects an unknown physical tenant\n"
+        status="$(grpc_status "$auth" doesnotexist)"
+        [[ "$status" != "0" ]] || fail "gRPC call to an unknown tenant succeeded"
 
-if [[ "$auth" != "$default_auth" ]]; then
-        printf "\nTest: gRPC rejects the default login on %s\n" "$tenant"
-        status="$(grpc_status "$default_auth" "$tenant")"
-        [[ "$status" == "16" ]] || fail "expected UNAUTHENTICATED (16) for default login on $tenant over gRPC, got '$status'"
+        if [[ "$auth" != "$default_auth" ]]; then
+                printf "\nTest: gRPC rejects the default login on %s\n" "$tenant"
+                status="$(grpc_status "$default_auth" "$tenant")"
+                [[ "$status" == "16" ]] || fail "expected UNAUTHENTICATED (16) for default login on $tenant over gRPC, got '$status'"
+        fi
+else
+        printf "\nSkipping gRPC tests: this curl has no HTTP/2 support\n"
 fi
 
 printf "\nTest: deploy to physical tenant %s\n" "$tenant"
