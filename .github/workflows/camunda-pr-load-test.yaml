@@ -84,8 +84,8 @@ jobs:
           author="${AUTHOR}"
           db_type="${DB_TYPE}"
           pr_number="${PR_NUMBER}"
-          # REST keeps the namespace without a suffix, so a REST and a gRPC benchmark of the same
-          # storage can run side by side.
+          # Only gRPC gets a suffix. Thus a gRPC benchmark can run next to the REST benchmark of the
+          # same storage, and REST benchmarks that run now keep the namespace their cleanup uses.
           suffix=""
           [[ "${PROTOCOL}" == "grpc" ]] && suffix="-grpc"
           echo "namespace=c8-${author}-pr-${pr_number}-${db_type}${suffix}" >> "$GITHUB_OUTPUT"
@@ -117,7 +117,8 @@ jobs:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ inputs.ref }}
       scenario: 'max'
-      # Set explicitly so the run matches the daily variant resolve-daily.py compares it with.
+      # Do not rely on the load-tester default. The comparison selects the daily variant from
+      # this protocol, so a different default makes the comparison incorrect.
       load-test-load: "--set global.preferRest.enabled=${{ inputs.protocol != 'grpc' }}"
       secondary-storage-type: ${{ needs.sanitize-branch-name.outputs.storage-type }}
       reuse-tag: ${{ inputs.reuse-tag }}

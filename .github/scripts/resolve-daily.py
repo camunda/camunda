@@ -7,8 +7,8 @@ the first 30 min after the 15-min warmup) to `$GITHUB_OUTPUT`. Empty on
 miss so the downstream comparison job skips cleanly. Falls back to the
 previous business day when today's daily isn't yet complete.
 
-Reads `SECONDARY_STORAGE_TYPE` and `PROTOCOL` to pick the daily variant that
-matches the PR benchmark (see `daily_variant`).
+Reads `SECONDARY_STORAGE_TYPE` and `PROTOCOL` of the PR benchmark. A daily
+variant with a different setup gives deltas that do not come from the PR.
 """
 
 import os
@@ -20,11 +20,10 @@ REPO = os.environ.get("GITHUB_REPOSITORY", "")
 WORKFLOW = "camunda-daily-load-tests.yml"
 ARTIFACT_PREFIX = "daily-load-test-metrics-"
 ARTIFACT_NAME_PREFIX = ARTIFACT_PREFIX + "medic-daily-"
-# Daily matrix variant key -> label, as in camunda-daily-load-tests.yml. The key is the
-# namespace suffix. GitHub renders a matrixed reusable-workflow call's inner jobs as
-# "<outer job name> / <inner job name>", and stress-load-test.yml's soak job is always named
-# "Soak", so the soak job of a variant is "<label> / Soak". startswith() (not ==) keeps this
-# resilient if the inner workflow ever nests one level deeper.
+# Keep in sync with the matrix in camunda-daily-load-tests.yml. The key is the namespace
+# suffix. The label is necessary to find the soak job of the variant, because GitHub names the
+# inner jobs of a matrix leg "<label> / <inner job>". startswith() also finds the job if the
+# inner workflow gets one more level.
 VARIANT_LABELS = {
     "grpc": "gRPC",
     "rest": "REST",
@@ -83,8 +82,8 @@ def candidate_dates(now: datetime) -> list[date]:
 def daily_variant(storage_type: str, protocol: str) -> str:
     """Daily variant to compare a PR benchmark with.
 
-    The daily only runs with Elasticsearch or without secondary storage, so every other storage
-    is compared with the Elasticsearch variant of the same protocol.
+    The daily runs only with Elasticsearch or without secondary storage. Thus all other storages
+    use the Elasticsearch variant. The protocol must always be the same.
     """
     return f"none-{protocol}" if storage_type == "none" else protocol
 
@@ -107,7 +106,8 @@ def find_run_id(target: date) -> str | None:
 def soak_started_at(run_id: str, variant: str) -> str | None:
     soak_job_name = f"{VARIANT_LABELS[variant]} / Soak"
     out = gh([
-        # A daily run has more jobs than one page holds (30), so later variants need paging.
+        # A daily run has more jobs than one page (30). Without paging, the soak job of a variant
+        # can be missing.
         "api", "--paginate", f"repos/{REPO}/actions/runs/{run_id}/jobs",
         "--jq",
         f'.jobs[] | select(.name | startswith("{soak_job_name}")) | .started_at',
