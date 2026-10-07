@@ -12,12 +12,12 @@ on:
     # backport subset and would otherwise fail the Docusaurus build on every
     # docs-touching PR.
     branches: [main]
-    types: [opened, synchronize, closed]
+    types: [opened, assigned, closed, labeled]
   workflow_dispatch: {}
 
 # Limit workflow to 1 concurrent run per PR: new commit -> old runs are canceled to save costs
 concurrency:
-  cancel-in-progress: true
+  cancel-in-progress: false
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
 
 defaults:
