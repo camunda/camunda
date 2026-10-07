@@ -21,7 +21,7 @@ import type {ProcessDefinitionSelection} from './DiagramPanel';
 import type {ProcessesMode} from './ProcessesLayout';
 import {useDiagramXml} from './useDiagramXml';
 import {getMoveSourceRestriction, isAttachedToEventBasedGateway} from './batchModificationTargets';
-import {getLegacySharedStateFlag} from './getLegacySharedStateFlag';
+import {getLegacySharedStateFlag} from '#/operate/shared/utils/getLegacySharedStateFlag';
 
 const HELPER_STORAGE_KEY = 'operate.hideMoveModificationHelperModal';
 

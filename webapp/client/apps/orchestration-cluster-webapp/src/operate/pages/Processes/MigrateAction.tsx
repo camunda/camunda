@@ -14,8 +14,8 @@ import type {ProcessDefinitionSelection} from './DiagramPanel';
 import type {ProcessInstancesSelection} from './useProcessInstancesSelection';
 import type {ProcessesMode} from './ProcessesLayout';
 import {useDiagramXml} from './useDiagramXml';
-import {MigrationHelperModal} from './MigrationHelperModal';
-import {isMigrationHelperHidden} from './migrationHelperPreference';
+import {MigrationHelperModal} from '#/operate/shared/MigrationHelperModal/MigrationHelperModal';
+import {isMigrationHelperHidden} from '#/operate/shared/MigrationHelperModal/migrationHelperPreference';
 
 type Props = {
 	mode: ProcessesMode;

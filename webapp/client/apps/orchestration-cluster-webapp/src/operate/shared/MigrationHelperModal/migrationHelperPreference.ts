@@ -7,7 +7,7 @@
  */
 
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
-import {getLegacySharedStateFlag} from './getLegacySharedStateFlag';
+import {getLegacySharedStateFlag} from '#/operate/shared/utils/getLegacySharedStateFlag';
 
 const STORAGE_KEY = 'operate.hideMigrationHelperModal';
 
