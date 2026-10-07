@@ -97,6 +97,45 @@ public class DrainingProcessDefinitionTest {
   }
 
   @Test
+  public void shouldRejectCreateInstanceByVersionTagWhenDefinitionIsDraining() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var metadata =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .versionTag("draining-tag")
+                    .startEvent()
+                    .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
+    awaitJobCreated(engine.processInstance().ofBpmnProcessId(processId).create());
+    drainViaDeletion(metadata.getProcessDefinitionKey());
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withVersionTag("draining-tag")
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejection =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
+                processId, 1, metadata.getProcessDefinitionKey()));
+  }
+
+  @Test
   public void shouldRejectCreateInstanceByProcessIdWhenNoActiveVersionRemains() {
     // given - the only version is kept draining by a still-running instance
     final var processId = helper.getBpmnProcessId();
