@@ -90,10 +90,9 @@ func TestTenantsAddWithUserPromptsAndConfirms(t *testing.T) {
 	assert.Contains(t, errOut.String(), "Passwords do not match")
 	assert.NotContains(t, out.String()+errOut.String(), "good")
 	path, _ := pt.ResolvePath(base)
-	pw, ok, err := pt.NewStore(path).Password("hr")
+	_, passwords, err := pt.NewStore(path).Snapshot()
 	require.NoError(t, err)
-	assert.True(t, ok)
-	assert.Equal(t, "good", pw)
+	assert.Equal(t, "good", passwords["hr"])
 }
 
 func TestTenantsAddPasswordStdin(t *testing.T) {
@@ -101,8 +100,8 @@ func TestTenantsAddPasswordStdin(t *testing.T) {
 	cmd, _, _ := testTenantsCommand(t, "fromstdin\n", false, "")
 	require.NoError(t, cmd.run(base, []string{"add", "hr", "--username", "alice", "--password-stdin"}))
 	path, _ := pt.ResolvePath(base)
-	pw, _, _ := pt.NewStore(path).Password("hr")
-	assert.Equal(t, "fromstdin", pw)
+	_, passwords, _ := pt.NewStore(path).Snapshot()
+	assert.Equal(t, "fromstdin", passwords["hr"])
 
 	assert.ErrorContains(t, cmd.run(base, []string{"add", "x", "--username", "bob"}), "requires a terminal")
 }

@@ -125,20 +125,6 @@ func (s *Store) Snapshot() ([]Tenant, map[string]string, error) {
 	return doc.Tenants, doc.Passwords, err
 }
 
-// Get returns one tenant.
-func (s *Store) Get(id string) (Tenant, bool, error) {
-	tenants, err := s.List()
-	if err != nil {
-		return Tenant{}, false, err
-	}
-	for _, t := range tenants {
-		if t.ID == id {
-			return t, true, nil
-		}
-	}
-	return Tenant{}, false, nil
-}
-
 // Add persists new tenants. It fails without writing anything if any id already exists.
 func (s *Store) Add(newTenants []Tenant, passwords map[string]string) error {
 	return s.update(func(doc *document) error {
@@ -204,16 +190,6 @@ func (s *Store) Reset() error {
 	})
 }
 
-// Password returns the stored password for a tenant with its own login.
-func (s *Store) Password(id string) (string, bool, error) {
-	doc, err := s.read()
-	if err != nil {
-		return "", false, err
-	}
-	pw, ok := doc.Passwords[id]
-	return pw, ok, nil
-}
-
 // update applies a change to the whole document under the lock and commits it with one
 // atomic rename; nothing is written if the change returns an error.
 func (s *Store) update(change func(*document) error) error {
@@ -255,32 +231,4 @@ func (s *Store) write(doc document) error {
 	header := "# Physical tenants managed by `c8run tenants`. Edit with the CLI rather than by hand.\n" +
 		"# Readable only by you: it holds the passwords of tenants with their own login.\n"
 	return localsecrets.WriteOwnerOnlyFile(s.path, append([]byte(header), content...))
-}
-
-func atomicWrite(path string, content []byte, perm os.FileMode) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return fmt.Errorf("failed to create %s: %w", filepath.Dir(path), err)
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*")
-	if err != nil {
-		return err
-	}
-	tmpName := tmp.Name()
-	defer func() { _ = os.Remove(tmpName) }()
-	if err := tmp.Chmod(perm); err != nil && !isWindows() {
-		_ = tmp.Close()
-		return err
-	}
-	if _, err := tmp.Write(content); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(tmpName, path)
 }
