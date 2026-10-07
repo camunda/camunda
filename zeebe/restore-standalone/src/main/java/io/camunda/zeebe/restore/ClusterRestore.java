@@ -20,7 +20,6 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
@@ -43,7 +42,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
@@ -333,9 +331,10 @@ public final class ClusterRestore {
         PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer());
     final var current = persisted.getConfiguration();
     final var updated =
-        withRoutingOver(
-            withoutPartitionsAbove(current, restoredPartitionCounts, localMember::equals),
-            restoredPartitionCounts);
+        withoutUnroutedPartitions(
+            withRoutingOver(current, restoredPartitionCounts),
+            restoredPartitionCounts.keySet(),
+            localMember);
     if (!updated.equals(current)) {
       persisted.update(updated);
       LOG.info(
@@ -344,50 +343,20 @@ public final class ClusterRestore {
   }
 
   /**
-   * {@code configuration} without the partitions above each tenant's restored partition count, on
-   * the members selected by {@code members}.
+   * {@code configuration} without the partitions of {@code member} that the restored tenants no
+   * longer route over, by the same rule a broker applies when it leaves recovery after an
+   * in-process restore.
    */
-  @VisibleForTesting
-  static CurrentClusterConfiguration withoutPartitionsAbove(
+  private static CurrentClusterConfiguration withoutUnroutedPartitions(
       final CurrentClusterConfiguration configuration,
-      final Map<String, Integer> partitionCounts,
-      final Predicate<MemberId> members) {
+      final Set<String> restoredPhysicalTenantIds,
+      final MemberId member) {
     var result = configuration;
-    for (final var entry : partitionCounts.entrySet()) {
-      if (result.partitionGroup(entry.getKey()) == null) {
-        continue;
-      }
-      result =
-          result.updatePartitionGroupConfig(
-              entry.getKey(), group -> withoutPartitionsAbove(group, entry.getValue(), members));
-    }
-    return result;
-  }
-
-  private static PartitionGroupConfiguration withoutPartitionsAbove(
-      final PartitionGroupConfiguration group,
-      final int partitionCount,
-      final Predicate<MemberId> members) {
-    var result = group;
-    for (final var member : group.members().entrySet()) {
-      if (!members.test(member.getKey())) {
-        continue;
-      }
-      final var surplus =
-          member.getValue().partitions().keySet().stream()
-              .filter(partitionId -> partitionId > partitionCount)
-              .toList();
-      if (!surplus.isEmpty()) {
+    for (final var physicalTenantId : restoredPhysicalTenantIds) {
+      if (result.partitionGroup(physicalTenantId) != null) {
         result =
-            result.updateMember(
-                member.getKey(),
-                broker -> {
-                  var updated = broker;
-                  for (final var partitionId : surplus) {
-                    updated = updated.removePartition(partitionId);
-                  }
-                  return updated;
-                });
+            result.updatePartitionGroupConfig(
+                physicalTenantId, group -> group.withoutUnroutedPartitions(member));
       }
     }
     return result;
