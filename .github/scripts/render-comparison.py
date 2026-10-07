@@ -89,6 +89,17 @@ def verdict(
 
 # ---------- rendering ----------
 
+def optimal_metrics(optimal: dict, storage_type: str) -> dict:
+    # The max scenario starts more instances without secondary storage (see
+    # load-tests/setup/common.mk), so the optimal values of that storage differ.
+    base = optimal.get("metrics", {})
+    overrides = optimal.get("storage-type-overrides", {}).get(storage_type, {})
+    return {
+        name: {**(base.get(name) or {}), **(overrides.get(name) or {})}
+        for name in base.keys() | overrides.keys()
+    }
+
+
 def load_inputs() -> dict:
     with open(os.environ["QUERIES_JSON_PATH"], encoding="utf-8") as f:
         queries_doc = json.load(f)
@@ -102,7 +113,7 @@ def load_inputs() -> dict:
         "storage_type": os.environ.get("STORAGE_TYPE", ""),
         "protocol": os.environ.get("PROTOCOL", ""),
         "queries": queries_doc["queries"],
-        "optimal_metrics": optimal.get("metrics", {}),
+        "optimal_metrics": optimal_metrics(optimal, os.environ.get("STORAGE_TYPE", "")),
         "results": safe_json_parse(os.environ.get("PR_RESULTS_JSON"), "Current"),
         "daily_results": safe_json_parse(os.environ.get("DAILY_RESULTS_JSON"), "Daily"),
     }
