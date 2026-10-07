@@ -7,6 +7,7 @@
  */
 
 import {linkOptions} from '@tanstack/react-router';
+import type {z} from 'zod';
 import {
 	processInstanceSchema,
 	type ProcessDefinition,
@@ -26,11 +27,9 @@ const instanceMigrationSchema = processInstanceSchema.pick({
 	tenantId: true,
 });
 
-function getSourceSearch({
-	processDefinitionId,
-	processDefinitionVersion,
-	tenantId,
-}: Pick<ProcessInstance, 'processDefinitionId' | 'processDefinitionVersion' | 'tenantId'>) {
+type InstanceMigrationHandoff = z.infer<typeof instanceMigrationSchema>;
+
+function getSourceSearch({processDefinitionId, processDefinitionVersion, tenantId}: InstanceMigrationHandoff) {
 	return {
 		active: true,
 		incidents: true,
@@ -44,20 +43,11 @@ function getSourceSearch({
 }
 
 function getInstanceMigrationLocation(processInstance: ProcessInstance) {
+	const handoff = instanceMigrationSchema.parse(processInstance);
 	return linkOptions({
 		to: '/operate/processes',
-		search: getSourceSearch(processInstance),
-		state: {
-			operateInstanceMigration: {
-				processInstanceKey: processInstance.processInstanceKey,
-				processDefinitionKey: processInstance.processDefinitionKey,
-				processDefinitionId: processInstance.processDefinitionId,
-				processDefinitionName: processInstance.processDefinitionName,
-				processDefinitionVersion: processInstance.processDefinitionVersion,
-				processDefinitionVersionTag: processInstance.processDefinitionVersionTag,
-				tenantId: processInstance.tenantId,
-			},
-		},
+		search: getSourceSearch(handoff),
+		state: {operateInstanceMigration: handoff},
 	});
 }
 
