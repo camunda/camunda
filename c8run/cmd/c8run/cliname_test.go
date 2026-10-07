@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
@@ -96,10 +97,11 @@ func TestPathWarningPrintsDirectoriesVerbatim(t *testing.T) {
 	t.Setenv(cliNameEnv, "c8ctl cluster")
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
-	t.Setenv("APPDATA", filepath.Join(home, "AppData"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
+	t.Setenv("LOCALAPPDATA", filepath.Join(home, "AppData", "Local"))
 	defaultDir, err := localsecrets.DefaultDirectory()
 	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(defaultDir, home), "the default directory must resolve inside the temporary home, got %s", defaultDir)
 	require.NoError(t, os.MkdirAll(defaultDir, 0o700))
 	require.NoError(t, os.WriteFile(filepath.Join(defaultDir, "OLD_SECRET"), []byte("x"), 0o600))
 	dir := filepath.Join(t.TempDir(), "c8run secrets")
