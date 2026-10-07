@@ -13,9 +13,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"gopkg.in/yaml.v3"
@@ -24,8 +24,6 @@ import (
 // GeneratedConfigName is written into the c8run configuration directory. Spring only
 // auto-loads application.yaml from that directory, so c8run adds this file explicitly.
 const GeneratedConfigName = "physical-tenants.generated.yaml"
-
-func isWindows() bool { return runtime.GOOS == "windows" }
 
 // StoragePrefix returns the secondary-storage namespace a tenant gets for a storage type,
 // and the camunda.data.secondary-storage sub-key it lives under.
@@ -147,41 +145,14 @@ func ApplyGeneratedConfig(baseDir string, content []byte) error {
 		}
 		return nil
 	}
-	if err := atomicWrite(path, content, 0o644); err != nil {
+	if err := localsecrets.WriteOwnerOnlyFile(path, content); err != nil {
 		return fmt.Errorf("failed to write %s: %w", path, err)
 	}
 	return nil
 }
 
-// WriteGeneratedConfig writes (or, with no tenants, removes) the generated config file.
-func WriteGeneratedConfig(baseDir string, tenants []types.PhysicalTenant, storageType string) (string, error) {
-	return WriteGeneratedConfigForPort(baseDir, tenants, storageType, 0)
-}
-
 // portMarker records the port c8run was started on so `c8run tenants` prints matching URLs.
 const portMarker = "# c8run-port: "
-
-// WriteGeneratedConfigForPort is WriteGeneratedConfig that also records the Camunda port.
-func WriteGeneratedConfigForPort(baseDir string, tenants []types.PhysicalTenant, storageType string, port int) (string, error) {
-	path := filepath.Join(baseDir, "configuration", GeneratedConfigName)
-	if len(tenants) == 0 {
-		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return "", err
-		}
-		return "", nil
-	}
-	content, err := Render(tenants, storageType)
-	if err != nil {
-		return "", err
-	}
-	if port > 0 {
-		content = append([]byte(fmt.Sprintf("%s%d\n", portMarker, port)), content...)
-	}
-	if err := atomicWrite(path, content, 0o644); err != nil {
-		return "", fmt.Errorf("failed to write %s: %w", path, err)
-	}
-	return path, nil
-}
 
 // ConfigDeclaresTenants reports whether a Spring YAML file declares camunda.physical-tenants.
 func ConfigDeclaresTenants(path string) bool {
