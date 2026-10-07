@@ -144,7 +144,7 @@ jobs:
           compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
-          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-9 }}
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
 
