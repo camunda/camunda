@@ -451,13 +451,52 @@ jobs:
           cd "${ws_dir}"
           claude -p "$prompt" --dangerously-skip-permissions
 
+      # team-test-automation is internal and this repo is public, so GitHub refuses to
+      # resolve `uses: camunda/team-test-automation/...` -- an internal repo shares its
+      # actions only with private and internal repos. Check the action out and run it
+      # from a local path instead.
+      #
+      # A token of its own, not the one minted at the top of the job: that one is an
+      # installation token good for an hour, and this job may run 90 minutes.
+      - name: Generate medic-resolver read token
+        id: medic-token
+        if: always()
+        continue-on-error: true
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: team-test-automation
+
+      # `path` is relative to $GITHUB_WORKSPACE, so this lands INSIDE the tooling
+      # checkout. Harmless only because the agent edits and commits in $ws_dir, never here.
+      - name: Check out the medic resolver
+        id: medic-src
+        if: ${{ always() && steps.medic-token.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: camunda/team-test-automation
+          ref: 4ba23b2dfa0029dc5a640fc8e24e78844ca0aa06 # camunda/team-test-automation#186
+          token: ${{ steps.medic-token.outputs.token }}
+          path: .medic-resolver
+          fetch-depth: 1
+          persist-credentials: false
+
       # Resolved from the same rotation schedule @test-automation-team-medic is rendered
       # from, so the reviewer tagged below is whoever that handle points at today.
       - name: Resolve the test-automation medic
         id: medic
-        if: always()
+        if: ${{ always() && steps.medic-src.outcome == 'success' }}
         continue-on-error: true
-        uses: camunda/team-test-automation/.github/actions/resolve-medic@4ba23b2dfa0029dc5a640fc8e24e78844ca0aa06 # camunda/team-test-automation#186
+        uses: ./.medic-resolver/.github/actions/resolve-medic
 
       - name: Request review and label PRs
         if: always()
