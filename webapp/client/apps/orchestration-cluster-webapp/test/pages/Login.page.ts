@@ -9,8 +9,12 @@
 import {BasePage} from './BasePage';
 
 class LoginPage extends BasePage {
-	async goto() {
-		return this.page.goto('/login');
+	async goto(redirectTo?: string) {
+		return this.page.goto(redirectTo === undefined ? '/login' : `/login?redirect=${encodeURIComponent(redirectTo)}`);
+	}
+
+	get heading() {
+		return this.page.getByRole('heading');
 	}
 
 	get submitButton() {
@@ -22,7 +26,7 @@ class LoginPage extends BasePage {
 	}
 
 	get passwordInput() {
-		return this.page.getByLabel(/^password$/i);
+		return this.page.getByLabel(/password/i);
 	}
 
 	get errorMessage() {

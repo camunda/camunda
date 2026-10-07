@@ -163,3 +163,27 @@ test('should show a loading state while the login form is submitting', async ({n
 	await expect(loginPage.loadingButton).toBeVisible();
 	await expect(loginPage.loadingButton).toBeDisabled();
 });
+
+test('should show the Operate heading by default', async ({network, loginPage}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+	);
+
+	await loginPage.goto();
+
+	await expect(loginPage.heading).toHaveText('Operate');
+});
+
+test('should show the Admin heading when redirected from the Admin app', async ({network, loginPage}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+	);
+
+	await loginPage.goto('/admin');
+
+	await expect(loginPage.heading).toHaveText('Admin');
+});
