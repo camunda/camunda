@@ -47,10 +47,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  * indices with a strict, conflicting mapping, so the tenant's very first attempt fails while
  * everything else about the cluster stays healthy — no network games and one container. The same
  * trick is used by {@code SchemaManagerStartupIT}.
- *
- * <p>The degraded tenant is deliberately <em>not</em> the default one: until the module-specific
- * search-engine readiness indicators are replaced ({@code #51861}), a degraded default tenant still
- * pulls down the readiness group, so isolation is only observable for a non-default tenant.
  */
 @Timeout(300)
 @ZeebeIntegration
