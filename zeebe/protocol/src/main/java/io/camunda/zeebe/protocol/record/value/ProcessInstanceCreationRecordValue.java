@@ -81,6 +81,15 @@ public interface ProcessInstanceCreationRecordValue
    */
   String getBusinessId();
 
+  /**
+   * Returns the version tag of the process definition to create the process instance from. Used
+   * together with the BPMN process id to resolve the process definition version.
+   *
+   * @return the version tag, or an empty string if not set
+   * @since 8.11
+   */
+  String getVersionTag();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)
   interface ProcessInstanceCreationStartInstructionValue {

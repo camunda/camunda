@@ -1140,6 +1140,7 @@ public class CompactRecordLogger {
     return new StringBuilder()
         .append("new <process ")
         .append(formatId(value.getBpmnProcessId()))
+        .append(value.getVersionTag().isEmpty() ? "" : " tag:" + value.getVersionTag())
         .append(">")
         .append(summarizeStartInstructions(value.getStartInstructions()))
         .append(formatVariables(value))
