@@ -83,3 +83,58 @@ func TestFilesInIncludesActiveProfilesFirst(t *testing.T) {
 	t.Setenv("SPRING_PROFILES_ACTIVE", "other")
 	assert.Equal(t, filepath.Join(dir, "application-other.yaml"), FilesIn(dir)[0], "the environment beats the base file")
 }
+
+func TestValuePrecedence(t *testing.T) {
+	cfg := filepath.Join(t.TempDir(), "application.yaml")
+	require.NoError(t, os.WriteFile(cfg, []byte("camunda.data.secondary-storage.type: rdbms\n"), 0o644))
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "")
+	t.Setenv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "")
+	got, _ := Value([]string{cfg}, "camunda.data.secondary-storage.type")
+	assert.Equal(t, "rdbms", got)
+	t.Setenv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "opensearch")
+	got, _ = Value([]string{cfg}, "camunda.data.secondary-storage.type")
+	assert.Equal(t, "opensearch", got)
+	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
+	got, _ = Value([]string{cfg}, "camunda.data.secondary-storage.type")
+	assert.Equal(t, "elasticsearch", got)
+	t.Setenv("JDK_JAVA_OPTIONS", "-Dcamunda.data.secondary-storage.type=elasticsearch -Dcamunda.data.secondaryStorage.type=opensearch")
+	got, _ = Value([]string{cfg}, "camunda.data.secondary-storage.type")
+	assert.Equal(t, "opensearch", got, "JDK_JAVA_OPTIONS beats env vars; the last -D wins")
+	t.Setenv("JAVA_OPTS", "-Xmx1g -Dcamunda.data.secondary-storage.type=rdbms")
+	got, _ = Value([]string{cfg}, "camunda.data.secondary-storage.type")
+	assert.Equal(t, "rdbms", got, "JAVA_OPTS is on the command line and beats JDK_JAVA_OPTIONS")
+}
+
+func TestValueReadsEveryConfigShape(t *testing.T) {
+	for _, key := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS", "CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "CAMUNDA_DATA_SECONDARY_STORAGE_TYPE"} {
+		t.Setenv(key, "")
+	}
+	dir := t.TempDir()
+	write := func(name, content string) string {
+		path := filepath.Join(dir, name)
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+		return path
+	}
+	cases := map[string]struct{ file, content, want string }{
+		"flat dotted YAML key":    {"flat.yaml", "camunda.data.secondary-storage.type: elasticsearch\n", "elasticsearch"},
+		"placeholder default":     {"placeholder.yaml", "camunda:\n  data:\n    secondary-storage:\n      type: ${C8RUN_TEST_STORAGE:elasticsearch}\n", "elasticsearch"},
+		"camelCase YAML":          {"camel.yaml", "camunda:\n  data:\n    secondaryStorage:\n      type: opensearch\n", "opensearch"},
+		"camelCase properties":    {"camel.properties", "camunda.data.secondaryStorage.type=elasticsearch\n", "elasticsearch"},
+		"kebab-case properties":   {"kebab.properties", "camunda.data.secondary-storage.type=rdbms\n", "rdbms"},
+		"no storage type present": {"empty.yaml", "camunda:\n  data: {}\n", ""},
+	}
+	for name, tc := range cases {
+		got, _ := Value([]string{write(tc.file, tc.content)}, "camunda.data.secondary-storage.type")
+		assert.Equal(t, tc.want, got, name)
+	}
+
+	t.Setenv("C8RUN_TEST_STORAGE", "opensearch")
+	got, _ := Value([]string{filepath.Join(dir, "placeholder.yaml")}, "camunda.data.secondary-storage.type")
+	assert.Equal(t, "opensearch", got, "the environment overrides the placeholder default")
+
+	got, ok := Value([]string{filepath.Join(dir, "empty.yaml"), filepath.Join(dir, "kebab.properties")}, "camunda.data.secondary-storage.type")
+	assert.True(t, ok)
+	assert.Equal(t, "rdbms", got, "a file that does not set the key falls through to the next one")
+}

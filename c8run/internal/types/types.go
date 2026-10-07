@@ -15,7 +15,6 @@ type C8Run interface {
 
 type C8RunSettings struct {
 	Config               string
-	ResolvedConfigPath   string
 	ConfigPaths          []string
 	Detached             bool
 	DisableConnectors    bool

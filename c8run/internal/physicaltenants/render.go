@@ -185,41 +185,13 @@ func WriteGeneratedConfigForPort(baseDir string, tenants []types.PhysicalTenant,
 
 // ConfigDeclaresTenants reports whether a Spring YAML file declares camunda.physical-tenants.
 func ConfigDeclaresTenants(path string) bool {
-	if root, ok := springconfig.Load(path); ok {
-		if _, ok := springconfig.Lookup(root, "camunda", "physical-tenants"); ok {
-			return true
-		}
-		if _, ok := springconfig.Lookup(root, "camunda", "physicalTenants"); ok {
-			return true
-		}
-		return false
-	}
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	if strings.HasSuffix(path, ".properties") {
-		return strings.Contains(string(content), "camunda.physical-tenants.") ||
-			strings.Contains(string(content), "camunda.physicalTenants.")
-	}
-	var root map[string]any
-	if yaml.Unmarshal(content, &root) != nil {
+	root, ok := springconfig.Load(path)
+	if !ok {
+		content, _ := os.ReadFile(path)
 		return strings.Contains(string(content), "physical-tenants")
 	}
-	if camunda, ok := root["camunda"].(map[string]any); ok {
-		if _, ok := camunda["physical-tenants"]; ok {
-			return true
-		}
-		if _, ok := camunda["physicalTenants"]; ok {
-			return true
-		}
-	}
-	for key := range root {
-		if strings.HasPrefix(key, "camunda.physical-tenants.") {
-			return true
-		}
-	}
-	return false
+	_, ok = springconfig.Lookup(root, "camunda", "physical-tenants")
+	return ok
 }
 
 // ResolveInput is everything Resolve needs; it keeps the function free of globals for tests.
