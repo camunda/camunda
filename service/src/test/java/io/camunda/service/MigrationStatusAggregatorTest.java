@@ -12,12 +12,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.cluster.migration.MigrationConditionStatus;
 import io.camunda.cluster.migration.MigrationState;
 import io.camunda.cluster.migration.MigrationStatusProvider;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 final class MigrationStatusAggregatorTest {
@@ -48,11 +51,14 @@ final class MigrationStatusAggregatorTest {
         Executors.newSingleThreadExecutor(r -> new Thread(r, "aggregate-test-executor"));
     final var observedThreadNames = new CopyOnWriteArrayList<String>();
     final var aggregator =
-        new MigrationStatusAggregator(List.of(threadRecordingProvider("a", observedThreadNames)));
+        new MigrationStatusAggregator(
+            List.of(threadRecordingProvider("a", observedThreadNames)),
+            Duration.ofSeconds(5),
+            executor);
 
     try {
       // when
-      aggregator.aggregate(executor);
+      aggregator.aggregate();
 
       // then
       assertThat(observedThreadNames).containsExactly("aggregate-test-executor");
@@ -192,6 +198,261 @@ final class MigrationStatusAggregatorTest {
     // then - nothing from the first poll carries over; the backfill defaults to UNKNOWN
     assertThat(secondPhysicalTenants.get("default").get("a").state())
         .isEqualTo(MigrationState.UNKNOWN);
+  }
+
+  @Test
+  void shouldReportUnknownForAProviderThatDoesNotAnswerInTime() throws Exception {
+    // given - one provider answers, another hangs well past the provider timeout
+    final var release = new CountDownLatch(1);
+    final var hanging =
+        new MigrationStatusProvider() {
+          @Override
+          public String conditionName() {
+            return "hanging";
+          }
+
+          @Override
+          public Map<String, MigrationConditionStatus> getMigrationStatus() {
+            try {
+              release.await(30, TimeUnit.SECONDS);
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            return Map.of("default", migrated("late"));
+          }
+        };
+    final var aggregator =
+        new MigrationStatusAggregator(
+            List.of(provider("fast", Map.of("default", migrated("fast done"))), hanging),
+            Duration.ofSeconds(1));
+
+    try {
+      // when - the poll must finish long before the hanging provider would
+      final var result = aggregator.aggregateAsync().get(10, TimeUnit.SECONDS);
+
+      // then
+      assertThat(result.get("default").get("fast").state()).isEqualTo(MigrationState.MIGRATED);
+      assertThat(result.get("default").get("hanging").state()).isEqualTo(MigrationState.UNKNOWN);
+    } finally {
+      release.countDown();
+    }
+  }
+
+  @Test
+  void shouldShareOnePollAmongConcurrentCallersWhileItIsInFlight() throws Exception {
+    // given - a provider that stays busy until released, and counts how often it is asked
+    final var release = new CountDownLatch(1);
+    final var calls = new AtomicInteger();
+    final var slow =
+        new MigrationStatusProvider() {
+          @Override
+          public String conditionName() {
+            return "slow";
+          }
+
+          @Override
+          public Map<String, MigrationConditionStatus> getMigrationStatus() {
+            calls.incrementAndGet();
+            try {
+              release.await(30, TimeUnit.SECONDS);
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            return Map.of("default", migrated("done"));
+          }
+        };
+    final var aggregator = new MigrationStatusAggregator(List.of(slow), Duration.ofSeconds(30));
+
+    try {
+      // when - several callers arrive while the first poll is still running
+      final var first = aggregator.aggregateAsync();
+      final var second = aggregator.aggregateAsync();
+      final var third = aggregator.aggregateAsync();
+      release.countDown();
+
+      // then - they all see the same poll and the provider was asked once
+      for (final var poll : List.of(first, second, third)) {
+        assertThat(poll.get(10, TimeUnit.SECONDS).get("default").get("slow").state())
+            .isEqualTo(MigrationState.MIGRATED);
+      }
+      assertThat(calls).hasValue(1);
+    } finally {
+      release.countDown();
+    }
+  }
+
+  @Test
+  void shouldNotDeadlockWhenTheExecutorHasASingleThread() throws Exception {
+    // given - a one-thread executor: the poll must not hold that thread while waiting for the
+    // provider tasks that run on it
+    final var executor = Executors.newSingleThreadExecutor();
+    try {
+      final var aggregator =
+          new MigrationStatusAggregator(
+              List.of(
+                  provider("a", Map.of("default", migrated("a done"))),
+                  provider("b", Map.of("default", migrated("b done"))),
+                  provider("c", Map.of("default", migrated("c done")))),
+              Duration.ofSeconds(5),
+              executor);
+
+      // when
+      final var result = aggregator.aggregateAsync().get(10, TimeUnit.SECONDS);
+
+      // then
+      assertThat(result.get("default")).containsOnlyKeys("a", "b", "c");
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
+  void shouldNotStartAnotherTaskForAProviderThatIsStillRunning() throws Exception {
+    // given - a provider that stays busy far past the provider timeout, counting its invocations
+    final var release = new CountDownLatch(1);
+    final var calls = new AtomicInteger();
+    final var stuck =
+        new MigrationStatusProvider() {
+          @Override
+          public String conditionName() {
+            return "stuck";
+          }
+
+          @Override
+          public Map<String, MigrationConditionStatus> getMigrationStatus() {
+            calls.incrementAndGet();
+            try {
+              release.await(30, TimeUnit.SECONDS);
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            return Map.of("default", migrated("done"));
+          }
+        };
+    final var aggregator = new MigrationStatusAggregator(List.of(stuck), Duration.ofMillis(100));
+
+    try {
+      // when - repeated polls, each giving up on the stuck provider after the timeout
+      for (int i = 0; i < 5; i++) {
+        aggregator.aggregateAsync().get(10, TimeUnit.SECONDS);
+      }
+
+      // then - the provider was started once, not once per poll, so it holds one thread
+      assertThat(calls).hasValue(1);
+    } finally {
+      release.countDown();
+      aggregator.close();
+    }
+  }
+
+  @Test
+  void shouldReportAProviderAgainOnceItHasRecovered() throws Exception {
+    // given - a provider that hangs on its first call, then answers at once
+    final var release = new CountDownLatch(1);
+    final var calls = new AtomicInteger();
+    final var provider =
+        new MigrationStatusProvider() {
+          @Override
+          public String conditionName() {
+            return "recovering";
+          }
+
+          @Override
+          public Map<String, MigrationConditionStatus> getMigrationStatus() {
+            if (calls.incrementAndGet() == 1) {
+              try {
+                release.await(30, TimeUnit.SECONDS);
+              } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            }
+            return Map.of("default", migrated("done"));
+          }
+        };
+    final var aggregator = new MigrationStatusAggregator(List.of(provider), Duration.ofMillis(100));
+
+    try {
+      // when - the first poll gives up on it, then the provider recovers
+      final var first = aggregator.aggregateAsync().get(10, TimeUnit.SECONDS);
+      release.countDown();
+      final var second = aggregator.aggregateAsync().get(10, TimeUnit.SECONDS);
+
+      // then - a poll reuses the finishing task or starts a fresh one; either way it is not stuck
+      assertThat(first).isEmpty();
+      assertThat(second.get("default").get("recovering").state())
+          .isEqualTo(MigrationState.MIGRATED);
+    } finally {
+      release.countDown();
+      aggregator.close();
+    }
+  }
+
+  @Test
+  void shouldCompleteThePollEvenWhenAProviderHoldsTheOnlyExecutorThread() throws Exception {
+    // given - an injected one-thread executor that a hung provider occupies, so the second provider
+    // never even starts. The merge must not queue behind them on that executor.
+    final var release = new CountDownLatch(1);
+    final var executor = Executors.newSingleThreadExecutor();
+    final var hanging =
+        new MigrationStatusProvider() {
+          @Override
+          public String conditionName() {
+            return "hanging";
+          }
+
+          @Override
+          public Map<String, MigrationConditionStatus> getMigrationStatus() {
+            try {
+              release.await(30, TimeUnit.SECONDS);
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            return Map.of("default", migrated("late"));
+          }
+        };
+    final var aggregator =
+        new MigrationStatusAggregator(
+            List.of(hanging, provider("queued", Map.of("default", migrated("queued done")))),
+            Duration.ofMillis(300),
+            executor);
+
+    try {
+      // when / then - bounded by the provider timeout, not by the hung provider
+      assertThat(aggregator.aggregateAsync().get(10, TimeUnit.SECONDS)).isEmpty();
+    } finally {
+      release.countDown();
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
+  void shouldFailTheFutureInsteadOfThrowingOnceTheExecutorIsShutDown() {
+    // given
+    final var aggregator =
+        new MigrationStatusAggregator(
+            List.of(provider("a", Map.of("default", migrated("a done")))), Duration.ofSeconds(1));
+    aggregator.close();
+
+    // when
+    final var poll = aggregator.aggregateAsync();
+
+    // then
+    assertThat(poll)
+        .failsWithin(5, TimeUnit.SECONDS)
+        .withThrowableThat()
+        .withCauseInstanceOf(RejectedExecutionException.class);
+  }
+
+  @Test
+  void shouldAllowClosingMoreThanOnce() {
+    // given
+    final var aggregator =
+        new MigrationStatusAggregator(
+            List.of(provider("a", Map.of("default", migrated("a done")))), Duration.ofSeconds(1));
+
+    // when / then
+    aggregator.close();
+    aggregator.close();
   }
 
   private static MigrationConditionStatus migrated(final String detail) {

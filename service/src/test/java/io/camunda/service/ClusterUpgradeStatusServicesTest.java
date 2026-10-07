@@ -8,15 +8,15 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.camunda.cluster.migration.MigrationConditionStatus;
 import io.camunda.cluster.migration.MigrationState;
 import io.camunda.cluster.migration.MigrationStatusProvider;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 class ClusterUpgradeStatusServicesTest {
@@ -78,6 +78,74 @@ class ClusterUpgradeStatusServicesTest {
     assertThat(statusOf(services)).isEqualTo(MigrationState.MIGRATION_IN_PROGRESS);
   }
 
+  @Test
+  void shouldReportUnknownPromptlyWhenAProviderHangs() throws Exception {
+    // given - one provider answers, another never does within the (short) provider timeout
+    final var release = new CountDownLatch(1);
+    final var hanging =
+        new MigrationStatusProvider() {
+          @Override
+          public String conditionName() {
+            return "hanging";
+          }
+
+          @Override
+          public Map<String, MigrationConditionStatus> getMigrationStatus() {
+            try {
+              release.await(30, TimeUnit.SECONDS);
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            return Map.of("default", migrated("late"));
+          }
+        };
+    final var services =
+        new ClusterUpgradeStatusServices(
+            new MigrationStatusAggregator(
+                List.of(provider("fast", Map.of("default", migrated("fast done"))), hanging),
+                Duration.ofMillis(500)));
+
+    try {
+      // when / then - the answer arrives long before the hanging provider would return
+      assertThat(services.getStatus().get(10, TimeUnit.SECONDS)).isEqualTo(MigrationState.UNKNOWN);
+    } finally {
+      release.countDown();
+    }
+  }
+
+  @Test
+  void shouldReportUnknownWhenEveryProviderHangsOnTheFirstPoll() throws Exception {
+    // given - cold start: no provider has ever answered, so no physical tenant is known yet
+    final var release = new CountDownLatch(1);
+    final var hanging =
+        new MigrationStatusProvider() {
+          @Override
+          public String conditionName() {
+            return "hanging";
+          }
+
+          @Override
+          public Map<String, MigrationConditionStatus> getMigrationStatus() {
+            try {
+              release.await(30, TimeUnit.SECONDS);
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            return Map.of("default", migrated("late"));
+          }
+        };
+    final var services =
+        new ClusterUpgradeStatusServices(
+            new MigrationStatusAggregator(List.of(hanging), Duration.ofMillis(500)));
+
+    try {
+      // when / then - an empty tenant map must read as UNKNOWN, never as MIGRATED
+      assertThat(services.getStatus().get(10, TimeUnit.SECONDS)).isEqualTo(MigrationState.UNKNOWN);
+    } finally {
+      release.countDown();
+    }
+  }
+
   private static MigrationConditionStatus migrated(final String detail) {
     return new MigrationConditionStatus(MigrationState.MIGRATED, detail);
   }
@@ -106,10 +174,7 @@ class ClusterUpgradeStatusServicesTest {
   }
 
   private static ClusterUpgradeStatusServices services(final MigrationStatusProvider... providers) {
-    final var executorProvider = mock(ApiServicesExecutorProvider.class);
-    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
-    return new ClusterUpgradeStatusServices(
-        new MigrationStatusAggregator(List.of(providers)), executorProvider);
+    return new ClusterUpgradeStatusServices(new MigrationStatusAggregator(List.of(providers)));
   }
 
   private static MigrationState statusOf(final ClusterUpgradeStatusServices services) {
