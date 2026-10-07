@@ -31,7 +31,7 @@
 	},
 	"packageManager": "npm@12.2.0",
 	"devDependencies": {
-		"@camunda/design-system": "0.66.1",
+		"@camunda/design-system": "0.68.1",
 		"@eslint/js": "10.0.1",
 		"@tanstack/eslint-plugin-query": "5.104.1",
 		"@vitest/eslint-plugin": "1.6.27",
