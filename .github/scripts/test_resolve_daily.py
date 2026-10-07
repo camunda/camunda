@@ -117,12 +117,19 @@ class TestCandidateDates:
 
 
 class TestDailyVariant:
-    def test_no_secondary_storage_compares_with_none_rest(self):
-        assert r.daily_variant("none") == "none-rest"
+    @pytest.mark.parametrize("protocol", ["rest", "grpc"])
+    def test_no_secondary_storage_compares_with_the_none_variant(self, protocol):
+        assert r.daily_variant("none", protocol) == f"none-{protocol}"
 
     @pytest.mark.parametrize("storage", ["elasticsearch", "opensearch", "postgresql", ""])
-    def test_any_other_storage_compares_with_rest(self, storage):
-        assert r.daily_variant(storage) == "rest"
+    @pytest.mark.parametrize("protocol", ["rest", "grpc"])
+    def test_any_other_storage_compares_with_the_elasticsearch_variant(self, storage, protocol):
+        assert r.daily_variant(storage, protocol) == protocol
+
+    @pytest.mark.parametrize("storage", ["elasticsearch", "none"])
+    @pytest.mark.parametrize("protocol", ["rest", "grpc"])
+    def test_every_variant_has_a_soak_job_label(self, storage, protocol):
+        assert r.daily_variant(storage, protocol) in r.VARIANT_LABELS
 
 
 class TestSoakStartedAt:

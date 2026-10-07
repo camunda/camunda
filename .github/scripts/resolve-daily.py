@@ -7,8 +7,8 @@ the first 30 min after the 15-min warmup) to `$GITHUB_OUTPUT`. Empty on
 miss so the downstream comparison job skips cleanly. Falls back to the
 previous business day when today's daily isn't yet complete.
 
-Reads `SECONDARY_STORAGE_TYPE` to pick the daily variant that matches the PR
-benchmark (see `daily_variant`).
+Reads `SECONDARY_STORAGE_TYPE` and `PROTOCOL` to pick the daily variant that
+matches the PR benchmark (see `daily_variant`).
 """
 
 import os
@@ -80,13 +80,13 @@ def candidate_dates(now: datetime) -> list[date]:
     return out
 
 
-def daily_variant(storage_type: str) -> str:
+def daily_variant(storage_type: str, protocol: str) -> str:
     """Daily variant to compare a PR benchmark with.
 
-    camunda-pr-load-test.yaml pins REST. The daily only runs with Elasticsearch or without
-    secondary storage, so every other storage is compared with the Elasticsearch variant.
+    The daily only runs with Elasticsearch or without secondary storage, so every other storage
+    is compared with the Elasticsearch variant of the same protocol.
     """
-    return "none-rest" if storage_type == "none" else "rest"
+    return f"none-{protocol}" if storage_type == "none" else protocol
 
 
 def find_run_id(target: date) -> str | None:
@@ -176,7 +176,9 @@ def main() -> int:
         warn("GITHUB_REPOSITORY env not set")
         emit("", "")
         return 0
-    variant = daily_variant(os.environ.get("SECONDARY_STORAGE_TYPE", ""))
+    variant = daily_variant(
+        os.environ.get("SECONDARY_STORAGE_TYPE", ""), os.environ.get("PROTOCOL") or "rest"
+    )
     result = resolve(datetime.now(timezone.utc), variant)
     if result is None:
         warn("no usable daily-on-main run found; daily comparison skipped")
