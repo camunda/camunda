@@ -9,14 +9,15 @@
   "type": "commonjs",
   "scripts": {
     "build:lint": "ncc build src/lint.ts -o lint/dist --no-source-map-register",
-    "build": "npm run build:lint",
+    "build:generate": "ncc build src/generate.ts -o generate/dist --no-source-map-register",
+    "build": "npm run build:lint && npm run build:generate",
     "test": "node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "24.0.15",
-    "@vercel/ncc": "0.38.4",
-    "tsx": "4.19.4",
-    "typescript": "5.7.3"
+    "@types/node": "24.19.1",
+    "@vercel/ncc": "0.45.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
   }
 }
