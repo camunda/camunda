@@ -2,4 +2,4 @@ camunda:
   data:
     secondary-storage:
       rdbms:
-        prefix: C8RUN_E2E_
+        queueSize: 999

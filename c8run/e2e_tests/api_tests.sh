@@ -41,11 +41,11 @@ if [[ "$returnCode" != 0 ]]; then
 fi
 printf "\nTest: test --config flag\n"
 
-PREFIX="$(curl --silent --show-error --fail localhost:9600/actuator/configprops \
-        | jq -r '[.contexts[] | .beans["camunda-io.camunda.configuration.Camunda"].properties.data.secondaryStorage.rdbms.prefix // empty] | first // empty')"
-echo "$PREFIX"
-if [[ "$PREFIX" != "C8RUN_E2E_" ]]; then
-        echo "test failed: expected the RDBMS prefix from e2e_tests/prefix-config.yaml"
+QUEUE_SIZE="$(curl --silent --show-error --fail localhost:9600/actuator/configprops \
+        | jq -r '[.contexts[] | .beans["camunda-io.camunda.configuration.Camunda"].properties.data.secondaryStorage.rdbms.queueSize // empty] | first // empty')"
+echo "$QUEUE_SIZE"
+if [[ "$QUEUE_SIZE" != "999" ]]; then
+        echo "test failed: expected the RDBMS queueSize from e2e_tests/config-flag.yaml"
         exit 1
 fi
 
