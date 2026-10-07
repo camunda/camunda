@@ -27,14 +27,14 @@ public interface SuspensionAware<T extends UnifiedRecordValue> {
       "Expected to process command for process instance with key '%d', but the process instance is suspended.";
 
   /**
-   * Handles the command while the target instance is {@code SUSPENDING}. By default, commands
-   * continue processing until suspension is complete.
+   * Handles the command while the target instance is {@code SUSPENDING}. By default, uses the same
+   * behavior as {@link #onSuspended}.
    *
    * @param record the command being handled
    * @return the {@link SuspensionAction} the gate should apply; never {@code null}
    */
   default SuspensionAction onSuspending(final TypedRecord<T> record) {
-    return SuspensionAction.PROCESS;
+    return onSuspended(record);
   }
 
   /**
@@ -83,7 +83,10 @@ public interface SuspensionAware<T extends UnifiedRecordValue> {
     PROCESS,
     /** Reject the command when a suspension hook disallows it. */
     REJECT,
-    /** Buffer the command while {@code SUSPENDED}. Must not be returned by {@link #onResuming}. */
+    /**
+     * Buffer the command while {@code SUSPENDING} or {@code SUSPENDED}. Must not be returned by
+     * {@link #onResuming}.
+     */
     BUFFER
   }
 }

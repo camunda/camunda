@@ -29,10 +29,10 @@ public interface SuspensionState {
   @Nullable State getSuspensionState(long processInstanceKey);
 
   /**
-   * @return {@code true} while the process instance is {@link State#SUSPENDED} or {@link
-   *     State#RESUMING}; {@code false} while {@link State#SUSPENDING} or without a marker. The
-   *     marker remains while buffered commands drain during resuming. Use {@link
-   *     #getSuspensionState(long)} to check for any marker or distinguish the states.
+   * @return {@code true} while the process instance is {@link State#SUSPENDING}, {@link
+   *     State#SUSPENDED}, or {@link State#RESUMING}; {@code false} without a marker. The marker
+   *     remains while buffered commands drain during resuming. Use {@link
+   *     #getSuspensionState(long)} to distinguish the states.
    */
   boolean isSuspended(long processInstanceKey);
 

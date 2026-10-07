@@ -58,7 +58,7 @@ public class SuspensionAppliersTest {
     suspendingApplier.applyState(processInstanceKey, record);
 
     // then
-    assertThat(suspensionState.isSuspended(processInstanceKey)).isFalse();
+    assertThat(suspensionState.isSuspended(processInstanceKey)).isTrue();
     assertThat(suspensionState.getSuspensionState(processInstanceKey))
         .isEqualTo(SuspensionState.State.SUSPENDING);
 

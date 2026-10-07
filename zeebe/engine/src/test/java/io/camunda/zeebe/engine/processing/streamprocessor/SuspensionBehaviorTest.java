@@ -127,7 +127,7 @@ final class SuspensionBehaviorTest {
 
   @ParameterizedTest
   @EnumSource(SuspensionAction.class)
-  void shouldProcessByDefaultWhileSuspending(final SuspensionAction behavior) {
+  void shouldApplySuspendedClassificationByDefaultWhileSuspending(final SuspensionAction behavior) {
     // given
     markerIs(State.SUSPENDING);
     final var command = command();
@@ -137,10 +137,34 @@ final class SuspensionBehaviorTest {
     final var result = suspensionBehavior.process(command, processor);
 
     // then
-    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+    assertThat(result.outcome()).isEqualTo(behavior);
     assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
-    assertThat(result.rejectionReason()).isNull();
+    if (behavior == SuspensionAction.REJECT) {
+      assertThat(result.rejectionReason())
+          .isEqualTo(SuspensionAware.ERROR_MESSAGE_SUSPENDED_PI.formatted(PROCESS_INSTANCE_KEY));
+    } else {
+      assertThat(result.rejectionReason()).isNull();
+    }
     verifyOnSuspending(processor, command);
+  }
+
+  @Test
+  void shouldApplyOverriddenClassificationWhileSuspending() {
+    // given
+    markerIs(State.SUSPENDING);
+    final var command = command();
+    final var processor = overridingProcessor(SuspensionAction.REJECT);
+    final var suspensionAware = (SuspensionAware<?>) processor;
+    doReturn(SuspensionAction.PROCESS).when(suspensionAware).onSuspending(any());
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+    verify(suspensionAware).onSuspending(any());
+    verify(suspensionAware, never()).onSuspended(any());
+    verify(suspensionAware, never()).onResuming(any());
   }
 
   @Test
@@ -208,17 +232,20 @@ final class SuspensionBehaviorTest {
     final var command = command();
     final var processor = overridingProcessor(SuspensionAction.BUFFER);
 
-    // when / then - BUFFER is only valid while SUSPENDED; re-buffering while draining is a bug
+    // when / then - re-buffering while draining is a bug
     assertThatThrownBy(() -> suspensionBehavior.process(command, processor))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Expected PROCESS or REJECT from onResuming, but got BUFFER");
     verifyOnResuming(processor, command);
   }
 
-  @Test
-  void shouldCarryCustomRejectionReasonWhenProcessorRejects() {
+  @ParameterizedTest
+  @EnumSource(
+      value = State.class,
+      names = {"SUSPENDING", "SUSPENDED"})
+  void shouldCarryCustomRejectionReasonWhenProcessorRejects(final State marker) {
     // given
-    markerIs(State.SUSPENDED);
+    markerIs(marker);
     final var command = command();
     final var processor = overridingProcessor(SuspensionAction.REJECT);
     stubRejectionReason(processor, command, "custom user-task reason");
@@ -229,7 +256,11 @@ final class SuspensionBehaviorTest {
     // then - Engine can use this instead of the generic suspended-process-instance message
     assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
     assertThat(result.rejectionReason()).isEqualTo("custom user-task reason");
-    verifyOnSuspended(processor, command);
+    if (marker == State.SUSPENDING) {
+      verifyOnSuspending(processor, command);
+    } else {
+      verifyOnSuspended(processor, command);
+    }
   }
 
   @Test
@@ -432,7 +463,7 @@ final class SuspensionBehaviorTest {
   private static void verifyOnSuspending(
       final TypedRecordProcessor<?> processor, final TypedRecord<?> command) {
     verify((SuspensionAware) processor).onSuspending(command);
-    verify((SuspensionAware) processor, never()).onSuspended(any());
+    verify((SuspensionAware) processor).onSuspended(command);
     verify((SuspensionAware) processor, never()).onResuming(any());
   }
 

@@ -66,18 +66,17 @@ public final class JobTimeOutProcessor
 
     if (state == State.ACTIVATED && hasTimedOut(job)) {
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
-      jobMetrics.countJobEvent(JobAction.TIMED_OUT, job.getJobKind(), job.getType());
 
-      // TIMED_OUT made the job ACTIVATABLE. If the instance is still SUSPENDED, park it in the same
-      // batch so it is not handed out. Use getSuspensionState == SUSPENDED (not isSuspended): while
-      // RESUMING the instance is draining and the job must become available again.
-      if (suspensionState.getSuspensionState(job.getProcessInstanceKey())
-          == SuspensionState.State.SUSPENDED) {
+      // Park timed-out jobs while suspending or suspended. During RESUMING, they must become
+      // available again.
+      final var marker = suspensionState.getSuspensionState(job.getProcessInstanceKey());
+      if (marker == SuspensionState.State.SUSPENDING || marker == SuspensionState.State.SUSPENDED) {
         stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
         suspensionMetrics.jobSuspended();
       } else {
         jobActivationBehavior.notifyJobAvailableAsSideEffect(job);
       }
+      jobMetrics.countJobEvent(JobAction.TIMED_OUT, job.getJobKind(), job.getType());
     } else {
       final var reason =
           switch (state) {

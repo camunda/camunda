@@ -29,8 +29,8 @@ import org.slf4j.Logger;
  * processed normally. An implementing processor's {@link SuspensionAware#onSuspended} classifies
  * the command as {@code PROCESS}, {@code REJECT}, or {@code BUFFER} while {@code SUSPENDED}. While
  * {@code RESUMING}, {@link SuspensionAware#onResuming} classifies instead. Commands targeting
- * {@code SUSPENDING} instances use {@link SuspensionAware#onSuspending}, which processes them by
- * default.
+ * {@code SUSPENDING} instances use {@link SuspensionAware#onSuspending}, which delegates to {@link
+ * SuspensionAware#onSuspended} by default.
  */
 @NullMarked
 public final class SuspensionBehavior {

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -101,6 +102,42 @@ public final class MessageSuspensionGateTest {
     Assertions.assertThat(rejection)
         .hasIntent(MessageCorrelationIntent.CORRELATE)
         .hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldRejectCorrelateWhileSuspending() {
+    // given - the message-side subscription is still open, so a published message sends CORRELATE
+    // to the instance while it is suspending
+    final String processId = Strings.newRandomValidBpmnId();
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = Strings.newRandomValidBpmnId();
+    final long processInstanceKey =
+        deployAndStartProcessWithMessageCatchEvent(processId, messageName, correlationKey);
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    seedSuspending(processInstanceKey);
+
+    // when
+    ENGINE.message().withName(messageName).withCorrelationKey(correlationKey).publish();
+
+    // then
+    final var rejection =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CORRELATE)
+            .onlyCommandRejections()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .processMessageSubscriptionRecords()
+                        .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
   }
 
   @Test
@@ -315,5 +352,12 @@ public final class MessageSuspensionGateTest {
                 .done())
         .deploy();
     return ENGINE.processInstance().ofBpmnProcessId(processId).create();
+  }
+
+  private static void seedSuspending(final long processInstanceKey) {
+    await().until(ENGINE::hasReachedEnd);
+    ((MutableProcessingState) ENGINE.getProcessingState())
+        .getSuspensionState()
+        .setSuspensionState(processInstanceKey, State.SUSPENDING);
   }
 }
