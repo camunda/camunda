@@ -15,10 +15,11 @@ The goal is to improve transparency and shorten the feedback cycle!
 
 ## Inputs
 
-|     Input      |                                                     Description                                                     | Required |  Default  |
-|----------------|---------------------------------------------------------------------------------------------------------------------|----------|-----------|
-| `github_token` | GitHub token for API access. Needs `actions:read`, `checks:read` and `pull-requests:write` permissions.             | Yes      | -         |
-| `has_failures` | Whether there are any failures or cancellations in the workflow. When `'false'`, deletes outdated failure comments. | No       | `'false'` |
+|     Input      |                                                                            Description                                                                             | Required |  Default  |
+|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-----------|
+| `github_token` | GitHub token for API access. Needs `actions:read`, `checks:read` and `pull-requests:write` permissions.                                                            | Yes      | -         |
+| `has_failures` | Whether there are any failures or cancellations in the workflow. When `'false'`, deletes outdated failure comments.                                                | No       | `'false'` |
+| `jobs_file`    | JSON file (`{"jobs": [...]}`, Jobs API format) with the jobs to report. When unset, missing or empty, the action reports the failed and cancelled jobs of the run. | No       | `''`      |
 
 ## Usage
 

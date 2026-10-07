@@ -2414,7 +2414,8 @@ jobs:
     # This name is hard-coded in the branch rules; remember to update that if this name changes
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    # At least the sum of the step timeouts, so the gate step always runs.
+    timeout-minutes: 15
     permissions:
       actions: read
       checks: read
@@ -2458,7 +2459,7 @@ jobs:
       - zeebe-ci
       - zeebe-unit-tests
     env:
-      SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+      SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
@@ -2466,28 +2467,80 @@ jobs:
           persist-credentials: false
       - name: Check for aborted jobs
         continue-on-error: true
+        timeout-minutes: 2
         uses: ./.github/actions/observe-aborted-jobs
         with:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      # The needs context can miss jobs GitHub cancelled or failed before a runner was assigned
+      # (INC-8501), so the gate also reads the latest job results from the Jobs API. A job blocks
+      # unless it succeeded, was skipped or neutral, runs after this job, or has job-level
+      # continue-on-error; the last two are read from this workflow file. Any error leaves
+      # `failed` unset, which fails the gate and keeps the GCS objects.
+      - name: Evaluate job results
+        id: results
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEEDS_FAILED: ${{ contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+          BLOCKING_JOBS_FILE: ${{ runner.temp }}/blocking-jobs.json
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?filter=latest&per_page=100" \
+              > "${RUNNER_TEMP}/jobs.json" && break
+            if (( attempt == 3 )); then
+              echo "::error::Could not read job results from the Jobs API."
+              exit 1
+            fi
+            sleep 10
+          done
+          yq -o=json '.jobs' .github/workflows/ci.yml > "${RUNNER_TEMP}/workflow-jobs.json"
+          jq -s --slurpfile wf "${RUNNER_TEMP}/workflow-jobs.json" '
+            $wf[0] as $wf
+            | def needs_list: (.needs // []) | if type == "string" then [.] else . end;
+              def after($ids):
+                ([$wf | to_entries[] | select(any(.value | needs_list[]; IN($ids[]))) | .key] + $ids | unique) as $next
+                | if ($next | length) == ($ids | length) then $ids else after($next) end;
+              def names: map($wf[.].name // .);
+              # API job names are "<name>", "<name> (<matrix values>)" or "<caller> / <called job>".
+              def named($names): .name as $n
+                | any($names[]; . as $d | $n == $d or ($n | startswith($d + " (")) or ($n | startswith($d + " / ")));
+              (after(["check-results"]) | names) as $ignored
+              | ([$wf | to_entries[] | select(.value["continue-on-error"] == true) | .key] | names) as $non_blocking
+              | {jobs: [.[].jobs[]
+                  | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")
+                  | select((named($ignored) or named($non_blocking)) | not)]}
+          ' "${RUNNER_TEMP}/jobs.json" > "${BLOCKING_JOBS_FILE}"
+          blocking=$(jq -r '[.jobs[] | "\(.name) (\(.conclusion // .status))"] | join(", ")' "${BLOCKING_JOBS_FILE}")
+          if [[ -n "${blocking}" ]]; then
+            echo "::notice::Blocking jobs: ${blocking}"
+          fi
+          if [[ "${NEEDS_FAILED}" == 'true' || -n "${blocking}" ]]; then
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "failed=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Post CI Failure Reasons
         continue-on-error: true
+        timeout-minutes: 2
         uses: ./.github/actions/post-ci-failure-reasons
         with:
           github_token: ${{ github.token }}
-          has_failures: ${{ contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+          has_failures: ${{ steps.results.outputs.failed != 'false' }}
+          jobs_file: ${{ runner.temp }}/blocking-jobs.json
       # Clean up the run-scoped GCS objects (distball + m2 tarball) only when build-distball
-      # succeeded and no other job failed or was cancelled. If any did, keep them so
-      # "Re-run failed jobs" can re-fetch the distball (build-distball won't re-run, so it won't
-      # re-upload). needs.* here spans every check-results dependency (broader than the old
-      # consumer-only gate) — strictly safer: a failure anywhere keeps the objects for a rerun.
+      # succeeded and the gate passed. Otherwise keep them so "Re-run failed jobs" can re-fetch
+      # the distball (build-distball won't re-run, so it won't re-upload). Non-blocking jobs
+      # don't need the distball on a rerun, so their failures don't keep the objects.
       # Orphaned objects on abandoned runs are reaped by the bucket TTL (Infra-owned).
       # continue-on-error keeps a Vault/GCS infra flake from failing the merge-queue gate.
       # timeout-minutes additionally bounds a Vault/WIF hang so continue-on-error doesn't
       # have to wait out the whole job timeout-minutes budget to take effect -- see INC-6820.
       - name: Authenticate to GCS build-cache
-        if: env.SHOULD_CLEANUP_GCS == 'true'
+        if: env.SHOULD_CLEANUP_GCS == 'true' && steps.results.outputs.failed == 'false'
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
@@ -2496,8 +2549,9 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Delete run-scoped GCS objects
-        if: env.SHOULD_CLEANUP_GCS == 'true'
+        if: env.SHOULD_CLEANUP_GCS == 'true' && steps.results.outputs.failed == 'false'
         continue-on-error: true
+        timeout-minutes: 1
         shell: bash
         run: |
           set -euo pipefail
@@ -2510,7 +2564,7 @@ jobs:
           echo "If you're reading this and wondering what the is the problem, please check other GHA jobs of this workflow run to for errors/cancellation and see their logs."
 
           # shellcheck disable=SC2242
-          exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+          exit ${{ (steps.results.outputs.failed != 'false' && 1) || 0 }}
 
 
   # Dynamically generate the concurrency group based on branch name
@@ -2532,7 +2586,7 @@ jobs:
     # Covers ~6min setup + up to 2x20min deploy attempts; retry only re-runs the deploy step.
     timeout-minutes: 48
     permissions: { }  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: always() && needs.check-results.result == 'success' && needs.build-platform-frontend.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
@@ -2656,7 +2710,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: always() && needs.check-results.result == 'success' && needs.build-platform-frontend.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
@@ -2727,7 +2781,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: always() && needs.check-results.result == 'success' && needs.build-platform-frontend.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-optimize-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
