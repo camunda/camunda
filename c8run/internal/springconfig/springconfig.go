@@ -121,7 +121,7 @@ func scalar(value any) string {
 }
 
 func canonical(name string) string {
-	return strings.ToLower(strings.ReplaceAll(name, "-", ""))
+	return strings.ToLower(strings.NewReplacer("-", "", "_", "").Replace(name))
 }
 
 func splitProfiles(value string) []string {
