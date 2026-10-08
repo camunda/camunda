@@ -50,9 +50,9 @@ dependencies {
   api(libs.org.testcontainers.testcontainers.mysql)
   api(libs.org.testcontainers.testcontainers.mssqlserver)
   api(libs.com.github.dasniko.testcontainers.keycloak)
-  api(libs.org.elasticsearch.client.elasticsearch.rest.client)
   api(libs.org.opensearch.opensearch.testcontainers)
-  api(libs.org.opensearch.client.opensearch.rest.client)
+  testImplementation(libs.org.elasticsearch.client.elasticsearch.rest.client)
+  testImplementation(libs.org.opensearch.client.opensearch.rest.client)
   api(libs.org.openjdk.jmh.jmh.core)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
 }
