@@ -121,18 +121,24 @@ describe('<ResizablePanel />', () => {
 		const container = screen.getByTestId('container').element();
 		await expect.element(screen.getByTestId('left')).toBeVisible();
 		const gutter = getGutter(container);
-		if (gutter === null) {
-			throw new Error('Expected a gutter to be rendered');
+		const dragger = getDragger(container);
+		if (gutter === null || dragger === null) {
+			throw new Error('Expected a gutter and a dragger to be rendered');
 		}
+		const {x, y} = dragger.getBoundingClientRect();
+		const start = {bubbles: true, clientX: x + 1, clientY: y + 1};
 
 		expect(document.body.classList.contains('cursor-col-resize')).toBe(false);
 
-		gutter.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: 200, clientY: 200}));
+		// The splitter resolves the dragged gutter from the dragger's mousedown, not the gutter's.
+		dragger.dispatchEvent(new MouseEvent('mousedown', start));
 		await expect.poll(() => document.body.classList.contains('cursor-col-resize')).toBe(true);
+		await expect.poll(() => gutter.className).toContain('after:bg-[var(--primary-action-default)]');
 
-		window.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: 220, clientY: 200}));
-		window.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, clientX: 220, clientY: 200}));
+		window.dispatchEvent(new MouseEvent('mousemove', {...start, clientX: start.clientX + 20}));
+		window.dispatchEvent(new MouseEvent('mouseup', {...start, clientX: start.clientX + 20}));
 
 		await expect.poll(() => document.body.classList.contains('cursor-col-resize')).toBe(false);
+		await expect.poll(() => gutter.className).not.toContain('after:bg-[var(--primary-action-default)]');
 	});
 });
