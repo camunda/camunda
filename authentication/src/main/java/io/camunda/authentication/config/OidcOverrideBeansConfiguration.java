@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
@@ -29,6 +30,7 @@ import io.camunda.security.spring.converter.TokenClaimsConvertersByIssuer;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.security.spring.oidc.AssertionJwkProvider;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
+import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;
@@ -155,6 +157,7 @@ public class OidcOverrideBeansConfiguration {
       final ObjectProvider<TokenClaimsConvertersByIssuer> tokenClaimsConvertersByIssuer,
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator,
+      final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       final Environment environment) {
     final var perIssuerConverters = tokenClaimsConvertersByIssuer.getIfAvailable();
     if (perIssuerConverters == null || perIssuerConverters.byIssuer().isEmpty()) {
@@ -167,40 +170,59 @@ public class OidcOverrideBeansConfiguration {
               + " any other issuer fall back to the default provider's claim config",
           perIssuerConverters.byIssuer().keySet());
     }
-    // Cluster/default surface (unprefixed /v2): root claim config + the per-issuer map (#61920).
+    // Cluster/default surface (unprefixed /v2 and /physical-tenants/default): root claim config +
+    // the
+    // per-issuer map (#61920). physicalTenantClusterAuthUnification already collapses the cluster
+    // config onto the default tenant, so the default tenant is served by this converter, not a
+    // rebuilt one — hence it is deliberately excluded from the per-tenant map below.
     final var defaultConverter =
         new OidcTokenAuthenticationConverter(
             tokenClaimsConverter, oidcClaimsProvider, perIssuerConverters);
-    // One converter per physical tenant, each built from that tenant's resolved OIDC config
-    // (#64685). Empty when no physical tenants are configured, so the default converter is always
-    // used and behaviour is unchanged for non-physical-tenant deployments.
+    // One converter per NON-DEFAULT physical tenant, each built from that tenant's resolved OIDC
+    // config (#64685). When no physical tenants are configured the map is empty and the plain
+    // default converter is returned unchanged — so non-physical-tenant deployments behave exactly
+    // as
+    // before, and consumers that inject the concrete OidcTokenAuthenticationConverter still get it.
     final Map<String, CamundaAuthenticationConverter<Authentication>> convertersByPhysicalTenant =
         new LinkedHashMap<>();
     PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment)
         .forEach(
-            (physicalTenantId, authentication) ->
+            (physicalTenantId, authentication) -> {
+              if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
                 convertersByPhysicalTenant.put(
                     physicalTenantId,
                     buildPhysicalTenantConverter(
+                        physicalTenantId,
                         authentication,
-                        oidcClaimsProvider,
+                        scopedOidcClaimsProviderFactory,
                         membershipPort,
-                        membershipResolutionContextPropagator)));
+                        membershipResolutionContextPropagator));
+              }
+            });
+    if (convertersByPhysicalTenant.isEmpty()) {
+      return defaultConverter;
+    }
     return new PhysicalTenantAwareOidcTokenAuthenticationConverter(
         convertersByPhysicalTenant, defaultConverter);
   }
 
   /**
    * Builds the bearer-token converter for a single physical tenant from its resolved {@link
-   * io.camunda.security.api.model.config.AuthenticationConfiguration}: the flat {@code oidc.*} slot
-   * is the default claim config, and every provider that declares an {@code issuer-uri} (the flat
-   * slot plus each {@code providers.oidc.<id>}) contributes an issuer-keyed converter built from
-   * its own claim settings — so a tenant that itself fronts multiple IdPs still resolves each token
-   * with the issuing provider's claims.
+   * AuthenticationConfiguration}: the flat {@code oidc.*} slot is the default claim config, and
+   * every provider that declares an {@code issuer-uri} (the flat slot plus each {@code
+   * providers.oidc.<id>}) contributes an issuer-keyed converter built from its own claim settings —
+   * so a tenant that itself fronts multiple IdPs still resolves each token with the issuing
+   * provider's claims.
+   *
+   * <p>The {@link OidcClaimsProvider} (UserInfo augmentation) is built per tenant from the tenant's
+   * own configuration via {@link ScopedOidcClaimsProviderFactory}, mirroring the gRPC path: a
+   * tenant can enable UserInfo augmentation even when the cluster default disables it, and vice
+   * versa.
    */
   private static CamundaAuthenticationConverter<Authentication> buildPhysicalTenantConverter(
+      final String physicalTenantId,
       final AuthenticationConfiguration authentication,
-      final OidcClaimsProvider oidcClaimsProvider,
+      final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
     final var flat = authentication.getOidc();
@@ -231,8 +253,11 @@ public class OidcOverrideBeansConfiguration {
                         membershipResolutionContextPropagator));
               }
             });
+    final var claimsProvider =
+        scopedOidcClaimsProviderFactory.buildClaimsProvider(
+            authentication, "physical tenant '" + physicalTenantId + "'");
     return new OidcTokenAuthenticationConverter(
-        defaultClaimsConverter, oidcClaimsProvider, new TokenClaimsConvertersByIssuer(byIssuer));
+        defaultClaimsConverter, claimsProvider, new TokenClaimsConvertersByIssuer(byIssuer));
   }
 
   private static boolean hasText(final String value) {
