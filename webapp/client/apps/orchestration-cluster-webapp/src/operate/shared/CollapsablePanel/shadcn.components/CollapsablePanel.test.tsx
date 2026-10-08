@@ -22,7 +22,7 @@ describe('<CollapsablePanel />', () => {
 		);
 
 		await expect.element(screen.getByTestId('collapsed-panel')).toBeInTheDocument();
-		await expect.element(screen.getByText('Content')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Content')).not.toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Expand Filters'}));
 
