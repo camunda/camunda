@@ -153,6 +153,13 @@ tasks.withType<Test>().configureEach {
 // JUnitPlatformOptions (rather than calling useJUnitPlatform again) preserves the
 // performance/strace exclusions set by server-conventions.
 tasks.named<Test>("it") {
+  timeout.set(
+    providers.systemProperty("failsafe.timeout")
+      .map(String::toLong)
+      .orElse(960L)
+      .map { Duration.ofSeconds(it) }
+  )
+
   // Match the Maven QA parent's Failsafe include patterns exactly.
   setIncludes(
     setOf(
