@@ -153,37 +153,25 @@ public final class RestoreValidator
     final var ids = backupIds.stream().mapToLong(Long::longValue).sorted().toArray();
     final var store =
         Objects.requireNonNull(backupStore, "Backup store must be configured to load backups");
-    final var partitionCount = backupPartitionCount(store, ids[ids.length - 1]);
+    final var restoredPartitionCount = backupPartitionCount(store, ids[ids.length - 1]);
+    if (exportedPositionSupplier != null) {
+      // A database that already holds exported positions has to belong to the partitions of the
+      // backup. One without any is restored from scratch, so the backup alone decides.
+      final var exportedPartitionCount =
+          exportedPositions(exportedPositionSupplier, partitionCount);
+      if (!exportedPartitionCount.isEmpty()) {
+        verifyPartitionCountsAgree(
+            ids[ids.length - 1], restoredPartitionCount, exportedPartitionCount.size());
+      }
+    }
     final var backups =
         awaitResult(
                 FuturesUtil.parTraverse(
-                    IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+                    IntStream.rangeClosed(1, restoredPartitionCount).boxed().toList(),
                     partition -> verifyBackupsExist(store, partition, ids)))
             .stream()
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    for (final var backupId : ids) {
-      verifyBackupPartitionCount(store, backupId, ids[ids.length - 1], partitionCount);
-    }
     return backups;
-  }
-
-  /**
-   * Every backup to restore must have been taken with the partition count that is restored, the one
-   * of the latest backup. Restoring backups of different partition counts together mixes states
-   * that do not belong together.
-   */
-  private void verifyBackupPartitionCount(
-      final BackupStore store,
-      final long backupId,
-      final long latestBackupId,
-      final int latestPartitionCount) {
-    final var backupPartitionCount = backupPartitionCount(store, backupId);
-    if (backupPartitionCount != latestPartitionCount) {
-      throw new IllegalArgumentException(
-          ("Cannot restore backup %d: it was taken with %d partitions, but backup %d, the latest "
-                  + "to restore, was taken with %d")
-              .formatted(backupId, backupPartitionCount, latestBackupId, latestPartitionCount));
-    }
   }
 
   private CompletableFuture<Entry<Integer, long[]>> verifyBackupsExist(
@@ -232,7 +220,7 @@ public final class RestoreValidator
     final var exportedPositions =
         exportedPositionSupplier == null
             ? null
-            : exportedPositions(exportedPositionSupplier, partitionCount);
+            : requireExportedPositions(exportedPositions(exportedPositionSupplier, partitionCount));
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
     // Only an RDBMS has exported positions to take the partition count from. Without one, the
     // backups are the only record of it.
@@ -245,7 +233,7 @@ public final class RestoreValidator
         RestorePointResolver.resolve(
             metadataByPartition, instantFrom, instantTo, exportedPositions);
     if (exportedPositions != null) {
-      verifyBackupsHoldTheExportedPartitions(restorableBackups, exportedPositions.size());
+      verifyLastBackupHoldsThePartitions(restorableBackups, exportedPositions.size());
     }
     return restorableBackups;
   }
@@ -264,19 +252,29 @@ public final class RestoreValidator
         latestBackup);
   }
 
-  private void verifyBackupsHoldTheExportedPartitions(
+  private void verifyLastBackupHoldsThePartitions(
       final RestorableBackups restorableBackups, final int exportedPartitionCount) {
     final var lastBackup =
         requireNonNull(restorableBackups.backupsByPartitionId().get(1)).getLast().checkpointId();
-    final var backupPartitionCount =
+    verifyPartitionCountsAgree(
+        lastBackup,
         backupPartitionCount(
             requireNonNull(backupStore, "Backup store must be configured to load backups"),
-            lastBackup);
+            lastBackup),
+        exportedPartitionCount);
+  }
+
+  /**
+   * The partitions to restore are those of the last backup, which have to be the ones the RDBMS
+   * holds exported positions for.
+   */
+  private static void verifyPartitionCountsAgree(
+      final long backupId, final int backupPartitionCount, final int exportedPartitionCount) {
     if (backupPartitionCount != exportedPartitionCount) {
       throw new IllegalStateException(
           ("Cannot restore: backup %d was taken with %d partitions, but the RDBMS holds exported "
                   + "positions for %d")
-              .formatted(lastBackup, backupPartitionCount, exportedPartitionCount));
+              .formatted(backupId, backupPartitionCount, exportedPartitionCount));
     }
   }
 
@@ -330,10 +328,14 @@ public final class RestoreValidator
         positions.put(partition, position);
       }
     }
+    return Map.copyOf(positions);
+  }
+
+  private static Map<Integer, Long> requireExportedPositions(final Map<Integer, Long> positions) {
     if (positions.isEmpty()) {
       throw new IllegalStateException("No exported position found for partition 1 in RDBMS");
     }
-    return Map.copyOf(positions);
+    return positions;
   }
 
   private List<BackupMetadata> loadMetadataForAllPartitions(final int partitionCount) {
