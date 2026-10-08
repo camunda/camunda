@@ -141,7 +141,9 @@ def test_a_job_level_failure_does_not_claim_zero_failing_tests():
     out = notify.text(payload, "main", "")
 
     assert "0 failing test" not in out
-    assert "the job failed before any test ran" in out
+    # No chronology claim: job_level also covers a cleanup job, which runs after tests.
+    assert "before any test ran" not in out
+    assert "the job failed with no per-test detail" in out
 
 
 def test_merged_job_level_failures_report_the_job_count():
@@ -155,7 +157,7 @@ def test_merged_job_level_failures_report_the_job_count():
         ]
     )
 
-    assert "2 failing jobs" in notify.text(payload, "main", "")
+    assert "2 failing jobs, no per-test detail" in notify.text(payload, "main", "")
 
 
 def test_a_dispatch_names_the_first_test_the_agent_was_given():
@@ -272,7 +274,7 @@ def test_an_unreadable_report_is_not_reported_as_no_test_having_run():
     out = notify.text(payload, "main", "")
 
     assert "before any test ran" not in out
-    assert "no readable test results" in out
+    assert "no per-test detail" in out
 
 
 def test_a_product_bug_is_not_captioned_with_a_covering_prs_number():
@@ -352,3 +354,22 @@ def test_a_partial_dispatch_names_how_many_actually_started():
 
     assert "started only 1 of 2 fix agents" in out
     assert "those areas are unattended" in out
+
+
+def test_a_test_title_cannot_reformat_the_rest_of_its_line():
+    # escape() stops a title breaking OUT of a code span; a bare title could still
+    # reformat the line with Slack's own `*`, `_` and `~`, which a title may contain.
+    payload = _payload(
+        dispatches=[
+            {
+                "surface": "sm-smoke-e2e",
+                "test_specs": [
+                    {"file": "tests/SM-8.10/a.spec.ts", "test_name": "*bold* _it_ ~out~"}
+                ],
+            }
+        ]
+    )
+
+    out = notify.text(payload, "main", "")
+
+    assert "› `*bold* _it_ ~out~`" in out

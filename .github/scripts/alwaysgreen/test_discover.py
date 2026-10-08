@@ -580,8 +580,18 @@ def test_a_suppressed_candidate_carries_its_own_base_ref(monkeypatch):
 
 
 def _run_discovery(monkeypatch, tmp_path, **overrides):
+    """Run `_run` with every lookup stubbed, and nothing left able to reach the network.
+
+    `gh_json`/`gh_json_ex` are stubbed too, not just the named producers: this suite runs
+    with no token, so an unstubbed lookup would not merely be slow — it would fail closed,
+    suppress the candidate, and fail the assertion for a reason that has nothing to do
+    with what is being tested. Stubbing the transport makes that impossible rather than
+    relying on the stub list staying complete as producers are renamed.
+    """
     import json as _json
     import sys as _sys
+
+    import plan as planning
 
     cand = planning.Candidate(
         base_ref="main",
@@ -598,26 +608,31 @@ def _run_discovery(monkeypatch, tmp_path, **overrides):
             )
         ],
     )
+
+    def _no_network_json(args, default):
+        return default
+
+    def _no_network_json_ex(args, default):
+        # Empty-but-OK, so a lookup reached through the transport reports "nothing
+        # found" rather than the fail-closed "could not prove it".
+        return [], ""
+
     stubs = {
+        "gh_json": _no_network_json,
+        "gh_json_ex": _no_network_json_ex,
         "build_candidates": lambda run_id, base_ref, workdir: ([cand], []),
         "inflight_keys": lambda: (set(), True),
-        "dedupe_inputs": lambda: (
-            set(),
-            set(),
-            set(),
-            {"covered_by": {}, "keys": {}},
-            True,
-        ),
+        "dedupe_inputs": lambda: (set(), set(), set(), {"covered_by": {}, "keys": {}}, True),
+        "covered_fingerprints": lambda: (set(), {}),
+        "open_fix_pr_keys": lambda: (set(), {}, True),
+        "paths_claimed_by_open_prs": lambda paths: ({}, True),
         "product_bug_fingerprints": lambda: (set(), {}),
         "resolve_blame": lambda sha: classify.Blame(None, None, None, "none"),
-        "gh_json": lambda args, default: {},
     }
     stubs.update(overrides)
     for name, value in stubs.items():
         if hasattr(discover, name):
             monkeypatch.setattr(discover, name, value)
-    if hasattr(discover, "paths_claimed_by_open_prs"):
-        monkeypatch.setattr(discover, "paths_claimed_by_open_prs", lambda paths: ({}, True))
 
     out = tmp_path / "plan.json"
     monkeypatch.setattr(

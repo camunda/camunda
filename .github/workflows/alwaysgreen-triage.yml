@@ -296,6 +296,10 @@ jobs:
           PARENT_CHANNEL: ${{ inputs.parent_slack_channel }}
           PLAN_OUTCOME: ${{ steps.plan.outcome }}
           DISPATCHED: ${{ steps.mode.outputs.dispatch }}
+          # The run being classified, not this one. A discovery failure writes an empty
+          # fallback plan with no run_url, which is exactly when the reader most needs
+          # the link — and on a manual replay the two runs are different.
+          TARGET_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ steps.target.outputs.run_id }}
         run: |
           set -euo pipefail
           base_ref='${{ steps.target.outputs.base_ref }}'
@@ -318,6 +322,7 @@ jobs:
           text=$(python .github/scripts/alwaysgreen/notify.py \
             --report /tmp/alwaysgreen-plan.json \
             --base-ref "${base_ref}" \
+            --failing-run-url "${TARGET_RUN_URL}" \
             --triage-run-url "${RUN_URL}" \
             --state "${state}")
 

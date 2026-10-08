@@ -213,13 +213,14 @@ def amount_phrase(entry: dict, spec_count: int) -> str:
     # monorepo today); absent elsewhere, so a merged job-level failure reports as one.
     jobs = 1 + len([j for j in (entry.get("also_failing_jobs") or []) if j])
     if jobs > 1:
-        return f"{jobs} failing jobs, no test results"
-    if entry.get("job_level"):
-        return "the job failed before any test ran"
-    if spec_count == 0:
-        # NOT "before any test ran": `no-failing-specs-extracted` has this exact shape,
-        # and there the tests did run — their results could not be read.
-        return "the test job failed with no readable test results"
+        return f"{jobs} failing jobs, no per-test detail"
+    if entry.get("job_level") or spec_count == 0:
+        # Deliberately says nothing about chronology. `job_level` only means discovery
+        # found no per-spec evidence: it covers a Helm install that died before any test
+        # ran AND a cleanup job that runs after all of them, and
+        # `no-failing-specs-extracted` is a run whose tests did execute and whose report
+        # could not be read.
+        return "the job failed with no per-test detail"
     return f"{spec_count} failing test{'s' if spec_count != 1 else ''}"
 
 
@@ -307,9 +308,13 @@ def dispatch_line(entry: dict, headline_ref: str = "") -> str:
     if specs:
         first = specs[0]
         more = f" (+{len(specs) - 1} more)" if len(specs) > 1 else ""
+        # The title goes in a code span as well as the file: `escape()` neutralises the
+        # characters that break OUT of a span, but a bare title could still reformat the
+        # rest of the line with Slack's `*`, `_` or `~`, which a Playwright title may
+        # legally contain.
         line += (
             f": `{escape(first.get('file') or '')}` › "
-            f"{escape(first.get('test_name') or '')}{more}"
+            f"`{escape(first.get('test_name') or '')}`{more}"
         )
     elif entry.get("job_name"):
         line += f": `{escape(entry['job_name'])}`"
