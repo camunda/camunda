@@ -34,8 +34,8 @@ cptMedic="<!subteam^S0BGRACEPPS|cpt-medic>"
 lookupTeamMedic["@camunda/c8-testing"]=$cptMedic
 
 # @pod-operate-admin-medic
-operateFrontendMedic="<!subteam^S0BNSQUL9RV|pod-operate-admin-medic>"
-lookupTeamMedic["@camunda/operate-frontend"]=$operateFrontendMedic
+operateAdminMedic="<!subteam^S0BNSQUL9RV|pod-operate-admin-medic>"
+lookupTeamMedic["@camunda/operate-admin-pod"]=$operateAdminMedic
 
 # @bi-pod-medic
 optimizeFrontendMedic="<!subteam^S0BPBPG5H2S|bi-pod-medic>"

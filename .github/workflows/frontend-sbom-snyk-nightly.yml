@@ -52,6 +52,7 @@ jobs:
     permissions: {}
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/operate-admin-pod'
       TEST_PRODUCT: Identity
     defaults:
       run:
@@ -98,6 +99,7 @@ jobs:
     permissions: {}
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/operate-admin-pod'
       TEST_PRODUCT: Operate
     defaults:
       run:
@@ -146,6 +148,7 @@ jobs:
     permissions: {}
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
       TEST_PRODUCT: Tasklist
     defaults:
       run:
