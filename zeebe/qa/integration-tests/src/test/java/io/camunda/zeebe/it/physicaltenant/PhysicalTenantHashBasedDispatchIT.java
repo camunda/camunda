@@ -16,9 +16,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CorrelateMessageResponse;
-import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
-import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
-import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -137,7 +134,7 @@ final class PhysicalTenantHashBasedDispatchIT {
     // given — an instance waiting on each key, before tenant A is scaled up
     final var keysBeforeScaleUp = keysForEveryPartition("ck-before-");
     final var keysAfterScaleUp = keysForEveryPartition("ck-after-");
-    deploy(MESSAGE_PROCESS, MESSAGE_PROCESS_ID);
+    TENANTS.deploy(client, MESSAGE_PROCESS, MESSAGE_PROCESS_ID);
     final var instances =
         createWaitingInstances(
             Stream.concat(keysBeforeScaleUp.stream(), keysAfterScaleUp.stream()).toList());
@@ -156,7 +153,7 @@ final class PhysicalTenantHashBasedDispatchIT {
   void shouldEnforceBusinessIdUniquenessOnTheTenantsOwnPartitionBeforeAndAfterScalingIt() {
     // given
     final var businessIds = keysForEveryPartition("biz-");
-    deploy(BUSINESS_ID_PROCESS, BUSINESS_ID_PROCESS_ID);
+    TENANTS.deploy(client, BUSINESS_ID_PROCESS, BUSINESS_ID_PROCESS_ID);
 
     // when / then — each instance is created on its business id's hashed partition
     for (final var businessId : businessIds) {
@@ -296,52 +293,16 @@ final class PhysicalTenantHashBasedDispatchIT {
                     || e instanceof final ProblemException p && p.code() == 404);
   }
 
-  /** Retries while the tenant's partition group may still be electing leaders after startup. */
-  private void deploy(final BpmnModelInstance process, final String processId) {
-    await("deployment of '%s' succeeds".formatted(processId))
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, processId + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
-  }
-
-  /**
-   * Scales tenant A up by one partition, retrying the request because the cluster rejects it while
-   * still applying its own initial configuration change, then waits until the scale-up completes.
-   */
+  /** Scales tenant A up by one partition and waits until the scale-up completes. */
   private void scaleUp() {
-    await("tenant A accepts the scale-up")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .until(
-            () -> {
-              actuator.patchCluster(
-                  new ClusterConfigPatchRequest()
-                      .partitions(
-                          new ClusterConfigPatchRequestPartitions()
-                              .count(TENANT_A_SCALED_PARTITIONS_COUNT)),
-                  false,
-                  false,
-                  TENANT_A);
-              return true;
-            });
-    await("tenant A's scale-up completes")
-        .atMost(Duration.ofSeconds(60))
-        .untilAsserted(
-            () ->
-                assertThat(actuator.getTopology(TENANT_A).getRouting().getRequestHandling())
-                    .isInstanceOfSatisfying(
-                        RequestHandlingAllPartitions.class,
-                        allPartitions ->
-                            assertThat(allPartitions.getPartitionCount())
-                                .isEqualTo(TENANT_A_SCALED_PARTITIONS_COUNT)));
+    TENANTS.awaitAccepted(
+        "tenant A accepts the scale-up",
+        () ->
+            actuator.patchCluster(
+                TENANTS.toPartitionCount(TENANT_A_SCALED_PARTITIONS_COUNT),
+                false,
+                false,
+                TENANT_A));
+    TENANTS.awaitPartitionCount(actuator, TENANT_A, TENANT_A_SCALED_PARTITIONS_COUNT);
   }
 }

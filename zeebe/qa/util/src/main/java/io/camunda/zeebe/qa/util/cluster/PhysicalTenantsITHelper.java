@@ -15,6 +15,11 @@ import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
+import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -335,6 +340,75 @@ public final class PhysicalTenantsITHelper {
       builder.physicalTenantId(tenantId);
     }
     return builder;
+  }
+
+  /**
+   * Deploys {@code process} through {@code client}, retrying because the tenant's partition group
+   * may still be electing a leader right after startup.
+   */
+  public void deploy(
+      final CamundaClient client, final BpmnModelInstance process, final String processId) {
+    Awaitility.await("deployment of '%s' succeeds".formatted(processId))
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        client
+                            .newDeployResourceCommand()
+                            .addProcessModel(process, processId + ".bpmn")
+                            .send()
+                            .join()
+                            .getProcesses())
+                    .isNotEmpty());
+  }
+
+  /** A cluster patch that scales the targeted partition group to {@code partitionCount}. */
+  public ClusterConfigPatchRequest toPartitionCount(final int partitionCount) {
+    return new ClusterConfigPatchRequest()
+        .partitions(new ClusterConfigPatchRequestPartitions().count(partitionCount));
+  }
+
+  /**
+   * Retries {@code request} until the cluster accepts it. The request is not an assertion — it
+   * either returns or throws a {@link feign.FeignException} — so it cannot be handed to {@code
+   * untilAsserted}, which only retries on {@link AssertionError}. A retry is needed because the
+   * cluster can still be applying its own initial configuration change when the test starts, and
+   * rejects a scale-up while another change is in progress.
+   */
+  public void awaitAccepted(final String alias, final Runnable request) {
+    Awaitility.await(alias)
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .until(
+            () -> {
+              request.run();
+              return true;
+            });
+  }
+
+  /**
+   * Waits until {@code tenantId} routes requests to all of its {@code expectedCount} partitions.
+   * While a scale-up is in progress, the routing state only lists the new partitions as becoming
+   * active; it reports all partitions again once the scale-up has completed, including
+   * redistributing existing deployments to the new partitions.
+   */
+  public void awaitPartitionCount(
+      final ClusterActuator actuator, final String tenantId, final int expectedCount) {
+    Awaitility.await(
+            "physical tenant '%s' reports %d partitions".formatted(tenantId, expectedCount))
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () -> assertThat(partitionCount(actuator, tenantId)).isEqualTo(expectedCount));
+  }
+
+  /** The tenant's current partition count; fails while a scale-up is still in progress. */
+  public int partitionCount(final ClusterActuator actuator, final String tenantId) {
+    final var routing = actuator.getTopology(tenantId).getRouting();
+    assertThat(routing).isNotNull();
+    final var requestHandling = routing.getRequestHandling();
+    assertThat(requestHandling).isInstanceOf(RequestHandlingAllPartitions.class);
+    return ((RequestHandlingAllPartitions) requestHandling).getPartitionCount();
   }
 
   public Set<String> tenantIds() {
