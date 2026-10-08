@@ -18,6 +18,7 @@ import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {DecisionsSearch} from '../decisionsFilter';
 import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
+import {InstancesTable} from './InstancesTable';
 
 type Props = {
 	search: DecisionsSearch;
@@ -38,6 +39,7 @@ const Decisions: React.FC<Props> = ({search}) => {
 		!search.decisionDefinitionId &&
 		search.decisionDefinitionVersion === undefined &&
 		search.tenantId === undefined &&
+		search.sort === undefined &&
 		Object.values(optionalFilterValues).every((value) => value === undefined) &&
 		visibleFilters.length === 0;
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -107,14 +109,8 @@ const Decisions: React.FC<Props> = ({search}) => {
 								{t('operate.decisions.scaffold.decisionPanelPlaceholder')}
 							</Text>
 						</div>
-						<div className={panelClassName}>
-							<Heading as="h2" variant="heading-sm">
-								{t('operate.decisions.instancesTable.title')}
-							</Heading>
-							<Separator className="my-3" />
-							<Text as="p" className="text-sm text-neutral-foreground-subtle">
-								{t('operate.decisions.scaffold.instancesTablePlaceholder')}
-							</Text>
+						<div className="h-full overflow-hidden">
+							<InstancesTable search={search} />
 						</div>
 					</ResizablePanel>
 				</div>
