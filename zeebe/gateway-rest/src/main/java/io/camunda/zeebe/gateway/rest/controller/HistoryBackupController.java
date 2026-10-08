@@ -38,7 +38,6 @@ import org.springframework.web.bind.annotation.RequestParam;
  * physical-tenant request mapping, not from a second mapping here.
  */
 @CamundaRestController
-@RequiresSecondaryStorage({ELASTICSEARCH, OPENSEARCH})
 @RequestMapping("/v2/backups/history")
 public class HistoryBackupController {
 
@@ -52,6 +51,7 @@ public class HistoryBackupController {
     this.authenticationProvider = authenticationProvider;
   }
 
+  @RequiresSecondaryStorage({ELASTICSEARCH, OPENSEARCH})
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> takeBackup(
       @PhysicalTenantId final String physicalTenantId,
