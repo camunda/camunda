@@ -13,6 +13,7 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {HttpResponse} from 'msw';
 import {
+	mockDeleteResourceEndpoint,
 	mockGetDecisionDefinitionXmlEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
@@ -21,8 +22,10 @@ import {
 	createDecisionDefinition,
 	createQueryDecisionDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/decision-definitions';
+import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {Decisions} from './Decisions';
 
 const DecisionsWithSearch = () => {
@@ -43,6 +46,7 @@ describe('<Decisions />', () => {
 
 	afterEach(() => {
 		sessionStorage.clear();
+		notificationsStore.reset();
 	});
 
 	it('should render the sr-only decisions title', async ({worker}) => {
@@ -94,7 +98,7 @@ describe('<Decisions />', () => {
 	it('should enable reset when a decision definition is selected in the URL', async ({worker}) => {
 		worker.use(
 			mockInstances(),
-			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text('<definitions/>')}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 			mockQueryDecisionDefinitionsEndpoint({
 				successResponse: HttpResponse.json(
 					createQueryDecisionDefinitionsResponse({
@@ -143,6 +147,33 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeEnabled();
 	});
 
+	it('should remove a single optional filter from the URL when its remove button is clicked', async ({worker}) => {
+		worker.use(mockInstances());
+		const screen = await renderWithRouter(DecisionsWithSearch, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&failed=false',
+		});
+
+		await screen.getByRole('button', {name: 'Remove Business ID Filter'}).element().click();
+
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
+		expect(screen.router.state.location.search).not.toHaveProperty('businessId');
+		expect(screen.router.state.location.search).toMatchObject({failed: false});
+	});
+
+	it('should vertically center the remove button on the filter input', async ({worker}) => {
+		worker.use(mockInstances());
+		const screen = await renderWithRouter(DecisionsWithSearch, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
+		});
+
+		const input = screen.getByLabelText('Business ID', {exact: true}).element().getBoundingClientRect();
+		const button = screen.getByRole('button', {name: 'Remove Business ID Filter'}).element().getBoundingClientRect();
+
+		expect(input.top + input.height / 2 - (button.top + button.height / 2)).toBe(0);
+	});
+
 	it('should remove active optional filters when resetting', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
@@ -159,7 +190,7 @@ describe('<Decisions />', () => {
 	it('should show the selected decision in the decision panel', async ({worker}) => {
 		worker.use(
 			mockInstances(),
-			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text('<definitions/>')}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 			mockQueryDecisionDefinitionsEndpoint({
 				successResponse: HttpResponse.json(
 					createQueryDecisionDefinitionsResponse({
@@ -235,5 +266,79 @@ describe('<Decisions />', () => {
 		await expect
 			.element(screen.getByText('Decision "Invoice Classification" exists in more than one Tenant'))
 			.toBeVisible();
+	});
+
+	it('should show the delete action only when a single decision version is selected', async ({worker}) => {
+		worker.use(
+			mockInstances(),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+			mockQueryDecisionDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [
+							createDecisionDefinition({name: 'Invoice Classification', decisionDefinitionId: 'invoice', version: 1}),
+						],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderWithRouter(DecisionsWithSearch, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
+		});
+
+		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).toBeVisible();
+
+		await screen.router.navigate({to: '.', search: {decisionDefinitionId: 'invoice'}});
+
+		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).not.toBeInTheDocument();
+	});
+
+	it('should keep a newly selected version blocked until the previous deletion finishes', async ({worker}) => {
+		worker.use(
+			mockInstances(),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 500}),
+			mockQueryDecisionDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [
+							createDecisionDefinition({
+								name: 'Invoice Classification',
+								decisionDefinitionId: 'invoice',
+								decisionDefinitionKey: 'key-1',
+								version: 1,
+							}),
+							createDecisionDefinition({
+								name: 'Invoice Classification',
+								decisionDefinitionId: 'invoice',
+								decisionDefinitionKey: 'key-2',
+								version: 2,
+							}),
+						],
+					}),
+				),
+			}),
+		);
+		const screen = await renderWithRouter(DecisionsWithSearch, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
+		});
+
+		await userEvent.click(screen.getByRole('button', {name: /Delete Decision Definition/}));
+		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
+		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
+		await screen.router.navigate({to: '.', search: {decisionDefinitionId: 'invoice', decisionDefinitionVersion: 2}});
+
+		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).toBeDisabled();
+		await expect
+			.poll(() => notificationsStore.notifications.some(({title}) => title === 'Operation created'))
+			.toBe(true);
+		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).toBeEnabled();
+		expect(screen.router.state.location.search).toMatchObject({
+			decisionDefinitionId: 'invoice',
+			decisionDefinitionVersion: 2,
+		});
 	});
 });

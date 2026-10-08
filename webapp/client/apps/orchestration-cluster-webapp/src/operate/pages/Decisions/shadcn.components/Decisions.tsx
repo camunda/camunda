@@ -19,6 +19,7 @@ import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 import {DecisionPanel} from './DecisionPanel';
 import {InstancesTable} from './InstancesTable';
+import {DecisionOperations} from '../DecisionOperations/shadcn.components/DecisionOperations';
 import {useDecisionDefinitionSelection} from './useDecisionDefinitionSelection';
 
 type Props = {
@@ -105,7 +106,17 @@ const Decisions: React.FC<Props> = ({search}) => {
 						direction={SplitDirection.Vertical}
 						minHeights={[panelMinHeight, panelMinHeight]}
 					>
-						<DecisionPanel {...selection} />
+						<DecisionPanel
+							{...selection}
+							headerActions={
+								selection.decisionDefinitionSelection.kind === 'single-version' ? (
+									<DecisionOperations
+										key={selection.decisionDefinitionSelection.definition.decisionDefinitionKey}
+										definition={selection.decisionDefinitionSelection.definition}
+									/>
+								) : undefined
+							}
+						/>
 						<div className="h-full overflow-hidden">
 							<InstancesTable search={search} />
 						</div>
