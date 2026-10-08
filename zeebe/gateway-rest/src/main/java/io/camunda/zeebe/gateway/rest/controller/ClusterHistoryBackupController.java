@@ -68,6 +68,9 @@ public final class ClusterHistoryBackupController {
         HttpStatus.ACCEPTED);
   }
 
+  @RequiresSecondaryStorage(
+      value = {ELASTICSEARCH, OPENSEARCH},
+      availableWhileDegraded = true)
   @CamundaGetMapping
   public CompletableFuture<ResponseEntity<Object>> listBackups(
       @RequestParam(required = false) final @Nullable String physicalTenantId,
@@ -82,6 +85,9 @@ public final class ClusterHistoryBackupController {
         HttpStatus.OK);
   }
 
+  @RequiresSecondaryStorage(
+      value = {ELASTICSEARCH, OPENSEARCH},
+      availableWhileDegraded = true)
   @CamundaGetMapping(path = "/{backupId}")
   public CompletableFuture<ResponseEntity<Object>> getBackup(
       @PathVariable final long backupId,
@@ -95,6 +101,9 @@ public final class ClusterHistoryBackupController {
         HttpStatus.OK);
   }
 
+  @RequiresSecondaryStorage(
+      value = {ELASTICSEARCH, OPENSEARCH},
+      availableWhileDegraded = true)
   @CamundaDeleteMapping(path = "/{backupId}")
   public CompletableFuture<ResponseEntity<Object>> deleteBackup(
       @PathVariable final long backupId,

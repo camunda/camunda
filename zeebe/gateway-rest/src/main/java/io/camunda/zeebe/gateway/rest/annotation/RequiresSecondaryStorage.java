@@ -21,6 +21,9 @@ import java.lang.annotation.Target;
  *
  * <p>{@link #value()} narrows this to endpoints that only work on some secondary storages; those
  * also return HTTP 403 on a physical tenant configured with any other storage.
+ *
+ * <p>Unless {@link #availableWhileDegraded()}, they return HTTP 503 while the tenant's secondary
+ * storage is not ready. A method-level annotation replaces the class-level one.
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -29,4 +32,10 @@ public @interface RequiresSecondaryStorage {
 
   /** Secondary storages this endpoint supports. Empty means any configured secondary storage. */
   DatabaseType[] value() default {};
+
+  /**
+   * Whether the endpoint keeps serving while the secondary storage is not ready, as it is while the
+   * tenant is recovering.
+   */
+  boolean availableWhileDegraded() default false;
 }
