@@ -95,8 +95,9 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
 
   public CompletableFuture<Long> moveNextBatch() {
     final Stopwatch stopwatch = Stopwatch.createStarted();
+    final var batchSizeForBatch = batchSize.get();
     return idsSupplier
-        .apply(getLastSearchPosition(), batchSize.get())
+        .apply(getLastSearchPosition(), batchSizeForBatch)
         .thenComposeAsync(
             response -> {
               if (response.isEmpty()) {
@@ -113,6 +114,12 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                         lastSearchResponse.set(response);
                         totalArchived.accumulateAndGet(deletedCount, Long::sum);
                         retryCount.set(0);
+                        // batch was below page size, so that implies there should
+                        // not be another batch to read, so now that we've processed
+                        // this batch we can finish
+                        if (response.documents.size() < batchSizeForBatch) {
+                          finished.set(true);
+                        }
                         return deletedCount;
                       })
                   .exceptionallyCompose(

@@ -41,6 +41,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.json.Json;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -299,7 +301,58 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
     inOrder.verify(client).search(any(SearchRequest.class));
     inOrder.verify(client).reindex(any(ReindexRequest.class));
     inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSearchReindexThenBulkDeleteMultipleTimesWhenMovingDocumentsByIdIfManyDocsFound()
+      throws IOException {
+    // given
+
+    final var fullBatchSize = 2500;
+    final var fullBatchIds =
+        IntStream.rangeClosed(1, fullBatchSize).mapToObj(String::valueOf).toArray(String[]::new);
+    final var lastBatchSize = 1;
+    final var lastBatchIds =
+        IntStream.rangeClosed(1, lastBatchSize).mapToObj(String::valueOf).toArray(String[]::new);
+
+    when(client.search(any(SearchRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(searchResponse(fullBatchIds)),
+            CompletableFuture.completedFuture(searchResponse(lastBatchIds)));
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(
+                    b -> b.total((long) fullBatchSize).created((long) fullBatchSize).updated(0L))))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(
+                    b -> b.total((long) lastBatchSize).created((long) lastBatchSize).updated(0L))));
+    when(client.bulk(any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse(fullBatchIds)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse(lastBatchIds)));
+
+    // when
+    final var future =
+        repository.moveDocumentsById(
+            "from-index",
+            "to-index",
+            Map.of("key", List.of("1", "2", "3")),
+            Map.of(),
+            Map.of(),
+            Runnable::run);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+
+    final var inOrder = Mockito.inOrder(client);
     inOrder.verify(client).search(any(SearchRequest.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verify(client).search(any(SearchRequest.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
     inOrder.verifyNoMoreInteractions();
   }
 

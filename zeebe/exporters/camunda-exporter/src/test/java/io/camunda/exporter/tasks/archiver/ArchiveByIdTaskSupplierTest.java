@@ -221,7 +221,7 @@ class ArchiveByIdTaskSupplierTest {
 
     // then - no exception, no retry, but the overcount is logged
     assertThat(result).isEqualTo(1L);
-    assertThat(taskSupplier.isComplete()).isFalse();
+    assertThat(taskSupplier.isComplete()).isTrue();
     verify(metrics, times(0)).recordArchiverBatchRetry();
     verify(logger).warn(any(String.class), eq("reindex"), eq("source-idx"), eq(2L), eq(1));
   }
@@ -249,7 +249,7 @@ class ArchiveByIdTaskSupplierTest {
 
     // then - no exception, no retry, but the overcount is logged
     assertThat(result).isEqualTo(2L);
-    assertThat(taskSupplier.isComplete()).isFalse();
+    assertThat(taskSupplier.isComplete()).isTrue();
     verify(metrics, times(0)).recordArchiverBatchRetry();
     verify(logger).warn(any(String.class), eq("delete"), eq("source-idx"), eq(2L), eq(1));
   }
@@ -301,6 +301,34 @@ class ArchiveByIdTaskSupplierTest {
     // then
     assertThat(result).isEqualTo(0L);
     assertThat(taskSupplier.isComplete()).isTrue();
+  }
+
+  @Test
+  void shouldCompleteWhenLastBatchReadIsBelowBatchSize() {
+    // given
+    final var config = historyConfigWithMaxRetry(3);
+    config.setReindexBatchSize(2);
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            config,
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) ->
+                CompletableFuture.completedFuture(
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+            (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER);
+
+    // when
+    final var result = taskSupplier.moveNextBatch().join();
+
+    // then
+    assertThat(result).isEqualTo(1L);
+    assertThat(taskSupplier.isComplete()).isTrue();
+    assertThat(taskSupplier.getTotalArchived()).isEqualTo(1L);
   }
 
   @Test
