@@ -6,7 +6,7 @@ C8Run always loads `configuration/application.yaml` first via `--spring.config.a
 
 If `--config` points to a directory, a trailing slash is added automatically so Spring Boot loads all YAML files inside it. If it points to a file, no slash is added. This directory-detection logic lives in `cmd/c8run/main.go` for startup config path building.
 
-To decide values before Java starts (secondary storage type, RDBMS URL, authentication method, Connectors credentials, H2 cleanup), c8run reads the same sources through `internal/springconfig`: `Paths` lists the config files Spring loads, highest precedence first, and `Value` returns a property from `-D` in `JAVA_OPTS`, then `JDK_JAVA_OPTIONS`, then the environment variable, then the first of those files that sets it. Startup and shutdown share this code, so they always agree.
+To decide values before Java starts (secondary storage type, RDBMS URL, authentication method, Connectors credentials, H2 cleanup), c8run reads the same sources through `internal/springconfig`: `Paths` lists the config files Spring loads, highest precedence first, and `Value` returns a property from `-D` in `JAVA_OPTS`, then `JDK_JAVA_OPTIONS`, then the environment variable, then the first of those files that sets it. Startup and shutdown share this code, but a separate `c8run stop` has no `--config` flag, so it does not read the files passed to `c8run start --config`.
 
 ## JAVA_HOME Resolution Fallback Chain
 
