@@ -6,17 +6,202 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Heading} from '@camunda/design-system';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {Pencil, Trash2} from '@camunda/design-system/icons';
+import {
+	Button,
+	DataTable,
+	Label,
+	PageHeader,
+	PageLayout,
+	SearchInput,
+	type DataTableColumn,
+	type DataTableRowAction,
+	type SortingConfig,
+} from '@camunda/design-system';
+import type {Role} from '@camunda/camunda-api-zod-schemas/8.11';
+import {AddRoleModal} from '#/admin/modules/roles/AddRoleModal';
+import {EditRoleModal} from '#/admin/modules/roles/EditRoleModal';
+import {DeleteRoleModal} from '#/admin/modules/roles/DeleteRoleModal';
+import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type RolesSearch} from '#/admin/modules/roles/searchSchema';
 
-const AdminRolesPage: React.FC = () => {
+type SortingState = NonNullable<SortingConfig['sortState']>;
+
+const SEARCH_DEBOUNCE = 500;
+const ROLES_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/role/';
+
+type ModalState = {type: 'create'} | {type: 'edit'; role: Role} | {type: 'delete'; role: Role} | null;
+
+type AdminRolesPageProps = {
+	roles: Role[];
+	totalItems: number;
+	defaultRoleIds: string[];
+	search: RolesSearch;
+	onSearchChange: (next: Partial<RolesSearch>) => void;
+	onOpenRole: (role: Role) => void;
+};
+
+const AdminRolesPage: React.FC<AdminRolesPageProps> = ({
+	roles,
+	totalItems,
+	defaultRoleIds,
+	search,
+	onSearchChange,
+	onOpenRole,
+}) => {
 	const {t} = useTranslation();
+	const appliedSearchTerm = search.search ?? '';
+	const [searchDraft, setSearchDraft] = useState(appliedSearchTerm);
+	const [lastAppliedSearchTerm, setLastAppliedSearchTerm] = useState(appliedSearchTerm);
+	const [modalState, setModalState] = useState<ModalState>(null);
+
+	if (lastAppliedSearchTerm !== appliedSearchTerm) {
+		setLastAppliedSearchTerm(appliedSearchTerm);
+		setSearchDraft(appliedSearchTerm);
+	}
+
+	useEffect(() => {
+		if (searchDraft === appliedSearchTerm) {
+			return;
+		}
+
+		const timeoutId = setTimeout(() => {
+			onSearchChange({search: searchDraft === '' ? undefined : searchDraft, page: undefined});
+		}, SEARCH_DEBOUNCE);
+
+		return () => clearTimeout(timeoutId);
+	}, [appliedSearchTerm, onSearchChange, searchDraft]);
+
+	const closeModal = useCallback(() => setModalState(null), []);
+
+	const columns = useMemo<DataTableColumn<Role>[]>(
+		() => [
+			{accessorKey: 'roleId', header: t('admin.roles.roleId')},
+			{accessorKey: 'name', header: t('admin.roles.roleName')},
+		],
+		[t],
+	);
+
+	const rowActions = useMemo<DataTableRowAction<Role>[]>(
+		() => [
+			{
+				id: 'edit',
+				label: t('admin.roles.editRole'),
+				icon: <Pencil aria-hidden />,
+				iconOnly: true,
+				disabled: (role) => defaultRoleIds.includes(role.roleId),
+				onClick: (role) => setModalState({type: 'edit', role}),
+			},
+			{
+				id: 'delete',
+				label: t('admin.roles.deleteRole'),
+				icon: <Trash2 aria-hidden />,
+				iconOnly: true,
+				variant: 'destructive',
+				disabled: (role) => defaultRoleIds.includes(role.roleId),
+				onClick: (role) => setModalState({type: 'delete', role}),
+			},
+		],
+		[defaultRoleIds, t],
+	);
+
+	const sortState = useMemo<SortingState>(
+		() => [{id: search.sortField ?? 'roleId', desc: search.sortOrder === 'desc'}],
+		[search.sortField, search.sortOrder],
+	);
+
+	const handleSortingChange = useCallback(
+		(state: SortingState) => {
+			const [sorted] = state;
+
+			onSearchChange({
+				sortField: sorted?.id as RolesSearch['sortField'],
+				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'desc' : 'asc',
+				page: undefined,
+			});
+		},
+		[onSearchChange],
+	);
+
+	const handlePaginationChange = useCallback(
+		({pageIndex, pageSize}: {pageIndex: number; pageSize: number}) => {
+			const nextPageSize = pageSize === DEFAULT_PAGE_SIZE ? undefined : (pageSize as RolesSearch['pageSize']);
+			const hasPageSizeChanged = pageSize !== (search.pageSize ?? DEFAULT_PAGE_SIZE);
+
+			onSearchChange({
+				pageSize: nextPageSize,
+				page: hasPageSizeChanged || pageIndex === 0 ? undefined : pageIndex + 1,
+			});
+		},
+		[onSearchChange, search.pageSize],
+	);
+
+	const title = t('admin.headerNavItemRoles');
 
 	return (
-		<Heading as="h1" variant="heading-lg">
-			{t('admin.headerNavItemRoles')}
-		</Heading>
+		<PageLayout id="main-content" tabIndex={-1}>
+			<div className="flex flex-col gap-6">
+				<div className="flex flex-col gap-1">
+					<PageHeader title={title} />
+					<p className="text-sm leading-5 text-muted-foreground">
+						{t('admin.roles.guideBody')}
+						<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
+							<a href={ROLES_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+								{t('admin.roles.guideLinkLabel')}
+							</a>
+						</Button>
+					</p>
+				</div>
+
+				<div className="flex flex-col gap-4">
+					<div className="flex items-center gap-4">
+						<div className="flex-1">
+							<Label htmlFor="roles-search" className="sr-only">
+								{t('admin.roles.searchByRoleId')}
+							</Label>
+							<SearchInput
+								id="roles-search"
+								className="max-w-sm min-w-48"
+								placeholder={t('admin.roles.searchByRoleId')}
+								value={searchDraft}
+								onChange={(event) => setSearchDraft(event.target.value)}
+								onClear={() => setSearchDraft('')}
+							/>
+						</div>
+						<Button type="button" onClick={() => setModalState({type: 'create'})}>
+							{t('admin.roles.createRole')}
+						</Button>
+					</div>
+					<DataTable
+						aria-label={title}
+						className="**:data-[slot=data-table-actions-trigger]:ms-auto"
+						columns={columns}
+						data={roles}
+						getRowId={(role) => role.roleId}
+						onRowClick={onOpenRole}
+						rowActions={rowActions}
+						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
+						pagination={{
+							manual: true,
+							pageSizes: [...PAGE_SIZES],
+							defaultPageSize: DEFAULT_PAGE_SIZE,
+							pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+							pageIndex: (search.page ?? 1) - 1,
+							rowCount: totalItems,
+							onPaginationChange: handlePaginationChange,
+						}}
+						emptyState={t('admin.roles.noRolesFound')}
+					/>
+				</div>
+			</div>
+
+			{modalState?.type === 'create' && <AddRoleModal isOpen onClose={closeModal} />}
+			{modalState?.type === 'edit' && <EditRoleModal isOpen role={modalState.role} onClose={closeModal} />}
+			{modalState?.type === 'delete' && <DeleteRoleModal isOpen roleId={modalState.role.roleId} onClose={closeModal} />}
+		</PageLayout>
 	);
 };
 
 export {AdminRolesPage};
+export type {AdminRolesPageProps};

@@ -495,6 +495,90 @@ const mockQueryGroupsEndpoint = createEndpointMock({
 	method: endpoints.queryGroups.method,
 });
 
+const mockGetRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.getRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.getRole.method,
+});
+
+const mockCreateRoleEndpoint = createEndpointMock({
+	endpoint: endpoints.createRole.getUrl(),
+	method: endpoints.createRole.method,
+});
+
+const mockUpdateRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.updateRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.updateRole.method,
+});
+
+const mockDeleteRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.deleteRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.deleteRole.method,
+});
+
+const mockQueryUsersByRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryUsersByRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.queryUsersByRole.method,
+});
+
+const mockQueryGroupsByRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryGroupsByRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.queryGroupsByRole.method,
+});
+
+const mockQueryMappingRulesByRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryMappingRulesByRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.queryMappingRulesByRole.method,
+});
+
+const mockQueryClientsByRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryClientsByRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.queryClientsByRole.method,
+});
+
+const mockAssignUserToRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignUserToRole.getUrl({roleId: ':roleId', username: ':username'})),
+	method: endpoints.assignUserToRole.method,
+});
+
+const mockUnassignUserFromRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignUserFromRole.getUrl({roleId: ':roleId', username: ':username'})),
+	method: endpoints.unassignUserFromRole.method,
+});
+
+const mockAssignGroupToRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignGroupToRole.getUrl({roleId: ':roleId', groupId: ':groupId'})),
+	method: endpoints.assignGroupToRole.method,
+});
+
+const mockUnassignGroupFromRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignGroupFromRole.getUrl({roleId: ':roleId', groupId: ':groupId'})),
+	method: endpoints.unassignGroupFromRole.method,
+});
+
+const mockAssignMappingToRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(
+		endpoints.assignMappingToRole.getUrl({roleId: ':roleId', mappingRuleId: ':mappingRuleId'}),
+	),
+	method: endpoints.assignMappingToRole.method,
+});
+
+const mockUnassignMappingFromRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(
+		endpoints.unassignMappingFromRole.getUrl({roleId: ':roleId', mappingRuleId: ':mappingRuleId'}),
+	),
+	method: endpoints.unassignMappingFromRole.method,
+});
+
+const mockAssignClientToRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignClientToRole.getUrl({roleId: ':roleId', clientId: ':clientId'})),
+	method: endpoints.assignClientToRole.method,
+});
+
+const mockUnassignClientFromRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignClientFromRole.getUrl({roleId: ':roleId', clientId: ':clientId'})),
+	method: endpoints.unassignClientFromRole.method,
+});
+
 export {
 	mockCreateCancellationBatchOperationEndpoint,
 	mockCreateMigrationBatchOperationEndpoint,
@@ -572,6 +656,22 @@ export {
 	mockCreateAuthorizationEndpoint,
 	mockDeleteAuthorizationEndpoint,
 	mockQueryRolesEndpoint,
+	mockGetRoleEndpoint,
+	mockCreateRoleEndpoint,
+	mockUpdateRoleEndpoint,
+	mockDeleteRoleEndpoint,
+	mockQueryUsersByRoleEndpoint,
+	mockQueryGroupsByRoleEndpoint,
+	mockQueryMappingRulesByRoleEndpoint,
+	mockQueryClientsByRoleEndpoint,
+	mockAssignUserToRoleEndpoint,
+	mockUnassignUserFromRoleEndpoint,
+	mockAssignGroupToRoleEndpoint,
+	mockUnassignGroupFromRoleEndpoint,
+	mockAssignMappingToRoleEndpoint,
+	mockUnassignMappingFromRoleEndpoint,
+	mockAssignClientToRoleEndpoint,
+	mockUnassignClientFromRoleEndpoint,
 	mockQueryGroupsEndpoint,
 	mockGetUserEndpoint,
 	mockCreateUserEndpoint,
