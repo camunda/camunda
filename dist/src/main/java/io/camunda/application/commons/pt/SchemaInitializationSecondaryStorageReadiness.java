@@ -7,9 +7,13 @@
  */
 package io.camunda.application.commons.pt;
 
+import io.camunda.application.commons.pt.SchemaInitializationStatus.State;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.cluster.SecondaryStorageReadiness;
+import java.util.Collection;
+import java.util.Map;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -34,14 +38,17 @@ public class SchemaInitializationSecondaryStorageReadiness implements SecondaryS
   private final PhysicalTenantIds tenantIds;
   private final Predicate<String> schemaInitialized;
   private final Predicate<String> recovering;
+  private final Supplier<Map<String, SchemaInitializationStatus>> statuses;
 
   public SchemaInitializationSecondaryStorageReadiness(
       final PhysicalTenantIds tenantIds,
       final Predicate<String> schemaInitialized,
-      final Predicate<String> recovering) {
+      final Predicate<String> recovering,
+      final Supplier<Map<String, SchemaInitializationStatus>> statuses) {
     this.tenantIds = tenantIds;
     this.schemaInitialized = schemaInitialized;
     this.recovering = recovering;
+    this.statuses = statuses;
   }
 
   @Override
@@ -57,5 +64,40 @@ public class SchemaInitializationSecondaryStorageReadiness implements SecondaryS
   @Override
   public boolean isRecovering(final String physicalTenantId) {
     return recovering.test(physicalTenantId);
+  }
+
+  /** A tenant in recovery mode counts as recovering, even once its schema is initialized. */
+  @Override
+  public NodeReadiness nodeReadiness() {
+    return rollUp(
+        statuses.get().entrySet().stream()
+            .map(
+                tenant ->
+                    isRecovering(tenant.getKey()) ? State.RECOVERING : tenant.getValue().state())
+            .toList());
+  }
+
+  /** READY if every tenant is, NOT_READY if every tenant is, DEGRADED otherwise. */
+  static NodeReadiness rollUp(final Collection<State> states) {
+    var allReady = true;
+    var allNotReady = !states.isEmpty();
+    for (final var state : states) {
+      final var readiness = readinessOf(state);
+      allReady &= readiness == NodeReadiness.READY;
+      allNotReady &= readiness == NodeReadiness.NOT_READY;
+    }
+    if (allReady) {
+      return NodeReadiness.READY;
+    }
+    return allNotReady ? NodeReadiness.NOT_READY : NodeReadiness.DEGRADED;
+  }
+
+  /** One tenant's readiness: still trying or recovering is DEGRADED, stopped for good NOT_READY. */
+  static NodeReadiness readinessOf(final State state) {
+    return switch (state) {
+      case INITIALIZED -> NodeReadiness.READY;
+      case INITIALIZING, RETRYING, RECOVERING -> NodeReadiness.DEGRADED;
+      case FAILED, GAVE_UP, ABORTED -> NodeReadiness.NOT_READY;
+    };
   }
 }
