@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize;
 
+import static io.camunda.optimize.MetricEnum.IMPORT_DB_WRITE_FAILURES_METRIC;
 import static io.camunda.optimize.MetricEnum.OVERALL_IMPORT_TIME_METRIC;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -17,11 +18,13 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 
 public class OptimizeMetrics {
 
   public static final String RECORD_TYPE_TAG = "RECORD_TYPE";
   public static final String PARTITION_ID_TAG = "PARTITION_ID";
+  public static final String ERROR_TYPE_TAG = "ERROR_TYPE";
   public static final String METRICS_ENDPOINT = "metrics";
 
   public static <T extends ZeebeRecordDto<?, ?>> void recordOverallEntitiesImportTime(
@@ -53,5 +56,18 @@ public class OptimizeMetrics {
         .tag(RECORD_TYPE_TAG, recordType)
         .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
         .register(Metrics.globalRegistry);
+  }
+
+  public static void recordDbWriteFailure(
+      final String recordType, final String partitionId, final Throwable failure) {
+    final ErrorType errorType =
+        Objects.requireNonNullElse(ErrorType.fromException(failure), ErrorType.UNKNOWN);
+    Counter.builder(IMPORT_DB_WRITE_FAILURES_METRIC.getName())
+        .description(IMPORT_DB_WRITE_FAILURES_METRIC.getDescription())
+        .tag(RECORD_TYPE_TAG, recordType)
+        .tag(PARTITION_ID_TAG, partitionId)
+        .tag(ERROR_TYPE_TAG, errorType.getValue())
+        .register(Metrics.globalRegistry)
+        .increment();
   }
 }
