@@ -205,6 +205,59 @@ final class GraphScopeReconcilerTest {
   }
 
   @Test
+  void shouldRetryWhenStagingAnOperationFails() {
+    // given — staging the operation (the first updateLocally call, before apply() is ever reached)
+    // fails once, e.g. a transient IOException writing the configuration file. No other trigger
+    // follows: when the local member's operation is the one a change waits on, nothing else in the
+    // cluster changes the configuration, so the reconciler's own retry is all that is left.
+    final var applyAttempts = new AtomicInteger();
+    final var updateCalls = new AtomicInteger();
+    final var scope = failingUntilSuccess(applyAttempts, 0);
+    final Function<CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
+        updateLocally =
+            c ->
+                updateCalls.incrementAndGet() == 1
+                    ? Either.left(new IOException("disk full"))
+                    : Either.right(c);
+
+    // when — with the default (synchronous) TestConcurrencyControl, a scheduled retry runs inline
+    reconciler(scope, CurrentClusterConfiguration.init(), updateLocally, executor).reconcile();
+
+    // then — the operation was staged again and applied, instead of being left pending
+    assertThat(applyAttempts).hasValue(1);
+  }
+
+  @Test
+  void shouldKeepASingleRetryPendingWhileAnOperationKeepsFailing() {
+    // given — an async-scheduling executor, so retries queue up instead of running inline, and an
+    // operation whose staging never succeeds (e.g. an init() validation that keeps rejecting it)
+    final var asyncExecutor = new TestConcurrencyControl(true);
+    final var scope =
+        scope(
+            planWith(1),
+            () -> operation(ignored -> CompletableActorFuture.completed(UnaryOperator.identity())));
+    final var reconciler =
+        reconciler(
+            scope,
+            CurrentClusterConfiguration.init(),
+            c -> Either.left(new IOException("disk full")),
+            asyncExecutor);
+
+    // when — several external triggers (local updates, gossip merges) each hit the failing
+    // operation
+    reconciler.reconcile();
+    reconciler.reconcile();
+    reconciler.reconcile();
+
+    // then — they share one pending retry instead of each starting a retry chain of its own
+    assertThat(asyncExecutor.scheduledTasks()).isOne();
+
+    // and — when that retry fires and fails again, it is replaced, not multiplied
+    assertThat(asyncExecutor.runAll()).isOne();
+    assertThat(asyncExecutor.scheduledTasks()).isOne();
+  }
+
+  @Test
   void shouldPickUpOperationWhenExternalTriggerArrivesBeforeScheduledRetryFires() {
     // given — an async-scheduling executor, so a retry scheduled after a failure is queued rather
     // than run inline, leaving a real window for another trigger to race it (e.g. the coordinator's
