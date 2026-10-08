@@ -105,10 +105,7 @@ const DetailsTab: React.FC = () => {
       page: {limit: 1},
     },
     {
-      enabled:
-        !!elementInstanceKey &&
-        isCamundaTask &&
-        !isNil(clientConfig.tasklistUrl),
+      enabled: !!elementInstanceKey && isCamundaTask,
     },
   );
 
