@@ -15,6 +15,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.search.schema.SchemaManagerContainer;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -45,6 +46,27 @@ class SecondaryStorageReadinessConfigurationTest {
               assertThat(context).hasSingleBean(SecondaryStorageReadinessMetrics.class);
               final var readiness = context.getBean(SecondaryStorageReadiness.class);
               assertThat(readiness.isReady(TENANT_A)).isTrue();
+            });
+  }
+
+  @Test
+  void shouldReportARecoveringTenantAsNotReadyEvenOnceInitialized() {
+    // given
+    final var schemaManagerContainer = mock(SchemaManagerContainer.class);
+    when(schemaManagerContainer.isInitialized(TENANT_A)).thenReturn(true);
+    final var topologyManager = mock(BrokerTopologyManager.class);
+    when(topologyManager.isRecoveringOrUnknown(TENANT_A)).thenReturn(true);
+
+    // when/then
+    baseRunner()
+        .withBean(SchemaManagerContainer.class, () -> schemaManagerContainer)
+        .withBean(BrokerTopologyManager.class, () -> topologyManager)
+        .withPropertyValues("camunda.data.secondary-storage.type=elasticsearch")
+        .run(
+            context -> {
+              final var readiness = context.getBean(SecondaryStorageReadiness.class);
+              assertThat(readiness.isReady(TENANT_A)).isFalse();
+              assertThat(readiness.anyReady()).isFalse();
             });
   }
 

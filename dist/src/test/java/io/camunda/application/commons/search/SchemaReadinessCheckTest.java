@@ -38,6 +38,24 @@ class SchemaReadinessCheckTest {
     assertThat(health.getStatus()).isEqualTo(Status.UP);
   }
 
+  @Test
+  void shouldBeDegradedOnceAnInitializedPhysicalTenantEntersRecovery() {
+    // given
+    final var readinessCheck =
+        new SchemaReadinessCheck(
+            readiness(true),
+            () ->
+                Map.of("default", status(State.INITIALIZED), "tenanta", status(State.INITIALIZED)),
+            "tenanta"::equals);
+
+    // when
+    final var health = readinessCheck.health();
+
+    // then
+    assertThat(health.getStatus())
+        .isEqualTo(PhysicalTenantSchemaInitializationHealthIndicator.DEGRADED);
+  }
+
   @ParameterizedTest
   @EnumSource(
       value = State.class,
@@ -90,7 +108,7 @@ class SchemaReadinessCheckTest {
   @Test
   void shouldBeUpWithoutSchemaInitializationStatusesWhenAPhysicalTenantIsReady() {
     // given
-    final var readinessCheck = new SchemaReadinessCheck(readiness(true), Map::of);
+    final var readinessCheck = new SchemaReadinessCheck(readiness(true), Map::of, tenant -> false);
 
     // when
     final var health = readinessCheck.health();
@@ -102,7 +120,7 @@ class SchemaReadinessCheckTest {
   @Test
   void shouldBeDownWithoutSchemaInitializationStatusesWhenNoPhysicalTenantIsReady() {
     // given
-    final var readinessCheck = new SchemaReadinessCheck(readiness(false), Map::of);
+    final var readinessCheck = new SchemaReadinessCheck(readiness(false), Map::of, tenant -> false);
 
     // when
     final var health = readinessCheck.health();
@@ -113,7 +131,7 @@ class SchemaReadinessCheckTest {
 
   private static SchemaReadinessCheck readinessCheck(
       final Map<String, SchemaInitializationStatus> statuses) {
-    return new SchemaReadinessCheck(readiness(false), () -> statuses);
+    return new SchemaReadinessCheck(readiness(false), () -> statuses, tenant -> false);
   }
 
   private static SecondaryStorageReadiness readiness(final boolean anyReady) {

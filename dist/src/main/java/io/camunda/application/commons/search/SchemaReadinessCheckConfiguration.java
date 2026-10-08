@@ -9,9 +9,11 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.pt.SchemaInitializer;
+import io.camunda.application.commons.pt.SecondaryStorageReadinessConfiguration;
 import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import java.util.Map;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,12 +33,14 @@ public class SchemaReadinessCheckConfiguration {
   @Qualifier(SchemaReadinessCheck.SCHEMA_READINESS_CHECK)
   public SchemaReadinessCheck schemaReadinessCheck(
       final SecondaryStorageReadiness secondaryStorageReadiness,
-      final ObjectProvider<SchemaInitializer> schemaInitializer) {
+      final ObjectProvider<SchemaInitializer> schemaInitializer,
+      final ObjectProvider<BrokerTopologyManager> brokerTopologyManager) {
     return new SchemaReadinessCheck(
         secondaryStorageReadiness,
         () -> {
           final var initializer = schemaInitializer.getIfAvailable();
           return initializer == null ? Map.of() : initializer.statuses();
-        });
+        },
+        SecondaryStorageReadinessConfiguration.isRecovering(brokerTopologyManager));
   }
 }
