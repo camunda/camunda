@@ -409,7 +409,7 @@
       prPriority: 10,
     },
     {
-      description: "version.spring-boot-oldest-managing-protobuf and version.protobuf-spring-boot-baseline pin the lowest protobuf runtime that a user application can get, and the protoc version must stay below it. Following the latest Spring Boot patch or protobuf-java fails ProtobufGencodeCompatibilityTest, and satisfying that test by raising protoc breaks users on the older runtime. Raise them by hand, together, only when that Spring Boot patch is no longer supported. They are selected by property name because version.spring-boot in the same pom is the real Spring Boot import and must keep updating.",
+      description: "version.spring-boot-oldest-managing-protobuf and version.protobuf-spring-boot-baseline pin the lowest protobuf runtime that a user application can get, and the protoc version must not go above it. Following the latest Spring Boot patch or protobuf-java fails ProtobufGencodeCompatibilityTest, and satisfying that test by raising protoc breaks users on the older runtime. Raise them by hand, together, only when the oldest Spring Boot line that manages protobuf changes. They are selected by property name because version.spring-boot in the same pom is the real Spring Boot import and must keep updating.",
       matchManagers: [
         "maven",
       ],
