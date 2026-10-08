@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.cluster.migration.MigrationConditionStatus;
 import io.camunda.cluster.migration.MigrationState;
@@ -17,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,32 +39,28 @@ final class MigrationStatusAggregatorTest {
     // when
     final var physicalTenants = aggregator.aggregate();
 
-    // then - both providers reported their status, so neither call was left waiting forever
-    assertThat(physicalTenants.get("default")).hasSize(2);
+    // then - both providers answered. A provider that timed out would also be filled in, as
+    // UNKNOWN, so check the states and not only the number of conditions.
+    assertThat(physicalTenants.get("default").values())
+        .hasSize(2)
+        .allMatch(status -> status.state() == MigrationState.MIGRATED);
   }
 
   @Test
-  void shouldPollOnTheGivenExecutorInsteadOfTheCommonPool() {
-    // given - a dedicated single-thread executor with a recognizable thread name, so a poll
-    // routed through the common pool instead would be caught rather than passing by coincidence
-    final var executor =
-        Executors.newSingleThreadExecutor(r -> new Thread(r, "aggregate-test-executor"));
+  void shouldPollOnTheDedicatedPoolInsteadOfTheCommonPool() {
+    // given
     final var observedThreadNames = new CopyOnWriteArrayList<String>();
     final var aggregator =
-        new MigrationStatusAggregator(
-            List.of(threadRecordingProvider("a", observedThreadNames)),
-            Duration.ofSeconds(5),
-            executor);
+        new MigrationStatusAggregator(List.of(threadRecordingProvider("a", observedThreadNames)));
 
-    try {
-      // when
-      aggregator.aggregate();
+    // when
+    aggregator.aggregate();
+    aggregator.close();
 
-      // then
-      assertThat(observedThreadNames).containsExactly("aggregate-test-executor");
-    } finally {
-      executor.shutdown();
-    }
+    // then - a poll routed through the common pool instead would be caught here
+    assertThat(observedThreadNames)
+        .hasSize(1)
+        .allMatch(name -> name.startsWith("upgrade-readiness-"));
   }
 
   @Test
@@ -282,31 +278,6 @@ final class MigrationStatusAggregatorTest {
   }
 
   @Test
-  void shouldNotDeadlockWhenTheExecutorHasASingleThread() throws Exception {
-    // given - a one-thread executor: the poll must not hold that thread while waiting for the
-    // provider tasks that run on it
-    final var executor = Executors.newSingleThreadExecutor();
-    try {
-      final var aggregator =
-          new MigrationStatusAggregator(
-              List.of(
-                  provider("a", Map.of("default", migrated("a done"))),
-                  provider("b", Map.of("default", migrated("b done"))),
-                  provider("c", Map.of("default", migrated("c done")))),
-              Duration.ofSeconds(5),
-              executor);
-
-      // when
-      final var result = aggregator.aggregateAsync().get(10, TimeUnit.SECONDS);
-
-      // then
-      assertThat(result.get("default")).containsOnlyKeys("a", "b", "c");
-    } finally {
-      executor.shutdownNow();
-    }
-  }
-
-  @Test
   void shouldNotStartAnotherTaskForAProviderThatIsStillRunning() throws Exception {
     // given - a provider that stays busy far past the provider timeout, counting its invocations
     final var release = new CountDownLatch(1);
@@ -388,44 +359,6 @@ final class MigrationStatusAggregatorTest {
   }
 
   @Test
-  void shouldCompleteThePollEvenWhenAProviderHoldsTheOnlyExecutorThread() throws Exception {
-    // given - an injected one-thread executor that a hung provider occupies, so the second provider
-    // never even starts. The merge must not queue behind them on that executor.
-    final var release = new CountDownLatch(1);
-    final var executor = Executors.newSingleThreadExecutor();
-    final var hanging =
-        new MigrationStatusProvider() {
-          @Override
-          public String conditionName() {
-            return "hanging";
-          }
-
-          @Override
-          public Map<String, MigrationConditionStatus> getMigrationStatus() {
-            try {
-              release.await(30, TimeUnit.SECONDS);
-            } catch (final InterruptedException e) {
-              Thread.currentThread().interrupt();
-            }
-            return Map.of("default", migrated("late"));
-          }
-        };
-    final var aggregator =
-        new MigrationStatusAggregator(
-            List.of(hanging, provider("queued", Map.of("default", migrated("queued done")))),
-            Duration.ofMillis(300),
-            executor);
-
-    try {
-      // when / then - bounded by the provider timeout, not by the hung provider
-      assertThat(aggregator.aggregateAsync().get(10, TimeUnit.SECONDS)).isEmpty();
-    } finally {
-      release.countDown();
-      executor.shutdownNow();
-    }
-  }
-
-  @Test
   void shouldFailTheFutureInsteadOfThrowingOnceTheExecutorIsShutDown() {
     // given
     final var aggregator =
@@ -487,16 +420,42 @@ final class MigrationStatusAggregatorTest {
       // then - the hung call carries one observer and no waiting polls, not one per poll
       final var call = aggregator.runningCall(0);
       assertThat(call.dependentsOfCall()).isLessThanOrEqualTo(1);
-      // A poll drops its waiter just after its result is delivered, so give that a moment.
-      final var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-      while (call.waitingPolls() != 0 && System.nanoTime() < deadline) {
-        Thread.onSpinWait();
-      }
-      assertThat(call.waitingPolls()).isZero();
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(call.waitingPolls()).isZero());
     } finally {
       release.countDown();
       aggregator.close();
     }
+  }
+
+  @Test
+  void shouldReportUnknownForAProviderThatFailsWithAnError() {
+    // given - only exceptions are caught around a provider call, so an error fails the call itself
+    final var broken =
+        new MigrationStatusProvider() {
+          @Override
+          public String conditionName() {
+            return "broken";
+          }
+
+          @Override
+          public Map<String, MigrationConditionStatus> getMigrationStatus() {
+            throw new AssertionError("not an exception");
+          }
+        };
+    final var aggregator =
+        new MigrationStatusAggregator(
+            List.of(provider("ok", Map.of("default", migrated("ok done"))), broken));
+
+    // when
+    final var physicalTenants = aggregator.aggregate();
+    aggregator.close();
+
+    // then - the other provider is unaffected and the failed one reads as unknown
+    assertThat(physicalTenants.get("default").get("ok").state()).isEqualTo(MigrationState.MIGRATED);
+    assertThat(physicalTenants.get("default").get("broken").state())
+        .isEqualTo(MigrationState.UNKNOWN);
   }
 
   private static MigrationConditionStatus migrated(final String detail) {
