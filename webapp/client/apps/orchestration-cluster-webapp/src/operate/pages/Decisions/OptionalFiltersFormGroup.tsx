@@ -27,16 +27,7 @@ import {
 	validateParentInstanceIdComplete,
 	validateParentInstanceIdNotTooLong,
 } from '#/operate/shared/utils/validators';
-
-type OptionalFilter = 'decisionEvaluationInstanceKey' | 'processInstanceKey' | 'businessId' | 'evaluationDateRange';
-
-type OptionalFilterValues = {
-	decisionEvaluationInstanceKey?: string;
-	processInstanceKey?: string;
-	businessId?: string;
-	evaluationDateFrom?: string;
-	evaluationDateTo?: string;
-};
+import type {OptionalFilter, OptionalFilterValues} from './optionalFilters';
 
 const optionalFilters: OptionalFilter[] = [
 	'decisionEvaluationInstanceKey',

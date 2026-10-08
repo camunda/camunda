@@ -21,7 +21,7 @@ import {
 	validateParentInstanceIdComplete,
 	validateParentInstanceIdNotTooLong,
 } from '#/operate/shared/utils/validators';
-import type {OptionalFilter, OptionalFilterValues} from '../OptionalFiltersFormGroup';
+import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
 
 type Props = {
 	filters: OptionalFilterValues;
@@ -79,7 +79,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 			...(['decisionEvaluationInstanceKey', 'processInstanceKey', 'businessId'] as const).filter(
 				(filter) => filters[filter] !== undefined,
 			),
-			...(filters.evaluationDateFrom !== undefined && filters.evaluationDateTo !== undefined
+			...(filters.evaluationDateFrom !== undefined || filters.evaluationDateTo !== undefined
 				? (['evaluationDateRange'] as const)
 				: []),
 		],
