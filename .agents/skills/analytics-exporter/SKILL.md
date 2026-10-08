@@ -67,28 +67,30 @@ Open `AnalyticsAttributes.java` and add any new `AttributeKey` constants or stri
 `Tenant`, `Element`, `Metric`, etc.). Add new constants to the appropriate nested class, or
 create a new one if a new domain is needed.
 
-**OTel naming rules:**
-- Attribute keys: dot-delimited namespaces, snake_case — e.g. `"camunda.job.type"`
-- Event name strings: take the name from the data contract for the signal you are adding (go
-  inside the `Event` nested class)
-- Metric name strings: dot-delimited — e.g. `"camunda.job.activated"` (go inside `Metric`)
+**Names come from the data contract.** Every attribute key, event name, and metric name the
+exporter emits is defined in the product-telemetry data contract
+([catalog](https://github.com/camunda/Holistic-Data-Platform/blob/main/ingest/camunda-product-telemetry/schemas/docs/catalog.md)).
+Before adding a constant, find the signal's entry there and copy its names exactly. If the signal
+has no entry yet, propose one in the contract first rather than inventing a name here; the
+exporter `AGENTS.md` and `README.md` describe the convention the contract follows, but the
+contract is the source of truth.
 
-**Event names come from the data contract, not from a house convention.** Contract-defined
-signals use canonical dotted names — e.g. `"camunda.tenant.created"`. The bare snake_case names
-already in `AnalyticsAttributes.Event` (`process_instance_created`, `user_task_created`) predate
-the contract; they stay as they are because renaming them would break consumers, but they are not
-a rule to follow for new signals. If there is no contract entry, match the closest contract name
-rather than inventing a snake_case one.
+- Attribute keys go in the domain's nested class (e.g. `"camunda.process.definition.key"`)
+- Event name strings go inside the `Event` nested class (e.g. `"camunda.tenant.created"`)
+- Metric name strings go inside `Metric` (e.g. `"camunda.decision.instance.evaluated"`)
 
 **Keep attribute count minimal.** Every attribute added to a metric becomes a dimension in the
 time-series backend. Too many attributes — especially high-cardinality ones — cause dimension
 explosion and drive up storage and query costs. Only add attributes that are genuinely needed.
 For log events this is less critical, but the same principle applies.
 
-**Iron rule — never remove or rename existing constants.** Attribute key strings, event names,
-and metric names are part of the analytics schema. They are baked into downstream dashboards,
-queries, and alerts. Renaming or removing one silently breaks consumers. Only ever *add* new
-constants. If semantics change, add a new constant alongside the old one.
+**Iron rule — never remove or rename existing constants as part of feature work.** Attribute key
+strings, event names, and metric names are part of the analytics schema. They are baked into
+downstream dashboards, queries, and alerts. Renaming or removing one silently breaks consumers.
+When adding an event, only ever *add* new constants; if semantics change, add a new constant
+alongside the old one. A rename is only acceptable as an explicitly agreed contract migration
+with downstream consumers, done in its own PR that updates the pinning tests
+(`AnalyticsEventNamesTest`, `AnalyticsAttributeKeysTest`) and the README.
 
 Adding a new domain (e.g. `Job`):
 
@@ -444,7 +446,8 @@ Before opening the PR, go through this checklist:
 1. **No PII exposed** — double-check every attribute: no variable values, usernames, email
    addresses, author-chosen names, or any other personally identifiable data.
 2. **No attributes renamed or removed** — existing constants in `AnalyticsAttributes` are
-   unchanged; only new constants were added.
+   unchanged; only new constants were added (unless the PR is an explicitly agreed contract
+   migration, see the iron rule in Step 2).
 3. **Attribute count is minimal** — no unnecessary dimensions; every attribute added to a
    metric has a clear analytical purpose.
 4. **Handler is registered** — `.register(ValueType, Intent, handler)` call is present in
