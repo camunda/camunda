@@ -94,3 +94,8 @@ describe('useSessionHeartbeat', () => {
 		expect(latestOnUnauthorized).toHaveBeenCalledTimes(1);
 	});
 });
+
+// DEMO ONLY (camunda/infra-global-github-actions#850): provoked failure in a container job
+it('demo: provoked failure for submit-test-status in container job', () => {
+	expect(1).toBe(2);
+});

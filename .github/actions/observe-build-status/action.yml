@@ -88,7 +88,7 @@ runs:
         echo "Generated $(wc -l < "${TEST_RESULTS_FILE}") test results"
 
     - name: Submit test results
-      uses: camunda/infra-global-github-actions/submit-test-status@main
+      uses: camunda/infra-global-github-actions/submit-test-status@43eb7b2a3156c5ec3ddcc70ccfb3817b1771fd96 # cmur2/submit-test-status-container-temp
       if: ${{ (inputs.detailed_junit_tests == 'true') && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         test_results_file_path: "${{ steps.get-detailed-junit-tests.outputs.test_results_file }}"
