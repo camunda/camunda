@@ -51,6 +51,9 @@ public final class RaftMemberContext {
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
   private IndexedRaftLogEntry currentEntry;
+  // the index of the next entry to send, also when there is no current entry because the log
+  // starts after the previous entry
+  private long nextIndex;
 
   RaftMemberContext(
       final DefaultRaftMember member,
@@ -140,6 +143,10 @@ public final class RaftMemberContext {
     reader.seekToLast();
     if (reader.hasNext()) {
       currentEntry = reader.next();
+      nextIndex = currentEntry.index() + 1;
+    } else {
+      currentEntry = null;
+      nextIndex = 0;
     }
   }
 
@@ -461,6 +468,7 @@ public final class RaftMemberContext {
 
   public IndexedRaftLogEntry nextEntry() {
     currentEntry = reader.next();
+    nextIndex = currentEntry.index() + 1;
     return currentEntry;
   }
 
@@ -472,9 +480,15 @@ public final class RaftMemberContext {
     return currentEntry != null ? currentEntry.index() : 0;
   }
 
+  public long getNextIndex() {
+    return nextIndex;
+  }
+
   public void reset(final long index) {
-    final var nextIndex = reader.seek(index - 1);
-    if (nextIndex == index - 1) {
+    // set nextIndex explicitly so that it is visible even if currentEntry is null (e.g. if the log
+    // starts after the previous entry)
+    nextIndex = index;
+    if (reader.seek(index - 1) == index - 1) {
       currentEntry = reader.next();
     } else {
       currentEntry = null;
