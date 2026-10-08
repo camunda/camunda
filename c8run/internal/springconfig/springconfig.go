@@ -25,16 +25,15 @@ import (
 // first: within one location .properties wins over YAML.
 var DirectoryFiles = []string{"application.properties", "application.yml", "application.yaml"}
 
-// FilesIn returns the config files Spring would load from a --config location, highest
-// precedence first: profile-specific files for the active profiles (last profile wins), then
-// the base files. A directory always lists application.yaml (it may not exist yet).
-func FilesIn(location string) []string {
+// FilesIn returns the config files Spring would load from a config location for the active
+// profiles, highest precedence first: profile-specific files (last profile wins), then the
+// base files. A directory always lists application.yaml (it may not exist yet).
+func FilesIn(location string, profiles []string) []string {
 	info, err := os.Stat(location)
 	if err != nil || !info.IsDir() {
 		return []string{location}
 	}
 	var files []string
-	profiles := ActiveProfiles(location)
 	for i := len(profiles) - 1; i >= 0; i-- {
 		for _, ext := range []string{".properties", ".yml", ".yaml"} {
 			path := filepath.Join(location, "application-"+profiles[i]+ext)
@@ -52,26 +51,25 @@ func FilesIn(location string) []string {
 	return files
 }
 
-// ActiveProfiles returns spring.profiles.active from JVM options, the environment, or the
-// base files of a config directory, in that precedence.
-func ActiveProfiles(location string) []string {
-	var files []string
-	for _, name := range DirectoryFiles {
-		files = append(files, filepath.Join(location, name))
-	}
-	value, _ := Value(files, "spring.profiles.active")
-	return splitProfiles(value)
-}
-
 func Paths(baseDir, userConfig string) []string {
-	var paths []string
+	locations := []string{filepath.Join(baseDir, "configuration")}
 	if userConfig != "" {
 		candidate := filepath.Join(baseDir, userConfig)
 		if _, err := os.Stat(candidate); err == nil {
-			paths = append(paths, FilesIn(candidate)...)
+			locations = []string{candidate, locations[0]}
 		}
 	}
-	return append(paths, FilesIn(filepath.Join(baseDir, "configuration"))...)
+	// Spring activates profiles from the base files of every location, then applies them to all.
+	var baseFiles []string
+	for _, location := range locations {
+		baseFiles = append(baseFiles, FilesIn(location, nil)...)
+	}
+	active, _ := Value(baseFiles, "spring.profiles.active")
+	var paths []string
+	for _, location := range locations {
+		paths = append(paths, FilesIn(location, splitProfiles(active))...)
+	}
+	return paths
 }
 
 func Value(paths []string, property string) (string, bool) {

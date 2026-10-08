@@ -26,8 +26,8 @@ func TestFilesInOrdersPropertiesBeforeYAML(t *testing.T) {
 		filepath.Join(dir, "application.properties"),
 		filepath.Join(dir, "application.yml"),
 		filepath.Join(dir, "application.yaml"),
-	}, FilesIn(dir))
-	assert.Equal(t, []string{"x.yaml"}, FilesIn("x.yaml"))
+	}, FilesIn(dir, nil))
+	assert.Equal(t, []string{"x.yaml"}, FilesIn("x.yaml", nil))
 }
 
 func TestLoadPropertiesAndYAMLIntoOneShape(t *testing.T) {
@@ -66,11 +66,13 @@ func TestResolvePlaceholders(t *testing.T) {
 	assert.Equal(t, "opensearch", v)
 }
 
-func TestFilesInIncludesActiveProfilesFirst(t *testing.T) {
+func TestPathsIncludesActiveProfilesFirst(t *testing.T) {
 	t.Setenv("JAVA_OPTS", "")
 	t.Setenv("JDK_JAVA_OPTIONS", "")
 	t.Setenv("SPRING_PROFILES_ACTIVE", "")
-	dir := t.TempDir()
+	base := t.TempDir()
+	dir := filepath.Join(base, "configuration")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.yaml"), []byte("spring:\n  profiles:\n    active: base,prod\n"), 0o644))
 	for _, name := range []string{"application-prod.yaml", "application-base.properties", "application-other.yaml"} {
 		require.NoError(t, os.WriteFile(filepath.Join(dir, name), nil, 0o644))
@@ -79,10 +81,42 @@ func TestFilesInIncludesActiveProfilesFirst(t *testing.T) {
 		filepath.Join(dir, "application-prod.yaml"),
 		filepath.Join(dir, "application-base.properties"),
 		filepath.Join(dir, "application.yaml"),
-	}, FilesIn(dir), "the last active profile wins; inactive profiles are ignored")
+	}, Paths(base, ""), "the last active profile wins; inactive profiles are ignored")
 
 	t.Setenv("SPRING_PROFILES_ACTIVE", "other")
-	assert.Equal(t, filepath.Join(dir, "application-other.yaml"), FilesIn(dir)[0], "the environment beats the base file")
+	assert.Equal(t, filepath.Join(dir, "application-other.yaml"), Paths(base, "")[0], "the environment beats the base file")
+}
+
+func TestPathsAppliesProfilesFromEveryLocation(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	t.Setenv("SPRING_PROFILES_ACTIVE", "")
+	base := t.TempDir()
+	configuration := filepath.Join(base, "configuration")
+	userDir := filepath.Join(base, "cfg")
+	require.NoError(t, os.MkdirAll(configuration, 0o755))
+	require.NoError(t, os.MkdirAll(userDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(configuration, "application.yaml"), []byte("spring.profiles.active: mysql\n"), 0o644))
+	for _, path := range []string{
+		filepath.Join(configuration, "application-mysql.yaml"),
+		filepath.Join(configuration, "application-postgresql.yaml"),
+		filepath.Join(userDir, "application-mysql.yaml"),
+	} {
+		require.NoError(t, os.WriteFile(path, nil, 0o644))
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(base, "user.yaml"), []byte("spring.profiles.active: postgresql\n"), 0o644))
+
+	assert.Equal(t, []string{
+		filepath.Join(base, "user.yaml"),
+		filepath.Join(configuration, "application-postgresql.yaml"),
+		filepath.Join(configuration, "application.yaml"),
+	}, Paths(base, "user.yaml"), "the --config profile beats configuration/ and selects its bundled profile file")
+	assert.Equal(t, []string{
+		filepath.Join(userDir, "application-mysql.yaml"),
+		filepath.Join(userDir, "application.yaml"),
+		filepath.Join(configuration, "application-mysql.yaml"),
+		filepath.Join(configuration, "application.yaml"),
+	}, Paths(base, "cfg"), "a profile set in configuration/ selects the --config profile file too")
 }
 
 func TestValuePrecedence(t *testing.T) {
