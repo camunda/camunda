@@ -88,6 +88,10 @@ public class HttpClientFactory {
   private static final Pattern TRAILING_PHYSICAL_TENANT_PATH =
       Pattern.compile(Pattern.quote(PHYSICAL_TENANT_PATH_SEGMENT) + "[a-zA-Z0-9]+$");
 
+  private static final TimeValue CONNECTION_TIME_TO_LIVE = TimeValue.ofSeconds(60);
+
+  private static final TimeValue CONNECTION_VALIDATE_AFTER_INACTIVITY = TimeValue.ofSeconds(5);
+
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper()
           .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -125,7 +129,7 @@ public class HttpClientFactory {
         credentialsProvider);
   }
 
-  private PoolingAsyncClientConnectionManager createConnectionManager() {
+  PoolingAsyncClientConnectionManager createConnectionManager() {
     final HttpClientHostnameVerifier hostnameVerifier =
         new HostnameVerifier(config.getOverrideAuthority());
     final TlsStrategy tlsStrategy =
@@ -137,18 +141,22 @@ public class HttpClientFactory {
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)
             .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
-            .setMaxConnPerRoute(config.getMaxHttpConnections());
+            .setMaxConnPerRoute(config.getMaxHttpConnections())
+            .setConnectionConfigResolver(this::createConnectionConfig);
 
     if (config.useClientSideLoadBalancing()) {
       connectionManagerBuilder.setDnsResolver(new RandomizedDnsResolver());
-      // Use a short connection TTL to force frequent re-resolution of DNS. Without this,
-      // pooled connections are reused indefinitely, and the randomized DNS resolver would
-      // only take effect when a new connection is created — defeating load balancing.
-      connectionManagerBuilder.setDefaultConnectionConfig(
-          ConnectionConfig.custom().setTimeToLive(TimeValue.ofSeconds(1)).build());
     }
 
     return connectionManagerBuilder.build();
+  }
+
+  ConnectionConfig createConnectionConfig(final org.apache.hc.client5.http.HttpRoute route) {
+    return ConnectionConfig.custom()
+        .setTimeToLive(
+            config.useClientSideLoadBalancing() ? TimeValue.ofSeconds(1) : CONNECTION_TIME_TO_LIVE)
+        .setValidateAfterInactivity(CONNECTION_VALIDATE_AFTER_INACTIVITY)
+        .build();
   }
 
   private URI buildGatewayAddress() {
