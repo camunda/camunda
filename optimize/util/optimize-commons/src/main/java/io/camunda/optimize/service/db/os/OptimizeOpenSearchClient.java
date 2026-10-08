@@ -319,7 +319,18 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Query query,
       final Script script,
       final boolean failOnVersionConflicts) {
-    return richOpenSearchClient.doc().updateByQuery(index, query, script, failOnVersionConflicts);
+    return updateByQuery(index, query, script, failOnVersionConflicts, null);
+  }
+
+  public long updateByQuery(
+      final String index,
+      final Query query,
+      final Script script,
+      final boolean failOnVersionConflicts,
+      final Integer scrollSize) {
+    return richOpenSearchClient
+        .doc()
+        .updateByQuery(index, query, script, failOnVersionConflicts, scrollSize);
   }
 
   public final <T> IndexResponse index(final IndexRequest.Builder<T> indexRequest) {
