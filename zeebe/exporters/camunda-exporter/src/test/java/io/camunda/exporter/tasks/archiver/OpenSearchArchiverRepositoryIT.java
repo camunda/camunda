@@ -1540,6 +1540,37 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldFailToDeleteDocumentIfWrongSeqNoAndPrimaryTermProvided() throws IOException {
+    // given
+    final var indexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    final var documents = List.of(new TestDocument("1"));
+    documents.forEach(doc -> index(indexName, doc));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when
+    final var result =
+        repository.deleteDocumentsById(
+            indexName, List.of(new IdWithRouting("1", null, Long.MAX_VALUE, Long.MAX_VALUE)));
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(30))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(VersionConflictOnArchiveDeleteException.class);
+
+    testClient.indices().refresh(r -> r.index(indexName));
+    final var remaining =
+        testClient.search(r -> r.index(indexName).requestCache(false), TestDocument.class);
+    assertThat(remaining.hits().hits())
+        .as("document has not been deleted")
+        .hasSize(1)
+        .first()
+        .extracting(Hit::id)
+        .isEqualTo("1");
+  }
+
+  @Test
   void shouldNotCountNotFoundResultsAsDeleted() throws IOException {
     // given - an index with a single real doc; we will issue a bulk delete that mixes the
     // real id with non-existent ids so OS returns result=not_found for the latter. The

@@ -50,10 +50,12 @@ class ArchiveByIdTaskSupplierTest {
         new CompletionException(mock(ElasticsearchException.class)),
         new CompletionException(mock(OpenSearchException.class)),
         new CompletionException(mock(BatchCountMismatchException.class)),
+        new CompletionException(new VersionConflictOnArchiveDeleteException("version conflict")),
         mock(SocketTimeoutException.class),
         mock(ElasticsearchException.class),
         mock(OpenSearchException.class),
-        mock(BatchCountMismatchException.class));
+        mock(BatchCountMismatchException.class),
+        new VersionConflictOnArchiveDeleteException("version conflict"));
   }
 
   @ParameterizedTest

@@ -34,7 +34,8 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
           SocketTimeoutException.class,
           ElasticsearchException.class,
           OpenSearchException.class,
-          BatchCountMismatchException.class);
+          BatchCountMismatchException.class,
+          VersionConflictOnArchiveDeleteException.class);
 
   private final HistoryConfiguration config;
   private final String sourceIdx;
