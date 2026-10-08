@@ -548,7 +548,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                                 del.id(d.id())
                                     .routing(d.routing())
                                     .ifSeqNo(d.seqNo())
-                                    .ifPrimaryTerm(d.seqNo()))
+                                    .ifPrimaryTerm(d.primaryTerm()))
                         .build())
             .toList();
 
@@ -565,6 +565,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   private long getDeletedDocCount(final String sourceIndex, final BulkResponse response) {
     if (response.errors()) {
+      checkIfErrorsAreAllVersionConflicts(sourceIndex, response);
+
       final long errorCount =
           response.items().stream().filter(item -> item.error() != null).count();
       throw new IllegalStateException(
@@ -588,6 +590,23 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                     .map(jd -> jd.to(Boolean.class))
                     .map(blocked -> blocked ? ArchivingStatus.BLOCKED : ArchivingStatus.NOT_BLOCKED)
                     .orElse(ArchivingStatus.NOT_BLOCKED));
+  }
+
+  private void checkIfErrorsAreAllVersionConflicts(
+      final String sourceIndex, final BulkResponse response) {
+    var totalConflicts = 0;
+    for (final var item : response.items()) {
+      final var error = item.error();
+      if (error != null) {
+        if (!"version_conflict_engine_exception".equals(error.type())) {
+          return;
+        }
+        totalConflicts++;
+      }
+    }
+    throw new VersionConflictOnArchiveDeleteException(
+        "Deleting reindexed documents from %s index completed with %d version conflicts"
+            .formatted(sourceIndex, totalConflicts));
   }
 
   private Query finishedProcessInstancesQuery(
