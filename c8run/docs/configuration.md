@@ -30,8 +30,10 @@ Changes to this chain must ensure all fallback paths still produce a valid binar
 The RDBMS URL is resolved in this precedence order (first match wins):
 1. `-Dcamunda.data.secondary-storage.rdbms.url` in `JAVA_OPTS`, then in `JDK_JAVA_OPTIONS`
 2. `CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL` or `CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL` environment variable
-3. User-provided `--config` file (if supplied)
-4. `configuration/application.yaml`
+3. User-provided `--config` file or directory (if supplied)
+4. `configuration/`
+
+In a directory, profile-specific files for the active profiles come first (the last profile wins), then `application.properties`, `application.yml` and `application.yaml`. Profiles activated in any of these sources apply to the `--config` directory and `configuration/` alike.
 
 **File-based H2 (`jdbc:h2:file:*`) does NOT trigger deletion.** Only in-memory H2 is cleaned up on stop.
 
