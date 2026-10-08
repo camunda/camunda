@@ -142,7 +142,7 @@ mwnw*                       @camunda/engineering-operations
 ################################
 
 # Identity application
-/identity/                  @camunda/identity-frontend
+/identity/                  @camunda/operate-admin-pod
 /authentication/            @camunda/identity
 /security/                  @camunda/identity
 
@@ -305,7 +305,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/assign-urgency-to-issue* @camunda/core-features
 /.github/workflows/operate-playwright.yml @camunda/core-features
 /.github/workflows/ci-operate.yml @camunda/core-features
-/.github/workflows/ci-webapp-client.yml @camunda/core-features
+/.github/workflows/ci-webapp-client.yml @camunda/orchestration-cluster-webapps
 /.github/workflows/ci-webapp-run-ut-reuseable.yml @camunda/core-features
 /.github/workflows/ci-optimize.yml @camunda/core-features
 /.github/workflows/optimize-*.yml @camunda/core-features
@@ -443,7 +443,7 @@ optimize.Dockerfile         @camunda/core-features
 
 # Operate frontend: overrides the broad /operate/ rule above, which predates the
 # operate-frontend/operate-backend team split.
-/operate/client/            @camunda/operate-frontend
+/operate/client/            @camunda/operate-admin-pod
 
 # Optimize frontend: overrides the broad /optimize/ rule above, which predates the
 # optimize-frontend/optimize-backend team split.
