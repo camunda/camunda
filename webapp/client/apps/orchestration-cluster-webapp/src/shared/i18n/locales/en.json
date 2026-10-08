@@ -1072,8 +1072,7 @@
 			"decisions": {
 				"title": "Decisions",
 				"scaffold": {
-					"filtersPanelPlaceholder": "Filters panel placeholder",
-					"decisionPanelPlaceholder": "Decision panel placeholder"
+					"filtersPanelPlaceholder": "Filters panel placeholder"
 				},
 				"diagramHeader": {
 					"title": "Decision",

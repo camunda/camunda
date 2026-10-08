@@ -1063,8 +1063,7 @@
 			"decisions": {
 				"title": "Décisions",
 				"scaffold": {
-					"filtersPanelPlaceholder": "Espace réservé pour le panneau de filtres",
-					"decisionPanelPlaceholder": "Espace réservé pour le panneau de décision"
+					"filtersPanelPlaceholder": "Espace réservé pour le panneau de filtres"
 				},
 				"diagramHeader": {
 					"title": "Décision",

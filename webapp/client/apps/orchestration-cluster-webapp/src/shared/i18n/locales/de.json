@@ -1060,8 +1060,7 @@
 			"decisions": {
 				"title": "Entscheidungen",
 				"scaffold": {
-					"filtersPanelPlaceholder": "Platzhalter für den Filterbereich",
-					"decisionPanelPlaceholder": "Platzhalter für den Entscheidungsbereich"
+					"filtersPanelPlaceholder": "Platzhalter für den Filterbereich"
 				},
 				"diagramHeader": {
 					"title": "Entscheidung",

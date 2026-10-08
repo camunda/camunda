@@ -1060,8 +1060,7 @@
 			"decisions": {
 				"title": "Decisiones",
 				"scaffold": {
-					"filtersPanelPlaceholder": "Marcador de posición del panel de filtros",
-					"decisionPanelPlaceholder": "Marcador de posición del panel de decisión"
+					"filtersPanelPlaceholder": "Marcador de posición del panel de filtros"
 				},
 				"diagramHeader": {
 					"title": "Decisión",
