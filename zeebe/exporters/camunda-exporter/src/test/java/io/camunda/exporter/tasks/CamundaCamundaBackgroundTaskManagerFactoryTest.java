@@ -18,7 +18,6 @@ import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.AuditLogArchiverJob;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.JobBatchMetricsArchiverJob;
-import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceByIdArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
@@ -65,26 +64,9 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
   }
 
   @Test
-  void shouldScheduleProcessInstanceArchiverTaskWhenConfigEnabled() {
-    // given
-    config.getHistory().setProcessInstanceEnabled(true);
-    config.getHistory().setArchiveByIdEnabled(false);
-
-    // when
-    final var taskManager = factory.build();
-
-    // then
-    final var tasks = getTasksFromManager(taskManager);
-    assertThat(tasks)
-        .as("Should contain ProcessInstancesArchiverJob when config is enabled")
-        .anyMatch(task -> isProcessInstanceArchiverTask(task));
-  }
-
-  @Test
   void shouldScheduleProcessInstanceByIdArchiverJobTaskWhenConfigEnabled() {
     // given
     config.getHistory().setProcessInstanceEnabled(true);
-    config.getHistory().setArchiveByIdEnabled(true);
 
     // when
     final var taskManager = factory.build();
@@ -108,7 +90,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should not contain ProcessInstancesArchiverJob when config is disabled")
-        .noneMatch(task -> isProcessInstanceArchiverTask(task));
+        .noneMatch(task -> isProcessInstanceByIdArchiverTask(task));
   }
 
   @Test
@@ -141,7 +123,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     assertThat(tasks)
         .as("Should not contain ProcessInstanceToBeArchivedCountJob when PI config is disabled")
         .noneMatch(task -> isProcessInstanceToBeArchivedCountTask(task))
-        .noneMatch(task -> isProcessInstanceArchiverTask(task));
+        .noneMatch(task -> isProcessInstanceByIdArchiverTask(task));
   }
 
   @Test
@@ -254,10 +236,6 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     } catch (final Exception e) {
       throw new RuntimeException("Failed to access tasks field", e);
     }
-  }
-
-  private boolean isProcessInstanceArchiverTask(final RunnableTask task) {
-    return isTaskOfType(task, ProcessInstanceArchiverJob.class);
   }
 
   private boolean isProcessInstanceByIdArchiverTask(final RunnableTask task) {
