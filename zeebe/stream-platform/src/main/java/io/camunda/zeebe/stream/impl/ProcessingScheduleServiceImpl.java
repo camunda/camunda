@@ -209,7 +209,7 @@ public class ProcessingScheduleServiceImpl
       writeFuture.onComplete(
           (v, t) -> {
             // a false result without an error means the write was aborted before it succeeded
-            if (t != null || !Boolean.TRUE.equals(v)) {
+            if (t != null || !v) {
               stagedCache.rollback();
             }
             if (t != null) {
