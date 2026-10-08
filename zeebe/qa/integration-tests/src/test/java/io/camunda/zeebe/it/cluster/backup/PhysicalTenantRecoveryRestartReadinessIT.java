@@ -66,11 +66,6 @@ final class PhysicalTenantRecoveryRestartReadinessIT {
     ELASTICSEARCH.start();
   }
 
-  @AfterAll
-  static void stopElasticsearch() {
-    ELASTICSEARCH.stop();
-  }
-
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
           .withTenant(
@@ -98,6 +93,11 @@ final class PhysicalTenantRecoveryRestartReadinessIT {
                   configureBackupStores(
                       TENANTS.configure(broker.withUnauthenticatedAccess().withCreateSchema(true))))
           .build();
+
+  @AfterAll
+  static void stopElasticsearch() {
+    ELASTICSEARCH.stop();
+  }
 
   @Test
   void shouldAcceptRestoreThroughAReadyNodeAfterEveryBrokerRestartedWhileAllTenantsRecover() {
