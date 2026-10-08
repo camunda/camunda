@@ -1486,6 +1486,7 @@
 					"resultCountMore": "{{count}}+ resultados"
 				},
 				"diagramShell": {
+					"loading": "Cargando diagrama",
 					"forbiddenMessage": "Permisos insuficientes para ver la definición",
 					"forbiddenAdditionalInfo": "Póngase en contacto con el propietario o administrador de su organización para obtener los permisos necesarios"
 				},

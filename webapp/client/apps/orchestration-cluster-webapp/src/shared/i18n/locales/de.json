@@ -1486,6 +1486,7 @@
 					"resultCountMore": "{{count}}+ Ergebnisse"
 				},
 				"diagramShell": {
+					"loading": "Diagramm wird geladen",
 					"forbiddenMessage": "Fehlende Berechtigungen zum Anzeigen der Definition",
 					"forbiddenAdditionalInfo": "Bitte wenden Sie sich an den Eigentümer oder Administrator Ihrer Organisation, um die erforderlichen Leseberechtigungen zu erhalten"
 				},
