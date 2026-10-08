@@ -240,6 +240,7 @@ public final class BpmnProcessors {
             keyGenerator,
             processingState.getElementInstanceState(),
             processingState.getSuspensionState(),
+            processingState.getUserTaskState(),
             suspensionMetrics);
     typedRecordProcessors.onCommand(
         ValueType.SUSPENSION_BATCH,
