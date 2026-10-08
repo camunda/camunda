@@ -345,22 +345,25 @@ public final class PhysicalTenantsITHelper {
   /**
    * Deploys {@code process} through {@code client}, retrying because the tenant's partition group
    * may still be electing a leader right after startup.
+   *
+   * @return the deployed process definition key
    */
-  public void deploy(
+  public long deploy(
       final CamundaClient client, final BpmnModelInstance process, final String processId) {
-    Awaitility.await("deployment of '%s' succeeds".formatted(processId))
-        .atMost(Duration.ofSeconds(30))
+    return Awaitility.await("deployment of '%s' succeeds".formatted(processId))
+        .atMost(Duration.ofSeconds(60))
         .ignoreExceptions()
-        .untilAsserted(
+        .until(
             () ->
-                assertThat(
-                        client
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, processId + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
+                client
+                    .newDeployResourceCommand()
+                    .addProcessModel(process, processId + ".bpmn")
+                    .send()
+                    .join()
+                    .getProcesses(),
+            processes -> !processes.isEmpty())
+        .getFirst()
+        .getProcessDefinitionKey();
   }
 
   /** A cluster patch that scales the targeted partition group to {@code partitionCount}. */
@@ -374,7 +377,7 @@ public final class PhysicalTenantsITHelper {
    * either returns or throws a {@link feign.FeignException} — so it cannot be handed to {@code
    * untilAsserted}, which only retries on {@link AssertionError}. A retry is needed because the
    * cluster can still be applying its own initial configuration change when the test starts, and
-   * rejects a scale-up while another change is in progress.
+   * rejects a second change while one is in progress.
    */
   public void awaitAccepted(final String alias, final Runnable request) {
     Awaitility.await(alias)

@@ -21,7 +21,6 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,21 +66,7 @@ final class PhysicalTenantBanningActuatorIT {
     // given - a process instance in tenant A and one in the default tenant
     final var process = Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
 
-    // tenant A's partition group may need a moment to elect a leader after startup; retry the
-    // first command until it lands (its topology is not observable via the default topology RPC)
-    await("deployment to tenant A succeeds")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        tenantAClient
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, PROCESS_ID + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
+    TENANTS.deploy(tenantAClient, process, PROCESS_ID);
     defaultClient
         .newDeployResourceCommand()
         .addProcessModel(process, PROCESS_ID + ".bpmn")

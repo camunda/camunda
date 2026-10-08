@@ -164,19 +164,7 @@ final class PhysicalTenantPurgeIT {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
 
-    await("deployment succeeds")
-        .atMost(Duration.ofSeconds(60))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, PROCESS_ID + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
+    TENANTS.deploy(client, process, PROCESS_ID);
   }
 
   private long createInstance(final CamundaClient client) {

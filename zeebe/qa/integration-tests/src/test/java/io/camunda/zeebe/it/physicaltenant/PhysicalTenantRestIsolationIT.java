@@ -58,21 +58,7 @@ final class PhysicalTenantRestIsolationIT {
     final long processInstanceKey;
     try (final CamundaClient tenantAClient = TENANTS.newClientBuilder(broker, TENANT_A).build();
         final CamundaClient defaultClient = TENANTS.newClientBuilder(broker, DEFAULT).build()) {
-      processDefinitionKey =
-          await("deployment to tenant A succeeds")
-              .atMost(Duration.ofSeconds(30))
-              .ignoreExceptions()
-              .until(
-                  () ->
-                      tenantAClient
-                          .newDeployResourceCommand()
-                          .addProcessModel(process, PROCESS_ID + ".bpmn")
-                          .send()
-                          .join()
-                          .getProcesses()
-                          .get(0)
-                          .getProcessDefinitionKey(),
-                  key -> key > 0);
+      processDefinitionKey = TENANTS.deploy(tenantAClient, process, PROCESS_ID);
 
       processInstanceKey =
           tenantAClient
