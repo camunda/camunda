@@ -17,11 +17,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
-test('should have no accessibility violations in the decisions placeholder shell', async ({
-	network,
-	operatePreviewDecisionsPage,
-	makeAxeBuilder,
-}) => {
+test.beforeEach(({network}) => {
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
@@ -33,9 +29,28 @@ test('should have no accessibility violations in the decisions placeholder shell
 			successResponse: HttpResponse.json(createLicense()),
 		}),
 	);
+});
 
+test('should have no accessibility violations in the decisions placeholder shell', async ({
+	operatePreviewDecisionsPage,
+	makeAxeBuilder,
+}) => {
 	await operatePreviewDecisionsPage.goto();
 	await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
+
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations with populated optional filters', async ({
+	page,
+	operatePreviewDecisionsPage,
+	makeAxeBuilder,
+}) => {
+	await page.goto(
+		`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true&businessId=eq_order-1&processInstanceKey=2251799813685249&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z`,
+	);
+	await expect(page.getByLabel('Business ID', {exact: true})).toHaveValue('order-1');
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
