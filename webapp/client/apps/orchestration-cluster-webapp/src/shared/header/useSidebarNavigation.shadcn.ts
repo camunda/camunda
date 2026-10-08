@@ -44,6 +44,7 @@ const tabRoutes = {
 	operateDashboard: '/operate-preview',
 	operateProcesses: '/operate/processes',
 	operateDecisions: '/operate/decisions',
+	operateDecisionsPreview: '/operate-preview/decisions',
 	operateOperationsLog: '/operate/operations-log',
 	operateBatchOperations: '/operate/batch-operations',
 	adminIndex: '/admin',
@@ -193,7 +194,9 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	if (isOperateRoute) {
 		const hasOperateAccess = hasComponentAccess('operate', authorizedComponents);
 		const isOperateProcessesRoute = matchRoute({to: tabRoutes['operateProcesses'], fuzzy: true}) !== false;
-		const isOperateDecisionsRoute = matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false;
+		const isOperateDecisionsRoute =
+			matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false ||
+			matchRoute({to: tabRoutes['operateDecisionsPreview'], fuzzy: true}) !== false;
 		const isOperateOperationsLogRoute = matchRoute({to: tabRoutes['operateOperationsLog'], fuzzy: true}) !== false;
 		const isOperateBatchOperationsRoute = matchRoute({to: tabRoutes['operateBatchOperations'], fuzzy: true}) !== false;
 
