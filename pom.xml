@@ -94,6 +94,7 @@
               <exclude>.github/workflows/**/*.md</exclude>
               <exclude>load-tests/skills/**/*.md</exclude>
               <exclude>SYSTEM.md</exclude>
+              <exclude>zeebe/engine/ARCHITECTURE.md</exclude>
               <exclude>docs/monorepo-docs/**/*.md</exclude>
             </excludes>
             <flexmark/>
