@@ -16,7 +16,7 @@ import {FiltersPanel} from '#/operate/shared/FiltersPanel/shadcn.components/Filt
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {DecisionsSearch} from '../decisionsFilter';
-import type {OptionalFilter, OptionalFilterValues} from '../OptionalFiltersFormGroup';
+import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 
 const Decisions: React.FC = () => {
