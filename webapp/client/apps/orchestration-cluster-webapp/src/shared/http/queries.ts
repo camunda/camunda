@@ -40,6 +40,19 @@ import type {
 	User,
 	QueryUsersRequestBody,
 	QueryUsersResponseBody,
+	QueryRolesRequestBody,
+	QueryRolesResponseBody,
+	QueryUsersByGroupRequestBody,
+	QueryUsersByGroupResponseBody,
+	QueryClientsByGroupRequestBody,
+	QueryClientsByGroupResponseBody,
+	QueryRolesByGroupRequestBody,
+	QueryRolesByGroupResponseBody,
+	QueryMappingRulesByGroupRequestBody,
+	QueryMappingRulesByGroupResponseBody,
+	Group,
+	QueryGroupsRequestBody,
+	QueryGroupsResponseBody,
 	ClusterVariable,
 	QueryClusterVariablesRequestBody,
 	QueryClusterVariablesResponseBody,
@@ -51,10 +64,6 @@ import type {
 	Authorization,
 	QueryAuthorizationsRequestBody,
 	QueryAuthorizationsResponseBody,
-	QueryRolesRequestBody,
-	QueryRolesResponseBody,
-	QueryGroupsRequestBody,
-	QueryGroupsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -98,6 +107,17 @@ const queryKeys = {
 	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
 	users: (body: QueryUsersRequestBody) => ['users', body] as const,
 	user: (username: string) => ['user', username] as const,
+	groups: (body: QueryGroupsRequestBody) => ['groups', body] as const,
+	group: (groupId: string) => ['group', groupId] as const,
+	roles: (body: QueryRolesRequestBody) => ['roles', body] as const,
+	groupUsers: (groupId: string, body: QueryUsersByGroupRequestBody) =>
+		['groupMembers', groupId, 'users', body] as const,
+	groupClients: (groupId: string, body: QueryClientsByGroupRequestBody) =>
+		['groupMembers', groupId, 'clients', body] as const,
+	groupRoles: (groupId: string, body: QueryRolesByGroupRequestBody) =>
+		['groupMembers', groupId, 'roles', body] as const,
+	groupMappingRules: (groupId: string, body: QueryMappingRulesByGroupRequestBody) =>
+		['groupMembers', groupId, 'mappingRules', body] as const,
 	queryClusterVariables: (body: QueryClusterVariablesRequestBody) => ['queryClusterVariables', body] as const,
 	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
 		['getClusterVariable', variable] as const,
@@ -108,8 +128,6 @@ const queryKeys = {
 	queryAuthorizations: (body: QueryAuthorizationsRequestBody) => ['queryAuthorizations', body] as const,
 	getAuthorization: (authorization: Pick<Authorization, 'authorizationKey'>) =>
 		['getAuthorization', authorization] as const,
-	queryRoles: (body: QueryRolesRequestBody) => ['queryRoles', body] as const,
-	queryGroups: (body: QueryGroupsRequestBody) => ['queryGroups', body] as const,
 	adminClientConfig: () => ['adminClientConfig'] as const,
 };
 
@@ -493,6 +511,90 @@ const queries = {
 			},
 		}),
 
+	queryGroups: (body: QueryGroupsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groups(body),
+			queryFn: async (): Promise<QueryGroupsResponseBody> => {
+				const {response, error} = await request(endpoints.queryGroups(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getGroup: (groupId: string) =>
+		queryOptions({
+			queryKey: queryKeys.group(groupId),
+			queryFn: async (): Promise<Group> => {
+				const {response, error} = await request(endpoints.getGroup({groupId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUsersByGroup: (groupId: string, body: QueryUsersByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupUsers(groupId, body),
+			queryFn: async (): Promise<QueryUsersByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsersByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClientsByGroup: (groupId: string, body: QueryClientsByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupClients(groupId, body),
+			queryFn: async (): Promise<QueryClientsByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryClientsByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryRolesByGroup: (groupId: string, body: QueryRolesByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupRoles(groupId, body),
+			queryFn: async (): Promise<QueryRolesByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryRolesByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMappingRulesByGroup: (groupId: string, body: QueryMappingRulesByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupMappingRules(groupId, body),
+			queryFn: async (): Promise<QueryMappingRulesByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryMappingRulesByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryRoles: (body: QueryRolesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roles(body),
+			queryFn: async (): Promise<QueryRolesResponseBody> => {
+				const {response, error} = await request(endpoints.queryRoles(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
 	queryAuditLogs: (body: QueryAuditLogsRequestBody) =>
 		queryOptions({
 			queryKey: queryKeys.queryAuditLogs(body),
@@ -592,30 +694,6 @@ const queries = {
 			queryKey: queryKeys.getAuthorization(authorization),
 			queryFn: async (): Promise<Authorization> => {
 				const {response, error} = await request(endpoints.getAuthorization(authorization));
-				if (error !== null) {
-					throw mapQueryError(error);
-				}
-				return response.json();
-			},
-		}),
-
-	queryRoles: (body: QueryRolesRequestBody) =>
-		queryOptions({
-			queryKey: queryKeys.queryRoles(body),
-			queryFn: async (): Promise<QueryRolesResponseBody> => {
-				const {response, error} = await request(endpoints.queryRoles(body));
-				if (error !== null) {
-					throw mapQueryError(error);
-				}
-				return response.json();
-			},
-		}),
-
-	queryGroups: (body: QueryGroupsRequestBody) =>
-		queryOptions({
-			queryKey: queryKeys.queryGroups(body),
-			queryFn: async (): Promise<QueryGroupsResponseBody> => {
-				const {response, error} = await request(endpoints.queryGroups(body));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
