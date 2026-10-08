@@ -65,6 +65,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -142,12 +143,13 @@ public class ResourceDeletionDeleteProcessor
     final var value = command.getValue();
     final long eventKey = keyGenerator.nextKey();
 
-    tryDeleteResources(command, eventKey);
+    final var distributionPartitions = tryDeleteResources(command, eventKey);
 
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
     commandDistributionBehavior
         .withKey(eventKey)
         .inQueue(DistributionQueue.DEPLOYMENT)
+        .forPartitions(distributionPartitions)
         .distribute(command);
     responseWriter.writeAcceptedResponseOnCommand(
         eventKey, ResourceDeletionIntent.DELETED, value, command);
@@ -198,7 +200,8 @@ public class ResourceDeletionDeleteProcessor
     }
   }
 
-  private void tryDeleteResources(
+  /** Returns the partitions the deletion is distributed to. */
+  private Set<Integer> tryDeleteResources(
       final TypedRecord<ResourceDeletionRecord> command, final long eventKey) {
     final var value = command.getValue();
 
@@ -207,20 +210,33 @@ public class ResourceDeletionDeleteProcessor
         untilResourceDeleted(
             command,
             tenantId -> tryDeleteResource(command, tenantId, eventKey, drainingDeletionInFlight));
+    if (resourceDeleted) {
+      return routingInfo.desiredPartitions();
+    }
+    if (drainingDeletionInFlight.get()) {
+      throw new ResourceDeletionInProgressException(value.getResourceKey());
+    }
 
-    if (!resourceDeleted) {
-      if (drainingDeletionInFlight.get()
-          || processState.hasPendingDeletion(value.getResourceKey())) {
+    final var pendingPartitions = processState.getPendingDeletionPartitions(value.getResourceKey());
+    if (!pendingPartitions.isEmpty()) {
+      // Gone here but other partitions still owe a drain report: re-distribute to those
+      // partitions so they retry their delete, unless this is already a distributed copy. A
+      // still-draining partition keeps its original deleteHistory flag, so a history deletion
+      // could not be honored.
+      if (command.isCommandDistributed() || value.isDeleteHistory()) {
         throw new ResourceDeletionInProgressException(value.getResourceKey());
       }
-      // Delete-time history purge is only for a resource already fully gone from primary storage.
-      if (value.isDeleteHistory()
-          && SUPPORTED_HISTORY_DELETION_TYPES.contains(value.getResourceType())) {
-        deleteHistory(command);
-      } else {
-        throw new NoSuchResourceException(value.getResourceKey());
-      }
+      pendingPartitions.retainAll(routingInfo.desiredPartitions());
+      return pendingPartitions;
     }
+
+    // Delete-time history purge is only for a resource already fully gone from primary storage.
+    if (value.isDeleteHistory()
+        && SUPPORTED_HISTORY_DELETION_TYPES.contains(value.getResourceType())) {
+      deleteHistory(command);
+      return routingInfo.desiredPartitions();
+    }
+    throw new NoSuchResourceException(value.getResourceKey());
   }
 
   private boolean tryDeleteResource(
@@ -232,12 +248,7 @@ public class ResourceDeletionDeleteProcessor
 
     final var process = processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId);
     if (process != null) {
-      final var handled = tryDeleteProcessDefinition(command, eventKey, process);
-      if (handled.isPresent()) {
-        return handled.get();
-      }
-      // found but not ACTIVE: deletion already in flight, so the caller rejects as INVALID_STATE
-      drainingDeletionInFlight.set(true);
+      return tryDeleteProcessDefinition(command, eventKey, process, drainingDeletionInFlight);
     }
 
     final var drgOptional =
@@ -354,13 +365,11 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
-  // Empty when not active, so the caller rejects a repeated delete of a DRAINING definition as
-  // already-being-deleted (INVALID_STATE). A resting PENDING_DELETION counts as active and stays
-  // deletable, letting an operator clear a stuck row via the normal API.
-  private Optional<Boolean> tryDeleteProcessDefinition(
+  private boolean tryDeleteProcessDefinition(
       final TypedRecord<ResourceDeletionRecord> command,
       final long eventKey,
-      final DeployedProcess process) {
+      final DeployedProcess process,
+      final AtomicBoolean drainingDeletionInFlight) {
     // Stamp metadata before the not-ACTIVE bail-out so a repeat-delete rejection carries the
     // resolved type/id/tenant, not whatever the client sent.
     command
@@ -369,16 +378,16 @@ public class ResourceDeletionDeleteProcessor
         .setResourceId(process.getBpmnProcessId())
         .setTenantId(process.getTenantId());
     if (!process.isActive()) {
-      return Optional.empty();
+      drainingDeletionInFlight.set(true);
+      return false;
     }
-    return Optional.of(
-        authorizeAndDelete(
-            command,
-            eventKey,
-            PermissionType.DELETE_PROCESS,
-            bufferAsString(process.getBpmnProcessId()),
-            process.getTenantId(),
-            () -> deleteProcess(process, command)));
+    return authorizeAndDelete(
+        command,
+        eventKey,
+        PermissionType.DELETE_PROCESS,
+        bufferAsString(process.getBpmnProcessId()),
+        process.getTenantId(),
+        () -> deleteProcess(process, command));
   }
 
   private void deleteProcess(
