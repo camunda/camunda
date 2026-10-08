@@ -51,6 +51,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -1798,6 +1799,127 @@ final class ClusterConfigurationManagerImplTest {
               assertThat(group.pendingChanges()).isEmpty();
               assertThat(group.lastChange()).isPresent();
             });
+  }
+
+  @Test
+  void shouldAdvancePhaseWhenAPeerCompletesItViaGossip() {
+    // given — member 0 is the coordinator, but the first phase only has an operation for member 1,
+    // so the coordinator learns that the phase drained only from member 1's gossip
+    final var manager = newManager(MEMBER_0);
+    manager.start(() -> CompletableActorFuture.completed(threeMemberCluster())).join();
+    manager.updateMultiConfiguration(c -> c.initPlan(peerThenLocalPartitionLeave())).join();
+    assertThat(configuration(manager).phasedChangeState().onlyPending().currentPhaseIndex())
+        .describedAs("The coordinator cannot advance a phase whose operation runs on a peer")
+        .isZero();
+
+    // when — member 1 applies its operation, finishes the phase's graph change, and gossips that
+    manager.onGossipReceivedCurrent(completeOnlyDefaultGroupOperation(configuration(manager)));
+
+    // then — the coordinator advanced to the second phase, applied its own operation there, and
+    // completed the plan
+    final var config = configuration(manager);
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.phasedChangeState().lastChange().orElseThrow().status())
+        .isEqualTo(PhasedChangePlanStatus.COMPLETED);
+    assertThat(
+            config
+                .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                .getMember(MEMBER_0)
+                .hasPartition(2))
+        .isFalse();
+  }
+
+  @Test
+  void shouldResumeAMultiPhasePlanWhenRestartedBetweenPhases() {
+    // given — the coordinator restarts right after the first phase's graph change was finished and
+    // persisted, but before the plan was advanced to the second phase, so the work left is
+    // advancing the plan rather than applying an operation of the current phase
+    final var persisted =
+        PersistedCurrentClusterConfiguration.ofFile(
+            tmp.resolve("config-restart-between-phases.meta"), new ProtoBufSerializer());
+    final var manager =
+        new ClusterConfigurationManagerImpl(
+            executor,
+            MEMBER_0,
+            persisted,
+            new TopologyManagerMetrics(new SimpleMeterRegistry()),
+            Duration.ofMillis(1),
+            Duration.ofMillis(1));
+    manager.setCurrentConfigurationGossiper(ignored -> {});
+    manager.registerGlobalChangeAppliers(
+        new GlobalConfigurationChangeAppliersImpl(
+            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+    final var betweenPhases =
+        completeOnlyDefaultGroupOperation(
+            threeMemberCluster().initPlan(peerThenLocalPartitionLeave()));
+    assertThat(
+            betweenPhases.isCurrentPhaseComplete(
+                betweenPhases.phasedChangeState().onlyPending().id()))
+        .isTrue();
+
+    // when — the manager starts from that state and the group's appliers are registered afterward,
+    // as production does once local partitions are up
+    manager.start(() -> CompletableActorFuture.completed(betweenPhases)).join();
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+
+    // then — the plan was advanced, the second phase's operation applied, and the plan completed
+    Awaitility.await("Plan is advanced and completed after restart")
+        .untilAsserted(
+            () -> {
+              final var config = configuration(manager);
+              assertThat(config.phasedChangeState().pending()).isEmpty();
+              assertThat(config.phasedChangeState().lastChange().orElseThrow().status())
+                  .isEqualTo(PhasedChangePlanStatus.COMPLETED);
+              assertThat(
+                      config
+                          .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                          .getMember(MEMBER_0)
+                          .hasPartition(2))
+                  .isFalse();
+            });
+  }
+
+  /**
+   * Two phases on the default group of {@link #threeMemberCluster()}: member 1 leaves partition 1,
+   * then member 0 leaves partition 2.
+   */
+  private static List<Phase> peerThenLocalPartitionLeave() {
+    return List.of(
+        PartitionGroupPhase.sequential(
+            Map.of(
+                CurrentClusterConfiguration.DEFAULT_GROUP,
+                List.of(new PartitionLeaveOperation(MEMBER_1, 1, 1)))),
+        PartitionGroupPhase.sequential(
+            Map.of(
+                CurrentClusterConfiguration.DEFAULT_GROUP,
+                List.of(new PartitionLeaveOperation(MEMBER_0, 2, 1)))));
+  }
+
+  /**
+   * Records the default group's only pending operation as complete and finishes the drained graph
+   * change — what the member running it persists and gossips (see {@code
+   * PartitionGroupOperationApplication#apply}), without the operation's effect on member state.
+   */
+  private static CurrentClusterConfiguration completeOnlyDefaultGroupOperation(
+      final CurrentClusterConfiguration config) {
+    final var operationId =
+        config
+            .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+            .pendingChanges()
+            .orElseThrow()
+            .operations()
+            .firstKey();
+    return config.updatePartitionGroupConfig(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        g ->
+            g.completeOperation(operationId, UnaryOperator.identity())
+                .completeGraphChangeIfDrained());
   }
 
   /** Three active members, all replicating partitions 1 and 2 of the default group. */
