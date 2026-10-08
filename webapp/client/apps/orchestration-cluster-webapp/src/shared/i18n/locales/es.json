@@ -1551,6 +1551,29 @@
 					"deleteButton": "Eliminar",
 					"cancelButton": "Cancelar",
 					"confirmationError": "Marque esta casilla si desea continuar."
+				},
+				"batchStateIndicator": {
+					"ariaLabelPrefix": "Estado de la operación por lotes",
+					"state": {
+						"completed": "Completado",
+						"active": "Activo",
+						"suspended": "Suspendido",
+						"canceled": "Cancelado",
+						"failed": "Fallido",
+						"created": "Creado",
+						"partiallyCompleted": "Parcialmente completado",
+						"skipped": "Omitido"
+					}
+				},
+				"batchItemsCount": {
+					"notStarted": "no iniciado",
+					"noItems": "sin elementos",
+					"successful_one": "{{formattedCount}} correcto",
+					"successful_other": "{{formattedCount}} correctos",
+					"failed_one": "{{formattedCount}} fallido",
+					"failed_other": "{{formattedCount}} fallidos",
+					"pending_one": "{{formattedCount}} pendiente",
+					"pending_other": "{{formattedCount}} pendientes"
 				}
 			}
 		}

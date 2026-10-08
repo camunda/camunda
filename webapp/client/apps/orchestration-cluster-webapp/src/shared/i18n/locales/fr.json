@@ -1554,6 +1554,29 @@
 					"deleteButton": "Supprimer",
 					"cancelButton": "Annuler",
 					"confirmationError": "Veuillez cocher cette case si vous souhaitez continuer."
+				},
+				"batchStateIndicator": {
+					"ariaLabelPrefix": "Statut de l'opération par lots",
+					"state": {
+						"completed": "Terminé",
+						"active": "Actif",
+						"suspended": "Suspendu",
+						"canceled": "Annulé",
+						"failed": "Échoué",
+						"created": "Créé",
+						"partiallyCompleted": "Partiellement terminé",
+						"skipped": "Ignoré"
+					}
+				},
+				"batchItemsCount": {
+					"notStarted": "non démarré",
+					"noItems": "aucun élément",
+					"successful_one": "{{formattedCount}} réussi",
+					"successful_other": "{{formattedCount}} réussis",
+					"failed_one": "{{formattedCount}} échoué",
+					"failed_other": "{{formattedCount}} échoués",
+					"pending_one": "{{formattedCount}} en attente",
+					"pending_other": "{{formattedCount}} en attente"
 				}
 			}
 		}

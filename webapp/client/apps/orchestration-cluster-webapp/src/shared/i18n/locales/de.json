@@ -1551,6 +1551,29 @@
 					"deleteButton": "Löschen",
 					"cancelButton": "Abbrechen",
 					"confirmationError": "Bitte aktivieren Sie dieses Kästchen, wenn Sie fortfahren möchten."
+				},
+				"batchStateIndicator": {
+					"ariaLabelPrefix": "Status des Stapelvorgangs",
+					"state": {
+						"completed": "Abgeschlossen",
+						"active": "Aktiv",
+						"suspended": "Angehalten",
+						"canceled": "Abgebrochen",
+						"failed": "Fehlgeschlagen",
+						"created": "Erstellt",
+						"partiallyCompleted": "Teilweise abgeschlossen",
+						"skipped": "Übersprungen"
+					}
+				},
+				"batchItemsCount": {
+					"notStarted": "nicht gestartet",
+					"noItems": "keine Elemente",
+					"successful_one": "{{formattedCount}} erfolgreich",
+					"successful_other": "{{formattedCount}} erfolgreich",
+					"failed_one": "{{formattedCount}} fehlgeschlagen",
+					"failed_other": "{{formattedCount}} fehlgeschlagen",
+					"pending_one": "{{formattedCount}} ausstehend",
+					"pending_other": "{{formattedCount}} ausstehend"
 				}
 			}
 		}

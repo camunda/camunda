@@ -54,8 +54,11 @@ type EntityKeyData = {
 };
 
 /**
- * Maps an audit log entry to entity-key display data. `link` is a plain `href` only for
- * entity types whose detail pages are not yet migrated to TanStack Router links in this area.
+ * Maps an audit log entry to entity-key display data. `link` is a plain `href` kept for the
+ * Carbon `CellEntityKey` consumer and the Carbon `OperationsLogDetailsModal` (which reads it
+ * when rendering batch and decision entity links); neither is yet migrated to TanStack Router
+ * links. The shadcn `OperationsLogDetailsModal` uses typed router links instead and ignores
+ * this field, but it must stay populated until both Carbon consumers are removed.
  */
 function mapToCellEntityKeyData(
 	t: TFunction,
