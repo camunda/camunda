@@ -469,7 +469,8 @@ abstract class AbstractBatchOperationTest {
         null, // treePath
         Set.of(), // tags
         null, // businessId
-        null); // suspendedDate
+        null, // suspendedDate
+        null); // storageOrdinal
   }
 
   protected IncidentEntity fakeIncidentEntity(
