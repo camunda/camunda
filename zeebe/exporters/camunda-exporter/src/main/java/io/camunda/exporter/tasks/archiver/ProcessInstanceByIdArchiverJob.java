@@ -11,19 +11,37 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.zeebe.util.FunctionUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.Timer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
 /**
- * This is an archiver job for archiving process instance data where we reindex documents by id.
- * Similar to the {@link ProcessInstanceArchiverJob} this job handles the archiving of the process
- * instance records itself and also delegates to the repository to move dependent records
- * (decisions, flow node instances, variable updates, etc).
+ * Archiver job for process instance data. This job handles the archiving of the process instance
+ * records itself and also delegates to the repository to move dependent records (decisions, flow
+ * node instances, variable updates, etc).
  */
-public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
+public class ProcessInstanceByIdArchiverJob implements ArchiverJob {
+  private static final int MAX_LARGE_BATCH_SIZE = 5_000;
+  private static final int SUB_BATCHES_PER_LARGE_BATCH = 10;
+
+  private final HistoryConfiguration config;
+  private final ArchiverRepository repository;
+  private final ListViewTemplate template;
+  private final List<ProcessInstanceDependant> dependants;
+  private final CamundaExporterMetrics metrics;
+  private final Logger logger;
+  private final Executor executor;
+  private final RecentlyArchivedProcessInstances recentlyArchivedProcessInstances;
+  private final Queue<ArchiveBatch> pendingBatches =
+      new java.util.concurrent.ConcurrentLinkedQueue<>();
 
   public ProcessInstanceByIdArchiverJob(
       final HistoryConfiguration config,
@@ -33,17 +51,71 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final Executor executor) {
-    super(
-        config,
-        repository,
-        processInstanceTemplate,
-        processInstanceDependants,
-        metrics,
-        logger,
-        executor);
+    this.config = config;
+    this.repository = repository;
+    template = processInstanceTemplate;
+    dependants = processInstanceDependants;
+    this.metrics = metrics;
+    this.logger = logger;
+    this.executor = executor;
+    recentlyArchivedProcessInstances = new RecentlyArchivedProcessInstances(largeBatchSize());
   }
 
   @Override
+  public CompletionStage<Integer> archiveNextBatch() {
+    final var timer = Timer.start();
+    return getNextBatch()
+        .thenComposeAsync(this::archiveBatch, executor)
+        // we schedule us after the archiveBatch future - to correctly measure
+        // the time it takes all in all, including searching, reindexing, deletion
+        // There is some overhead with the scheduling at the executor, but this should be
+        // negligible
+        .whenCompleteAsync((val, err) -> metrics.measureArchivingDuration(timer), executor);
+  }
+
+  @VisibleForTesting
+  CompletableFuture<ArchiveBatch> getNextBatch() {
+    if (!pendingBatches.isEmpty()) {
+      return CompletableFuture.completedFuture(pendingBatches.poll());
+    }
+    return repository
+        .getProcessInstancesNextBatch(largeBatchSize())
+        .thenApply(
+            batch -> {
+              if (batch != null) {
+                final var deduped = recentlyArchivedProcessInstances.deduplicate(batch);
+                final var duplication = batch.ids().size() - deduped.ids().size();
+                metrics.recordProcessInstancesArchivingDeduplicated(duplication);
+                final var chunks = deduped.chunk(config.getRolloverBatchSize());
+                final var first = chunks.removeFirst();
+                pendingBatches.addAll(chunks);
+                return first;
+              }
+              return batch;
+            });
+  }
+
+  private CompletionStage<Integer> archiveBatch(final ArchiveBatch batch) {
+    if (batch != null && !(batch.ids() == null || batch.ids().isEmpty())) {
+      logger.trace("Following process instances are found for archiving: {}", batch);
+      metrics.recordProcessInstancesArchiving(batch.ids().size());
+
+      return moveDependants(batch.finishDate(), batch.ids())
+          .thenComposeAsync(
+              count -> moveProcessInstances(batch.finishDate(), batch.ids()), executor)
+          // we want to make sure the rescheduling happens after we update the metrics, so we peek
+          // instead of creating an additional pipeline on the interim future
+          .thenApplyAsync(FunctionUtil.peek(metrics::recordProcessInstancesArchived), executor)
+          .thenApplyAsync(
+              FunctionUtil.peek(
+                  (count) -> recentlyArchivedProcessInstances.markRecentlyArchived(batch)),
+              executor);
+    }
+
+    logger.trace("Nothing to archive");
+    return CompletableFuture.completedFuture(0);
+  }
+
   public CompletableFuture<Void> moveDependants(
       final String finishDate, final List<String> processInstanceKeys) {
     // get the usual process instance dependent archive tasks
@@ -61,7 +133,7 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
     // add archiving variables from the list view index as a parallel task
     dependentFutures.add(
         archive(
-            getTemplateDescriptor().getFullQualifiedName(),
+            template.getFullQualifiedName(),
             ListViewTemplate.PROCESS_INSTANCE_KEY,
             finishDate,
             processInstanceKeys,
@@ -71,7 +143,7 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
     // add archiving flownodes/activities from the list view index as a parallel task
     dependentFutures.add(
         archive(
-            getTemplateDescriptor().getFullQualifiedName(),
+            template.getFullQualifiedName(),
             ListViewTemplate.PROCESS_INSTANCE_KEY,
             finishDate,
             processInstanceKeys,
@@ -81,7 +153,6 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
     return CompletableFuture.allOf(dependentFutures.toArray(CompletableFuture[]::new));
   }
 
-  @Override
   protected CompletableFuture<Integer> moveProcessInstances(
       final String finishDate, final List<String> processInstanceKeys) {
     // 1. First archive docs from dependent indices and `joinRelation={variable OR activity}`
@@ -90,7 +161,7 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
     // we use this as a catch-all clause to move all related documents.
     // 3. Then archive all `joinRelation=processInstance` docs from operate-list-view index
     return archive(
-            getTemplateDescriptor().getFullQualifiedName(),
+            template.getFullQualifiedName(),
             ListViewTemplate.PROCESS_INSTANCE_KEY,
             finishDate,
             processInstanceKeys,
@@ -99,7 +170,7 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
         .thenComposeAsync(
             ignored ->
                 archive(
-                    getTemplateDescriptor().getFullQualifiedName(),
+                    template.getFullQualifiedName(),
                     ListViewTemplate.PROCESS_INSTANCE_KEY,
                     finishDate,
                     processInstanceKeys,
@@ -107,10 +178,32 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
                         ListViewTemplate.JOIN_RELATION,
                         ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
                     Map.of()),
-            getExecutor());
+            executor);
   }
 
-  @Override
+  protected List<CompletableFuture<?>> getProcessDependentArchiveFutures(
+      final String finishDate, final List<String> processInstanceKeys) {
+    final var futures = new ArrayList<CompletableFuture<?>>();
+
+    for (final var dependant : dependants) {
+      futures.add(
+          archive(
+              dependant.getFullQualifiedName(),
+              dependant.getProcessInstanceDependantField(),
+              finishDate,
+              processInstanceKeys));
+    }
+    return futures;
+  }
+
+  protected CompletableFuture<Integer> archive(
+      final String sourceIdxName,
+      final String idField,
+      final String finishDate,
+      final List<String> processInstanceKeys) {
+    return archive(sourceIdxName, idField, finishDate, processInstanceKeys, Map.of(), Map.of());
+  }
+
   protected CompletableFuture<Integer> archive(
       final String sourceIdxName,
       final String idField,
@@ -118,7 +211,7 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
       final List<String> processInstanceKeys,
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters) {
-    return getRepository()
+    return repository
         .moveDocumentsById(
             sourceIdxName,
             sourceIdxName + finishDate,
@@ -126,8 +219,16 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
             processInstanceKeys,
             inclusionFilters,
             exclusionFilters,
-            getExecutor())
-        .thenApplyAsync(ok -> processInstanceKeys.size(), getExecutor());
+            executor)
+        .thenApplyAsync(ok -> processInstanceKeys.size(), executor);
+  }
+
+  private int largeBatchSize() {
+    final int rolloverBatchSize = config.getRolloverBatchSize();
+    final int largeBatchSize =
+        Math.min(MAX_LARGE_BATCH_SIZE, SUB_BATCHES_PER_LARGE_BATCH * rolloverBatchSize);
+    // just in case rollover batch size is configured very high
+    return Math.max(largeBatchSize, rolloverBatchSize);
   }
 
   @Override

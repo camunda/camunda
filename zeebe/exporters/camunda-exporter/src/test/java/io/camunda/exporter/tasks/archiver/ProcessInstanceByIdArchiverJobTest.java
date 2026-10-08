@@ -109,7 +109,7 @@ final class ProcessInstanceByIdArchiverJobTest {
     // given
     final var dependant = new WeirdlyNamedDependant();
     final var job =
-        new ProcessInstanceArchiverJob(
+        new ProcessInstanceByIdArchiverJob(
             historyConfiguration,
             repository,
             processInstanceTemplate,
