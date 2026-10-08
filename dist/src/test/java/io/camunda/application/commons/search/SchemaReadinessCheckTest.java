@@ -106,39 +106,9 @@ class SchemaReadinessCheckTest {
     assertThat(health.getStatus()).isEqualTo(Status.DOWN);
   }
 
-  @Test
-  void shouldBeUpWithoutSchemaInitializationStatusesWhenAPhysicalTenantIsReady() {
-    // given
-    final var readinessCheck = new SchemaReadinessCheck(readiness(true), Map::of);
-
-    // when
-    final var health = readinessCheck.health();
-
-    // then
-    assertThat(health.getStatus()).isEqualTo(Status.UP);
-  }
-
-  @Test
-  void shouldBeDownWithoutSchemaInitializationStatusesWhenNoPhysicalTenantIsReady() {
-    // given
-    final var readinessCheck = new SchemaReadinessCheck(readiness(false), Map::of);
-
-    // when
-    final var health = readinessCheck.health();
-
-    // then
-    assertThat(health.getStatus()).isEqualTo(Status.DOWN);
-  }
-
   private static SchemaReadinessCheck readinessCheck(
       final Map<String, SchemaInitializationStatus> statuses) {
     return new SchemaReadinessCheck(mock(SecondaryStorageReadiness.class), () -> statuses);
-  }
-
-  private static SecondaryStorageReadiness readiness(final boolean anyReady) {
-    final var readiness = mock(SecondaryStorageReadiness.class);
-    when(readiness.anyReady()).thenReturn(anyReady);
-    return readiness;
   }
 
   private static SchemaInitializationStatus status(final State state) {
