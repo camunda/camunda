@@ -92,13 +92,13 @@ public final class AnalyticsAttributes {
     public static final AttributeKey<String> BPMN_PROCESS_ID =
         AttributeKey.stringKey("camunda.process.id");
     public static final AttributeKey<Long> VERSION =
-        AttributeKey.longKey("camunda.process.version");
+        AttributeKey.longKey("camunda.process.definition.version");
     public static final AttributeKey<Long> DEFINITION_KEY =
-        AttributeKey.longKey("camunda.process.definition_key");
+        AttributeKey.longKey("camunda.process.definition.key");
     public static final AttributeKey<Long> INSTANCE_KEY =
-        AttributeKey.longKey("camunda.process.instance_key");
+        AttributeKey.longKey("camunda.process.instance.key");
     public static final AttributeKey<Long> ROOT_INSTANCE_KEY =
-        AttributeKey.longKey("camunda.process.root_instance_key");
+        AttributeKey.longKey("camunda.process.root_instance.key");
 
     private Process() {}
   }
@@ -123,24 +123,27 @@ public final class AnalyticsAttributes {
 
   public static final class Decision {
     public static final AttributeKey<String> ID = AttributeKey.stringKey("camunda.decision.id");
-    public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.decision.key");
+    public static final AttributeKey<Long> KEY =
+        AttributeKey.longKey("camunda.decision.definition.key");
     public static final AttributeKey<Long> VERSION =
-        AttributeKey.longKey("camunda.decision.version");
+        AttributeKey.longKey("camunda.decision.definition.version");
 
     private Decision() {}
   }
 
   public static final class Form {
     public static final AttributeKey<String> ID = AttributeKey.stringKey("camunda.form.id");
-    public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.form.key");
-    public static final AttributeKey<Long> VERSION = AttributeKey.longKey("camunda.form.version");
+    public static final AttributeKey<Long> KEY =
+        AttributeKey.longKey("camunda.form.definition.key");
+    public static final AttributeKey<Long> VERSION =
+        AttributeKey.longKey("camunda.form.definition.version");
 
     private Form() {}
   }
 
   public static final class Agent {
     public static final AttributeKey<Long> INSTANCE_KEY =
-        AttributeKey.longKey("camunda.agent.instance_key");
+        AttributeKey.longKey("camunda.agent.instance.key");
     public static final AttributeKey<Long> DEFINITION_KEY =
         AttributeKey.longKey("camunda.agent.definition_key");
     public static final AttributeKey<String> STATUS =

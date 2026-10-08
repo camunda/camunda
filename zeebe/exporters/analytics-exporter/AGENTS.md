@@ -98,9 +98,11 @@ Replicated log
 
 ### Attribute Naming
 
-All attributes use **snake_case, dot-separated** following OTel semantic conventions:
+All attributes are dot-separated, one dot per hierarchy step, following OTel semantic conventions.
+Use snake_case only inside a single segment (`camunda.user_task.key`,
+`camunda.event.sequence_number`), never to join two hierarchy levels:
 - `camunda.process.id` (not `camunda.bpmnProcessId`)
-- `camunda.process.definition_key` (not `camunda.processDefinitionKey`)
+- `camunda.process.definition.key` (not `camunda.process.definitionKey` or `camunda.processDefinitionKey`)
 - `camunda.event.sequence_number`, `camunda.log.position`, `camunda.tenant.id`
 
 Namespace all custom attributes with `camunda.` prefix. Use `event.name` (OTel standard, no prefix).
