@@ -25,9 +25,11 @@ import org.junit.jupiter.api.Test;
  * which means a rename would otherwise pass unnoticed.
  *
  * <p>If this test fails you have changed or added a published attribute key. That is allowed, but
- * it is a contract change: update the expectations here, the README attribute tables, the HDP
- * contract ({@code ingest/camunda-product-telemetry/schemas/}), and coordinate the migration with
- * the analytics backend before merging.
+ * it is a contract change: update the expectations here, the README attribute tables, the data
+ * contract in camunda/Holistic-Data-Platform (<a
+ * href="https://github.com/camunda/Holistic-Data-Platform/tree/main/ingest/camunda-product-telemetry/schemas">{@code
+ * ingest/camunda-product-telemetry/schemas/}</a>), and coordinate the migration with the analytics
+ * backend before merging.
  */
 final class AnalyticsAttributeKeysTest {
 
@@ -61,7 +63,7 @@ final class AnalyticsAttributeKeysTest {
           Map.entry("Form.KEY", "camunda.form.definition.key"),
           Map.entry("Form.VERSION", "camunda.form.definition.version"),
           Map.entry("Agent.INSTANCE_KEY", "camunda.agent.instance.key"),
-          Map.entry("Agent.DEFINITION_KEY", "camunda.agent.definition_key"),
+          Map.entry("Agent.DEFINITION_KEY", "camunda.agent.definition.key"),
           Map.entry("Agent.STATUS", "camunda.agent.status"),
           Map.entry("Metric.SEQUENCE_NUMBER", "camunda.metric.sequence_number"),
           Map.entry("Heartbeat.BROKER_VERSION", "camunda.telemetry.heartbeat.broker_version"),

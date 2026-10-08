@@ -11,8 +11,9 @@ import io.opentelemetry.api.common.AttributeKey;
 
 /**
  * OTel attribute keys and event name constants for analytics events, grouped by domain. Naming
- * follows OTel semantic conventions: dot-delimited namespaces, snake_case for multi-word
- * components.
+ * follows OTel semantic conventions: one dot per hierarchy step, with snake_case only inside a
+ * single segment (for example {@code camunda.process.definition.key}, {@code
+ * camunda.user_task.key}).
  *
  * @see <a href="https://opentelemetry.io/docs/specs/semconv/general/naming/">OTel Naming</a>
  */
@@ -145,7 +146,7 @@ public final class AnalyticsAttributes {
     public static final AttributeKey<Long> INSTANCE_KEY =
         AttributeKey.longKey("camunda.agent.instance.key");
     public static final AttributeKey<Long> DEFINITION_KEY =
-        AttributeKey.longKey("camunda.agent.definition_key");
+        AttributeKey.longKey("camunda.agent.definition.key");
     public static final AttributeKey<String> STATUS =
         AttributeKey.stringKey("camunda.agent.status");
 

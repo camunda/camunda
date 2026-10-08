@@ -102,8 +102,13 @@ All attributes are dot-separated, one dot per hierarchy step, following OTel sem
 Use snake_case only inside a single segment (`camunda.user_task.key`,
 `camunda.event.sequence_number`), never to join two hierarchy levels:
 - `camunda.process.id` (not `camunda.bpmnProcessId`)
-- `camunda.process.definition.key` (not `camunda.process.definitionKey` or `camunda.processDefinitionKey`)
+- `camunda.process.definition.key` (not an underscore between `definition` and `key`, and not
+`camunda.processDefinitionKey`)
 - `camunda.event.sequence_number`, `camunda.log.position`, `camunda.tenant.id`
+
+`camunda.process.instance.key` is dotted because the instance is a sub-entity of the process.
+`camunda.process.root_instance.key` (and a future `parent_instance.key`) keeps `root_instance` as one
+underscore segment because it is a qualified reference to another instance, not a level of its own.
 
 Namespace all custom attributes with `camunda.` prefix. Use `event.name` (OTel standard, no prefix).
 

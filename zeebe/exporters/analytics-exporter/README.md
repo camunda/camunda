@@ -178,6 +178,15 @@ Every signal uses the canonical `camunda.<namespace>.<action>` contract name. `u
 and `heartbeat` carried flat pre-contract names until 8.10 and were renamed to
 `camunda.user_task.created` and `camunda.telemetry.heartbeat`.
 
+### Attribute naming
+
+Attribute keys use one dot per hierarchy step, with snake_case only inside a single segment:
+`camunda.process.definition.key`, not an underscore between `definition` and `key`.
+
+`camunda.process.instance.key` is dotted because the instance is a sub-entity of the process.
+`camunda.process.root_instance.key` (and a future `parent_instance.key`) keeps `root_instance` as one
+underscore segment because it is a qualified reference to another instance, not a level of its own.
+
 ### Common log record attributes
 
 These attributes are set on every log record:
@@ -299,7 +308,7 @@ The form resource, resource name, and version tag are deliberately not exported.
 |              Attribute              |  Type  |                       Description                        |
 |-------------------------------------|--------|----------------------------------------------------------|
 | `camunda.agent.instance.key`        | long   | Agent instance key.                                      |
-| `camunda.agent.definition_key`      | long   | Agent definition key.                                    |
+| `camunda.agent.definition.key`      | long   | Agent definition key.                                    |
 | `camunda.agent.status`              | string | Agent instance status, e.g. `INITIALIZING`, `COMPLETED`. |
 | `camunda.process.id`                | string | BPMN process ID.                                         |
 | `camunda.process.definition.key`    | long   | Process definition key.                                  |
