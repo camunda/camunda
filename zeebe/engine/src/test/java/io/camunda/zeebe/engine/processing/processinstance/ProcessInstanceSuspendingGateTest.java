@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -63,6 +65,27 @@ public final class ProcessInstanceSuspendingGateTest {
                 .withRecordKey(processInstanceKey)
                 .count())
         .isOne();
+  }
+
+  @Test
+  public void shouldRejectResumeWhileSuspending() {
+    // given
+    final long processInstanceKey = createInstanceWithJob();
+    leaveInstanceSuspending(processInstanceKey);
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectResumeRejection()
+            .resume();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(ProcessInstanceIntent.RESUME)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason()).contains("it is still suspending");
   }
 
   private static long createInstanceWithJob() {
