@@ -130,7 +130,6 @@ describe('<ResizablePanel />', () => {
 
 		expect(document.body.classList.contains('cursor-col-resize')).toBe(false);
 
-		// The splitter resolves the dragged gutter from the dragger's mousedown, not the gutter's.
 		dragger.dispatchEvent(new MouseEvent('mousedown', start));
 		await expect.poll(() => document.body.classList.contains('cursor-col-resize')).toBe(true);
 		await expect.poll(() => gutter.className).toContain('after:bg-[var(--primary-action-default)]');
