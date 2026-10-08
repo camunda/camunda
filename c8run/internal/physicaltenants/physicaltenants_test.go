@@ -264,6 +264,19 @@ func TestPrintSummary(t *testing.T) {
 	assert.Empty(t, buf.String())
 }
 
+func TestPrintSummaryPointsToEnvVariablesInEnvSecretsMode(t *testing.T) {
+	// given
+	var buf bytes.Buffer
+	settings := types.C8RunSettings{Port: 8080, SecretsEnvPrefix: "MYSECRET_", PhysicalTenants: []types.PhysicalTenant{{ID: "sales"}}}
+
+	// when
+	PrintSummary(&buf, settings, nil, 8086)
+
+	// then
+	assert.Contains(t, buf.String(), "environment variables named MYSECRET_SALES_<NAME>")
+	assert.NotContains(t, buf.String(), "secrets --tenant")
+}
+
 func TestLastStartPort(t *testing.T) {
 	base := t.TempDir()
 	assert.Zero(t, LastStartPort(base))

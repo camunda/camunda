@@ -189,7 +189,11 @@ func PrintSummary(w io.Writer, settings types.C8RunSettings, results []ProbeResu
 	_, _ = fmt.Fprintf(w, "  - gRPC (:26500):   send header \"Camunda-Physical-Tenant: %s\"\n", example.ID)
 	_, _ = fmt.Fprintf(w, "  - Java/Spring:     camunda.client.physical-tenant-id=%s\n", example.ID)
 	_, _ = fmt.Fprintf(w, "  - MCP:             %s\n", ex.MCP)
-	_, _ = fmt.Fprintf(w, "Each tenant has its own local secrets: `c8run secrets --tenant %s set <NAME>`.\n", example.ID)
+	if settings.SecretsEnvPrefix != "" {
+		_, _ = fmt.Fprintf(w, "Each tenant has its own secrets: set environment variables named %s%s_<NAME>.\n", settings.SecretsEnvPrefix, strings.ToUpper(example.ID))
+	} else {
+		_, _ = fmt.Fprintf(w, "Each tenant has its own local secrets: `c8run secrets --tenant %s set <NAME>`.\n", example.ID)
+	}
 	_, _ = fmt.Fprintln(w, "Manage tenants with `c8run tenants list|add|remove`.")
 	_, _ = fmt.Fprintln(w)
 }

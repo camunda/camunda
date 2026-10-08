@@ -279,7 +279,24 @@ func TestModeRejectsInvalidValue(t *testing.T) {
 
 	_, err := Mode()
 
-	assert.ErrorContains(t, err, "must be local or external")
+	assert.ErrorContains(t, err, "must be local, external, or env")
+}
+
+func TestModeAcceptsEnv(t *testing.T) {
+	t.Setenv(ModeEnv, " ENV ")
+
+	mode, err := Mode()
+
+	require.NoError(t, err)
+	assert.Equal(t, "env", mode)
+}
+
+func TestResolveDirectoryRejectsEnvMode(t *testing.T) {
+	t.Setenv(ModeEnv, "env")
+
+	_, err := ResolveDirectory(t.TempDir())
+
+	assert.ErrorContains(t, err, "C8RUN_SECRETS_MODE=env")
 }
 
 func TestSetCreatesNestedConfiguredDirectory(t *testing.T) {

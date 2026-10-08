@@ -101,6 +101,11 @@ func SecretStoreEnv(id string) string {
 	return "CAMUNDA_PHYSICALTENANTS_" + strings.ToUpper(id) + "_SECRETS_STORES_FILE_DEFAULT_PATH"
 }
 
+// EnvSecretStoreEnv is the property that sets a tenant's environment variable secret prefix.
+func EnvSecretStoreEnv(id string) string {
+	return "CAMUNDA_PHYSICALTENANTS_" + strings.ToUpper(id) + "_SECRETS_STORES_ENV_DEFAULT_PREFIX"
+}
+
 // TenantEnvPrefix prefixes every per-tenant property c8run passes to Camunda.
 const TenantEnvPrefix = "CAMUNDA_PHYSICALTENANTS_"
 

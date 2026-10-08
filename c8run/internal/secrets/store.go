@@ -50,8 +50,8 @@ func ResolveDirectory(baseDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if mode == "external" {
-		return "", errors.New("local secret commands are disabled because C8RUN_SECRETS_MODE=external")
+	if mode != "local" {
+		return "", fmt.Errorf("local secret commands are disabled because %s=%s", ModeEnv, mode)
 	}
 	directory := strings.TrimSpace(os.Getenv(DirectoryEnv))
 	if directory == "" {
@@ -68,8 +68,8 @@ func Mode() (string, error) {
 	if mode == "" {
 		return "local", nil
 	}
-	if mode != "local" && mode != "external" {
-		return "", fmt.Errorf("%s must be local or external", ModeEnv)
+	if mode != "local" && mode != "external" && mode != "env" {
+		return "", fmt.Errorf("%s must be local, external, or env", ModeEnv)
 	}
 	return mode, nil
 }

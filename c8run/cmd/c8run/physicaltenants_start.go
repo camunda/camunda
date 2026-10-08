@@ -234,3 +234,35 @@ func configureTenantSecretStores(baseDir string, settings *types.C8RunSettings) 
 	}
 	return nil
 }
+
+// RootEnvSecretStorePrefixEnv sets the default tenant's environment variable secret prefix.
+const RootEnvSecretStorePrefixEnv = "CAMUNDA_SECRETS_STORES_ENV_DEFAULT_PREFIX"
+
+// configureEnvSecretStores points the default tenant and every c8run-managed physical tenant
+// at its own disjoint environment variable prefix (<base>DEFAULT_, <base><ID>_), so no tenant
+// can resolve another tenant's camunda.secrets.* names.
+func configureEnvSecretStores(settings *types.C8RunSettings) error {
+	base, err := localsecrets.EnvBasePrefix()
+	if err != nil {
+		return err
+	}
+	defaultPrefix := localsecrets.DefaultTenantEnvPrefix(base)
+	if err := localsecrets.ValidateEnvPrefix(defaultPrefix); err != nil {
+		return err
+	}
+	for _, tenant := range settings.PhysicalTenants {
+		prefix := localsecrets.TenantEnvPrefix(base, tenant.ID)
+		if err := localsecrets.ValidateEnvPrefix(prefix); err != nil {
+			return err
+		}
+		if settings.PhysicalTenantsEnv == nil {
+			settings.PhysicalTenantsEnv = map[string]string{}
+		}
+		settings.PhysicalTenantsEnv[physicaltenants.EnvSecretStoreEnv(tenant.ID)] = prefix
+	}
+	if err := os.Setenv(RootEnvSecretStorePrefixEnv, defaultPrefix); err != nil {
+		return fmt.Errorf("failed to configure Camunda secret store: %w", err)
+	}
+	settings.SecretsEnvPrefix = base
+	return nil
+}

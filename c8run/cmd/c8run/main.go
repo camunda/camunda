@@ -564,9 +564,9 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		if mode != "local" && len(state.Settings.PhysicalTenants) > 0 {
-			fmt.Fprintf(os.Stderr, "Physical tenants managed by c8run need their own secret stores, which c8run only sets up when %s=local.\n"+
-				"Either unset %s, or declare the tenants and their secret stores in your --config "+
+		if mode == "external" && len(state.Settings.PhysicalTenants) > 0 {
+			fmt.Fprintf(os.Stderr, "Physical tenants managed by c8run need their own secret stores, which c8run only sets up when %s is local or env.\n"+
+				"Either unset %s, set it to env, or declare the tenants and their secret stores in your --config "+
 				"(camunda.physical-tenants.<id>.secrets.stores.*).\n", localsecrets.ModeEnv, localsecrets.ModeEnv)
 			os.Exit(1)
 		}
@@ -590,6 +590,12 @@ func main() {
 				os.Exit(1)
 			}
 			if err := configureTenantSecretStores(baseDir, &state.Settings); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+		}
+		if mode == "env" {
+			if err := configureEnvSecretStores(&state.Settings); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
