@@ -260,7 +260,7 @@ public class ExporterConfiguration {
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
-    private int rolloverBatchSize = 100; // TODO should we change the default here now?
+    private int rolloverBatchSize = 500;
     private int reindexBatchSize = 2500;
     private int archiveByIdMaxRetryAttempts = 3;
     private int archiveByIdRetryDelayMs = 1000;
