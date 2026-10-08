@@ -145,6 +145,30 @@ test('should match the assign user dialog snapshot', async ({adminGroupDetailPag
 	await expect(page).toHaveScreenshot();
 });
 
+test('should match the assign user dialog with the picker open snapshot', async ({
+	adminGroupDetailPage,
+	page,
+	network,
+}) => {
+	// Delegated login makes the dialog a plain id input; the picker is only used for internal users.
+	network.use(
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(
+				createSystemConfiguration({
+					components: {active: ['admin']},
+					authentication: {canLogout: true, isLoginDelegated: false, isCamundaGroupsEnabled: true},
+				}),
+			),
+		}),
+	);
+	await adminGroupDetailPage.goto('engineering');
+	await adminGroupDetailPage.button('Assign user').click();
+	await adminGroupDetailPage.dialogCombobox.click();
+	await expect(adminGroupDetailPage.option('new.user')).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
 test('should match the remove user dialog snapshot', async ({adminGroupDetailPage, page}) => {
 	await adminGroupDetailPage.goto('engineering');
 	await adminGroupDetailPage.button('Remove user jane.doe').click();
