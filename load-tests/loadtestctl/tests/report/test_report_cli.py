@@ -7,13 +7,14 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-from helpers import parse_args
-from helpers import run
 
 import loadtestctl.report
 from loadtestctl.cli import build_parser
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.prometheus import auth_headers
+
+from .helpers import parse_args
+from .helpers import run
 
 PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
 

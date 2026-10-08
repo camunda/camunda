@@ -5,7 +5,6 @@ from typing import Any
 from unittest import mock
 
 import pytest
-from helpers import run
 
 import loadtestctl.report
 from loadtestctl.report.cli import Options
@@ -15,6 +14,8 @@ from loadtestctl.report.queries import QueriesDocument
 from loadtestctl.report.queries import Query
 from loadtestctl.report.report import build_report
 from loadtestctl.report.report import render_report
+
+from .helpers import run
 
 PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
 PACKAGED_QUERY_FILES = (

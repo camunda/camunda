@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-from helpers import parse_args
 from pydantic import ValidationError
 
 import loadtestctl.report
@@ -9,6 +8,8 @@ from loadtestctl.report.cli import Options
 from loadtestctl.report.cli import query_substitutions
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.queries import QueriesDocument
+
+from .helpers import parse_args
 
 PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
 PACKAGED_QUERY_FILES = (
