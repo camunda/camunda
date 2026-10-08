@@ -218,7 +218,7 @@ describe('<AgentDetails />', () => {
 
     const sectionHeader = section.getByRole('button', {name: 'Usage'});
     expect(sectionHeader).toHaveTextContent('3 model calls');
-    expect(sectionHeader).toHaveTextContent('150 tokens');
+    expect(sectionHeader).toHaveTextContent('180 tokens');
 
     const modelCalls = section.getByRole('article', {name: 'Model Calls'});
     expect(modelCalls).toBeInTheDocument();
@@ -227,7 +227,7 @@ describe('<AgentDetails />', () => {
 
     const tokensUsed = section.getByRole('article', {name: 'Tokens Used'});
     expect(tokensUsed).toBeInTheDocument();
-    expect(within(tokensUsed).getByText('150')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('180')).toBeInTheDocument();
     expect(
       within(tokensUsed).getByText(`of ${(1000).toLocaleString()} limit`),
     ).toBeInTheDocument();

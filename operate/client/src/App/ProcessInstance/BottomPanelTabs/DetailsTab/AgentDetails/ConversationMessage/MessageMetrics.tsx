@@ -10,6 +10,7 @@ import type {AgentInstanceHistoryItemMetrics} from '@camunda/camunda-api-zod-sch
 import {Tag, Tooltip} from '@carbon/react';
 import {memo} from 'react';
 import styled from 'styled-components';
+import {getTotalTokens} from '../getTotalTokens';
 
 const MetricsContainer = styled.div`
   display: flex;
@@ -43,9 +44,12 @@ const MessageMetrics: React.FC<Props> = memo(function MessageMetrics({
     return null;
   }
 
-  const totalTokensMetric =
-    (metrics.inputTokens ?? 0) + (metrics.outputTokens ?? 0);
-  const inputTooltip = `Input: ${formatToken(metrics.inputTokens)} ${metrics.cacheReadTokenCount !== null ? `(${formatToken(metrics.cacheReadTokenCount)} cached)` : ''}`;
+  const totalTokensMetric = getTotalTokens(metrics);
+  const inputTooltip = `Input: ${formatToken(metrics.inputTokens)}`;
+  const cacheReadTooltip =
+    metrics.cacheReadTokenCount !== null
+      ? `Cache read: ${formatToken(metrics.cacheReadTokenCount)}`
+      : '';
   const outputTooltip = `Output: ${formatToken(metrics.outputTokens)} ${metrics.reasoningTokenCount !== null ? `(${formatToken(metrics.reasoningTokenCount)} reasoning)` : ''}`;
   const cacheWriteTooltip =
     metrics.cacheCreationTokenCount !== null
@@ -60,9 +64,11 @@ const MessageMetrics: React.FC<Props> = memo(function MessageMetrics({
             <>
               {inputTooltip}
               <br />
-              {outputTooltip}
+              {cacheReadTooltip}
               <br />
               {cacheWriteTooltip}
+              <br />
+              {outputTooltip}
             </>
           }
           align="bottom"
