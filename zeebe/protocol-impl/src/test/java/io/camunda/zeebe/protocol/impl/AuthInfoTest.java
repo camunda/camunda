@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.protocol.impl;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
@@ -181,6 +183,92 @@ final class AuthInfoTest {
       assertThat(copy.getFormat()).isEqualTo(original.getFormat());
       assertThat(copy.getAuthData()).isEqualTo(original.getAuthData());
       assertThat(copy.getClaims()).isEqualTo(original.getClaims());
+    }
+  }
+
+  @Nested
+  class CacheInvalidationTests {
+    @Test
+    void shouldCacheDecodedClaimsUntilClaimsChange() {
+      // given
+      final var authInfo = new AuthInfo();
+      authInfo.setClaims(Map.of("key", "value"));
+
+      // when
+      final var initialClaims = authInfo.getClaims();
+      final var cachedClaims = authInfo.getClaims();
+      authInfo.setClaims(Map.of("other", "claim"));
+      final var updatedClaims = authInfo.getClaims();
+
+      // then
+      assertThat(cachedClaims).isSameAs(initialClaims);
+      assertThat(updatedClaims).isNotSameAs(initialClaims);
+      assertThat(updatedClaims).isEqualTo(Map.of("other", "claim"));
+    }
+
+    @Test
+    void shouldInvalidateDecodedJwtClaimsWhenAuthDataChanges() {
+      // given
+      final var authInfo = new AuthInfo();
+      authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
+      authInfo.setAuthData(jwtWithClaims(Map.of("sub", "first")));
+
+      // when
+      final var initialClaims = authInfo.toDecodedMap();
+      final var cachedClaims = authInfo.toDecodedMap();
+      authInfo.setAuthData(jwtWithClaims(Map.of("sub", "second")));
+      final var updatedClaims = authInfo.toDecodedMap();
+
+      // then
+      assertThat(cachedClaims).isSameAs(initialClaims);
+      assertThat(updatedClaims).isNotSameAs(initialClaims);
+      assertThat(updatedClaims).isEqualTo(Map.of("sub", "second"));
+    }
+
+    @Test
+    void shouldKeepDecodedClaimsCacheWhenJwtClaimsChange() {
+      // given
+      final var authInfo = new AuthInfo();
+      authInfo.setClaims(Map.of("key", "value"));
+      authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
+      authInfo.setAuthData(jwtWithClaims(Map.of("sub", "first")));
+
+      // when
+      final var initialClaims = authInfo.getClaims();
+      authInfo.toDecodedMap();
+      authInfo.setAuthData(jwtWithClaims(Map.of("sub", "second")));
+      final var cachedClaims = authInfo.getClaims();
+
+      // then
+      assertThat(cachedClaims).isSameAs(initialClaims);
+      assertThat(cachedClaims).isEqualTo(Map.of("key", "value"));
+    }
+
+    @Test
+    void shouldInvalidateCachedValuesOnReset() {
+      // given
+      final var authInfo = new AuthInfo();
+      authInfo.setClaims(Map.of("key", "value"));
+      authInfo.getClaims();
+      authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
+      authInfo.setAuthData(jwtWithClaims(Map.of("sub", "first")));
+      authInfo.toDecodedMap();
+
+      // when
+      authInfo.reset();
+
+      // then
+      assertThat(authInfo.getClaims()).isEqualTo(Map.of());
+    }
+
+    private String jwtWithClaims(final Map<String, Object> claims) {
+      return "eyJhbGciOiJub25lIn0." + base64Url("{\"sub\":\"" + claims.get("sub") + "\"}") + ".";
+    }
+
+    private String base64Url(final String value) {
+      return Base64.getUrlEncoder()
+          .withoutPadding()
+          .encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
   }
 }

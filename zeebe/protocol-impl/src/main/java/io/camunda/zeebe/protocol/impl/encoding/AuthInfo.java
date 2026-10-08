@@ -18,9 +18,12 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 
 /** */
 public class AuthInfo extends UnpackedObject {
+  private @Nullable Map<String, Object> decodedClaims;
+  private @Nullable Map<String, Object> decodedJwtClaims;
 
   private final EnumProperty<AuthDataFormat> formatProp =
       new EnumProperty<>("format", AuthDataFormat.class, AuthDataFormat.UNKNOWN);
@@ -39,6 +42,7 @@ public class AuthInfo extends UnpackedObject {
 
   public AuthInfo setFormat(final AuthDataFormat format) {
     formatProp.setValue(format);
+    invalidateDecodedJwtClaims();
     return this;
   }
 
@@ -48,20 +52,26 @@ public class AuthInfo extends UnpackedObject {
 
   public AuthInfo setAuthData(final String authData) {
     authDataProp.setValue(authData);
+    invalidateDecodedJwtClaims();
     return this;
   }
 
   public Map<String, Object> getClaims() {
-    return MsgPackConverter.convertToMap(claimsProp.getValue());
+    if (decodedClaims == null) {
+      decodedClaims = MsgPackConverter.convertToMap(claimsProp.getValue());
+    }
+    return decodedClaims;
   }
 
   public AuthInfo setClaims(final DirectBuffer authInfo) {
     claimsProp.setValue(authInfo);
+    invalidateDecodedClaims();
     return this;
   }
 
   public AuthInfo setClaims(final Map<String, Object> authInfo) {
     claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authInfo)));
+    invalidateDecodedClaims();
     return this;
   }
 
@@ -70,6 +80,8 @@ public class AuthInfo extends UnpackedObject {
     formatProp.setValue(AuthDataFormat.UNKNOWN);
     authDataProp.setValue("");
     claimsProp.reset();
+    invalidateDecodedClaims();
+    invalidateDecodedJwtClaims();
   }
 
   @Override
@@ -100,8 +112,11 @@ public class AuthInfo extends UnpackedObject {
 
   public Map<String, Object> toDecodedMap() {
     if (getFormat() == AuthDataFormat.JWT) {
-      final String token = getAuthData();
-      return new JwtDecoder(token).decode().getClaims();
+      if (decodedJwtClaims == null) {
+        final String token = getAuthData();
+        decodedJwtClaims = new JwtDecoder(token).decode().getClaims();
+      }
+      return decodedJwtClaims;
     }
     return getClaims();
   }
@@ -124,6 +139,14 @@ public class AuthInfo extends UnpackedObject {
         return claimsProp.getValue() != null
             && !DocumentValue.EMPTY_DOCUMENT.equals(claimsProp.getValue());
     }
+  }
+
+  private void invalidateDecodedClaims() {
+    decodedClaims = null;
+  }
+
+  private void invalidateDecodedJwtClaims() {
+    decodedJwtClaims = null;
   }
 
   public enum AuthDataFormat {
