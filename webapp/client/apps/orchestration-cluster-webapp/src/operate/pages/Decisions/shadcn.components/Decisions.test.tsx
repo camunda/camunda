@@ -45,6 +45,36 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeEnabled();
 	});
 
+	it('should enable reset when a decision definition is selected in the URL', async () => {
+		const screen = await renderWithRouter(Decisions, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice',
+		});
+
+		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeEnabled();
+	});
+
+	it('should write edited optional filters to the URL and keep unrelated search state', async () => {
+		const screen = await renderWithRouter(Decisions, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&tenantId=tenant-a&failed=false',
+		});
+
+		await userEvent.fill(screen.getByLabelText('Business ID', {exact: true}), 'order-2');
+
+		await expect
+			.poll(() => screen.router.state.location.search)
+			.toEqual({
+				businessId: 'eq_order-2',
+				tenantId: 'tenant-a',
+				failed: false,
+			});
+
+		await userEvent.clear(screen.getByLabelText('Business ID', {exact: true}));
+
+		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant-a', failed: false});
+	});
+
 	it('should remove active optional filters when resetting', async () => {
 		const screen = await renderWithRouter(Decisions, {
 			path: '/operate-preview/decisions',
