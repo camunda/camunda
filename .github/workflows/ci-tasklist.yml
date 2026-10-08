@@ -90,6 +90,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
       TEST_PRODUCT: Tasklist
     defaults:
       run:
@@ -130,6 +131,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
       TEST_PRODUCT: Tasklist
     defaults:
       run:
@@ -170,6 +172,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -209,6 +212,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -246,6 +250,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: visual-regression
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
     container:
       image: mcr.microsoft.com/playwright:v1.53.2
       options: --user 1001:1000
@@ -298,6 +303,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
     container:
       image: mcr.microsoft.com/playwright:v1.53.2
       options: --user 1001:1000

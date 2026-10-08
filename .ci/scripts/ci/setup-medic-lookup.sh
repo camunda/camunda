@@ -30,8 +30,8 @@ lookupTeamMedic["Distributed Systems"]=$distributedSystemsMedic
 lookupTeamMedic["DistributedSystems"]=$distributedSystemsMedic
 
 # @pod-operate-admin-medic
-operateFrontendMedic="<!subteam^S0BNSQUL9RV|pod-operate-admin-medic>"
-lookupTeamMedic["@camunda/operate-frontend"]=$operateFrontendMedic
+operateAdminMedic="<!subteam^S0BNSQUL9RV|pod-operate-admin-medic>"
+lookupTeamMedic["@camunda/operate-admin-pod"]=$operateAdminMedic
 
 # @bi-pod-medic
 optimizeFrontendMedic="<!subteam^S0BPBPG5H2S|bi-pod-medic>"
