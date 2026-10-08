@@ -53,8 +53,8 @@ touches the release. Publishing is the separate cutover work unit (#57714).
 | `audit.json`             | Two lists. `overrides`: the `allow-unattributed` exceptions actually applied, one row per pull request with its reason — empty when nothing was overridden, and empty when the guard FAILED, since a failed run overrode nothing. `warnings`: every audit line the run produced, in walk order — range anomalies, ruleset bypasses, truncated fields, attribution and categorization reasons, post-gate anomalies. Always present, empty on a clean run. |
 | `comments.json`          | **One entry per issue**, naming every pull request that delivered it, with the comment text and a stable marker so a re-run updates rather than duplicates.                                                                                                                                                                                                                                                                                              |
 
-|   Step output   |                                                               Contents                                                               |
-|-----------------|--------------------------------------------------------------------------------------------------------------------------------------|
+|   Step output   |                                                                            Contents                                                                             |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `customer-body` | The release description: everything in the full asset, or — if that exceeds GitHub's 125,000-character limit — a truncated version with a warning banner (§ 6). |
 
 Both outputs are also written to the job's step summary, so a reviewer can see the customer body and
