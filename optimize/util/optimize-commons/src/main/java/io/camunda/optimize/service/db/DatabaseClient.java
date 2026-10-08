@@ -202,6 +202,10 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   public abstract void removeWriteBlock(String rawIndexName);
 
+  public abstract boolean hasWriteBlock(String rawIndexName);
+
+  public abstract void refreshOrFail(String rawIndexName);
+
   public abstract void deleteAllIndexes();
 
   private String generateErrorMessageForValidationImportRequestDto(

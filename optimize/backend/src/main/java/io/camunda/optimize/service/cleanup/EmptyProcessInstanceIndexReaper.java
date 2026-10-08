@@ -46,6 +46,10 @@ public class EmptyProcessInstanceIndexReaper {
       // the cleanup deletes instances without a refresh, so the count would still see them
       databaseClient.refresh(alias);
       if (databaseClient.countWithoutPrefix(index) > 0) {
+        // a block left by an interrupted earlier attempt would make every import into it fail
+        if (databaseClient.hasWriteBlock(index)) {
+          databaseClient.removeWriteBlock(index);
+        }
         return;
       }
 
@@ -53,7 +57,7 @@ public class EmptyProcessInstanceIndexReaper {
       // either visible to it or rejected, and the rejected write is retried by the importer
       try {
         databaseClient.addWriteBlock(index);
-        databaseClient.refresh(alias);
+        databaseClient.refreshOrFail(index);
         if (databaseClient.countWithoutPrefix(index) > 0) {
           databaseClient.removeWriteBlock(index);
           return;
