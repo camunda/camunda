@@ -245,9 +245,7 @@ no-ops happen in `HandlerRegistry.handle()`. No other change is needed for filte
 `AnalyticsHandlerCatalogTest.shouldRegisterAllExpectedHandlersWhenAllCategoriesActive` asserts the
 registered set *exactly*, so a new `.register(...)` fails that test until the same
 `(ValueType, Intent)` entry is added there. The failure names only the set difference, not this
-step, so do it now. Add the entry to the matching per-category test as well
-(`shouldRegisterOnlyContractualHandlersWhenOptionalCategoryDisabled` or
-`shouldRegisterOnlyOptionalHandlersWhenContractualCategoryDisabled`):
+step, so do it now:
 
 ```java
 assertThat(registry.registrations())
@@ -255,6 +253,11 @@ assertThat(registry.registrations())
         ...
         Map.entry(ValueType.MY_VALUE_TYPE, MyIntent.MY_INTENT));
 ```
+
+The per-category tests (`shouldRegisterOnlyContractualHandlersWhenOptionalCategoryDisabled` and
+`shouldRegisterOnlyOptionalHandlersWhenContractualCategoryDisabled`) are not exact-set: add the
+pair to the `contains(...)` list of the test for its own category and to the `doesNotContain(...)`
+list of the other one.
 
 ## Step 6 — Write tests
 
@@ -402,7 +405,9 @@ void shouldEmitMyEventWhenRecordExported() {
 >   `java.util.List.of(...)` — passing a bare scalar does not compile.
 > - **Partial builders are legal.** The immutables are generated with
 >   `validationMethod = ValidationMethod.NONE` (see `ImmutableProtocol`), so you only need to set
->   the fields the handler reads; unset fields come back `null`.
+>   the fields the handler reads. Unset reference fields come back `null`, but unset primitive
+>   fields (`long getDecisionKey()`, `int getDecisionVersion()` and similar) come back as Java
+>   defaults (`0`, `false`), so do not read a `0` key in a partial-builder test as a real value.
 >
 > See the existing handler tests in `handler/*HandlerTest.java` for exact usage.
 
@@ -459,8 +464,9 @@ Before opening the PR, go through this checklist:
 4. **Handler is registered** — `.register(ValueType, Intent, handler)` call is present in
    `AnalyticsHandlerCatalog.build(...)`.
 5. **Catalog test updated** — the same `(ValueType, Intent)` pair is in the
-   `containsExactlyInAnyOrder` set of the all-categories test and of its per-category test in
-   `AnalyticsHandlerCatalogTest`.
+   `containsExactlyInAnyOrder` set of the all-categories test in `AnalyticsHandlerCatalogTest`, and
+   its per-category test asserts it is registered (`contains`) when its category is active and
+   absent (`doesNotContain`) when it is not.
 6. **Names match the contract** — every new name and unit is copied from the data contract and
    pinned in `AnalyticsAttributeKeysTest`, `AnalyticsEventNamesTest` or `AnalyticsMetricNamesTest`.
 7. **Tests pass** — the module's `./mvnw verify` from Step 8 is green.
