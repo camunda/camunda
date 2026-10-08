@@ -487,6 +487,43 @@ severity, or the affected version:
 Never change a `component/`, `severity/`, `likelihood/` or `affects/` label that a person already
 set on an existing issue. Add only the categories that are missing.
 
+#### Team board routing — why the `component/` label is load-bearing
+
+**Never add the issue to a project board yourself.** `gh project item-add` needs a `project` scope
+the qa-processes App token does not carry, and every owning repo already automates it. What those
+automations route on is the **`component/` label you set at creation** — so an issue filed without
+one reaches no team. It lands on the catch-all Quality Board, where nobody owns it. That is the
+single most consequential reason the label table above is mandatory.
+
+This works on creation: labels passed to `gh issue create` do emit `labeled` webhook events, so
+`camunda/camunda`'s `add-to-projects.yml` — which triggers on `labeled`, **not** `opened` — fires for
+issues this agent files. [camunda/camunda#60836](https://github.com/camunda/camunda/issues/60836) is
+the counter-example worth remembering: filed by the bot with only `kind/bug`, it reached no team
+board until a human added `component/optimize` six weeks later.
+
+`camunda/camunda` — `.github/workflows/add-to-projects.yml`:
+
+|                 `component/` label you set                  |                                                                                                           Team board it routes to                                                                                                            |
+|-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `operate`, `tasklist`, `optimize`, `c8-api`, `zeebe-engine` | [Core Features #173](https://github.com/orgs/camunda/projects/173)                                                                                                                                                                           |
+| `zeebe`                                                     | [Core Features #173](https://github.com/orgs/camunda/projects/173) **and** [Distributed Systems / ZDP #92](https://github.com/orgs/camunda/projects/92) — a deliberate dual fallback when neither `zeebe-engine` nor `zeebe-platform` is set |
+| `data-layer`                                                | [Data Layer #184](https://github.com/orgs/camunda/projects/184)                                                                                                                                                                              |
+| `identity`, `management-identity`                           | [Identity #209](https://github.com/orgs/camunda/projects/209)                                                                                                                                                                                |
+| `c8run`                                                     | [Distribution #33](https://github.com/orgs/camunda/projects/33)                                                                                                                                                                              |
+| `needs component label`                                     | ⚠️ **no team board** — only the Quality Board                                                                                                                                                                                                |
+
+`kind/bug` additionally puts it on the [Quality Board #187](https://github.com/orgs/camunda/projects/187) regardless of component.
+
+The other repo in this agent's routing table:
+
+|              Repo               |                             What routes it                              |                                      Board                                       |
+|---------------------------------|-------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `camunda/camunda-platform-helm` | `.github/workflows/add-new-issue.yaml`, unconditional on issue creation | [Distribution #33](https://github.com/orgs/camunda/projects/33), + Quality Board |
+
+It routes whatever labels you set, so the `component/` label matters there for triage rather than
+for routing — but it is still mandatory, and `camunda-platform-helm` has no severity label, so the
+`Severity` section of the body is the only record of that.
+
 #### Use the target repo's own bug template
 
 **Every repo's template is different — read it before filing** and use *its* section headings:
