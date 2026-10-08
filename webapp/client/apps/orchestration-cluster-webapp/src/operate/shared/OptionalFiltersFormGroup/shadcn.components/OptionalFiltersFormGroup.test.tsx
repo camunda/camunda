@@ -49,14 +49,15 @@ const getDefinitions = (onRemoveCustom: () => void): OptionalFilterDefinition<Fi
 
 const Harness: React.FC<{
 	initialVisible?: FilterId[];
+	initialValues?: Record<string, unknown>;
 	activeFilters?: FilterId[];
 	onSubmit?: (values: Record<string, unknown>) => void;
 	onRemoveCustom?: () => void;
-}> = ({initialVisible = [], activeFilters = [], onSubmit = vi.fn(), onRemoveCustom = vi.fn()}) => {
+}> = ({initialVisible = [], initialValues, activeFilters = [], onSubmit = vi.fn(), onRemoveCustom = vi.fn()}) => {
 	const [visibleFilters, setVisibleFilters] = useState<FilterId[]>(initialVisible);
 
 	return (
-		<Form onSubmit={onSubmit}>
+		<Form onSubmit={onSubmit} initialValues={initialValues}>
 			{({handleSubmit}) => (
 				<form onSubmit={handleSubmit}>
 					<OptionalFiltersFormGroup
@@ -113,5 +114,23 @@ describe('<OptionalFiltersFormGroup /> (shared, design system)', () => {
 		await expect.element(screen.getByText('custom content')).not.toBeInTheDocument();
 		expect(onRemoveCustom).toHaveBeenCalledTimes(1);
 		expect(onSubmit).toHaveBeenCalledTimes(1);
+	});
+
+	it('should clear every key of the removed filter and submit', async () => {
+		const onSubmit = vi.fn();
+		const screen = await render(
+			<Harness
+				initialVisible={['startDateRange']}
+				initialValues={{startDateFrom: '2026-01-01T00:00:00.000+0000', startDateTo: '2026-01-02T00:00:00.000+0000'}}
+				onSubmit={onSubmit}
+			/>,
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Remove Start date range Filter'}));
+
+		expect(onSubmit).toHaveBeenCalledTimes(1);
+		const submitted = onSubmit.mock.calls[0]?.[0];
+		expect(submitted?.startDateFrom).toBeUndefined();
+		expect(submitted?.startDateTo).toBeUndefined();
 	});
 });
