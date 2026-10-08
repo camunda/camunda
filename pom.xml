@@ -103,6 +103,7 @@
               <exclude>zeebe/exporters/ARCHITECTURE.md</exclude>
               <exclude>service/ARCHITECTURE.md</exclude>
               <exclude>search/ARCHITECTURE.md</exclude>
+              <exclude>db/ARCHITECTURE.md</exclude>
               <exclude>docs/monorepo-docs/**/*.md</exclude>
             </excludes>
             <flexmark/>
