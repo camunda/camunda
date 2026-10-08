@@ -1525,7 +1525,7 @@ function render(all, options) {
     // `/pull/N` and `/issues/N` redirect to each other, so one URL form serves both.
     const link = (number) => options.repository ? `[#${number}](https://github.com/${options.repository}/pull/${number})` : `#${number}`;
     const fullAsset = renderSectionedBody(assetPrs, link);
-    const { body: customerBody, dropped, cutEntries } = fitCustomerBody(assetPrs, link, options);
+    const { body: customerBody, dropped, cutEntries } = fitCustomerBody(assetPrs, (number) => `#${number}`, options);
     const prsByIssue = new Map(); // insertion-ordered: issues come out in walk order
     for (const pr of all) {
         for (const issueNumber of pr.issueNumbers) {

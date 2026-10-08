@@ -46,8 +46,10 @@ export interface RenderOptions {
   readonly version: string;
   readonly allowUnattributed: boolean;
   readonly unattributedReason?: string;
-  /** "owner/repo". When set, every `#N` in the two bodies becomes a link — the
-   *  full asset and the step summary don't autolink the way a release body does. */
+  /** "owner/repo". When set, every `#N` in the full asset becomes a link — it and the
+   *  step summary don't autolink the way a release body does. The release description
+   *  keeps bare `#N`, which GitHub autolinks; a URL per reference would cost 49
+   *  characters each against its size limit. */
   readonly repository?: string;
   /** Every audit line the run produced, in walk order — logged too, but a
    *  log isn't an artifact downstream can read, diff, or archive. */
@@ -445,7 +447,7 @@ export function render(all: readonly RenderPrInput[], options: RenderOptions): R
   const link = (number: number) =>
     options.repository ? `[#${number}](https://github.com/${options.repository}/pull/${number})` : `#${number}`;
   const fullAsset = renderSectionedBody(assetPrs, link);
-  const { body: customerBody, dropped, cutEntries } = fitCustomerBody(assetPrs, link, options);
+  const { body: customerBody, dropped, cutEntries } = fitCustomerBody(assetPrs, (number) => `#${number}`, options);
 
   const prsByIssue = new Map<number, RenderPrInput[]>(); // insertion-ordered: issues come out in walk order
   for (const pr of all) {
