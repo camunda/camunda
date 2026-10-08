@@ -57,6 +57,7 @@ import co.elastic.clients.elasticsearch.core.UpdateResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.AddBlockResponse;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.ExistsRequest;
@@ -66,12 +67,16 @@ import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.GetIndicesSettingsResponse;
 import co.elastic.clients.elasticsearch.indices.GetMappingRequest.Builder;
 import co.elastic.clients.elasticsearch.indices.GetMappingResponse;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
+import co.elastic.clients.elasticsearch.indices.IndexState;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.PutTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
+import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import co.elastic.clients.elasticsearch.indices.RolloverRequest;
 import co.elastic.clients.elasticsearch.indices.RolloverResponse;
+import co.elastic.clients.elasticsearch.indices.add_block.IndicesBlockOptions;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotRequest;
@@ -694,6 +699,71 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     deleteIndexByRawIndexNames("_all");
   }
 
+  @Override
+  public void addWriteBlock(final String rawIndexName) {
+    final AddBlockResponse response;
+    try {
+      response =
+          esWithTransportOptions()
+              .indices()
+              .addBlock(b -> b.index(rawIndexName).block(IndicesBlockOptions.Write));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not add write block to index " + rawIndexName, e);
+    }
+    if (!response.acknowledged() || !response.shardsAcknowledged()) {
+      throw new OptimizeRuntimeException(
+          "The write block on index " + rawIndexName + " was not acknowledged by all shards");
+    }
+  }
+
+  @Override
+  public boolean hasWriteBlock(final String rawIndexName) {
+    try {
+      final IndexState index =
+          esWithTransportOptions()
+              .indices()
+              .getSettings(g -> g.index(rawIndexName).name("index.blocks.write"))
+              .result()
+              .get(rawIndexName);
+      return index != null && isWriteBlocked(index.settings());
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not read the settings of index " + rawIndexName, e);
+    }
+  }
+
+  @Override
+  public void refreshOrFail(final String rawIndexName) {
+    final RefreshResponse response;
+    try {
+      response = esWithTransportOptions().indices().refresh(r -> r.index(rawIndexName));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not refresh index " + rawIndexName, e);
+    }
+    if (response.shards().failed().intValue() > 0) {
+      throw new OptimizeRuntimeException("Not all shards of index " + rawIndexName + " refreshed");
+    }
+  }
+
+  private static boolean isWriteBlocked(final IndexSettings settings) {
+    if (settings == null) {
+      return false;
+    }
+    final IndexSettings indexSettings = settings.index() != null ? settings.index() : settings;
+    return indexSettings.blocks() != null && Boolean.TRUE.equals(indexSettings.blocks().write());
+  }
+
+  @Override
+  public void removeWriteBlock(final String rawIndexName) {
+    try {
+      esWithTransportOptions()
+          .indices()
+          .putSettings(b -> b.index(rawIndexName).settings(st -> st.blocks(bl -> bl.write(false))));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(
+          "Could not remove write block from index " + rawIndexName, e);
+    }
+  }
+
   public long count(final String[] indexNames, final BoolQuery.Builder query) throws IOException {
     return Objects.requireNonNull(
             count(
@@ -835,7 +905,8 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                                               createDefaultScriptWithPrimitiveParams(
                                                   requestDto.getScriptData().scriptString(),
                                                   requestDto.getScriptData().params())))
-                              .retryOnConflict(requestDto.getRetryNumberOnConflict())));
+                              .retryOnConflict(requestDto.getRetryNumberOnConflict())
+                              .requireAlias(requestDto.isRequireAlias())));
       default -> throw new IllegalStateException("Unexpected value: " + requestDto.getType());
     }
   }

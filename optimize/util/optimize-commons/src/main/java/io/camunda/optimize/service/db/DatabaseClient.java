@@ -194,6 +194,18 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   public abstract void deleteIndexByRawIndexNames(String... indexNames);
 
+  /**
+   * Rejects all further writes to the index. Writes already in flight complete before this returns,
+   * so a count taken afterwards (and after a refresh) is final until the block is removed.
+   */
+  public abstract void addWriteBlock(String rawIndexName);
+
+  public abstract void removeWriteBlock(String rawIndexName);
+
+  public abstract boolean hasWriteBlock(String rawIndexName);
+
+  public abstract void refreshOrFail(String rawIndexName);
+
   public abstract void deleteAllIndexes();
 
   private String generateErrorMessageForValidationImportRequestDto(
