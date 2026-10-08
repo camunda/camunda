@@ -409,6 +409,19 @@
       prPriority: 10,
     },
     {
+      description: "version.spring-boot-oldest-managing-protobuf and version.protobuf-spring-boot-baseline pin the lowest protobuf runtime that a user application can get, and the protoc version must stay below it. Following the latest Spring Boot patch or protobuf-java fails ProtobufGencodeCompatibilityTest, and satisfying that test by raising protoc breaks users on the older runtime. Raise them by hand, together, only when that Spring Boot patch is no longer supported. They are selected by property name because version.spring-boot in the same pom is the real Spring Boot import and must keep updating.",
+      matchManagers: [
+        "maven",
+      ],
+      matchFileNames: [
+        "parent/pom.xml",
+      ],
+      matchJsonata: [
+        "sharedVariableName in ['version.spring-boot-oldest-managing-protobuf', 'version.protobuf-spring-boot-baseline']",
+      ],
+      enabled: false,
+    },
+    {
       description: "Digest + patch updates cover all use cases since they are used as base, so we disable other types.",
       matchManagers: [
         "dockerfile",
