@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.pt;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -29,7 +30,7 @@ import org.springframework.boot.health.contributor.Status;
 @NullMarked
 public final class PhysicalTenantSchemaInitializationHealthIndicator implements HealthIndicator {
 
-  static final Status DEGRADED = new Status("DEGRADED");
+  public static final Status DEGRADED = new Status("DEGRADED");
 
   /**
    * Long enough to name the cause, short enough that the endpoint stays readable with many tenants:
@@ -50,26 +51,25 @@ public final class PhysicalTenantSchemaInitializationHealthIndicator implements 
   @Override
   public Health health() {
     final var statusesByTenant = statuses.get();
-    var allUp = true;
-    var allDown = !statusesByTenant.isEmpty();
     final var details = new LinkedHashMap<String, Object>();
-    for (final var tenant : statusesByTenant.entrySet()) {
-      final var status = tenant.getValue();
+    statusesByTenant.forEach(
+        (tenantId, status) -> details.put(tenantId, detailsOf(statusOf(status.state()), status)));
+    return Health.status(rollUp(statusesByTenant.values())).withDetails(details).build();
+  }
+
+  /** UP if every tenant is, DOWN if every tenant is, DEGRADED otherwise. */
+  public static Status rollUp(final Collection<SchemaInitializationStatus> statuses) {
+    var allUp = true;
+    var allDown = !statuses.isEmpty();
+    for (final var status : statuses) {
       final var tenantStatus = statusOf(status.state());
       allUp &= Status.UP.equals(tenantStatus);
       allDown &= Status.DOWN.equals(tenantStatus);
-      details.put(tenant.getKey(), detailsOf(tenantStatus, status));
     }
-
-    final Health.Builder health;
     if (allUp) {
-      health = Health.up();
-    } else if (allDown) {
-      health = Health.down();
-    } else {
-      health = Health.status(DEGRADED);
+      return Status.UP;
     }
-    return health.withDetails(details).build();
+    return allDown ? Status.DOWN : DEGRADED;
   }
 
   private static Status statusOf(final SchemaInitializationStatus.State state) {
