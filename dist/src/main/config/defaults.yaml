@@ -1903,6 +1903,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     max-concurrency: null # Type: Integer, Env: CAMUNDA_SECRETS_MAXCONCURRENCY
     stores: # Type: io.camunda.configuration.Secrets$Stores  
       aws: null # Type: Map<String,io.camunda.configuration.Secrets$AwsSecretsManagerStore>, Env: CAMUNDA_SECRETS_STORES_AWS
+      env: null # Type: Map<String,io.camunda.configuration.Secrets$EnvStore>, Env: CAMUNDA_SECRETS_STORES_ENV
       file: null # Type: Map<String,io.camunda.configuration.Secrets$FileStore>, Env: CAMUNDA_SECRETS_STORES_FILE
       gcp: null # Type: Map<String,io.camunda.configuration.Secrets$GcpSecretManagerStore>, Env: CAMUNDA_SECRETS_STORES_GCP
   

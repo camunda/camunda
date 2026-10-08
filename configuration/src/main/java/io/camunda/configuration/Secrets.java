@@ -34,6 +34,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.stores.gcp.<id>.path-prefix}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.endpoint}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.container-secret-id}
+ *   <li>{@code camunda.secrets.stores.env.<id>.prefix}
+ *   <li>{@code camunda.secrets.stores.env.<id>.name-matching}
  * </ul>
  *
  * <p>Exactly one store per physical tenant is supported, and its {@code <id>} must be {@code
@@ -165,6 +167,7 @@ public class Secrets {
     private Map<String, FileStore> file = new LinkedHashMap<>();
     private Map<String, AwsSecretsManagerStore> aws = new LinkedHashMap<>();
     private Map<String, GcpSecretManagerStore> gcp = new LinkedHashMap<>();
+    private Map<String, EnvStore> env = new LinkedHashMap<>();
 
     public Map<String, FileStore> getFile() {
       return file;
@@ -201,6 +204,14 @@ public class Secrets {
 
     public void setGcp(final Map<String, GcpSecretManagerStore> gcp) {
       this.gcp = gcp;
+    }
+
+    public Map<String, EnvStore> getEnv() {
+      return env;
+    }
+
+    public void setEnv(final Map<String, EnvStore> env) {
+      this.env = env;
     }
   }
 
@@ -333,6 +344,51 @@ public class Secrets {
     public void setPath(final String path) {
       this.path = path;
     }
+  }
+
+  /**
+   * Configuration for a store that reads secrets from the node's environment variables. The
+   * environment is read once at startup, so changing a secret requires a restart.
+   */
+  public static class EnvStore {
+
+    /**
+     * Prefix every secret variable carries: secret {@code name} is read from {@code
+     * <prefix><name>}. Mandatory, and must not overlap the namespaces the platform reads its own
+     * settings from (such as {@code CAMUNDA_}, {@code ZEEBE_}, {@code SPRING_}), so a secret
+     * reference cannot read the node's own credentials. Prefixes of different physical tenants must
+     * not overlap either.
+     */
+    private String prefix = "";
+
+    /**
+     * How a secret name maps to a variable name. {@code exact} reads {@code <prefix><name>} only.
+     * {@code connectors-compatible} also tries the name with dots and dashes replaced by
+     * underscores, and upper-cased, the same way Camunda Connectors' environment secret provider
+     * does. Defaults to {@code exact}.
+     */
+    private EnvNameMatching nameMatching = EnvNameMatching.EXACT;
+
+    public String getPrefix() {
+      return prefix;
+    }
+
+    public void setPrefix(final @Nullable String prefix) {
+      this.prefix = prefix == null ? "" : prefix;
+    }
+
+    public EnvNameMatching getNameMatching() {
+      return nameMatching;
+    }
+
+    public void setNameMatching(final @Nullable EnvNameMatching nameMatching) {
+      this.nameMatching = nameMatching == null ? EnvNameMatching.EXACT : nameMatching;
+    }
+  }
+
+  public enum EnvNameMatching {
+    EXACT,
+    CONNECTORS_COMPATIBLE
   }
 
   /**

@@ -749,6 +749,148 @@ class SecretStoreConfigurationTest {
     assertThat(cache.getMaxSize()).isEqualTo(CaffeineSecretCache.DEFAULT_MAX_SIZE);
   }
 
+  @Test
+  void shouldBuildEnvStoreWhenEnvStoreConfigured() {
+    // given
+    final var config =
+        new SecretStoreConfiguration(
+            () -> Map.of("APP_SECRET_token", "token-value", "DB_PASSWORD", "platform"));
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.env.default.prefix", "APP_SECRET_"));
+
+    // when
+    final var store = defaultStoreOf(config, resolver);
+
+    // then only the prefixed variable is reachable
+    assertThat(store.list()).containsExactly("token");
+    assertThat(store.resolve(Set.of("token"))).containsEntry("token", new Resolved("token-value"));
+    assertThat(store.resolve(Set.of("DB_PASSWORD")).get("DB_PASSWORD")).isInstanceOf(Failed.class);
+  }
+
+  @Test
+  void shouldResolveConnectorsCompatibleNamesWhenConfigured() {
+    // given
+    final var config =
+        new SecretStoreConfiguration(() -> Map.of("APP_SECRET_DB_PASSWORD", "value"));
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.env.default.prefix", "APP_SECRET_",
+                "camunda.secrets.stores.env.default.name-matching", "connectors-compatible"));
+
+    // when
+    final var store = defaultStoreOf(config, resolver);
+
+    // then
+    assertThat(store.resolve(Set.of("db.password")))
+        .containsEntry("db.password", new Resolved("value"));
+  }
+
+  @Test
+  void shouldThrowWhenEnvStoreHasNoPrefix() {
+    // given
+    final var resolver = resolverFor(Map.of("camunda.secrets.stores.env.default.prefix", ""));
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(
+            () ->
+                new SecretStoreConfiguration(Map::of)
+                    .secretStoreRegistries(resolver, CLOCK_SERVICE, new SimpleMeterRegistry()))
+        .withMessageContaining("non-blank prefix")
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  void shouldThrowWhenEnvStorePrefixExposesPlatformSettings() {
+    // given
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.env.default.prefix", "CAMUNDA_"));
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(
+            () ->
+                new SecretStoreConfiguration(Map::of)
+                    .secretStoreRegistries(resolver, CLOCK_SERVICE, new SimpleMeterRegistry()))
+        .withMessageContaining("overlaps the reserved prefix 'CAMUNDA_'");
+  }
+
+  @Test
+  void shouldThrowWhenTwoPhysicalTenantsUseOverlappingEnvPrefixes() {
+    // given tenant b's prefix starts with tenant a's, so a reads every secret of b
+    final var resolver =
+        resolverFor(
+            physicalTenantsWithEnvPrefixes(
+                Map.of("tenanta", "TENANT_A_", "tenantb", "TENANT_A_B_")));
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(
+            () ->
+                new SecretStoreConfiguration(Map::of)
+                    .secretStoreRegistries(resolver, CLOCK_SERVICE, new SimpleMeterRegistry()))
+        .withMessageContaining("overlapping environment variable secret store prefixes")
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
+  @Test
+  void shouldIsolatePhysicalTenantsWithDisjointEnvPrefixes() {
+    // given
+    final var config =
+        new SecretStoreConfiguration(() -> Map.of("TENANT_A_token", "a", "TENANT_B_token", "b"));
+    final var resolver =
+        resolverFor(
+            physicalTenantsWithEnvPrefixes(Map.of("tenanta", "TENANT_A_", "tenantb", "TENANT_B_")));
+
+    // when
+    final var registries =
+        config
+            .secretStoreRegistries(resolver, CLOCK_SERVICE, new SimpleMeterRegistry())
+            .byPhysicalTenant();
+
+    // then each tenant reads only its own variable
+    assertThat(
+            registries
+                .get("tenanta")
+                .getStores()
+                .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+                .resolve(Set.of("token")))
+        .containsEntry("token", new Resolved("a"));
+    assertThat(
+            registries
+                .get("tenantb")
+                .getStores()
+                .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+                .resolve(Set.of("token")))
+        .containsEntry("token", new Resolved("b"));
+  }
+
+  private static SecretStore defaultStoreOf(
+      final SecretStoreConfiguration config, final PhysicalTenantResolver resolver) {
+    return config
+        .secretStoreRegistries(resolver, CLOCK_SERVICE, new SimpleMeterRegistry())
+        .byPhysicalTenant()
+        .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .getStores()
+        .get(SecretStoreRegistry.DEFAULT_STORE_ID);
+  }
+
+  private static Map<String, Object> physicalTenantsWithEnvPrefixes(
+      final Map<String, String> prefixByTenant) {
+    final var properties = new java.util.HashMap<String, Object>();
+    prefixByTenant.forEach(
+        (tenant, prefix) -> {
+          final var root = "camunda.physical-tenants." + tenant + ".";
+          properties.put(root + "secrets.stores.env.default.prefix", prefix);
+          properties.put(
+              root + "security.initialization.default-roles.admin.users[0]", tenant + "-admin");
+          properties.put(root + "data.secondary-storage.elasticsearch.index-prefix", tenant);
+        });
+    return properties;
+  }
+
   /**
    * Travels the clock forward through the real {@code /actuator/clock} endpoint rather than
    * mutating the clock directly, since {@link ControlledActorClock} only reflects a mutation once

@@ -11,6 +11,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Secrets;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
+import io.camunda.configuration.Secrets.EnvStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
 import io.camunda.configuration.Secrets.Stores;
@@ -22,6 +23,8 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig;
+import io.camunda.secretstore.env.EnvVarSecretStore;
+import io.camunda.secretstore.env.NameMatching;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerStoreConfig;
@@ -42,6 +45,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
@@ -62,13 +66,32 @@ public class SecretStoreConfiguration {
    * here (plus its factory method) — the per-tenant count check and registration loop below are
    * type-agnostic and never need to change.
    */
-  private static final List<StoreBinding<?>> STORE_BINDINGS =
-      List.of(
-          new StoreBinding<>("file", "file", Stores::getFile, SecretStoreConfiguration::fileStore),
-          new StoreBinding<>(
-              "aws", "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
-          new StoreBinding<>(
-              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
+  private final List<StoreBinding<?>> storeBindings;
+
+  public SecretStoreConfiguration() {
+    this(System::getenv);
+  }
+
+  /**
+   * @param environment the variables an {@code env} store reads, so a test can supply its own
+   *     rather than depend on the environment of the JVM running it
+   */
+  SecretStoreConfiguration(final Supplier<Map<String, String>> environment) {
+    storeBindings =
+        List.of(
+            new StoreBinding<>(
+                "file", "file", Stores::getFile, SecretStoreConfiguration::fileStore),
+            new StoreBinding<>(
+                "aws", "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
+            new StoreBinding<>(
+                "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore),
+            new StoreBinding<>(
+                "env",
+                "environment variable",
+                Stores::getEnv,
+                (storeId, tenantId, config) ->
+                    envStore(storeId, tenantId, config, environment.get())));
+  }
 
   /**
    * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
@@ -95,21 +118,22 @@ public class SecretStoreConfiguration {
     // it, since nothing else references the pool to shut it down later
     final List<ExecutorService> concurrencyPools = new ArrayList<>();
     final var timeSource = new ActorClockInstantSource(clockService);
+    final var secretsByTenant = resolver.mapValues(Camunda::getSecrets);
+    requireDisjointEnvPrefixes(secretsByTenant);
     try {
-      resolver
-          .mapValues(Camunda::getSecrets)
-          .forEach(
-              (tenantId, secrets) ->
-                  registries.put(
+      secretsByTenant.forEach(
+          (tenantId, secrets) ->
+              registries.put(
+                  tenantId,
+                  buildRegistry(
+                      storeBindings,
                       tenantId,
-                      buildRegistry(
-                          tenantId,
-                          secrets,
-                          created,
-                          timeSource,
-                          meterRegistry,
-                          tenantMeterRegistries,
-                          concurrencyPools)));
+                      secrets,
+                      created,
+                      timeSource,
+                      meterRegistry,
+                      tenantMeterRegistries,
+                      concurrencyPools)));
     } catch (final RuntimeException e) {
       closeAll(created);
       tenantMeterRegistries.forEach(MicrometerUtil::close);
@@ -120,6 +144,7 @@ public class SecretStoreConfiguration {
   }
 
   private static SecretStoreRegistry buildRegistry(
+      final List<StoreBinding<?>> storeBindings,
       final String tenantId,
       final Secrets secrets,
       final List<SecretStore> created,
@@ -130,7 +155,7 @@ public class SecretStoreConfiguration {
     final Stores config = secrets.getStores();
     // cap is one store total per tenant, counted across all store types combined
     final long totalStores =
-        STORE_BINDINGS.stream().mapToLong(binding -> binding.ids(config).size()).sum();
+        storeBindings.stream().mapToLong(binding -> binding.ids(config).size()).sum();
     if (totalStores > 1) {
       throw new IllegalStateException(
           "Physical tenant '"
@@ -143,7 +168,7 @@ public class SecretStoreConfiguration {
     // error rather than whatever the store's own construction fails with — an AWS or GCP store
     // eagerly builds a client and probes credentials, which would otherwise surface first for a
     // configuration that is rejected anyway
-    STORE_BINDINGS.forEach(binding -> binding.requireSupportedStoreIds(config, tenantId));
+    storeBindings.forEach(binding -> binding.requireSupportedStoreIds(config, tenantId));
     // read before any store is built, for the same reason: an out-of-bounds ttl/max-size fails
     // startup without first constructing an AWS/GCP client only to roll it back again
     final Secrets.Cache cacheConfig;
@@ -173,7 +198,7 @@ public class SecretStoreConfiguration {
           e);
     }
     final Map<String, SecretStore> stores = new LinkedHashMap<>();
-    STORE_BINDINGS.forEach(binding -> binding.registerAll(config, stores, created, tenantId));
+    storeBindings.forEach(binding -> binding.registerAll(config, stores, created, tenantId));
     if (stores.isEmpty()) {
       stores.put(SecretStoreRegistry.DEFAULT_STORE_ID, NOOP_STORE);
       LOG.info("No secret stores configured for physical tenant '{}', using noop store", tenantId);
@@ -318,6 +343,56 @@ public class SecretStoreConfiguration {
               + "' has no path configured");
     }
     return new FileBasedSecretStore(Path.of(path));
+  }
+
+  private static SecretStore envStore(
+      final String storeId,
+      final String tenantId,
+      final EnvStore config,
+      final Map<String, String> environment) {
+    final var nameMatching =
+        switch (config.getNameMatching()) {
+          case EXACT -> NameMatching.EXACT;
+          case CONNECTORS_COMPATIBLE -> NameMatching.CONNECTORS_COMPATIBLE;
+        };
+    try {
+      return new EnvVarSecretStore(environment, config.getPrefix(), nameMatching);
+    } catch (final IllegalArgumentException e) {
+      throw new IllegalStateException(
+          "Environment variable store '%s' for physical tenant '%s' is misconfigured: %s"
+              .formatted(storeId, tenantId, e.getMessage()),
+          e);
+    }
+  }
+
+  /**
+   * Rejects two physical tenants whose environment variable stores could read the same variable:
+   * the environment is shared by every tenant on the node, so the prefix is the only thing keeping
+   * one tenant's processes from reading another tenant's secrets.
+   */
+  private static void requireDisjointEnvPrefixes(final Map<String, Secrets> secretsByTenant) {
+    final var prefixes = new LinkedHashMap<String, String>();
+    secretsByTenant.forEach(
+        (tenantId, secrets) ->
+            secrets
+                .getStores()
+                .getEnv()
+                .values()
+                .forEach(store -> prefixes.put(tenantId, store.getPrefix())));
+    final var entries = List.copyOf(prefixes.entrySet());
+    for (int i = 0; i < entries.size(); i++) {
+      for (int j = i + 1; j < entries.size(); j++) {
+        final var a = entries.get(i);
+        final var b = entries.get(j);
+        if (!a.getValue().isBlank()
+            && !b.getValue().isBlank()
+            && EnvVarSecretStore.overlap(a.getValue(), b.getValue())) {
+          throw new IllegalStateException(
+              "Physical tenants '%s' and '%s' configure overlapping environment variable secret store prefixes '%s' and '%s'; each tenant needs a prefix that is not the start of another's"
+                  .formatted(a.getKey(), b.getKey(), a.getValue(), b.getValue()));
+        }
+      }
+    }
   }
 
   private static SecretStore awsStore(
