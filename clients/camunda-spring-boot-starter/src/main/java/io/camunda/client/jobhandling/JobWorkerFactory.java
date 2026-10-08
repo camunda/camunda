@@ -84,9 +84,8 @@ public class JobWorkerFactory {
                         jobWorkerValue.getMaxRetries().value())))
             .metrics(
                 jobWorkerMetricsFactory.createJobWorkerMetrics(
-                    new JobWorkerMetricsFactoryContext(
-                        jobWorkerValue.getType().value(),
-                        physicalTenantId(camundaClient, clientName))));
+                    new JobWorkerMetricsFactoryContext(jobWorkerValue.getType().value()),
+                    physicalTenantId(camundaClient, clientName)));
 
     if (canBeSetToBuilder(jobWorkerValue.getMaxJobsActive(), this::isValidInteger)) {
       builder.maxJobsActive(jobWorkerValue.getMaxJobsActive().value());

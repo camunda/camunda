@@ -82,6 +82,8 @@ public class JobWorkerFactoryTest {
     jobWorkerMetricsFactory = mock(JobWorkerMetricsFactory.class);
     when(jobWorkerMetricsFactory.createJobWorkerMetrics(any()))
         .thenReturn(mock(JobWorkerMetrics.class));
+    when(jobWorkerMetricsFactory.createJobWorkerMetrics(any(), any()))
+        .thenReturn(mock(JobWorkerMetrics.class));
 
     jobWorkerFactory =
         new JobWorkerFactory(
@@ -147,7 +149,7 @@ public class JobWorkerFactoryTest {
 
     // then
     verify(jobWorkerMetricsFactory)
-        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("test", "tenant-a"));
+        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("test"), "tenant-a");
   }
 
   @Test
@@ -163,7 +165,7 @@ public class JobWorkerFactoryTest {
 
     // then
     verify(jobWorkerMetricsFactory)
-        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("test", "tenant-a"));
+        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("test"), "tenant-a");
   }
 
   @Test
@@ -178,7 +180,7 @@ public class JobWorkerFactoryTest {
 
     // then
     verify(jobWorkerMetricsFactory)
-        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("test", "client-name"));
+        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("test"), "client-name");
   }
 
   @Test
@@ -192,7 +194,7 @@ public class JobWorkerFactoryTest {
     // then
     verify(jobWorkerMetricsFactory)
         .createJobWorkerMetrics(
-            new JobWorkerMetricsFactoryContext(
-                "test", CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME));
+            new JobWorkerMetricsFactoryContext("test"),
+            CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME);
   }
 }

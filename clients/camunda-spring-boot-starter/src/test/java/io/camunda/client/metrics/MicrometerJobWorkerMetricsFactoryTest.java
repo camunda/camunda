@@ -17,9 +17,11 @@ package io.camunda.client.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.event.CamundaClientCreatedEvent;
 import io.camunda.client.metrics.JobWorkerMetricsFactory.JobWorkerMetricsFactoryContext;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 public class MicrometerJobWorkerMetricsFactoryTest {
@@ -34,7 +36,7 @@ public class MicrometerJobWorkerMetricsFactoryTest {
   void shouldTagMetricsWithPhysicalTenantId() {
     // when
     factory
-        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("job-type", "tenant-a"))
+        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("job-type"), "tenant-a")
         .jobActivated(3);
 
     // then
@@ -52,10 +54,10 @@ public class MicrometerJobWorkerMetricsFactoryTest {
   void shouldKeepPhysicalTenantsApart() {
     // when
     factory
-        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("job-type", "tenant-a"))
+        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("job-type"), "tenant-a")
         .jobActivated(3);
     factory
-        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("job-type", "tenant-b"))
+        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("job-type"), "tenant-b")
         .jobActivated(5);
 
     // then
@@ -70,7 +72,7 @@ public class MicrometerJobWorkerMetricsFactoryTest {
     // when
     factory.createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("job-type")).jobActivated(2);
     factory
-        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("job-type", "tenant-a"))
+        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("job-type"), "tenant-a")
         .jobActivated(3);
 
     // then - registries such as Prometheus require one tag-key set per meter name
@@ -96,5 +98,23 @@ public class MicrometerJobWorkerMetricsFactoryTest {
                 .counter()
                 .count())
         .isEqualTo(2);
+  }
+
+  @Test
+  void shouldDelegateTenantAwareCreationToExistingFactoryImplementations() {
+    // given
+    final AtomicReference<JobWorkerMetricsFactoryContext> receivedContext = new AtomicReference<>();
+    final JobWorkerMetricsFactory legacyFactory =
+        context -> {
+          receivedContext.set(context);
+          return JobWorkerMetrics.noop();
+        };
+    final JobWorkerMetricsFactoryContext context = new JobWorkerMetricsFactoryContext("job-type");
+
+    // when
+    legacyFactory.createJobWorkerMetrics(context, "tenant-a");
+
+    // then
+    assertThat(receivedContext.get()).isSameAs(context);
   }
 }

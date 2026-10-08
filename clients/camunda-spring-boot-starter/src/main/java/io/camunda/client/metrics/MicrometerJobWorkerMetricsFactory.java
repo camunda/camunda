@@ -29,12 +29,16 @@ public class MicrometerJobWorkerMetricsFactory implements JobWorkerMetricsFactor
 
   @Override
   public JobWorkerMetrics createJobWorkerMetrics(final JobWorkerMetricsFactoryContext context) {
+    return createJobWorkerMetrics(context, null);
+  }
+
+  @Override
+  public JobWorkerMetrics createJobWorkerMetrics(
+      final JobWorkerMetricsFactoryContext context, final String physicalTenantId) {
     // always tagged, so that every meter of the same name has the same tag keys
-    final String physicalTenantId =
-        context.physicalTenantId() != null
-            ? context.physicalTenantId()
-            : CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME;
-    final Tags tags = Tags.of("type", context.type(), "physicalTenantId", physicalTenantId);
+    final String tenantId =
+        physicalTenantId != null ? physicalTenantId : CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME;
+    final Tags tags = Tags.of("type", context.type(), "physicalTenantId", tenantId);
     return JobWorkerMetrics.micrometer().withMeterRegistry(meterRegistry).withTags(tags).build();
   }
 }
