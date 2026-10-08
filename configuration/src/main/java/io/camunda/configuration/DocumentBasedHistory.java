@@ -20,7 +20,6 @@ public class DocumentBasedHistory {
   private static final boolean DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED = true;
   private static final ProcessInstanceRetentionMode
       DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE = ProcessInstanceRetentionMode.PI_HIERARCHY;
-  private static final boolean DEFAULT_HISTORY_ARCHIVE_BY_ID_ENABLED = true;
   private static final String DEFAULT_HISTORY_POLICY_NAME = "camunda-retention-policy";
   private static final String DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "date";
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
@@ -54,8 +53,6 @@ public class DocumentBasedHistory {
 
   private ProcessInstanceRetentionMode processInstanceRetentionMode =
       DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE;
-
-  private boolean archiveByIdEnabled = DEFAULT_HISTORY_ARCHIVE_BY_ID_ENABLED;
 
   /** Date format for historical indices in Java DateTimeFormatter syntax */
   private String elsRolloverDateFormat = DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT;
@@ -119,14 +116,6 @@ public class DocumentBasedHistory {
   public void setProcessInstanceRetentionMode(
       final ProcessInstanceRetentionMode processInstanceRetentionMode) {
     this.processInstanceRetentionMode = processInstanceRetentionMode;
-  }
-
-  public boolean isArchiveByIdEnabled() {
-    return archiveByIdEnabled;
-  }
-
-  public void setArchiveByIdEnabled(final boolean archiveByIdEnabled) {
-    this.archiveByIdEnabled = archiveByIdEnabled;
   }
 
   public String getPrefix() {
