@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -63,6 +64,11 @@ final class PhysicalTenantRecoveryRestartReadinessIT {
 
   static {
     ELASTICSEARCH.start();
+  }
+
+  @AfterAll
+  static void stopElasticsearch() {
+    ELASTICSEARCH.stop();
   }
 
   private static final PhysicalTenantsITHelper TENANTS =

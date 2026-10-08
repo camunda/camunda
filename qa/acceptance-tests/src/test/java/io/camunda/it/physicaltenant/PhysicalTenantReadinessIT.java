@@ -36,10 +36,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 /**
- * Readiness of a broker serving two physical tenants: UP once every tenant is initialized, DEGRADED
- * (HTTP 200) while another tenant failed, retries, or is recovering. Cases with no initialized
- * tenant never reach a running node (startup waits or aborts); see {@code
- * SchemaReadinessCheckTest}.
+ * Readiness of a broker serving two physical tenants: UP when every tenant is initialized, DOWN
+ * when every tenant failed for good, DEGRADED (HTTP 200) otherwise — here while one tenant failed,
+ * retries, or is recovering. All tenants failing aborts startup, so DOWN is covered by {@code
+ * SchemaReadinessCheckTest} instead.
  */
 @Timeout(600)
 @ZeebeIntegration
@@ -132,10 +132,12 @@ final class PhysicalTenantReadinessIT {
       assertThat(tenantStates(broker)).containsExactly("INITIALIZED", "INITIALIZED");
       assertThat(searchStatus(broker, TENANT_A)).isEqualTo(503);
       assertThat(searchStatus(broker, DEFAULT_TENANT)).isEqualTo(200);
+      // and - its history backups are still listed: no repository is configured here, so reaching
+      // the backup service is what proves the request got past the readiness check
       assertThat(
               send(HttpRequest.newBuilder(restUri(broker, TENANT_A, "v2/backups/history")).GET())
-                  .statusCode())
-          .isNotEqualTo(503);
+                  .body())
+          .contains("No backup repository configured for physical tenant '" + TENANT_A + "'");
 
       // when - tenant A leaves recovery
       changeMode(broker, TENANT_A, "PROCESSING");
