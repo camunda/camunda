@@ -1843,7 +1843,8 @@ public class ResourceDeletionTest {
         null, // treePath
         Set.of(), // tags
         null, // businessId
-        null); // suspendedDate
+        null, // suspendedDate
+        null); // storageOrdinal
   }
 
   private DecisionInstanceEntity createDecisionInstanceEntity(final long decisionInstanceKey) {
