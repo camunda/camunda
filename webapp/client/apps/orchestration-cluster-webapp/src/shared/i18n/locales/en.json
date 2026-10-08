@@ -1073,8 +1073,7 @@
 				"title": "Decisions",
 				"scaffold": {
 					"filtersPanelPlaceholder": "Filters panel placeholder",
-					"decisionPanelPlaceholder": "Decision panel placeholder",
-					"instancesTablePlaceholder": "Instances table placeholder"
+					"decisionPanelPlaceholder": "Decision panel placeholder"
 				},
 				"diagramHeader": {
 					"title": "Decision",
@@ -1123,7 +1122,10 @@
 					"emptyMessage": "There are no Instances matching this filter set",
 					"emptyAdditionalInfo": "To see some results, select at least one Instance state",
 					"selectAll": "Select all rows",
-					"selectRow": "Select row {{key}}"
+					"selectRow": "Select row {{key}}",
+					"tableLabel": "Decision instances",
+					"loadingPreviousPage": "Loading previous decision instances",
+					"loadingNextPage": "Loading next decision instances"
 				},
 				"toolbar": {
 					"delete": "Delete",
