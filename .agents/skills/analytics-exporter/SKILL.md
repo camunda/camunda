@@ -17,8 +17,9 @@ backwards compatibility wrong silently drops data or breaks analytics.
 >
 > Identity-domain records (tenant, user, group, role, mapping rule, authorization) carry
 > author-chosen or user-supplied identifiers alongside their keys — `name`, `description`,
-> `entityId` and similar. These are PII or free text and must not be emitted. Emit only
-> keys, ids, entity *types*, status/result flags, and timestamps.
+> `entityId` and similar. These are PII or free text and must not be emitted, even when the
+> field name ends in `Id`. Emit only engine-generated record keys, the tenant id, the attributes
+> the data contract defines for the signal, entity *types*, status/result flags, and timestamps.
 
 ## Module layout
 
@@ -323,9 +324,12 @@ class MyEventHandlerTest {
     // given — a fresh exporter and handler, and a record that should be filtered out
     final var logExporter = InMemoryLogRecordExporter.create();
     final var handler = new MyEventHandler(TestOtelSdkManager.inMemory(logExporter));
+    // build a value whose filtered-on field does NOT match, e.g. a different element type
+    final var nonMatchingValue = ImmutableMyRecordValue.builder().withBpmnElementType(...).build();
     final var unrelatedRecord = FACTORY.generateRecord(ValueType.MY_VALUE_TYPE,
-        r -> r.withRecordType(RecordType.EVENT).withIntent(MyIntent.MY_INTENT));
-        // set the field the handler filters on to a non-matching value
+        r -> r.withRecordType(RecordType.EVENT)
+              .withIntent(MyIntent.MY_INTENT)
+              .withValue(nonMatchingValue));
 
     // when
     handler.handle(typed(unrelatedRecord));
