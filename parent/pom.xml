@@ -971,6 +971,11 @@
         <artifactId>camunda-secret-store-gcp</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-secret-store-env</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- Camunda Process Testing modules -->
 
