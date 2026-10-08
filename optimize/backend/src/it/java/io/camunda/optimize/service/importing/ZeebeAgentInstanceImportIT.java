@@ -128,6 +128,35 @@ class ZeebeAgentInstanceImportIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldImportUpdatedAgentInstance_totalTokensIncludeCacheTokens() {
+    // given
+    final long agentKey = keyCounter.getAndIncrement();
+    final AgentMetricsValueDto metrics = metrics(512L, 128L, 1, 2);
+    metrics.setCacheReadTokenCount(4000L);
+    metrics.setCacheCreationTokenCount(300L);
+    metrics.setReasoningTokenCount(64L);
+    seedRecord(
+        agentKey, AgentInstanceIntent.CREATED, AgentInstanceStatus.INITIALIZING, 0L, 0L, 0, 0);
+    seedRecord(agentKey, AgentInstanceIntent.UPDATED, AgentInstanceStatus.THINKING, metrics, null);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            pi -> {
+              final AgentInstanceDto.AgentMetricsDto m = pi.getAgentInstances().get(0).getMetrics();
+              assertThat(m.getCacheReadTokens()).isEqualTo(4000L);
+              assertThat(m.getCacheCreationTokens()).isEqualTo(300L);
+              assertThat(pi.getAgentTotalInputTokens()).isEqualTo(512L);
+              assertThat(pi.getAgentTotalOutputTokens()).isEqualTo(128L);
+              assertThat(pi.getAgentTotalTokens()).isEqualTo(512L + 4000L + 300L + 128L);
+            });
+  }
+
+  @Test
   void shouldImportCompletedAgentInstance_setsDurationAndEndDate() {
     // given
     final long agentKey = keyCounter.getAndIncrement();

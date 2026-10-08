@@ -192,11 +192,13 @@ public interface ZeebeProcessInstanceScriptFactory {
           }
         }
         existingInstance.agentInstances = agentsById.values();
-        long totalInput = 0; long totalOutput = 0; long totalModel = 0; long totalTool = 0;
+        long totalInput = 0; long totalOutput = 0; long totalCache = 0; long totalModel = 0; long totalTool = 0;
         for (def a : existingInstance.agentInstances) {
           if (a.metrics != null) {
             if (a.metrics.inputTokens != null) { totalInput += a.metrics.inputTokens; }
             if (a.metrics.outputTokens != null) { totalOutput += a.metrics.outputTokens; }
+            if (a.metrics.cacheReadTokens != null) { totalCache += a.metrics.cacheReadTokens; }
+            if (a.metrics.cacheCreationTokens != null) { totalCache += a.metrics.cacheCreationTokens; }
             if (a.metrics.modelCalls != null) { totalModel += a.metrics.modelCalls; }
             if (a.metrics.toolCalls != null) { totalTool += a.metrics.toolCalls; }
           }
@@ -205,7 +207,7 @@ public interface ZeebeProcessInstanceScriptFactory {
         existingInstance.agentTotalOutputTokens = totalOutput;
         existingInstance.agentTotalModelCalls = totalModel;
         existingInstance.agentTotalToolCalls = totalTool;
-        existingInstance.agentTotalTokens = totalInput + totalOutput;
+        existingInstance.agentTotalTokens = totalInput + totalCache + totalOutput;
       }
       """;
   }
