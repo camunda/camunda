@@ -378,6 +378,75 @@ public class ResourceDeletionMultiPartitionTest {
   }
 
   @Test
+  public void shouldRetryOnlyOnStillDrainingPartitionWhenDeletingAgain() {
+    // given - the deployment partition finalized locally while the instance's partition drains
+    final var processId = Strings.newRandomValidBpmnId();
+    final long processDefinitionKey = deployServiceTaskProcess(processId);
+    final long instanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .onPartition(INSTANCE_PARTITION)
+            .create();
+    awaitJobCreated(instanceKey);
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DELETE_COMPLETED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .withPartitionId(1)
+        .limit(PARTITION_COUNT - 1)
+        .toList();
+
+    // when - the definition is deleted again
+    final var retry = engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then - the deployment partition cannot tell a slow drain from a stuck one and accepts it
+    assertThat(retry.getIntent()).isEqualTo(ResourceDeletionIntent.DELETED);
+
+    // and - the retry is distributed only to the partition that still owes a drain report
+    final var retryDistribution =
+        RecordingExporter.commandDistributionRecords()
+            .limit(
+                r ->
+                    r.getKey() == retry.getKey()
+                        && r.getIntent() == CommandDistributionIntent.FINISHED)
+            .filter(r -> r.getKey() == retry.getKey())
+            .withIntent(CommandDistributionIntent.DISTRIBUTING)
+            .map(r -> r.getValue().getPartitionId())
+            .toList();
+    assertThat(retryDistribution).containsExactly(INSTANCE_PARTITION);
+
+    // and - which rejects it, as it is still draining
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETE)
+                .onlyCommandRejections()
+                .withResourceKey(processDefinitionKey)
+                .withPartitionId(INSTANCE_PARTITION)
+                .getFirst()
+                .getRejectionType())
+        .isEqualTo(RejectionType.INVALID_STATE);
+
+    // when - the instance completes
+    engine.job().ofInstance(instanceKey).withType(JOB_TYPE).complete();
+
+    // then - the original deletion finishes and the instance was never terminated
+    assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.FULLY_DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .withPartitionId(1)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(instanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("the instance must run to completion, not be terminated by the retry")
+        .isTrue();
+  }
+
+  @Test
   public void shouldFullyDeleteAfterActiveInstanceCompletesOnAnotherPartition() {
     // given - a process draining with an active instance on a non-deployment partition
     final var processId = Strings.newRandomValidBpmnId();

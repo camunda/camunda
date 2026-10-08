@@ -39,6 +39,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -1212,6 +1213,84 @@ public class DrainingProcessDefinitionTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
     assertThat(rejection.getValue().getResourceType()).isEqualTo(ResourceType.PROCESS_DEFINITION);
     assertThat(rejection.getValue().getResourceId()).isEqualTo(processId);
+  }
+
+  @Test
+  public void shouldRetriggerDeletionForOrphanedPendingPartitions() {
+    // given - a stuck deletion
+    final var metadata = orphanOnPendingPartitions(helper.getBpmnProcessId());
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+
+    // when - the deletion is re-issued
+    final var deletion = engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then - it is accepted and re-distributed instead of being rejected as already-in-progress
+    assertThat(deletion).hasIntent(ResourceDeletionIntent.DELETED);
+
+    // when - the pending partitions report back
+    engine.writeRecords(
+        drainReport(processDefinitionKey, metadata, 2),
+        drainReport(processDefinitionKey, metadata, 3));
+
+    // then - the definition is fully deleted, which is only emitted once nothing is left pending
+    assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.FULLY_DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldRejectHistoryDeletionForOrphanedPendingPartitions() {
+    // given
+    final var metadata = orphanOnPendingPartitions(helper.getBpmnProcessId());
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+
+    // when - the retry also asks for the history, which a still-draining partition cannot honor
+    final var rejection =
+        engine
+            .resourceDeletion()
+            .withResourceKey(processDefinitionKey)
+            .withResourceType(ResourceType.PROCESS_DEFINITION)
+            .withResourceId(metadata.getBpmnProcessId())
+            .withDeleteHistory(true)
+            .expectRejection()
+            .delete();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+
+    // and - a plain retry still recovers the definition
+    assertThat(engine.resourceDeletion().withResourceKey(processDefinitionKey).delete())
+        .hasIntent(ResourceDeletionIntent.DELETED);
+  }
+
+  // Seeds a stuck deletion in this single-partition engine: the definition is deleted here, but
+  // rows for partitions 2 and 3 remain, as if those partitions never reported their drain.
+  private ProcessMetadataValue orphanOnPendingPartitions(final String processId) {
+    final var metadata = deployWithJob(processId);
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+    injectDraining(metadata, false, 1, 2, 3);
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .key(processDefinitionKey)
+            .process(
+                ProcessIntent.DELETED,
+                new ProcessRecord()
+                    .setKey(processDefinitionKey)
+                    .setBpmnProcessId(metadata.getBpmnProcessId())
+                    .setVersion(metadata.getVersion())
+                    .setResourceName(metadata.getResourceName())
+                    .setTenantId(metadata.getTenantId())));
+    engine.start();
+    engine.writeRecords(drainReport(processDefinitionKey, metadata, 1));
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DELETE_COMPLETED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+    return metadata;
   }
 
   private RecordToWrite drainReport(
