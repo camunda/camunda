@@ -149,14 +149,16 @@ runs:
 
     - name: Get version number from zeebe archive
       if: ${{ inputs.source-build == 'true' }}
-      run: echo CAMUNDA_VERSION=$( echo $distball | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_ENV
+      id: source-version
+      run: echo version=$( echo $distball | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_OUTPUT
       shell: bash
       env:
         distball: ${{ steps.build-zeebe.outputs.distball }}
 
     - name: Get version of camunda-dist
       if: ${{ inputs.local-archive-build == 'true' }}
-      run: echo CAMUNDA_VERSION=$(ls camunda-zeebe*.tar.gz | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_ENV
+      id: archive-version
+      run: echo version=$(ls camunda-zeebe*.tar.gz | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_OUTPUT
       shell: bash
       working-directory: ./c8run
 
@@ -177,10 +179,15 @@ runs:
       working-directory: ./c8run
 
     - name: make a package
-      run: ./packager package
+      run: |
+        if [[ -n "$DIST_VERSION" ]]; then
+          export CAMUNDA_VERSION="$DIST_VERSION"
+        fi
+        ./packager package
       shell: bash
       working-directory: ./c8run
       env:
+        DIST_VERSION: ${{ steps.source-version.outputs.version || steps.archive-version.outputs.version }}
         JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
         JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
