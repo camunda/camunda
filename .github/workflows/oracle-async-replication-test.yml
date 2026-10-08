@@ -291,6 +291,7 @@ jobs:
             -Prdbms-oracle
             -Dit.test=OracleAsyncReplicationIT
             -DskipUTs -DskipChecks -DskipTests=false
+            -Dfailsafe.timeout=5400
 
       - name: Upload test reports and SSM logs
         if: always()
