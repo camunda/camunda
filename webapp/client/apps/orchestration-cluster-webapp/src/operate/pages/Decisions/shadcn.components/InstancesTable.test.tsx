@@ -6,7 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import {afterEach, beforeEach, describe, expect} from 'vitest';
+import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {Toaster, toast} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
@@ -28,6 +30,14 @@ import type {DecisionsSearch} from '../decisionsFilter';
 const BASE_SEARCH: DecisionsSearch = {evaluated: true, failed: true};
 const DECISIONS_LIST_PATH = '/operate/decisions';
 
+const SizedContainer: React.FC<{children: React.ReactNode}> = ({children}) => (
+	<div style={{height: '100vh'}}>
+		{children}
+		<Toaster />
+		<Notifications />
+	</div>
+);
+
 function renderInstancesTable({
 	search = BASE_SEARCH,
 	basepath = '',
@@ -37,13 +47,9 @@ function renderInstancesTable({
 } = {}) {
 	return renderWithRouter(
 		() => (
-			// The table's scroll container needs a sized ancestor, which the full page's
-			// ResizablePanel normally provides — give it one here in isolation.
-			<div style={{height: '100vh'}}>
+			<SizedContainer>
 				<InstancesTable search={search} />
-				<Toaster />
-				<Notifications />
-			</div>
+			</SizedContainer>
 		),
 		{
 			path: DECISIONS_LIST_PATH,
@@ -161,14 +167,58 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
 
-			await screen.getByRole('checkbox', {name: 'Select row 1'}).click();
+			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 1'}));
 
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
 			await expect.element(screen.getByText('1 item selected')).toBeVisible();
 
-			await screen.getByRole('button', {name: 'Discard'}).click();
+			await userEvent.click(screen.getByRole('button', {name: 'Discard'}));
 
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
+		});
+
+		it('should select all rows and report the total in the toolbar', async ({worker}) => {
+			worker.use(
+				mockInstances([
+					createDecisionInstance({decisionEvaluationInstanceKey: '1'}),
+					createDecisionInstance({decisionEvaluationInstanceKey: '2'}),
+				]),
+			);
+
+			const screen = await renderInstancesTable();
+
+			await userEvent.click(screen.getByRole('checkbox', {name: 'Select all rows'}));
+
+			await expect.element(screen.getByText('2 items selected')).toBeVisible();
+			await expect.element(screen.getByRole('checkbox', {name: 'Select row 1'})).toBeChecked();
+			await expect.element(screen.getByRole('checkbox', {name: 'Select row 2'})).toBeChecked();
+		});
+
+		it('should clear the selection when the filter changes', async ({worker}) => {
+			worker.use(mockInstances([createDecisionInstance({decisionEvaluationInstanceKey: '1'})]));
+
+			const FilterSwitcher = () => {
+				const [search, setSearch] = useState<DecisionsSearch>(BASE_SEARCH);
+				return (
+					<SizedContainer>
+						<button type="button" onClick={() => setSearch({evaluated: true, failed: false})}>
+							Change filter
+						</button>
+						<InstancesTable search={search} />
+					</SizedContainer>
+				);
+			};
+			const screen = await renderWithRouter(() => <FilterSwitcher />, {
+				path: DECISIONS_LIST_PATH,
+				initialEntry: DECISIONS_LIST_PATH,
+			});
+
+			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 1'}));
+			await expect.element(screen.getByText('1 item selected')).toBeVisible();
+
+			await userEvent.click(screen.getByRole('button', {name: 'Change filter'}));
+
+			await expect.element(screen.getByText('1 item selected')).not.toBeInTheDocument();
 		});
 
 		it('should delete the selected instance and show a success notification', async ({worker}) => {
@@ -184,9 +234,9 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 			const screen = await renderInstancesTable();
 
-			await screen.getByRole('checkbox', {name: 'Select row 1'}).click();
-			await screen.getByRole('button', {name: 'Delete'}).click();
-			await screen.getByRole('alertdialog').getByRole('button', {name: 'Delete'}).click();
+			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 1'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
+			await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Delete'}));
 
 			await expect
 				.element(screen.getByText('The batch operation "Delete Decision Instance" has been started'))
@@ -204,9 +254,9 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 			const screen = await renderInstancesTable();
 
-			await screen.getByRole('checkbox', {name: 'Select row 1'}).click();
-			await screen.getByRole('button', {name: 'Delete'}).click();
-			await screen.getByRole('alertdialog').getByRole('button', {name: 'Delete'}).click();
+			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 1'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
+			await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Delete'}));
 
 			await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
 		});
@@ -229,6 +279,22 @@ describe('<InstancesTable /> (shadcn)', () => {
 			await expect
 				.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'}))
 				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/2251799813685250`);
+		},
+	);
+
+	it.for([
+		{basepath: '', expectedPathPrefix: ''},
+		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
+	])(
+		'should render decision instance links with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}, {worker}) => {
+			worker.use(mockInstances([createDecisionInstance({decisionEvaluationInstanceKey: '1'})]));
+
+			const screen = await renderInstancesTable({basepath});
+
+			await expect
+				.element(screen.getByRole('link', {name: '1'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/decisions/1`);
 		},
 	);
 
