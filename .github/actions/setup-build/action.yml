@@ -140,7 +140,7 @@ runs:
     # Secrets are imported only if current workflow run is not related to a fork PR
     if: steps.is-fork.outputs.is-fork != 'true'
     id: secrets
-    uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+    uses: ./.github/actions/vault-action-with-retry
     with:
       url: ${{ inputs.vault-address }}
       method: approle
@@ -188,8 +188,8 @@ runs:
       CAMUNDA_NEXUS_MAVEN_SERVER: >-
         [{
           "id": "camunda-nexus",
-          "username": "${{ steps.secrets.outputs.ci-account-username }}",
-          "password": "${{ steps.secrets.outputs.ci-account-password }}"
+          "username": "${{ fromJSON(steps.secrets.outputs.secrets || '{}').ci-account-username }}",
+          "password": "${{ fromJSON(steps.secrets.outputs.secrets || '{}').ci-account-password }}"
         }]
       # Avoid rate limiting on repo.maven.apache.org by mirroring central via Google's
       # public Maven Central mirror. Applies to all artifacts (deps, plugins, extensions, BOM).
@@ -263,8 +263,8 @@ runs:
       )
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ steps.secrets.outputs.dockerhub-username }}
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.dockerhub-token }}
+      DOCKER_USERNAME: ${{ fromJSON(steps.secrets.outputs.secrets).dockerhub-username }}
+      DOCKER_PASSWORD: ${{ fromJSON(steps.secrets.outputs.secrets).dockerhub-token }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
@@ -279,8 +279,8 @@ runs:
       inputs.harbor == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ steps.secrets.outputs.harbor-username }}
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.harbor-password }}
+      DOCKER_USERNAME: ${{ fromJSON(steps.secrets.outputs.secrets).harbor-username }}
+      DOCKER_PASSWORD: ${{ fromJSON(steps.secrets.outputs.secrets).harbor-password }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
@@ -296,7 +296,7 @@ runs:
       inputs.minimus == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.minimus-token }}
+      DOCKER_PASSWORD: ${{ fromJSON(steps.secrets.outputs.secrets).minimus-token }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
