@@ -65,10 +65,11 @@ import org.junit.jupiter.api.Test;
  * </ul>
  *
  * <p>Uses two small in-JVM fake IdPs (JDK {@link HttpServer} + a self-generated RSA key) instead of
- * Keycloak, because proving isolation requires counting requests per IdP. Tokens are signed directly
- * and handed to the REST client via a static {@link CredentialsProvider} that attaches the bearer
- * header. In-memory H2 ({@link Storage#rdbmsH2}) backs the {@code /v2/authentication/me/...} endpoint
- * the test calls to force principal resolution (and thus the augmentation call) on the REST path.
+ * Keycloak, because proving isolation requires counting requests per IdP. Tokens are signed
+ * directly and handed to the REST client via a static {@link CredentialsProvider} that attaches the
+ * bearer header. In-memory H2 ({@link Storage#rdbmsH2}) backs the {@code /v2/authentication/me/...}
+ * endpoint the test calls to force principal resolution (and thus the augmentation call) on the
+ * REST path.
  */
 @ZeebeIntegration
 final class PhysicalTenantRestOidcUserInfoAugmentationIT {
@@ -149,7 +150,8 @@ final class PhysicalTenantRestOidcUserInfoAugmentationIT {
 
   @BeforeEach
   void resetHitCounts() {
-    // Readiness polling in @BeforeAll (and any earlier test) may have already called /userinfo; each
+    // Readiness polling in @BeforeAll (and any earlier test) may have already called /userinfo;
+    // each
     // test signs its own fresh token (unique jti, so never cache-served), so resetting here makes
     // hit-count assertions independent of test order and prior runs.
     idpA.resetUserInfoHitCount();
@@ -159,7 +161,8 @@ final class PhysicalTenantRestOidcUserInfoAugmentationIT {
   @Test
   void shouldAugmentClaimsFromOwnUserInfoEndpointWhenEnabled() throws Exception {
     // given — a PT-A token that does NOT carry the client_ref claim on the JWT itself
-    // when / then — accepted only because PT-A's own claims provider fetched it from PT-A's /userinfo
+    // when / then — accepted only because PT-A's own claims provider fetched it from PT-A's
+    // /userinfo
     try (final var client = client(TENANT_A, idpA.signToken())) {
       assertThatNoException()
           .as("PT-A token is accepted over REST — the claim is resolved via PT-A's own /userinfo")
@@ -198,8 +201,10 @@ final class PhysicalTenantRestOidcUserInfoAugmentationIT {
   void shouldUsePassthroughAndRejectWhenUserInfoAugmentationDisabled() throws Exception {
     // given — a PT-C token; PT-C shares PT-A's issuer but has augmentation disabled, so the claims
     // provider is a no-op passthrough that never calls /userinfo
-    // when / then — rejected: the client_ref claim only exists in /userinfo, which is never consulted,
-    // so neither the username nor client-id claim resolves. Over REST the unresolvable-claims failure
+    // when / then — rejected: the client_ref claim only exists in /userinfo, which is never
+    // consulted,
+    // so neither the username nor client-id claim resolves. Over REST the unresolvable-claims
+    // failure
     // surfaces as a 4xx client error (400 for this lazily-resolved endpoint, 401 where resolution
     // runs inside the security filter).
     try (final var client = client(TENANT_C, idpA.signToken())) {
@@ -211,7 +216,8 @@ final class PhysicalTenantRestOidcUserInfoAugmentationIT {
 
     assertThat(idpA.userInfoHitCount())
         .as(
-            "a userinfo-disabled PT must never call /userinfo — true passthrough, not a failed call")
+            "a userinfo-disabled PT must never call /userinfo — true passthrough, not a failed"
+                + " call")
         .isZero();
   }
 
