@@ -96,7 +96,7 @@ function getReactNodeTextContent(node: ReactNode): string {
   if (node instanceof Array) {
     return node.map(getReactNodeTextContent).join('');
   }
-  if (isValidElement(node)) {
+  if (isValidElement<{children?: ReactNode}>(node)) {
     return getReactNodeTextContent(node.props.children);
   }
 

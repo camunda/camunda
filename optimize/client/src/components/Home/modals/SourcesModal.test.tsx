@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ReactElement} from 'react';
+import {ComponentProps, ReactElement, ReactNode} from 'react';
 import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
+import {TenantPopover} from 'components';
 import {areTenantsAvailable} from 'config';
 
 import {getDefinitionsWithTenants, getTenantsWithDefinitions} from './service';
@@ -192,9 +193,11 @@ it('should change the selected tenants based on the popover in C7', async () => 
   await runAllEffects();
   await node.update();
 
-  const tenantPopover = (node.find('Table').prop('body') as ReactElement[][])?.[0]?.[3];
+  const tenantPopover = (
+    node.find('Table').prop('body') as ReactElement<ComponentProps<typeof TenantPopover>>[][]
+  )?.[0]?.[3];
 
-  tenantPopover?.props.onChange([{id: 'test'}]);
+  tenantPopover?.props.onChange(['test']);
 
   node.find('.confirm').simulate('click');
 
@@ -202,7 +205,7 @@ it('should change the selected tenants based on the popover in C7', async () => 
     {
       definitionKey: 'def1',
       definitionType: 'process',
-      tenants: [{id: 'test'}],
+      tenants: ['test'],
     },
     {
       definitionKey: 'def2',
@@ -224,5 +227,5 @@ it('should display the only tenant value as text in self managed mode', async ()
   await runAllEffects();
   await node.update();
 
-  expect((node.find('Table').prop('body') as ReactElement[][])?.[0]?.[3]).toEqual(<>Default</>);
+  expect((node.find('Table').prop('body') as ReactNode[][])?.[0]?.[3]).toEqual(<>Default</>);
 });

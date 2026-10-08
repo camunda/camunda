@@ -40,7 +40,7 @@ it('should set startDate on date change of start date input field', () => {
 
   node.instance().setDate('startDate')('change');
 
-  expect(spy).toBeCalledWith('startDate', 'change');
+  expect(spy).toHaveBeenCalledWith('startDate', 'change');
 });
 
 it('should set endDate on date change of end date input field', () => {
@@ -49,7 +49,7 @@ it('should set endDate on date change of end date input field', () => {
 
   node.instance().setDate('endDate')('change');
 
-  expect(spy).toBeCalledWith('endDate', 'change');
+  expect(spy).toHaveBeenCalledWith('endDate', 'change');
 });
 
 it('should select date range popup on date input click', () => {

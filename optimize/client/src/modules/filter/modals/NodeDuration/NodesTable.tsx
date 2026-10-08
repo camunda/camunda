@@ -93,7 +93,9 @@ export default function NodesTable({
               hideLabel
               value={settings.value}
               type="number"
-              ref={(el: HTMLInputElement) => (inputsRef.current[id] = el)}
+              ref={(el: HTMLInputElement) => {
+                inputsRef.current[id] = el;
+              }}
               onChange={(evt) => setTarget('value', id, evt.target.value)}
               onFocus={() => updateFocus(id)}
               onBlur={() => updateFocus(null)}

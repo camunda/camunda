@@ -6,10 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {ComponentProps} from 'react';
+
 import ignoreFragments from './ignoreFragments';
 
 it('should remove all fragments from children', () => {
-  const result = ignoreFragments(
+  const result = ignoreFragments<ComponentProps<'option'>>(
     <>
       <option value="1">first</option>
       <>

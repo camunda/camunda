@@ -27,7 +27,7 @@ interface NotificationProps {
 
 export default function Notification({config, remove}: NotificationProps): JSX.Element {
   const [closing, setClosing] = useState(false);
-  const closeTrigger = useRef<ReturnType<typeof setTimeout>>();
+  const closeTrigger = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const {text, duration, stayOpen, type} = config;
   const title = typeof text === 'string' ? text : '';
   const children = typeof text === 'string' ? undefined : text;

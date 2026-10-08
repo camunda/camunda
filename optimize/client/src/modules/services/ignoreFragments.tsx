@@ -8,16 +8,16 @@
 
 import {Children, Fragment, ReactElement, ReactNode} from 'react';
 
-export default function ignoreFragments(children?: ReactNode): ReactElement[] {
+export default function ignoreFragments<P = unknown>(children?: ReactNode): ReactElement<P>[] {
   if (isFragment(children)) {
-    return ignoreFragments(children.props.children);
+    return ignoreFragments<P>(children.props.children);
   }
 
   return Children.toArray(children)
-    .filter(isReactElement)
-    .reduce<ReactElement[]>((arr, child) => {
+    .filter(isReactElement<P>)
+    .reduce<ReactElement<P>[]>((arr, child) => {
       if (isFragment(child)) {
-        return arr.concat(...ignoreFragments(child.props.children));
+        return arr.concat(...ignoreFragments<P>(child.props.children));
       }
       return [...arr, child];
     }, []);
@@ -27,6 +27,6 @@ function isFragment(child: ReactNode): child is ReactElement<{children?: ReactNo
   return isReactElement(child) && child.type === Fragment;
 }
 
-function isReactElement(child: ReactNode): child is ReactElement {
+function isReactElement<P = unknown>(child: ReactNode): child is ReactElement<P> {
   return !!child && typeof child === 'object' && 'type' in child;
 }

@@ -136,7 +136,9 @@
   "resolutions": {
     "react-is": "^19.0.0",
     "**/tmp": "^0.2.7",
-    "@types/minimatch": "6.0.0"
+    "@types/minimatch": "6.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
   },
   "jest": {
     "resetMocks": false,

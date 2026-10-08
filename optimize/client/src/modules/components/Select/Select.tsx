@@ -39,7 +39,7 @@ export default function Select<T extends object | string | number>(props: Select
 
         if (child.type === Select.Submenu) {
           newProps.selected = Children.toArray(child.props.children).some(
-            (child) => isReactElement(child) && child.props.value === props.value
+            (child) => isReactElement<OptionProps<T>>(child) && child.props.value === props.value
           );
 
           newProps.children = renderChildrenWithProps(child.props.children);
@@ -63,7 +63,7 @@ export default function Select<T extends object | string | number>(props: Select
   const getLabel = (children = props.children) => {
     let label;
 
-    Children.forEach(ignoreFragments(children), (child) => {
+    Children.forEach(ignoreFragments<SubmenuProps | OptionProps<T>>(children), (child) => {
       if (child.props.value === props.value) {
         label = child.props.label;
       } else if (child.type === Select.Submenu && child.props.children) {
@@ -77,7 +77,7 @@ export default function Select<T extends object | string | number>(props: Select
     return label;
   };
 
-  const children = ignoreFragments(props.children);
+  const children = ignoreFragments<SubmenuProps | OptionProps<T>>(props.children);
 
   return (
     <div className={classnames('Select', props.className)}>

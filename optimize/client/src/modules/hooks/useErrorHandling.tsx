@@ -10,7 +10,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 
 export default function useErrorHandling<Error = unknown>() {
   const [error, setError] = useState<Error | undefined>(undefined);
-  const mounted = useRef<boolean>();
+  const mounted = useRef<boolean | undefined>(undefined);
 
   const mightFail = useCallback(async function callback<
     T = unknown,

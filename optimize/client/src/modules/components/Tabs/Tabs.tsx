@@ -35,7 +35,7 @@ export default function Tabs<T extends string | number>({
   showButtons = true,
   isLoading,
 }: TabsProps<T>) {
-  const tabs = ignoreFragments(children);
+  const tabs = ignoreFragments<TabProps<T>>(children);
   const values = tabs.map<T>(({props: {value}}, idx) => (value || idx) as T);
   const [selected, setSelected] = useState<T>(value);
 
