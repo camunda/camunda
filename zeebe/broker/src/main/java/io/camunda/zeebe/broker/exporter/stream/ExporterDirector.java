@@ -166,6 +166,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
     return actor.call(
         () -> {
+          containers.stream().forEach(ExporterContainer::hardPauseExporter);
           metrics.setExporterPaused();
           exporterPhase = ExporterPhase.PAUSED;
         });
@@ -209,9 +210,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     return actor.call(
         () -> {
-          if (exporterPhase == ExporterPhase.SOFT_PAUSED) {
-            containers.stream().forEach(ExporterContainer::undoSoftPauseExporter);
-          }
+          containers.stream().forEach(ExporterContainer::resumeExporter);
           exporterPhase = ExporterPhase.EXPORTING;
           metrics.setExporterActive();
           if (exporterMode == ExporterMode.ACTIVE) {
