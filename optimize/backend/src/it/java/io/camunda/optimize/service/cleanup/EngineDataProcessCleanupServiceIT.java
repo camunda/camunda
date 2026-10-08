@@ -17,12 +17,14 @@ import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import io.camunda.optimize.service.util.configuration.cleanup.ProcessCleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import io.github.netmikey.logunit.api.LogCapturer;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -163,6 +165,34 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
                 getProcessInstanceIndexAliasName(retainedDefinitionKey)))
         .isTrue();
     assertProcessInstanceDataExists(List.of(unaffectedProcessInstance));
+  }
+
+  @Test
+  public void shouldRemoveAWriteBlockLeftOnAProcessInstanceIndexThatHasInstances()
+      throws IOException {
+    // given
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setDeleteEmptyIndices(true);
+    persistProcessInstances(
+        List.of(
+            processInstanceWithEndDate(processDefinitionKey, LocalDateUtil.getCurrentDateTime())));
+    final DatabaseClient databaseClient = embeddedOptimizeExtension.getOptimizeDatabaseClient();
+    final String index =
+        databaseClient
+            .getAllIndicesForAlias(
+                databaseClient.convertToPrefixedAliasName(
+                    getProcessInstanceIndexAliasName(processDefinitionKey)))
+            .iterator()
+            .next();
+    databaseClient.addWriteBlock(index);
+    assertThat(databaseClient.hasWriteBlock(index)).isTrue();
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+
+    // then
+    assertThat(databaseClient.hasWriteBlock(index)).isFalse();
   }
 
   @Test
