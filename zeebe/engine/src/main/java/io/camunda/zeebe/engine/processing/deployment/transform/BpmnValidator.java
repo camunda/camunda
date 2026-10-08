@@ -19,6 +19,7 @@ import org.camunda.bpm.model.xml.impl.validation.ModelValidationResultsImpl;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public final class BpmnValidator {
+  private final ValidationVisitor designTimeAspectValidator;
   private final ValidationVisitor runtimeAspectValidator;
   private final ValidationErrorFormatter formatter = new ValidationErrorFormatter();
   private final int validatorResultsOutputMaxSize;
@@ -27,6 +28,10 @@ public final class BpmnValidator {
       final ExpressionLanguage expressionLanguage,
       final ExpressionProcessor expressionProcessor,
       final int validatorResultsOutputMaxSize) {
+    designTimeAspectValidator =
+        new ValidationVisitor(
+            ZeebeDesignTimeValidators.STATELESS_VALIDATORS_BY_TYPE,
+            ZeebeDesignTimeValidators::newStatefulValidators);
     runtimeAspectValidator =
         new ValidationVisitor(
             ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));
@@ -34,11 +39,7 @@ public final class BpmnValidator {
   }
 
   public String validate(final BpmnModelInstance modelInstance) {
-    // the design time visitor holds stateful validators, so it can't be reused across validations
-    final var designTimeAspectValidator =
-        new ValidationVisitor(
-            ZeebeDesignTimeValidators.STATELESS_VALIDATORS_BY_TYPE,
-            ZeebeDesignTimeValidators.newStatefulValidators());
+    designTimeAspectValidator.reset();
     runtimeAspectValidator.reset();
 
     final ModelWalker walker = new ModelWalker(modelInstance);

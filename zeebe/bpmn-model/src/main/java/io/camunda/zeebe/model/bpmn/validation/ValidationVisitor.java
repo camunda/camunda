@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.camunda.bpm.model.xml.impl.validation.ValidationResultsCollectorImpl;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -33,27 +34,29 @@ import org.camunda.bpm.model.xml.validation.ValidationResults;
 public class ValidationVisitor extends TypeHierarchyVisitor {
 
   private final Map<Class, List<ModelElementValidator>> validators;
-  private final Map<Class, List<ModelElementValidator>> statefulValidators;
+  private final Supplier<Collection<ModelElementValidator<?>>> statefulValidatorsSupplier;
+  private Map<Class, List<ModelElementValidator>> statefulValidators;
 
   private ValidationResultsCollectorImpl resultCollector;
 
   public ValidationVisitor(final Collection<ModelElementValidator<?>> validators) {
-    this(groupByType(validators), Collections.emptyList());
+    this(groupByType(validators), Collections::emptyList);
   }
 
   /**
    * @param validators stateless validators, already grouped by {@link #groupByType}, which can be
    *     shared between visitors
-   * @param statefulValidators validators that keep state during a walk; they must be new for every
-   *     visitor and the visitor must not be reused for another walk. For an element they run before
-   *     the stateless ones, which keeps the order of the reported errors as it was when they were
-   *     registered first.
+   * @param statefulValidatorsSupplier creates validators that keep state during a walk; it is
+   *     called again on {@link #reset()}, so that no state leaks into the next walk. For an element
+   *     they run before the stateless ones, which keeps the order of the reported errors as it was
+   *     when they were registered first.
    */
   public ValidationVisitor(
       final Map<Class, List<ModelElementValidator>> validators,
-      final Collection<ModelElementValidator<?>> statefulValidators) {
+      final Supplier<Collection<ModelElementValidator<?>>> statefulValidatorsSupplier) {
     this.validators = validators;
-    this.statefulValidators = groupByType(statefulValidators);
+    this.statefulValidatorsSupplier = statefulValidatorsSupplier;
+    statefulValidators = groupByType(statefulValidatorsSupplier.get());
     resultCollector = new ValidationResultsCollectorImpl();
   }
 
@@ -84,6 +87,7 @@ public class ValidationVisitor extends TypeHierarchyVisitor {
 
   public void reset() {
     resultCollector = new ValidationResultsCollectorImpl();
+    statefulValidators = groupByType(statefulValidatorsSupplier.get());
   }
 
   public ValidationResults getValidationResult() {
