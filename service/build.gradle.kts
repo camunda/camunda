@@ -43,6 +43,7 @@ dependencies {
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.mockito.mockito.junit.jupiter)
   testImplementation(libs.org.instancio.instancio.core)
+  testImplementation(libs.org.awaitility.awaitility)
 }
 
 description = "Camunda Service"
