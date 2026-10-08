@@ -230,6 +230,15 @@ Related resources:
 * entrypoint and main file for pipeline code of unified CI: [ci.yml](https://github.com/camunda/camunda/blob/main/.github/workflows/ci.yml)
 * see for example how [#19423 (actionlint)](https://github.com/camunda/camunda/pull/19423) and [#19436 (Java unit tests)](https://github.com/camunda/camunda/pull/19436) got added to unified CI
 
+### GitHub API job names vs. workflow job keys
+
+The GitHub API output of `/repos/<repo>/actions/runs/<run_id>/jobs` only contains the _display_ job
+names. It does not contain the `jobs.<job_key>` keys from the workflow YAML files. Do not write
+logic that maps one to the other, especially across called (reusable) workflows. Such a mapping is
+brittle (e.g. a parser that only reads `ci.yml` misses jobs of called workflows) and hard to
+maintain. If a job is only identifiable by its YAML key, find another way to get the information,
+e.g. pass it explicitly via job `outputs` or `needs`, or decide against the feature.
+
 ## CI Test Files
 
 ### Ownership
