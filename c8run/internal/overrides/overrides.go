@@ -105,9 +105,7 @@ func SetConnectorsAuthEnvVars(settings types.C8RunSettings) error {
 // when a key is defined nowhere the API is treated as open, matching the default
 // C8Run behaviour.
 func ConnectorsAuthRequired(configPaths []string) bool {
-	authorizations, _ := springconfig.Value(configPaths, "camunda.security.authorizations.enabled")
-	unprotected, _ := springconfig.Value(configPaths, "camunda.security.authentication.unprotected-api")
-	authorizationsOn, _ := strconv.ParseBool(authorizations)
-	apiUnprotected, err := strconv.ParseBool(unprotected)
-	return authorizationsOn || (err == nil && !apiUnprotected)
+	authorizationsOn, _ := springconfig.Bool(configPaths, "camunda.security.authorizations.enabled")
+	apiUnprotected, ok := springconfig.Bool(configPaths, "camunda.security.authentication.unprotected-api")
+	return authorizationsOn || (ok && !apiUnprotected)
 }

@@ -101,6 +101,18 @@ func Value(paths []string, property string) (string, bool) {
 	return "", false
 }
 
+// Bool resolves property like Value and accepts the boolean spellings Spring converts.
+func Bool(paths []string, property string) (value, ok bool) {
+	raw, _ := Value(paths, property)
+	switch strings.ToLower(raw) {
+	case "true", "on", "yes", "1":
+		return true, true
+	case "false", "off", "no", "0":
+		return false, true
+	}
+	return false, false
+}
+
 func systemProperty(options, property string) string {
 	value := ""
 	for _, option := range strings.Fields(options) {
