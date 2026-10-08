@@ -157,8 +157,7 @@ public final class RestoreValidator
     if (exportedPositionSupplier != null) {
       // A database that already holds exported positions has to belong to the partitions of the
       // backup. One without any is restored from scratch, so the backup alone decides.
-      final var exportedPartitionCount =
-          exportedPositions(exportedPositionSupplier, partitionCount);
+      final var exportedPartitionCount = availableExportedPositions(exportedPositionSupplier);
       if (!exportedPartitionCount.isEmpty()) {
         verifyPartitionCountsAgree(
             ids[ids.length - 1], restoredPartitionCount, exportedPartitionCount.size());
@@ -329,6 +328,23 @@ public final class RestoreValidator
       }
     }
     return Map.copyOf(positions);
+  }
+
+  /**
+   * The exported positions of the RDBMS, or none if they cannot be read. A database that is about
+   * to be restored into may not have its schema yet, which only the restore creates, so a failure
+   * to read is not an inconsistency; a gap between the positions still is.
+   */
+  private Map<Integer, Long> availableExportedPositions(
+      final IntFunction<@Nullable Long> positionSupplier) {
+    try {
+      return exportedPositions(positionSupplier, partitionCount);
+    } catch (final IllegalStateException inconsistentPositions) {
+      throw inconsistentPositions;
+    } catch (final RuntimeException e) {
+      LOG.warn("Exported positions are not available, restoring from the backup alone", e);
+      return Map.of();
+    }
   }
 
   private static Map<Integer, Long> requireExportedPositions(final Map<Integer, Long> positions) {
