@@ -39,6 +39,20 @@ public interface JobWorkerMetricsFactory {
   JobWorkerMetrics createJobWorkerMetrics(JobWorkerMetricsFactoryContext context);
 
   /**
+   * Creates a new {@link JobWorkerMetrics} instance for the given context and physical tenant ID.
+   *
+   * <p>The default implementation preserves compatibility for existing factory implementations.
+   *
+   * @param context the context containing information about the job worker
+   * @param physicalTenantId the physical tenant ID to associate with the metrics, or {@code null}
+   * @return a {@link JobWorkerMetrics} instance appropriate for the given context
+   */
+  default JobWorkerMetrics createJobWorkerMetrics(
+      final JobWorkerMetricsFactoryContext context, final String physicalTenantId) {
+    return createJobWorkerMetrics(context);
+  }
+
+  /**
    * Context information provided to {@link JobWorkerMetricsFactory} when creating a new {@link
    * JobWorkerMetrics} instance.
    *

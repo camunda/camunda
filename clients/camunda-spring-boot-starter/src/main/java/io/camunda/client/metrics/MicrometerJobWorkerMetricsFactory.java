@@ -16,6 +16,7 @@
 package io.camunda.client.metrics;
 
 import io.camunda.client.api.worker.JobWorkerMetrics;
+import io.camunda.client.event.CamundaClientCreatedEvent;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 
@@ -28,9 +29,16 @@ public class MicrometerJobWorkerMetricsFactory implements JobWorkerMetricsFactor
 
   @Override
   public JobWorkerMetrics createJobWorkerMetrics(final JobWorkerMetricsFactoryContext context) {
-    return JobWorkerMetrics.micrometer()
-        .withMeterRegistry(meterRegistry)
-        .withTags(Tags.of("type", context.type()))
-        .build();
+    return createJobWorkerMetrics(context, null);
+  }
+
+  @Override
+  public JobWorkerMetrics createJobWorkerMetrics(
+      final JobWorkerMetricsFactoryContext context, final String physicalTenantId) {
+    // always tagged, so that every meter of the same name has the same tag keys
+    final String tenantId =
+        physicalTenantId != null ? physicalTenantId : CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME;
+    final Tags tags = Tags.of("type", context.type(), "physicalTenantId", tenantId);
+    return JobWorkerMetrics.micrometer().withMeterRegistry(meterRegistry).withTags(tags).build();
   }
 }
