@@ -28,7 +28,7 @@ import org.slf4j.Logger;
  * records itself and also delegates to the repository to move dependent records (decisions, flow
  * node instances, variable updates, etc).
  */
-public class ProcessInstanceByIdArchiverJob implements ArchiverJob {
+public class ProcessInstanceArchiverJob implements ArchiverJob {
   private static final int MAX_LARGE_BATCH_SIZE = 5_000;
   private static final int SUB_BATCHES_PER_LARGE_BATCH = 10;
 
@@ -43,7 +43,7 @@ public class ProcessInstanceByIdArchiverJob implements ArchiverJob {
   private final Queue<ArchiveBatch> pendingBatches =
       new java.util.concurrent.ConcurrentLinkedQueue<>();
 
-  public ProcessInstanceByIdArchiverJob(
+  public ProcessInstanceArchiverJob(
       final HistoryConfiguration config,
       final ArchiverRepository repository,
       final ListViewTemplate processInstanceTemplate,

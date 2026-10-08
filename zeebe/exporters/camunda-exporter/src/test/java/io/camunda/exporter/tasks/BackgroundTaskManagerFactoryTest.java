@@ -16,7 +16,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
-import io.camunda.exporter.tasks.archiver.ProcessInstanceByIdArchiverJob;
+import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricsArchiverJob;
@@ -219,7 +219,7 @@ class BackgroundTaskManagerFactoryTest {
   }
 
   private boolean isProcessInstanceByIdArchiverTask(final RunnableTask task) {
-    return isTaskOfType(task, ProcessInstanceByIdArchiverJob.class);
+    return isTaskOfType(task, ProcessInstanceArchiverJob.class);
   }
 
   private boolean isProcessInstanceToBeArchivedCountTask(final RunnableTask task) {
