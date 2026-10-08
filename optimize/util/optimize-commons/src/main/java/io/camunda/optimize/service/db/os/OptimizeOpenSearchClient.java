@@ -352,7 +352,12 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   public long updateByQuery(final String index, final Query query, final Script script) {
-    return richOpenSearchClient.doc().updateByQuery(index, query, script);
+    return updateByQuery(index, query, script, null);
+  }
+
+  public long updateByQuery(
+      final String index, final Query query, final Script script, final Integer scrollSize) {
+    return richOpenSearchClient.doc().updateByQuery(index, query, script, scrollSize);
   }
 
   public final <T> IndexResponse index(final IndexRequest.Builder<T> indexRequest) {
@@ -567,6 +572,19 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
+  public void deleteIndexByRawIndexNames(final String... indexNames) {
+    final String indexNamesString = Arrays.toString(indexNames);
+    LOG.debug("Deleting indices [{}].", indexNamesString);
+    dbClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
+        .get(
+            () ->
+                getOpenSearchClient()
+                    .indices()
+                    .delete(DeleteIndexRequest.of(b -> b.index(List.of(indexNames)))));
+    LOG.debug("Successfully deleted index [{}].", indexNamesString);
+  }
+
+  @Override
   public void addWriteBlock(final String rawIndexName) {
     final AddBlockResponse response;
     try {
@@ -580,6 +598,18 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     if (!response.acknowledged() || !response.shardsAcknowledged()) {
       throw new OptimizeRuntimeException(
           "The write block on index " + rawIndexName + " was not acknowledged by all shards");
+    }
+  }
+
+  @Override
+  public void removeWriteBlock(final String rawIndexName) {
+    try {
+      getOpenSearchClient()
+          .indices()
+          .putSettings(b -> b.index(rawIndexName).settings(st -> st.blocks(bl -> bl.write(false))));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(
+          "Could not remove write block from index " + rawIndexName, e);
     }
   }
 
@@ -611,39 +641,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
-  private static boolean isWriteBlocked(final IndexSettings settings) {
-    if (settings == null) {
-      return false;
-    }
-    final IndexSettings indexSettings = settings.index() != null ? settings.index() : settings;
-    return indexSettings.blocks() != null && Boolean.TRUE.equals(indexSettings.blocks().write());
-  }
-
-  @Override
-  public void removeWriteBlock(final String rawIndexName) {
-    try {
-      getOpenSearchClient()
-          .indices()
-          .putSettings(b -> b.index(rawIndexName).settings(st -> st.blocks(bl -> bl.write(false))));
-    } catch (final IOException e) {
-      throw new OptimizeRuntimeException(
-          "Could not remove write block from index " + rawIndexName, e);
-    }
-  }
-
-  @Override
-  public void deleteIndexByRawIndexNames(final String... indexNames) {
-    final String indexNamesString = Arrays.toString(indexNames);
-    LOG.debug("Deleting indices [{}].", indexNamesString);
-    dbClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
-        .get(
-            () ->
-                getOpenSearchClient()
-                    .indices()
-                    .delete(DeleteIndexRequest.of(b -> b.index(List.of(indexNames)))));
-    LOG.debug("Successfully deleted index [{}].", indexNamesString);
-  }
-
   @Override
   public void deleteAllIndexes() {
     LOG.debug("Deleting all indexes.");
@@ -658,6 +655,14 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     } catch (final IOException e) {
       LOG.warn("There was an error deleting all indexes.", e);
     }
+  }
+
+  private static boolean isWriteBlocked(final IndexSettings settings) {
+    if (settings == null) {
+      return false;
+    }
+    final IndexSettings indexSettings = settings.index() != null ? settings.index() : settings;
+    return indexSettings.blocks() != null && Boolean.TRUE.equals(indexSettings.blocks().write());
   }
 
   public long count(final String[] indexNames, final Query query) throws IOException {

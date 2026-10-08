@@ -404,12 +404,20 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public long updateByQuery(final String index, final Query query, final Script script) {
-    final UpdateByQueryRequest request =
+    return updateByQuery(index, query, script, null);
+  }
+
+  public long updateByQuery(
+      final String index, final Query query, final Script script, final Integer scrollSize) {
+    final UpdateByQueryRequest.Builder requestBuilder =
         applyIndexPrefix(updateByQueryRequestBuilder(List.of(index)))
             .query(query)
             .refresh(true)
-            .script(script)
-            .build();
+            .script(script);
+    if (scrollSize != null) {
+      requestBuilder.scrollSize(scrollSize.longValue());
+    }
+    final UpdateByQueryRequest request = requestBuilder.build();
     final UpdateByQueryResponse response;
     Long status;
     try {
