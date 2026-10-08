@@ -8,18 +8,7 @@
 
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/type';
-import {
-	Button,
-	InlineLoading,
-	InlineNotification,
-	Link,
-	ListItem,
-	OrderedList,
-	Select,
-	Stack,
-	TableHeader,
-	TableRow,
-} from '@carbon/react';
+import {Button, InlineLoading, InlineNotification, Link, Select, Stack, TableHeader, TableRow} from '@carbon/react';
 import {createLink} from '@tanstack/react-router';
 import {
 	Add,
@@ -184,16 +173,6 @@ const VisuallyHiddenStatus = styled.span`
 	border: 0;
 `;
 
-const MigrationHelperList = styled(OrderedList)`
-	display: flex;
-	flex-direction: column;
-	gap: var(--cds-spacing-05);
-`;
-
-const MigrationHelperListItem = styled(ListItem)`
-	list-style: decimal;
-`;
-
 const MigrationDiagrams = styled.div`
 	display: flex;
 	height: 100%;
@@ -339,8 +318,6 @@ export {
 	ProcessName,
 	InstanceLink,
 	VisuallyHiddenStatus,
-	MigrationHelperList,
-	MigrationHelperListItem,
 	MigrationDiagrams,
 	MigrationDiagramHeader,
 	MigrationHeaderLabel,

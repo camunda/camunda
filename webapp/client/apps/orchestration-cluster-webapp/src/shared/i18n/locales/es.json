@@ -1447,6 +1447,7 @@
 					"retryTitle": "Reintentar instancia {{processInstanceKey}}",
 					"cancelTitle": "Cancelar instancia {{processInstanceKey}}",
 					"modifyTitle": "Modificar instancia {{processInstanceKey}}",
+					"migrateTitle": "Migrar instancia {{processInstanceKey}}",
 					"deleteTitle": "Eliminar instancia {{processInstanceKey}}",
 					"suspendTitle": "Suspender instancia {{processInstanceKey}}",
 					"resumeTitle": "Reanudar instancia {{processInstanceKey}}",

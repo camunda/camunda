@@ -54,6 +54,7 @@ import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {ProcessesHarness} from './ProcessesHarness';
+import {getInstanceMigrationLocation} from './instanceMigration';
 
 const SOURCE = createProcessDefinition({
 	processDefinitionId: 'my_simple_process',
@@ -1001,5 +1002,255 @@ describe('Processes migration', () => {
 		await expect.element(dialog).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Migration step 2 - confirm')).toBeVisible();
 		expect(screen.router.state.location.searchStr).toBe(`?${SEARCH}`);
+	});
+
+	describe('from a process instance', () => {
+		const INSTANCE = createProcessInstance({
+			processInstanceKey: '2251799813685249',
+			processDefinitionKey: 'source-key',
+			processDefinitionId: 'my_simple_process',
+			processDefinitionName: 'Invoice process',
+			processDefinitionVersion: 1,
+			tenantId: 'tenant-a',
+		});
+		const INSTANCE_PATH = `/operate/processes/${INSTANCE.processInstanceKey}`;
+		const SOURCE_SEARCH = {
+			active: true,
+			incidents: true,
+			suspended: true,
+			completed: false,
+			canceled: false,
+			process: 'my_simple_process',
+			version: 1,
+		};
+
+		async function openFromInstance(state = getInstanceMigrationLocation(INSTANCE).state) {
+			const screen = await renderWithRouter(
+				() => (
+					<>
+						<ProcessesHarness />
+						<Notifications />
+					</>
+				),
+				{path: '/operate/processes', initialEntry: INSTANCE_PATH},
+			);
+			await screen.router.navigate({...getInstanceMigrationLocation(INSTANCE), state});
+			return screen;
+		}
+
+		it.for([
+			{multiTenancy: 'disabled', isMultiTenancyEnabled: false, tenantId: undefined},
+			{multiTenancy: 'enabled', isMultiTenancyEnabled: true, tenantId: 'tenant-a'},
+		])(
+			'should migrate only the handed-over instance with multi-tenancy $multiTenancy',
+			async ({isMultiTenancyEnabled, tenantId}, {worker}) => {
+				sessionStorage.setItem(
+					'clientConfig',
+					JSON.stringify(
+						createSystemConfiguration({
+							deployment: {...createSystemConfiguration().deployment, isMultiTenancyEnabled},
+						}),
+					),
+				);
+				mockPage(worker);
+				worker.use(
+					mockCurrentUserEndpoint({
+						successResponse: HttpResponse.json(
+							createCurrentUser({tenants: [{tenantId: 'tenant-a', name: 'Tenant A', description: null}]}),
+						),
+					}),
+					mockGetProcessDefinitionStatisticsEndpoint({
+						schema: z.strictObject({
+							filter: z.strictObject({
+								$or: z.tuple([
+									z.strictObject({state: z.strictObject({$eq: z.literal('ACTIVE')}), hasIncident: z.literal(false)}),
+									z.strictObject({state: z.strictObject({$eq: z.literal('SUSPENDED')})}),
+									z.strictObject({
+										hasIncident: z.literal(true),
+										state: z.strictObject({$neq: z.literal('SUSPENDED')}),
+									}),
+								]),
+								...(isMultiTenancyEnabled ? {tenantId: z.strictObject({$eq: z.literal('tenant-a')})} : {}),
+								processInstanceKey: z.strictObject({$in: z.tuple([z.literal(INSTANCE.processInstanceKey)])}),
+							}),
+						}),
+						successResponse: HttpResponse.json(
+							createGetProcessDefinitionStatisticsResponse([
+								createProcessDefinitionStatistic({elementId: 'task-1', active: 1}),
+							]),
+						),
+						failureResponse: new HttpResponse(null, {status: 400}),
+					}),
+					mockCreateMigrationBatchOperationEndpoint({
+						schema: z.strictObject({
+							filter: z.strictObject({
+								$or: z.tuple([
+									z.strictObject({state: z.strictObject({$eq: z.literal('ACTIVE')}), hasIncident: z.literal(false)}),
+									z.strictObject({state: z.strictObject({$eq: z.literal('SUSPENDED')})}),
+									z.strictObject({
+										hasIncident: z.literal(true),
+										state: z.strictObject({$neq: z.literal('SUSPENDED')}),
+									}),
+								]),
+								state: z.strictObject({$eq: z.literal('ACTIVE')}),
+								processDefinitionId: z.strictObject({$eq: z.literal('my_simple_process')}),
+								processDefinitionVersion: z.literal(1),
+								...(isMultiTenancyEnabled ? {tenantId: z.strictObject({$eq: z.literal('tenant-a')})} : {}),
+								processInstanceKey: z.strictObject({$in: z.tuple([z.literal(INSTANCE.processInstanceKey)])}),
+								processDefinitionKey: z.strictObject({$eq: z.literal('source-key')}),
+							}),
+							migrationPlan: z.strictObject({
+								targetProcessDefinitionKey: z.literal('latest-key'),
+								mappingInstructions: z.tuple([
+									z.strictObject({sourceElementId: z.literal('task-1'), targetElementId: z.literal('task-1')}),
+								]),
+							}),
+						}),
+						successResponse: accepted(),
+						failureResponse: new HttpResponse(null, {status: 400}),
+					}),
+				);
+
+				const screen = await openFromInstance();
+
+				await expect.element(screen.getByText('Migration step 1 - mapping elements')).toBeVisible();
+				expect(screen.router.state.location.search).toEqual({...SOURCE_SEARCH, tenantId});
+				await expect.poll(() => screen.router.state.location.state.operateInstanceMigration).toBeUndefined();
+
+				await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+
+				await expect
+					.element(screen.getByText(/^You are about to migrate/))
+					.toHaveTextContent(
+						'You are about to migrate 1 process instance from the process definition: Invoice process - version 1 to the process definition: Invoice process - version 3',
+					);
+				await expect.element(screen.getByTestId('state-overlay-task-1-active')).toHaveTextContent('1');
+
+				await confirmMigration(screen);
+
+				await expect
+					.element(screen.getByText('The batch operation "Migrate Process Instance" has been started'))
+					.toBeVisible();
+				expect(screen.router.state.location.search).toEqual({
+					active: true,
+					suspended: true,
+					incidents: true,
+					process: 'my_simple_process',
+					version: 3,
+					tenantId,
+				});
+			},
+		);
+
+		it('should return to the source list after exiting and not re-enter the migration', async ({worker}) => {
+			mockPage(worker);
+			const screen = await openFromInstance();
+			await expect.element(screen.getByText('Migration step 1 - mapping elements')).toBeVisible();
+
+			await userEvent.click(screen.getByRole('button', {name: 'Exit migration'}));
+			await userEvent.click(screen.getByRole('dialog', {name: 'Exit migration'}).getByRole('button', {name: 'Exit'}));
+
+			await expect.element(screen.getByText('Migration step 1 - mapping elements')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Invoice process');
+			expect(screen.router.state.location.search).toEqual(SOURCE_SEARCH);
+
+			screen.router.history.back();
+			await expect.poll(() => screen.router.state.location.pathname).toBe(INSTANCE_PATH);
+			screen.router.history.forward();
+
+			await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Invoice process');
+			await expect.element(screen.getByText('Migration step 1 - mapping elements')).not.toBeInTheDocument();
+		});
+
+		it('should keep the hand-over in its tenant when another tenant shares the definition ID', async ({worker}) => {
+			sessionStorage.setItem(
+				'clientConfig',
+				JSON.stringify(
+					createSystemConfiguration({
+						deployment: {...createSystemConfiguration().deployment, isMultiTenancyEnabled: true},
+					}),
+				),
+			);
+			const otherTenantVersion = createProcessDefinition({
+				processDefinitionId: 'my_simple_process',
+				processDefinitionKey: 'other-tenant-key',
+				name: 'Invoice process',
+				version: 4,
+				tenantId: 'tenant-b',
+			});
+			mockPage(worker, {xmlByKey: {...XML_BY_KEY, 'other-tenant-key': BPMN_XML}});
+			worker.use(
+				mockCurrentUserEndpoint({
+					successResponse: HttpResponse.json(
+						createCurrentUser({
+							tenants: [
+								{tenantId: 'tenant-a', name: 'Tenant A', description: null},
+								{tenantId: 'tenant-b', name: 'Tenant B', description: null},
+							],
+						}),
+					),
+				}),
+				mockQueryProcessDefinitionsByFilterEndpoint({
+					getResponse: (filter) =>
+						HttpResponse.json(
+							createQueryProcessDefinitionsResponse({
+								items: (filter?.isLatestVersion
+									? [FLIGHT_REGISTRATION]
+									: [SOURCE, PREVIOUS_TARGET, LATEST_TARGET, otherTenantVersion]
+								).filter(({tenantId}) => filter?.tenantId === undefined || tenantId === filter.tenantId),
+							}),
+						),
+				}),
+			);
+			const screen = await openFromInstance();
+
+			await expect.element(screen.getByRole('combobox', {name: 'Target Version'})).toHaveTextContent('3Open menu');
+			await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+			await expect
+				.element(screen.getByText(/^You are about to migrate/))
+				.toHaveTextContent(
+					'You are about to migrate 1 process instance from the process definition: Invoice process - version 1 to the process definition: Invoice process - version 3',
+				);
+
+			await userEvent.click(screen.getByRole('button', {name: 'Exit migration'}));
+			await userEvent.click(screen.getByRole('dialog', {name: 'Exit migration'}).getByRole('button', {name: 'Exit'}));
+			await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Invoice process');
+			screen.router.history.back();
+			await expect.poll(() => screen.router.state.location.pathname).toBe(INSTANCE_PATH);
+			screen.router.history.forward();
+
+			await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Invoice process');
+			await expect.element(screen.getByText('Migration step 1 - mapping elements')).not.toBeInTheDocument();
+			expect(screen.router.state.location.search).toEqual({...SOURCE_SEARCH, tenantId: 'tenant-a'});
+		});
+
+		it('should ask before returning to the instance', async ({worker}) => {
+			mockPage(worker);
+			const screen = await openFromInstance();
+			await expect.element(screen.getByText('Migration step 1 - mapping elements')).toBeVisible();
+
+			screen.router.history.push(INSTANCE_PATH);
+			const dialog = screen.getByRole('dialog', {name: 'Leave Migration Mode'});
+			await userEvent.click(dialog.getByRole('button', {name: 'Stay'}));
+
+			await expect.element(screen.getByText('Migration step 1 - mapping elements')).toBeVisible();
+			expect(screen.router.state.location.pathname).toBe('/operate/processes');
+
+			screen.router.history.push(INSTANCE_PATH);
+			await userEvent.click(dialog.getByRole('button', {name: 'Leave'}));
+
+			await expect.poll(() => screen.router.state.location.pathname).toBe(INSTANCE_PATH);
+		});
+
+		it('should list the instances when the hand-over is malformed', async ({worker}) => {
+			mockPage(worker);
+			const screen = await openFromInstance(
+				JSON.parse(`{"operateInstanceMigration": {"processInstanceKey": "${INSTANCE.processInstanceKey}"}}`),
+			);
+
+			await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Invoice process');
+			await expect.element(screen.getByText('Migration step 1 - mapping elements')).not.toBeInTheDocument();
+			await expect.poll(() => screen.router.state.location.state.operateInstanceMigration).toBeUndefined();
+		});
 	});
 });

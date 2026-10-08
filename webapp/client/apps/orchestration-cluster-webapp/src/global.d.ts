@@ -12,6 +12,7 @@ declare module '@tanstack/history' {
 		operateDecisionFocus?: {decisionInstanceKey: string} | 'list';
 		operateVariableFilterDraft?: {name: string; value: string};
 		operateVariableFilterOpenedFromList?: true;
+		operateInstanceMigration?: unknown;
 	}
 }
 

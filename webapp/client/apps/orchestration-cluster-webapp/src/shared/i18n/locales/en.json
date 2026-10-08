@@ -1459,6 +1459,7 @@
 					"retryTitle": "Retry Instance {{processInstanceKey}}",
 					"cancelTitle": "Cancel Instance {{processInstanceKey}}",
 					"modifyTitle": "Modify Instance {{processInstanceKey}}",
+					"migrateTitle": "Migrate Instance {{processInstanceKey}}",
 					"deleteTitle": "Delete Instance {{processInstanceKey}}",
 					"suspendTitle": "Suspend Instance {{processInstanceKey}}",
 					"resumeTitle": "Resume Instance {{processInstanceKey}}",

@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
-import {useBlocker, useNavigate} from '@tanstack/react-router';
+import {useBlocker, useLocation, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Button, Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {queries} from '#/shared/http/queries';
@@ -38,11 +38,10 @@ import {DiagramPanel, type ProcessDefinitionSelection} from './DiagramPanel';
 import {InstancesTable} from './InstancesTable';
 import {MigrationView} from './MigrationView';
 import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
-import type {MigrationScope} from './getMigrationFilter';
+import {getInstanceMigration} from './instanceMigration';
 import {useDiagramXml} from './useDiagramXml';
 import {selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
 import type {BatchModificationScope} from './useBatchModificationStatistics';
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {setVariableConditions, useVariableConditions} from './VariablesFilter/variableFilterStore';
 
 type FiltersFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
@@ -119,10 +118,25 @@ const Processes: React.FC<Props> = ({
 	const isDefinitionsReady =
 		Boolean(process) && selectedDefinitions !== undefined && !isDefinitionsLoading && !isDefinitionsError;
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-	const [mode, setMode] = useState<ProcessesMode>('list');
+	const instanceMigrationState = useLocation({select: ({state}) => state.operateInstanceMigration});
+	const [migration, setMigration] = useState(() =>
+		ENABLE_PROCESS_MIGRATION ? getInstanceMigration(instanceMigrationState) : null,
+	);
+	const [mode, setMode] = useState<ProcessesMode>(migration === null ? 'list' : 'migration');
 	const [selectedTargetElementId, setSelectedTargetElementId] = useState<string>();
 	const [selectionScope, setSelectionScope] = useState<BatchModificationScope | null>(null);
-	const [migration, setMigration] = useState<{source: ProcessDefinition; scope: MigrationScope} | null>(null);
+	useEffect(() => {
+		if (instanceMigrationState !== undefined) {
+			void navigate({
+				to: '.',
+				search: true,
+				hash: true,
+				state: ({operateInstanceMigration: _, ...state}) => state,
+				replace: true,
+				ignoreBlocker: true,
+			});
+		}
+	}, [instanceMigrationState, navigate]);
 	const blocker = useBlocker({
 		// Like legacy, only a change of page interrupts the mode; search-only changes, such as browser back, pass.
 		shouldBlockFn: ({current, next}) => current.pathname !== next.pathname,

@@ -1447,6 +1447,7 @@
 					"retryTitle": "Instanz {{processInstanceKey}} wiederholen",
 					"cancelTitle": "Instanz {{processInstanceKey}} abbrechen",
 					"modifyTitle": "Instanz {{processInstanceKey}} ändern",
+					"migrateTitle": "Instanz {{processInstanceKey}} migrieren",
 					"deleteTitle": "Instanz {{processInstanceKey}} löschen",
 					"suspendTitle": "Instanz {{processInstanceKey}} anhalten",
 					"resumeTitle": "Instanz {{processInstanceKey}} fortsetzen",
