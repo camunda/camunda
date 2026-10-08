@@ -1417,6 +1417,7 @@
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Entscheidungsdefinition \"{{name}} - Version {{version}}\" löschen",
+					"loadingMessage": "Entscheidungsdefinition wird gelöscht",
 					"title": "DRD löschen",
 					"description": "Sie sind dabei, das folgende DRD zu löschen:",
 					"confirmation": "Ja, ich bestätige, dass ich dieses DRD und alle zugehörigen Instanzen löschen möchte.",
