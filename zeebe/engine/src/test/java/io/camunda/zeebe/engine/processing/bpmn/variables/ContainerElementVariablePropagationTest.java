@@ -410,7 +410,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/35251")
   public void shouldNotLeakUntouchedLocalSiblingIntoParentScope() {
     // given: 'a' is set locally on the sub-process with an untouched sibling 'p' that is never
     // targeted by any output mapping

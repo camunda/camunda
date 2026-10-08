@@ -42,49 +42,6 @@ class OutputMappingResolverComparisonTest {
   private static final OrderedOutputMappingResolver ORDERED = new OrderedOutputMappingResolver();
   private static final CombinedOutputMappingResolver COMBINED = new CombinedOutputMappingResolver();
 
-  @Nested
-  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
-  // @DisplayName("Non-overlapping targets")
-  class NonOverlappingTargets {
-    @Test
-    void shouldProduceSameResultForDistinctTargets() {
-      final var r =
-          Helpers.resolve(
-              List.of(Helpers.mapping("=x", "a"), Helpers.mapping("=y", "b")),
-              Map.of("x", 1, "y", 2));
-      Helpers.assertSame(r, "{'a':1,'b':2}");
-    }
-  }
-
-  @Nested
-  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
-  // @DisplayName("Duplicate target with intermediate read")
-  class DuplicateTargetWithIntermediateRead {
-    @Test
-    void shouldDifferOnIntermediateValueVisibility() {
-      final var r =
-          Helpers.resolve(
-              List.of(
-                  Helpers.mapping("=1", "x"),
-                  Helpers.mapping("=x", "y"),
-                  Helpers.mapping("=2", "x")),
-              Map.of());
-      Helpers.assertDiffers(r, "{'x':2,'y':1}", "{'x':2,'y':2}");
-    }
-  }
-
-  @Nested
-  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
-  // @DisplayName("Nested target scope seeding")
-  class NestedTargetScopeSeeding {
-    @Test
-    void shouldPreserveSiblingKeysForNestedTarget() {
-      final var scope = Map.<String, Object>of("a", Map.of("b", "old", "c", "kept"));
-      final var r = Helpers.resolve(List.of(Helpers.mapping("=x", "a.b")), Map.of("x", 42), scope);
-      Helpers.assertSame(r, "{'a':{'b':42,'c':'kept'}}");
-    }
-  }
-
   static final class Helpers {
 
     static ResolverResults resolve(final List<ZeebeMapping> m, final Map<String, Object> jobVars) {
@@ -107,7 +64,7 @@ class OutputMappingResolverComparisonTest {
       final var ej = encode(jobVars);
       final var ee = encode(elementScope);
       final ScopedEvaluationContext ctx = name -> Either.left(ee.getOrDefault(name, ej.get(name)));
-      final var ctx2 = new MappingContext(BufferUtil.wrapString("t"), -1L, -1L, -1L, "");
+      final var ctx2 = new MappingContext(BufferUtil.wrapString("t"), -1L, -1L, -1L, "", -1L);
       return new MappingExpressionProcessor(
           new ExpressionProcessor(EXPRESSION_LANGUAGE, ctx, DEFAULT_TIMEOUT), ctx2);
     }
@@ -157,4 +114,47 @@ class OutputMappingResolverComparisonTest {
 
   record ResolverResults(
       Either<Failure, DirectBuffer> ordered, Either<Failure, DirectBuffer> combined) {}
+
+  @Nested
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Non-overlapping targets")
+  class NonOverlappingTargets {
+    @Test
+    void shouldProduceSameResultForDistinctTargets() {
+      final var r =
+          Helpers.resolve(
+              List.of(Helpers.mapping("=x", "a"), Helpers.mapping("=y", "b")),
+              Map.of("x", 1, "y", 2));
+      Helpers.assertSame(r, "{'a':1,'b':2}");
+    }
+  }
+
+  @Nested
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Duplicate target with intermediate read")
+  class DuplicateTargetWithIntermediateRead {
+    @Test
+    void shouldDifferOnIntermediateValueVisibility() {
+      final var r =
+          Helpers.resolve(
+              List.of(
+                  Helpers.mapping("=1", "x"),
+                  Helpers.mapping("=x", "y"),
+                  Helpers.mapping("=2", "x")),
+              Map.of());
+      Helpers.assertDiffers(r, "{'x':2,'y':1}", "{'x':2,'y':2}");
+    }
+  }
+
+  @Nested
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Nested target scope seeding")
+  class NestedTargetScopeSeeding {
+    @Test
+    void shouldPreserveSiblingKeysForNestedTarget() {
+      final var scope = Map.<String, Object>of("a", Map.of("b", "old", "c", "kept"));
+      final var r = Helpers.resolve(List.of(Helpers.mapping("=x", "a.b")), Map.of("x", 42), scope);
+      Helpers.assertSame(r, "{'a':{'b':42,'c':'kept'}}");
+    }
+  }
 }
