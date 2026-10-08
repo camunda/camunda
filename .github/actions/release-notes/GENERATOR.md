@@ -474,9 +474,11 @@ Maintenance · Uncategorized
 Breaking changes are additionally hoisted into a `## Breaking changes` section at the top.
 A grouped dependency entry is breaking if any contributing pull request is marked breaking.
 An opt-out pull request is grouped by its title type like any other — having no tracked issue says
-nothing about what the change is. Every `#N` is a link to `https://github.com/<owner>/<repo>/pull/N` (GitHub
-redirects it to `/issues/N` for an issue), because the full asset and the step summary don't autolink
-the way a release body does.
+nothing about what the change is. In the full asset every `#N` is a link to `https://github.com/<owner>/<repo>/pull/N` (GitHub
+redirects it to `/issues/N` for an issue), because that file does not autolink the way a release body
+does. The release description keeps bare `#N`, which GitHub autolinks: a URL per reference costs 49
+characters, and on 8.10.0 it would more than double the full asset (352,445 to 785,097) and push the
+description past the limit.
 
 The two outputs are the same list of changes with one difference: the **release description** (the
 `customer-body` output) must fit GitHub's release body limit, the **full asset**
