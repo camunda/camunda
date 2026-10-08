@@ -238,6 +238,41 @@ class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldIncludeCacheTokensInTotalTokensWhenApplyingUpdate() {
+    // given: CREATED batch
+    final ProcessInstanceDto created = buildBaseInstance();
+    created.setAgentInstances(List.of(createdAgentWithDefinition(AGENT_ID)));
+    importProcessInstances(List.of(created));
+
+    // when: UPDATED batch carries cache tokens
+    final ProcessInstanceDto updated = buildBaseInstance();
+    final AgentInstanceDto updatedAgent = new AgentInstanceDto();
+    updatedAgent.setAgentInstanceId(AGENT_ID);
+    updatedAgent.setFlowNodeId("agentTask");
+    updatedAgent.setStatus("THINKING");
+    updatedAgent.setLastUpdatedDate(OffsetDateTime.parse("2024-01-01T10:00:03+00:00"));
+    final AgentMetricsDto metrics = metrics();
+    metrics.setCacheReadTokens(1000L);
+    metrics.setCacheCreationTokens(50L);
+    updatedAgent.setMetrics(metrics);
+    updated.setAgentInstances(List.of(updatedAgent));
+    importProcessInstances(List.of(updated));
+
+    // then: total = input + cache read + cache write + output
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              final AgentMetricsDto savedMetrics = saved.getAgentInstances().get(0).getMetrics();
+              assertThat(savedMetrics.getCacheReadTokens()).isEqualTo(1000L);
+              assertThat(savedMetrics.getCacheCreationTokens()).isEqualTo(50L);
+              assertThat(saved.getAgentTotalInputTokens()).isEqualTo(100L);
+              assertThat(saved.getAgentTotalOutputTokens()).isEqualTo(200L);
+              assertThat(saved.getAgentTotalTokens()).isEqualTo(100L + 1000L + 50L + 200L);
+            });
+  }
+
+  @Test
   void shouldNotOverwriteTerminalStatusEvenWithNewerUpdate() {
     // given: COMPLETED sets terminal status at END_TIME (10:00:05)
     final ProcessInstanceDto completed = buildBaseInstance();
@@ -383,12 +418,13 @@ class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   private void computeAgentTotals(final ProcessInstanceDto dto) {
-    long totalInput = 0L, totalOutput = 0L, totalModel = 0L, totalTool = 0L;
+    long totalInput = 0L, totalOutput = 0L, totalCache = 0L, totalModel = 0L, totalTool = 0L;
     for (final AgentInstanceDto agent : dto.getAgentInstances()) {
       final AgentMetricsDto m = agent.getMetrics();
       if (m != null) {
         totalInput += m.getInputTokens();
         totalOutput += m.getOutputTokens();
+        totalCache += m.getCacheReadTokens() + m.getCacheCreationTokens();
         totalModel += m.getModelCalls();
         totalTool += m.getToolCalls();
       }
@@ -397,7 +433,7 @@ class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
     dto.setAgentTotalOutputTokens(totalOutput);
     dto.setAgentTotalModelCalls(totalModel);
     dto.setAgentTotalToolCalls(totalTool);
-    dto.setAgentTotalTokens(totalInput + totalOutput);
+    dto.setAgentTotalTokens(totalInput + totalCache + totalOutput);
   }
 
   private void importProcessInstances(final List<ProcessInstanceDto> instances) {

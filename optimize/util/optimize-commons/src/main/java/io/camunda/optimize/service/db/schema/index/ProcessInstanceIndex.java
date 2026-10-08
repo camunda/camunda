@@ -371,6 +371,14 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
                                                     p2 -> p2.long_(k2 -> k2))
                                                 .properties(
                                                     AgentInstanceDto.AgentMetricsDto.Fields
+                                                        .cacheReadTokens,
+                                                    p2 -> p2.long_(k2 -> k2))
+                                                .properties(
+                                                    AgentInstanceDto.AgentMetricsDto.Fields
+                                                        .cacheCreationTokens,
+                                                    p2 -> p2.long_(k2 -> k2))
+                                                .properties(
+                                                    AgentInstanceDto.AgentMetricsDto.Fields
                                                         .modelCalls,
                                                     p2 -> p2.long_(k2 -> k2))
                                                 .properties(
