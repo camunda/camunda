@@ -247,3 +247,108 @@ def test_a_path_claim_falls_back_to_the_human_detail_when_it_has_no_refs():
     out = notify.text(payload, "main", "")
 
     assert "already touches these test files: tests/SM-8.10/a.spec.ts (#123)" in out
+
+
+def test_the_caller_can_supply_the_failing_run_when_the_plan_has_none():
+    # A discovery failure leaves no plan, which is the case where the link to the run
+    # that actually broke matters most.
+    out = notify.text(
+        _payload(run_url=""), "main", "https://triage",
+        notify.STATE_TRIAGE_FAILED, "https://github.com/camunda/x/actions/runs/9",
+    )
+
+    assert "<https://github.com/camunda/x/actions/runs/9|Failing run ↗>" in out
+
+
+def test_an_unreadable_report_is_not_reported_as_no_test_having_run():
+    # `no-failing-specs-extracted` has exactly this shape — not job_level, no specs —
+    # and there the tests DID run; their results could not be read.
+    payload = _payload(
+        suppressed=[
+            _suppressed(reason="no-failing-specs-extracted", spec_count=0, fingerprints=[])
+        ]
+    )
+
+    out = notify.text(payload, "main", "")
+
+    assert "before any test ran" not in out
+    assert "no readable test results" in out
+
+
+def test_a_product_bug_is_not_captioned_with_a_covering_prs_number():
+    # A fingerprint can be both tracked by a bug and claimed by a PR. The planner picks
+    # the product-bug reason, so the reference must come from the product-bug index —
+    # a merged index let the PR win and be labelled as the bug.
+    payload = _payload(
+        suppressed=[_suppressed(reason="tracked-by-open-product-bug")],
+        references={
+            "product_bugs": {"aaaaaaaa": "https://github.com/camunda/camunda/issues/1"},
+            "covered_by": {"aaaaaaaa": "camunda/e2e#999"},
+        },
+    )
+
+    out = notify.text(payload, "main", "")
+
+    assert "camunda#1" in out
+    assert "999" not in out
+
+
+def test_a_failed_lookup_says_nobody_may_be_on_it_rather_than_an_agent_is():
+    # discover fails closed: a failed in-flight lookup suppresses by claiming every key
+    # is in flight. The suppression is right, but "an agent is already working on this"
+    # is then a guess, and it is the one sentence that makes a medic move on.
+    payload = _payload(
+        suppressed=[_suppressed(reason="agent-already-running")],
+        references={"lookups_failed": ["inflight"]},
+    )
+
+    out = notify.text(payload, "main", "")
+
+    assert "already working on this area" not in out
+    assert "could not check whether an agent is already running" in out
+    assert "nobody may be on this" in out
+
+
+def test_a_verified_lookup_keeps_the_plain_reason():
+    payload = _payload(
+        suppressed=[_suppressed(reason="agent-already-running")],
+        references={"lookups_failed": []},
+    )
+
+    assert "already working on this area" in notify.text(payload, "main", "")
+
+
+def test_a_candidate_on_another_branch_is_labelled_with_its_own_ref():
+    # preview-env-smoke-test.yml deploys four minors from one `main` run, so a single
+    # headline ref would label a stable-branch failure `main`.
+    payload = _payload(
+        suppressed=[
+            _suppressed(base_ref="main"),
+            _suppressed(
+                base_ref="stable/8.9",
+                reason="base-ref-not-supported-by-fix-agent",
+                dispatch_key="stable/8.9:sm-smoke-e2e",
+            ),
+        ]
+    )
+
+    lines = [l for l in notify.text(payload, "main", "").splitlines() if l.startswith("•")]
+
+    assert "(on `" not in lines[0]
+    assert "(on `stable/8.9`)" in lines[1]
+
+
+def test_a_partial_dispatch_names_how_many_actually_started():
+    # `failed` and `partial` call for opposite reactions, so they cannot share wording:
+    # one means nobody is on any of it, the other that part of it is unattended.
+    payload = _payload(
+        dispatches=[
+            {"surface": "sm-smoke-e2e", "test_specs": [], "job_level": True},
+            {"surface": "saas-smoke-e2e", "test_specs": [], "job_level": True},
+        ]
+    )
+
+    out = notify.text(payload, "main", "", notify.STATE_PARTIAL, "", 1)
+
+    assert "started only 1 of 2 fix agents" in out
+    assert "those areas are unattended" in out

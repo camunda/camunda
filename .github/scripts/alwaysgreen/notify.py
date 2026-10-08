@@ -38,8 +38,18 @@ ASK_CHANNEL_NAME = "#ask-alwaysgreen"
 STATE_DISPATCHED = "dispatched"
 STATE_DRY_RUN = "dry-run"
 STATE_FAILED = "failed"
+#: Some agents started and the rest did not. Distinct from `failed` because the two
+#: call for opposite reactions: `failed` means nobody is on any of it, while `partial`
+#: means someone is on part of it and the remainder is unattended.
+STATE_PARTIAL = "partial"
 STATE_TRIAGE_FAILED = "triage-failed"
-STATES = (STATE_DISPATCHED, STATE_DRY_RUN, STATE_FAILED, STATE_TRIAGE_FAILED)
+STATES = (
+    STATE_DISPATCHED,
+    STATE_DRY_RUN,
+    STATE_FAILED,
+    STATE_PARTIAL,
+    STATE_TRIAGE_FAILED,
+)
 
 #: Surface ids are dispatch-key material and appear in labels and fingerprints, so they
 #: are not renamed. They are translated here instead: a medic reading the channel knows
@@ -96,6 +106,38 @@ REASON_SENTENCES = {
     "no-failing-specs-extracted": "no failing test could be read from the report",
     "per-run-cap-reached": "the per-run agent limit for this run was already reached",
     "daily-cap-reached": "the daily agent limit was already reached",
+}
+
+
+#: A reason is only as true as the lookup behind it. Every discover.py fails CLOSED: a
+#: failed in-flight-run lookup suppresses by claiming every key is in flight, a failed
+#: open-PR lookup by claiming every key has a PR, a failed path scan by claiming every
+#: path is touched. The suppression is right — a duplicate fix PR is worse than a delay
+#: — but the reason it reports is then a guess, and "a fix agent is already working on
+#: this area" is the one sentence that makes a medic move on. These replace it, so an
+#: unverified hold reads as unattended work rather than as someone else's problem.
+#: `discover.py` names the failed lookups in the plan's `lookups_failed`.
+REASON_LOOKUPS = {
+    "agent-already-running": "inflight",
+    "open-fix-pr-for-surface": "open_prs",
+    "open-pr-covers-all-specs": "open_prs",
+    "spec-path-claimed-by-open-pr": "paths",
+    "all-specs-already-accounted-for": "open_prs",
+}
+
+UNVERIFIED_SENTENCES = {
+    "inflight": (
+        "AlwaysGreen could not check whether an agent is already running, so it held "
+        "back rather than risk a duplicate — nobody may be on this"
+    ),
+    "open_prs": (
+        "AlwaysGreen could not check for an existing fix PR, so it held back rather "
+        "than risk a duplicate — nobody may be on this"
+    ),
+    "paths": (
+        "AlwaysGreen could not check which test files open PRs touch, so it held back "
+        "rather than risk a duplicate — nobody may be on this"
+    ),
 }
 
 
@@ -167,11 +209,17 @@ def amount_phrase(entry: dict, spec_count: int) -> str:
     A job-level candidate (a Helm install, a job that died before Playwright ran) has
     no specs at all, and reporting it as "0 failing tests" reads as "nothing failed".
     """
+    # Present only where the planner preserves the job names it merged (the camunda
+    # monorepo today); absent elsewhere, so a merged job-level failure reports as one.
     jobs = 1 + len([j for j in (entry.get("also_failing_jobs") or []) if j])
-    if entry.get("job_level") or spec_count == 0:
-        if jobs > 1:
-            return f"{jobs} failing jobs, no test results"
+    if jobs > 1:
+        return f"{jobs} failing jobs, no test results"
+    if entry.get("job_level"):
         return "the job failed before any test ran"
+    if spec_count == 0:
+        # NOT "before any test ran": `no-failing-specs-extracted` has this exact shape,
+        # and there the tests did run — their results could not be read.
+        return "the test job failed with no readable test results"
     return f"{spec_count} failing test{'s' if spec_count != 1 else ''}"
 
 
@@ -187,10 +235,18 @@ def references_for(entry: dict, references: dict) -> list[str]:
     if reason in ("open-fix-pr-for-surface", "spec-path-claimed-by-open-pr"):
         by_key = references.get("keys") or {}
         return list(by_key.get(entry.get("dispatch_key") or "") or [])
-    by_fp = {
-        **(references.get("product_bugs") or {}),
-        **(references.get("covered_by") or {}),
-    }
+    # Per reason, not merged: a fingerprint can be both covered by a PR and tracked by a
+    # product bug, and a merged index let the PR win and be captioned as the bug. Only
+    # `all-specs-already-accounted-for` is genuinely several sources at once.
+    if reason == "tracked-by-open-product-bug":
+        by_fp = references.get("product_bugs") or {}
+    elif reason == "all-specs-already-accounted-for":
+        by_fp = {
+            **(references.get("product_bugs") or {}),
+            **(references.get("covered_by") or {}),
+        }
+    else:
+        by_fp = references.get("covered_by") or {}
     out: list[str] = []
     for fp in entry.get("fingerprints") or []:
         ref = by_fp.get(fp)
@@ -199,9 +255,31 @@ def references_for(entry: dict, references: dict) -> list[str]:
     return out
 
 
-def area_line(entry: dict, references: dict) -> str:
+def ref_suffix(entry: dict, headline_ref: str) -> str:
+    r"""` (on \`stable/8.9\`)` when this candidate is not on the headline's branch.
+
+    One run can carry candidates for several branches — `preview-env-smoke-test.yml`
+    deploys four minors from one `main` run — so a single headline ref would label a
+    stable-branch failure `main`, and the "does not run on this branch" reason would
+    contradict the ref printed beside it.
+    """
+    ref = (entry.get("base_ref") or "").strip()
+    if not ref or ref == headline_ref:
+        return ""
+    return f" (on `{escape(ref)}`)"
+
+
+def area_line(entry: dict, references: dict, headline_ref: str = "") -> str:
     """One bullet: what failed, how much, and why no agent is on it."""
     reason = entry.get("reason") or "unknown"
+    unverified = REASON_LOOKUPS.get(reason)
+    if unverified and unverified in (references.get("lookups_failed") or []):
+        return (
+            f"• *{escape(surface_label(entry.get('surface') or ''))}*"
+            f"{ref_suffix(entry, headline_ref)} — "
+            f"{amount_phrase(entry, int(entry.get('spec_count') or 0))}, "
+            f"{UNVERIFIED_SENTENCES[unverified]}"
+        )
     sentence = REASON_SENTENCES.get(reason)
     refs = refs_clause(references_for(entry, references))
     if not refs and reason in HUMAN_DETAIL_REASONS and (entry.get("detail") or "").strip():
@@ -212,14 +290,20 @@ def area_line(entry: dict, references: dict) -> str:
     else:
         why = sentence.format(refs=refs)
     amount = amount_phrase(entry, int(entry.get("spec_count") or 0))
-    return f"• *{escape(surface_label(entry.get('surface') or ''))}* — {amount}, {why}"
+    return (
+        f"• *{escape(surface_label(entry.get('surface') or ''))}*"
+        f"{ref_suffix(entry, headline_ref)} — {amount}, {why}"
+    )
 
 
-def dispatch_line(entry: dict) -> str:
+def dispatch_line(entry: dict, headline_ref: str = "") -> str:
     """One bullet per dispatched agent, naming the first test it was given."""
     specs = entry.get("test_specs") or []
     amount = amount_phrase(entry, len(specs))
-    line = f"• *{escape(surface_label(entry.get('surface') or ''))}* — {amount}"
+    line = (
+        f"• *{escape(surface_label(entry.get('surface') or ''))}*"
+        f"{ref_suffix(entry, headline_ref)} — {amount}"
+    )
     if specs:
         first = specs[0]
         more = f" (+{len(specs) - 1} more)" if len(specs) > 1 else ""
@@ -250,10 +334,16 @@ def noise_line(noise: list[dict]) -> str:
     )
 
 
-def footer(payload: dict, triage_run_url: str) -> str:
+def footer(payload: dict, triage_run_url: str, failing_run_url: str = "") -> str:
+    """The failing run is linked from the plan, or from the caller when there is no plan.
+
+    A discovery failure is exactly the case where the plan is missing and the link
+    matters most, so the workflow passes the run it resolved as a fallback.
+    """
     links = []
-    if payload.get("run_url"):
-        links.append(f"<{payload['run_url']}|Failing run ↗>")
+    failing = payload.get("run_url") or failing_run_url
+    if failing:
+        links.append(f"<{failing}|Failing run ↗>")
     if triage_run_url:
         links.append(f"<{triage_run_url}|Triage run ↗>")
     links.append(f"<{ASK_CHANNEL_URL}|{ASK_CHANNEL_NAME}>")
@@ -265,6 +355,8 @@ def text(
     base_ref: str,
     triage_run_url: str,
     state: str = STATE_DISPATCHED,
+    failing_run_url: str = "",
+    started: int = 0,
 ) -> str:
     on = f"on `{escape(base_ref)}`"
     dispatches = payload.get("dispatches") or []
@@ -277,7 +369,7 @@ def text(
             [
                 f":warning: *AlwaysGreen triage failed* {on} — no fix agent was "
                 f"dispatched, so this failure is unattended.",
-                footer(payload, triage_run_url),
+                footer(payload, triage_run_url, failing_run_url),
             ]
         )
 
@@ -291,6 +383,14 @@ def text(
                 f":mag: *AlwaysGreen would dispatch {agents}* {on} — held back "
                 f"because fix-agent dispatch is switched off."
             )
+        elif state == STATE_PARTIAL:
+            # Named counts, because the reaction differs per area: the started agents
+            # need nothing, the rest need a human. The workflow appends the links of
+            # the ones that did start.
+            lines.append(
+                f":warning: *AlwaysGreen started only {started} of {n} fix agents* "
+                f"{on} — the rest failed to start, so those areas are unattended."
+            )
         elif state == STATE_FAILED:
             lines.append(
                 f":warning: *AlwaysGreen planned {agents} but failed to start "
@@ -298,19 +398,19 @@ def text(
             )
         else:
             lines.append(f":robot_face: *AlwaysGreen dispatched {agents}* {on}")
-        lines.extend(dispatch_line(d) for d in dispatches)
+        lines.extend(dispatch_line(d, base_ref) for d in dispatches)
     else:
         lines.append(f":information_source: *AlwaysGreen: no fix agent needed* {on}")
 
     references = payload.get("references") or {}
-    lines.extend(area_line(s, references) for s in suppressed)
+    lines.extend(area_line(s, references, base_ref) for s in suppressed)
 
     if noise and not dispatches and not suppressed:
         lines.append(noise_line(noise))
     if not dispatches and not suppressed and not noise:
         lines.append("• No failing job matched an area AlwaysGreen owns.")
 
-    lines.append(footer(payload, triage_run_url))
+    lines.append(footer(payload, triage_run_url, failing_run_url))
     return "\n".join(lines)
 
 
@@ -319,6 +419,17 @@ def main() -> int:
     ap.add_argument("--report", required=True)
     ap.add_argument("--base-ref", default="")
     ap.add_argument("--triage-run-url", default="")
+    ap.add_argument(
+        "--failing-run-url",
+        default="",
+        help="run to link when the plan is missing its own run_url",
+    )
+    ap.add_argument(
+        "--started",
+        type=int,
+        default=0,
+        help="agents that actually started, for --state partial",
+    )
     ap.add_argument(
         "--state",
         choices=STATES,
@@ -333,7 +444,16 @@ def main() -> int:
         # The message must survive a missing or truncated plan: the failure it reports
         # is real either way, and a crash here would drop the only notification.
         payload = {}
-    print(text(payload, args.base_ref, args.triage_run_url, args.state))
+    print(
+        text(
+            payload,
+            args.base_ref,
+            args.triage_run_url,
+            args.state,
+            args.failing_run_url,
+            args.started,
+        )
+    )
     return 0
 
 

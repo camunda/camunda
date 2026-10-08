@@ -865,6 +865,9 @@ def serialise(
             {
                 "surface": s.candidate.surface,
                 "dispatch_key": s.candidate.key,
+                # Per candidate, not the run's: preview-env-smoke-test.yml carries
+                # candidates for four branches in one `main` run.
+                "base_ref": s.candidate.base_ref,
                 "reason": s.reason,
                 "detail": s.detail,
                 # What failed and how much of it, so the Slack line can say so without
@@ -908,6 +911,10 @@ def main() -> int:
             keys = {c.key for c in candidates}
             log("::warning::in-flight lookup failed; suppressing dispatch this run")
 
+        lookups_failed: list[str] = []
+        if not keys_ok:
+            lookups_failed.append("inflight")
+
         covered, pr_keys, pr_keys_covered, pr_refs, dedupe_ok = dedupe_inputs()
         if not dedupe_ok:
             # Cannot prove what an open PR already covers, so suppress every candidate:
@@ -916,6 +923,7 @@ def main() -> int:
             pr_keys = {c.key for c in candidates}
             pr_keys_covered = set()
             pr_refs = {}
+            lookups_failed.append("open_prs")
             log("::warning::open fix PR lookup failed; suppressing dispatch this run")
 
         run = gh_json(["api", f"repos/{REPO}/actions/runs/{args.run_id}"], {})
@@ -958,6 +966,10 @@ def main() -> int:
                 "covered_by": (pr_refs or {}).get("covered_by") or {},
                 "keys": (pr_refs or {}).get("keys") or {},
                 "product_bugs": bug_urls,
+                # Which lookups could not be proven. Every suppression above fails
+                # closed, so without this the message states a reason that is really a
+                # guess — "an agent is already running" when nothing is.
+                "lookups_failed": lookups_failed,
             },
         )
 

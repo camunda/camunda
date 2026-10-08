@@ -444,3 +444,208 @@ def test_a_failing_job_with_no_steps_and_no_annotation_stays_noise(monkeypatch):
         monkeypatch, jobs=[_job("Create cluster generation on INT", "failure")]
     )
     assert discover.downstream_ci_specs("1") == []
+
+
+# ---------------------------------------------------------------------------
+# References: which PR or issue accounts for a suppressed failure
+# ---------------------------------------------------------------------------
+#
+# The notifier tests hand-build these maps, so without producer-side assertions here a
+# regression could drop or misassign every PR link in Slack and leave the suite green.
+
+
+def test_a_claimed_fingerprint_reports_the_pr_that_claimed_it(monkeypatch):
+    _stub(monkeypatch, [_pr(3951, ["main:sm-smoke-e2e"], claims=["aaaaaaaa"])])
+
+    _covered, _keys, _per_spec, refs, _ok = discover.dedupe_inputs()
+
+    repo = discover.FIX_PR_REPOS[0]
+    assert refs["covered_by"] == {"aaaaaaaa": f"{repo}#3951"}
+
+
+def test_the_first_claimant_is_the_one_reported(monkeypatch):
+    # The PR reported must be the one whose claim actually suppressed the dispatch.
+    _stub(
+        monkeypatch,
+        [
+            _pr(1, ["main:sm-smoke-e2e"], claims=["aaaaaaaa"]),
+            _pr(2, ["main:sm-smoke-e2e"], claims=["aaaaaaaa"]),
+        ],
+    )
+
+    _covered, _keys, _per_spec, refs, _ok = discover.dedupe_inputs()
+
+    assert refs["covered_by"]["aaaaaaaa"].endswith("#1")
+
+
+def test_a_locked_key_reports_every_pr_holding_it(monkeypatch):
+    _stub(
+        monkeypatch,
+        [_pr(10, ["main:saas-smoke-e2e"]), _pr(11, ["main:saas-smoke-e2e"])],
+    )
+
+    _covered, _keys, _per_spec, refs, _ok = discover.dedupe_inputs()
+
+    repo = discover.FIX_PR_REPOS[0]
+    assert refs["keys"]["main:saas-smoke-e2e"] == [f"{repo}#10", f"{repo}#11"]
+
+
+def test_a_stale_prs_claim_is_reported_by_neither_index(monkeypatch):
+    # Its claims are dropped so a fresh agent gets a chance; reporting it as the PR to
+    # wait on would point the medic at a PR that can never land.
+    _stub(
+        monkeypatch,
+        [_pr(9, ["main:sm-smoke-e2e"], claims=["aaaaaaaa"], mergeable="CONFLICTING")],
+    )
+
+    _covered, _keys, _per_spec, refs, _ok = discover.dedupe_inputs()
+
+    assert refs["covered_by"] == {}
+
+
+def test_an_expired_lock_is_not_reported_as_holding_the_key(monkeypatch):
+    _stub(
+        monkeypatch,
+        [_pr(8, ["main:sm-smoke-e2e"], age_hours=planning.PR_LOCK_TTL_HOURS + 1)],
+    )
+
+    _covered, _keys, _per_spec, refs, _ok = discover.dedupe_inputs()
+
+    assert refs["keys"] == {}
+
+
+def test_a_product_bug_reports_its_issue_url(monkeypatch):
+    monkeypatch.setattr(
+        discover,
+        "gh_json",
+        lambda args, default: [
+            {
+                "body": "Fingerprint: nightly-product-bug fp=abcd1234\n",
+                "url": "https://github.com/camunda/camunda/issues/55864",
+            }
+        ],
+    )
+
+    fps, urls = discover.product_bug_fingerprints()
+
+    assert fps == {"abcd1234"}
+    assert urls == {"abcd1234": "https://github.com/camunda/camunda/issues/55864"}
+
+
+def test_a_product_bug_without_a_url_still_suppresses(monkeypatch):
+    # The fingerprint is what decides; the URL is only what the message prints.
+    monkeypatch.setattr(
+        discover,
+        "gh_json",
+        lambda args, default: [{"body": "nightly-product-bug fp=abcd1234"}],
+    )
+
+    fps, urls = discover.product_bug_fingerprints()
+
+    assert fps == {"abcd1234"}
+    assert urls == {}
+
+
+def test_a_suppressed_candidate_carries_its_own_base_ref(monkeypatch):
+    # Not the run's: one preview-env run suppresses candidates for several branches.
+    result = planning.Plan(
+        suppressed=[
+            planning.Suppression(
+                planning.Candidate(
+                    base_ref="stable/8.9",
+                    surface=classify.SURFACE_SM_E2E,
+                    job_name="Run 8.9 Smoke Tests",
+                ),
+                planning.SUPPRESSED_IN_FLIGHT,
+            )
+        ]
+    )
+
+    payload = discover.serialise(
+        result, classify.Blame(None, None, None, "none"), "1", base_ref="main"
+    )
+
+    assert payload["suppressed"][0]["base_ref"] == "stable/8.9"
+    assert payload["base_ref"] == "main"
+
+
+# ---------------------------------------------------------------------------
+# End-to-end smoke test over _run()
+# ---------------------------------------------------------------------------
+#
+# Every other test here calls one function, so a changed return arity between a
+# producer and its only caller is invisible to them: `dedupe_inputs` grew a fifth
+# value and `_run` kept unpacking four, which raises `ValueError` on every real
+# triage while the whole suite stayed green. This test exists to fail on that.
+
+
+def _run_discovery(monkeypatch, tmp_path, **overrides):
+    import json as _json
+    import sys as _sys
+
+    cand = planning.Candidate(
+        base_ref="main",
+        surface=classify.SURFACE_SM_E2E,
+        job_name="Playwright e2e smoke after install",
+        specs=[
+            classify.FailingSpec(
+                file="tests/SM-8.10/a.spec.ts",
+                test_name="logs in",
+                error="boom",
+                project="chromium",
+                attempts=1,
+                statuses=["failed"],
+            )
+        ],
+    )
+    stubs = {
+        "build_candidates": lambda run_id, base_ref, workdir: ([cand], []),
+        "inflight_keys": lambda: (set(), True),
+        "dedupe_inputs": lambda: (
+            set(),
+            set(),
+            set(),
+            {"covered_by": {}, "keys": {}},
+            True,
+        ),
+        "product_bug_fingerprints": lambda: (set(), {}),
+        "resolve_blame": lambda sha: classify.Blame(None, None, None, "none"),
+        "gh_json": lambda args, default: {},
+    }
+    stubs.update(overrides)
+    for name, value in stubs.items():
+        if hasattr(discover, name):
+            monkeypatch.setattr(discover, name, value)
+    if hasattr(discover, "paths_claimed_by_open_prs"):
+        monkeypatch.setattr(discover, "paths_claimed_by_open_prs", lambda paths: ({}, True))
+
+    out = tmp_path / "plan.json"
+    monkeypatch.setattr(
+        _sys,
+        "argv",
+        ["discover.py", "--run-id", "1", "--base-ref", "main", "--out", str(out)],
+    )
+    runner = getattr(discover, "_run", None) or discover.main
+    assert runner() == 0
+    return _json.loads(out.read_text())
+
+
+def test_discovery_produces_a_plan_the_notifier_can_render(monkeypatch, tmp_path):
+    payload = _run_discovery(monkeypatch, tmp_path)
+
+    assert payload["base_ref"] == "main"
+    assert "covered_by" in payload["references"]
+    assert "keys" in payload["references"]
+    assert "product_bugs" in payload["references"]
+    assert len(payload["dispatches"]) == 1
+
+
+def test_a_failed_lookup_is_named_in_the_plan(monkeypatch, tmp_path):
+    # What lets the Slack message say "could not verify" instead of asserting that
+    # someone else is already on the failure.
+    payload = _run_discovery(
+        monkeypatch, tmp_path, inflight_keys=lambda: (set(), False)
+    )
+
+    assert "inflight" in payload["references"]["lookups_failed"]
+    assert payload["dispatches"] == []

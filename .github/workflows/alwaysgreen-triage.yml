@@ -380,6 +380,12 @@ jobs:
           # run-name and would otherwise be matched by mistake on a repeat replay.
           started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           : > /tmp/agent-runs.tsv
+          # Which dispatches actually started, as opposed to which ones we managed to
+          # resolve a run URL for. The two differ: `gh workflow run` can succeed and the
+          # URL poll below still come up empty, and the step aborts on the first failed
+          # dispatch, leaving the rest unstarted. Only this file can tell the Slack
+          # message whether some, all or none of the planned agents are running.
+          : > /tmp/agent-dispatched.txt
 
           jq -c '.dispatches[]' /tmp/alwaysgreen-plan.json | while read -r d; do
             key=$(jq -r '.dispatch_key' <<<"$d")
@@ -403,6 +409,7 @@ jobs:
               -f triage_run_url="${TRIAGE_RUN_URL}" \
               -f blame="${blame_json}" \
               -f slack="${slack_json}"
+            printf '%s\n' "${key}" >> /tmp/agent-dispatched.txt
 
             # `gh workflow run` returns no run id, so resolve it from the run-name,
             # which carries the dispatch key verbatim. Poll: the run takes a moment
@@ -443,21 +450,48 @@ jobs:
           set -euo pipefail
           [ -s /tmp/slack-text.txt ] || { echo "No posted message to update."; exit 0; }
 
+          planned=$(jq '.dispatches | length' /tmp/alwaysgreen-plan.json 2>/dev/null || echo 0)
+          # grep -c, not `wc -l <`: under `pipefail` a missing file fails the pipeline
+          # and takes the step with it, and the file is absent whenever dispatch was
+          # withheld — the normal case in dry-run.
+          started=$(grep -c . /tmp/agent-dispatched.txt 2>/dev/null || true)
+          started=${started:-0}
+          links=""
           if [ -s /tmp/agent-runs.tsv ]; then
             links=$(awk -F'\t' '{printf "%s<%s|%s ↗>", sep, $2, $1; sep=" · "}' /tmp/agent-runs.tsv)
-            text="$(cat /tmp/slack-text.txt)"$'\n'"Agents: ${links}"
-          elif [ "${DISPATCH_OUTCOME}" = "failure" ]; then
-            # The message was posted before dispatch, because the agent needs its ts to
-            # reply in-thread. Left alone it claims agents are running when the dispatch
-            # step died, which is the one reading that stops anyone else from picking the
-            # failure up.
+          fi
+
+          # The message was posted before dispatch, because the agent needs its ts to
+          # reply in-thread. Left alone it claims every planned agent is running, which
+          # is the one reading that stops anyone else from picking the failure up — so
+          # the headline is re-rendered from what actually started. Counted from the
+          # dispatch log rather than from the step outcome or the link file: the step can
+          # fail after starting some agents, and a started agent whose URL did not
+          # resolve is still running.
+          if [ "${DISPATCH_OUTCOME}" = "skipped" ] || [ "${planned}" = "0" ]; then
+            state=""
+          elif [ "${started}" = "0" ]; then
+            state=failed
+          elif [ "${started}" -lt "${planned}" ]; then
+            state=partial
+          else
+            state=""
+          fi
+
+          if [ -n "${state}" ]; then
             text=$(python .github/scripts/alwaysgreen/notify.py \
               --report /tmp/alwaysgreen-plan.json \
               --base-ref "${BASE_REF}" \
               --triage-run-url "${RUN_URL}" \
-              --state failed)
+              --state "${state}" \
+              --started "${started}")
+            if [ -n "${links}" ]; then
+              text="${text}"$'\n'"Agents that did start: ${links}"
+            fi
+          elif [ -n "${links}" ]; then
+            text="$(cat /tmp/slack-text.txt)"$'\n'"Agents: ${links}"
           else
-            echo "No agent runs to link."
+            echo "Nothing to update: no agents started and none were planned."
             exit 0
           fi
 
