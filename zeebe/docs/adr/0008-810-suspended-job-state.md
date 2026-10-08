@@ -60,7 +60,8 @@ migration. Cost is paid once per suspend, and once per resume cycle, not on ever
 
 - **Suspend:** `ProcessInstanceSuspendProcessor` validates the command, appends
   `ProcessInstance.SUSPENDING`, closes subscriptions, appends `Job.SUSPENDED` for every
-  `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job, then appends
+  `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job except jobs of a terminating element (see
+  D3 notes), then appends
   `ProcessInstance.SUSPENDED` and responds `SUSPENDED`. All work runs inline in the same record
   batch; this change does not introduce a processor handoff or a second batch. A follow-up change
   can add that handoff. Commands targeting the `SUSPENDING` marker are treated as if the instance
@@ -114,8 +115,10 @@ Notes:
   termination waits for its canceling task listener and cancel execution listener jobs, and the
   instance is never resumed. So `SuspensionBehavior` processes `JOB`, `USER_TASK`, and `INCIDENT`
   commands and `ProcessInstance.COMPLETE_EXECUTION_LISTENER` of a terminating element without asking
-  the processor, and `JobTimeOut` does not park such a job. Otherwise the termination never finishes
-  (#64505).
+  the processor, and neither suspend nor `JobTimeOut` parks such a job. Otherwise the termination
+  never finishes (#64505). A job of an element that is already terminating at suspend time, e.g.
+  the canceling listener of an interrupted user task, stays available too; the flow after the
+  interruption still waits for the resume.
 
 **D4. `Job.SUSPENDED` and `Job.RESUMED` are exported but not consumed.** Both exporters filter by an
 allow-list (`JobHandler.JOB_EVENTS`, `JobExportHandler.EXPORTABLE_INTENTS`) that does not include
