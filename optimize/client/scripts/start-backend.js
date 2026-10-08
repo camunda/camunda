@@ -105,7 +105,7 @@ function startBackend() {
     };
 
     backendProcess = spawnWithArgs(
-      `mvn -f optimize-distro/pom.xml exec:java -Dexec.mainClass="io.camunda.optimize.Main"`,
+      `./mvnw -f optimize-distro/pom.xml exec:java -Dexec.mainClass="io.camunda.optimize.Main"`,
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
@@ -152,7 +152,7 @@ async function setupEnvironment() {
   await Promise.all([
     startDocker(),
     buildBackend().catch(() => {
-      console.err('Optimize build interrupted');
+      console.error('Optimize build interrupted');
     }),
   ]);
 }
@@ -160,7 +160,7 @@ async function setupEnvironment() {
 function buildBackend() {
   return new Promise((resolve, reject) => {
     buildBackendProcess = spawnWithArgs(
-      'mvn -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am',
+      './mvnw -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am',
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
