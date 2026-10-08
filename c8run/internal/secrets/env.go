@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -62,6 +63,19 @@ func ValidateEnvPrefix(prefix string) error {
 		}
 	}
 	return nil
+}
+
+// EnvSecretNames returns the sorted secret names exposed under prefix, never their values.
+func EnvSecretNames(environ []string, prefix string) []string {
+	var names []string
+	for _, kv := range environ {
+		key, _, _ := strings.Cut(kv, "=")
+		if name, ok := strings.CutPrefix(key, prefix); ok && name != "" {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
 }
 
 // ScrubEnvSecrets removes every variable under base except those under keep, so a connectors

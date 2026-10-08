@@ -272,6 +272,36 @@ func TestSecretsCommandsAreDisabledInExternalMode(t *testing.T) {
 	assert.ErrorIs(t, statErr, os.ErrNotExist)
 }
 
+func TestSecretsListInEnvModeShowsOnlyTheTenantsNames(t *testing.T) {
+	t.Setenv("C8RUN_SECRETS_MODE", "env")
+	t.Setenv("C8RUN_SECRETS_ENV_PREFIX", "C8RUNTEST_")
+	t.Setenv("C8RUNTEST_DEFAULT_API_KEY", "default-value")
+	t.Setenv("C8RUNTEST_SALES_CRM_TOKEN", "sales-value")
+
+	defaultCommand, defaultOutput, _ := testSecretsCommand("", false)
+	require.NoError(t, defaultCommand.run(t.TempDir(), []string{"list"}))
+	tenantCommand, tenantOutput, _ := testSecretsCommand("", false)
+	require.NoError(t, tenantCommand.run(t.TempDir(), []string{"--tenant", "sales", "list"}))
+
+	assert.Equal(t, "API_KEY\n", defaultOutput.String())
+	assert.Equal(t, "CRM_TOKEN\n", tenantOutput.String())
+	assert.NotContains(t, defaultOutput.String()+tenantOutput.String(), "value")
+}
+
+func TestSecretsWritesAreDisabledInEnvMode(t *testing.T) {
+	baseDir := t.TempDir()
+	t.Setenv("C8RUN_SECRETS_MODE", "env")
+	t.Setenv("C8RUN_SECRETS_ENV_PREFIX", "C8RUNTEST_")
+	command, _, _ := testSecretsCommand("secret-value", false)
+
+	err := command.run(baseDir, []string{"--tenant", "sales", "set", "API_KEY", "--stdin"})
+
+	assert.ErrorContains(t, err, "C8RUN_SECRETS_MODE=env")
+	assert.ErrorContains(t, err, "C8RUNTEST_SALES_<NAME>")
+	_, statErr := os.Stat(filepath.Join(baseDir, "secrets"))
+	assert.ErrorIs(t, statErr, os.ErrNotExist)
+}
+
 func TestSecretsImportDoesNotPrintValues(t *testing.T) {
 	baseDir := t.TempDir()
 	sentinel := "value-that-must-not-be-disclosed"

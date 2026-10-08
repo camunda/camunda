@@ -68,6 +68,9 @@ func (c *secretsCommand) run(baseDir string, args []string) error {
 	if err != nil {
 		return err
 	}
+	if mode, err := localsecrets.Mode(); err == nil && mode == "env" {
+		return c.runEnvMode(tenant, args)
+	}
 	if tenant != "" {
 		return c.runForTenant(baseDir, tenant, args)
 	}
@@ -112,6 +115,36 @@ func (c *secretsCommand) run(baseDir string, args []string) error {
 	default:
 		return fmt.Errorf("unsupported secrets operation: %s", args[0])
 	}
+}
+
+// runEnvMode serves C8RUN_SECRETS_MODE=env, where secrets are environment variables that
+// c8run can list by name but never write.
+func (c *secretsCommand) runEnvMode(tenant string, args []string) error {
+	if len(args) == 0 {
+		return errors.New("usage: c8run secrets [--tenant <id>] list")
+	}
+	if args[0] == "help" || args[0] == "-h" || args[0] == "--help" {
+		_, _ = fmt.Fprint(c.output, secretsHelp)
+		return nil
+	}
+	base, err := localsecrets.EnvBasePrefix()
+	if err != nil {
+		return err
+	}
+	prefix := localsecrets.DefaultTenantEnvPrefix(base)
+	if tenant != "" {
+		prefix = localsecrets.TenantEnvPrefix(base, tenant)
+	}
+	if args[0] != "list" {
+		return fmt.Errorf("c8run secrets %s is disabled because %s=env; set each secret as an environment variable named %s<NAME> instead", args[0], localsecrets.ModeEnv, prefix)
+	}
+	if len(args) != 1 {
+		return errors.New("usage: c8run secrets [--tenant <id>] list")
+	}
+	for _, name := range localsecrets.EnvSecretNames(os.Environ(), prefix) {
+		_, _ = fmt.Fprintln(c.output, name)
+	}
+	return nil
 }
 
 // extractTenantArgument removes `--tenant <id>` / `--tenant=<id>` from anywhere in args.
@@ -457,6 +490,9 @@ C8RUN_SECRETS_DIR selects another directory; relative paths use the current work
 Each physical tenant has its own secrets; use --tenant <id> to manage them. A tenant never
 sees the default tenant's secrets or another tenant's.
 C8RUN_SECRETS_MODE defaults to local; external disables local secret commands.
+C8RUN_SECRETS_MODE=env reads secrets from environment variables instead: set
+C8RUN_SECRETS_ENV_PREFIX (for example MYSECRET_), then <prefix>DEFAULT_<NAME> for the
+default tenant and <prefix><TENANT-ID>_<NAME> for a physical tenant. Only list works in env mode.
 Overwrites and deletions may remain cached until c8run restarts or the cache expires.
 Local secret commands do not manage stores configured explicitly through --config, such as AWS or GCP.
 `

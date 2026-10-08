@@ -52,6 +52,18 @@ func TestValidateEnvPrefixRejectsReservedPrefixes(t *testing.T) {
 	assert.NoError(t, ValidateEnvPrefix("MYSECRET_DEFAULT_"))
 }
 
+func TestEnvSecretNamesListsNamesWithoutValuesOrPrefix(t *testing.T) {
+	environ := []string{
+		"MYSECRET_DEFAULT_B=value-b",
+		"MYSECRET_DEFAULT_A=value-a",
+		"MYSECRET_DEFAULT_=empty-name",
+		"MYSECRET_SALES_C=value-c",
+		"PATH=/bin",
+	}
+
+	assert.Equal(t, []string{"A", "B"}, EnvSecretNames(environ, "MYSECRET_DEFAULT_"))
+}
+
 func TestScrubEnvSecretsKeepsOnlyOwnPrefix(t *testing.T) {
 	env := []string{"MYSECRET_DEFAULT_A=1", "mysecret_sales_b=2", "MYSECRET_HR_C=3", "PATH=/bin"}
 
