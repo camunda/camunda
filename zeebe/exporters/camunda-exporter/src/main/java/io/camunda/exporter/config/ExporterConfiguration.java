@@ -257,11 +257,10 @@ public class ExporterConfiguration {
     private boolean processInstanceEnabled = true;
     private ProcessInstanceRetentionMode processInstanceRetentionMode =
         ProcessInstanceRetentionMode.PI_HIERARCHY;
-    private boolean archiveByIdEnabled = true;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
-    private int rolloverBatchSize = 100;
+    private int rolloverBatchSize = 100; // TODO should we change the default here now?
     private int reindexBatchSize = 2500;
     private int archiveByIdMaxRetryAttempts = 3;
     private int archiveByIdRetryDelayMs = 1000;
@@ -286,14 +285,6 @@ public class ExporterConfiguration {
     public void setProcessInstanceRetentionMode(
         final ProcessInstanceRetentionMode processInstanceRetentionMode) {
       this.processInstanceRetentionMode = processInstanceRetentionMode;
-    }
-
-    public boolean isArchiveByIdEnabled() {
-      return archiveByIdEnabled;
-    }
-
-    public void setArchiveByIdEnabled(final boolean archiveByIdEnabled) {
-      this.archiveByIdEnabled = archiveByIdEnabled;
     }
 
     public String getElsRolloverDateFormat() {
@@ -404,8 +395,6 @@ public class ExporterConfiguration {
           + processInstanceEnabled
           + ", processInstanceRetentionMode="
           + processInstanceRetentionMode
-          + ", archiveByIdEnabled="
-          + archiveByIdEnabled
           + ", elsRolloverDateFormat='"
           + elsRolloverDateFormat
           + '\''

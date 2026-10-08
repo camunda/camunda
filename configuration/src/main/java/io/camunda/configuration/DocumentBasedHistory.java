@@ -30,9 +30,7 @@ public class DocumentBasedHistory {
   /* keep in sync with ExporterConfiguration.HistoryConfiguration.usageMetricsRolloverInterval */
   private static final String DEFAULT_HISTORY_USAGE_METRICS_ROLLOVER_INTERVAL = "1M";
   /* This should be kept in sync with CamundaBackgroundTaskManagerFactory.DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE */
-  private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
-  /* This should be kept in sync with CamundaBackgroundTaskManagerFactory.DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE */
-  private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE = 500;
+  private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 500;
   private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_REINDEX_BATCH_SIZE = 2500;
   private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_MAX_RETRY_ATTEMPTS = 3;
   private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_RETRY_DELAY_MS = 1000;
@@ -73,7 +71,7 @@ public class DocumentBasedHistory {
   private String rolloverInterval = DEFAULT_HISTORY_ROLLOVER_INTERVAL;
 
   /** Maximum number of process instances per archiving batch */
-  private Integer rolloverBatchSize;
+  private Integer rolloverBatchSize = DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE;
 
   /** Maximum number of docs reindexed/deleted in a batch */
   private int reindexBatchSize = DEFAULT_HISTORY_ARCHIVE_BY_ID_REINDEX_BATCH_SIZE;
@@ -185,14 +183,6 @@ public class DocumentBasedHistory {
   }
 
   public int getRolloverBatchSize() {
-    if (rolloverBatchSize == null) {
-      if (archiveByIdEnabled) {
-        rolloverBatchSize = DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE;
-      } else {
-        rolloverBatchSize = DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE;
-      }
-    }
-
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".rollover-batch-size",
         rolloverBatchSize,
