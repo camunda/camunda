@@ -98,6 +98,7 @@
               <exclude>zeebe/gateway-rest/ARCHITECTURE.md</exclude>
               <exclude>zeebe/gateway-protocol/ARCHITECTURE.md</exclude>
               <exclude>service/ARCHITECTURE.md</exclude>
+              <exclude>search/ARCHITECTURE.md</exclude>
               <exclude>docs/monorepo-docs/**/*.md</exclude>
             </excludes>
             <flexmark/>
