@@ -468,6 +468,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .allowPartialSearchResults(false)
             .query(query)
             .size(size)
+            // need to ensure we have these for deletes so we are not deleting stale data
+            .seqNoPrimaryTerm(true)
             .source(s -> s.fetch(false))
             .sort(SortOptions.of(s -> s.field(f -> f.field("id").order(SortOrder.Asc))));
 
@@ -487,7 +489,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                 return ArchiveDocIdsBatch.empty();
               }
               return ArchiveDocIdsBatch.from(
-                  hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
+                  hits.stream()
+                      .map(h -> new IdWithRouting(h.id(), h.routing(), h.seqNo(), h.primaryTerm()))
+                      .toList(),
                   hits.getLast().sort());
             });
   }
@@ -556,7 +560,12 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .map(
                 d ->
                     new BulkOperation.Builder()
-                        .delete(del -> del.id(d.id()).routing(d.routing()))
+                        .delete(
+                            del ->
+                                del.id(d.id())
+                                    .routing(d.routing())
+                                    .ifSeqNo(d.seqNo())
+                                    .ifPrimaryTerm(d.seqNo()))
                         .build())
             .toList();
 
