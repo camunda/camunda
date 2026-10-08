@@ -642,32 +642,63 @@ final class RestoreValidatorResolverTest {
     }
 
     @Test
-    void shouldRejectBackupsTakenWithDifferentPartitionCounts() {
-      // given - two backups to restore together, the earlier taken with 3 partitions and the latest
-      // with 2: the partitions restored would mix states that do not belong together
-      stubBackupPartitionCount(41L, 3);
-      stubBackupPartitionCount(42L, 2);
-      for (final var partitionId : List.of(1, 2)) {
-        stubBackupExists(partitionId, 41L);
-        stubBackupExists(partitionId, 42L);
-      }
-      final var validator = new RestoreValidator(3, backupStore, null);
-      final var request =
-          new RestoreRequest(
-              "default",
-              new TenantRestoreArguments(
-                  new RestoreParameters(List.of(41L, 42L), null, null), "rdbms", false),
-              false);
+    void shouldRejectBackupIdsWithAnotherPartitionCountThanTheExportedPositions() {
+      // given - the RDBMS holds exported positions for 3 partitions, but the backup was taken with
+      // 2: the database was not rolled back to the backup
+      stubBackupPartitionCount(1L, 2);
+      final IntFunction<Long> exportedPositionSupplier = partitionId -> 50L;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
 
       // when
-      final var result = validator.validate(request);
+      final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
 
       // then
       assertThat(assertInvalid(result))
-          .isInstanceOf(IllegalArgumentException.class)
+          .isInstanceOf(IllegalStateException.class)
           .hasMessage(
-              "Cannot restore backup 41: it was taken with 3 partitions, but backup 42, the latest "
-                  + "to restore, was taken with 2");
+              "Cannot restore: backup 1 was taken with 2 partitions, but the RDBMS holds exported "
+                  + "positions for 3");
+    }
+
+    @Test
+    void shouldRestoreTheBackupIdsPartitionsWhenTheExportedPositionsAgree() {
+      // given - a rollback of a scale up from 3 to 2 partitions, with the RDBMS rolled back too
+      stubBackupPartitionCount(1L, 2);
+      stubBackupExists(1, 1L);
+      stubBackupExists(2, 1L);
+      final IntFunction<Long> exportedPositionSupplier =
+          partitionId -> partitionId <= 2 ? 50L : null;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
+    @Test
+    void shouldRestoreTheBackupIdsPartitionsIntoADatabaseWithoutExportedPositions() {
+      // given - an empty RDBMS: nothing to agree with, so the backup alone decides
+      stubBackupPartitionCount(1L, 2);
+      stubBackupExists(1, 1L);
+      stubBackupExists(2, 1L);
+      final IntFunction<Long> exportedPositionSupplier = partitionId -> null;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
+    private static RestoreRequest rdbmsRequestWithBackupIds(final long backupId) {
+      return new RestoreRequest(
+          "default",
+          new TenantRestoreArguments(
+              new RestoreParameters(List.of(backupId), null, null), "rdbms", false),
+          false);
     }
 
     @Test
