@@ -99,6 +99,7 @@
               <exclude>zeebe/gateway-protocol/ARCHITECTURE.md</exclude>
               <exclude>zeebe/gateway/ARCHITECTURE.md</exclude>
               <exclude>zeebe/protocol/ARCHITECTURE.md</exclude>
+              <exclude>zeebe/bpmn-model/ARCHITECTURE.md</exclude>
               <exclude>service/ARCHITECTURE.md</exclude>
               <exclude>search/ARCHITECTURE.md</exclude>
               <exclude>docs/monorepo-docs/**/*.md</exclude>
