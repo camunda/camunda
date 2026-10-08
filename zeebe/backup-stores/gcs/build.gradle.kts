@@ -24,6 +24,7 @@ dependencies {
   testImplementation(projectArtifact(":zeebe-backup-testkit", ArtifactKind.TESTS))
   testImplementation(libs.org.testcontainers.testcontainers)
   testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
+  testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
   testImplementation(libs.org.apache.commons.commons.lang3)
   testImplementation(libs.com.github.docker.java.docker.java.api)
   testImplementation(libs.org.mockito.mockito.core)

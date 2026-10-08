@@ -23,6 +23,7 @@ dependencies {
   api(libs.org.reactivestreams.reactive.streams)
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-atomix-cluster"))
+  implementation(libs.org.jspecify.jspecify)
   testImplementation(project(":zeebe-backup-testkit"))
   testImplementation(projectArtifact(":zeebe-backup-testkit", ArtifactKind.TESTS))
   testImplementation(libs.org.apache.commons.commons.lang3)
