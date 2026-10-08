@@ -8,20 +8,29 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.SUSPENDED;
+import static io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent.COMPLETE_SUSPENDING_ELEMENT_INSTANCE;
+import static io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
+import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -185,5 +194,112 @@ public final class SuspendProcessInstanceTest {
         .hasRejectionReason(
             "Expected to suspend a process instance with key '%d', but it is already being terminated"
                 .formatted(processInstanceKey));
+  }
+
+  @Test
+  public void shouldVisitElementInstancesDepthFirst() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .subProcess("sub")
+                .embeddedSubProcess()
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("a")
+                .endEvent()
+                .moveToNode("fork")
+                .userTask("b")
+                .endEvent()
+                .subProcessDone()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final List<Long> taskKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.USER_TASK)
+            .limit(2)
+            .map(Record::getKey)
+            .sorted()
+            .toList();
+    final long subProcessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("sub")
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // then
+    assertThat(suspensionWalk(processInstanceKey))
+        .containsExactly(
+            tuple(SUSPEND_ELEMENT_INSTANCE, processInstanceKey, -1L),
+            tuple(SUSPEND_ELEMENT_INSTANCE, subProcessKey, processInstanceKey),
+            tuple(SUSPEND_ELEMENT_INSTANCE, taskKeys.get(0), subProcessKey),
+            tuple(SUSPEND_ELEMENT_INSTANCE, taskKeys.get(1), subProcessKey),
+            tuple(COMPLETE_SUSPENDING_ELEMENT_INSTANCE, subProcessKey, processInstanceKey),
+            tuple(COMPLETE_SUSPENDING_ELEMENT_INSTANCE, processInstanceKey, -1L));
+  }
+
+  @Test
+  public void shouldNotVisitCalledProcessInstance() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String childProcessId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "child.bpmn",
+            Bpmn.createExecutableProcess(childProcessId).startEvent().userTask().endEvent().done())
+        .withXmlResource(
+            "parent.bpmn",
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long callActivityKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("call")
+            .getFirst()
+            .getKey();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withParentProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.USER_TASK)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // then
+    assertThat(suspensionWalk(processInstanceKey))
+        .containsExactly(
+            tuple(SUSPEND_ELEMENT_INSTANCE, processInstanceKey, -1L),
+            tuple(SUSPEND_ELEMENT_INSTANCE, callActivityKey, processInstanceKey),
+            tuple(COMPLETE_SUSPENDING_ELEMENT_INSTANCE, processInstanceKey, -1L));
+  }
+
+  /** Returns the walk commands of all process instances until the given one is suspended. */
+  private static List<Tuple> suspensionWalk(final long processInstanceKey) {
+    return RecordingExporter.records()
+        .limit(r -> r.getIntent() == SUSPENDED && r.getKey() == processInstanceKey)
+        .filter(r -> r.getValueType() == ValueType.SUSPENSION_BATCH)
+        .filter(r -> r.getRecordType() == RecordType.COMMAND)
+        .map(
+            r -> {
+              final var value = (SuspensionBatchRecordValue) r.getValue();
+              return tuple(r.getIntent(), value.getIndexKey(), value.getParentKey());
+            })
+        .toList();
   }
 }
