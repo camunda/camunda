@@ -41,12 +41,8 @@ public class SchemaReadinessCheck implements HealthIndicator {
 
   @Override
   public Health health() {
-    final var reported = schemaInitializationStatuses.get();
-    if (reported.isEmpty()) {
-      return (secondaryStorageReadiness.anyReady() ? Health.up() : Health.down()).build();
-    }
     final var statuses =
-        reported.entrySet().stream()
+        schemaInitializationStatuses.get().entrySet().stream()
             .map(
                 tenant ->
                     secondaryStorageReadiness.isRecovering(tenant.getKey())
