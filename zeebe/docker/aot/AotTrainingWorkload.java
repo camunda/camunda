@@ -10,6 +10,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.PartitionBrokerHealth;
+import io.camunda.client.api.response.PartitionBrokerRole;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -23,14 +26,22 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
+import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -41,7 +52,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * polling one. Each instance runs a service task, an exclusive gateway and, for every other
  * instance, a message catch event. Across several partitions, this also covers deployment
  * distribution and message correlation between partitions. The Elasticsearch exporter sends to a
- * {@link FakeElasticsearch}.
+ * {@link FakeElasticsearch}. Afterwards, the recording broker hands its partitions to the other
+ * brokers of the cluster and takes them back several times, see {@link #changeLeaders}.
  */
 public final class AotTrainingWorkload {
 
@@ -49,14 +61,22 @@ public final class AotTrainingWorkload {
   private static final String JOB_TYPE = "aot-training";
   private static final String MESSAGE_NAME = "aot-training";
   private static final int MAX_IN_FLIGHT = 32;
+  private static final int RECORDER = 0;
+  private static final int PEER = 1;
+  private static final Duration LEADER_CHANGE_TIMEOUT = Duration.ofMinutes(1);
+  // the cluster-admin user train.sh configures
+  private static final String CLUSTER_ADMIN =
+      "Basic " + Base64.getEncoder().encodeToString("aot-training:aot-training".getBytes(UTF_8));
 
   public static void main(final String[] args) throws Exception {
     final int instances = Integer.parseInt(args[0]);
     final int partitions = Integer.parseInt(args[1]);
+    final int leaderChanges = Integer.parseInt(args[2]);
+    final long recorderPid = Long.parseLong(args[3]);
 
     final var elasticsearch = new FakeElasticsearch();
-    try (final var grpc = client(false);
-        final var rest = client(true)) {
+    try (final var grpc = client(false, RECORDER);
+        final var rest = client(true, RECORDER)) {
       awaitLeaders(grpc, partitions);
       grpc.newDeployResourceCommand()
           .addProcessModel(process(), PROCESS_ID + ".bpmn")
@@ -86,6 +106,7 @@ public final class AotTrainingWorkload {
             instances, TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start));
       }
       sendRequestShapes();
+      changeLeaders(leaderChanges, recorderPid, partitions);
       elasticsearch.awaitExportDrained();
     } finally {
       elasticsearch.stop();
@@ -146,6 +167,153 @@ public final class AotTrainingWorkload {
     System.out.printf("AOT training: sent %d framed requests%n", 100 * shapes.length);
   }
 
+  /**
+   * Hands the recording broker's partitions to the other brokers and back, so that the cache
+   * carries a follower taking over leadership while commands keep arriving, which is what a
+   * rebalance does in production. Each round pauses the recording broker until other brokers are
+   * elected in its place, resumes it as a follower, and asks for a rebalance, which gives its
+   * partitions back. Commands go through another broker's gateway, as the recording broker's
+   * stops while it is paused, and their failures during the hand-over are expected.
+   */
+  private static void changeLeaders(final int rounds, final long recorderPid, final int partitions)
+      throws Exception {
+    final var running = new AtomicBoolean(true);
+    final var inFlight = new Semaphore(8);
+    try (final var peer = client(false, PEER);
+        final var ignored = worker(peer, true)) {
+      final var load =
+          Thread.ofPlatform()
+              .start(
+                  () -> {
+                    for (long i = 0; running.get(); i++) {
+                      inFlight.acquireUninterruptibly();
+                      peer.newCreateInstanceCommand()
+                          .bpmnProcessId(PROCESS_ID)
+                          .latestVersion()
+                          .variables(Map.of("key", "leader-change-" + i, "withMessage", false))
+                          .withResult()
+                          .requestTimeout(Duration.ofSeconds(10))
+                          .send()
+                          .toCompletableFuture()
+                          .whenComplete((result, error) -> inFlight.release());
+                    }
+                  });
+      try {
+        for (int round = 1; round <= rounds; round++) {
+          signal(recorderPid, "STOP");
+          try {
+            await(
+                "other brokers to lead every partition",
+                () -> ledBy(peer, RECORDER).isEmpty() && ledByAny(peer) == partitions);
+          } finally {
+            signal(recorderPid, "CONT");
+          }
+          await("the recording broker to follow every partition", () -> follows(peer, partitions));
+          await(
+              "the recording broker to lead a partition again",
+              () -> {
+                rebalance();
+                return !ledBy(peer, RECORDER).isEmpty();
+              });
+          // the commands that reach the new leader right after it took over are the point
+          Thread.sleep(5_000);
+        }
+      } finally {
+        running.set(false);
+        load.join();
+      }
+    }
+    System.out.printf("AOT training: moved leadership to the recording broker %d times%n", rounds);
+  }
+
+  private static List<Integer> ledBy(final CamundaClient client, final int nodeId) {
+    final String memberId = String.valueOf(nodeId);
+    final var brokers = topology(client);
+    return brokers.stream()
+        .filter(broker -> broker.getMemberId().equals(memberId))
+        .flatMap(broker -> broker.getPartitions().stream())
+        .filter(partition -> partition.isLeader())
+        .map(partition -> partition.getPartitionId())
+        .filter(
+            partitionId ->
+                brokers.stream()
+                    .filter(other -> !other.getMemberId().equals(memberId))
+                    .flatMap(other -> other.getPartitions().stream())
+                    .noneMatch(p -> p.getPartitionId() == partitionId && p.isLeader()))
+        .toList();
+  }
+
+  private static long ledByAny(final CamundaClient client) {
+    return topology(client).stream()
+        .flatMap(broker -> broker.getPartitions().stream())
+        .filter(partition -> partition.isLeader())
+        .map(partition -> partition.getPartitionId())
+        .distinct()
+        .count();
+  }
+
+  private static boolean follows(final CamundaClient client, final int partitions) {
+    return topology(client).stream()
+        .filter(broker -> broker.getMemberId().equals(String.valueOf(RECORDER)))
+        .flatMap(broker -> broker.getPartitions().stream())
+        .filter(partition -> partition.getRole() == PartitionBrokerRole.FOLLOWER)
+        .filter(partition -> partition.getHealth() == PartitionBrokerHealth.HEALTHY)
+        .count()
+        == partitions;
+  }
+
+  private static List<BrokerInfo> topology(final CamundaClient client) {
+    return client.newTopologyRequest().send().join().getBrokers();
+  }
+
+  private static void rebalance() throws IOException, InterruptedException {
+    try (final var http = HttpClient.newHttpClient()) {
+      final var response =
+          http.send(
+              HttpRequest.newBuilder(
+                      URI.create(
+                          "http://localhost:%d/cluster/v2/rebalance".formatted(8080 + PEER)))
+                  .header("Accept", "application/json")
+                  .header("Authorization", CLUSTER_ADMIN)
+                  .POST(BodyPublishers.noBody())
+                  .build(),
+              BodyHandlers.ofString());
+      if (response.statusCode() != 202) {
+        throw new IllegalStateException(
+            "Rebalance answered %d: %s".formatted(response.statusCode(), response.body()));
+      }
+    }
+  }
+
+  private static void signal(final long pid, final String signal)
+      throws IOException, InterruptedException {
+    final int exit =
+        new ProcessBuilder("kill", "-" + signal, Long.toString(pid)).inheritIO().start().waitFor();
+    if (exit != 0) {
+      throw new IllegalStateException("kill -%s %d exited with %d".formatted(signal, pid, exit));
+    }
+  }
+
+  private static void await(final String what, final Callable<Boolean> condition)
+      throws Exception {
+    final long deadline = System.nanoTime() + LEADER_CHANGE_TIMEOUT.toNanos();
+    RuntimeException lastFailure = null;
+    while (true) {
+      try {
+        if (condition.call()) {
+          return;
+        }
+      } catch (final RuntimeException e) {
+        // the topology or the rebalance can fail while leadership moves; ask again
+        lastFailure = e;
+      }
+      if (System.nanoTime() > deadline) {
+        throw new IllegalStateException("Timed out waiting for " + what, lastFailure);
+      }
+      Thread.sleep(1_000);
+    }
+  }
+
   private static void createWithRetry(final CamundaClient client, final String key)
       throws InterruptedException {
     for (int attempt = 1; ; attempt++) {
@@ -166,12 +334,7 @@ public final class AotTrainingWorkload {
     final long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(5);
     while (true) {
       try {
-        final long leaders =
-            client.newTopologyRequest().send().join().getBrokers().stream()
-                .flatMap(broker -> broker.getPartitions().stream())
-                .filter(partition -> partition.isLeader())
-                .count();
-        if (leaders == partitions) {
+        if (ledByAny(client) == partitions) {
           return;
         }
       } catch (final RuntimeException e) {
@@ -186,10 +349,11 @@ public final class AotTrainingWorkload {
     }
   }
 
-  private static CamundaClient client(final boolean preferRest) {
+  /** A client of broker {@code nodeId}'s gateway, at the ports train.sh gives that broker. */
+  private static CamundaClient client(final boolean preferRest, final int nodeId) {
     return CamundaClient.newClientBuilder()
-        .restAddress(URI.create("http://localhost:8080"))
-        .grpcAddress(URI.create("http://localhost:26500"))
+        .restAddress(URI.create("http://localhost:" + (8080 + nodeId)))
+        .grpcAddress(URI.create("http://localhost:" + (26500 + 10 * nodeId)))
         .preferRestOverGrpc(preferRest)
         .build();
   }
