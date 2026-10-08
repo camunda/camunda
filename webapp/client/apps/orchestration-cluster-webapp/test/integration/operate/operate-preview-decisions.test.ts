@@ -36,13 +36,18 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () => {
-	test('should render the placeholder shell', async ({operatePreviewDecisionsPage}) => {
+	test('should render the placeholder shell', async ({network, operatePreviewDecisionsPage}) => {
+		network.use(
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
+			}),
+		);
 		await operatePreviewDecisionsPage.goto();
 
 		await expect(operatePreviewDecisionsPage.heading).toBeAttached();
 		await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
 		await expect(operatePreviewDecisionsPage.decisionPanelPlaceholder).toBeVisible();
-		await expect(operatePreviewDecisionsPage.instancesTablePlaceholder).toBeVisible();
+		await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
 	});
 
 	test('should keep the Carbon Decisions route working', async ({network, operateDecisionsPage, page}) => {
