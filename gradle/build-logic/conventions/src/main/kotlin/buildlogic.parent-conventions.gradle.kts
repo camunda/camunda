@@ -45,6 +45,7 @@ val checkerQualVersion = versionCatalog.requiredVersion("org-checkerframework-ch
 val commonsCodecVersion = versionCatalog.requiredVersion("commons-codec")
 val commonsCollectionsVersion =
   versionCatalog.requiredVersion("org-apache-commons-commons-collections")
+val commonsLangVersion = versionCatalog.requiredVersion("org-apache-commons-commons-lang3")
 val commonsLoggingVersion = versionCatalog.requiredVersion("commons-logging")
 val gsonVersion = versionCatalog.requiredVersion("gson")
 val guavaVersion = versionCatalog.requiredVersion("guava")
@@ -119,6 +120,7 @@ configurations.configureEach {
     "commons-codec:commons-codec:$commonsCodecVersion",
     "commons-collections:commons-collections:$commonsCollectionsVersion",
     "commons-logging:commons-logging:$commonsLoggingVersion",
+    "org.apache.commons:commons-lang3:$commonsLangVersion",
     "com.auth0:auth0:$auth0Version",
     "com.auth0:jwks-rsa:$jwksRsaVersion",
     "com.nimbusds:nimbus-jose-jwt:$nimbusJoseJwtVersion",
