@@ -110,10 +110,10 @@ public final class ExportersState {
 
   /**
    * Position 0 is not a valid log entry position; the first valid position is 1. A persisted 0 is
-   * the result of a historical bug where {@code undoSoftPauseExporter} flushed the long default
-   * value of {@code lastAcknowledgedPosition}. Treat such entries as uninitialized so seek and
-   * compaction behave like for a fresh exporter and the first real acknowledgment overwrites the
-   * stale entry.
+   * the result of a historical bug where resuming an exporter from a soft pause flushed the long
+   * default value of {@code lastAcknowledgedPosition}. Treat such entries as uninitialized so seek
+   * and compaction behave like for a fresh exporter and the first real acknowledgment overwrites
+   * the stale entry.
    */
   private static long normalizePosition(final long position) {
     return position == 0 ? VALUE_NOT_FOUND : position;
