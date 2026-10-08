@@ -9,25 +9,13 @@
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	Button,
-	buttonVariants,
-	typographyVariants,
-} from '@camunda/design-system';
 import {Trash2} from '@camunda/design-system/icons';
 import type {CreateDecisionInstancesDeletionBatchOperationResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
-import {cn} from '#/shared/cn';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {BulkActionBar} from '#/operate/shared/BulkActionBar/shadcn.components/BulkActionBar';
+import {BulkActionConfirmDialog} from '#/operate/shared/BulkActionBar/shadcn.components/BulkActionConfirmDialog';
 import {formatOperationType} from '#/operate/shared/utils/formatOperationType';
 import {handleOperationError} from '#/operate/shared/utils/handleOperationError';
 import {buildInstanceKeyCriterion, type DecisionInstancesFilter} from '../decisionsFilter';
@@ -94,47 +82,35 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 
 	return (
 		<>
-			<div className="flex items-center justify-between gap-4 border-b border-border bg-neutral-background-subtle px-4 py-2">
-				<span role="status" className={cn('text-neutral-foreground', typographyVariants({variant: 'label-md'}))}>
-					{selectedCount === 1
+			<BulkActionBar
+				selectedLabel={
+					selectedCount === 1
 						? t('operate.decisions.toolbar.itemSelected', {count: selectedCount})
-						: t('operate.decisions.toolbar.itemsSelected', {count: selectedCount})}
-				</span>
-				<div className="flex items-center gap-2">
-					<Button variant="ghost" size="sm" disabled={isDeleting} onClick={() => setShowDeleteModal(true)}>
-						<Trash2 aria-hidden />
-						{t('operate.decisions.toolbar.delete')}
-					</Button>
-					<Button variant="secondary" size="sm" onClick={onDiscard}>
-						{t('operate.decisions.toolbar.discard')}
-					</Button>
-				</div>
-			</div>
-
-			<AlertDialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>{t('operate.decisions.toolbar.deleteModalHeading')}</AlertDialogTitle>
-					</AlertDialogHeader>
-					<AlertDialogDescription>
-						{t('operate.decisions.toolbar.deleteModalBody', {count: selectedCount})}
-					</AlertDialogDescription>
-					<AlertDialogFooter>
-						<AlertDialogCancel onClick={onDiscard}>
-							{t('operate.decisions.toolbar.deleteModalCancel')}
-						</AlertDialogCancel>
-						<AlertDialogAction
-							className={buttonVariants({variant: 'destructive'})}
-							onClick={(event) => {
-								event.preventDefault();
-								void handleDelete();
-							}}
-						>
-							{t('operate.decisions.toolbar.delete')}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+						: t('operate.decisions.toolbar.itemsSelected', {count: selectedCount})
+				}
+				discardLabel={t('operate.decisions.toolbar.discard')}
+				actions={[
+					{
+						key: 'delete',
+						label: t('operate.decisions.toolbar.delete'),
+						icon: <Trash2 aria-hidden />,
+						disabled: isDeleting,
+						onClick: () => setShowDeleteModal(true),
+					},
+				]}
+				onDiscard={onDiscard}
+			/>
+			<BulkActionConfirmDialog
+				open={showDeleteModal}
+				title={t('operate.decisions.toolbar.deleteModalHeading')}
+				description={t('operate.decisions.toolbar.deleteModalBody', {count: selectedCount})}
+				confirmLabel={t('operate.decisions.toolbar.delete')}
+				cancelLabel={t('operate.decisions.toolbar.deleteModalCancel')}
+				isDestructive
+				onOpenChange={setShowDeleteModal}
+				onCancel={onDiscard}
+				onConfirm={() => void handleDelete()}
+			/>
 		</>
 	);
 };
