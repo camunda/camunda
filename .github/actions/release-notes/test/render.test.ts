@@ -313,7 +313,9 @@ test('with a repository, every issue and PR number in both bodies is a link; wit
   // then
   const issue = '[#55](https://github.com/camunda/camunda/pull/55)';
   const pull = '[#7](https://github.com/camunda/camunda/pull/7)';
-  assert.match(linked.customerBody, new RegExp(`\\(${issue.replace(/[[\]().]/g, '\\$&')}\\) — ${pull.replace(/[[\]().]/g, '\\$&')}`));
+  assert.match(linked.fullAsset, new RegExp(`\\(${issue.replace(/[[\]().]/g, '\\$&')}\\) — ${pull.replace(/[[\]().]/g, '\\$&')}`));
+  assert.match(linked.customerBody, /\(#55\) — #7/); // a release body autolinks bare numbers; URLs would eat its size limit
+  assert.doesNotMatch(linked.customerBody, /github\.com\/camunda\/camunda\/pull/);
   assert.match(linked.fullAsset, /- foo: 1\.0 → 1\.1 \(\[#8\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/8\)\)/);
   assert.match(plain.customerBody, /\(#55\) — #7/);
 });
