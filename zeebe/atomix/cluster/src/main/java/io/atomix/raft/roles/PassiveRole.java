@@ -113,8 +113,23 @@ public class PassiveRole extends InactiveRole {
 
   private void truncateUncommittedEntries() throws CheckedJournalException {
     if (role() == RaftServer.Role.PASSIVE && raft.getLog().getLastIndex() > raft.getCommitIndex()) {
-      raft.getLog().deleteAfter(raft.getCommitIndex());
+      deleteLogAfter(raft.getCommitIndex());
     }
+  }
+
+  /**
+   * Deletes the entries after the given index and drops a configuration that came from one of them.
+   * The journal is truncated before the flush that can fail, so the configuration has to be dropped
+   * in that case too: the retry sees an already truncated log and would never do it.
+   */
+  private void deleteLogAfter(final long index) throws FlushException {
+    try {
+      raft.getLog().deleteAfter(index);
+    } catch (final FlushException e) {
+      raft.getCluster().rollbackConfigurationAfterTruncation(index);
+      throw e;
+    }
+    raft.getCluster().rollbackConfigurationAfterTruncation(index);
   }
 
   @Override
@@ -887,6 +902,7 @@ public class PassiveRole extends InactiveRole {
       if (request.prevLogTerm() == 0) {
         log.debug("Reset first index to {}", request.prevLogIndex() + 1);
         raft.getLog().reset(request.prevLogIndex() + 1);
+        raft.getCluster().rollbackConfigurationAfterLogReset();
       }
 
       // Iterate through entries and append them.
@@ -991,7 +1007,7 @@ public class PassiveRole extends InactiveRole {
         // the log and append the leader's entry.
         if (lastEntry.term() != entry.term()) {
           try {
-            raft.getLog().deleteAfter(index - 1);
+            deleteLogAfter(index - 1);
           } catch (final FlushException e) {
             return !failAppend(index - 1, future);
           }
@@ -1050,7 +1066,7 @@ public class PassiveRole extends InactiveRole {
       // the log and append the leader's entry.
       if (existingEntry.term() != entry.term()) {
         try {
-          raft.getLog().deleteAfter(index - 1);
+          deleteLogAfter(index - 1);
         } catch (final FlushException e) {
           return failAppend(index - 1, future);
         }
@@ -1167,5 +1183,6 @@ public class PassiveRole extends InactiveRole {
         snapshotIndex,
         snapshotIndex + 1);
     raftLog.reset(snapshotIndex + 1);
+    raft.getCluster().rollbackConfigurationAfterLogReset();
   }
 }

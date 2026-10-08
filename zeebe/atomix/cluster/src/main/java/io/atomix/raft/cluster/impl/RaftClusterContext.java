@@ -379,6 +379,93 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   /**
+   * Reverts the current configuration if the log entry it was taken from has been truncated.
+   * Configurations take effect as soon as they are appended, so truncating an uncommitted
+   * configuration entry must also drop its configuration. Otherwise this member keeps a
+   * configuration that no log contains, commits it once the commit index passes its index and
+   * reports it to the leader, which ignores it and never repairs it.
+   *
+   * @param lastRetainedIndex the index of the last entry remaining in the log
+   */
+  public void rollbackConfigurationAfterTruncation(final long lastRetainedIndex) {
+    raft.checkThread();
+    if (configuration == null || configuration.index() <= lastRetainedIndex) {
+      return;
+    }
+
+    // Committed configurations are never truncated, so the stored configuration is always a valid
+    // fallback. A newer configuration entry that is still in the log takes precedence.
+    var rollbackTarget = raft.getMetaStore().loadConfiguration();
+    // Committed entries do not need to be searched, a committed configuration is already stored.
+    final var firstIndexToSearch =
+        Math.max(rollbackTarget == null ? 0 : rollbackTarget.index(), raft.getCommitIndex()) + 1;
+    if (firstIndexToSearch <= lastRetainedIndex && !raft.getLog().isEmpty()) {
+      try (final var reader = raft.getLog().openUncommittedReader()) {
+        reader.seek(firstIndexToSearch);
+        while (reader.hasNext()) {
+          final var entry = reader.next();
+          if (entry.index() > lastRetainedIndex) {
+            break;
+          }
+          if (entry.entry() instanceof final ConfigurationEntry configurationEntry) {
+            rollbackTarget =
+                new Configuration(
+                    entry.index(),
+                    entry.term(),
+                    configurationEntry.timestamp(),
+                    configurationEntry.newMembers(),
+                    configurationEntry.oldMembers(),
+                    false);
+          }
+        }
+      }
+    }
+
+    revertConfiguration(
+        rollbackTarget, "truncating the log after index %d".formatted(lastRetainedIndex));
+  }
+
+  /**
+   * Reverts to the stored committed configuration after the whole log was reset, for example to
+   * install a snapshot. No entry remains, so every configuration newer than the stored one has lost
+   * its entry, whatever its index is compared to the new first index of the log.
+   */
+  public void rollbackConfigurationAfterLogReset() {
+    raft.checkThread();
+    final var storedConfiguration = raft.getMetaStore().loadConfiguration();
+    if (configuration == null
+        || storedConfiguration == null
+        || configuration.index() <= storedConfiguration.index()) {
+      return;
+    }
+
+    revertConfiguration(storedConfiguration, "resetting the log");
+  }
+
+  private void revertConfiguration(final Configuration target, final String reason) {
+    if (target == null) {
+      LOGGER.warn(
+          "Cannot roll back configuration {} after {}, no stored or logged configuration to fall back to",
+          configuration,
+          reason);
+      return;
+    }
+
+    LOGGER.info("Rolling back configuration {} to {} after {}", configuration, target, reason);
+    final var initialType = localMember.getType();
+    updateConfiguration(target);
+    // The members of the dropped configuration were kept as replication targets until the outcome
+    // of a configuration is decided. For the dropped one it is decided now.
+    pruneMembersNotInConfiguration();
+    if (raft.getCommitIndex() >= target.index()) {
+      // Applies the local member type and stores the configuration if it is newer than the stored.
+      commitCurrentConfiguration();
+    } else if (initialType != localMember.getType()) {
+      raft.transition(localMember.getType());
+    }
+  }
+
+  /**
    * Configures the cluster state.
    *
    * @param configuration The cluster configuration.
@@ -519,6 +606,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     // and every caller (the commit-index hook, an already-committed configure(), the initial
     // config, PassiveRole/InactiveRole onConfigure, force-configure) may invoke this repeatedly for
     // the same configuration.
+    pruneMembersNotInConfiguration();
+
+    // Apply the configuration to the local server state.
+    raft.transition(localMember.getType());
+  }
+
+  private void pruneMembersNotInConfiguration() {
     final var membersInConfiguration = configuration.allMembers();
     final var membersToRemove =
         remoteMemberContexts.values().stream()
@@ -528,9 +622,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     for (final var member : membersToRemove) {
       removeMemberContext(member);
     }
-
-    // Apply the configuration to the local server state.
-    raft.transition(localMember.getType());
   }
 
   @Override
