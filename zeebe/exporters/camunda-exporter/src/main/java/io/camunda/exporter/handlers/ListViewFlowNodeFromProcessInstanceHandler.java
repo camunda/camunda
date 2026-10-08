@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,6 +95,9 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
+    if (recordValue.getStorageOrdinal() != StorageOrdinalRelated.MAIN_INDEX) {
+      entity.setStorageOrdinal(recordValue.getStorageOrdinal());
+    }
 
     if (PI_AND_AI_FINISH_STATES.contains(intent)) {
       if (intent.equals(ELEMENT_TERMINATED)) {

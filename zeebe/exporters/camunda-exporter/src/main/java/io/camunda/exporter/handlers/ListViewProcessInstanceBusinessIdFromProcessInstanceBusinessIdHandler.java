@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,10 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
         .setPartitionId(record.getPartitionId())
         .setPosition(record.getPosition())
         .setBusinessId(emptyToNull(recordValue.getBusinessId()));
+
+    if (recordValue.getStorageOrdinal() != StorageOrdinalRelated.MAIN_INDEX) {
+      entity.setStorageOrdinal(recordValue.getStorageOrdinal());
+    }
   }
 
   @Override

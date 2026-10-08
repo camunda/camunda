@@ -18,6 +18,7 @@ import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.HashMap;
 import java.util.List;
@@ -88,6 +89,10 @@ public class ListViewVariableFromVariableHandler
         .setVarName(recordValue.getName())
         .setVarValue(truncatedValue)
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
+
+    if (recordValue.getStorageOrdinal() != StorageOrdinalRelated.MAIN_INDEX) {
+      entity.setStorageOrdinal(recordValue.getStorageOrdinal());
+    }
 
     // set parent
     final long processInstanceKey = recordValue.getProcessInstanceKey();

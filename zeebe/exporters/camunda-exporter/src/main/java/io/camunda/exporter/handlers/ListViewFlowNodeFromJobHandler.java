@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +84,10 @@ public class ListViewFlowNodeFromJobHandler
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .getJoinRelation()
         .setParent(recordValue.getProcessInstanceKey());
+
+    if (recordValue.getStorageOrdinal() != StorageOrdinalRelated.MAIN_INDEX) {
+      entity.setStorageOrdinal(recordValue.getStorageOrdinal());
+    }
 
     if (FAILED_JOB_EVENTS.contains(intent)) {
       // Don't overwrite activityId for failed/error-thrown jobs because the engine may set
