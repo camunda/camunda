@@ -220,11 +220,11 @@ test.describe('using-tasklist', () => {
 				fitText: true,
 			},
 			{label: 'Assignee', target: firstCard.getByTitle('Task assigned to me'), side: 'left'},
-			{label: 'Priority', target: firstCard.getByTitle('Priority: High'), side: 'right'},
-			{label: 'Creation date', target: firstCard.getByTitle(/^Created /), side: 'left'},
+			{label: 'Priority', target: firstCard.getByText('High', {exact: true}), side: 'right'},
+			{label: 'Creation date', target: firstCard.getByText('17 minutes ago', {exact: true}), side: 'left'},
 			{
 				label: 'Due / Follow up date',
-				target: [firstCard.getByTitle(/^Due /), secondCard.getByTitle(/^Follow-up /)],
+				target: [firstCard.getByText('Tomorrow', {exact: true}), secondCard.getByText('8 Sep', {exact: true})],
 				side: 'right',
 			},
 		]);

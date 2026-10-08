@@ -18,6 +18,9 @@ export type TaskCard = {
 class TaskPanelPage {
   readonly availableTasks: Locator;
   readonly taskCards: Locator;
+  // The element that actually scrolls the virtualized list -- scrolling the
+  // page itself does nothing here, and neither does scrolling the tasks
+  // side panel that wraps it.
   readonly scrollableList: Locator;
   readonly filterSelectButton: Locator;
   private page: Page;
@@ -26,7 +29,9 @@ class TaskPanelPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.availableTasks = page.getByTitle('Available tasks');
+    this.availableTasks = page.getByRole('region', {
+      name: 'Tasks side panel',
+    });
     this.taskCards = this.availableTasks.locator('article');
     this.scrollableList = this.availableTasks.getByTestId('scrollable-list');
     this.filterSelectButton = page.getByRole('button', {

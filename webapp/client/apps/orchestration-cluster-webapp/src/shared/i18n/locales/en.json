@@ -236,7 +236,6 @@
 			"taskHeaderUnassigning": "Unassigning...",
 			"taskHeaderAssignmentSuccessful": "Assignment successful",
 			"taskHeaderUnassignmentSuccessful": "Unassignment successful",
-			"availableTasksTitle": "Available tasks",
 			"availableTasksNoTasksFoundInfo": "No tasks found",
 			"availableTasksNoTasksMatchingCriteriaInfo": "There are no tasks matching your filter criteria.",
 			"availableTasksCreatedRelativeLabel": "Created",

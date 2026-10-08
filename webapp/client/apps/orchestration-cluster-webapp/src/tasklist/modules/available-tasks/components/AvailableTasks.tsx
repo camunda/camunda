@@ -9,7 +9,6 @@
 import {useEffect, useMemo, useRef} from 'react';
 import type {CurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useVirtualizer} from '@tanstack/react-virtual';
-import {useTranslation} from 'react-i18next';
 import {NoTasks} from './NoTasks';
 import {Task} from './Task';
 
@@ -40,7 +39,6 @@ const AvailableTasks: React.FC<Props> = ({
 	isFetchingPreviousPage = false,
 }) => {
 	const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-	const {t} = useTranslation();
 	const tasks = useMemo(() => pages.flatMap((page) => page.items), [pages]);
 	const totalItems = pages[0]?.page.totalItems ?? tasks.length;
 
@@ -72,7 +70,7 @@ const AvailableTasks: React.FC<Props> = ({
 	}, [firstVirtualIndex, hasPreviousPage, isFetchingPreviousPage, onScrollUp]);
 
 	return (
-		<div className="h-full w-full overflow-hidden" title={t('tasklist.availableTasksTitle')}>
+		<div className="h-full w-full overflow-hidden">
 			{totalItems === 0 ? (
 				<NoTasks />
 			) : (
