@@ -65,4 +65,24 @@ describe('loadDecisionsData', () => {
 
 		await expect(loadDecisionsData(options)).resolves.toBe(true);
 	});
+
+	it('should skip the unfiltered definitions request when prefetching is disabled', async ({worker}) => {
+		const definition = createDecisionDefinition({decisionDefinitionId: 'known-decision', version: 1});
+		worker.use(
+			mockQueryDecisionDefinitionsEndpointByFilter({
+				unfilteredResponse: new HttpResponse(null, {status: 500}),
+				filteredResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: [definition]})),
+			}),
+		);
+		const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+
+		await expect(
+			loadDecisionsData({
+				queryClient,
+				decisionDefinitionId: 'known-decision',
+				decisionDefinitionVersion: 1,
+				prefetchDefinitions: false,
+			}),
+		).resolves.toBe(true);
+	});
 });
