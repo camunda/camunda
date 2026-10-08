@@ -5,6 +5,7 @@ on:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: '@camunda/employee-engagement-tasklist'
 
 jobs:
   fe-type-check:

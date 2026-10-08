@@ -929,6 +929,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_OWNER: '@camunda/operate-admin-pod'
     defaults:
       run:
         working-directory: identity/client
