@@ -26,6 +26,7 @@ public class CamundaSpringProcessTestRuntimeBuilder {
 
     final CamundaProcessTestRuntimeMode runtimeMode = runtimeConfiguration.getRuntimeMode();
     runtimeBuilder.withRuntimeMode(runtimeMode);
+    runtimeBuilder.withClusterSecrets(runtimeConfiguration.getClusterSecrets());
 
     if (runtimeMode == null
         || runtimeMode == CamundaProcessTestRuntimeMode.MANAGED
