@@ -206,9 +206,16 @@ func envDeclaresTenants() bool {
 		strings.Contains(os.Getenv("JDK_JAVA_OPTIONS"), "-Dcamunda.physical-tenants.")
 }
 
+// camundaPorts are the ports the Camunda process binds.
+func camundaPorts(camundaPort int) map[int]bool {
+	return map[int]bool{camundaPort: true, 9600: true, 26500: true, 26501: true, 26502: true}
+}
+
 // reservedPorts are ports c8run's own processes bind, never handed to a tenant connectors runtime.
 func reservedPorts(camundaPort, connectorsPort int) map[int]bool {
-	return map[int]bool{camundaPort: true, connectorsPort: true, 9600: true, 26500: true, 26501: true, 26502: true}
+	ports := camundaPorts(camundaPort)
+	ports[connectorsPort] = true
+	return ports
 }
 
 // configureTenantSecretStores gives every physical tenant its own local secret directory, so

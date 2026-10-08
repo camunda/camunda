@@ -182,6 +182,9 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, erro
 		if settings.ConnectorsPort < 1 || settings.ConnectorsPort > 65535 {
 			return settings, startupURLProvided, fmt.Errorf("--connectors-port must be between 1 and 65535 (got %d)", settings.ConnectorsPort)
 		}
+		if !settings.DisableConnectors && camundaPorts(settings.Port)[settings.ConnectorsPort] {
+			return settings, startupURLProvided, fmt.Errorf("--connectors-port %d is already used by Camunda", settings.ConnectorsPort)
+		}
 		ids, err := physicaltenants.ParseIDList(settings.PhysicalTenantsFlag)
 		if err != nil {
 			return settings, startupURLProvided, fmt.Errorf("--physical-tenants: %w", err)

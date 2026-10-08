@@ -245,6 +245,18 @@ func TestShouldParseConnectorsPortFlagOnStart(t *testing.T) {
 	os.Args = []string{"c8run", "start", "--connectors-port", "70000"}
 	_, _, err = getBaseCommandSettings("start")
 	assert.ErrorContains(t, err, "--connectors-port must be between 1 and 65535")
+
+	os.Args = []string{"c8run", "start", "--connectors-port", "9600"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.ErrorContains(t, err, "--connectors-port 9600 is already used by Camunda")
+
+	os.Args = []string{"c8run", "start", "--port", "8086"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.ErrorContains(t, err, "--connectors-port 8086 is already used by Camunda")
+
+	os.Args = []string{"c8run", "start", "--port", "8086", "--disable-connectors"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.NoError(t, err)
 }
 
 func TestShouldParseNoBrowserFlagOnStart(t *testing.T) {

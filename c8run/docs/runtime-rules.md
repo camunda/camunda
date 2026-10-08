@@ -32,7 +32,7 @@ Do not change this version gate without verifying both launcher paths still work
 
 The `--port` flag changes the main web/REST port. If the user did not set `CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS`, Connectors defaults to the selected Camunda port.
 
-**The Connectors port defaults to `8086`.** Set it with `--connectors-port`; `--port` does not change it. This one port serves both the inbound Connectors API and the Connectors health endpoint.
+**The Connectors port defaults to `8086`.** Set it with `--connectors-port`; `--port` does not change it. This one port serves both the inbound Connectors API and the Connectors health endpoint. Unless `--disable-connectors` is set, `c8run start` rejects a Connectors port that Camunda binds (`--port`, `9600`, `26500`-`26502`).
 
 ## Health Check Timeout
 
