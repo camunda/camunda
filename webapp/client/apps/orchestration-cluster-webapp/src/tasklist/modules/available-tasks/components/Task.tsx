@@ -8,6 +8,7 @@
 
 import React from 'react';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import {Text} from '@camunda/design-system';
 import {Link, useMatchRoute} from '@tanstack/react-router';
 import {Bell, Calendar, CircleCheck, TriangleAlert} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
@@ -18,7 +19,6 @@ import {formatISODate, formatISODateTime} from '#/tasklist/modules/dates/formatD
 import {AssigneeBadge} from './AssigneeBadge';
 import {DateLabel} from './DateLabel';
 import {PriorityLabel} from './PriorityLabel';
-import {TruncatedText} from './TruncatedText';
 
 type Props = {
 	userTaskKey: string;
@@ -66,7 +66,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 			<article>
 				<Link
 					className={cn(
-						'flex min-h-34 w-full min-w-0 flex-col gap-3 rounded-xl border border-border bg-neutral-background-subtle p-4 text-neutral-foreground-strong outline-none transition-colors',
+						'flex min-h-34 w-full flex-col gap-3 rounded-xl border border-border bg-neutral-background-subtle p-4 text-neutral-foreground-strong outline-none transition-colors',
 						'hover:bg-neutral-background-medium focus-visible:ring-2 focus-visible:ring-ring',
 						{'bg-neutral-background-strong hover:bg-neutral-background-strong': isActive},
 					)}
@@ -80,21 +80,27 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 						currentUsername: currentUser.username,
 					})}
 				>
-					<div className="flex h-full w-full min-w-0 flex-col gap-3" data-testid={`task-${userTaskKey}`} ref={ref}>
-						<div className="flex min-h-5 min-w-0 flex-col justify-center">
-							<TruncatedText variant="label-md-strong">{displayName}</TruncatedText>
-							<TruncatedText variant="helper" className="text-neutral-foreground-strong">
+					<div className="flex h-full w-full flex-col gap-3" data-testid={`task-${userTaskKey}`} ref={ref}>
+						<div className="flex min-h-5 flex-col justify-center">
+							<Text variant="label-md-strong" className="truncate" title={displayName}>
+								{displayName}
+							</Text>
+							<Text variant="helper" className="truncate text-neutral-foreground-subtle" title={processDisplayName}>
 								{processDisplayName}
-							</TruncatedText>
-							{businessId === null ? null : <TruncatedText variant="helper">{businessId}</TruncatedText>}
+							</Text>
+							{businessId === null ? null : (
+								<Text variant="helper" className="truncate text-neutral-foreground-subtle" title={businessId}>
+									{businessId}
+								</Text>
+							)}
 						</div>
 
-						<div className="flex min-h-5 min-w-0 items-center justify-between gap-2">
-							<AssigneeBadge currentUser={currentUser} assignee={assignee} truncate />
+						<div className="flex min-h-5 items-center justify-between gap-2">
+							<AssigneeBadge currentUser={currentUser} assignee={assignee} />
 							{priority === null ? null : <PriorityLabel priority={priority} />}
 						</div>
 
-						<div data-testid="dates" className="flex min-h-5 min-w-0 items-end justify-between gap-2">
+						<div data-testid="dates" className="flex min-h-5 items-end justify-between gap-2">
 							{creationDate === null ? null : (
 								<DateLabel
 									date={creationDate}

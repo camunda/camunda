@@ -236,6 +236,7 @@
 			"taskHeaderUnassigning": "Desasignando...",
 			"taskHeaderAssignmentSuccessful": "Asignación exitosa",
 			"taskHeaderUnassignmentSuccessful": "Desasignación exitosa",
+			"availableTasksTitle": "Tareas disponibles",
 			"availableTasksNoTasksFoundInfo": "No se encontraron tareas",
 			"availableTasksNoTasksMatchingCriteriaInfo": "No hay tareas que coincidan con sus criterios de filtro.",
 			"availableTasksCreatedRelativeLabel": "Creado",
