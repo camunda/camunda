@@ -23,6 +23,7 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.LongStream;
@@ -30,9 +31,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ProcessInstanceArchiverJobTest {
+final class ProcessInstanceByIdArchiverJobTest {
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(ProcessInstanceArchiverJobTest.class);
+      LoggerFactory.getLogger(ProcessInstanceByIdArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
   private final HistoryConfiguration historyConfiguration = new HistoryConfiguration();
@@ -43,8 +44,9 @@ final class ProcessInstanceArchiverJobTest {
   private final SequenceFlowTemplate sequenceFlowTemplate = new SequenceFlowTemplate("", true);
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
-  private final ProcessInstanceArchiverJob job =
-      new ProcessInstanceArchiverJob(
+
+  private final ProcessInstanceByIdArchiverJob job =
+      new ProcessInstanceByIdArchiverJob(
           historyConfiguration,
           repository,
           processInstanceTemplate,
@@ -145,6 +147,8 @@ final class ProcessInstanceArchiverJobTest {
                 processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
                 ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
                 List.of("1", "2", "3"),
+                Map.of("joinRelation", "processInstance"),
+                Map.of(),
                 executor));
   }
 
@@ -163,6 +167,9 @@ final class ProcessInstanceArchiverJobTest {
         .containsExactly(
             sequenceFlowTemplate.getFullQualifiedName(),
             decisionInstanceTemplate.getFullQualifiedName(),
+            processInstanceTemplate.getFullQualifiedName(),
+            processInstanceTemplate.getFullQualifiedName(),
+            processInstanceTemplate.getFullQualifiedName(),
             processInstanceTemplate.getFullQualifiedName());
   }
 
@@ -200,18 +207,18 @@ final class ProcessInstanceArchiverJobTest {
     repository.batches =
         List.of(
             new ArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 125L).mapToObj(String::valueOf).toList()));
+                "2024-01-01", LongStream.rangeClosed(1L, 525L).mapToObj(String::valueOf).toList()));
 
     // when
     final var count1 = job.archiveNextBatch().toCompletableFuture().join();
     final var count2 = job.archiveNextBatch().toCompletableFuture().join();
 
     // then
-    assertThat(count1).isEqualTo(100);
+    assertThat(count1).isEqualTo(500);
     assertThat(count2).isEqualTo(25);
 
     // two batches processed, but only one request made to get the batches
-    verify(repository).getProcessInstancesNextBatch(1_000);
+    verify(repository).getProcessInstancesNextBatch(5_000);
   }
 
   @Test
@@ -220,7 +227,8 @@ final class ProcessInstanceArchiverJobTest {
     repository.batches =
         List.of(
             new ArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 300L).mapToObj(String::valueOf).toList()));
+                "2024-01-01",
+                LongStream.rangeClosed(1L, 1500L).mapToObj(String::valueOf).toList()));
 
     // when
     final var first = job.getNextBatch().toCompletableFuture().join();
@@ -231,19 +239,19 @@ final class ProcessInstanceArchiverJobTest {
     assertThat(first)
         .isEqualTo(
             new ArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 100L).mapToObj(String::valueOf).toList()));
+                "2024-01-01", LongStream.rangeClosed(1L, 500L).mapToObj(String::valueOf).toList()));
     assertThat(second)
         .isEqualTo(
             new ArchiveBatch(
                 "2024-01-01",
-                LongStream.rangeClosed(101L, 200L).mapToObj(String::valueOf).toList()));
+                LongStream.rangeClosed(501L, 1000L).mapToObj(String::valueOf).toList()));
     assertThat(third)
         .isEqualTo(
             new ArchiveBatch(
                 "2024-01-01",
-                LongStream.rangeClosed(201L, 300L).mapToObj(String::valueOf).toList()));
+                LongStream.rangeClosed(1001L, 1500L).mapToObj(String::valueOf).toList()));
 
-    verify(repository).getProcessInstancesNextBatch(1_000);
+    verify(repository).getProcessInstancesNextBatch(5_000);
   }
 
   @Test
@@ -252,7 +260,8 @@ final class ProcessInstanceArchiverJobTest {
     repository.batches =
         List.of(
             new ArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 200L).mapToObj(String::valueOf).toList()));
+                "2024-01-01",
+                LongStream.rangeClosed(1L, 1_000L).mapToObj(String::valueOf).toList()));
 
     // when
     final var first = job.getNextBatch().toCompletableFuture().join();
@@ -263,18 +272,18 @@ final class ProcessInstanceArchiverJobTest {
     assertThat(first)
         .isEqualTo(
             new ArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 100L).mapToObj(String::valueOf).toList()));
+                "2024-01-01", LongStream.rangeClosed(1L, 500L).mapToObj(String::valueOf).toList()));
     assertThat(second)
         .isEqualTo(
             new ArchiveBatch(
                 "2024-01-01",
-                LongStream.rangeClosed(101L, 200L).mapToObj(String::valueOf).toList()));
+                LongStream.rangeClosed(501L, 1_000L).mapToObj(String::valueOf).toList()));
     assertThat(third)
         .isEqualTo(
             new ArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 100L).mapToObj(String::valueOf).toList()));
+                "2024-01-01", LongStream.rangeClosed(1L, 500L).mapToObj(String::valueOf).toList()));
 
-    verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
+    verify(repository, times(2)).getProcessInstancesNextBatch(5_000);
   }
 
   @Test
@@ -316,7 +325,7 @@ final class ProcessInstanceArchiverJobTest {
     assertThat(archiverTimer.count()).isEqualTo(2);
     assertThat(archiverTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
 
-    verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
+    verify(repository, times(2)).getProcessInstancesNextBatch(5_000);
   }
 
   private static final class WeirdlyNamedDependant implements ProcessInstanceDependant {
