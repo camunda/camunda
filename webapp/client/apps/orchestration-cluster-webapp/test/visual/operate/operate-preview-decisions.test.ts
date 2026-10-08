@@ -36,7 +36,7 @@ test('should match the resized decisions panels snapshot after dragging the resi
 	page,
 }) => {
 	await operatePreviewDecisionsPage.goto();
-	await expect(operatePreviewDecisionsPage.instancesTablePlaceholder).toBeVisible();
+	await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
 
 	await operatePreviewDecisionsPage.panelResizeHandle.dragTo(operatePreviewDecisionsPage.decisionPanelPlaceholder, {
 		force: true,
