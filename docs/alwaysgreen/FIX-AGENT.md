@@ -286,7 +286,13 @@ sentence explaining that they are not the cause.
   page.
 - **`test.skip()` / `test.fixme()` / `.only` are forbidden**, except for a confirmed
   product regression that has a filed tracking issue — follow
-  `## Product-Bug Escalation` in the e2e repo's `AGENTS.md` and use its annotation format.
+  `## Product-Bug Escalation` in the e2e repo's `AGENTS.md` in full: its three gates, its
+  fingerprint dedupe, its **Labels for the issue** section (`kind/bug`, `component/`,
+  `severity/`, `likelihood/`, `affects/`, plus the per-repo marker and explaining comment
+  when a field cannot be determined), its template-shaped issue body, and its annotation
+  format. A bug filed without those labels reaches nobody, which is the whole reason the
+  escalation path exists. Record the issue in `product_bugs` (below) so it also reaches the
+  Slack thread.
 - **Minimal diff.** No refactoring, no dependency bumps, nothing unrelated.
 - **Fix only the dispatched specs.** Other failures may be visible in the artifacts; leave
   them.
@@ -316,9 +322,31 @@ Write `/tmp/fix-meta.json` before stopping, always:
       "fingerprints": ["1a2b3c4d"]
     }
   ],
+  "product_bugs": [
+    {
+      "repo": "camunda/camunda",
+      "component": "operate",
+      "severity": "high",
+      "affects": ["8.10"],
+      "undetermined_fields": [],
+      "issue_url": "https://github.com/camunda/camunda/issues/55864",
+      "issue_number": 55864,
+      "fingerprint": "1a2b3c4d",
+      "root_cause": "One sentence: which product change broke which flow.",
+      "suspect_commit": "<sha + subject, or PR #, or 'not pinned'>",
+      "skipped_tests": ["<file> › <test_name>"]
+    }
+  ],
   "reason": "Required when prs is empty: what you found and why no change was safe."
 }
 ```
+
+`product_bugs` is required whenever you reached a product-bug verdict, and `[]` otherwise. It
+uses the same object shape as the e2e repo's `## Product-Bug Escalation` manifest, so one
+filing format serves every agent. `component`, `severity` and `affects` must match the labels
+you actually set on the issue, and `undetermined_fields` lists any category you could not
+determine and flagged with a comment — `alwaysgreen-fix.yml` renders them in the Slack
+thread and the job summary, so a filed bug does not sit unnoticed.
 
 `reason` is mandatory whenever `prs` is empty — it is the Slack thread reply and the job
 summary, and it is all the next reader gets.
