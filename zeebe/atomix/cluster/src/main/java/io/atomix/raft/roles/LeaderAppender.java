@@ -505,9 +505,17 @@ final class LeaderAppender {
     if (response.preferredChunkSize() > 0) {
       member.getSnapshotChunkReader().setMaximumChunkSize(response.preferredChunkSize());
     }
+    if (response.snapshotNotNeeded()) {
+      // The member's log or its own snapshot covers the snapshot's index. Continue with the entries
+      // after it. The member kept its log, so its match index stays. Its snapshot index stays too,
+      // as the member may only have log entries up to the snapshot's index.
+      member.setNextSnapshotIndex(0);
+      member.setNextSnapshotChunkId(null);
+      resetNextIndex(member, request.index() + 1);
+    }
     // If the install request was completed successfully, set the member's snapshotIndex and reset
     // the next snapshot index/offset.
-    if (request.complete()) {
+    else if (request.complete()) {
       member.setNextSnapshotIndex(0);
       member.setNextSnapshotChunkId(null);
       member.setSnapshotIndex(request.index());
@@ -896,13 +904,24 @@ final class LeaderAppender {
       // https://github.com/camunda/camunda/issues/9820 for context.
       return false;
     }
-    if (raft.getLog().getFirstIndex() > member.getCurrentIndex()) {
+
+    final long nextIndex = member.getNextIndex();
+    if (nextIndex <= 1) {
+      // The member has no entries. The snapshot may contain state that is not in the log, e.g. the
+      // bootstrap snapshot of a partition created by scaling up, so the log cannot rebuild it.
+      return true;
+    }
+    if (raft.getLog().getFirstIndex() > nextIndex) {
       // Necessary events are not available anymore, we have to use the snapshot
+      return true;
+    }
+    if (member.getCurrentEntry() == null && nextIndex != persistedSnapshot.getIndex() + 1) {
+      // The previous entry of the next append is neither in the log nor the snapshot
       return true;
     }
     // Only use the snapshot if the number of events that would have to be replicated
     // is above the threshold
-    final var memberLag = persistedSnapshot.getIndex() - member.getCurrentIndex();
+    final var memberLag = persistedSnapshot.getIndex() - (nextIndex - 1);
     return memberLag > raft.getPreferSnapshotReplicationThreshold();
   }
 
