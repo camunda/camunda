@@ -64,10 +64,9 @@ final class PhysicalTenantPartitionScalingIT {
               // a scaled-up partition receives pre-existing deployments through exactly that
               // mechanism, so without a short, flat backoff the hand-off assertion below would
               // need to out-wait the worst-case retry gap
-              .withPtConfig(
-                  TENANT_A,
-                  camunda -> {
-                    final var distribution = camunda.getProcessing().getEngine().getDistribution();
+              .withProcessingConfig(
+                  processing -> {
+                    final var distribution = processing.getEngine().getDistribution();
                     distribution.setRedistributionInterval(Duration.ofSeconds(1));
                     distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
                   }));
