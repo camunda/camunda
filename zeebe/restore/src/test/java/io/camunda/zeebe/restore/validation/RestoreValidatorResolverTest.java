@@ -693,6 +693,25 @@ final class RestoreValidatorResolverTest {
       assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
     }
 
+    @Test
+    void shouldRestoreTheBackupIdsPartitionsWhenTheExportedPositionsCannotBeRead() {
+      // given - an RDBMS without its schema yet, which only the restore creates
+      stubBackupPartitionCount(1L, 2);
+      stubBackupExists(1, 1L);
+      stubBackupExists(2, 1L);
+      final IntFunction<Long> exportedPositionSupplier =
+          partitionId -> {
+            throw new IllegalArgumentException("Table EXPORTER_POSITION not found");
+          };
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
     private static RestoreRequest rdbmsRequestWithBackupIds(final long backupId) {
       return new RestoreRequest(
           "default",
