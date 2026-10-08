@@ -254,8 +254,7 @@ public final class ClusterRestore {
    *       alone and must keep their entry in the topology file.
    * </ul>
    */
-  @VisibleForTesting
-  static boolean shouldRewriteTopologyFile(
+  public static boolean shouldRewriteTopologyFile(
       final TargetDataPolicy targetDataPolicy, final boolean wholeCluster) {
     return targetDataPolicy == TargetDataPolicy.REQUIRE_EMPTY && wholeCluster;
   }
