@@ -34,6 +34,18 @@ Use a dedicated dotenv file such as `.env.secrets` for imports. `c8run secrets` 
 
 `C8RUN_SECRETS_MODE` defaults to `local`. Local mode makes `C8RUN_SECRETS_DIR` authoritative. Set `C8RUN_SECRETS_MODE=external` when `--config` or Spring settings configure a file, AWS, or GCP store; local `c8run secrets` commands are disabled in external mode.
 
+Set `C8RUN_SECRETS_MODE=env` to read secrets from environment variables instead of files, for example in CI. Choose a base prefix with `C8RUN_SECRETS_ENV_PREFIX` and set each secret in your environment or c8run `.env` file:
+
+```bash
+export C8RUN_SECRETS_MODE=env
+export C8RUN_SECRETS_ENV_PREFIX=MYSECRET_
+export MYSECRET_DEFAULT_OPENAI_API_KEY=...   # =camunda.secrets.OPENAI_API_KEY in the default tenant
+export MYSECRET_SALES_OPENAI_API_KEY=...     # the same name in physical tenant "sales"
+./c8run start
+```
+
+The prefix may not overlap a platform prefix such as `CAMUNDA_`, `ZEEBE_` or `SPRING_`. Camunda reads the variables once at startup, so restart c8run after changing them. In env mode, `./c8run secrets [--tenant <id>] list` shows the names Camunda can resolve, and the other `secrets` commands are disabled. Each connectors runtime only sees its own tenant's variables.
+
 ## Physical tenants
 
 Physical tenants are fully isolated engines inside one c8run. Each one has its own partitions, its own data in secondary storage, its own users, and its own Operate, Tasklist, Admin and Orchestration Cluster API. They require Camunda 8.10 or newer.
@@ -49,7 +61,7 @@ A tenant is served under `http://localhost:8080/physical-tenants/<id>/`, for exa
 
 Tenant IDs use lowercase letters and digits only, up to 64 characters (8 with RDBMS or H2 storage, see below). By default every tenant gets the same login as `c8run start` (`--username`/`--password`, `demo`/`demo` unless changed). To give a tenant its own user, run `./c8run tenants add hr --username alice`; c8run prompts for the password (or reads it with `--password-stdin`) and saves it in the tenants file, which only you can read. It never appears in the generated Camunda configuration, a command line, or your shell history.
 
-Each tenant gets its own connectors runtime on the next free port from 8087 upwards (logs in `log/connectors-<id>.log`). Use `--no-connectors` on `tenants add` to skip it for one tenant, or `--disable-connectors` on `start` to skip all connectors. Each tenant has its own local secrets, so a tenant never resolves the default tenant's or another tenant's `camunda.secrets.*` values. Manage them with `--tenant`, for example `./c8run secrets --tenant sales set OPENAI_API_KEY`.
+Each tenant gets its own connectors runtime on the next free port from 8087 upwards (logs in `log/connectors-<id>.log`). Use `--no-connectors` on `tenants add` to skip it for one tenant, or `--disable-connectors` on `start` to skip all connectors. Each tenant has its own local secrets, so a tenant never resolves the default tenant's or another tenant's `camunda.secrets.*` values. Manage them with `--tenant`, for example `./c8run secrets --tenant sales set OPENAI_API_KEY`. In env mode, each tenant reads its own `<prefix><ID>_` variables instead (see [Local secrets](#local-secrets)).
 
 To run with tenants for one start only, without saving them (useful in CI), use `./c8run start --physical-tenants sales,hr`. Removing a tenant keeps its data in secondary storage under the tenant's prefix, so adding the same ID again restores it, including the users created in that tenant. `./c8run tenants reset` removes all saved tenants.
 
@@ -64,7 +76,7 @@ Tools that wrap c8run, such as `c8ctl cluster`, can set `C8RUN_CLI_NAME` to the 
 - Removing a tenant does not delete its data; it stays in secondary storage under the tenant's prefix.
 - c8run does not manage tenants when your `--config`, `CAMUNDA_PHYSICALTENANTS_*` environment variables or `JAVA_OPTS` already declare them, or when `C8RUN_TENANTS_MODE=external` is set.
 - Each tenant's connectors runtime uses an extra local port (from 8087 upwards) and its own JVM.
-- Tenants need `C8RUN_SECRETS_MODE=local`, the default, so each tenant gets its own secret store.
+- Tenants need `C8RUN_SECRETS_MODE=local`, the default, or `env`, so each tenant gets its own secret store.
 
 ## CI requirement for merging
 
