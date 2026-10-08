@@ -37,6 +37,10 @@ lookupTeamMedic["@camunda/c8-testing"]=$cptMedic
 operateAdminMedic="<!subteam^S0BNSQUL9RV|pod-operate-admin-medic>"
 lookupTeamMedic["@camunda/operate-admin-pod"]=$operateAdminMedic
 
+# @pod-employee-engagement-tasklist-medic
+tasklistMedic="<!subteam^S0BPB1RF1NZ|pod-employee-engagement-tasklist-medic>"
+lookupTeamMedic["@camunda/employee-engagement-tasklist"]=$tasklistMedic
+
 # @bi-pod-medic
 optimizeFrontendMedic="<!subteam^S0BPBPG5H2S|bi-pod-medic>"
 lookupTeamMedic["@camunda/optimize-frontend"]=$optimizeFrontendMedic
