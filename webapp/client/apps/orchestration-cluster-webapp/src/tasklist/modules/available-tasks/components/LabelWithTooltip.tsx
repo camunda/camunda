@@ -6,33 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {cn} from '#/shared/cn';
-import {TOOLTIP_DELAY_MS} from '#/tasklist/modules/available-tasks/tooltipDelay';
 import {Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
 
 type Align = 'top-start' | 'top-end';
 
 type Props = {
-	screenReaderText: string;
+	title: string;
 	content: React.ReactNode;
 	children: React.ReactNode;
 	align: Align;
-	className?: string;
 };
 
-const LabelWithTooltip: React.FC<Props> = ({screenReaderText, content, children, align, className}) => (
-	<Tooltip delayDuration={TOOLTIP_DELAY_MS}>
+const LabelWithTooltip: React.FC<Props> = ({title, content, children, align}) => (
+	<Tooltip>
 		<TooltipTrigger asChild>
-			<span
-				className={cn(
-					'inline-flex min-w-0 items-center gap-1 whitespace-nowrap text-xs text-neutral-foreground-strong',
-					className,
-				)}
-			>
-				<span className="sr-only">{screenReaderText}</span>
-				<span className="contents" aria-hidden>
-					{children}
-				</span>
+			<span className="inline-flex items-center gap-1 text-xs text-neutral-foreground-strong" title={title}>
+				{children}
 			</span>
 		</TooltipTrigger>
 		<TooltipContent side="top" align={align === 'top-end' ? 'end' : 'start'}>
