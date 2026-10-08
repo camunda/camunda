@@ -57,7 +57,7 @@ registration.
 
 > **One handler per `(ValueType, Intent)`.** If the same intent covers multiple element types
 > (like `PROCESS_INSTANCE / ELEMENT_ACTIVATED`), add filtering logic *inside* the handler
-> (see `AdHocSubProcessHandler` for an example).
+> (see `ProcessInstanceElementActivatedHandler` for an example).
 
 ## Step 2 — Add AnalyticsAttributes constants
 
@@ -67,17 +67,23 @@ Open `AnalyticsAttributes.java` and add any new `AttributeKey` constants or stri
 `Tenant`, `Element`, `Metric`, etc.). Add new constants to the appropriate nested class, or
 create a new one if a new domain is needed.
 
-**Names come from the data contract.** Every attribute key, event name, and metric name the
-exporter emits is defined in the product-telemetry data contract
-([catalog](https://github.com/camunda/Holistic-Data-Platform/blob/main/ingest/camunda-product-telemetry/schemas/docs/catalog.md)).
-Before adding a constant, find the signal's entry there and copy its names exactly. If the signal
-has no entry yet, propose one in the contract first rather than inventing a name here; the
-exporter `AGENTS.md` and `README.md` describe the convention the contract follows, but the
-contract is the source of truth.
+**Names come from the data contract.** Every attribute key, event name, metric name, and metric
+unit the exporter emits is defined in the product-telemetry data contract, which is the authority:
+
+- **The contract** lives in the internal `camunda/Holistic-Data-Platform` repository under
+  `ingest/camunda-product-telemetry/schemas/`; its rendered catalog is
+  [`docs/catalog.md`](https://github.com/camunda/Holistic-Data-Platform/blob/main/ingest/camunda-product-telemetry/schemas/docs/catalog.md)
+  (Camunda organization access required). Find the signal's entry and copy its names exactly.
+- **The public mirror** is this module's `README.md` (**Event types**, **Per-event attributes**,
+  **Pre-aggregated counters**), which must match the contract. Use it when you cannot open the
+  contract.
+- **No entry, or no access:** do not invent a name. Ask in the PR for Core Features or the HDP
+  team to propose the contract entry, and add the constant once it exists.
 
 - Attribute keys go in the domain's nested class (e.g. `"camunda.process.definition.key"`)
 - Event name strings go inside the `Event` nested class (e.g. `"camunda.tenant.created"`)
-- Metric name strings go inside `Metric` (e.g. `"camunda.decision.instance.evaluated"`)
+- Metric name strings and their units go inside `Metric` (e.g.
+  `"camunda.decision.instance.evaluated"` with unit `"{decision_instance}"`)
 
 **Keep attribute count minimal.** Every attribute added to a metric becomes a dimension in the
 time-series backend. Too many attributes — especially high-cardinality ones — cause dimension
@@ -90,7 +96,8 @@ downstream dashboards, queries, and alerts. Renaming or removing one silently br
 When adding an event, only ever *add* new constants; if semantics change, add a new constant
 alongside the old one. A rename is only acceptable as an explicitly agreed contract migration
 with downstream consumers, done in its own PR that updates the pinning tests
-(`AnalyticsEventNamesTest`, `AnalyticsAttributeKeysTest`) and the README.
+(`AnalyticsEventNamesTest`, `AnalyticsAttributeKeysTest`, `AnalyticsMetricNamesTest`) and the
+README. A new constant also has to be added to the matching pinning test.
 
 Adding a new domain (e.g. `Job`):
 
@@ -118,22 +125,18 @@ public static final class Event {
 
 Create `handler/MyEventHandler.java` in the same package as the other handlers.
 
-**Choose the correct category** by implementing `category()` (there is no default — every handler
-must make a deliberate choice):
-- `AnalyticsCategory.CONTRACTUAL` — commercial/licence metrics (process instances, decision
-  instances, task users, tenant events, usage metrics)
-- `AnalyticsCategory.OPTIONAL` — non-commercial product usage metrics (ad-hoc subprocess activations,
-  feature adoption signals)
-
-The category determines whether the handler is active based on the exporter's `categories`
-configuration. If a category is removed from the config array, all handlers in that category are
-excluded at startup. Changing categories also changes the exporter digest fingerprint.
+**Choose the category** by implementing `category()`: `AnalyticsCategory.CONTRACTUAL` or
+`AnalyticsCategory.OPTIONAL`. There is no default, and the category is not a judgement call: take it
+from the signal's entry in the data contract (its `contractual` / `optional` category). How the
+`categories` configuration activates handlers is described under **Configuration reference** in
+the module README.
 
 > **Handlers must be named classes.** Do not treat `AnalyticsHandler` as a functional interface.
 > A lambda, anonymous class, or local class compiles, but `AnalyticsHandler.digestInput()` hashes
 > the handler's `.class` bytes and throws `IllegalArgumentException` for those forms — so a lambda
-> registered in the catalog fails at `configure()` time, when the exporter digest is computed.
-> (Routing tests that never compute a digest may still use lambdas; see `HandlerRegistryTest`.)
+> registered in the catalog fails at `configure()` time, when the exporter digest is computed, if
+> its category is active. (Routing tests that never compute a digest may still use lambdas; see
+> `HandlerRegistryTest`.)
 
 ```java
 package io.camunda.exporter.analytics.handler;
@@ -160,8 +163,7 @@ public final class MyEventHandler implements AnalyticsHandler<MyRecordValue> {
 
   @Override
   public AnalyticsCategory category() {
-    // CONTRACTUAL — commercial/licence metrics (process instances, decision instances, task users)
-    // OPTIONAL — non-commercial product usage metrics (e.g. ad-hoc subprocess activations)
+    // Take the category from the signal's data-contract entry.
     return AnalyticsCategory.CONTRACTUAL;
   }
 
@@ -175,7 +177,7 @@ public final class MyEventHandler implements AnalyticsHandler<MyRecordValue> {
         record.getPosition(),
         log ->
             log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
-                // Tenant.ID and Element.ID share the unqualified name ID — use qualified form
+                // several nested classes declare ID — use the qualified form
                 .setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
@@ -184,33 +186,32 @@ public final class MyEventHandler implements AnalyticsHandler<MyRecordValue> {
 
 **Import style:** use explicit static imports from the nested class (e.g.
 `AnalyticsAttributes.Process.BPMN_PROCESS_ID`). When the unqualified name would be ambiguous
-(e.g. both `Tenant.ID` and `Element.ID` are named `ID`), use the qualified form
+(`Tenant.ID`, `Element.ID`, `Decision.ID` and `Form.ID` are all named `ID`), use the qualified form
 `AnalyticsAttributes.Tenant.ID` directly rather than a static import.
 
-Use `otelSdkManager.logEvent()` for discrete events and `otelSdkManager.incrementMetric()` for
-counters/gauges. See `ProcessInstanceCreationHandler` for an example that uses both.
-`incrementMetric(metricName, position, eventTimeMs, dimensions)` takes a pre-built
-`Attributes.of(...)` as its last argument — there is no builder callback as there is for
-`logEvent`.
+Use `otelSdkManager.logEvent()` for discrete events (see `TenantCreatedHandler`) and
+`otelSdkManager.incrementMetric()` for counters (see `DecisionInstanceEvaluatedHandler`).
+`incrementMetric(metricName, unit, position, eventTimeMs, dimensions)` takes the counter's
+contracted unit and a pre-built `Attributes.of(...)` as its last argument — there is no builder
+callback as there is for `logEvent`. `logEvent` also has an overload taking a sampling rate; the
+applied rate is the lower of that and the configured `sampling-rate`.
 
-### What the platform injects vs what your handler sets
+### What the platform sets vs what your handler sets
 
-Do not set the injected fields yourself. `logEvent()` sets them before it runs your builder
-callback, so anything you set on the same key silently overwrites the platform's value.
+The fields every record carries are listed in the module README under **Common log record
+attributes** and **Resource attributes**. Three things the README does not spell out:
 
-| Field | Set by |
-|-------|--------|
-| `event.name` | `OtelSdkManager.logEvent()`, from the event name you pass |
-| `camunda.log.position` | `OtelSdkManager.logEvent()`, from the position you pass |
-| `camunda.event.sequence_number` | `OtelSdkManager.logEvent()`, per-partition counter |
-| `camunda.event.sample_rate` | `OtelSdkManager.logEvent()`, only when the applied rate is below 1.0 |
-| `service.name`, `camunda.cluster.id`, `camunda.partition.id`, `camunda.exporter.digest` | OTel `Resource`, built once per partition in `OtelSdkManager.buildResource()` |
-| schema version | the OTel instrumentation scope's schema URL, not a per-record attribute |
-| record timestamp | your handler — `.setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS)` |
-| every domain attribute | your handler |
-
-There is no `event.id` attribute. Records are identified downstream by cluster, partition,
-log position and sequence number; do not invent one.
+- `logEvent()` sets `event.name`, `camunda.log.position`, `camunda.event.sequence_number` and,
+  when the applied sampling rate is below 1.0, `camunda.event.sample_rate` *before* it runs your
+  builder callback. Do not set them yourself: anything you set on the same key silently
+  overwrites the platform's value.
+- Resource attributes (including `camunda.tenant.physical_id` and `camunda.exporter.digest`) are
+  set once per exporter instance. Never set them per record; the per-record tenant is the logical
+  `camunda.tenant.id`.
+- The record timestamp and every domain attribute are yours:
+  `.setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS)`. There is no `event.id`
+  attribute; records are identified downstream by cluster, partition, log position and sequence
+  number, so do not invent one.
 
 ## Step 4 — Register the handler in the catalog
 
@@ -219,8 +220,9 @@ chain. This is the only main-source file outside `handler/` and `AnalyticsAttrib
 event touches — `AnalyticsExporter` never changes:
 
 ```java
-static HandlerRegistry build(final OtelSdkManager otelSdkManager) {
-  return new HandlerRegistry()
+static HandlerRegistry build(
+    final OtelSdkManager otelSdkManager, final Set<AnalyticsCategory> activeCategories) {
+  return new HandlerRegistry(activeCategories)
       ...
       .register(
           ValueType.MY_VALUE_TYPE,
@@ -229,7 +231,8 @@ static HandlerRegistry build(final OtelSdkManager otelSdkManager) {
 }
 ```
 
-`AnalyticsExporter.configure()` calls `AnalyticsHandlerCatalog.build(otelSdkManager).apply(context)`.
+`AnalyticsExporter.configure()` calls
+`AnalyticsHandlerCatalog.build(otelSdkManager, config.getActiveCategories()).apply(context)`.
 The `apply(context)` call installs an `AnalyticsRecordFilter`. The filter is an
 over-approximation: it accepts records whose `ValueType` is in the registered set *and* whose
 `Intent` is in the registered set, but those two sets are evaluated independently — a record can
@@ -238,9 +241,12 @@ no-ops happen in `HandlerRegistry.handle()`. No other change is needed for filte
 
 ## Step 5 — Add the pair to the catalog test
 
-`AnalyticsHandlerCatalogTest.shouldRegisterAllExpectedHandlers` asserts the registered set
-*exactly*, so a new `.register(...)` fails that test until the same `(ValueType, Intent)` entry is
-added there. The failure names only the set difference, not this step, so do it now:
+`AnalyticsHandlerCatalogTest.shouldRegisterAllExpectedHandlersWhenAllCategoriesActive` asserts the
+registered set *exactly*, so a new `.register(...)` fails that test until the same
+`(ValueType, Intent)` entry is added there. The failure names only the set difference, not this
+step, so do it now. Add the entry to the matching per-category test as well
+(`shouldRegisterOnlyContractualHandlersWhenOptionalCategoryDisabled` or
+`shouldRegisterOnlyOptionalHandlersWhenContractualCategoryDisabled`):
 
 ```java
 assertThat(registry.registrations())
@@ -257,7 +263,7 @@ Create `handler/MyEventHandlerTest.java`. The exporter and handler are built fre
 `UserTaskCreatedHandlerTest` builds them inline in the `@Test`, the older tests use `@BeforeEach`;
 either is fine, but do not share one `InMemoryLogRecordExporter` across tests.
 
-The four types the test needs, in full:
+The five types the test needs, in full:
 
 - `io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter` — captures emitted log records
 - `io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader` — captures metrics (only if the
@@ -315,6 +321,12 @@ class MyEventHandlerTest {
   @Test
   void shouldSkipUnmatchedRecords() {
     // given — a fresh exporter and handler, and a record that should be filtered out
+    final var logExporter = InMemoryLogRecordExporter.create();
+    final var handler = new MyEventHandler(TestOtelSdkManager.inMemory(logExporter));
+    final var unrelatedRecord = FACTORY.generateRecord(ValueType.MY_VALUE_TYPE,
+        r -> r.withRecordType(RecordType.EVENT).withIntent(MyIntent.MY_INTENT));
+        // set the field the handler filters on to a non-matching value
+
     // when
     handler.handle(typed(unrelatedRecord));
     // then
@@ -346,7 +358,7 @@ final var handler =
 // assert on metricReader.collectAllMetrics()
 ```
 
-See `ProcessInstanceCreationHandlerTest` for the full pattern.
+See `DecisionInstanceEvaluatedHandlerTest` for the full pattern.
 
 ### Integration wiring check
 
@@ -399,7 +411,7 @@ table (ValueType, Intent, handler class, `event.name`, extra filter). This one i
 because it duplicates part of the README's table.
 
 **`zeebe/exporters/analytics-exporter/README.md`** — update it in lockstep with the code changes
-above; it is the source of truth downstream consumers read to understand what the exporter emits:
+above; it is the public mirror of the data contract that readers outside Camunda rely on:
 
 - Add a row for the new event to the **Event types** table (source record, intent, event
   name, and a short note on when it's emitted).
@@ -414,28 +426,18 @@ above; it is the source of truth downstream consumers read to understand what th
 
 ## Step 8 — Build and verify
 
-Java 21 is required; point `JAVA_HOME` at a JDK 21 before running anything. All commands run from
-the repository root. See the **Building** section of the module README for the canonical list.
+Use the commands in the **Building** section of the module README, from the repository root.
+What the README does not say:
 
-```bash
-# Build the module and everything it depends on. Without -am this fails on a fresh clone,
-# because the module's dependencies are not yet in the local repository.
-./mvnw install -pl zeebe/exporters/analytics-exporter -am -Dquickly -T1C
-
-# Run this module's tests. The install step above put the module and its dependencies in the
-# local repository, so -pl without -am resolves them and runs all of this module's tests. Do
-# not scope with -Dtest here: -Dsurefire.failIfNoSpecifiedTests=false would let a mistyped
-# pattern that matches nothing pass as a false green.
-./mvnw verify -pl zeebe/exporters/analytics-exporter -DskipTests=false -DskipITs -Dquickly
-
-# Format the Java in this module. Unscoped, spotless:apply reformats the whole repository.
-./mvnw license:format spotless:apply -pl zeebe/exporters/analytics-exporter
-```
-
-Drop `-DskipITs` only when Docker is running: `verify` otherwise runs `AnalyticsExporterOtelIT`,
-which starts a real OTel Collector via Testcontainers. Note also that markdown formatting is
-configured on the root POM only, so running `spotless:apply` from the root touches markdown across
-the entire repository, not just your module.
+- Java 21 is required; point `JAVA_HOME` at a JDK 21 first.
+- On a fresh clone, run the README's `install ... -am` step before `verify`: without `-am` the
+  module's dependencies are not in the local repository yet.
+- Do not scope `verify` with `-Dtest`: together with `-Dsurefire.failIfNoSpecifiedTests=false`, a
+  mistyped pattern that matches nothing passes as a false green.
+- `verify` without `-DskipITs` runs `AnalyticsExporterOtelIT`, which needs Docker.
+- Format with `./mvnw license:format spotless:apply -pl zeebe/exporters/analytics-exporter`.
+  Unscoped, `spotless:apply` reformats the whole repository, and markdown formatting is configured
+  on the root POM only.
 
 All tests must pass before committing.
 
@@ -453,9 +455,12 @@ Before opening the PR, go through this checklist:
 4. **Handler is registered** — `.register(ValueType, Intent, handler)` call is present in
    `AnalyticsHandlerCatalog.build(...)`.
 5. **Catalog test updated** — the same `(ValueType, Intent)` pair is in the
-   `containsExactlyInAnyOrder` set in `AnalyticsHandlerCatalogTest`.
-6. **Tests pass** — the scoped `./mvnw verify` from Step 8 is green.
-7. **Module docs updated** — the new event is a row in the **Current Event Handlers** table in
+   `containsExactlyInAnyOrder` set of the all-categories test and of its per-category test in
+   `AnalyticsHandlerCatalogTest`.
+6. **Names match the contract** — every new name and unit is copied from the data contract and
+   pinned in `AnalyticsAttributeKeysTest`, `AnalyticsEventNamesTest` or `AnalyticsMetricNamesTest`.
+7. **Tests pass** — the module's `./mvnw verify` from Step 8 is green.
+8. **Module docs updated** — the new event is a row in the **Current Event Handlers** table in
    `zeebe/exporters/analytics-exporter/AGENTS.md`, and is listed in the **Event types** table in
    `zeebe/exporters/analytics-exporter/README.md` with its specific attributes documented and
    attribute names matching the `AnalyticsAttributes` constants.
