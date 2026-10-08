@@ -314,7 +314,7 @@ public class ProcessInstanceController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceSuspensionBatchOperationRequest request) {
     return processInstanceMapper
-        .toRequiredProcessInstanceFilter(request.getFilter())
+        .toProcessInstanceSuspensionFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             filter -> batchOperationSuspension(physicalTenantId, filter));
@@ -326,7 +326,7 @@ public class ProcessInstanceController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceResumptionBatchOperationRequest request) {
     return processInstanceMapper
-        .toRequiredProcessInstanceFilter(request.getFilter())
+        .toProcessInstanceResumptionFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             filter -> batchOperationResumption(physicalTenantId, filter));
