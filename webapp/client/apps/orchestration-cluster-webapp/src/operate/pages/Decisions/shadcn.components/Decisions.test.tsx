@@ -18,11 +18,29 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toBeInTheDocument();
 	});
 
-	it('should render all scaffold placeholders', async () => {
+	it('should render the filters panel with the optional filters menu and remaining scaffold placeholders', async () => {
 		const screen = await renderWithRouter(Decisions, {path: '/operate-preview/decisions'});
 
-		await expect.element(screen.getByText('Filters panel placeholder')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
 		await expect.element(screen.getByText('Decision panel placeholder')).toBeVisible();
 		await expect.element(screen.getByText('Instances table placeholder')).toBeVisible();
+	});
+
+	it('should show optional filters that are active in the URL', async () => {
+		const screen = await renderWithRouter(Decisions, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
+		});
+
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
+	});
+
+	it('should enable reset when optional filters are active in the URL', async () => {
+		const screen = await renderWithRouter(Decisions, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
+		});
+
+		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeEnabled();
 	});
 });

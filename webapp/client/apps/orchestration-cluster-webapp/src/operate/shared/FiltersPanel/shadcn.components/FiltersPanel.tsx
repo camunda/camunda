@@ -9,6 +9,7 @@
 import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Button} from '@camunda/design-system';
+import {Filter} from '@camunda/design-system/icons';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {CollapsablePanel} from '../../CollapsablePanel/shadcn.components/CollapsablePanel';
 
@@ -39,6 +40,7 @@ const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick,
 	return (
 		<CollapsablePanel
 			label={t('operate.shared.filtersPanel.label')}
+			icon={Filter}
 			panelPosition="LEFT"
 			maxWidth={320}
 			isCollapsed={panelState === 'collapsed'}
@@ -52,11 +54,16 @@ const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick,
 				});
 			}}
 			footer={
-				<div className="flex justify-center p-1">
-					<Button variant="ghost" size="sm" disabled={isResetButtonDisabled} type="reset" onClick={onResetClick}>
-						{t('operate.shared.filtersPanel.resetFilters')}
-					</Button>
-				</div>
+				<Button
+					variant="secondary"
+					size="sm"
+					className="w-full"
+					disabled={isResetButtonDisabled}
+					type="reset"
+					onClick={onResetClick}
+				>
+					{t('operate.shared.filtersPanel.resetFilters')}
+				</Button>
 			}
 		>
 			<div className="absolute w-full p-4">{children}</div>
