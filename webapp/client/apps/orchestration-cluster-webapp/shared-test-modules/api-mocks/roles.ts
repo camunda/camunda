@@ -27,10 +27,10 @@ function createQueryRolesResponse(overrides?: Partial<QueryRolesResponseBody>): 
 	});
 }
 
-function createMembersPage<TItem>(items: TItem[]) {
+function createMembersPage<TItem>(items: TItem[], totalItems = items.length) {
 	return createPaginatedResponse({
 		items,
-		page: {totalItems: items.length, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+		page: {totalItems, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 	});
 }
 
