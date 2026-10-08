@@ -345,7 +345,7 @@ Write `/tmp/fix-meta.json` before stopping, always:
 uses the same object shape as the e2e repo's `## Product-Bug Escalation` manifest, so one
 filing format serves every agent. `component`, `severity` and `affects` must match the labels
 you actually set on the issue, and `undetermined_fields` lists any category you could not
-determine and flagged with a comment — they are what names the owning team in the Slack
+determine and flagged with a comment — `alwaysgreen-fix.yml` renders them in the Slack
 thread and the job summary, so a filed bug does not sit unnoticed.
 
 `reason` is mandatory whenever `prs` is empty — it is the Slack thread reply and the job

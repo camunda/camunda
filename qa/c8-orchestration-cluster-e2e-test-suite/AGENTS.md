@@ -470,9 +470,10 @@ both, and `severity/mid` is the one CONTRIBUTING.md documents.
 Never omit a required category in silence. When you cannot confidently determine the component, the
 severity, or the affected version:
 
-1. **Apply the marker label** where the repo has one — in `camunda/camunda`,
-   `needs component label` (component), `severity/unknown` (severity), `likelihood/unknown`
-   (likelihood). `camunda/camunda-platform-helm` has no marker label.
+1. **Apply the marker label** where the repo has one. **Both repos define `severity/unknown` and
+   `likelihood/unknown`**, so those categories are never left unset. Only the component marker is
+   repo-specific: `camunda/camunda` has `needs component label`; `camunda/camunda-platform-helm`
+   has none, so omit `component/` there and rely on the comment.
 2. **Always post a comment** naming each field and why. The comment is the part that works in both
    repos, so it is mandatory even where a marker label exists:
    ```bash
@@ -572,7 +573,9 @@ set on an existing issue. Add only the categories that are missing.
    <what the assertion expects, and the docs reference if the behavior is documented>
 
    ### Environment
-   <Elasticsearch | OpenSearch | RDBMS (<vendor>)> — <any scenario flags that apply>
+   SM
+   <!-- the template's Environment dropdown is SM / SaaS / SaaS & SM; this suite runs SM -->
+   **Secondary storage:** <Elasticsearch | OpenSearch | RDBMS (<vendor>)> — <any scenario flags>
 
    ### Version
    <X.Y> (branch `<stable/X.Y | main>`)
@@ -1099,9 +1102,9 @@ filed/reused issue (a dispatch may yield several bugs):
 `category`, the skip PR in `prs`, and a non-empty `product_bugs` are all required for this verdict.
 `component`, `severity` and `affects` must match the labels you actually set, and
 `undetermined_fields` lists any category you could not determine and had to flag with a comment
-(`["component"]`, `["severity"]`, …) — `[]` when every field is set. They are surfaced in the job
-summary and the Slack thread, so the owning team is named there rather than having to open the
-issue to find out the bug is theirs.
+(`["component"]`, `["severity"]`, …) — `[]` when every field is set. `c8-orchestration-cluster-e2e-nightly-fix.yml`
+renders them in the Slack thread and the job summary, so the owning team is named there rather than
+having to open the issue to find out the bug is theirs.
 `suspect_commit` is surfaced directly in the Slack thread. The triage dispatcher reads each issue's
 fingerprint marker to suppress re-dispatch while the issue is open; once the skip PR merges the test
 no longer runs, and when the issue is later closed the skip should be removed so the test runs again.

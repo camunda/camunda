@@ -625,6 +625,25 @@ jobs:
               fi
             fi
 
+            # Product bugs filed this run. Shown regardless of whether a skip PR
+            # was also opened: the issue, its severity and its component are what
+            # tell a reader of this summary which team owns the regression.
+            if [ -f /tmp/fix-meta.json ]; then
+              pb_count=$(jq '[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
+              if [ "$pb_count" -gt 0 ]; then
+                echo ""
+                echo "### :bug: Product bugs filed: ${pb_count}"
+                echo ""
+                jq -r '[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)][] |
+                  "- [\(.issue_url // "issue link missing")](\(.issue_url // "")) in `\(.repo // "?")`"
+                  + " — **\(.severity // "severity?")** / `\(.component // "component?")`"
+                  + (if ((.affects // []) | length) > 0 then " (affects \((.affects | join(", "))))" else "" end)
+                  + (if ((.undetermined_fields // []) | length) > 0 then " :warning: needs triage: \((.undetermined_fields | join(", ")))" else "" end)
+                  + (if (.root_cause // "") != "" then "\n  - \(.root_cause)" else "" end)' \
+                  /tmp/fix-meta.json || true
+              fi
+            fi
+
             if [ -n "${TRIAGE_RUN_URL:-}" ]; then
               echo ""
               echo "**Triage run:** [↗](${TRIAGE_RUN_URL})"
@@ -679,13 +698,26 @@ jobs:
             repo=$(echo "$pb" | jq -r '.repo // "?"')
             rc=$(echo "$pb" | jq -r '.root_cause // ""')
             sc=$(echo "$pb" | jq -r '.suspect_commit // ""')
+            # Severity + component are what route the bug to a team. Without them
+            # in the thread the issue is filed but nobody knows it is theirs.
+            sev=$(echo "$pb" | jq -r '.severity // ""')
+            comp=$(echo "$pb" | jq -r '.component // ""')
+            # A dispatch can span versions, so the thread header cannot say which
+            # versions each individual bug affects.
+            aff=$(echo "$pb" | jq -r '(.affects // []) | join(", ")')
+            undet=$(echo "$pb" | jq -r '(.undetermined_fields // []) | join(", ")')
             if [ -n "$url" ]; then
               line="• product bug → <${url}|issue> in \`${repo}\`"
             else
               line="• product bug in \`${repo}\` (issue link missing in fix-meta)"
             fi
+            if [ -n "$sev" ] || [ -n "$comp" ]; then
+              line="${line} [${sev:-severity?}/${comp:-component?}]"
+            fi
+            [ -n "$aff" ] && line="${line} affects ${aff}"
             [ -n "$rc" ] && line="${line} — ${rc}"
             [ -n "$sc" ] && line="${line} (suspect: ${sc})"
+            [ -n "$undet" ] && line="${line} :warning: needs triage: ${undet}"
             lines+=("$line")
           done < <(echo "$pbugs_json" | jq -c '.[]')
           if [ "$pr_count" -gt 0 ]; then

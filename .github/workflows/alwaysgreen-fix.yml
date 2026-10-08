@@ -610,6 +610,23 @@ jobs:
                 jq -r '.prs[] | select(.root_cause) | "**Root cause:** \(.root_cause)", ""' /tmp/fix-meta.json
               fi
             fi
+            # Product bugs filed this run. A product-bug verdict can come with or
+            # without a skip PR, so this is outside the prs branch above.
+            if [ -f /tmp/fix-meta.json ]; then
+              pb_count=$(jq '[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
+              if [ "$pb_count" -gt 0 ]; then
+                echo ""
+                echo "### :bug: Product bugs filed: ${pb_count}"
+                echo ""
+                jq -r '[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)][] |
+                  "- [\(.issue_url // "issue link missing")](\(.issue_url // "")) in `\(.repo // "?")`"
+                  + " — **\(.severity // "severity?")** / `\(.component // "component?")`"
+                  + (if ((.affects // []) | length) > 0 then " (affects \((.affects | join(", "))))" else "" end)
+                  + (if ((.undetermined_fields // []) | length) > 0 then " :warning: needs triage: \((.undetermined_fields | join(", ")))" else "" end)
+                  + (if (.root_cause // "") != "" then "\n  - \(.root_cause)" else "" end)' \
+                  /tmp/fix-meta.json || true
+              fi
+            fi
             [ -n "${TRIAGE_RUN_URL}" ] && { echo ""; echo "**Triage run:** [↗](${TRIAGE_RUN_URL})"; }
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -654,10 +671,31 @@ jobs:
           # -1 when absent or unparseable, so a broken manifest reports the no-verdict
           # branch instead of erroring on an empty numeric comparison.
           pr_count=-1
+          pb_lines=""
           if [ -f /tmp/fix-meta.json ]; then
             pr_count=$(jq '.prs | length' /tmp/fix-meta.json 2>/dev/null || echo -1)
+            # Severity and component are what route a filed bug to a team; without
+            # them in the thread the issue exists but nobody knows it is theirs.
+            pb_lines=$(jq -r '[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)][] |
+              "• product bug → " + (if (.issue_url // "") != "" then "<\(.issue_url)|issue>" else "(issue link missing)" end)
+              + " in `\(.repo // "?")` [\(.severity // "severity?")/\(.component // "component?")]"
+              + (if ((.affects // []) | length) > 0 then " affects \((.affects | join(", ")))" else "" end)
+              + (if (.root_cause // "") != "" then " — \(.root_cause)" else "" end)
+              + (if ((.undetermined_fields // []) | length) > 0 then " :warning: needs triage: \((.undetermined_fields | join(", ")))" else "" end)' \
+              /tmp/fix-meta.json 2>/dev/null || true)
           fi
-          if [ "${pr_count}" -gt 0 ]; then
+          if [ -n "${pb_lines}" ]; then
+            # A filed product bug is the headline whether or not a skip PR exists:
+            # with one the run is unblocked, without one the test is still red.
+            if [ "${pr_count}" -gt 0 ]; then
+              links=$(jq -r '[.prs[] | "<\(.url // "")|PR #\(.number)>"] | join("  ")' /tmp/fix-meta.json)
+              text=":bug: *${SURFACE}* — product bug(s), test(s) skipped pending fix:"$'\n'"${pb_lines}"$'\n'"• PR(s): ${links}"
+            else
+              text=":warning: *${SURFACE}* — product bug(s) filed but NO skip PR, test(s) still failing:"$'\n'"${pb_lines}"
+            fi
+            [ -z "${MEDIC_USERGROUP}" ] \
+              || text="${text}"$'\n'"cc <!subteam^${MEDIC_USERGROUP}> — on shift for this"
+          elif [ "${pr_count}" -gt 0 ]; then
             links=$(jq -r '[.prs[] | "<\(.url // "")|PR #\(.number)>"] | join("  ")' /tmp/fix-meta.json)
             text=":white_check_mark: *${SURFACE}* — ${links}"
             # Slack only notifies on <!subteam^ID>; a literal @handle in text pings nobody.
