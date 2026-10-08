@@ -58,12 +58,13 @@ documented as a caller obligation.
 `ProcessInstanceSuspensionJobBehavior`; suspend's tree walk follows the same `ArrayDeque` pattern as
 migration. Cost is paid once per suspend, and once per resume cycle, not on every poll.
 
-- **Suspend:** append `Job.SUSPENDED` for every `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job,
-  then append `ProcessInstance.SUSPENDED`. Suspending every job finishes before the instance marker
-  is set, in one record batch: `Job.SUSPENDED` carries the job's own record, including its variables,
-  so it is not fixed-size, but it is the only record suspend writes per job — no activation record
-  alongside it. The batch's size scales with the aggregate serialized size of every job the walk
-  suspends, since suspend does not chunk (see Consequences).
+- **Suspend:** append `Job.SUSPENDED` for every `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job
+  except jobs of a terminating element (see D3 notes), then append `ProcessInstance.SUSPENDED`.
+  Suspending every job finishes before the instance marker is set, in one record batch:
+  `Job.SUSPENDED` carries the job's own record, including its variables, so it is not fixed-size,
+  but it is the only record suspend writes per job — no activation record alongside it. The batch's
+  size scales with the aggregate serialized size of every job the walk suspends, since suspend does
+  not chunk (see Consequences).
 - **Resume:** a `RESUME_JOBS` command searches `JOBS_BY_PROCESS_INSTANCE` (see D5) from the resume
   cursor, finds the first `SUSPENDED` entry it reaches, appends `Job.RESUMED` for it, and calls
   `BpmnJobActivationBehavior.publishWork` so stream and poll workers see the job again, before
@@ -109,8 +110,10 @@ Notes:
   termination waits for its canceling task listener and cancel execution listener jobs, and the
   instance is never resumed. So `SuspensionBehavior` processes `JOB`, `USER_TASK`, and `INCIDENT`
   commands and `ProcessInstance.COMPLETE_EXECUTION_LISTENER` of a terminating element without asking
-  the processor, and `JobTimeOut` does not park such a job. Otherwise the termination never finishes
-  (#64505).
+  the processor, and neither suspend nor `JobTimeOut` parks such a job. Otherwise the termination
+  never finishes (#64505). A job of an element that is already terminating at suspend time, e.g.
+  the canceling listener of an interrupted user task, stays available too; the flow after the
+  interruption still waits for the resume.
 
 **D4. `Job.SUSPENDED` and `Job.RESUMED` are exported but not consumed.** Both exporters filter by an
 allow-list (`JobHandler.JOB_EVENTS`, `JobExportHandler.EXPORTABLE_INTENTS`) that does not include

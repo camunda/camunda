@@ -371,6 +371,40 @@ public final class UserTaskSuspensionGateTest {
     assertThatProcessInstanceTerminated(processInstanceKey);
   }
 
+  @Test
+  public void shouldHandOutCancelingListenerJobOfInterruptedUserTaskWhileSuspended() {
+    // given - the user task is already terminating when the instance is suspended
+    final String processId = Strings.newRandomValidBpmnId();
+    final String listenerType = Strings.newRandomValidBpmnId();
+    final String signalName = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeTaskListener(l -> l.canceling().type(listenerType))
+                .boundaryEvent("interrupt", b -> b.signal(signalName))
+                .endEvent()
+                .moveToActivity("task")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.signal().withSignalName(signalName).broadcast();
+    final long listenerJobKey = listenerJobKey(processInstanceKey, listenerType);
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // then
+    assertThatJobIsHandedOut(listenerType, listenerJobKey);
+  }
+
   private static long suspendAndCancelInstanceWithCancelingListeners(
       final String... listenerTypes) {
     final String processId = Strings.newRandomValidBpmnId();

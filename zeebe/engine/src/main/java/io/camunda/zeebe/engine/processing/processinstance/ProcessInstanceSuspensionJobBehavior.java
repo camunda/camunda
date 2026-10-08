@@ -57,7 +57,8 @@ public final class ProcessInstanceSuspensionJobBehavior {
   }
 
   /**
-   * Appends {@link JobIntent#SUSPENDED} for every job in {@link #SUSPENDABLE_STATES}.
+   * Appends {@link JobIntent#SUSPENDED} for every job in {@link #SUSPENDABLE_STATES}, except jobs
+   * of a terminating element: its termination waits for them, e.g. a canceling task listener job.
    *
    * @return the number of jobs suspended; the caller records the metric after all writes complete
    */
@@ -70,14 +71,15 @@ public final class ProcessInstanceSuspensionJobBehavior {
     walk(
         processInstance,
         elementInstance ->
-            visitJobInStates(
-                elementInstance,
-                SUSPENDABLE_STATES,
-                (jobKey, job) -> {
-                  stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
-                  count.incrementAndGet();
-                  return true;
-                }));
+            elementInstance.isTerminating()
+                || visitJobInStates(
+                    elementInstance,
+                    SUSPENDABLE_STATES,
+                    (jobKey, job) -> {
+                      stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
+                      count.incrementAndGet();
+                      return true;
+                    }));
     return count.get();
   }
 
