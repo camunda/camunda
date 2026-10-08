@@ -96,8 +96,10 @@ final class RecoveryPartitionManagerTest {
     final var metadata = localPartitionMetadata(PARTITION_ID);
     final var metadata2 = localPartitionMetadata(PARTITION_ID_2);
     clusterConfigurationService = mock(ClusterConfigurationService.class);
-    when(clusterConfigurationService.getCurrentPartitionDistribution(any()))
-        .thenReturn(new PartitionDistribution(Set.of(metadata, metadata2)));
+    when(clusterConfigurationService.getLatestPartitionDistribution(any()))
+        .thenReturn(
+            CompletableActorFuture.completed(
+                new PartitionDistribution(Set.of(metadata, metadata2))));
     when(clusterConfigurationService.getCurrentClusterConfiguration())
         .thenReturn(CurrentClusterConfiguration.uninitialized());
 
@@ -661,8 +663,8 @@ final class RecoveryPartitionManagerTest {
     @Test
     void shouldCompleteImmediatelyWhenNoLocalPartitions() {
       // given
-      when(clusterConfigurationService.getCurrentPartitionDistribution(any()))
-          .thenReturn(new PartitionDistribution(Set.of()));
+      when(clusterConfigurationService.getLatestPartitionDistribution(any()))
+          .thenReturn(CompletableActorFuture.completed(new PartitionDistribution(Set.of())));
 
       // when
       controlActor.run(() -> startFuture.set(partitionManager.start()));
@@ -737,8 +739,8 @@ final class RecoveryPartitionManagerTest {
     void shouldBeIdempotentWhenDirectoryIsAlreadyEmpty() {
       // given: no local partitions, so preRestore's target directory is never created, and
       // start() only needs to set up the restoreExecutor for this to be a no-op deletion
-      when(clusterConfigurationService.getCurrentPartitionDistribution(any()))
-          .thenReturn(new PartitionDistribution(Set.of()));
+      when(clusterConfigurationService.getLatestPartitionDistribution(any()))
+          .thenReturn(CompletableActorFuture.completed(new PartitionDistribution(Set.of())));
       controlActor.run(() -> partitionManager.start());
       await().atMost(Duration.ofSeconds(10)).until(() -> true); // let start() settle
 

@@ -110,8 +110,8 @@ class PartitionManagerStepTest {
           mock(ClusterConfigurationService.class);
       when(clusterConfigurationService.getPartitionDistribution(any()))
           .thenReturn(PartitionDistribution.NO_PARTITIONS);
-      when(clusterConfigurationService.getCurrentPartitionDistribution(any()))
-          .thenReturn(PartitionDistribution.NO_PARTITIONS);
+      when(clusterConfigurationService.getLatestPartitionDistribution(any()))
+          .thenReturn(CompletableActorFuture.completed(PartitionDistribution.NO_PARTITIONS));
       mockClusterConfiguration = mock(CurrentClusterConfiguration.class);
       when(clusterConfigurationService.getInitialClusterConfiguration())
           .thenReturn(mockClusterConfiguration);
