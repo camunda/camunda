@@ -12,7 +12,7 @@ import {render} from 'vitest-browser-react';
 import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
-import type {OptionalFilter, OptionalFilterValues} from '../OptionalFiltersFormGroup';
+import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 
 const Harness: React.FC<{
@@ -70,6 +70,16 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		await expect.element(screen.getByLabelText('Decision Instance Key(s)')).toHaveValue('2251799813688001');
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
 	});
+
+	it.for([{evaluationDateFrom: '2024-01-01T00:00:00.000Z'}, {evaluationDateTo: '2024-01-02T00:00:00.000Z'}])(
+		'should show the date range filter when only one bound is active in the initial values',
+		async (initialValues) => {
+			const screen = await render(<Harness initialValues={initialValues} />);
+
+			await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+			await expect.element(screen.getByRole('menuitem', {name: 'Evaluation Date Range'})).not.toBeInTheDocument();
+		},
+	);
 
 	it('should serialize entered values on submit', async () => {
 		const onSubmit = vi.fn();
