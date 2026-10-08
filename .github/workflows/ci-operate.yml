@@ -134,7 +134,7 @@ jobs:
       shard-total: ${{ steps.shard-total.outputs.value }}
     env:
       TEST_TYPE: Unit
-      TEST_OWNER: '@camunda/operate-frontend'
+      TEST_OWNER: '@camunda/operate-admin-pod'
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -192,7 +192,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
-      TEST_OWNER: '@camunda/operate-frontend'
+      TEST_OWNER: '@camunda/operate-admin-pod'
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -255,7 +255,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: '@camunda/operate-frontend'
+      TEST_OWNER: '@camunda/operate-admin-pod'
       TEST_PRODUCT: Operate
     defaults:
       run:
@@ -297,7 +297,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: '@camunda/operate-frontend'
+      TEST_OWNER: '@camunda/operate-admin-pod'
       TEST_PRODUCT: Operate
     defaults:
       run:
@@ -339,7 +339,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: '@camunda/operate-frontend'
+      TEST_OWNER: '@camunda/operate-admin-pod'
     container:
       image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
@@ -401,7 +401,7 @@ jobs:
       shard-total: ${{ steps.shard-total.outputs.value }}
     env:
       TEST_TYPE: visual-regression
-      TEST_OWNER: '@camunda/operate-frontend'
+      TEST_OWNER: '@camunda/operate-admin-pod'
     container:
       image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
@@ -462,7 +462,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: visual-regression
-      TEST_OWNER: '@camunda/operate-frontend'
+      TEST_OWNER: '@camunda/operate-admin-pod'
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -538,7 +538,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: screenshot-update
-      TEST_OWNER: '@camunda/operate-frontend'
+      TEST_OWNER: '@camunda/operate-admin-pod'
     container:
       image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
