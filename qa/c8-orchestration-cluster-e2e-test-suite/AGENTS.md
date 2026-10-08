@@ -390,23 +390,36 @@ Orchestration-suite failures almost always trace to a module inside this same re
 | c8Run setup / packaging             | `camunda/camunda`               | `c8run/`                                    |
 | Helm chart / deploy config          | `camunda/camunda-platform-helm` | `charts/`                                   |
 
-### Labels for issues in `camunda/camunda`
+### Labels for the issue (both owning repos)
 
-`camunda/camunda` triages bugs by their labels. Its `opened_issue_labeler.yml` reads only the
-markers of the bug-report form, and the body this agent writes has none, so no automation adds
-these labels for you. Set **all** of them on `gh issue create`. When you reuse, reopen, or append a
-fingerprint to an existing issue, add the ones it is missing (see step 1).
+Bugs are triaged by their labels, and no automation adds them for you: `camunda/camunda`'s
+`opened_issue_labeler.yml` reads only the markers of its bug-report form, and the body this agent
+writes has none. Set **all** of the applicable labels on `gh issue create`. When you reuse, reopen,
+or append a fingerprint to an existing issue, add the ones it is missing (see step 1).
+
+Both repos in the routing table above — `camunda/camunda` and `camunda/camunda-platform-helm` —
+define `severity/`, `likelihood/`, `affects/` and `component/`, so the only per-repo differences are
+`qa/automation-found` and the component vocabulary.
 
 |         Label         |                                                                                               Value                                                                                               |
 |-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `kind/bug`            | Always.                                                                                                                                                                                           |
-| `qa/automation-found` | Always. Use it instead of `nightly-detected`, which does not exist in `camunda/camunda`.                                                                                                          |
-| `component/<x>`       | From the component table below.                                                                                                                                                                   |
-| `severity/<x>`        | From the severity rules below.                                                                                                                                                                    |
+| `kind/bug`            | Always, in both repos.                                                                                                                                                                            |
+| `qa/automation-found` | `camunda/camunda` only — its marker for an automation-found bug. `camunda/camunda-platform-helm` does not define it.                                                                              |
+| `component/<x>`       | From the per-repo vocabulary below.                                                                                                                                                               |
+| `severity/<x>`        | From the severity rules below. Always, in both repos.                                                                                                                                             |
 | `likelihood/<x>`      | `likelihood/high`, because Gate A already proved the failure is deterministic. Use `likelihood/mid` only when it fails in some scenarios or on some nights of the same version and not in others. |
-| `affects/<X.Y>`       | The version of the failing run (`8.10` → `affects/8.10`). Omit it for `main`.                                                                                                                     |
+| `affects/<X.Y>`       | The version of the failing run (`8.10` -> `affects/8.10`). Omit it for `main`.                                                                                                                    |
 
-|                    Failure surface                    |       `component/` label        |
+**Standing rule:** a repo only accepts labels it defines. Confirm with
+`gh label list --repo <owner>/<repo> --search "<prefix>"` when unsure, and drop a label the repo
+does not have rather than letting `gh issue create` fail — but never drop a whole category in
+silence: see **Fields you cannot determine** below.
+
+#### `component/` vocabulary
+
+`camunda/camunda`, by failure surface:
+
+|                    Failure surface                    |        `component/` label       |
 |-------------------------------------------------------|---------------------------------|
 | Identity, Admin UI, authorizations, RBA (8.10+)       | `component/identity`            |
 | Management Identity (Self-Managed)                    | `component/management-identity` |
@@ -420,7 +433,19 @@ fingerprint to an existing issue, add the ones it is missing (see step 1).
 | c8Run packaging or startup                            | `component/c8run`               |
 | Cannot tell                                           | `needs component label`         |
 
-Severity follows [CONTRIBUTING.md](https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#severity-and-likelihood-bugs):
+`camunda/camunda-platform-helm`:
+
+|                                                            Failure surface                                                             |                                   `component/` label                                   |
+|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| Chart templating, values, install/upgrade itself                                                                                       | `component/helm`                                                                       |
+| A component's chart config (Operate, Tasklist, Optimize, Zeebe, Identity, Console, Connectors, Web Modeler, Elasticsearch, monitoring) | the matching `component/<name>`                                                        |
+| Shared/core chart wiring                                                                                                               | `component/core` or `component/orchestration`                                          |
+| Cannot tell                                                                                                                            | omit `component/` and say so in the comment (this repo has no "needs component" label) |
+
+#### Severity
+
+Severity follows [CONTRIBUTING.md](https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#severity-and-likelihood-bugs)
+and applies in both repos:
 
 - `severity/critical` — **data loss** (user data deleted, lost or corrupted, for example entities
   gone after an upgrade) or **unauthorized access** (a user without the permission reaches data or
@@ -431,14 +456,33 @@ Severity follows [CONTRIBUTING.md](https://github.com/camunda/camunda/blob/main/
   through the REST API, another UI path, or another filter). Name the workaround in the body.
 - `severity/low` — little impact on users: a wrong status code for invalid input, a cosmetic
   defect, log noise.
-- `severity/unknown` — only when you cannot tell without a deep investigation. Do not use it to
-  avoid a choice.
+- `severity/unknown` — only when you genuinely cannot tell without a deep investigation, **and**
+  only together with the comment required below. Never omit severity instead.
 
-When you hesitate between two severities, take the higher one. Give the reason in the
-`**Severity:**` line of the body.
+When you hesitate between two severities, take the higher one. Give the reason in the `### Severity`
+section of the body.
 
-Never change a `component/`, `severity/` or `likelihood/` label that a person already set on an
-existing issue. Add only the categories that are missing.
+**Exact strings matter.** Use `severity/mid`, never `severity/medium` — `camunda/camunda` defines
+both, and `severity/mid` is the one CONTRIBUTING.md documents.
+
+#### Fields you cannot determine
+
+Never omit a required category in silence. When you cannot confidently determine the component, the
+severity, or the affected version:
+
+1. **Apply the marker label** where the repo has one — in `camunda/camunda`,
+   `needs component label` (component), `severity/unknown` (severity), `likelihood/unknown`
+   (likelihood). `camunda/camunda-platform-helm` has no marker label.
+2. **Always post a comment** naming each field and why. The comment is the part that works in both
+   repos, so it is mandatory even where a marker label exists:
+   ```bash
+   gh issue comment <n> --repo <owner>/<repo> --body \
+     "Automated triage could not determine **<field>**: <reason>. Please set it during triage."
+   ```
+   One comment listing every undetermined field is enough — do not post one per field.
+
+Never change a `component/`, `severity/`, `likelihood/` or `affects/` label that a person already
+set on an existing issue. Add only the categories that are missing.
 
 ### Filing the bug ticket (dedupe FIRST)
 
@@ -480,30 +524,69 @@ existing issue. Add only the categories that are missing.
 
      Put its URL in `fix-meta.json`.
 
-   - In `camunda/camunda`, in each case above, also add the labels the issue is missing (see
-     **Labels for issues in `camunda/camunda`**):
-     `gh issue edit <n> --repo camunda/camunda --add-label "<label>,<label>"`.
+   - In **every** case above, also add the labels the issue is missing (see **Labels for the issue
+     (both owning repos)**) — a reused or human-filed issue is exactly where severity and component
+     are most often absent:
+     `gh issue edit <n> --repo <owner>/<repo> --add-label "<label>,<label>"`. Drop a label the repo
+     does not define, never change one a person already set, and post the comment required by
+     **Fields you cannot determine** if a category stays unset.
 
-2. **File the issue** when none exists. You MAY use the repo's `create-issue` skill (bug template +
-   component label), but the body MUST contain the fingerprint line below so dedupe works:
+2. **File the issue** when none exists. The body below mirrors the required fields of
+   `camunda/camunda`'s bug-report template (`.github/ISSUE_TEMPLATE/1. bug_report.yml`), so a human
+   triaging it sees the same sections the form would have produced. The template's four dropdowns —
+   Component, Affected version, Severity, Likelihood — are carried by the labels instead, which is
+   why every one of them is mandatory above. Do **not** write the form's HTML markers
+   (`<!-- Component -->`, `<!-- Severity -->`) into the body: that hands label selection back to
+   `opened_issue_labeler.yml`, whose regexes have mislabelled bot issues before, and it hides from
+   the command which labels were actually set. You MAY use the repo's `create-issue` skill instead,
+   but only if the result carries the same sections, the same labels, and the fingerprint line:
 
    ```bash
-   # every label from "Labels for issues in camunda/camunda"
+   # every label from "Labels for the issue (both owning repos)"
    # Quote each label: `needs component label` holds spaces.
+   # camunda/camunda:
    LABELS=(--label kind/bug --label qa/automation-found --label "component/<x>" \
      --label "severity/<x>" --label "likelihood/<x>" --label "affects/<X.Y>")
+   # camunda/camunda-platform-helm (no qa/automation-found there):
+   # LABELS=(--label kind/bug --label "component/<x>" \
+   #   --label "severity/<x>" --label "likelihood/<x>" --label "affects/<X.Y>")
 
-   gh issue create --repo camunda/camunda \
+   gh issue create --repo <owner>/<repo> \
      --title "<module>: <one-line symptom> (nightly <version>)" \
      "${LABELS[@]}" \
      --body "$(cat <<'BODY'
    Detected by orchestration-cluster nightly triage. The failing test is **correct** and the failure
    is **not flaky** — it traces to a recent product change.
 
-   - **Failing test:** `<file>` › `<test_name>` (<test_type>, <version>)
-   - **Symptom:** <what the screenshot / error shows>
-   - **Suspected change:** <commit sha + subject, or PR #, or docs reference>
-   - **Severity:** <severity label> — <one-line reason; name the workaround if one exists>
+   ### Description
+   <one-line symptom, in product terms rather than test terms>
+
+   ### Steps to reproduce
+   1. Run `<file>` › `<test_name>` (<test_type>) on <version>.
+   2. See the nightly run: <e2e / api run URL>
+
+   ### Current behavior
+   <what the screenshot / trace / error actually shows the product doing>
+
+   ### Expected behavior
+   <what the assertion expects, and the docs reference if the behavior is documented>
+
+   ### Environment
+   <Elasticsearch | OpenSearch | RDBMS (<vendor>)> — <any scenario flags that apply>
+
+   ### Version
+   <X.Y> (branch `<stable/X.Y | main>`)
+
+   ### Workaround
+   <the workaround that justified severity/mid, or "none known">
+
+   ### Severity
+   <severity label> — <one-line reason>
+
+   ### Rootcause
+   <commit sha + subject, or PR #, or docs reference, or "not pinned">
+
+   ### Triage
    - **Nightly run(s):** <e2e / api run URLs>
    - **Triage run:** <triage_run_url>
 
@@ -512,9 +595,12 @@ existing issue. Add only the categories that are missing.
    )"
    ```
 
-   The `Fingerprint:` line is **mandatory**. If a label is rejected, check its name against the
-   tables above and retry; drop only an `affects/<X.Y>` label that does not exist yet. For an
-   issue in `camunda/camunda-platform-helm`, use `--label kind/bug` only.
+   The `Fingerprint:` line is **mandatory**. Keep every `###` heading even when a value is unknown:
+   write "not determined — see comment" under it and post the comment required by **Fields you
+   cannot determine**. If a label is rejected, check its name against the tables above and retry;
+   drop only a label the repo genuinely does not define (an `affects/<X.Y>` that does not exist yet,
+   or `qa/automation-found` in `camunda/camunda-platform-helm`). Never drop a whole category without
+   the explaining comment.
 
 3. **Skip the failing test with a bug-linked annotation**, static `test.skip(...)` form, with the
    annotation comment on the line directly above — exact format, no deviation:
@@ -996,6 +1082,9 @@ filed/reused issue (a dispatch may yield several bugs):
     {
       "repo": "camunda/camunda",
       "component": "operate",
+      "severity": "high",
+      "affects": ["8.10"],
+      "undetermined_fields": [],
       "issue_url": "https://github.com/camunda/camunda/issues/55864",
       "issue_number": 55864,
       "fingerprint": "<FP>",
@@ -1008,6 +1097,11 @@ filed/reused issue (a dispatch may yield several bugs):
 ```
 
 `category`, the skip PR in `prs`, and a non-empty `product_bugs` are all required for this verdict.
+`component`, `severity` and `affects` must match the labels you actually set, and
+`undetermined_fields` lists any category you could not determine and had to flag with a comment
+(`["component"]`, `["severity"]`, …) — `[]` when every field is set. They are surfaced in the job
+summary and the Slack thread, so the owning team is named there rather than having to open the
+issue to find out the bug is theirs.
 `suspect_commit` is surfaced directly in the Slack thread. The triage dispatcher reads each issue's
 fingerprint marker to suppress re-dispatch while the issue is open; once the skip PR merges the test
 no longer runs, and when the issue is later closed the skip should be removed so the test runs again.
@@ -1112,7 +1206,7 @@ actually fixed, or something regressed since — then:
    it with a longer timeout, a viewport pin, or a weakened assertion. The PR is
    *supposed* to go red here: that is the signal a human needs.
 3. Reopen the closed issue the marker referenced (`gh issue reopen`) and add the labels
-   it is missing (see "### Labels for issues in `camunda/camunda`") — or file a new
+   it is missing (see "### Labels for the issue (both owning repos)") — or file a new
    one per "### Filing the bug ticket (dedupe FIRST)" when the original is not the
    right home — and comment on it linking this verification run.
 4. Comment on the unskip PR (`gh pr comment $PR_NUMBER --repo $REPO`) with the test,
