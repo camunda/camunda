@@ -416,8 +416,14 @@ def open_fix_prs(repo: str) -> tuple[list[dict], bool]:
     return prs, True
 
 
-def dedupe_inputs() -> tuple[set[str], set[str], set[str], bool]:
-    """(covered fingerprints, keys with an open PR, keys decided per spec, ok).
+def dedupe_inputs() -> tuple[set[str], set[str], set[str], dict[str, object], bool]:
+    """(covered fingerprints, keys with an open PR, keys decided per spec, refs, ok).
+
+    `refs` is what the Slack message needs to say *which* PR accounts for a failure:
+    `{"covered_by": {fingerprint: "owner/repo#n"}, "keys": {key: ["owner/repo#n"]}}`.
+    Built here rather than looked up again by the notifier, because the answer is a
+    by-product of the decision that was already made — re-deriving it would be a second
+    PR listing that could disagree with the one the plan was built from.
 
     One lookup behind one `ok`, across every repo a fix can land in. Coverage used to
     come from a second, separate `gh` call whose failure was swallowed into an empty
@@ -453,6 +459,8 @@ def dedupe_inputs() -> tuple[set[str], set[str], set[str], bool]:
     covered: set[str] = set()
     keys: set[str] = set()
     uncovered: set[str] = set()
+    covered_by: dict[str, str] = {}
+    key_refs: dict[str, list[str]] = {}
     ok = True
     now = datetime.now(timezone.utc)
     for repo in FIX_PR_REPOS:
@@ -470,6 +478,10 @@ def dedupe_inputs() -> tuple[set[str], set[str], set[str], bool]:
                 )
             else:
                 covered |= claims
+                # First claimant wins, so the reported PR matches the one whose claim
+                # actually suppressed the dispatch.
+                for claim in claims:
+                    covered_by.setdefault(claim, f"{repo}#{pr.get('number')}")
             pr_keys: set[str] = set()
             for label in pr.get("labels") or []:
                 name = (label.get("name") or "").strip()
@@ -488,6 +500,8 @@ def dedupe_inputs() -> tuple[set[str], set[str], set[str], bool]:
                 )
                 continue
             keys |= pr_keys
+            for key in pr_keys:
+                key_refs.setdefault(key, []).append(f"{repo}#{pr.get('number')}")
             if not claims:
                 uncovered |= pr_keys
             log(
@@ -506,7 +520,13 @@ def dedupe_inputs() -> tuple[set[str], set[str], set[str], bool]:
                 else "decided per spec (every holder claims some)"
             )
         )
-    return covered, keys, keys - uncovered, ok
+    return (
+        covered,
+        keys,
+        keys - uncovered,
+        {"covered_by": covered_by, "keys": key_refs},
+        ok,
+    )
 
 
 def inflight_keys() -> tuple[set[str], bool]:
@@ -642,21 +662,31 @@ def fixed_upstream_fingerprints(
     return out
 
 
-def product_bug_fingerprints() -> set[str]:
+def product_bug_fingerprints() -> tuple[set[str], dict[str, str]]:
+    """(fingerprints, fingerprint -> issue URL).
+
+    The URL is carried so a suppressed failure can name the bug it is tracked by. A
+    medic told only "tracked as a known product bug" still has to find the issue by
+    hand, which is the whole cost the message was supposed to save.
+    """
     issues = gh_json(
         [
             "search", "issues", "nightly-product-bug is:issue",
             "--owner", "camunda", "--state", "open",
-            "--limit", "200", "--json", "body",
+            "--limit", "200", "--json", "body,url",
         ],
         [],
     )
     out: set[str] = set()
+    urls: dict[str, str] = {}
     for issue in issues if isinstance(issues, list) else []:
         for line in (issue.get("body") or "").splitlines():
             if "nightly-product-bug fp=" in line:
-                out.add(line.split("fp=", 1)[1].strip()[:8])
-    return out
+                fp = line.split("fp=", 1)[1].strip()[:8]
+                out.add(fp)
+                if issue.get("url"):
+                    urls.setdefault(fp, str(issue["url"]))
+    return out, urls
 
 
 # ---------------------------------------------------------------------------
@@ -782,6 +812,8 @@ def serialise(
     blame: classify.Blame,
     run_id: str,
     blame_for_ref: Callable[[str], classify.Blame] | None = None,
+    base_ref: str = "",
+    references: dict | None = None,
 ) -> dict:
     """`blame` is the run's own ref, kept at top level for the job summary.
 
@@ -794,6 +826,11 @@ def serialise(
     dispatch_blame = blame_for_ref or (lambda _ref: blame)
     return {
         "run_url": f"https://github.com/{REPO}/actions/runs/{run_id}",
+        "base_ref": base_ref,
+        # Which PR or issue accounts for each suppressed fingerprint and each locked
+        # dispatch key. notify.py renders it; the job summary and the artifact keep
+        # using the reason codes.
+        "references": references or {},
         "blame": asdict(blame),
         "dispatches": [
             {
@@ -830,6 +867,16 @@ def serialise(
                 "dispatch_key": s.candidate.key,
                 "reason": s.reason,
                 "detail": s.detail,
+                # What failed and how much of it, so the Slack line can say so without
+                # anyone opening the run. `fingerprints` is what maps a suppression to
+                # the PR or issue in `references`.
+                "job_name": classify.job_leaf_name(s.candidate.job_name),
+                "also_failing_jobs": [
+                    classify.job_leaf_name(n) for n in s.candidate.also_failing_jobs
+                ],
+                "job_level": s.candidate.job_level,
+                "spec_count": len(s.candidate.specs),
+                "fingerprints": s.candidate.fingerprints,
             }
             for s in result.suppressed
         ],
@@ -861,17 +908,20 @@ def main() -> int:
             keys = {c.key for c in candidates}
             log("::warning::in-flight lookup failed; suppressing dispatch this run")
 
-        covered, pr_keys, pr_keys_covered, dedupe_ok = dedupe_inputs()
+        covered, pr_keys, pr_keys_covered, pr_refs, dedupe_ok = dedupe_inputs()
         if not dedupe_ok:
             # Cannot prove what an open PR already covers, so suppress every candidate:
             # the key set and the coverage set must be one snapshot or a partial read
             # licenses a duplicate PR.
             pr_keys = {c.key for c in candidates}
             pr_keys_covered = set()
+            pr_refs = {}
             log("::warning::open fix PR lookup failed; suppressing dispatch this run")
 
         run = gh_json(["api", f"repos/{REPO}/actions/runs/{args.run_id}"], {})
         started = run.get("run_started_at") or run.get("created_at") or ""
+
+        bug_fps, bug_urls = product_bug_fingerprints()
 
         result = planning.plan_dispatches(
             candidates,
@@ -879,7 +929,7 @@ def main() -> int:
             inflight_keys=keys,
             open_pr_keys=pr_keys,
             open_pr_keys_with_coverage=pr_keys_covered,
-            product_bug_fingerprints=product_bug_fingerprints(),
+            product_bug_fingerprints=bug_fps,
             recent_no_fix_fingerprints=recent_no_fix_fingerprints(workdir),
             fixed_upstream_fingerprints=fixed_upstream_fingerprints(candidates, started),
             max_dispatches=args.max_dispatches,
@@ -898,7 +948,18 @@ def main() -> int:
                 blame_cache[ref] = resolve_blame_for_ref(ref)
             return blame_cache[ref]
 
-        payload = serialise(result, blame, args.run_id, blame_for_ref=blame_for_ref)
+        payload = serialise(
+            result,
+            blame,
+            args.run_id,
+            blame_for_ref=blame_for_ref,
+            base_ref=base_ref,
+            references={
+                "covered_by": (pr_refs or {}).get("covered_by") or {},
+                "keys": (pr_refs or {}).get("keys") or {},
+                "product_bugs": bug_urls,
+            },
+        )
 
     text = json.dumps(payload, indent=2)
     if args.out == "-":

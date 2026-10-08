@@ -52,7 +52,7 @@ def _stub(monkeypatch, prs, *, ok=True):
 
 def test_a_claiming_holder_frees_its_key_for_other_specs(monkeypatch):
     _stub(monkeypatch, [_pr(1, ["main:saas-smoke-e2e"], claims=["aaaaaaaa"])])
-    covered, keys, per_spec, ok = discover.dedupe_inputs()
+    covered, keys, per_spec, _refs, ok = discover.dedupe_inputs()
     assert ok is True
     assert covered == {"aaaaaaaa"}
     assert keys == {"main:saas-smoke-e2e"}
@@ -61,7 +61,7 @@ def test_a_claiming_holder_frees_its_key_for_other_specs(monkeypatch):
 
 def test_a_holder_claiming_nothing_keeps_its_key_locked(monkeypatch):
     _stub(monkeypatch, [_pr(1, ["main:saas-smoke-e2e"])])
-    covered, keys, per_spec, ok = discover.dedupe_inputs()
+    covered, keys, per_spec, _refs, ok = discover.dedupe_inputs()
     assert covered == set()
     assert keys == {"main:saas-smoke-e2e"}
     assert per_spec == set()
@@ -72,7 +72,7 @@ def test_an_empty_coverage_block_claims_nothing(monkeypatch):
     pr = _pr(1, ["main:saas-smoke-e2e"])
     pr["body"] = f"Fixes.\n\n{planning.COVERAGE_BEGIN}\nfp=\n{planning.COVERAGE_END}\n"
     _stub(monkeypatch, [pr])
-    _covered, keys, per_spec, _ok = discover.dedupe_inputs()
+    _covered, keys, per_spec, _refs, _ok = discover.dedupe_inputs()
     assert keys == {"main:saas-smoke-e2e"}
     assert per_spec == set()
 
@@ -86,7 +86,7 @@ def test_one_non_claiming_holder_locks_a_key_another_holder_claims(monkeypatch):
             _pr(2, ["main:saas-smoke-e2e"]),
         ],
     )
-    covered, keys, per_spec, _ok = discover.dedupe_inputs()
+    covered, keys, per_spec, _refs, _ok = discover.dedupe_inputs()
     assert covered == {"aaaaaaaa"}
     assert keys == {"main:saas-smoke-e2e"}
     assert per_spec == set()
@@ -101,7 +101,7 @@ def test_an_expired_non_claiming_holder_does_not_lock_a_claiming_one(monkeypatch
             _pr(2, ["main:saas-smoke-e2e"], age_hours=99),
         ],
     )
-    _covered, keys, per_spec, _ok = discover.dedupe_inputs()
+    _covered, keys, per_spec, _refs, _ok = discover.dedupe_inputs()
     assert keys == {"main:saas-smoke-e2e"}
     assert per_spec == {"main:saas-smoke-e2e"}
 
@@ -110,7 +110,7 @@ def test_an_expired_holder_releases_its_key_but_keeps_its_claims(monkeypatch):
     # The specs a PR claims stay claimed while it is open; only the coarse key lock is
     # time-bound, so the failure it fixed is still suppressed per spec.
     _stub(monkeypatch, [_pr(1, ["main:saas-smoke-e2e"], claims=["aaaaaaaa"], age_hours=99)])
-    covered, keys, per_spec, _ok = discover.dedupe_inputs()
+    covered, keys, per_spec, _refs, _ok = discover.dedupe_inputs()
     assert covered == {"aaaaaaaa"}
     assert keys == set()
     assert per_spec == set()
@@ -121,7 +121,7 @@ def test_a_pr_carrying_two_key_labels_holds_both(monkeypatch):
         monkeypatch,
         [_pr(1, ["main:saas-smoke-e2e", "stable/8.10:saas-smoke-e2e"], claims=["aaaaaaaa"])],
     )
-    _covered, keys, per_spec, _ok = discover.dedupe_inputs()
+    _covered, keys, per_spec, _refs, _ok = discover.dedupe_inputs()
     assert keys == {"main:saas-smoke-e2e", "stable/8.10:saas-smoke-e2e"}
     assert per_spec == keys
 
@@ -130,7 +130,7 @@ def test_a_pr_with_no_key_label_still_contributes_its_claims(monkeypatch):
     # A fix PR whose key label was never stamped: it locks nothing, but the specs it
     # claims must still suppress a repeat.
     _stub(monkeypatch, [_pr(1, [], claims=["aaaaaaaa"])])
-    covered, keys, per_spec, _ok = discover.dedupe_inputs()
+    covered, keys, per_spec, _refs, _ok = discover.dedupe_inputs()
     assert covered == {"aaaaaaaa"}
     assert keys == set()
     assert per_spec == set()
@@ -140,7 +140,7 @@ def test_a_failed_lookup_reports_not_ok(monkeypatch):
     # Coverage and keys are one snapshot behind one `ok`. A partial read must not let
     # the caller skip the coarse lock while believing nothing is claimed.
     _stub(monkeypatch, [_pr(1, ["main:saas-smoke-e2e"], claims=["aaaaaaaa"])], ok=False)
-    _covered, _keys, _per_spec, ok = discover.dedupe_inputs()
+    _covered, _keys, _per_spec, _refs, ok = discover.dedupe_inputs()
     assert ok is False
 
 
@@ -157,7 +157,7 @@ def test_a_conflicting_holders_claim_does_not_count_as_covered(monkeypatch):
         monkeypatch,
         [_pr(1, ["main:sm-smoke-e2e"], claims=["aaaaaaaa"], mergeable="CONFLICTING")],
     )
-    covered, keys, per_spec, _ok = discover.dedupe_inputs()
+    covered, keys, per_spec, _refs, _ok = discover.dedupe_inputs()
     assert covered == set()
     # The key still counts as claiming something, so the coarse per-surface lock
     # still lifts for its neighbours; only the specific (untrustworthy) claim is
@@ -176,7 +176,7 @@ def test_a_conflicting_holder_beside_a_healthy_one_still_covers_the_spec(monkeyp
             _pr(2, ["main:sm-smoke-e2e"], claims=["bbbbbbbb"]),
         ],
     )
-    covered, _keys, _per_spec, _ok = discover.dedupe_inputs()
+    covered, _keys, _per_spec, _refs, _ok = discover.dedupe_inputs()
     assert covered == {"bbbbbbbb"}
 
 
@@ -186,7 +186,7 @@ def test_an_unknown_mergeable_state_still_counts_as_covered(monkeypatch):
         monkeypatch,
         [_pr(1, ["main:sm-smoke-e2e"], claims=["aaaaaaaa"], mergeable="UNKNOWN")],
     )
-    covered, _keys, _per_spec, _ok = discover.dedupe_inputs()
+    covered, _keys, _per_spec, _refs, _ok = discover.dedupe_inputs()
     assert covered == {"aaaaaaaa"}
 
 
