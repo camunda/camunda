@@ -14,7 +14,8 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * {@link SecondaryStorageReadiness} pulled from schema-initialization state: a physical tenant's
- * secondary storage is ready exactly when its schema has finished initializing.
+ * secondary storage is ready once its schema has finished initializing, unless the tenant is in
+ * recovery mode.
  *
  * <p>A standalone facade over the existing per-tenant schema-init predicate — it holds no mutable
  * state of its own. The predicate is backed by {@code SchemaManagerContainer::isInitialized}
@@ -32,20 +33,29 @@ public class SchemaInitializationSecondaryStorageReadiness implements SecondaryS
 
   private final PhysicalTenantIds tenantIds;
   private final Predicate<String> schemaInitialized;
+  private final Predicate<String> recovering;
 
   public SchemaInitializationSecondaryStorageReadiness(
-      final PhysicalTenantIds tenantIds, final Predicate<String> schemaInitialized) {
+      final PhysicalTenantIds tenantIds,
+      final Predicate<String> schemaInitialized,
+      final Predicate<String> recovering) {
     this.tenantIds = tenantIds;
     this.schemaInitialized = schemaInitialized;
+    this.recovering = recovering;
   }
 
   @Override
   public boolean isReady(final String physicalTenantId) {
-    return schemaInitialized.test(physicalTenantId);
+    return schemaInitialized.test(physicalTenantId) && !isRecovering(physicalTenantId);
   }
 
   @Override
   public boolean anyReady() {
     return tenantIds.known().stream().anyMatch(this::isReady);
+  }
+
+  @Override
+  public boolean isRecovering(final String physicalTenantId) {
+    return recovering.test(physicalTenantId);
   }
 }

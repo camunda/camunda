@@ -22,7 +22,8 @@ class SchemaInitializationSecondaryStorageReadinessTest {
   void shouldDelegateReadinessToSchemaInitializedPredicate() {
     // given
     final var readiness =
-        new SchemaInitializationSecondaryStorageReadiness(() -> Set.of(TENANT_A), TENANT_A::equals);
+        new SchemaInitializationSecondaryStorageReadiness(
+            () -> Set.of(TENANT_A), TENANT_A::equals, tenantId -> false);
 
     // when/then
     assertThat(readiness.isReady(TENANT_A)).isTrue();
@@ -36,7 +37,7 @@ class SchemaInitializationSecondaryStorageReadinessTest {
     // key they don't hold
     final var readiness =
         new SchemaInitializationSecondaryStorageReadiness(
-            () -> Set.of(TENANT_A), Set.of(TENANT_A)::contains);
+            () -> Set.of(TENANT_A), Set.of(TENANT_A)::contains, tenantId -> false);
 
     // when/then
     assertThat(readiness.isReady("unknown")).isFalse();
@@ -47,7 +48,7 @@ class SchemaInitializationSecondaryStorageReadinessTest {
     // given
     final var readiness =
         new SchemaInitializationSecondaryStorageReadiness(
-            () -> Set.of(TENANT_A, TENANT_B), tenantId -> false);
+            () -> Set.of(TENANT_A, TENANT_B), tenantId -> false, tenantId -> false);
 
     // when/then
     assertThat(readiness.anyReady()).isFalse();
@@ -58,7 +59,7 @@ class SchemaInitializationSecondaryStorageReadinessTest {
     // given
     final var readiness =
         new SchemaInitializationSecondaryStorageReadiness(
-            () -> Set.of(TENANT_A, TENANT_B), TENANT_A::equals);
+            () -> Set.of(TENANT_A, TENANT_B), TENANT_A::equals, tenantId -> false);
 
     // when/then
     assertThat(readiness.anyReady()).isTrue();
@@ -69,10 +70,23 @@ class SchemaInitializationSecondaryStorageReadinessTest {
     // given
     final var readiness =
         new SchemaInitializationSecondaryStorageReadiness(
-            () -> Set.of(TENANT_A, TENANT_B), tenantId -> true);
+            () -> Set.of(TENANT_A, TENANT_B), tenantId -> true, tenantId -> false);
 
     // when/then
     assertThat(readiness.anyReady()).isTrue();
+  }
+
+  @Test
+  void shouldReportARecoveringTenantAsNotReadyEvenOnceInitialized() {
+    // given
+    final var readiness =
+        new SchemaInitializationSecondaryStorageReadiness(
+            () -> Set.of(TENANT_A, TENANT_B), tenantId -> true, TENANT_A::equals);
+
+    // when/then
+    assertThat(readiness.isRecovering(TENANT_A)).isTrue();
+    assertThat(readiness.isReady(TENANT_A)).isFalse();
+    assertThat(readiness.isReady(TENANT_B)).isTrue();
   }
 
   @Test
@@ -80,7 +94,7 @@ class SchemaInitializationSecondaryStorageReadinessTest {
     // given
     final var readiness =
         new SchemaInitializationSecondaryStorageReadiness(
-            PhysicalTenantIds.DEFAULT, tenantId -> false);
+            PhysicalTenantIds.DEFAULT, tenantId -> false, tenantId -> false);
 
     // when/then
     assertThat(readiness.isReady(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)).isFalse();

@@ -41,12 +41,13 @@ class SchemaReadinessCheckTest {
   @Test
   void shouldBeDegradedOnceAnInitializedPhysicalTenantEntersRecovery() {
     // given
+    final var readiness = mock(SecondaryStorageReadiness.class);
+    when(readiness.isRecovering("tenanta")).thenReturn(true);
     final var readinessCheck =
         new SchemaReadinessCheck(
-            readiness(true),
+            readiness,
             () ->
-                Map.of("default", status(State.INITIALIZED), "tenanta", status(State.INITIALIZED)),
-            "tenanta"::equals);
+                Map.of("default", status(State.INITIALIZED), "tenanta", status(State.INITIALIZED)));
 
     // when
     final var health = readinessCheck.health();
@@ -108,7 +109,7 @@ class SchemaReadinessCheckTest {
   @Test
   void shouldBeUpWithoutSchemaInitializationStatusesWhenAPhysicalTenantIsReady() {
     // given
-    final var readinessCheck = new SchemaReadinessCheck(readiness(true), Map::of, tenant -> false);
+    final var readinessCheck = new SchemaReadinessCheck(readiness(true), Map::of);
 
     // when
     final var health = readinessCheck.health();
@@ -120,7 +121,7 @@ class SchemaReadinessCheckTest {
   @Test
   void shouldBeDownWithoutSchemaInitializationStatusesWhenNoPhysicalTenantIsReady() {
     // given
-    final var readinessCheck = new SchemaReadinessCheck(readiness(false), Map::of, tenant -> false);
+    final var readinessCheck = new SchemaReadinessCheck(readiness(false), Map::of);
 
     // when
     final var health = readinessCheck.health();
@@ -131,7 +132,7 @@ class SchemaReadinessCheckTest {
 
   private static SchemaReadinessCheck readinessCheck(
       final Map<String, SchemaInitializationStatus> statuses) {
-    return new SchemaReadinessCheck(readiness(false), () -> statuses, tenant -> false);
+    return new SchemaReadinessCheck(mock(SecondaryStorageReadiness.class), () -> statuses);
   }
 
   private static SecondaryStorageReadiness readiness(final boolean anyReady) {

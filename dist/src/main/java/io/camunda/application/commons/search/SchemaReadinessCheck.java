@@ -12,7 +12,6 @@ import io.camunda.application.commons.pt.SchemaInitializationStatus;
 import io.camunda.application.commons.pt.SchemaInitializationStatus.State;
 import io.camunda.cluster.SecondaryStorageReadiness;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.health.contributor.Health;
@@ -32,29 +31,29 @@ public class SchemaReadinessCheck implements HealthIndicator {
 
   private final SecondaryStorageReadiness secondaryStorageReadiness;
   private final Supplier<Map<String, SchemaInitializationStatus>> schemaInitializationStatuses;
-  private final Predicate<String> isRecovering;
 
   public SchemaReadinessCheck(
       final SecondaryStorageReadiness secondaryStorageReadiness,
-      final Supplier<Map<String, SchemaInitializationStatus>> schemaInitializationStatuses,
-      final Predicate<String> isRecovering) {
+      final Supplier<Map<String, SchemaInitializationStatus>> schemaInitializationStatuses) {
     this.secondaryStorageReadiness = secondaryStorageReadiness;
     this.schemaInitializationStatuses = schemaInitializationStatuses;
-    this.isRecovering = isRecovering;
   }
 
   @Override
   public Health health() {
-    final var statuses = schemaInitializationStatuses.get();
-    if (statuses.isEmpty()) {
+    final var reported = schemaInitializationStatuses.get();
+    if (reported.isEmpty()) {
       return (secondaryStorageReadiness.anyReady() ? Health.up() : Health.down()).build();
     }
-    final var effectiveStatuses =
-        statuses.entrySet().stream()
-            .map(tenant -> isRecovering.test(tenant.getKey()) ? RECOVERING : tenant.getValue())
+    final var statuses =
+        reported.entrySet().stream()
+            .map(
+                tenant ->
+                    secondaryStorageReadiness.isRecovering(tenant.getKey())
+                        ? RECOVERING
+                        : tenant.getValue())
             .toList();
-    return Health.status(
-            PhysicalTenantSchemaInitializationHealthIndicator.rollUp(effectiveStatuses))
+    return Health.status(PhysicalTenantSchemaInitializationHealthIndicator.rollUp(statuses))
         .build();
   }
 }
