@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnStatus;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -30,12 +31,26 @@ class LsnReplicationSignalStrategyTest {
   void setUp() {
     lsnProvider = mock(ReplicationLsnProvider.class);
     config = new ReplicationConfiguration();
-    config.setMinSyncReplicas(1);
+    config.setRegions(List.of(flatRegion(1)));
     when(lsnProvider.getCurrent()).thenReturn(100L);
   }
 
   private LsnReplicationSignalStrategy createStrategy() {
     return new LsnReplicationSignalStrategy(lsnProvider, config);
+  }
+
+  /** A single region matching every replica - the flat quorum, degenerate case of regions. */
+  private static RegionConfiguration flatRegion(final int minReplicas) {
+    return region("default", ".*", minReplicas);
+  }
+
+  private static RegionConfiguration region(
+      final String name, final String pattern, final int minReplicas) {
+    final var region = new RegionConfiguration();
+    region.setName(name);
+    region.setPattern(pattern);
+    region.setMinReplicas(minReplicas);
+    return region;
   }
 
   @Test
@@ -78,7 +93,7 @@ class LsnReplicationSignalStrategyTest {
     @Test
     void shouldReturnUnconfirmedWhenNotEnoughReplicas() {
       // given
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       when(lsnProvider.getCurrent()).thenReturn(50L);
       final var strategy = createStrategy();
 
@@ -92,8 +107,8 @@ class LsnReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnLowestOfTopNReplicaLsns() {
-      // given - minSyncReplicas = 2, 3 replicas with lsn 10, 30, 50
-      config.setMinSyncReplicas(2);
+      // given - minReplicas = 2, 3 replicas with lsn 10, 30, 50
+      config.setRegions(List.of(flatRegion(2)));
       when(lsnProvider.getCurrent()).thenReturn(50L);
       final var strategy = createStrategy();
 
@@ -124,6 +139,20 @@ class LsnReplicationSignalStrategyTest {
       // then
       assertThat(result).isEqualTo(40L);
     }
+
+    @Test
+    void shouldCountThePrimarysOwnEntryLikeAnyOtherTowardTheFlatRegion() {
+      // given - the primary's own entry alone satisfies the flat ".*" region's minReplicas=1
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(new ReplicationLsnStatus(90L, "primary", 0L, null, "primary-label", true));
+
+      // when
+      final long result = strategy.computeConfirmedMarker(statuses);
+
+      // then
+      assertThat(result).isEqualTo(90L);
+    }
   }
 
   @Nested
@@ -133,7 +162,7 @@ class LsnReplicationSignalStrategyTest {
     void shouldReturnPauseWorstCaseWhenQuorumNotMetAndQueueEmpty() {
       // given - quorum lost, and the queue is empty so there's no other lag signal to judge
       // staleness by
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
 
       // when
@@ -150,7 +179,7 @@ class LsnReplicationSignalStrategyTest {
       // given - quorum lost, but a position is still queued: its own queue-head-age already
       // signals staleness, so a replica shortage alone must not additionally force an immediate
       // pause on top of that
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
 
       // when
@@ -188,6 +217,123 @@ class LsnReplicationSignalStrategyTest {
 
       // then
       assertThat(lag).isEqualTo(Duration.ZERO);
+    }
+  }
+
+  @Nested
+  class RegionAwareTest {
+
+    @BeforeEach
+    void setUpRegions() {
+      config.setRegions(List.of(region("us-east", "us-east-.*", 1)));
+    }
+
+    @Test
+    void shouldReturnUnconfirmedWhenOneMandatoryRegionFallsShortEvenIfGlobalCountIsEnough() {
+      // given - two regions, each needs 1 replica; us-west has none even though us-east alone
+      // would already satisfy a flat minSyncReplicas=1
+      config.setRegions(
+          List.of(region("us-east", "us-east-.*", 1), region("us-west", "us-west-.*", 1)));
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLsnStatus(50L, "replica-1", 0L, null, "us-east-1"),
+              new ReplicationLsnStatus(60L, "replica-2", 0L, null, "us-east-2"));
+
+      // when
+      final long result = strategy.computeConfirmedMarker(statuses);
+
+      // then
+      assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
+    }
+
+    @Test
+    void shouldConfirmLowestLsnAmongEachRegionsOwnTopNThenWorstAcrossRegions() {
+      // given - us-east needs 2, us-west needs 1
+      config.setRegions(
+          List.of(region("us-east", "us-east-.*", 2), region("us-west", "us-west-.*", 1)));
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLsnStatus(10L, "replica-1", 0L, null, "us-east-1"),
+              new ReplicationLsnStatus(30L, "replica-2", 0L, null, "us-east-2"),
+              new ReplicationLsnStatus(90L, "replica-3", 0L, null, "us-west-1"));
+
+      // when
+      final long result = strategy.computeConfirmedMarker(statuses);
+
+      // then - us-east's own top 2 are 10 and 30, worst of those is 10; us-west's top 1 is 90;
+      // the worst across both mandatory regions is 10
+      assertThat(result).isEqualTo(10L);
+    }
+
+    @Test
+    void shouldIgnoreReplicasNotMatchingAnyConfiguredRegion() {
+      // given - only us-east is declared; an unrelated label must not count toward it
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(new ReplicationLsnStatus(80L, "replica-1", 0L, null, "eu-central-1"));
+
+      // when
+      final long result = strategy.computeConfirmedMarker(statuses);
+
+      // then - us-east still has 0 matching replicas against its minReplicas=1
+      assertThat(result).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
+    }
+
+    @Test
+    void shouldCountThePrimarysOwnEntryTowardItsResolvedRegion() {
+      // given - us-east wants 2 nodes total; the primary plus one real secondary satisfies that
+      config.setRegions(List.of(region("us-east", "us-east-.*", 2)));
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLsnStatus(70L, "replica-1", 0L, null, "us-east-1"),
+              new ReplicationLsnStatus(100L, "primary", 0L, null, "us-east-primary", true));
+
+      // when
+      final long result = strategy.computeConfirmedMarker(statuses);
+
+      // then - the worse of the primary (100) and the real secondary (70) is returned
+      assertThat(result).isEqualTo(70L);
+    }
+
+    @Test
+    void shouldPauseWhenAMandatoryRegionIsBelowItsOwnMinReplicasAndQueueIsEmpty() {
+      // given - us-east requires 1 replica but has none
+      final var strategy = createStrategy();
+
+      // when
+      final Duration lag = strategy.computePauseLag(List.of(), Optional.empty());
+
+      // then
+      assertThat(lag).isEqualTo(ReplicationSignalStrategy.PAUSE_WORST_CASE);
+    }
+
+    @Test
+    void shouldReportRegionsBelowQuorum() {
+      // given - us-east requires 1 replica but has none
+      final var strategy = createStrategy();
+
+      // when
+      final var below = strategy.regionsBelowQuorum(List.of());
+
+      // then
+      assertThat(below).containsExactly("us-east");
+    }
+
+    @Test
+    void shouldReportNoRegionsBelowQuorumWhenHealthy() {
+      // given
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(new ReplicationLsnStatus(50L, "replica-1", 0L, null, "us-east-1"));
+
+      // when
+      final var below = strategy.regionsBelowQuorum(statuses);
+
+      // then
+      assertThat(below).isEmpty();
     }
   }
 }

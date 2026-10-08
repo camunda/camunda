@@ -34,26 +34,27 @@ public interface ReplicationSignalStrategy<T extends ReplicationStatus> {
    */
   long captureFlushMarker();
 
-  /** Returns the current per-replica replication statuses. */
+  /** Returns the current per-replica replication statuses, including the primary itself. */
   List<T> fetchStatuses();
 
-  /**
-   * The confirmation threshold: an entry is confirmed once {@code entry.marker() <=
-   * computeConfirmedMarker(statuses)}. Returns {@link #UNCONFIRMED} when nothing is confirmed.
-   */
+  /** The confirmation threshold; entries with a marker at or below it are confirmed. */
   long computeConfirmedMarker(List<T> statuses);
 
-  /**
-   * The current replication lag, compared against {@code maxLag} to decide whether to pause. {@code
-   * queueHeadAge} is the age of the oldest still-unconfirmed queued entry, or {@link
-   * Optional#empty()} when the queue is empty. Returns {@link #PAUSE_WORST_CASE} when quorum is not
-   * met.
-   */
+  /** The current replication lag, compared against {@code maxLag} to decide whether to pause. */
   Duration computePauseLag(List<T> statuses, Optional<Duration> queueHeadAge);
 
   /** The delay before the next periodic check. Defaults to {@code pollingInterval} unchanged. */
   default Duration nextCheckDelay(
       final Duration pollingInterval, final Optional<Duration> queueHeadAge) {
     return pollingInterval;
+  }
+
+  /**
+   * The names of mandatory regions currently short of their own {@code minReplicas}, for diagnostic
+   * logging when the exporter pauses. Empty when region awareness is disabled or every declared
+   * region meets its own quorum. Defaults to always-empty for strategies with no region concept.
+   */
+  default List<String> regionsBelowQuorum(final List<T> statuses) {
+    return List.of();
   }
 }

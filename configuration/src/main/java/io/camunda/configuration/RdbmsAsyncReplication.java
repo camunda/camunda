@@ -8,21 +8,26 @@
 package io.camunda.configuration;
 
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RdbmsAsyncReplication {
 
   private boolean enabled = ReplicationConfiguration.DEFAULT_ENABLED;
   private ReplicationType type;
   private Duration pollingInterval = ReplicationConfiguration.DEFAULT_POLLING_INTERVAL;
-  private int minSyncReplicas = ReplicationConfiguration.DEFAULT_MIN_SYNC_REPLICAS;
+  private Integer minSyncReplicas;
   private Duration maxLag = ReplicationConfiguration.DEFAULT_MAX_LAG;
   private boolean pauseOnMaxLagExceeded =
       ReplicationConfiguration.DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED;
   private Duration delay;
   private Duration queueDebounceTime = ReplicationConfiguration.DEFAULT_QUEUE_DEBOUNCE_TIME;
   private int queueCapacity = ReplicationConfiguration.DEFAULT_QUEUE_CAPACITY;
+
+  private List<Region> regions = new ArrayList<>();
 
   public boolean isEnabled() {
     return enabled;
@@ -72,11 +77,11 @@ public class RdbmsAsyncReplication {
     this.pollingInterval = pollingInterval;
   }
 
-  public int getMinSyncReplicas() {
+  public Integer getMinSyncReplicas() {
     return minSyncReplicas;
   }
 
-  public void setMinSyncReplicas(final int minSyncReplicas) {
+  public void setMinSyncReplicas(final Integer minSyncReplicas) {
     this.minSyncReplicas = minSyncReplicas;
   }
 
@@ -94,5 +99,45 @@ public class RdbmsAsyncReplication {
 
   public void setPauseOnMaxLagExceeded(final boolean pauseOnMaxLagExceeded) {
     this.pauseOnMaxLagExceeded = pauseOnMaxLagExceeded;
+  }
+
+  public List<Region> getRegions() {
+    return regions;
+  }
+
+  public void setRegions(final List<Region> regions) {
+    this.regions = regions;
+  }
+
+  /** Mirrors {@link RegionConfiguration}. */
+  public static class Region {
+
+    private String name;
+    private String pattern;
+    private int minReplicas;
+
+    public String getName() {
+      return name;
+    }
+
+    public void setName(final String name) {
+      this.name = name;
+    }
+
+    public String getPattern() {
+      return pattern;
+    }
+
+    public void setPattern(final String pattern) {
+      this.pattern = pattern;
+    }
+
+    public int getMinReplicas() {
+      return minReplicas;
+    }
+
+    public void setMinReplicas(final int minReplicas) {
+      this.minReplicas = minReplicas;
+    }
   }
 }
