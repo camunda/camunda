@@ -186,7 +186,8 @@ public class JobWorkerManager {
           jobWorkerFactory.createJobWorker(
               internalManagedJobWorker.getCamundaClient(),
               internalManagedJobWorker.getCurrent(),
-              internalManagedJobWorker.getJobHandlerFactory()));
+              internalManagedJobWorker.getJobHandlerFactory(),
+              internalManagedJobWorker.getClientName()));
       LOGGER.info(
           "Starting job worker: {}",
           LOGGER.isDebugEnabled()
