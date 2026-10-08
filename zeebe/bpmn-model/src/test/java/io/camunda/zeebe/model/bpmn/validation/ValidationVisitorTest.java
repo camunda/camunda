@@ -24,12 +24,12 @@ import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import java.util.Collections;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class ValidationVisitorTest {
+final class ValidationVisitorTest {
 
   @Test
-  public void shouldNotKeepStatefulValidatorStateAfterReset() {
+  void shouldNotKeepStatefulValidatorStateAfterReset() {
     // given
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess("process")
@@ -42,7 +42,6 @@ public class ValidationVisitorTest {
         new ValidationVisitor(
             ValidationVisitor.groupByType(Collections.emptyList()),
             () -> Collections.<ModelElementValidator<?>>singletonList(new RejectSecondTask()));
-
     new ModelWalker(model).walk(visitor);
     assertThat(visitor.getValidationResult().getErrorCount()).isEqualTo(1);
 
