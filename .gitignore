@@ -105,6 +105,9 @@ load-tests/setup/c8-*
 # python caches from scripts in skills
 **/__pycache__/**
 
+# python coverage data written by pytest
+.coverage
+
 # Used by agents to persist session state
 /.agent-sessions/
 /STATE.md
