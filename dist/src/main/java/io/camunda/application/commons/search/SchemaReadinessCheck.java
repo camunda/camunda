@@ -9,8 +9,10 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
 import io.camunda.application.commons.pt.SchemaInitializationStatus;
+import io.camunda.application.commons.pt.SchemaInitializationStatus.State;
 import io.camunda.cluster.SecondaryStorageReadiness;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.health.contributor.Health;
@@ -18,21 +20,27 @@ import org.springframework.boot.health.contributor.HealthIndicator;
 
 /**
  * Rolls up the physical tenants' schema initialization like {@link
- * PhysicalTenantSchemaInitializationHealthIndicator}, without per-tenant details.
+ * PhysicalTenantSchemaInitializationHealthIndicator}, without per-tenant details. A tenant in
+ * recovery mode counts as recovering even once its schema is initialized.
  */
 @NullMarked
 public class SchemaReadinessCheck implements HealthIndicator {
 
   public static final String SCHEMA_READINESS_CHECK = "schemaReadinessCheck";
+  private static final SchemaInitializationStatus RECOVERING =
+      new SchemaInitializationStatus(State.RECOVERING, 0, null);
 
   private final SecondaryStorageReadiness secondaryStorageReadiness;
   private final Supplier<Map<String, SchemaInitializationStatus>> schemaInitializationStatuses;
+  private final Predicate<String> isRecovering;
 
   public SchemaReadinessCheck(
       final SecondaryStorageReadiness secondaryStorageReadiness,
-      final Supplier<Map<String, SchemaInitializationStatus>> schemaInitializationStatuses) {
+      final Supplier<Map<String, SchemaInitializationStatus>> schemaInitializationStatuses,
+      final Predicate<String> isRecovering) {
     this.secondaryStorageReadiness = secondaryStorageReadiness;
     this.schemaInitializationStatuses = schemaInitializationStatuses;
+    this.isRecovering = isRecovering;
   }
 
   @Override
@@ -41,8 +49,12 @@ public class SchemaReadinessCheck implements HealthIndicator {
     if (statuses.isEmpty()) {
       return (secondaryStorageReadiness.anyReady() ? Health.up() : Health.down()).build();
     }
+    final var effectiveStatuses =
+        statuses.entrySet().stream()
+            .map(tenant -> isRecovering.test(tenant.getKey()) ? RECOVERING : tenant.getValue())
+            .toList();
     return Health.status(
-            PhysicalTenantSchemaInitializationHealthIndicator.rollUp(statuses.values()))
+            PhysicalTenantSchemaInitializationHealthIndicator.rollUp(effectiveStatuses))
         .build();
   }
 }

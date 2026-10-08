@@ -116,6 +116,33 @@ final class PhysicalTenantReadinessIT {
   }
 
   @Test
+  void shouldBeDegradedAsSoonAsATenantEntersRecoveryUntilItLeavesIt(
+      @TempDir final Path workingDirectory) throws Exception {
+    // given
+    final var tenants = tenants(healthyStorage(), healthyStorage());
+    try (final var broker = startBroker(tenants, workingDirectory)) {
+      awaitReadiness(broker, 200, "UP");
+
+      // when - tenant A enters recovery, without a restart
+      changeMode(broker, TENANT_A, "RECOVERING");
+      awaitPartitionsOf(broker, TENANT_A, "recovering");
+
+      // then - its schema stays initialized, but the node is DEGRADED and its searches are rejected
+      awaitReadiness(broker, 200, "DEGRADED");
+      assertThat(tenantStates(broker)).containsExactly("INITIALIZED", "INITIALIZED");
+      assertThat(searchStatus(broker, TENANT_A)).isEqualTo(503);
+      assertThat(searchStatus(broker, DEFAULT_TENANT)).isEqualTo(200);
+
+      // when - tenant A leaves recovery
+      changeMode(broker, TENANT_A, "PROCESSING");
+
+      // then
+      awaitReadiness(broker, 200, "UP");
+      assertThat(searchStatus(broker, TENANT_A)).isEqualTo(200);
+    }
+  }
+
+  @Test
   void shouldBeDegradedWhileOneTenantIsDeferredForRecoveryUntilItLeavesRecovery(
       @TempDir final Path workingDirectory) throws Exception {
     // given
@@ -250,6 +277,15 @@ final class PhysicalTenantReadinessIT {
                       .toList();
               assertThat(partitionStates).isNotEmpty().containsOnly(state);
             });
+  }
+
+  private static int searchStatus(final TestStandaloneBroker broker, final String physicalTenantId)
+      throws IOException, InterruptedException {
+    return send(HttpRequest.newBuilder(
+                restUri(broker, physicalTenantId, "v2/process-instances/search"))
+            .header("Content-Type", "application/json")
+            .POST(BodyPublishers.ofString("{}")))
+        .statusCode();
   }
 
   private static URI restUri(
