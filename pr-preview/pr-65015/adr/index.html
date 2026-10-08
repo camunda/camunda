@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Architecture Decision Records | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-65015/adr/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Architecture Decision Records | Camunda Platform"><meta data-rh="true" name="description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><meta data-rh="true" property="og:description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-65015/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-65015/adr/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-65015/adr/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-65015/adr/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-65015/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-65015/assets/js/runtime~main.86d12ebd.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-65015/assets/js/main.b3c326e8.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-65015/assets/js/runtime~main.e69e5055.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-65015/assets/js/main.ea1a5450.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -56,6 +56,12 @@ the <code>camunda-spring-boot-starter</code> onto a single (multi-client) auto-c
 path, remapping <code>camunda.client.*</code> to <code>camunda.clients.default.*</code>, with a
 <code>defaultCamundaClient</code> <code>@Primary</code> bean plus a <code>camundaClient</code> alias for
 backward compatibility (camunda/camunda#57344).</li>
+<li class=""><code>clients/0002-reserved-poll-capacity-for-job-worker.md</code> — a streaming job
+worker reserves <code>floor(0.25·maxJobsActive)</code> of its capacity for the poll path
+while pushed jobs starve the poll (polled jobs are refused); the lane limits
+only the push path, the single capacity count stays, poll-only workers are
+unchanged, no measurable throughput cost in a cluster A/B
+(camunda/camunda#59734).</li>
 <li class=""><code>storage/001-remove-numeric-key-from-identity-entity-filters.md</code> — drop the
 internal numeric <code>key</code> filter fields from <code>UserFilter</code>, <code>GroupFilter</code>,
 <code>TenantFilter</code>, and <code>MappingRuleFilter</code>; Identity entities are filtered by their
