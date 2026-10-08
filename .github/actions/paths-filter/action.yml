@@ -563,7 +563,6 @@ runs:
           - '.github/scripts/**'
           - '.ci/db-versions.yml'
         load-test-scripts-change:
-          - 'load-tests/docs/scripts/load_test_report/**'
           - 'load-tests/loadtestctl/**'
         load-test-k6-change:
           - 'load-tests/setup/charts/load-test-setup/k6/**'

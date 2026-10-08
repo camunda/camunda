@@ -2787,9 +2787,6 @@ jobs:
       - name: Run repository script unit tests
         if: needs.detect-changes.outputs.scripts-changes == 'true'
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions
-      - name: Run load-test script unit tests
-        if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
-        run: make -C load-tests/docs/scripts/load_test_report check
       - name: Run loadtestctl unit tests
         if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
         run: make -C load-tests/loadtestctl check

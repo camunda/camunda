@@ -6,17 +6,18 @@ from unittest import mock
 
 import pytest
 
-import load_test_report
-from load_test_report.cli import Options
-from load_test_report.cli import run
-from load_test_report.errors import ReportError
-from load_test_report.prometheus import PrometheusResponse
-from load_test_report.queries import QueriesDocument
-from load_test_report.queries import Query
-from load_test_report.report import build_report
-from load_test_report.report import render_report
+import loadtestctl.report
+from loadtestctl.report.cli import Options
+from loadtestctl.report.errors import ReportError
+from loadtestctl.report.prometheus import PrometheusResponse
+from loadtestctl.report.queries import QueriesDocument
+from loadtestctl.report.queries import Query
+from loadtestctl.report.report import build_report
+from loadtestctl.report.report import render_report
 
-PROJECT_DIR = Path(load_test_report.__file__).resolve().parent
+from .helpers import run
+
+PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
 PACKAGED_QUERY_FILES = (
     "report-queries.yaml",
     "report-queries-stable-87.yaml",
@@ -69,8 +70,8 @@ def test_should_run_report_to_stdout(tmp_path: Path, capsys: pytest.CaptureFixtu
     client = successful_client()
 
     with (
-        mock.patch("load_test_report.cli.PrometheusClient", return_value=client),
-        mock.patch("load_test_report.cli.check_endpoint") as endpoint_check,
+        mock.patch("loadtestctl.report.cli.PrometheusClient", return_value=client),
+        mock.patch("loadtestctl.report.cli.check_endpoint") as endpoint_check,
     ):
         exit_code = run(["c8-ck-test", "--queries", str(queries_file)])
 
@@ -84,8 +85,8 @@ def test_should_run_report_to_output_file(tmp_path: Path) -> None:
     output_file = tmp_path / "report.json"
 
     with (
-        mock.patch("load_test_report.cli.PrometheusClient", return_value=successful_client()),
-        mock.patch("load_test_report.cli.check_endpoint"),
+        mock.patch("loadtestctl.report.cli.PrometheusClient", return_value=successful_client()),
+        mock.patch("loadtestctl.report.cli.check_endpoint"),
     ):
         exit_code = run(
             [
@@ -106,8 +107,8 @@ def test_should_report_output_file_error(tmp_path: Path, capsys: pytest.CaptureF
     output_file = tmp_path / "missing" / "report.json"
 
     with (
-        mock.patch("load_test_report.cli.PrometheusClient", return_value=successful_client()),
-        mock.patch("load_test_report.cli.check_endpoint"),
+        mock.patch("loadtestctl.report.cli.PrometheusClient", return_value=successful_client()),
+        mock.patch("loadtestctl.report.cli.check_endpoint"),
     ):
         exit_code = run(
             [
@@ -127,7 +128,7 @@ def test_should_report_invalid_query_document(tmp_path: Path, capsys: pytest.Cap
     queries_file = tmp_path / "queries.yaml"
     queries_file.write_text("{}", encoding="utf-8")
 
-    with mock.patch("load_test_report.cli.check_endpoint"):
+    with mock.patch("loadtestctl.report.cli.check_endpoint"):
         exit_code = run(["c8-ck-test", "--queries", str(queries_file)])
 
     assert exit_code == 1
@@ -136,7 +137,7 @@ def test_should_report_invalid_query_document(tmp_path: Path, capsys: pytest.Cap
 
 def test_should_report_unreachable_endpoint(capsys: pytest.CaptureFixture[str]) -> None:
     with mock.patch(
-        "load_test_report.cli.check_endpoint",
+        "loadtestctl.report.cli.check_endpoint",
         side_effect=ReportError("Could not reach Prometheus endpoint"),
     ):
         exit_code = run(["c8-ck-test"])

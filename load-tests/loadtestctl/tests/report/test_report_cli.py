@@ -8,20 +8,22 @@ from unittest import mock
 
 import pytest
 
-import load_test_report
-from load_test_report.cli import build_parser
-from load_test_report.cli import parse_args
-from load_test_report.cli import run
-from load_test_report.errors import ReportError
-from load_test_report.prometheus import auth_headers
+import loadtestctl.report
+from loadtestctl.cli import build_parser
+from loadtestctl.report.errors import ReportError
+from loadtestctl.report.prometheus import auth_headers
 
-PROJECT_DIR = Path(load_test_report.__file__).resolve().parent
+from .helpers import parse_args
+from .helpers import run
+
+PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
 
 
-def test_should_build_parser() -> None:
-    parser = build_parser()
+def test_should_register_report_subcommand() -> None:
+    args = build_parser().parse_args(["report", "c8-ck-test"])
 
-    assert parser.prog == "load-test-report"
+    assert args.command == "report"
+    assert args.namespace == "c8-ck-test"
 
 
 def test_should_return_argparse_exit_code_for_help() -> None:

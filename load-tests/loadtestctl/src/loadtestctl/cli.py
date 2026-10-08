@@ -3,6 +3,8 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from .report import cli as report_cli
+
 HERE = Path(__file__).resolve().parent
 
 
@@ -12,16 +14,17 @@ def build_parser() -> argparse.ArgumentParser:
         description="A helper CLI for controlling and operating on load tests",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Examples: 
-        tbd.
+        loadtestctl report c8-ck-baseline-20260814 --duration-seconds 1800
         """,
     )
+    subparsers = parser.add_subparsers(dest="command", required=True, metavar="<command>")
+    report_cli.add_parser(subparsers)
     return parser
 
 
 def run(argv: Sequence[str]) -> int:
     args = build_parser().parse_args(argv)
-    print(f"Running with arguments: {args}", file=sys.stderr)
-    return 0
+    return int(args.handler(args))
 
 
 def main() -> None:

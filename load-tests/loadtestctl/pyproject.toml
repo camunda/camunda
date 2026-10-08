@@ -9,6 +9,7 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "pydantic==2.13.5",
     "pyyaml>=6.0.3",
 ]
 
@@ -50,5 +51,6 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-ruff>=0.5",
     "ruff>=0.16.10",
+    "types-pyyaml>=6.0.12.20260906",
 ]
 

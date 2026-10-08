@@ -3,14 +3,15 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-import load_test_report
-from load_test_report.cli import Options
-from load_test_report.cli import parse_args
-from load_test_report.cli import query_substitutions
-from load_test_report.errors import ReportError
-from load_test_report.queries import QueriesDocument
+import loadtestctl.report
+from loadtestctl.report.cli import Options
+from loadtestctl.report.cli import query_substitutions
+from loadtestctl.report.errors import ReportError
+from loadtestctl.report.queries import QueriesDocument
 
-PROJECT_DIR = Path(load_test_report.__file__).resolve().parent
+from .helpers import parse_args
+
+PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
 PACKAGED_QUERY_FILES = (
     "report-queries.yaml",
     "report-queries-stable-87.yaml",
