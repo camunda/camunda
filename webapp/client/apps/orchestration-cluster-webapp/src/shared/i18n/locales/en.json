@@ -1367,7 +1367,8 @@
 					"selectSingleTenant": "To see a Decision Table or a Literal Expression, select a single Tenant",
 					"noDecisionSelected": "There is no Decision selected",
 					"selectDecisionInFilters": "To see a Decision Table or a Literal Expression, select a Decision in the Filters panel",
-					"decisionNotFoundTitle": "Couldn't find the decision"
+					"decisionNotFoundTitle": "Couldn't find the decision",
+					"ariaLabel": "Decision Panel"
 				},
 				"filters": {
 					"tenant": "Tenant",
@@ -2150,6 +2151,8 @@
 					"resultCountMore": "{{count}}+ results"
 				},
 				"diagramShell": {
+					"loading": "Loading diagram",
+					"content": "Diagram content",
 					"forbiddenMessage": "Missing permissions to view the Definition",
 					"forbiddenAdditionalInfo": "Contact your organization owner or admin to give you the necessary permissions to read this definition"
 				},
@@ -2214,7 +2217,8 @@
 					"copy": "Copy",
 					"copied": "Copied",
 					"copyToClipboard": "Copy to clipboard",
-					"copiedToClipboard": "Copied to clipboard"
+					"copiedToClipboard": "Copied to clipboard",
+					"copyFailed": "Couldn't copy to clipboard"
 				},
 				"filterMultiSelect": {
 					"chooseOption": "Choose option(s)"

@@ -31,3 +31,81 @@
  */
 @source inline("[&_[data-slot=table-container]]:{rounded-none!,border-0!,shadow-none!}");
 @source inline("[&_[data-slot=data-table]>div.rounded-xl]:{rounded-none!,border-0!}");
+
+/*
+ * Maps the DS tokens onto the CSS variables dmn-js reads, so DecisionViewer
+ * does not carry ~20 arbitrary-variant classes. Kept as plain unlayered rules
+ * (not `@utility`, which lands in the `utilities` layer) so they win over the
+ * unlayered dmn-js stylesheet by specificity instead of `!important`.
+ */
+.dmn-viewer-theme {
+	--viewer-panel: var(--neutral-background-medium);
+	--viewer-layer: var(--neutral-background-subtle);
+	background-color: var(--viewer-panel);
+
+	.dark & {
+		--viewer-panel: var(--background);
+		--viewer-layer: var(--neutral-background-medium);
+	}
+
+	.powered-by {
+		display: none;
+	}
+
+	.dmn-decision-table-container {
+		--decision-table-font-family: inherit;
+		--table-head-clause-color: var(--neutral-foreground-subtle);
+		--table-head-variable-color: var(--neutral-foreground-subtle);
+		--table-head-separator-color: var(--neutral-border-subtle);
+		--table-color: var(--neutral-foreground-subtle);
+		--table-cell-color: var(--neutral-foreground-subtle);
+		--decision-table-color: var(--neutral-foreground-subtle);
+		--decision-table-properties-color: var(--neutral-foreground-subtle);
+		--table-head-border-color: var(--neutral-border-strong);
+		--table-cell-border-color: var(--neutral-border-strong);
+		--decision-table-background-color: var(--viewer-layer);
+		--table-row-alternative-background-color: var(--viewer-layer);
+	}
+
+	.decision-table-properties {
+		border-width: 1px;
+	}
+
+	.tjs-table-container {
+		background-color: var(--viewer-layer);
+		border-width: 1px;
+	}
+
+	.dmn-literal-expression-container {
+		--literal-expression-font-family: inherit;
+		--literal-expression-font-family-monospace: var(--font-mono);
+		--decision-properties-border-color: var(--neutral-border-strong);
+		--decision-properties-color: var(--neutral-foreground-subtle);
+		--textarea-color: var(--neutral-foreground-subtle);
+		--literal-expression-properties-color: var(--neutral-foreground-subtle);
+
+		table {
+			border-collapse: unset;
+			padding: 0;
+		}
+	}
+
+	.decision-properties {
+		background-color: var(--viewer-layer);
+		border-color: var(--neutral-border-strong);
+		border-width: 1px;
+	}
+
+	.textarea {
+		background-color: var(--viewer-layer);
+		border-color: var(--neutral-border-strong);
+		min-height: 0;
+		border-width: 1px 2px;
+	}
+
+	.literal-expression-properties {
+		background-color: var(--viewer-layer);
+		border-color: var(--neutral-border-strong);
+		border-width: 1px 2px 2px 2px;
+	}
+}

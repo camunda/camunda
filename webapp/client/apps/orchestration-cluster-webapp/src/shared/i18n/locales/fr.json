@@ -1358,7 +1358,8 @@
 					"selectSingleTenant": "Pour voir une table de décision ou une expression littérale, sélectionnez un seul locataire",
 					"noDecisionSelected": "Aucune décision n'est sélectionnée",
 					"selectDecisionInFilters": "Pour voir une table de décision ou une expression littérale, sélectionnez une décision dans le panneau de filtres",
-					"decisionNotFoundTitle": "La décision n'a pas pu être trouvée"
+					"decisionNotFoundTitle": "La décision n'a pas pu être trouvée",
+					"ariaLabel": "Panneau de décision"
 				},
 				"filters": {
 					"tenant": "Locataire",
@@ -2141,6 +2142,8 @@
 					"resultCountMore": "{{count}}+ résultats"
 				},
 				"diagramShell": {
+					"loading": "Chargement du diagramme",
+					"content": "Contenu du diagramme",
 					"forbiddenMessage": "Autorisations manquantes pour afficher la définition",
 					"forbiddenAdditionalInfo": "Veuillez contacter le propriétaire ou l'administrateur de votre organisation pour obtenir les autorisations nécessaires"
 				},
@@ -2205,7 +2208,8 @@
 					"copy": "Copier",
 					"copied": "Copié",
 					"copyToClipboard": "Copier dans le presse-papiers",
-					"copiedToClipboard": "Copié dans le presse-papiers"
+					"copiedToClipboard": "Copié dans le presse-papiers",
+					"copyFailed": "Impossible de copier dans le presse-papiers"
 				},
 				"filterMultiSelect": {
 					"chooseOption": "Choisir une ou plusieurs options"
