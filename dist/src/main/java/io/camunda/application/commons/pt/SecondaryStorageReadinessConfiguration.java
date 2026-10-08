@@ -40,7 +40,8 @@ public class SecondaryStorageReadinessConfiguration {
       final ObjectProvider<BrokerTopologyManager> brokerTopologyManager) {
     return new SchemaInitializationSecondaryStorageReadiness(
         physicalTenantIds,
-        initializedAndNotRecovering(schemaManagerContainer::isInitialized, brokerTopologyManager));
+        schemaManagerContainer::isInitialized,
+        recovering(brokerTopologyManager));
   }
 
   @Bean
@@ -51,8 +52,8 @@ public class SecondaryStorageReadinessConfiguration {
       final ObjectProvider<BrokerTopologyManager> brokerTopologyManager) {
     return new SchemaInitializationSecondaryStorageReadiness(
         physicalTenantIds,
-        initializedAndNotRecovering(
-            rdbmsSchemaManagerRegistry::isInitialized, brokerTopologyManager));
+        rdbmsSchemaManagerRegistry::isInitialized,
+        recovering(brokerTopologyManager));
   }
 
   @Bean
@@ -61,19 +62,13 @@ public class SecondaryStorageReadinessConfiguration {
     return SecondaryStorageReadiness.ALWAYS_READY;
   }
 
-  /** Whether the tenant is in recovery mode; never, on a node without a topology manager. */
-  public static Predicate<String> isRecovering(
+  /** Never recovering on a node without a topology manager. */
+  private static Predicate<String> recovering(
       final ObjectProvider<BrokerTopologyManager> brokerTopologyManager) {
     return physicalTenantId -> {
       final var topologyManager = brokerTopologyManager.getIfAvailable();
       return topologyManager != null && topologyManager.isRecoveringOrUnknown(physicalTenantId);
     };
-  }
-
-  private static Predicate<String> initializedAndNotRecovering(
-      final Predicate<String> schemaInitialized,
-      final ObjectProvider<BrokerTopologyManager> brokerTopologyManager) {
-    return schemaInitialized.and(isRecovering(brokerTopologyManager).negate());
   }
 
   @Bean

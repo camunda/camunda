@@ -34,6 +34,11 @@ public interface SecondaryStorageReadiness {
         public boolean anyReady() {
           return true;
         }
+
+        @Override
+        public boolean isRecovering(final String physicalTenantId) {
+          return false;
+        }
       };
 
   /**
@@ -49,4 +54,11 @@ public interface SecondaryStorageReadiness {
    *     physical tenant.
    */
   boolean anyReady();
+
+  /**
+   * @param physicalTenantId the physical tenant id to check
+   * @return {@code true} if the physical tenant is in recovery mode, or its mode is not known yet
+   *     while brokers of it are visible; such a tenant is not ready, whatever its schema state.
+   */
+  boolean isRecovering(String physicalTenantId);
 }

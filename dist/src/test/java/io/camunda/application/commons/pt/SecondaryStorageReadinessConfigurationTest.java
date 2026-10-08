@@ -65,6 +65,7 @@ class SecondaryStorageReadinessConfigurationTest {
         .run(
             context -> {
               final var readiness = context.getBean(SecondaryStorageReadiness.class);
+              assertThat(readiness.isRecovering(TENANT_A)).isTrue();
               assertThat(readiness.isReady(TENANT_A)).isFalse();
               assertThat(readiness.anyReady()).isFalse();
             });
