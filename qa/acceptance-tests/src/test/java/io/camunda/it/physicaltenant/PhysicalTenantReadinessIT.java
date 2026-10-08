@@ -132,6 +132,10 @@ final class PhysicalTenantReadinessIT {
       assertThat(tenantStates(broker)).containsExactly("INITIALIZED", "INITIALIZED");
       assertThat(searchStatus(broker, TENANT_A)).isEqualTo(503);
       assertThat(searchStatus(broker, DEFAULT_TENANT)).isEqualTo(200);
+      assertThat(
+              send(HttpRequest.newBuilder(restUri(broker, TENANT_A, "v2/backups/history")).GET())
+                  .statusCode())
+          .isNotEqualTo(503);
 
       // when - tenant A leaves recovery
       changeMode(broker, TENANT_A, "PROCESSING");

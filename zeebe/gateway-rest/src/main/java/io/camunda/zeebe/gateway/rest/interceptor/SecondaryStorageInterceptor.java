@@ -38,8 +38,10 @@ import org.springframework.web.servlet.HandlerInterceptor;
  *       tenant's configured one is not among them.
  *   <li>HTTP 503 Service Unavailable, with a {@code Retry-After} hint, when secondary storage is
  *       configured but the request's physical tenant's secondary storage is currently degraded (see
- *       {@link SecondaryStorageReadiness}). On a {@link ClusterScoped} endpoint the bar is that
- *       <em>any</em> tenant is ready instead — see {@link #validateSecondaryStorageReady}.
+ *       {@link SecondaryStorageReadiness}), unless the endpoint is {@link
+ *       RequiresSecondaryStorage#availableWhileDegraded()}. On a {@link ClusterScoped} endpoint the
+ *       bar is that <em>any</em> tenant is ready instead — see {@link
+ *       #validateSecondaryStorageReady}.
  * </ul>
  */
 @Component
@@ -70,7 +72,9 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
       if (annotation != null) {
         final String physicalTenantId = PhysicalTenantContext.current();
         validateSecondaryStorageType(annotation, databaseTypeProvider.apply(physicalTenantId));
-        validateSecondaryStorageReady(request, response, handlerMethod, physicalTenantId);
+        if (!annotation.availableWhileDegraded()) {
+          validateSecondaryStorageReady(request, response, handlerMethod, physicalTenantId);
+        }
       }
     }
 

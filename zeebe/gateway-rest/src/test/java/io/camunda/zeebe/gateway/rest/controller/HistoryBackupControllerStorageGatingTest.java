@@ -9,9 +9,13 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -98,19 +103,56 @@ class HistoryBackupControllerStorageGatingTest {
     mockMvc.perform(get("/v2/backups/history")).andExpect(request().asyncStarted());
   }
 
+  @Test
+  void shouldServeReadsAndDeletesWhileTheTenantIsDegraded() throws Exception {
+    // given
+    final var mockMvc = mockMvcFor(DatabaseType.ELASTICSEARCH, notReady());
+
+    // when - then
+    mockMvc.perform(get("/v2/backups/history")).andExpect(request().asyncStarted());
+    mockMvc.perform(delete("/v2/backups/history/1")).andExpect(request().asyncStarted());
+  }
+
+  @Test
+  void shouldRejectTakingABackupWhileTheTenantIsDegraded() throws Exception {
+    // given
+    final var mockMvc = mockMvcFor(DatabaseType.ELASTICSEARCH, notReady());
+
+    // when - then
+    mockMvc
+        .perform(
+            post("/v2/backups/history")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"backupId\": 1}"))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(header().string("Retry-After", "5"));
+  }
+
+  private static SecondaryStorageReadiness notReady() {
+    final var readiness = mock(SecondaryStorageReadiness.class);
+    when(readiness.isReady(any())).thenReturn(false);
+    return readiness;
+  }
+
   private static MockMvc mockMvcFor(final DatabaseType secondaryStorageType) {
+    return mockMvcFor(secondaryStorageType, SecondaryStorageReadiness.ALWAYS_READY);
+  }
+
+  private static MockMvc mockMvcFor(
+      final DatabaseType secondaryStorageType, final SecondaryStorageReadiness readiness) {
     final var historyBackupServices = mock(HistoryBackupServices.class);
     when(historyBackupServices.listBackups(any(), anyBoolean(), any()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
     final var serviceRegistry = mock(ServiceRegistry.class);
+    when(historyBackupServices.deleteBackup(anyLong(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
     when(serviceRegistry.historyBackupServices(any())).thenReturn(historyBackupServices);
     final var authenticationProvider = mock(CamundaAuthenticationProvider.class);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
 
     final var interceptor =
-        new SecondaryStorageInterceptor(
-            tenantId -> secondaryStorageType, SecondaryStorageReadiness.ALWAYS_READY);
+        new SecondaryStorageInterceptor(tenantId -> secondaryStorageType, readiness);
     return MockMvcBuilders.standaloneSetup(
             new HistoryBackupController(serviceRegistry, authenticationProvider))
         .addInterceptors(interceptor)

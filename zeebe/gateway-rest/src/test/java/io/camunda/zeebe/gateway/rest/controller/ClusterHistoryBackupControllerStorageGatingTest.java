@@ -9,9 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
@@ -31,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -97,7 +101,19 @@ class ClusterHistoryBackupControllerStorageGatingTest {
   }
 
   @Test
-  void shouldRejectWhenNoPhysicalTenantIsReady() throws Exception {
+  void shouldServeReadsAndDeletesWhileNoPhysicalTenantIsReady() throws Exception {
+    // given
+    final var readiness = mock(SecondaryStorageReadiness.class);
+    when(readiness.anyReady()).thenReturn(false);
+    final var mockMvc = mockMvcFor(DatabaseType.ELASTICSEARCH, readiness);
+
+    // when - then
+    mockMvc.perform(get(BASE_URL)).andExpect(request().asyncStarted());
+    mockMvc.perform(delete(BASE_URL + "/1")).andExpect(request().asyncStarted());
+  }
+
+  @Test
+  void shouldRejectTakingABackupWhenNoPhysicalTenantIsReady() throws Exception {
     // given
     final var readiness = mock(SecondaryStorageReadiness.class);
     when(readiness.anyReady()).thenReturn(false);
@@ -105,7 +121,8 @@ class ClusterHistoryBackupControllerStorageGatingTest {
 
     // when - then
     mockMvc
-        .perform(get(BASE_URL))
+        .perform(
+            post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content("{\"backupId\": 1}"))
         .andExpect(status().isServiceUnavailable())
         .andExpect(header().string("Retry-After", "5"))
         .andExpect(
@@ -136,6 +153,8 @@ class ClusterHistoryBackupControllerStorageGatingTest {
     when(clusterHistoryBackupServices.listBackups(any(), any(), anyBoolean()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
     final var serviceRegistry = mock(ServiceRegistry.class);
+    when(clusterHistoryBackupServices.deleteBackup(any(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(null));
     when(serviceRegistry.clusterHistoryBackupServices()).thenReturn(clusterHistoryBackupServices);
 
     final var interceptor =
