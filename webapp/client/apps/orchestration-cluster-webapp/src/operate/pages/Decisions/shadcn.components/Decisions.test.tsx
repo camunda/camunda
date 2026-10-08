@@ -7,6 +7,7 @@
  */
 
 import {describe, expect} from 'vitest';
+import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {Decisions} from './Decisions';
@@ -42,5 +43,17 @@ describe('<Decisions />', () => {
 		});
 
 		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeEnabled();
+	});
+
+	it('should remove active optional filters when resetting', async () => {
+		const screen = await renderWithRouter(Decisions, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
+		});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
+
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeDisabled();
 	});
 });
