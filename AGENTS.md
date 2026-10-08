@@ -10,6 +10,8 @@ Instructions below extend those guidelines and take precedence if there is any c
 
 ## Repo-specific instructions
 
+Product context: part of the Orchestration Cluster system ([SYSTEM.md](SYSTEM.md)); boundaries and constraints in each component's ARCHITECTURE.md.
+
 ### Role & boundary
 
 Camunda 8 delivers scalable, on-demand process automation as-a-service, with execution engines for
