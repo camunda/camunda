@@ -20,6 +20,7 @@ import (
 	"github.com/camunda/camunda/c8run/internal/jre"
 	"github.com/camunda/camunda/c8run/internal/overrides"
 	"github.com/camunda/camunda/c8run/internal/physicaltenants"
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 )
@@ -515,7 +516,7 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 	processInfo := state.ProcessInfo
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
 		connectorsCmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
-		connectorsCmd.Env = connectorsEnv(connectorsCmd.Env)
+		connectorsCmd.Env = connectorsEnv(connectorsCmd.Env, state.Settings.SecretsEnvPrefix, localsecrets.DefaultTenantEnvPrefix(state.Settings.SecretsEnvPrefix))
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
 		if err != nil {
@@ -564,12 +565,13 @@ func withTenantEnv(env []string, tenantEnv map[string]string) []string {
 	return env
 }
 
-// connectorsEnv returns a connectors runtime environment without any per-tenant properties.
-func connectorsEnv(env []string) []string {
+// connectorsEnv returns a connectors runtime environment without any per-tenant properties
+// and, in env secrets mode, without secret variables other than those under ownSecretsPrefix.
+func connectorsEnv(env []string, secretsEnvPrefix, ownSecretsPrefix string) []string {
 	if env == nil {
 		env = os.Environ()
 	}
-	return physicaltenants.ScrubTenantEnv(env)
+	return localsecrets.ScrubEnvSecrets(physicaltenants.ScrubTenantEnv(env), secretsEnvPrefix, ownSecretsPrefix)
 }
 
 // TenantConnectorsPidPath is the PID file of a physical tenant's connectors runtime.
@@ -591,7 +593,7 @@ func (s *StartupHandler) startTenantConnectors(ctx context.Context, stop context
 	}
 	s.ProcessHandler.AttemptToStartProcess(pidPath, name, func() {
 		cmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, state.ProcessInfo.Connectors.Version, state.Settings.Port)
-		cmd.Env = append(connectorsEnv(cmd.Env), TenantConnectorsEnv(tenant, state.Settings)...)
+		cmd.Env = append(connectorsEnv(cmd.Env, state.Settings.SecretsEnvPrefix, localsecrets.TenantEnvPrefix(state.Settings.SecretsEnvPrefix, tenant.ID)), TenantConnectorsEnv(tenant, state.Settings)...)
 		logPath := filepath.Join(parentDir, "log", "connectors-"+tenant.ID+".log")
 		if err := s.startApplication(cmd, pidPath, logPath, stop); err != nil {
 			log.Err(err).Str("tenant", tenant.ID).Msg("Failed to start tenant Connectors process")

@@ -51,3 +51,10 @@ func TestValidateEnvPrefixRejectsReservedPrefixes(t *testing.T) {
 	assert.ErrorContains(t, ValidateEnvPrefix("SPRING_X_"), `"SPRING_"`)
 	assert.NoError(t, ValidateEnvPrefix("MYSECRET_DEFAULT_"))
 }
+
+func TestScrubEnvSecretsKeepsOnlyOwnPrefix(t *testing.T) {
+	env := []string{"MYSECRET_DEFAULT_A=1", "mysecret_sales_b=2", "MYSECRET_HR_C=3", "PATH=/bin"}
+
+	assert.Equal(t, []string{"mysecret_sales_b=2", "PATH=/bin"}, ScrubEnvSecrets(env, "MYSECRET_", "MYSECRET_SALES_"))
+	assert.Equal(t, env, ScrubEnvSecrets(env, "", ""))
+}

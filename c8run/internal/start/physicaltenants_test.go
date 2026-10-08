@@ -38,7 +38,7 @@ func TestTenantConnectorsPidPath(t *testing.T) {
 
 func TestConnectorsEnvDropsTenantProperties(t *testing.T) {
 	t.Setenv("CAMUNDA_PHYSICALTENANTS_HR_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "secret")
-	for _, kv := range connectorsEnv(nil) {
+	for _, kv := range connectorsEnv(nil, "", "") {
 		assert.NotContains(t, kv, "CAMUNDA_PHYSICALTENANTS_")
 	}
 }
@@ -47,4 +47,11 @@ func TestWithTenantEnvOnlyAddsToCamunda(t *testing.T) {
 	env := withTenantEnv([]string{"A=1"}, map[string]string{"CAMUNDA_PHYSICALTENANTS_X_Y": "z"})
 	assert.Equal(t, []string{"A=1", "CAMUNDA_PHYSICALTENANTS_X_Y=z"}, env)
 	assert.Equal(t, []string{"A=1"}, withTenantEnv([]string{"A=1"}, nil))
+}
+
+func TestConnectorsEnvKeepsOnlyOwnTenantSecrets(t *testing.T) {
+	env := []string{"MYSECRET_DEFAULT_A=1", "MYSECRET_SALES_B=2", "PATH=/bin"}
+
+	assert.Equal(t, []string{"MYSECRET_DEFAULT_A=1", "PATH=/bin"}, connectorsEnv(env, "MYSECRET_", "MYSECRET_DEFAULT_"))
+	assert.Equal(t, []string{"MYSECRET_SALES_B=2", "PATH=/bin"}, connectorsEnv(env, "MYSECRET_", "MYSECRET_SALES_"))
 }

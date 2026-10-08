@@ -63,3 +63,23 @@ func ValidateEnvPrefix(prefix string) error {
 	}
 	return nil
 }
+
+// ScrubEnvSecrets removes every variable under base except those under keep, so a connectors
+// runtime only sees its own tenant's secrets. Matching is case-insensitive because Windows
+// environment names are.
+func ScrubEnvSecrets(env []string, base, keep string) []string {
+	if base == "" {
+		return env
+	}
+	upperBase, upperKeep := strings.ToUpper(base), strings.ToUpper(keep)
+	out := make([]string, 0, len(env))
+	for _, kv := range env {
+		key, _, _ := strings.Cut(kv, "=")
+		upperKey := strings.ToUpper(key)
+		if strings.HasPrefix(upperKey, upperBase) && (keep == "" || !strings.HasPrefix(upperKey, upperKeep)) {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
+}
