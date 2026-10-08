@@ -10,15 +10,16 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
-import {Heading, PageLayout, Separator, Text} from '@camunda/design-system';
-import {cn} from '#/shared/cn';
+import {Heading, PageLayout} from '@camunda/design-system';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/shadcn.components/FiltersPanel';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {DecisionsSearch} from '../decisionsFilter';
 import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
+import {DecisionPanel} from './DecisionPanel';
 import {InstancesTable} from './InstancesTable';
+import {useDecisionDefinitionSelection} from './useDecisionDefinitionSelection';
 
 type Props = {
 	search: DecisionsSearch;
@@ -28,6 +29,11 @@ const Decisions: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+	const selection = useDecisionDefinitionSelection({
+		decisionDefinitionId: search.decisionDefinitionId,
+		decisionDefinitionVersion: search.decisionDefinitionVersion,
+		tenantId: search.tenantId,
+	});
 	const {decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo} = search;
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
 		() => ({decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo}),
@@ -44,7 +50,6 @@ const Decisions: React.FC<Props> = ({search}) => {
 		visibleFilters.length === 0;
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
-	const panelClassName = cn('h-full overflow-auto bg-neutral-background p-4');
 	const panelMinHeight = clientHeight / 4;
 
 	useEffect(() => {
@@ -100,15 +105,7 @@ const Decisions: React.FC<Props> = ({search}) => {
 						direction={SplitDirection.Vertical}
 						minHeights={[panelMinHeight, panelMinHeight]}
 					>
-						<div className={panelClassName}>
-							<Heading as="h2" variant="heading-sm">
-								{t('operate.decisions.diagramHeader.title')}
-							</Heading>
-							<Separator className="my-3" />
-							<Text as="p" className="text-sm text-neutral-foreground-subtle">
-								{t('operate.decisions.scaffold.decisionPanelPlaceholder')}
-							</Text>
-						</div>
+						<DecisionPanel {...selection} />
 						<div className="h-full overflow-hidden">
 							<InstancesTable search={search} />
 						</div>
