@@ -11,10 +11,15 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryDecisionInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {
+	createDecisionInstance,
+	createQueryDecisionInstancesResponse,
+} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
 test.beforeEach(({network}) => {
@@ -28,15 +33,47 @@ test.beforeEach(({network}) => {
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
 		}),
+		mockQueryDecisionInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryDecisionInstancesResponse({
+					items: [
+						createDecisionInstance({decisionEvaluationInstanceKey: '1', decisionDefinitionName: 'Invoice Approval'}),
+						createDecisionInstance({
+							decisionEvaluationInstanceKey: '2',
+							state: 'FAILED',
+							processInstanceKey: undefined,
+						}),
+					],
+				}),
+			),
+		}),
 	);
 });
 
-test('should have no accessibility violations in the decisions placeholder shell', async ({
+test('should have no accessibility violations in the decisions shell with the instances table', async ({
+	page,
 	operatePreviewDecisionsPage,
 	makeAxeBuilder,
 }) => {
-	await operatePreviewDecisionsPage.goto();
+	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
 	await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
+	await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
+	await expect(page.getByText('Invoice Approval')).toBeVisible();
+
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations with a selected row and the bulk delete dialog open', async ({
+	page,
+	operatePreviewDecisionsPage,
+	makeAxeBuilder,
+}) => {
+	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+	await page.getByRole('checkbox', {name: 'Select row 1'}).click();
+	await expect(page.getByRole('status')).toHaveText('1 item selected');
+	await page.getByRole('button', {name: 'Delete', exact: true}).click();
+	await expect(page.getByRole('alertdialog')).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
