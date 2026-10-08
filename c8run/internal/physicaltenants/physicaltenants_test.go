@@ -74,18 +74,17 @@ func TestStoreAddListRemove(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []Tenant{{ID: "hr", Username: "alice"}, {ID: "sales"}}, tenants)
 
-	pw, ok, err := store.Password("hr")
+	_, passwords, err := store.Snapshot()
 	require.NoError(t, err)
-	assert.True(t, ok)
-	assert.Equal(t, "s3cret", pw)
+	assert.Equal(t, "s3cret", passwords["hr"])
 
 	assert.ErrorContains(t, store.Add([]Tenant{{ID: "sales"}}, nil), "already exists")
 	assert.ErrorContains(t, store.Remove([]string{"nope"}), "unknown physical tenant")
 
 	require.NoError(t, store.Remove([]string{"hr"}))
-	_, ok, err = store.Password("hr")
+	_, passwords, err = store.Snapshot()
 	require.NoError(t, err)
-	assert.False(t, ok)
+	assert.NotContains(t, passwords, "hr")
 	content, err := os.ReadFile(store.Path())
 	require.NoError(t, err)
 	assert.NotContains(t, string(content), "s3cret", "a removed tenant's password is deleted")
@@ -148,17 +147,6 @@ func TestCredentialEnv(t *testing.T) {
 	assert.Equal(t, "alice", env["CAMUNDA_PHYSICALTENANTS_HR_SECURITY_INITIALIZATION_USERS_0_USERNAME"])
 	assert.Equal(t, "pw", env["CAMUNDA_PHYSICALTENANTS_HR_SECURITY_INITIALIZATION_USERS_0_PASSWORD"])
 	assert.Equal(t, "alice", env["CAMUNDA_PHYSICALTENANTS_HR_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0"])
-}
-
-func TestWriteGeneratedConfigRemovesStaleFile(t *testing.T) {
-	base := t.TempDir()
-	path, err := WriteGeneratedConfig(base, []types.PhysicalTenant{{ID: "a"}}, "rdbms")
-	require.NoError(t, err)
-	assert.FileExists(t, path)
-	empty, err := WriteGeneratedConfig(base, nil, "rdbms")
-	require.NoError(t, err)
-	assert.Empty(t, empty)
-	assert.NoFileExists(t, path)
 }
 
 func TestConfigDeclaresTenants(t *testing.T) {
@@ -264,14 +252,6 @@ func TestPrintSummary(t *testing.T) {
 	assert.Empty(t, buf.String())
 }
 
-func TestLastStartPort(t *testing.T) {
-	base := t.TempDir()
-	assert.Zero(t, LastStartPort(base))
-	_, err := WriteGeneratedConfigForPort(base, []types.PhysicalTenant{{ID: "a"}}, "rdbms", 8090)
-	require.NoError(t, err)
-	assert.Equal(t, 8090, LastStartPort(base))
-}
-
 func TestStoreConcurrentAddsAreNotLost(t *testing.T) {
 	store := NewStore(filepath.Join(t.TempDir(), FileName))
 	var wg sync.WaitGroup
@@ -284,13 +264,11 @@ func TestStoreConcurrentAddsAreNotLost(t *testing.T) {
 		}(i)
 	}
 	wg.Wait()
-	tenants, err := store.List()
+	tenants, passwords, err := store.Snapshot()
 	require.NoError(t, err)
 	assert.Len(t, tenants, 20)
 	for _, tenant := range tenants {
-		_, ok, err := store.Password(tenant.ID)
-		require.NoError(t, err)
-		assert.True(t, ok, tenant.ID)
+		assert.Contains(t, passwords, tenant.ID)
 	}
 }
 
@@ -398,6 +376,7 @@ func TestResolveDefersToEnvironmentTenants(t *testing.T) {
 
 func TestApplyGeneratedConfig(t *testing.T) {
 	base := t.TempDir()
+	assert.Zero(t, LastStartPort(base))
 	content, err := RenderForPort([]types.PhysicalTenant{{ID: "a"}}, "rdbms", 8090)
 	require.NoError(t, err)
 	require.NoError(t, ApplyGeneratedConfig(base, content))

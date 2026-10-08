@@ -120,7 +120,7 @@ func TestCamundaCmdPassword(t *testing.T) {
 	assert.Contains(t, javaOptsEnvVar, "-Dcamunda.security.initialization.users[0].password=changeme")
 }
 
-func TestApplySecondaryStorageDefaultsDetectsRdbms(t *testing.T) {
+func TestApplyConfigSettingsDetectsRdbms(t *testing.T) {
 	t.Helper()
 
 	tempDir := t.TempDir()
@@ -136,13 +136,12 @@ camunda:
 	require.NoError(t, os.WriteFile(filepath.Join(configDir, "application.yaml"), []byte(config), 0o644))
 
 	settings := types.C8RunSettings{}
-	applySecondaryStorageDefaults(tempDir, &settings)
+	applyConfigSettings(tempDir, &settings)
 
 	assert.Equal(t, "rdbms", settings.SecondaryStorageType)
-	assert.Equal(t, filepath.Join(configDir, "application.yaml"), settings.ResolvedConfigPath)
 }
 
-func TestApplySecondaryStorageDefaultsDetectsElasticsearch(t *testing.T) {
+func TestApplyConfigSettingsDetectsElasticsearch(t *testing.T) {
 	tempDir := t.TempDir()
 	configDir := filepath.Join(tempDir, "configuration")
 	require.NoError(t, os.MkdirAll(configDir, 0o755))
@@ -156,10 +155,9 @@ camunda:
 	require.NoError(t, os.WriteFile(filepath.Join(configDir, "application.yaml"), []byte(config), 0o644))
 
 	settings := types.C8RunSettings{}
-	applySecondaryStorageDefaults(tempDir, &settings)
+	applyConfigSettings(tempDir, &settings)
 
 	assert.Equal(t, "elasticsearch", settings.SecondaryStorageType)
-	assert.Equal(t, filepath.Join(configDir, "application.yaml"), settings.ResolvedConfigPath)
 }
 
 func TestValidatePort(t *testing.T) {

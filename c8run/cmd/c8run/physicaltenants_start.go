@@ -17,7 +17,6 @@ import (
 
 	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
-	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 )
@@ -116,82 +115,6 @@ func portFree(port int) bool {
 	}
 	_ = l.Close()
 	return true
-}
-
-// applyEffectiveRuntimeSettings resolves settings that JVM options and environment variables
-// can override over YAML (as Spring does), so driver provisioning, tenant isolation, readiness
-// probing and data cleanup all act on what Camunda will actually run with.
-func applyEffectiveRuntimeSettings(settings *types.C8RunSettings) error {
-	effectiveType, err := effectiveStorageType(settings.SecondaryStorageType)
-	if err != nil {
-		return err
-	}
-	settings.SecondaryStorageType = effectiveType
-	settings.OIDC = authenticationIsOIDC(settings.ConfigPaths)
-	return nil
-}
-
-// storageTypeEnv are the environment spellings of camunda.data.secondary-storage.type. Spring
-// gives them precedence over YAML, so they decide which isolation keys c8run must generate.
-var storageTypeEnv = []string{"CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "CAMUNDA_DATA_SECONDARY_STORAGE_TYPE"}
-
-// effectiveStorageType returns the secondary-storage type Camunda will actually use, in JVM
-// and Spring precedence: JAVA_OPTS (command line, so it wins over JDK_JAVA_OPTIONS, which the
-// launcher prepends), then JDK_JAVA_OPTIONS, then environment variables, then the YAML type.
-// Within one option string the last -D wins, as it does in the JVM.
-func effectiveStorageType(fromYAML string) (string, error) {
-	for _, source := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS"} {
-		if value, ok := lastSystemProperty(os.Getenv(source), "camunda.data.secondary-storage.type", "camunda.data.secondaryStorage.type"); ok {
-			return value, nil
-		}
-	}
-	for _, key := range storageTypeEnv {
-		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
-			if fromYAML != "" && !strings.EqualFold(value, fromYAML) {
-				log.Info().Str("env", key).Str("type", value).Str("config", fromYAML).
-					Msg("Secondary storage type from the environment overrides the configuration file; isolating physical tenants for it")
-			}
-			return value, nil
-		}
-	}
-	return fromYAML, nil
-}
-
-func lastSystemProperty(options string, names ...string) (string, bool) {
-	value, found := "", false
-	for _, opt := range strings.Fields(options) {
-		for _, name := range names {
-			if prefix := "-D" + name + "="; strings.HasPrefix(opt, prefix) {
-				value, found = strings.TrimSpace(strings.TrimPrefix(opt, prefix)), true
-			}
-		}
-	}
-	return value, found
-}
-
-// authenticationIsOIDC reports whether the effective authentication method is OIDC, from the
-// environment, JVM options, then config files (highest precedence first).
-func authenticationIsOIDC(configPaths []string) bool {
-	for _, source := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS"} {
-		if value, ok := lastSystemProperty(os.Getenv(source), "camunda.security.authentication.method"); ok {
-			return strings.EqualFold(value, "oidc")
-		}
-	}
-	if value := os.Getenv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD"); value != "" {
-		return strings.EqualFold(value, "oidc")
-	}
-	for _, path := range configPaths {
-		root, ok := springconfig.Load(path)
-		if !ok {
-			continue
-		}
-		if method, ok := springconfig.Lookup(root, "camunda", "security", "authentication", "method"); ok {
-			if value, ok := method.(string); ok && value != "" {
-				return strings.EqualFold(value, "oidc")
-			}
-		}
-	}
-	return false
 }
 
 // envDeclaresTenants reports whether physical tenants are already declared outside c8run,
