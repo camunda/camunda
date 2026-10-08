@@ -10,7 +10,9 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetDecisionDefinitionXmlEndpoint,
 	mockLicenseEndpoint,
+	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -20,6 +22,11 @@ import {
 	createDecisionInstance,
 	createQueryDecisionInstancesResponse,
 } from '#/shared-test-modules/api-mocks/decision-instances';
+import {
+	createDecisionDefinition,
+	createQueryDecisionDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/decision-definitions';
+import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
 test.beforeEach(({network}) => {
@@ -32,6 +39,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockQueryDecisionDefinitionsEndpoint({
+			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
 		}),
 		mockQueryDecisionInstancesEndpoint({
 			successResponse: HttpResponse.json(
@@ -102,6 +112,39 @@ test('should have no accessibility violations with the date range dialog open', 
 	await operatePreviewDecisionsPage.moreFiltersButton.click();
 	await page.getByRole('menuitem', {name: 'Evaluation Date Range'}).click();
 	await expect(page.getByTestId('date-range-modal')).toBeVisible();
+
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations with a selected decision definition', async ({
+	page,
+	network,
+	operatePreviewDecisionsPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockQueryDecisionDefinitionsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryDecisionDefinitionsResponse({
+					items: [
+						createDecisionDefinition({
+							name: 'Invoice Classification',
+							decisionDefinitionId: 'invoiceClassification',
+							version: 1,
+						}),
+					],
+				}),
+			),
+		}),
+		mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+	);
+	await operatePreviewDecisionsPage.goto(
+		'?evaluated=true&failed=true&decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1',
+	);
+	await expect(page.getByRole('heading', {name: 'Invoice Classification'})).toBeVisible();
+	await expect(operatePreviewDecisionsPage.decisionPanel.getByTestId('decision-viewer')).toBeVisible();
+	await expect(page.getByText('Invoice Amount')).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
