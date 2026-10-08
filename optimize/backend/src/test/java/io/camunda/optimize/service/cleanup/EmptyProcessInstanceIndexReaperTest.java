@@ -53,7 +53,7 @@ class EmptyProcessInstanceIndexReaperTest {
     order.verify(databaseClient).refresh("process-instance-some-process");
     order.verify(databaseClient).countWithoutPrefix(INDEX);
     order.verify(databaseClient).addWriteBlock(INDEX);
-    order.verify(databaseClient).refresh("process-instance-some-process");
+    order.verify(databaseClient).refreshOrFail(INDEX);
     order.verify(databaseClient).countWithoutPrefix(INDEX);
     order.verify(databaseClient).deleteIndexByRawIndexNames(INDEX);
     verify(databaseClient, never()).removeWriteBlock(any());
@@ -82,7 +82,36 @@ class EmptyProcessInstanceIndexReaperTest {
 
     // then
     verify(databaseClient, never()).addWriteBlock(any());
+    verify(databaseClient, never()).removeWriteBlock(any());
     verify(databaseClient, never()).deleteIndexByRawIndexNames(any());
+  }
+
+  @Test
+  void shouldRemoveAWriteBlockLeftOnAnIndexThatHasInstances() throws IOException {
+    // given
+    when(databaseClient.countWithoutPrefix(INDEX)).thenReturn(3L);
+    when(databaseClient.hasWriteBlock(INDEX)).thenReturn(true);
+
+    // when
+    reaper.deleteIfEmpty(KEY);
+
+    // then
+    verify(databaseClient).removeWriteBlock(INDEX);
+    verify(databaseClient, never()).deleteIndexByRawIndexNames(any());
+  }
+
+  @Test
+  void shouldUnblockTheIndexWhenTheRefreshAfterTheBlockFails() throws IOException {
+    // given
+    when(databaseClient.countWithoutPrefix(INDEX)).thenReturn(0L);
+    doThrow(new OptimizeRuntimeException("shard failed")).when(databaseClient).refreshOrFail(INDEX);
+
+    // when
+    assertThatNoException().isThrownBy(() -> reaper.deleteIfEmpty(KEY));
+
+    // then
+    verify(databaseClient, never()).deleteIndexByRawIndexNames(any());
+    verify(databaseClient).removeWriteBlock(INDEX);
   }
 
   @Test
