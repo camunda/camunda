@@ -155,7 +155,9 @@ public final class AnalyticsAttributes {
 
   public static final class Metric {
     public static final String DECISION_INSTANCE_EVALUATED = "camunda.decision.instance.evaluated";
+    public static final String DECISION_INSTANCE_EVALUATED_UNIT = "{decision_instance}";
     public static final String EXPORT_WINDOW = "camunda.metric.export_window";
+    public static final String EXPORT_WINDOW_UNIT = "{record}";
     public static final AttributeKey<Long> SEQUENCE_NUMBER =
         AttributeKey.longKey("camunda.metric.sequence_number");
 

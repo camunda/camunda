@@ -153,8 +153,22 @@ public class OtelSdkManager implements AutoCloseable {
       final long position,
       final long eventTimeMs,
       final Attributes dimensions) {
+    incrementMetric(metricName, "", position, eventTimeMs, dimensions);
+  }
+
+  /**
+   * Increments the named counter by 1 and updates the export window tracking fields. The unit is
+   * the counter's contracted unit (for example {@code {decision_instance}}); it is fixed when the
+   * counter is first created.
+   */
+  public void incrementMetric(
+      final String metricName,
+      final String unit,
+      final long position,
+      final long eventTimeMs,
+      final Attributes dimensions) {
     counters
-        .computeIfAbsent(metricName, name -> otelMeter.counterBuilder(name).build())
+        .computeIfAbsent(metricName, name -> otelMeter.counterBuilder(name).setUnit(unit).build())
         .add(1, dimensions);
     metricWindow.record(position, eventTimeMs);
   }
@@ -181,6 +195,7 @@ public class OtelSdkManager implements AutoCloseable {
   private void registerExportWindowGauge() {
     otelMeter
         .gaugeBuilder(EXPORT_WINDOW)
+        .setUnit(AnalyticsAttributes.Metric.EXPORT_WINDOW_UNIT)
         .ofLongs()
         .buildWithCallback(
             measurement -> {

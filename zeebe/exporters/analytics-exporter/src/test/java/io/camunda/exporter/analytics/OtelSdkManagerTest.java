@@ -619,6 +619,7 @@ class OtelSdkManagerTest {
               metric -> {
                 assertThat(metric.getResource().getAttribute(PHYSICAL_ID))
                     .isEqualTo("test-physical-tenant");
+                assertThat(metric.getUnit()).isEqualTo("{record}");
                 assertThat(metric.getLongGaugeData().getPoints())
                     .first()
                     .satisfies(
