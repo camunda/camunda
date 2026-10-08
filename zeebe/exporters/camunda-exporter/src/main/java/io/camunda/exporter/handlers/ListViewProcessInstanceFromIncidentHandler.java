@@ -95,7 +95,8 @@ public class ListViewProcessInstanceFromIncidentHandler
         .setKey(processInstanceKey)
         .setProcessInstanceKey(processInstanceKey)
         .setPartitionId(record.getPartitionId())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setStorageOrdinal(recordValue.getStorageOrdinal());
 
     if (record.getIntent() == IncidentIntent.CREATED) {
       entity.setErrorMessage(trimWhitespace(recordValue.getErrorMessage()));

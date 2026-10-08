@@ -236,4 +236,17 @@ public class ListViewVariableFromVariableHandlerTest {
     assertThat(entity.getVarValue()).hasSize(variableSizeThreshold - 10);
     assertThat(entity.getVarValue()).isEqualTo(shortValue);
   }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecord() {
+    // given
+    final Record<VariableRecordValue> record = factory.generateRecord(ValueType.VARIABLE);
+    final VariableForListViewEntity entity = new VariableForListViewEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(record.getValue().getStorageOrdinal());
+  }
 }
