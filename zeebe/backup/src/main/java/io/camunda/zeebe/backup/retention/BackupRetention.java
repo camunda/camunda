@@ -202,7 +202,7 @@ public class BackupRetention extends Actor {
         .thenComposeAsync(
             sharedAnchor ->
                 sharedAnchor
-                    .map(anchor -> sweepFutures(store, partitions, anchor))
+                    .map(anchor -> sweepAllPartitions(store, partitions, anchor))
                     .orElse(CompletableFuture.completedFuture(null)),
             actor)
         .whenCompleteAsync(
@@ -217,10 +217,8 @@ public class BackupRetention extends Actor {
     return retentionFuture;
   }
 
-  /**
-   * Sweeps every partition using the given shared anchor, or does nothing when there is no anchor.
-   */
-  private CompletableFuture<Void> sweepFutures(
+  /** Sweeps every partition using the given shared anchor. */
+  private CompletableFuture<Void> sweepAllPartitions(
       final BackupStore store, final List<Integer> partitions, final SharedAnchor anchor) {
     return CompletableFuture.allOf(
         partitions.stream()
