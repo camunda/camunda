@@ -93,9 +93,28 @@ final class ClusterConfigurationManagerImplTest {
   @TempDir private Path tmp;
 
   private ClusterConfigurationManagerImpl newManager(final MemberId localMemberId) {
+    final var manager =
+        newManagerWithoutGroupAppliers(localMemberId, "config-" + localMemberId.id() + ".meta");
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+    return manager;
+  }
+
+  /**
+   * A manager with no-op global appliers but no partition group appliers, as a broker is right
+   * after a restart: production registers a group's appliers only once its local partitions are up,
+   * after {@code start()} has completed.
+   */
+  private ClusterConfigurationManagerImpl newManagerWithoutGroupAppliers(
+      final MemberId localMemberId, final String configurationFileName) {
     final var persisted =
         PersistedCurrentClusterConfiguration.ofFile(
-            tmp.resolve("config-" + localMemberId.id() + ".meta"), new ProtoBufSerializer());
+            tmp.resolve(configurationFileName), new ProtoBufSerializer());
     final var manager =
         new ClusterConfigurationManagerImpl(
             executor,
@@ -108,13 +127,6 @@ final class ClusterConfigurationManagerImplTest {
     manager.registerGlobalChangeAppliers(
         new GlobalConfigurationChangeAppliersImpl(
             new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
-    manager.registerPartitionGroupChangeAppliers(
-        CurrentClusterConfiguration.DEFAULT_GROUP,
-        new PartitionGroupConfigurationChangeAppliersImpl(
-            new NoopPartitionChangeExecutor(),
-            new NoopPartitionScalingChangeExecutor(),
-            new NoopModeChangeExecutor(),
-            new NoopRestoreChangeExecutor()));
     return manager;
   }
 
@@ -1442,21 +1454,7 @@ final class ClusterConfigurationManagerImplTest {
     // Partition-group appliers are deliberately NOT registered yet: in production they only
     // become available once local partitions are bootstrapped, which happens after start()
     // completes (see ClusterConfigurationManagerService#registerPartitionGroupChangeAppliers).
-    final var persisted =
-        PersistedCurrentClusterConfiguration.ofFile(
-            tmp.resolve("config-restart.meta"), new ProtoBufSerializer());
-    final var manager =
-        new ClusterConfigurationManagerImpl(
-            executor,
-            MEMBER_0,
-            persisted,
-            new TopologyManagerMetrics(new SimpleMeterRegistry()),
-            Duration.ofMillis(1),
-            Duration.ofMillis(1));
-    manager.setCurrentConfigurationGossiper(ignored -> {});
-    manager.registerGlobalChangeAppliers(
-        new GlobalConfigurationChangeAppliersImpl(
-            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+    final var manager = newManagerWithoutGroupAppliers(MEMBER_0, "config-restart.meta");
     final var group =
         new PartitionGroupConfiguration(
             1,
@@ -1534,21 +1532,7 @@ final class ClusterConfigurationManagerImplTest {
                         new RuntimeException("not caught up yet"))
                     : CompletableActorFuture.completed(null));
 
-    final var persisted =
-        PersistedCurrentClusterConfiguration.ofFile(
-            tmp.resolve("config-promote-restart.meta"), new ProtoBufSerializer());
-    final var manager =
-        new ClusterConfigurationManagerImpl(
-            executor,
-            MEMBER_0,
-            persisted,
-            new TopologyManagerMetrics(new SimpleMeterRegistry()),
-            Duration.ofMillis(1),
-            Duration.ofMillis(1));
-    manager.setCurrentConfigurationGossiper(ignored -> {});
-    manager.registerGlobalChangeAppliers(
-        new GlobalConfigurationChangeAppliersImpl(
-            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+    final var manager = newManagerWithoutGroupAppliers(MEMBER_0, "config-promote-restart.meta");
     final var group =
         new PartitionGroupConfiguration(
             1,
@@ -1618,21 +1602,7 @@ final class ClusterConfigurationManagerImplTest {
     when(partitionChangeExecutor.join(anyInt(), any(), any(), eq(false)))
         .thenReturn(CompletableActorFuture.completed(null));
 
-    final var persisted =
-        PersistedCurrentClusterConfiguration.ofFile(
-            tmp.resolve("config-legacy-join.meta"), new ProtoBufSerializer());
-    final var manager =
-        new ClusterConfigurationManagerImpl(
-            executor,
-            MEMBER_0,
-            persisted,
-            new TopologyManagerMetrics(new SimpleMeterRegistry()),
-            Duration.ofMillis(1),
-            Duration.ofMillis(1));
-    manager.setCurrentConfigurationGossiper(ignored -> {});
-    manager.registerGlobalChangeAppliers(
-        new GlobalConfigurationChangeAppliersImpl(
-            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+    final var manager = newManagerWithoutGroupAppliers(MEMBER_0, "config-legacy-join.meta");
     final var group =
         new PartitionGroupConfiguration(
             1,
@@ -1694,21 +1664,8 @@ final class ClusterConfigurationManagerImplTest {
     // change used to be a side effect of whichever broker applied its last operation, so the broker
     // that finishes it was always one with work of its own. Here the local member has none, so
     // nothing about applying an operation can be what triggers the completion.
-    final var persisted =
-        PersistedCurrentClusterConfiguration.ofFile(
-            tmp.resolve("config-drained-no-local-work.meta"), new ProtoBufSerializer());
     final var manager =
-        new ClusterConfigurationManagerImpl(
-            executor,
-            MEMBER_0,
-            persisted,
-            new TopologyManagerMetrics(new SimpleMeterRegistry()),
-            Duration.ofMillis(1),
-            Duration.ofMillis(1));
-    manager.setCurrentConfigurationGossiper(ignored -> {});
-    manager.registerGlobalChangeAppliers(
-        new GlobalConfigurationChangeAppliersImpl(
-            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+        newManagerWithoutGroupAppliers(MEMBER_0, "config-drained-no-local-work.meta");
 
     // Two independent operations, one per peer, and no operation for MEMBER_0 at all.
     final var graph = OperationGraph.builder();
@@ -1834,21 +1791,8 @@ final class ClusterConfigurationManagerImplTest {
     // given — the coordinator restarts right after the first phase's graph change was finished and
     // persisted, but before the plan was advanced to the second phase, so the work left is
     // advancing the plan rather than applying an operation of the current phase
-    final var persisted =
-        PersistedCurrentClusterConfiguration.ofFile(
-            tmp.resolve("config-restart-between-phases.meta"), new ProtoBufSerializer());
     final var manager =
-        new ClusterConfigurationManagerImpl(
-            executor,
-            MEMBER_0,
-            persisted,
-            new TopologyManagerMetrics(new SimpleMeterRegistry()),
-            Duration.ofMillis(1),
-            Duration.ofMillis(1));
-    manager.setCurrentConfigurationGossiper(ignored -> {});
-    manager.registerGlobalChangeAppliers(
-        new GlobalConfigurationChangeAppliersImpl(
-            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+        newManagerWithoutGroupAppliers(MEMBER_0, "config-restart-between-phases.meta");
     final var betweenPhases =
         completeOnlyDefaultGroupOperation(
             threeMemberCluster().initPlan(peerThenLocalPartitionLeave()));
