@@ -644,6 +644,28 @@ test('if even the undroppable sections do not fit, trailing entries are cut and 
   assert.ok((result.auditJson as { warnings: string[] }).warnings.some((line) => line.includes('the last 1 entries')));
 });
 
+test('breaking changes that alone exceed the limit are kept whole and the oversize warning fires', () => {
+  const breaking = pr({ number: 2, title: `feat: ${'b'.repeat(RELEASE_BODY_LIMIT)}`, issueNumbers: [200], breaking: true });
+  const result = render([breaking], { version: '8.10.0', allowUnattributed: false });
+
+  assert.match(result.customerBody, /## Breaking changes\n\n- feat: b+ \(#200\) — #2/);
+  assert.ok(result.customerBody.length > RELEASE_BODY_LIMIT);
+  assert.ok((result.auditJson as { warnings: string[] }).warnings.some((line) => line.includes('release body limit')));
+});
+
+test('an entry is dropped whole: a Maintenance PR sharing an issue with a kept PR stays on its line', () => {
+  // given — #101 is Maintenance, #102 a Feature, both deliver issue 55; #3 is a plain Maintenance PR that forces the drop
+  const feature = pr({ number: 102, title: 'feat: agent history API', issueNumbers: [55] });
+  const sibling = pr({ number: 101, section: 'Maintenance', visibility: 'internal', title: 'ci: prep', issueNumbers: [55] });
+  const maintenance = pr({ number: 3, section: 'Maintenance', visibility: 'internal', title: `ci: ${'m'.repeat(900)}`, issueNumbers: [] });
+  const filler = pr({ number: 900, title: 'x'.repeat(RELEASE_BODY_LIMIT - 700), issueNumbers: [900] });
+  const result = render([feature, sibling, maintenance, filler], { version: '8.10.0', allowUnattributed: false });
+
+  // then — the plain Maintenance PR went, the shared entry kept both PR numbers
+  assert.doesNotMatch(result.customerBody, /ci: m+/);
+  assert.match(result.customerBody, /- feat: agent history API \(#55\) — #102, #101/);
+});
+
 test('a bump without a parseable package table is dropped with the other bumps, and counted in the pointer', () => {
   // given — a c8run-style `deps:` PR whose body has no table, beside 40 parsed bumps
   const unparsed = pr({ number: 5, title: 'deps: update c8run versions to 8.9.22', section: 'Dependency updates', attributionSource: 'botExempt', issueNumbers: [] });

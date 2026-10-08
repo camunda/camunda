@@ -498,8 +498,11 @@ one at a time and in this order, until it fits:
 5. changes without an attributed issue (the `unattributed` bucket);
 6. `Documentation`.
 
-A breaking change is never dropped. If everything droppable is gone and the body is still too long,
-entries are cut from the end. Whenever anything was dropped or cut, the body starts with
+A breaking change is never dropped. A pull request goes only together with the rest of its entry —
+one that shares an issue with a pull request that stays is kept, so a line never loses a `#N` it has
+in the full asset. If everything droppable is gone and the body is still too long, entries are cut
+from the end, stopping short of the `## Breaking changes` block; should that block alone exceed the
+limit, the body stays over it and `audit.json` warns. Whenever anything was dropped or cut, the body starts with
 
 ```
 > [!WARNING]

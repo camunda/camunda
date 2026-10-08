@@ -18,7 +18,7 @@ const SECTION_ORDER = [
   'Documentation',
   'Dependency updates',
   'Reverts',
-  'Maintenance', // asset-only, so last — never reached in the customer body
+  'Maintenance', // the first section a too-long description loses after bumps, so last
   'Uncategorized',
 ];
 
@@ -66,22 +66,23 @@ export interface RenderResult {
   readonly failureReason?: string;
 }
 
-/** An empty body reads as "this release ships nothing customer-facing" — true
- *  for a maintenance-only patch, but indistinguishable from the outside if
- *  attribution silently dropped everything into internal/opted-out buckets
- *  instead. Warns either way rather than shipping an empty description that
- *  looks identical to a correct one. See GENERATOR.md § 6. */
+/** Every pull request that has a section is listed, so an empty body means every
+ *  attributed pull request was an excluded `merge` commit — indistinguishable
+ *  from the outside from a release whose categorization silently dropped
+ *  everything. Warns rather than shipping an empty description that looks
+ *  identical to a correct one. See GENERATOR.md § 6. */
 export function emptyCustomerBodyWarning(hasAttributedWork: boolean, customerBody: string): string | undefined {
   return hasAttributedWork && customerBody === ''
-    ? 'Customer-facing body is empty even though pull requests were attributed to this release — every one is internal-only, opted out, or otherwise excluded from the customer body. Verify this is genuinely a maintenance-only release before publishing.'
+    ? 'Customer-facing body is empty even though pull requests were attributed to this release — every one was excluded from the changelog (merge commits). Verify the release really ships nothing before publishing.'
     : undefined;
 }
 
 /** GitHub rejects a longer release body via the API; the web editor silently truncates it. */
 export const RELEASE_BODY_LIMIT = 125_000;
 
-/** Asset-only bumps buy headroom, not a guarantee — warns before cutover
- *  publishes a body GitHub will reject. */
+/** Only reachable when the breaking changes alone exceed the limit — they are never
+ *  cut, so the body stays over and this warns before cutover publishes a body GitHub
+ *  will reject. */
 export function oversizedCustomerBodyWarning(customerBody: string): string | undefined {
   return customerBody.length > RELEASE_BODY_LIMIT
     ? `Customer-facing body is ${customerBody.length} characters, over GitHub's ${RELEASE_BODY_LIMIT}-character release body limit — publishing it will fail.`
@@ -320,6 +321,14 @@ const DROP_STEPS: readonly { readonly name: string; readonly drops: (prs: readon
   { name: 'Documentation', drops: (prs) => new Set(prs.filter((pr) => pr.section === 'Documentation' && !pr.breaking)) },
 ];
 
+/** An entry is the unit shown to a reader, so a pull request goes only when every
+ *  pull request in its entry does — else the line loses a `#N` it shares with the
+ *  full asset, and its section or "partially delivered" mark can change. */
+function wholeEntries(prs: readonly RenderPrInput[], doomed: ReadonlySet<RenderPrInput>): Set<RenderPrInput> {
+  const keptKeys = new Set(prs.filter((pr) => !doomed.has(pr)).map(entryKeyFor));
+  return new Set(prs.filter((pr) => doomed.has(pr) && !keptKeys.has(entryKeyFor(pr))));
+}
+
 function truncationBanner(options: RenderOptions): string {
   const assetUrl = options.repository
     ? `https://github.com/${options.repository}/releases/download/${options.version}/CHANGELOG-${options.version}.md`
@@ -331,7 +340,7 @@ function truncationBanner(options: RenderOptions): string {
 /** The release description: everything, unless that exceeds GitHub's limit — then
  *  categories are dropped in DROP_STEPS order until it fits, with a warning banner
  *  (counted against the limit) pointing at the full asset. If even the
- *  undroppable sections do not fit, trailing entries are cut. */
+ *  undroppable sections do not fit, trailing entries are cut — never the breaking changes. */
 function fitCustomerBody(
   assetPrs: readonly RenderPrInput[],
   link: (number: number) => string,
@@ -341,7 +350,8 @@ function fitCustomerBody(
   const dropped: string[] = [];
   const banner = truncationBanner(options);
   const render = (prs: readonly RenderPrInput[]) => {
-    const left = assetPrs.filter((pr) => !prs.includes(pr));
+    const kept = new Set(prs);
+    const left = assetPrs.filter((pr) => !kept.has(pr));
     const packageCount = new Set(left.filter(isDependencyBump).flatMap(packagesOf)).size + left.filter(isUnparsedBump).length;
     return renderSectionedBody(prs, link, packageCount > 0 ? { packageCount, version: options.version } : undefined);
   };
@@ -350,7 +360,7 @@ function fitCustomerBody(
   let body = render(remaining);
   for (const step of DROP_STEPS) {
     if (withBanner(body).length <= RELEASE_BODY_LIMIT) return { body: withBanner(body), dropped, cutEntries: 0 };
-    const doomed = step.drops(remaining);
+    const doomed = wholeEntries(remaining, step.drops(remaining));
     if (doomed.size === 0) continue;
     remaining = remaining.filter((pr) => !doomed.has(pr));
     dropped.push(step.name);
@@ -358,13 +368,20 @@ function fitCustomerBody(
   }
   if (withBanner(body).length <= RELEASE_BODY_LIMIT) return { body: withBanner(body), dropped, cutEntries: 0 };
 
-  // Last resort: what is left is breaking changes, features, fixes and performance. Cut from the end.
+  // Last resort: what is left is breaking changes, features, fixes and performance. Cut from the
+  // end, but never into the leading breaking-changes block (the lines before its closing blank).
   const lines = body.split('\n');
+  const blockEnd = lines.indexOf('', 2); // -1 when breaking changes are the whole body
+  const protectedLines = lines[0] !== '## Breaking changes' ? 0 : blockEnd === -1 ? lines.length : blockEnd;
+  const prefixLength = banner.length + 2;
+  let size = lines.join('\n').length;
   let cutEntries = 0;
-  while (lines.length > 0 && `${banner}\n\n${lines.join('\n')}`.length > RELEASE_BODY_LIMIT) {
-    if (lines.pop()!.startsWith('- ')) cutEntries++;
+  while (lines.length > protectedLines && prefixLength + size > RELEASE_BODY_LIMIT) {
+    const line = lines.pop()!;
+    size -= line.length + (lines.length > 0 ? 1 : 0);
+    if (line.startsWith('- ')) cutEntries++;
   }
-  while (lines.length > 0 && (lines[lines.length - 1] === '' || lines[lines.length - 1]!.startsWith('## '))) lines.pop();
+  while (lines.length > protectedLines && (lines[lines.length - 1] === '' || lines[lines.length - 1]!.startsWith('## '))) lines.pop();
   return { body: `${banner}\n\n${lines.join('\n')}`, dropped, cutEntries };
 }
 
