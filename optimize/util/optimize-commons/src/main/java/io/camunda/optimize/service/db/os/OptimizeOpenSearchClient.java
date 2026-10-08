@@ -927,12 +927,22 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                 .anyMatch(reason -> reason.contains(NESTED_DOC_LIMIT_MESSAGE));
         throw new OptimizeRuntimeException(
             String.format(
-                "There were %s failures while performing bulk on %s.%n%s",
-                failedOperationIds.size(), itemName, getHintForErrorMsg(isReachedNestedDocLimit)));
+                "There were %s failures while performing bulk on %s.%n%s Message: %s",
+                failedOperationIds.size(),
+                itemName,
+                getHintForErrorMsg(isReachedNestedDocLimit),
+                describeFailedItems(bulkResponse)));
       }
     } else {
       LOG.debug("Bulk request on {} not executed because it contains no actions.", itemName);
     }
+  }
+
+  static String describeFailedItems(final BulkResponse bulkResponse) {
+    return bulkResponse.items().stream()
+        .filter(item -> Objects.nonNull(item.error()))
+        .map(item -> item.operationType() + " " + item.error().type() + " " + item.error().reason())
+        .collect(Collectors.joining(" , "));
   }
 
   public BulkResponse bulk(final BulkRequest.Builder bulkRequest, final String errorMessage) {
