@@ -37,7 +37,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class HistoryElasticsearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
-  private static final boolean EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED = false;
   private static final int EXPECTED_HISTORY_ARCHIVER_ROLLOVER_BATCH_SIZE = 199;
   private static final String EXPECTED_HISTORY_POLICY_NAME = "policy-name-foo";
   private static final String EXPECTED_HISTORY_PROCESS_INSTANCE_RETENTION_MODE = "PI";
@@ -60,8 +59,6 @@ public class HistoryElasticsearchTest {
         "camunda.data.secondary-storage.type=elasticsearch",
         "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
-        "camunda.data.secondary-storage.elasticsearch.history.archive-by-id-enabled="
-            + EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED,
         "camunda.data.secondary-storage.elasticsearch.history.rollover-batch-size="
             + EXPECTED_HISTORY_ARCHIVER_ROLLOVER_BATCH_SIZE,
         "camunda.data.secondary-storage.elasticsearch.history.policy-name="
@@ -93,8 +90,6 @@ public class HistoryElasticsearchTest {
 
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
-      assertThat(exporterConfiguration.getHistory().isArchiveByIdEnabled())
-          .isEqualTo(EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED);
       assertThat(exporterConfiguration.getHistory().getRolloverBatchSize())
           .isEqualTo(EXPECTED_HISTORY_ARCHIVER_ROLLOVER_BATCH_SIZE);
       assertThat(exporterConfiguration.getHistory().getRetention())
@@ -193,30 +188,6 @@ public class HistoryElasticsearchTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.data.secondary-storage.elasticsearch.history.archive-by-id-enabled=false",
-        "camunda.data.secondary-storage.type=elasticsearch",
-      })
-  class WithDefaultValuesWhenArchiveByIdDisabled {
-    final BrokerBasedProperties brokerBasedProperties;
-
-    WithDefaultValuesWhenArchiveByIdDisabled(
-        @Autowired final BrokerBasedProperties brokerBasedProperties) {
-      this.brokerBasedProperties = brokerBasedProperties;
-    }
-
-    @Test
-    void shouldDefaultArchiveByIdEnabledToTrue() {
-      final ExporterConfiguration exporterConfiguration =
-          getExporterConfiguration(brokerBasedProperties);
-
-      assertThat(exporterConfiguration.getHistory().isArchiveByIdEnabled()).isFalse();
-      assertThat(exporterConfiguration.getHistory().getRolloverBatchSize()).isEqualTo(100);
-    }
-  }
-
-  @Nested
-  @TestPropertySource(
-      properties = {
         "camunda.data.secondary-storage.type=elasticsearch",
       })
   class WithDefaultValues {
@@ -231,7 +202,6 @@ public class HistoryElasticsearchTest {
       final ExporterConfiguration exporterConfiguration =
           getExporterConfiguration(brokerBasedProperties);
 
-      assertThat(exporterConfiguration.getHistory().isArchiveByIdEnabled()).isTrue();
       assertThat(exporterConfiguration.getHistory().getRolloverBatchSize()).isEqualTo(500);
     }
   }
