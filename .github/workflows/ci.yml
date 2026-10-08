@@ -1713,7 +1713,7 @@ jobs:
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
-      TEST_OWNER: '@camunda/identity'
+      TEST_OWNER: '@camunda/operate-admin-pod'
       CLIENT_DIR: identity/client
     defaults:
       run:
