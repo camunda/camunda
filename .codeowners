@@ -22,6 +22,7 @@ CODEOWNERS                  @camunda/orchestration-cluster
 
 AGENTS.md                   @camunda/orchestration-cluster
 CLAUDE.md                   @camunda/orchestration-cluster
+/.agents/                   @camunda/orchestration-cluster
 /.claude/                   @camunda/orchestration-cluster
 CHANGELOG.md                @camunda/orchestration-cluster
 CODE_OF_CONDUCT.md          @camunda/orchestration-cluster
@@ -67,16 +68,16 @@ buf.yaml                    @camunda/orchestration-cluster
 ## @camunda/engineering-operations
 ################################
 
-/.claude/skills/act-testing/ @camunda/engineering-operations
-/.claude/skills/agentic-workflows/ @camunda/engineering-operations
-/.claude/skills/ci-fix-failure/ @camunda/engineering-operations
-/.claude/skills/ci-incident/ @camunda/engineering-operations
-/.claude/skills/ci-push-workflow-health/ @camunda/engineering-operations
-/.claude/skills/ci-scheduled-workflow-health/ @camunda/engineering-operations
-/.claude/skills/ci-runner-utilization/ @camunda/engineering-operations
-/.claude/skills/ci-security-compliance/ @camunda/engineering-operations
-/.claude/skills/ci-validation/ @camunda/engineering-operations
-/.claude/skills/ci-workflow-authoring/ @camunda/engineering-operations
+/.agents/skills/act-testing/ @camunda/engineering-operations
+/.agents/skills/agentic-workflows/ @camunda/engineering-operations
+/.agents/skills/ci-fix-failure/ @camunda/engineering-operations
+/.agents/skills/ci-incident/ @camunda/engineering-operations
+/.agents/skills/ci-push-workflow-health/ @camunda/engineering-operations
+/.agents/skills/ci-scheduled-workflow-health/ @camunda/engineering-operations
+/.agents/skills/ci-runner-utilization/ @camunda/engineering-operations
+/.agents/skills/ci-security-compliance/ @camunda/engineering-operations
+/.agents/skills/ci-validation/ @camunda/engineering-operations
+/.agents/skills/ci-workflow-authoring/ @camunda/engineering-operations
 
 /.ci/                       @camunda/engineering-operations
 /.github/                   @camunda/engineering-operations
@@ -212,10 +213,10 @@ mwnw*                       @camunda/engineering-operations
 /zeebe/exporter-config-support/ @camunda/core-features
 
 # Engine-expert skill
-/.claude/skills/engine-expert/ @korthout @camunda/core-features
+/.agents/skills/engine-expert/ @korthout @camunda/core-features
 
 # Analytics exporter skill
-/.claude/skills/analytics-exporter/ @camunda/core-features
+/.agents/skills/analytics-exporter/ @camunda/core-features
 
 # optimize / BI team
 /zeebe/exporter-filter/        @camunda/core-features
@@ -328,8 +329,8 @@ optimize.Dockerfile         @camunda/core-features
 # Helm version pin consumed by the load test setup golden file workflow
 /.tool-versions             @camunda/reliability-testing
 
-# Claude Code skills
-/.claude/skills/load-test-ops/ @camunda/reliability-testing
+# Agents skills
+/.agents/skills/load-test-ops/ @camunda/reliability-testing
 
 ################################
 ## @camunda/data-layer
@@ -408,17 +409,17 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/frontend-sbom-snyk-nightly.yml @camunda/orchestration-cluster-webapps
 
 # Experience FE frontend skills
-/.claude/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
-/.claude/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
-/.claude/skills/frontend-operate-migrator/ @camunda/orchestration-cluster-webapps
-/.claude/skills/frontend-unit-test/        @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-operate-migrator/ @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-unit-test/        @camunda/orchestration-cluster-webapps
 
 # Operate frontend skills
-/.claude/skills/operate-engineering-loop/ @camunda/operate-admin-pod
-/.claude/skills/operate-frontend/         @camunda/operate-admin-pod
+/.agents/skills/operate-engineering-loop/ @camunda/operate-admin-pod
+/.agents/skills/operate-frontend/         @camunda/operate-admin-pod
 
 # Tasklist frontend skills
-/.claude/skills/tasklist-frontend/ @camunda/employee-engagement-tasklist
+/.agents/skills/tasklist-frontend/ @camunda/employee-engagement-tasklist
 
 /.github/workflows/zeebe-release-stable-dry-run.yml @camunda/engineering-operations
 /.github/workflows/c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml    @camunda/test-automation-team
