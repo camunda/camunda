@@ -188,4 +188,18 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
     return factory.generateRecord(
         ValueType.PROCESS_INSTANCE_BUSINESS_ID, r -> r.withIntent(intent).withValue(value));
   }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecord() {
+    // given
+    final Record<ProcessInstanceBusinessIdRecordValue> record =
+        factory.generateRecord(ValueType.PROCESS_INSTANCE_BUSINESS_ID);
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(record.getValue().getStorageOrdinal());
+  }
 }

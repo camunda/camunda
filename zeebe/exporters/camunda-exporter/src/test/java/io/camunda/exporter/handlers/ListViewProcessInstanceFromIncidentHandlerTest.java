@@ -205,4 +205,17 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
     return factory.generateRecord(
         ValueType.INCIDENT, r -> r.withIntent(intent).withValue(recordValue));
   }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecord() {
+    // given
+    final Record<IncidentRecordValue> record = factory.generateRecord(ValueType.INCIDENT);
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(record.getValue().getStorageOrdinal());
+  }
 }
