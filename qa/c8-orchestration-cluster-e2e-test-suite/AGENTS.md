@@ -419,7 +419,7 @@ silence: see **Fields you cannot determine** below.
 
 `camunda/camunda`, by failure surface:
 
-|                    Failure surface                    |        `component/` label       |
+|                    Failure surface                    |       `component/` label        |
 |-------------------------------------------------------|---------------------------------|
 | Identity, Admin UI, authorizations, RBA (8.10+)       | `component/identity`            |
 | Management Identity (Self-Managed)                    | `component/management-identity` |
@@ -476,10 +476,12 @@ severity, or the affected version:
    has none, so omit `component/` there and rely on the comment.
 2. **Always post a comment** naming each field and why. The comment is the part that works in both
    repos, so it is mandatory even where a marker label exists:
+
    ```bash
    gh issue comment <n> --repo <owner>/<repo> --body \
      "Automated triage could not determine **<field>**: <reason>. Please set it during triage."
    ```
+
    One comment listing every undetermined field is enough — do not post one per field.
 
 Never change a `component/`, `severity/`, `likelihood/` or `affects/` label that a person already

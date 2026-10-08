@@ -672,6 +672,7 @@ jobs:
           # branch instead of erroring on an empty numeric comparison.
           pr_count=-1
           pb_lines=""
+          pb_unskipped=0
           if [ -f /tmp/fix-meta.json ]; then
             pr_count=$(jq '.prs | length' /tmp/fix-meta.json 2>/dev/null || echo -1)
             # Severity and component are what route a filed bug to a team; without
@@ -681,18 +682,34 @@ jobs:
               + " in `\(.repo // "?")` [\(.severity // "severity?")/\(.component // "component?")]"
               + (if ((.affects // []) | length) > 0 then " affects \((.affects | join(", ")))" else "" end)
               + (if (.root_cause // "") != "" then " — \(.root_cause)" else "" end)
-              + (if ((.undetermined_fields // []) | length) > 0 then " :warning: needs triage: \((.undetermined_fields | join(", ")))" else "" end)' \
+              + (if ((.undetermined_fields // []) | length) > 0 then " :warning: needs triage: \((.undetermined_fields | join(", ")))" else "" end)
+              + (if ((.skipped_tests // []) | length) == 0 then " :rotating_light: NO skip — test still failing" else "" end)' \
               /tmp/fix-meta.json 2>/dev/null || true)
+            # Whether the run is unblocked is a per-bug fact, not a per-run one: a
+            # dispatch can carry a normal fix PR for one failure and a product bug
+            # with no skip for another. Only each bug's own skipped_tests proves its
+            # test is out of the run, so branch on that rather than on prs.
+            pb_unskipped=$(jq '[[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)][]
+              | select(((.skipped_tests // []) | length) == 0)] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
           fi
           if [ -n "${pb_lines}" ]; then
-            # A filed product bug is the headline whether or not a skip PR exists:
-            # with one the run is unblocked, without one the test is still red.
+            links=""
             if [ "${pr_count}" -gt 0 ]; then
               links=$(jq -r '[.prs[] | "<\(.url // "")|PR #\(.number)>"] | join("  ")' /tmp/fix-meta.json)
-              text=":bug: *${SURFACE}* — product bug(s), test(s) skipped pending fix:"$'\n'"${pb_lines}"$'\n'"• PR(s): ${links}"
-            else
-              text=":warning: *${SURFACE}* — product bug(s) filed but NO skip PR, test(s) still failing:"$'\n'"${pb_lines}"
             fi
+            if [ "${pb_unskipped}" -eq 0 ]; then
+              text=":bug: *${SURFACE}* — product bug(s), test(s) skipped pending fix:"$'\n'"${pb_lines}"
+            else
+              text=":warning: *${SURFACE}* — ${pb_unskipped} product bug(s) with NO skip, test(s) still failing:"$'\n'"${pb_lines}"
+              # FIX-AGENT.md requires `reason` whenever prs is empty; this branch
+              # must not swallow it just because a bug was also filed.
+              if [ "${pr_count}" -le 0 ] && [ -f /tmp/fix-meta.json ]; then
+                reason=$(jq -r '.reason // .why_no_pr // .root_cause // ""' \
+                           /tmp/fix-meta.json 2>/dev/null | head -c 700 || true)
+                [ -n "${reason}" ] && text="${text}"$'\n'"${reason}"
+              fi
+            fi
+            [ -n "${links}" ] && text="${text}"$'\n'"• PR(s): ${links}"
             [ -z "${MEDIC_USERGROUP}" ] \
               || text="${text}"$'\n'"cc <!subteam^${MEDIC_USERGROUP}> — on shift for this"
           elif [ "${pr_count}" -gt 0 ]; then

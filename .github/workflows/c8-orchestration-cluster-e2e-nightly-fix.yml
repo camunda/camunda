@@ -688,6 +688,11 @@ jobs:
           pr_count=$(echo "$prs_json" | jq 'length')
           pb_count=$(echo "$pbugs_json" | jq 'length')
           unaddressed_count=$( [ -f /tmp/fix-meta.json ] && jq '.unaddressed // [] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
+          # A nonzero pr_count does not prove the product-bug tests were skipped: a
+          # dispatch can carry a normal fix PR for one failure and a product bug with
+          # no skip for another. Only each bug's own skipped_tests proves its test is
+          # out of the run.
+          pb_unskipped=$( [ -f /tmp/fix-meta.json ] && jq '[[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)][] | select(((.skipped_tests // []) | length) == 0)] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
 
           # One bullet per outcome, each carrying its findings (issue link, repo,
           # root cause, suspected commit/PR).
@@ -718,6 +723,9 @@ jobs:
             [ -n "$rc" ] && line="${line} — ${rc}"
             [ -n "$sc" ] && line="${line} (suspect: ${sc})"
             [ -n "$undet" ] && line="${line} :warning: needs triage: ${undet}"
+            # Whether this bug's test is out of the run is a per-bug fact.
+            [ "$(echo "$pb" | jq '(.skipped_tests // []) | length')" -eq 0 ] \
+              && line="${line} :rotating_light: NO skip — test still failing"
             lines+=("$line")
           done < <(echo "$pbugs_json" | jq -c '.[]')
           if [ "$pr_count" -gt 0 ]; then
@@ -734,13 +742,13 @@ jobs:
           # A confirmed product bug lands as a skip PR, so its bullets + the skip PR
           # are reported together under the bug heading — but only when the skip PR
           # actually exists; an issue filed with NO skip PR means the test still fails.
-          if [ "$pb_count" -gt 0 ] && [ "$pr_count" -gt 0 ]; then
+          if [ "$pb_count" -gt 0 ] && [ "$pb_unskipped" -eq 0 ]; then
             icon=":bug:"
             summary="Product bug(s) — test(s) skipped pending fix:"$'\n'"$(printf '%s\n' "${lines[@]}")"
             [ "$JOB_STATUS" = "failure" ] && summary="${summary}"$'\n'"_(post-processing failed — see run)_"
           elif [ "$pb_count" -gt 0 ]; then
             icon=":warning:"
-            summary="Product bug(s) filed but NO skip PR — test(s) still failing, needs attention:"$'\n'"$(printf '%s\n' "${lines[@]}")"
+            summary="${pb_unskipped} product bug(s) with NO skip — test(s) still failing, needs attention:"$'\n'"$(printf '%s\n' "${lines[@]}")"
           elif [ "$pr_count" -gt 0 ]; then
             icon=":white_check_mark:"
             summary="$(printf '%s\n' "${lines[@]}")"
