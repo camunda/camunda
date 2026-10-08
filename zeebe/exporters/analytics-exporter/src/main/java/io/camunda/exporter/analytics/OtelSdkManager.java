@@ -56,7 +56,14 @@ import java.util.function.Consumer;
 public class OtelSdkManager implements AutoCloseable {
 
   private static final String INSTRUMENTATION_SCOPE = "io.camunda.analytics";
-  private static final String SCHEMA_URL = "https://camunda.io/schemas/analytics/v1";
+
+  /**
+   * The product-telemetry data contract version this exporter's payload conforms to. Releases
+   * before the contract stamped {@code v1}; the contract's first version is {@code 1.0}, so the two
+   * payload shapes are distinguishable from the scope alone.
+   */
+  private static final String SCHEMA_URL = "https://camunda.io/schemas/analytics/1.0";
+
   private static final String OTLP_LOGS_PATH = "/v1/logs";
   private static final String OTLP_METRICS_PATH = "/v1/metrics";
   private static final String SERVICE_NAME_VALUE = "camunda-zeebe";

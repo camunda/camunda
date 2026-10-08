@@ -356,8 +356,11 @@ attributes (heartbeats are not tied to the log stream):
 | `camunda.telemetry.heartbeat.broker_version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
 | `camunda.telemetry.heartbeat.exporter_version` | string | Analytics exporter version.                                              |
 
-The analytics schema URL (`https://camunda.io/schemas/analytics/v1`) is delivered automatically via
-the OTel instrumentation scope on every record, not as a per-record attribute.
+The analytics schema URL (`https://camunda.io/schemas/analytics/1.0`) is delivered automatically via
+the OTel instrumentation scope on every record and metric, not as a per-record attribute. Its last
+segment is the product-telemetry data contract version the payload conforms to. Releases before the
+contract-aligned attribute keys stamped `v1`, so a consumer can tell the two payload shapes apart
+from the scope alone.
 
 ### Resource attributes
 

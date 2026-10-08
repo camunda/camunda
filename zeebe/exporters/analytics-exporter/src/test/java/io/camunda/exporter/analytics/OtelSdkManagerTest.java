@@ -278,6 +278,33 @@ class OtelSdkManagerTest {
         .isEqualTo(3L);
   }
 
+  /** Every record is stamped with the data contract version through the scope's schema URL. */
+  @Test
+  void shouldStampTheContractSchemaUrlOnTheInstrumentationScope() {
+    // given
+    final var received = new CopyOnWriteArrayList<LogRecordData>();
+    final var manager =
+        initManager(
+            logs -> {
+              received.addAll(logs);
+              return CompletableResultCode.ofSuccess();
+            },
+            2048,
+            512);
+
+    // when
+    manager.logEvent("test", 0L, log -> {});
+    manager.close();
+
+    // then
+    assertThat(received)
+        .singleElement()
+        .satisfies(
+            log ->
+                assertThat(log.getInstrumentationScopeInfo().getSchemaUrl())
+                    .isEqualTo("https://camunda.io/schemas/analytics/1.0"));
+  }
+
   /** The sequence number continues from the initial value provided at initialization. */
   @Test
   void shouldInitializeSequenceNumberFromGivenValue() {
