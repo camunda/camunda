@@ -61,8 +61,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 
 @TestInstance(Lifecycle.PER_CLASS)
-public class ProcessInstanceByIdArchiverJobIT
-    extends ArchiverJobIT<ProcessInstanceByIdArchiverJob> {
+public class ProcessInstanceArchiverJobIT extends ArchiverJobIT<ProcessInstanceArchiverJob> {
 
   @TestTemplate
   void shouldArchiveLoneProcessInstance(
@@ -738,7 +737,7 @@ public class ProcessInstanceByIdArchiverJobIT
   }
 
   @Override
-  ProcessInstanceByIdArchiverJob createArchiveJob(
+  ProcessInstanceArchiverJob createArchiveJob(
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository) {
@@ -749,7 +748,7 @@ public class ProcessInstanceByIdArchiverJobIT
             .map(ProcessInstanceDependant.class::cast)
             .toList();
 
-    return new ProcessInstanceByIdArchiverJob(
+    return new ProcessInstanceArchiverJob(
         config.getHistory(),
         repository,
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
