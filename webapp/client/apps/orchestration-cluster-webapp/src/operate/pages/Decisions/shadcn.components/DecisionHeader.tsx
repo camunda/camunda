@@ -9,7 +9,7 @@
 import {useTranslation} from 'react-i18next';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {CopiableContent} from '#/operate/shared/PanelHeader/shadcn.components/CopiableContent';
-import type {DecisionDefinitionSelection} from './DecisionPanel';
+import type {DecisionDefinitionSelection} from './decisionDefinitionSelection';
 import {getDecisionDefinitionName} from '../getDecisionDefinitionName';
 
 type Props = {

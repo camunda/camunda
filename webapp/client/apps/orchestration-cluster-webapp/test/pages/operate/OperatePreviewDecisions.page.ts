@@ -28,8 +28,8 @@ class OperatePreviewDecisionsPage extends BasePage {
 		return this.page.getByRole('button', {name: 'More Filters'});
 	}
 
-	get decisionPanelPlaceholder() {
-		return this.page.getByText('Decision panel placeholder');
+	get decisionPanel() {
+		return this.page.getByRole('region', {name: 'Decision Panel'});
 	}
 
 	get instancesTable() {

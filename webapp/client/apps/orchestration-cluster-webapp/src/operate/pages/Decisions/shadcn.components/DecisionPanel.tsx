@@ -18,12 +18,7 @@ import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/Erro
 import {useDecisionDefinitionXml} from '../useDecisionDefinitionXml';
 import {getDecisionDefinitionName} from '../getDecisionDefinitionName';
 import {DecisionHeader} from './DecisionHeader';
-
-type DecisionDefinitionSelection =
-	| {kind: 'no-match'}
-	| {kind: 'single-version'; definition: DecisionDefinition}
-	| {kind: 'all-versions'; definition: Pick<DecisionDefinition, 'name' | 'decisionDefinitionId'>}
-	| {kind: 'multiple-tenants'; definition: Pick<DecisionDefinition, 'name' | 'decisionDefinitionId'>};
+import type {DecisionDefinitionSelection} from './decisionDefinitionSelection';
 
 type Props = {
 	decisionDefinitionSelection: DecisionDefinitionSelection;
@@ -55,75 +50,87 @@ const DecisionDiagramError: React.FC<{onRetry: () => void}> = ({onRetry}) => {
 	);
 };
 
-const DecisionPanel: React.FC<Props> = ({
+const DecisionPanelBody: React.FC<Omit<Props, 'headerActions'>> = ({
 	decisionDefinitionSelection,
 	isDefinitionSelectionLoading = false,
 	isDefinitionSelectionError = false,
-	headerActions,
 }) => {
 	const {t} = useTranslation();
-	const selectedDefinitionName =
-		decisionDefinitionSelection.kind !== 'no-match'
-			? getDecisionDefinitionName(decisionDefinitionSelection.definition)
-			: t('operate.decisions.diagramHeader.title');
 
-	const getEmptyMessage = () => {
+	if (isDefinitionSelectionLoading) {
+		return <DiagramShell status="loading" />;
+	}
+	if (isDefinitionSelectionError) {
+		return <DiagramShell status="error" />;
+	}
+	if (decisionDefinitionSelection.kind !== 'single-version') {
+		const selectedDefinitionName =
+			decisionDefinitionSelection.kind !== 'no-match'
+				? getDecisionDefinitionName(decisionDefinitionSelection.definition)
+				: t('operate.decisions.diagramHeader.title');
+
 		switch (decisionDefinitionSelection.kind) {
 			case 'all-versions':
-				return {
-					message: t('operate.decisions.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
-					additionalInfo: t('operate.decisions.diagramPanel.selectSingleVersion'),
-				};
+				return (
+					<DiagramShell
+						status="empty"
+						emptyMessage={{
+							message: t('operate.decisions.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
+							additionalInfo: t('operate.decisions.diagramPanel.selectSingleVersion'),
+						}}
+					/>
+				);
 			case 'multiple-tenants':
-				return {
-					message: t('operate.decisions.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
-					additionalInfo: t('operate.decisions.diagramPanel.selectSingleTenant'),
-				};
+				return (
+					<DiagramShell
+						status="empty"
+						emptyMessage={{
+							message: t('operate.decisions.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
+							additionalInfo: t('operate.decisions.diagramPanel.selectSingleTenant'),
+						}}
+					/>
+				);
 			default:
-				return {
-					message: t('operate.decisions.diagramPanel.noDecisionSelected'),
-					additionalInfo: t('operate.decisions.diagramPanel.selectDecisionInFilters'),
-				};
+				return (
+					<DiagramShell
+						status="empty"
+						emptyMessage={{
+							message: t('operate.decisions.diagramPanel.noDecisionSelected'),
+							additionalInfo: t('operate.decisions.diagramPanel.selectDecisionInFilters'),
+						}}
+					/>
+				);
 		}
-	};
+	}
 
 	return (
-		<section aria-label="Decision Panel" className="flex h-full flex-col">
-			<DecisionHeader decisionDefinitionSelection={decisionDefinitionSelection}>{headerActions}</DecisionHeader>
-			{(() => {
-				if (isDefinitionSelectionLoading) {
-					return <DiagramShell status="loading">{null}</DiagramShell>;
-				}
-				if (isDefinitionSelectionError) {
-					return <DiagramShell status="error">{null}</DiagramShell>;
-				}
-				if (decisionDefinitionSelection.kind !== 'single-version') {
-					return (
-						<DiagramShell status="empty" emptyMessage={getEmptyMessage()}>
-							{null}
-						</DiagramShell>
-					);
-				}
+		<QueryErrorResetBoundary>
+			{({reset}) => (
+				<ErrorBoundary
+					onReset={reset}
+					fallbackRender={({resetErrorBoundary}) => <DecisionDiagramError onRetry={resetErrorBoundary} />}
+					resetKeys={[decisionDefinitionSelection.definition.decisionDefinitionKey]}
+				>
+					<Suspense fallback={<DiagramShell status="loading" />}>
+						<DecisionDiagram definition={decisionDefinitionSelection.definition} />
+					</Suspense>
+				</ErrorBoundary>
+			)}
+		</QueryErrorResetBoundary>
+	);
+};
 
-				return (
-					<QueryErrorResetBoundary>
-						{({reset}) => (
-							<ErrorBoundary
-								onReset={reset}
-								fallbackRender={({resetErrorBoundary}) => <DecisionDiagramError onRetry={resetErrorBoundary} />}
-								resetKeys={[decisionDefinitionSelection.definition.decisionDefinitionKey]}
-							>
-								<Suspense fallback={<DiagramShell status="loading">{null}</DiagramShell>}>
-									<DecisionDiagram definition={decisionDefinitionSelection.definition} />
-								</Suspense>
-							</ErrorBoundary>
-						)}
-					</QueryErrorResetBoundary>
-				);
-			})()}
+const DecisionPanel: React.FC<Props> = ({headerActions, ...bodyProps}) => {
+	const {t} = useTranslation();
+
+	return (
+		<section aria-label={t('operate.decisions.diagramPanel.ariaLabel')} className="flex h-full flex-col">
+			<DecisionHeader decisionDefinitionSelection={bodyProps.decisionDefinitionSelection}>
+				{headerActions}
+			</DecisionHeader>
+			<DecisionPanelBody {...bodyProps} />
 		</section>
 	);
 };
 
 export {DecisionPanel};
-export type {DecisionDefinitionSelection};
