@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -199,9 +200,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   public void shouldSearchReindexThenBulkDeleteWhenMovingDocumentsById() throws IOException {
     // given
     when(client.search(any(SearchRequest.class), eq(Object.class)))
-        .thenReturn(
-            CompletableFuture.completedFuture(searchResponse("4", "5", "6")),
-            CompletableFuture.completedFuture(searchResponse()));
+        .thenReturn(CompletableFuture.completedFuture(searchResponse("4", "5", "6")));
     when(client.reindex(any(ReindexRequest.class)))
         .thenReturn(
             CompletableFuture.completedFuture(
@@ -228,7 +227,60 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
     inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
     inOrder.verify(client).reindex(any(ReindexRequest.class));
     inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSearchReindexThenBulkDeleteMultipleTimesWhenMovingDocumentsByIdIfManyDocsFound()
+      throws IOException {
+    // given
+
+    final var fullBatchSize = 2500;
+    final var fullBatchIds =
+        IntStream.rangeClosed(1, fullBatchSize).mapToObj(String::valueOf).toArray(String[]::new);
+    final var lastBatchSize = 1;
+    final var lastBatchIds =
+        IntStream.rangeClosed(1, lastBatchSize).mapToObj(String::valueOf).toArray(String[]::new);
+
+    when(client.search(any(SearchRequest.class), eq(Object.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(searchResponse(fullBatchIds)),
+            CompletableFuture.completedFuture(searchResponse(lastBatchIds)));
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(
+                    b -> b.total((long) fullBatchSize).created((long) fullBatchSize).updated(0L))))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(
+                    b -> b.total((long) lastBatchSize).created((long) lastBatchSize).updated(0L))));
+    when(client.bulk(any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse(fullBatchIds)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse(lastBatchIds)));
+
+    // when
+    final var future =
+        repository.moveDocumentsById(
+            "from-index",
+            "to-index",
+            Map.of("key", List.of("1", "2", "3")),
+            Map.of(),
+            Map.of(),
+            Runnable::run);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+
+    final var inOrder = Mockito.inOrder(client);
+    inOrder.verify(client)._transport();
+    inOrder.verify(client)._transportOptions();
     inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
     inOrder.verifyNoMoreInteractions();
   }
 
