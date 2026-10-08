@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -187,5 +188,51 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
             .build();
     return factory.generateRecord(
         ValueType.PROCESS_INSTANCE_BUSINESS_ID, r -> r.withIntent(intent).withValue(value));
+  }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecordWhenNotMainIndex() {
+    // given
+    final Record<ProcessInstanceBusinessIdRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE_BUSINESS_ID,
+            r ->
+                r.withIntent(ProcessInstanceBusinessIdIntent.ASSIGNED)
+                    .withValue(
+                        ImmutableProcessInstanceBusinessIdRecordValue.builder()
+                            .from(
+                                factory.generateObject(ProcessInstanceBusinessIdRecordValue.class))
+                            .withStorageOrdinal(42)
+                            .build()));
+
+    // when
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalFromRecordWhenMainIndex() {
+    // given
+    final Record<ProcessInstanceBusinessIdRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE_BUSINESS_ID,
+            r ->
+                r.withIntent(ProcessInstanceBusinessIdIntent.ASSIGNED)
+                    .withValue(
+                        ImmutableProcessInstanceBusinessIdRecordValue.builder()
+                            .from(
+                                factory.generateObject(ProcessInstanceBusinessIdRecordValue.class))
+                            .withStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX)
+                            .build()));
+
+    // when
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
   }
 }

@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -114,6 +115,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
             getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()))
         .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()))
         .setBusinessId(emptyToNull(recordValue.getBusinessId()));
+
+    if (recordValue.getStorageOrdinal() != StorageOrdinalRelated.MAIN_INDEX) {
+      piEntity.setStorageOrdinal(recordValue.getStorageOrdinal());
+    }
 
     if (recordValue.getTags() != null && recordValue.getTags().size() > 0) {
       piEntity.setTags(recordValue.getTags());
