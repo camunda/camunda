@@ -13,12 +13,17 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -88,6 +93,32 @@ public final class ProcessInstanceSuspendingGateTest {
     assertThat(rejection.getRejectionReason()).contains("it is still suspending");
   }
 
+  @Test
+  public void shouldRejectDrainWhileSuspending() {
+    // given
+    final long processInstanceKey = createInstanceWithJob();
+    setSuspensionState(processInstanceKey, State.SUSPENDING);
+
+    // when
+    writeDrain(processInstanceKey);
+
+    // then
+    assertDrainRejected(processInstanceKey);
+  }
+
+  @Test
+  public void shouldRejectDrainWhileSuspended() {
+    // given
+    final long processInstanceKey = createInstanceWithJob();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    writeDrain(processInstanceKey);
+
+    // then
+    assertDrainRejected(processInstanceKey);
+  }
+
   private static long createInstanceWithJob() {
     final String processId = Strings.newRandomValidBpmnId();
     ENGINE
@@ -111,5 +142,29 @@ public final class ProcessInstanceSuspendingGateTest {
     ((MutableProcessingState) ENGINE.getProcessingState())
         .getSuspensionState()
         .setSuspensionState(processInstanceKey, state);
+  }
+
+  private static void writeDrain(final long processInstanceKey) {
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .bufferedCommand(
+                BufferedCommandIntent.DRAIN,
+                new BufferedCommandRecord().setProcessInstanceKey(processInstanceKey))
+            .key(processInstanceKey));
+  }
+
+  private static void assertDrainRejected(final long processInstanceKey) {
+    final var rejection =
+        RecordingExporter.records()
+            .onlyCommandRejections()
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .withIntent(BufferedCommandIntent.DRAIN)
+            .filter(
+                r ->
+                    ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
+                        == processInstanceKey)
+            .getFirst();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason()).contains("it is not resuming");
   }
 }

@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
@@ -285,6 +287,13 @@ public final class RecordToWrite implements LogAppendEntry {
       final GlobalListenerBatchIntent intent, final GlobalListenerBatchRecordValue value) {
     recordMetadata.valueType(ValueType.GLOBAL_LISTENER_BATCH).intent(intent);
     unifiedRecordValue = (GlobalListenerBatchRecord) value;
+    return this;
+  }
+
+  public RecordToWrite bufferedCommand(
+      final BufferedCommandIntent intent, final BufferedCommandRecord value) {
+    recordMetadata.valueType(ValueType.BUFFERED_COMMAND).intent(intent);
+    unifiedRecordValue = value;
     return this;
   }
 
