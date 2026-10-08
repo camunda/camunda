@@ -64,7 +64,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
   }
 
   @Test
-  void shouldScheduleProcessInstanceByIdArchiverJobTaskWhenConfigEnabled() {
+  void shouldScheduleProcessInstanceArchiverJobTaskWhenConfigEnabled() {
     // given
     config.getHistory().setProcessInstanceEnabled(true);
 
@@ -74,8 +74,8 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     // then
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
-        .as("Should contain ProcessInstanceByIdArchiverJob when config is enabled")
-        .anyMatch(task -> isProcessInstanceByIdArchiverTask(task));
+        .as("Should contain ProcessInstanceArchiverJob when config is enabled")
+        .anyMatch(task -> isProcessInstanceArchiverTask(task));
   }
 
   @Test
@@ -90,7 +90,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should not contain ProcessInstancesArchiverJob when config is disabled")
-        .noneMatch(task -> isProcessInstanceByIdArchiverTask(task));
+        .noneMatch(task -> isProcessInstanceArchiverTask(task));
   }
 
   @Test
@@ -123,7 +123,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     assertThat(tasks)
         .as("Should not contain ProcessInstanceToBeArchivedCountJob when PI config is disabled")
         .noneMatch(task -> isProcessInstanceToBeArchivedCountTask(task))
-        .noneMatch(task -> isProcessInstanceByIdArchiverTask(task));
+        .noneMatch(task -> isProcessInstanceArchiverTask(task));
   }
 
   @Test
@@ -155,8 +155,8 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     // then
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
-        .as("Should contain both PI by ID archiver and count tasks when all configs are enabled")
-        .anyMatch(task -> isProcessInstanceByIdArchiverTask(task))
+        .as("Should contain both PI archiver and count tasks when all configs are enabled")
+        .anyMatch(task -> isProcessInstanceArchiverTask(task))
         .anyMatch(task -> isProcessInstanceToBeArchivedCountTask(task));
   }
 
@@ -238,7 +238,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     }
   }
 
-  private boolean isProcessInstanceByIdArchiverTask(final RunnableTask task) {
+  private boolean isProcessInstanceArchiverTask(final RunnableTask task) {
     return isTaskOfType(task, ProcessInstanceArchiverJob.class);
   }
 
