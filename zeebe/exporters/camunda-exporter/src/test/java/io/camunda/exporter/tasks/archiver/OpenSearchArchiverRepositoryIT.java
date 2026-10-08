@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
+import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository.SearchAfterImpl;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.exporter.utils.CamundaExporterSchemaUtils;
@@ -74,6 +74,7 @@ import org.mockito.Mockito;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.mapping.Property;
@@ -1323,8 +1324,9 @@ final class OpenSearchArchiverRepositoryIT {
         .extracting(IdWithRouting::id)
         .containsExactlyInAnyOrder("1", "2", "4");
     assertThat(batch.documents()).extracting(IdWithRouting::routing).containsOnly("111");
-    assertThat(batch.searchAfter()).hasSize(1);
-    assertThat(batch.searchAfter().getFirst().stringValue()).isEqualTo("4");
+    assertThat(batch.searchAfter())
+        .isInstanceOfSatisfying(
+            SearchAfterImpl.class, searchAfter -> verifyFieldValues(searchAfter.values(), "4"));
 
     // when searching for process instance key 999
     // then - we expect no documents to be returned
@@ -1341,7 +1343,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     assertThat(emptyBatch.isEmpty()).isTrue();
     assertThat(emptyBatch.documents()).isEmpty();
-    assertThat(emptyBatch.searchAfter()).isEmpty();
+    assertThat(emptyBatch.searchAfter()).isNull();
 
     // when searching for process instance key 111 with reindex batch size of 2
     // then - we expect documents with IDs 1 and 2 to be returned
@@ -1359,7 +1361,9 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(batchPg1.documents())
         .extracting(IdWithRouting::id)
         .containsExactlyInAnyOrder("1", "2");
-    assertThat(batchPg1.searchAfter().getFirst().stringValue()).isEqualTo("2");
+    assertThat(batchPg1.searchAfter())
+        .isInstanceOfSatisfying(
+            SearchAfterImpl.class, searchAfter -> verifyFieldValues(searchAfter.values(), "2"));
 
     // when searching for process instance key 111 with searchAfter from page 1
     // then - we expect document with ID 4 to be returned
@@ -1375,7 +1379,9 @@ final class OpenSearchArchiverRepositoryIT {
             .join();
 
     assertThat(batchPg2.documents()).extracting(IdWithRouting::id).containsExactlyInAnyOrder("4");
-    assertThat(batchPg2.searchAfter().getFirst().stringValue()).isEqualTo("4");
+    assertThat(batchPg2.searchAfter())
+        .isInstanceOfSatisfying(
+            SearchAfterImpl.class, searchAfter -> verifyFieldValues(searchAfter.values(), "4"));
 
     // when searching for process instance key 111 with searchAfter from page 2
     // then - we expect no documents to be returned
@@ -1392,7 +1398,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     assertThat(batchPg3.isEmpty()).isTrue();
     assertThat(batchPg3.documents()).isEmpty();
-    assertThat(batchPg3.searchAfter()).isEmpty();
+    assertThat(batchPg3.searchAfter()).isNull();
 
     // when searching for process instance key 111 with exclusion filter for joinRelation=activity
     // then - we expect only documents with joinRelation != activity (IDs 1 and 4)
@@ -2121,6 +2127,11 @@ final class OpenSearchArchiverRepositoryIT {
     } catch (final Exception e) {
       LOGGER.warn("Could not reset ISM job interval", e);
     }
+  }
+
+  private void verifyFieldValues(final List<FieldValue> actual, final String... expected) {
+    final var actualStrings = actual.stream().map(FieldValue::stringValue).toList();
+    assertThat(actualStrings).containsExactly(expected);
   }
 
   private record TestAuditLogDocument(String id, String entityType) implements TDocument {}
