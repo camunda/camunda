@@ -11,17 +11,20 @@ import {Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
 type Align = 'top-start' | 'top-end';
 
 type Props = {
-	title: string;
+	label: string;
 	content: React.ReactNode;
 	children: React.ReactNode;
 	align: Align;
 };
 
-const LabelWithTooltip: React.FC<Props> = ({title, content, children, align}) => (
+const LabelWithTooltip: React.FC<Props> = ({label, content, children, align}) => (
 	<Tooltip>
 		<TooltipTrigger asChild>
-			<span className="inline-flex items-center gap-1 text-xs text-neutral-foreground-strong" title={title}>
-				{children}
+			<span className="inline-flex items-center text-xs text-neutral-foreground-strong">
+				<span className="sr-only">{label}</span>
+				<span className="inline-flex items-center gap-1" aria-hidden>
+					{children}
+				</span>
 			</span>
 		</TooltipTrigger>
 		<TooltipContent side="top" align={align === 'top-end' ? 'end' : 'start'}>

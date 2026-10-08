@@ -181,10 +181,10 @@ test.describe('defining-task-priorities', () => {
 		await expect(taskDetailPage.taskName('Company registration')).toBeVisible();
 		await expect(taskDetailPage.assignButton).toBeVisible();
 		await expect(taskDetailPage.taskTabContent.getByLabel('Legal company name')).toBeVisible();
-		await expect(tasklistIndexPage.tasksPanel.getByTitle('Priority: Critical')).toBeVisible();
-		await expect(tasklistIndexPage.tasksPanel.getByTitle('Priority: High')).toBeVisible();
-		await expect(tasklistIndexPage.tasksPanel.getByTitle('Priority: Medium')).toHaveCount(2);
-		await expect(tasklistIndexPage.tasksPanel.getByTitle('Priority: Low')).toBeVisible();
+		await expect(tasklistIndexPage.tasksPanel.getByText('Priority: Critical', {exact: true})).toBeVisible();
+		await expect(tasklistIndexPage.tasksPanel.getByText('Priority: High', {exact: true})).toBeVisible();
+		await expect(tasklistIndexPage.tasksPanel.getByText('Priority: Medium', {exact: true})).toHaveCount(2);
+		await expect(tasklistIndexPage.tasksPanel.getByText('Priority: Low', {exact: true})).toBeVisible();
 
 		await page.screenshot({
 			path: getScreenshotPath({
@@ -205,7 +205,7 @@ test.describe('defining-task-priorities', () => {
 		await taskDetailPage.goto(companyRegistrationTask.userTaskKey, '?sortBy=priority');
 		await expect(taskDetailPage.taskName('Company registration')).toBeVisible();
 		await expect(taskDetailPage.taskTabContent.getByLabel('Legal company name')).toBeVisible();
-		await expect(tasklistIndexPage.tasksPanel.getByTitle('Priority: Critical')).toBeVisible();
+		await expect(tasklistIndexPage.tasksPanel.getByText('Priority: Critical', {exact: true})).toBeVisible();
 		await tasklistIndexPage.openSortMenu();
 		await expect(tasklistIndexPage.sortOption('Priority')).toBeChecked();
 		await tasklistIndexPage.sortOption('Priority').hover();

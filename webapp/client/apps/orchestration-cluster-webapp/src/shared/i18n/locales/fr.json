@@ -536,7 +536,6 @@
 			"taskHeaderUnassigning": "Désassignation...",
 			"taskHeaderAssignmentSuccessful": "Assignation réussie",
 			"taskHeaderUnassignmentSuccessful": "Désassignation réussie",
-			"availableTasksTitle": "Tâches disponibles",
 			"availableTasksNoTasksFoundInfo": "Aucune tâche trouvée",
 			"availableTasksNoTasksMatchingCriteriaInfo": "Il n'y a aucune tâche correspondant à vos critères de filtre.",
 			"availableTasksCreatedRelativeLabel": "Créée",
