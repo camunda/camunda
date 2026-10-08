@@ -100,7 +100,13 @@ public final class ProcessInstanceSuspendProcessor
     }
 
     final ProcessInstanceRecord value = elementInstance.getValue();
-    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDING, value);
+    // restarting a SUSPENDING instance skips the event (the marker is already there) and runs the
+    // suspension steps again; they skip subscriptions and jobs that were already handled
+    final boolean isRestart =
+        suspensionState.getSuspensionState(command.getKey()) == SuspensionState.State.SUSPENDING;
+    if (!isRestart) {
+      stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDING, value);
+    }
     final int suspendedJobCount = closeSubscriptionsAndSuspendJobs(command.getKey());
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
     responseWriter.writeAcceptedResponseOnCommand(
@@ -180,8 +186,9 @@ public final class ProcessInstanceSuspendProcessor
       return false;
     }
 
-    // Check marker presence so all duplicate suspend requests are rejected.
-    if (suspensionState.getSuspensionState(command.getKey()) != null) {
+    // Reject duplicate suspend requests, but let a SUSPENDING instance restart its suspension.
+    final var marker = suspensionState.getSuspensionState(command.getKey());
+    if (marker != null && marker != SuspensionState.State.SUSPENDING) {
       final var reason = String.format(PROCESS_ALREADY_SUSPENDED_MESSAGE, command.getKey());
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
@@ -201,6 +208,12 @@ public final class ProcessInstanceSuspendProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+  }
+
+  @Override
+  public SuspensionAction onSuspending(final TypedRecord<ProcessInstanceRecord> record) {
+    // process: a repeated suspend restarts a suspension that got stuck in SUSPENDING
+    return SuspensionAction.PROCESS;
   }
 
   @Override
