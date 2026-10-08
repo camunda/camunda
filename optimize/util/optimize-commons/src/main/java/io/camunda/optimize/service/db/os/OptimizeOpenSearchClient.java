@@ -312,6 +312,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().updateByQuery(index, query, script);
   }
 
+  public long updateByQuery(
+      final String index, final Query query, final Script script, final Integer scrollSize) {
+    return richOpenSearchClient.doc().updateByQuery(index, query, script, scrollSize);
+  }
+
   public final <T> IndexResponse index(final IndexRequest.Builder<T> indexRequest) {
     return richOpenSearchClient.doc().index(indexRequest);
   }
