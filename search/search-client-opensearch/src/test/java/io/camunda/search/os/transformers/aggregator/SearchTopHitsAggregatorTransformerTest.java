@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.search.clients.aggregator.SearchAggregatorBuilders;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.Arguments;
@@ -33,7 +34,15 @@ public class SearchTopHitsAggregatorTransformerTest
                 .size(20)
                 .aggregations(SearchAggregatorBuilders.terms("termsAgg", "field"))
                 .build(),
-            "{'aggregations':{'termsAgg':{'terms':{'field':'field','min_doc_count':1,'size':10}}},'top_hits':{'size':20,'sort':[{'status':{'order':'desc'}}]}}"));
+            "{'aggregations':{'termsAgg':{'terms':{'field':'field','min_doc_count':1,'size':10}}},'top_hits':{'size':20,'sort':[{'status':{'order':'desc'}}]}}"),
+        Arguments.arguments(
+            SearchAggregatorBuilders.topHits()
+                .name("name")
+                .field("version")
+                .excludes(List.of("bpmnXml"))
+                .size(1)
+                .build(),
+            "{'top_hits':{'size':1,'sort':[{'version':{'order':'desc'}}],'_source':{'excludes':['bpmnXml']}}}"));
   }
 
   @Test
