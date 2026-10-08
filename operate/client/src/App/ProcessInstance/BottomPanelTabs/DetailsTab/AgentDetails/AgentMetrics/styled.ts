@@ -35,6 +35,21 @@ const MetricCardValue = styled.span`
   color: var(--cds-text-primary);
 `;
 
+const MetricCardValueRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+`;
+
+const InfoButton = styled.button`
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--cds-icon-secondary);
+`;
+
 const MetricHelperText = styled.span`
   font-size: var(--cds-helper-text-01-font-size);
   line-height: var(--cds-helper-text-01-line-height);
@@ -103,6 +118,8 @@ export {
   MetricCardContainer,
   MetricCardTitle,
   MetricCardValue,
+  MetricCardValueRow,
+  InfoButton,
   MetricHelperText,
   LimitMeterContainer,
   LimitMeter,

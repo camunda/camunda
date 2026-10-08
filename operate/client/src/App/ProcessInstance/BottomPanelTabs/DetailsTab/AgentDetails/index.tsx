@@ -42,6 +42,7 @@ import {ConversationMessage} from './ConversationMessage';
 import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
 import {AvailableTools} from './AvailableTools';
+import {getTotalTokens} from './getTotalTokens';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   UNKNOWN: 'Unknown',
@@ -184,7 +185,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
                 {metrics.modelCalls.toLocaleString()} model calls
               </Tag>
               <Tag type="gray" size="sm">
-                {(metrics.inputTokens + metrics.outputTokens).toLocaleString()}
+                {getTotalTokens(metrics).toLocaleString()}
                 &nbsp;tokens
               </Tag>
             </SectionTitle>
@@ -198,8 +199,8 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             <TokensUsedMetric
               inputTokens={metrics.inputTokens}
               outputTokens={metrics.outputTokens}
-              cacheReadTokens={metrics.cacheReadTokenCount}
-              cacheCreationTokens={metrics.cacheCreationTokenCount}
+              cacheReadTokenCount={metrics.cacheReadTokenCount}
+              cacheCreationTokenCount={metrics.cacheCreationTokenCount}
               reasoningTokens={metrics.reasoningTokenCount}
               maxTokens={limits.maxTokens}
             />
