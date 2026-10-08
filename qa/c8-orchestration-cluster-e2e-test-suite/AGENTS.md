@@ -487,6 +487,32 @@ severity, or the affected version:
 Never change a `component/`, `severity/`, `likelihood/` or `affects/` label that a person already
 set on an existing issue. Add only the categories that are missing.
 
+#### Use the target repo's own bug template
+
+**Every repo's template is different — read it before filing** and use *its* section headings:
+
+```bash
+gh api "repos/<owner>/<repo>/contents/.github/ISSUE_TEMPLATE" --jq '.[].name'
+```
+
+A body that matches the template is what makes the issue triageable by the people who own it, and
+in some repos (`camunda/camunda-platform-helm`) an automation parses those exact headings.
+
+Five things this agent must record **in every repo**, whatever the template looks like:
+**Current behavior vs Expected behavior**, **Environment**, **Version**, **Severity**, and the
+**`Fingerprint:`** line. When the repo's template has no section for one of them, append it under its
+own heading rather than dropping it — `Severity` especially, since several repos have no severity
+label and the body is then the only record of it.
+
+|           Owning repo           |                     Its bug template                     |                                                                                                                                                      Headings to use                                                                                                                                                       |
+|---------------------------------|----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `camunda/camunda`               | `.github/ISSUE_TEMPLATE/1. bug_report.yml`               | The canonical shape below — it is modelled on this template.                                                                                                                                                                                                                                                               |
+| `camunda/camunda-platform-helm` | `.github/ISSUE_TEMPLATE/issue.md` (markdown, not a form) | Its own `##` headings, exactly: `## Description`, `## Expected vs Actual Behavior`, `## Steps to Reproduce`, `## Acceptance Criteria`. **Its AI triage reads this body to assign labels and severity**, so keep the headings verbatim; append `## Environment`, `## Version`, `## Severity` and `## Rootcause` after them. |
+
+When a repo has no usable bug template, use the canonical shape in step 2 of
+**Filing the bug ticket** below — it is `camunda/camunda`'s, and the most complete of the Camunda
+templates.
+
 ### Filing the bug ticket (dedupe FIRST)
 
 > **Token:** use the default `GH_TOKEN` (the qa-processes App token) for ALL `gh` calls FIRST —
@@ -534,11 +560,12 @@ set on an existing issue. Add only the categories that are missing.
      does not define, never change one a person already set, and post the comment required by
      **Fields you cannot determine** if a category stays unset.
 
-2. **File the issue** when none exists. The body below mirrors the required fields of
-   `camunda/camunda`'s bug-report template (`.github/ISSUE_TEMPLATE/1. bug_report.yml`), so a human
-   triaging it sees the same sections the form would have produced. The template's four dropdowns —
-   Component, Affected version, Severity, Likelihood — are carried by the labels instead, which is
-   why every one of them is mandatory above. Do **not** write the form's HTML markers
+2. **File the issue** when none exists, using **that repo's own** bug template (see **Use the
+   target repo's own bug template** above). Whatever the template, the four dropdowns a Camunda form
+   would ask for — Component, Affected version, Severity, Likelihood — are carried by the **labels**
+   instead, which is why every one of them is mandatory above. The shape below is
+   `camunda/camunda`'s; adapt its headings per the table above when filing in
+   `camunda/camunda-platform-helm`. Do **not** write the form's HTML markers
    (`<!-- Component -->`, `<!-- Severity -->`) into the body: that hands label selection back to
    `opened_issue_labeler.yml`, whose regexes have mislabelled bot issues before, and it hides from
    the command which labels were actually set. You MAY use the repo's `create-issue` skill instead,
