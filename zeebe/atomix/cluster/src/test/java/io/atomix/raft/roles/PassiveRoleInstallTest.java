@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.protocol.InstallRequest;
@@ -56,6 +57,7 @@ final class PassiveRoleInstallTest {
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final RaftContext raft = mock(RaftContext.class);
   private final RaftLog log = mock(RaftLog.class);
+  private final RaftClusterContext cluster = mock(RaftClusterContext.class);
   private final ReceivableSnapshotStore snapshotStore = mock(ReceivableSnapshotStore.class);
   private final ReceivedSnapshot receivedSnapshot = mock(ReceivedSnapshot.class);
   private PassiveRole role;
@@ -63,6 +65,7 @@ final class PassiveRoleInstallTest {
   @BeforeEach
   void setup() {
     when(raft.getLog()).thenReturn(log);
+    when(raft.getCluster()).thenReturn(cluster);
     when(raft.getStorage()).thenReturn(mock(RaftStorage.class));
     when(raft.getPersistedSnapshotStore()).thenReturn(snapshotStore);
     when(raft.getTerm()).thenReturn(TERM);
@@ -128,6 +131,8 @@ final class PassiveRoleInstallTest {
     assertThat(response.snapshotNotNeeded()).isFalse();
     verify(receivedSnapshot).persist();
     verify(log).reset(SNAPSHOT_INDEX + 1);
+    // the reset removes every entry, so a configuration of a removed entry must not survive
+    verify(cluster).rollbackConfigurationAfterTruncation(SNAPSHOT_INDEX);
   }
 
   @Test

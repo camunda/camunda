@@ -114,6 +114,7 @@ public class PassiveRole extends InactiveRole {
   private void truncateUncommittedEntries() throws CheckedJournalException {
     if (role() == RaftServer.Role.PASSIVE && raft.getLog().getLastIndex() > raft.getCommitIndex()) {
       raft.getLog().deleteAfter(raft.getCommitIndex());
+      raft.getCluster().rollbackConfigurationAfterTruncation(raft.getCommitIndex());
     }
   }
 
@@ -887,6 +888,7 @@ public class PassiveRole extends InactiveRole {
       if (request.prevLogTerm() == 0) {
         log.debug("Reset first index to {}", request.prevLogIndex() + 1);
         raft.getLog().reset(request.prevLogIndex() + 1);
+        raft.getCluster().rollbackConfigurationAfterTruncation(request.prevLogIndex());
       }
 
       // Iterate through entries and append them.
@@ -992,6 +994,7 @@ public class PassiveRole extends InactiveRole {
         if (lastEntry.term() != entry.term()) {
           try {
             raft.getLog().deleteAfter(index - 1);
+            raft.getCluster().rollbackConfigurationAfterTruncation(index - 1);
           } catch (final FlushException e) {
             return !failAppend(index - 1, future);
           }
@@ -1051,6 +1054,7 @@ public class PassiveRole extends InactiveRole {
       if (existingEntry.term() != entry.term()) {
         try {
           raft.getLog().deleteAfter(index - 1);
+          raft.getCluster().rollbackConfigurationAfterTruncation(index - 1);
         } catch (final FlushException e) {
           return failAppend(index - 1, future);
         }
@@ -1167,5 +1171,6 @@ public class PassiveRole extends InactiveRole {
         snapshotIndex,
         snapshotIndex + 1);
     raftLog.reset(snapshotIndex + 1);
+    raft.getCluster().rollbackConfigurationAfterTruncation(snapshotIndex);
   }
 }
