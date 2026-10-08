@@ -136,8 +136,6 @@ final class PartitionModeHandlerTest {
                         1,
                         LOCAL_MEMBER))
             .collect(Collectors.toSet());
-    when(clusterConfigurationService.getCurrentPartitionDistribution(any()))
-        .thenReturn(new PartitionDistribution(metadata));
     when(clusterConfigurationService.getLatestPartitionDistribution(any()))
         .thenReturn(CompletableActorFuture.completed(new PartitionDistribution(metadata)));
   }
