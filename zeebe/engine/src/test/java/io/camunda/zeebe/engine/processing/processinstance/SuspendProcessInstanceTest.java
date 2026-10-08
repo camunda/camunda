@@ -304,6 +304,55 @@ public final class SuspendProcessInstanceTest {
     assertThat(suspendedUserTasks(processInstanceKey)).isEmpty();
   }
 
+  @Test
+  public void shouldProcessEachWalkCommandInItsOwnBatch() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("a", t -> t.zeebeUserTask())
+                .endEvent()
+                .moveToNode("fork")
+                .userTask("b", t -> t.zeebeUserTask())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .limit(2)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // then
+    final var walkRecords =
+        RecordingExporter.records()
+            .limit(r -> r.getIntent() == SUSPENDED && r.getKey() == processInstanceKey)
+            .filter(r -> r.getValueType() == ValueType.SUSPENSION_BATCH)
+            .toList();
+    final var commandPositions =
+        walkRecords.stream()
+            .filter(r -> r.getRecordType() == RecordType.COMMAND)
+            .map(Record::getPosition)
+            .toList();
+    final var eventSourcePositions =
+        walkRecords.stream()
+            .filter(r -> r.getRecordType() == RecordType.EVENT)
+            .map(Record::getSourceRecordPosition)
+            .toList();
+    assertThat(commandPositions).hasSize(4);
+    // the first walk command is written by SUSPEND and runs in that command's batch
+    assertThat(eventSourcePositions.subList(1, 4))
+        .describedAs("Expect each walk command to be processed in its own batch")
+        .containsExactlyElementsOf(commandPositions.subList(1, 4));
+  }
+
   /** Returns the element instance keys of user tasks suspended until the given one is suspended. */
   private static List<Long> suspendedUserTasks(final long processInstanceKey) {
     return RecordingExporter.records()

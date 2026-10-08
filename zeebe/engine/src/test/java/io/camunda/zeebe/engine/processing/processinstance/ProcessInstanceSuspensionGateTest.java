@@ -9,14 +9,16 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -62,34 +64,45 @@ public final class ProcessInstanceSuspensionGateTest {
 
   @Test
   public void shouldClearBufferedCommandsWhenCancellingSuspendedProcessInstance() {
-    // given - a suspended instance with a buffered command left over from while it was SUSPENDED
-    // (seeded directly: buffering a real internal command is exercised by other suites, this test
-    // only needs a buffered entry to exist to verify termination cleans it up)
+    // given - suspending a user task buffers its RESUME command
     final String processId = Strings.newRandomValidBpmnId();
     ENGINE
         .deployment()
         .withXmlResource(
-            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", t -> t.zeebeUserTask())
+                .endEvent()
+                .done())
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
-
-    final var suspensionState =
-        ((MutableProcessingState) ENGINE.getProcessingState()).getSuspensionState();
-    final long bufferedCommandKey = Long.MAX_VALUE - processInstanceKey;
-    suspensionState.bufferCommand(
-        bufferedCommandKey,
-        new BufferedCommandRecord()
-            .setProcessInstanceKey(processInstanceKey)
-            .setCommandKey(bufferedCommandKey));
+    RecordingExporter.records()
+        .withValueType(ValueType.BUFFERED_COMMAND)
+        .withIntent(BufferedCommandIntent.BUFFERED)
+        .filter(
+            r ->
+                ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
+                    == processInstanceKey)
+        .await();
 
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then - no orphan buffered command remains for the now-terminated root instance
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(processId)
+        .await();
     final List<Long> remainingBufferedCommands = new ArrayList<>();
-    suspensionState.visitBufferedCommands(
-        processInstanceKey, (key, command) -> remainingBufferedCommands.add(key));
+    ENGINE
+        .getProcessingState()
+        .getSuspensionState()
+        .visitBufferedCommands(
+            processInstanceKey, (key, command) -> remainingBufferedCommands.add(key));
     assertThat(remainingBufferedCommands)
         .describedAs("terminating a suspended root must clear its buffered commands")
         .isEmpty();

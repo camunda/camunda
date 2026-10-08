@@ -138,7 +138,15 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    *
    * <p>This event is a notification for exporters only. It doesn't change the engine state.
    */
-  RESUMED(25);
+  RESUMED(25),
+
+  /**
+   * Represents the `RESUME` command for a user task. The engine buffers it while suspending the
+   * process instance and drains it on resume, which writes {@link #RESUMED}.
+   *
+   * @apiNote The engine manages this command internally. It shouldn't be used via client APIs.
+   */
+  RESUME(26);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -210,6 +218,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return SUSPENDED;
       case 25:
         return RESUMED;
+      case 26:
+        return RESUME;
       default:
         return UNKNOWN;
     }

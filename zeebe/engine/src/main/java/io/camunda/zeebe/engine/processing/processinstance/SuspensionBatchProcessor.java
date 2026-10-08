@@ -22,20 +22,22 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBat
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.List;
 
 /**
  * Walks the element instance tree of a suspending process instance depth-first, one element
  * instance per command, and writes {@link ProcessInstanceIntent#SUSPENDED} once the walk is done.
  *
- * <p>Each command writes exactly one follow-up command, so the walk needs no recursion and its
- * batch size does not grow with the tree. Called process instances are not children of their call
- * activity in the element instance tree, so the walk does not enter them.
+ * <p>Each command writes exactly one follow-up command and runs in its own batch (see {@link
+ * #shouldProcessResultsInSeparateBatches}), so the walk needs no recursion and its batch size does
+ * not grow with the tree. Called process instances are not children of their call activity in the
+ * element instance tree, so the walk does not enter them.
  *
- * <p>Writes {@link UserTaskIntent#SUSPENDED} for each visited element instance with a user task,
- * whatever the task's lifecycle state.
+ * <p>Each visited element instance is passed to every {@link ElementInstanceSuspensionVisitor}, in
+ * order. The order matters, since commands buffered for resume drain in the order they were
+ * buffered.
  *
  * <p>Cursor of {@link SuspensionBatchIntent#SUSPEND_ELEMENT_INSTANCE}: {@code indexKey} is the
  * element instance to visit and {@code parentKey} is its parent, or {@code -1} for the process
@@ -64,10 +66,11 @@ public final class SuspensionBatchProcessor
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
   private final SuspensionState suspensionState;
-  private final UserTaskState userTaskState;
   private final SuspensionMetrics suspensionMetrics;
+  private final List<ElementInstanceSuspensionVisitor> visitors;
 
   private long foundChildKey;
+  private int bufferedCommands;
 
   public SuspensionBatchProcessor(
       final Writers writers,
@@ -82,8 +85,11 @@ public final class SuspensionBatchProcessor
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.suspensionState = suspensionState;
-    this.userTaskState = userTaskState;
     this.suspensionMetrics = suspensionMetrics;
+    final var bufferingBehavior =
+        new CommandBufferingBehavior(keyGenerator, writers, suspensionMetrics);
+    visitors =
+        List.of(new UserTaskSuspensionVisitor(stateWriter, bufferingBehavior, userTaskState));
   }
 
   @Override
@@ -97,6 +103,7 @@ public final class SuspensionBatchProcessor
     stateWriter.appendFollowUpEvent(
         command.getKey(), SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED, value);
 
+    bufferedCommands = 0;
     final boolean suspended =
         switch ((SuspensionBatchIntent) command.getIntent()) {
           case SUSPEND_ELEMENT_INSTANCE -> suspendElementInstance(value);
@@ -107,9 +114,21 @@ public final class SuspensionBatchProcessor
                   "Unexpected suspension batch intent " + command.getIntent());
         };
 
+    for (int i = 0; i < bufferedCommands; i++) {
+      suspensionMetrics.commandBuffered();
+    }
     if (suspended) {
       suspensionMetrics.instanceSuspended();
     }
+  }
+
+  /**
+   * Without this, the stream processor runs the follow-up commands in the same batch, up to its
+   * command limit, so a wide tree would put many visits into one log batch.
+   */
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
   }
 
   @Override
@@ -146,7 +165,7 @@ public final class SuspensionBatchProcessor
   /** Visits the element instance, then descends into its first child or moves on. */
   private boolean suspendElementInstance(final SuspensionBatchRecord value) {
     final long elementInstanceKey = value.getIndexKey();
-    suspendUserTask(elementInstanceKey);
+    visit(elementInstanceKey);
     final long firstChildKey = findChild(elementInstanceKey, NO_KEY);
     if (firstChildKey != NO_KEY) {
       appendSuspendElementInstance(value, firstChildKey, elementInstanceKey);
@@ -155,19 +174,13 @@ public final class SuspensionBatchProcessor
     return continueAfter(value, elementInstanceKey, value.getParentKey());
   }
 
-  /** Writes {@link UserTaskIntent#SUSPENDED} if the element instance has a user task. */
-  private void suspendUserTask(final long elementInstanceKey) {
+  private void visit(final long elementInstanceKey) {
     final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
     if (elementInstance == null) {
       return;
     }
-    final long userTaskKey = elementInstance.getUserTaskKey();
-    if (userTaskKey <= 0) {
-      return;
-    }
-    final var userTask = userTaskState.getUserTask(userTaskKey);
-    if (userTask != null) {
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.SUSPENDED, userTask);
+    for (final var visitor : visitors) {
+      bufferedCommands += visitor.visit(elementInstance);
     }
   }
 

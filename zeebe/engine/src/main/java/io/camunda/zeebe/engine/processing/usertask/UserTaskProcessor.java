@@ -63,6 +63,9 @@ public class UserTaskProcessor
   private static final String USER_TASK_VARIABLE_UPDATE_REJECTION =
       "Variable update for user task instance with key '%d' was denied by Task Listener. Reason to deny: '%s'";
 
+  private static final String USER_TASK_RESUME_NOT_FOUND =
+      "Expected to resume user task with key '%d', but no such user task was found";
+
   private final UserTaskCommandProcessors commandProcessors;
   private final ProcessState processState;
   private final MutableUserTaskState userTaskState;
@@ -117,8 +120,20 @@ public class UserTaskProcessor
           processOperationCommand(command, intent);
       case COMPLETE_TASK_LISTENER -> processCompleteTaskListener(command);
       case DENY_TASK_LISTENER -> processDenyTaskListener(command);
+      case RESUME -> processResume(command);
       default -> throw new UnsupportedOperationException("Unexpected user task intent: " + intent);
     }
+  }
+
+  private void processResume(final TypedRecord<UserTaskRecord> command) {
+    final long userTaskKey = command.getKey();
+    final var userTask = userTaskState.getUserTask(userTaskKey);
+    if (userTask == null) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.NOT_FOUND, USER_TASK_RESUME_NOT_FOUND.formatted(userTaskKey));
+      return;
+    }
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.RESUMED, userTask);
   }
 
   private void processCompleteTaskListener(final TypedRecord<UserTaskRecord> command) {
@@ -422,6 +437,9 @@ public class UserTaskProcessor
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<UserTaskRecord> record) {
-    return SuspensionAction.REJECT;
+    // RESUME is buffered by the suspension walk and drained while resuming
+    return record.getIntent() == UserTaskIntent.RESUME
+        ? SuspensionAction.PROCESS
+        : SuspensionAction.REJECT;
   }
 }

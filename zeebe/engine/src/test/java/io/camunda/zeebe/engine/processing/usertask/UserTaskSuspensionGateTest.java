@@ -13,17 +13,21 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -277,6 +281,108 @@ public final class UserTaskSuspensionGateTest {
     Assertions.assertThat(rejection)
         .hasIntent(JobIntent.COMPLETE)
         .hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  public void shouldResumeUserTasksBeforeProcessInstanceIsResumed() {
+    // given - task "b" waits on a creating listener, so it stays in CREATING
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("a", t -> t.zeebeUserTask())
+                .endEvent()
+                .moveToNode("fork")
+                .userTask(
+                    "b",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.creating().type(processId)))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long taskAKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+    final List<Long> taskKeys =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(2)
+            .map(Record::getKey)
+            .toList();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    // then
+    final var userTaskRecords =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getIntent() == ProcessInstanceIntent.RESUMED
+                        && r.getKey() == processInstanceKey)
+            .userTaskRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .asList();
+    final var suspendedKeys = keysWithIntent(userTaskRecords, UserTaskIntent.SUSPENDED);
+    assertThat(suspendedKeys).containsExactlyInAnyOrderElementsOf(taskKeys);
+    assertThat(keysWithIntent(userTaskRecords, UserTaskIntent.RESUMED))
+        .describedAs("Expect one RESUMED per task, in suspension order, before the instance")
+        .containsExactlyElementsOf(suspendedKeys);
+
+    // and - the task kept its lifecycle state, so it can still be completed
+    ENGINE.userTask().withKey(taskAKey).complete();
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
+                .withRecordKey(taskAKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldRejectResumeOfMissingUserTask() {
+    // given - the task completed after its RESUME was buffered
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", t -> t.zeebeUserTask())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long userTaskKey =
+        ENGINE.userTask().ofInstance(processInstanceKey).complete().getValue().getUserTaskKey();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .userTask(
+                UserTaskIntent.RESUME,
+                new UserTaskRecord()
+                    .setUserTaskKey(userTaskKey)
+                    .setProcessInstanceKey(processInstanceKey))
+            .key(userTaskKey));
+
+    // then
+    final var rejection =
+        RecordingExporter.userTaskRecords(UserTaskIntent.RESUME)
+            .onlyCommandRejections()
+            .withRecordKey(userTaskKey)
+            .getFirst();
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  private static List<Long> keysWithIntent(
+      final List<Record<UserTaskRecordValue>> records, final UserTaskIntent intent) {
+    return records.stream().filter(r -> r.getIntent() == intent).map(Record::getKey).toList();
   }
 
   private static void seedSuspending(final long processInstanceKey) {
