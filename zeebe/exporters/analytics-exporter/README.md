@@ -330,6 +330,12 @@ is incremented once per source record and carries the dimensions listed below.
 |---------------------------------------|-----------------------|-------------------------------------|---------------------|
 | `camunda.decision.instance.evaluated` | `{decision_instance}` | `DECISION_EVALUATION` / `EVALUATED` | `camunda.tenant.id` |
 
+Each flush that counted at least one record also emits the `camunda.metric.export_window` gauge
+(unit `{record}`): its value is the number of records counted in the window, and it carries
+`camunda.metric.sequence_number`, `camunda.log.position_start`, `camunda.log.position_end`,
+`camunda.event.time_min` and `camunda.event.time_max`, so consumers can reassign flush-time metric
+timestamps to event time.
+
 `camunda.decision.instance.evaluated` counts evaluation records, not the decisions inside them:
 a decision that requires sub-decisions still counts once, and failed evaluations are not counted,
 which is the same counting rule as the `EDI` usage metric. It is the authoritative per-tenant EDI

@@ -147,15 +147,6 @@ public class OtelSdkManager implements AutoCloseable {
         .emit();
   }
 
-  /** Increments the named counter by 1 and updates the export window tracking fields. */
-  public void incrementMetric(
-      final String metricName,
-      final long position,
-      final long eventTimeMs,
-      final Attributes dimensions) {
-    incrementMetric(metricName, "", position, eventTimeMs, dimensions);
-  }
-
   /**
    * Increments the named counter by 1 and updates the export window tracking fields. The unit is
    * the counter's contracted unit (for example {@code {decision_instance}}); it is fixed when the
