@@ -39,7 +39,9 @@ final class ExporterContainer implements Controller {
   private final ExporterContext context;
   private final Exporter exporter;
   private long position;
-  private boolean exporterIsSoftPaused = false;
+
+  private ExporterPhase phase = ExporterPhase.EXPORTING;
+
   private long lastUnacknowledgedPosition;
   private long lastAcknowledgedPosition;
   private byte[] lastExportedMetadata;
@@ -77,9 +79,7 @@ final class ExporterContainer implements Controller {
     this.actor = actor;
     this.metrics = metrics;
     exportersState = state;
-    if (phase == ExporterPhase.SOFT_PAUSED) {
-      softPauseExporter();
-    }
+    this.phase = phase;
   }
 
   private void initPosition() {
@@ -163,7 +163,7 @@ final class ExporterContainer implements Controller {
     if (position < eventPosition) {
       lastAcknowledgedPosition = eventPosition;
       lastExportedMetadata = metadata;
-      if (!exporterIsSoftPaused) {
+      if (phase == ExporterPhase.EXPORTING) {
         DirectBuffer metadataBuffer = null;
         if (metadata != null) {
           metadataBuffer = BufferUtil.wrapArray(metadata);
@@ -257,11 +257,19 @@ final class ExporterContainer implements Controller {
   }
 
   void softPauseExporter() {
-    exporterIsSoftPaused = true;
+    phase = ExporterPhase.SOFT_PAUSED;
   }
 
-  void undoSoftPauseExporter() {
-    exporterIsSoftPaused = false;
+  void hardPauseExporter() {
+    phase = ExporterPhase.PAUSED;
+  }
+
+  /**
+   * Resumes the exporter from either pause mode. Always flushes {@code lastAcknowledgedPosition}/
+   * {@code lastExportedMetadata}.
+   */
+  void resumeExporter() {
+    phase = ExporterPhase.EXPORTING;
     updateExporterState(lastAcknowledgedPosition, lastExportedMetadata);
   }
 

@@ -452,7 +452,7 @@ final class ExporterContainerTest {
       assertThat(exporterContainer.readMetadata()).isNotPresent();
 
       // when
-      exporterContainer.undoSoftPauseExporter();
+      exporterContainer.resumeExporter();
       awaitPreviousCall();
 
       // then
@@ -470,7 +470,7 @@ final class ExporterContainerTest {
       exporterContainer.softPauseExporter();
 
       // when
-      exporterContainer.undoSoftPauseExporter();
+      exporterContainer.resumeExporter();
       awaitPreviousCall();
 
       // then - position 0 must never be persisted, see #52257. Inspect the raw stored value
