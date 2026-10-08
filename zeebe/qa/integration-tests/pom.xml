@@ -742,6 +742,10 @@
           <systemPropertyVariables>
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
+          <environmentVariables>
+            <!-- read by SecretResolutionFromEnvVarStoreIT through an env var secret store -->
+            <SECRETSTOREIT_token>value-of-env-token</SECRETSTOREIT_token>
+          </environmentVariables>
         </configuration>
       </plugin>
       <plugin>

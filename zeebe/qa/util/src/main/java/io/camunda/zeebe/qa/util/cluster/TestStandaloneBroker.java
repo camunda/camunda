@@ -14,6 +14,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.Secrets.EnvStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
@@ -239,6 +240,21 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     final var store = new FileStore();
     store.setPath(secretStoreDirectory.toString());
     unifiedConfig.getSecrets().getStores().getFile().put(SECRET_STORE_ID, store);
+    return this;
+  }
+
+  /**
+   * Configures an environment variable secret store reading the variables of this JVM that start
+   * with {@code prefix}. The broker runs in the test's JVM, so the variables have to be set on the
+   * process running the tests, e.g. through the build's test runner configuration.
+   *
+   * @param prefix the prefix every secret variable carries
+   * @return itself for chaining
+   */
+  public TestStandaloneBroker withEnvVarSecretStore(final String prefix) {
+    final var store = new EnvStore();
+    store.setPrefix(prefix);
+    unifiedConfig.getSecrets().getStores().getEnv().put(SECRET_STORE_ID, store);
     return this;
   }
 
