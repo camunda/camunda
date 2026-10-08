@@ -234,15 +234,10 @@ public record CurrentClusterConfiguration(
    *
    * <p>This is a pure, side-effect-free conversion: the returned pending plan (if any) is built at
    * phase 0 but is <em>not</em> activated into the default group — the default group's own {@code
-   * pendingChanges} stays empty. Activating phase 0 (via {@link #applyPhase}) is deliberately left
-   * to the caller, because this factory is invoked both for genuine one-time migrations (e.g.
-   * {@code PersistedCurrentClusterConfiguration} upgrading an on-disk v1 file, exactly once per
-   * broker) and for repeated, read-only re-derivations of a legacy view (e.g. {@code
-   * BrokerTopologyManagerImpl#onClusterConfigurationUpdated(ClusterConfiguration)}, invoked on
-   * every gossip update). Auto-activating here would re-run {@code startConfigurationChange} on a
-   * freshly-built (and therefore never-"pending") default group on every such repeated call,
-   * endlessly restarting an already in-progress plan from scratch. Callers that are performing a
-   * genuine one-time migration should call {@link #activatePendingPhase()} explicitly afterwards.
+   * pendingChanges} stays empty. Activation (via {@link #activatePendingPhase()}) is deliberately
+   * left to the caller so converting a legacy configuration does not itself start the pending
+   * change. {@code PersistedCurrentClusterConfiguration} explicitly activates the plan after
+   * converting an on-disk v1 file.
    *
    * @throws IllegalStateException if the legacy {@code lastChange} has {@code IN_PROGRESS} status
    */

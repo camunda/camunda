@@ -134,8 +134,8 @@ public final class PersistedCurrentClusterConfiguration {
       case VERSION_LEGACY -> {
         // One-time migration: activate the pending plan's phase 0 (if any) so this broker
         // continues driving it forward under the new model, exactly as initPlan would for a
-        // freshly-started plan. fromLegacy() itself stays a pure conversion since it is also used
-        // for repeated, read-only re-derivations elsewhere (see its javadoc).
+        // freshly-started plan. fromLegacy() stays a pure conversion; migration decides explicitly
+        // when to start the pending change.
         final var migratedConfig =
             CurrentClusterConfiguration.fromLegacy(
                     serializer.decodeClusterTopology(

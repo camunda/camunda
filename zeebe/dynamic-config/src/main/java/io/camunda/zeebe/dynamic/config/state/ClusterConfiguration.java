@@ -38,10 +38,9 @@ import java.util.stream.Stream;
  *     sub-configuration carries the {@link DependencyChangePlan} that sub-configuration is running,
  *     so a consumer reading it in-process sees the real change — including that several of its
  *     operations may be running at once. It is flattened to a {@link ClusterChangePlan} only where
- *     the wire demands one, when {@code ProtoBufSerializer} encodes the legacy {@code
- *     ClusterTopology} message a broker without the graph model reads (see {@link
- *     ClusterChangePlan#flatten(ChangePlan)}), which is therefore also the only shape a
- *     configuration decoded from that message can hold.
+ *     the persisted legacy format demands one, when {@code ProtoBufSerializer} encodes the {@code
+ *     ClusterTopology} message (see {@link ClusterChangePlan#flatten(ChangePlan)}), which is
+ *     therefore also the only shape a configuration decoded from that format can hold.
  * @param incarnationNumber - represents the incarnation number of the cluster configuration
  *     <p>This class is immutable. Each mutable methods returns a new instance with the updated
  *     state.
