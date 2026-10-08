@@ -42,8 +42,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * REST counterpart of {@link PhysicalTenantGrpcOidcClaimMappingIT}, the regression test for <a
  * href="https://github.com/camunda/camunda/issues/64685">camunda/camunda#64685</a>: the REST API
  * rejected a bearer token issued for a physical tenant's own OIDC provider with {@code 401} while
- * gRPC accepted it, because the REST bearer path resolved every token with the cluster-default claim
- * configuration instead of the tenant's own.
+ * gRPC accepted it, because the REST bearer path resolved every token with the cluster-default
+ * claim configuration instead of the tenant's own.
  *
  * <p>All PTs trust the SAME issuer (one shared Keycloak realm), so the issuer alone cannot be the
  * discriminator — exactly the hard case. Each PT maps identity from its OWN distinct custom claim
@@ -53,23 +53,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * ({@code root-id}) that none of the per-tenant tokens carry: so before the fix, a tenant's own
  * token — resolved with the root config on the REST path — matched neither claim and was rejected
  * with {@code 401}. After the fix (per-scope bearer-token claim resolution in the
- * camunda-security-library), the REST path resolves each tenant's token with that tenant's own claim
- * configuration, mirroring gRPC.
+ * camunda-security-library), the REST path resolves each tenant's token with that tenant's own
+ * claim configuration, mirroring gRPC.
  *
  * <p>Tests call {@code newOwnAuthorizationSearchRequest()} over REST ({@code
  * preferRestOverGrpc(true)}), which maps to {@code POST
  * /physical-tenants/<id>/v2/authentication/me/authorizations/search}: the controller resolves the
  * current principal via {@code CamundaAuthenticationProvider#getCamundaAuthentication()} (returning
- * {@code 401} when it cannot be resolved), so it actually exercises the REST bearer claim conversion
- * — unlike {@code /v2/topology}, which only validates the JWT. In-memory H2 ({@link
+ * {@code 401} when it cannot be resolved), so it actually exercises the REST bearer claim
+ * conversion — unlike {@code /v2/topology}, which only validates the JWT. In-memory H2 ({@link
  * Storage#rdbmsH2}) backs the authorization store the endpoint reads; it needs no container. Tokens
  * come from the same OAuth client the gRPC counterpart uses, so they are byte-for-byte what the
  * per-tenant decoder already accepts.
  *
  * <p><b>Dependency note:</b> this test only passes once the monorepo consumes a
  * camunda-security-library version that contains the per-scope bearer-token claim-resolution fix
- * (camunda-security-library#712). Until that version bump lands it is expected to fail with the very
- * {@code 401} it guards against, which is why the PR carrying it is opened as a draft.
+ * (camunda-security-library#712). Until that version bump lands it is expected to fail with the
+ * very {@code 401} it guards against, which is why the PR carrying it is opened as a draft.
  */
 @Testcontainers
 @ZeebeIntegration
@@ -89,14 +89,16 @@ final class PhysicalTenantRestOidcClaimMappingIT {
   private static final String CLIENT_SECRET_ROOT = "secret-root";
   private static final String CLAIM_A = "client-a-id";
   private static final String CLAIM_B = "client-b-id";
-  // The cluster-default claim that NO per-tenant token carries — this is what makes the pre-fix REST
+  // The cluster-default claim that NO per-tenant token carries — this is what makes the pre-fix
+  // REST
   // path reject a tenant's own token with 401 (it resolves against this root claim).
   private static final String CLAIM_ROOT = "root-id";
   private static final String AUDIENCE = "zeebe";
 
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
-          .withTenant(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.rdbmsH2("rest-oidc-default"))
+          .withTenant(
+              PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.rdbmsH2("rest-oidc-default"))
           .withTenant(TENANT_A, Storage.rdbmsH2("rest-oidc-tenanta"))
           .withTenant(TENANT_B, Storage.rdbmsH2("rest-oidc-tenantb"))
           .build();
@@ -159,7 +161,8 @@ final class PhysicalTenantRestOidcClaimMappingIT {
 
   @Test
   void shouldAcceptTenantOwnTokenOverRest() {
-    // The exact #64685 regression: a token issued for PT-A's own provider must be accepted on PT-A's
+    // The exact #64685 regression: a token issued for PT-A's own provider must be accepted on
+    // PT-A's
     // REST surface. Before the fix the REST path resolved it with the cluster-default (CLAIM_ROOT),
     // found neither claim, and rejected it with 401; gRPC accepted the same token.
     assertThatNoException()
@@ -173,10 +176,13 @@ final class PhysicalTenantRestOidcClaimMappingIT {
 
   @Test
   void shouldRejectTokenOnTenantThatDoesNotMapItsClaimOverRest() {
-    // Isolation is preserved: a token is accepted only on the PT whose claim it actually carries. On
-    // the other PT neither of that tenant's claims resolves, so the principal cannot be built and the
+    // Isolation is preserved: a token is accepted only on the PT whose claim it actually carries.
+    // On
+    // the other PT neither of that tenant's claims resolves, so the principal cannot be built and
+    // the
     // request is rejected with a client error. The exact code depends on where resolution runs: the
-    // /me/authorizations/search controller resolves the principal lazily, so the unresolvable-claims
+    // /me/authorizations/search controller resolves the principal lazily, so the
+    // unresolvable-claims
     // IllegalArgumentException surfaces as 400; an endpoint that resolves it inside the security
     // filter would surface 401. Either way the token is rejected — what matters for isolation.
     assertThatThrownBy(() -> clientAOnB.newOwnAuthorizationSearchRequest().send().join())
