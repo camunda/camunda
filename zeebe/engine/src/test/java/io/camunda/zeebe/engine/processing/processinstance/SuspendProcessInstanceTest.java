@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -209,10 +210,12 @@ public final class SuspendProcessInstanceTest {
                 .embeddedSubProcess()
                 .startEvent()
                 .parallelGateway("fork")
-                .userTask("a")
+                .userTask("a", t -> t.zeebeUserTask())
                 .endEvent()
                 .moveToNode("fork")
-                .userTask("b")
+                .userTask(
+                    "b",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.creating().type(processId)))
                 .endEvent()
                 .subProcessDone()
                 .endEvent()
@@ -233,6 +236,10 @@ public final class SuspendProcessInstanceTest {
             .withElementId("sub")
             .getFirst()
             .getKey();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATING)
+        .withProcessInstanceKey(processInstanceKey)
+        .limit(2)
+        .await();
 
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
@@ -246,6 +253,9 @@ public final class SuspendProcessInstanceTest {
             tuple(SUSPEND_ELEMENT_INSTANCE, taskKeys.get(1), subProcessKey),
             tuple(COMPLETE_SUSPENDING_ELEMENT_INSTANCE, subProcessKey, processInstanceKey),
             tuple(COMPLETE_SUSPENDING_ELEMENT_INSTANCE, processInstanceKey, -1L));
+    assertThat(suspendedUserTasks(processInstanceKey))
+        .describedAs("Expect one SUSPENDED per task, whatever its lifecycle state")
+        .containsExactlyElementsOf(taskKeys);
   }
 
   @Test
@@ -257,7 +267,11 @@ public final class SuspendProcessInstanceTest {
         .deployment()
         .withXmlResource(
             "child.bpmn",
-            Bpmn.createExecutableProcess(childProcessId).startEvent().userTask().endEvent().done())
+            Bpmn.createExecutableProcess(childProcessId)
+                .startEvent()
+                .userTask("task", t -> t.zeebeUserTask())
+                .endEvent()
+                .done())
         .withXmlResource(
             "parent.bpmn",
             Bpmn.createExecutableProcess(processId)
@@ -287,6 +301,16 @@ public final class SuspendProcessInstanceTest {
             tuple(SUSPEND_ELEMENT_INSTANCE, processInstanceKey, -1L),
             tuple(SUSPEND_ELEMENT_INSTANCE, callActivityKey, processInstanceKey),
             tuple(COMPLETE_SUSPENDING_ELEMENT_INSTANCE, processInstanceKey, -1L));
+    assertThat(suspendedUserTasks(processInstanceKey)).isEmpty();
+  }
+
+  /** Returns the element instance keys of user tasks suspended until the given one is suspended. */
+  private static List<Long> suspendedUserTasks(final long processInstanceKey) {
+    return RecordingExporter.records()
+        .limit(r -> r.getIntent() == SUSPENDED && r.getKey() == processInstanceKey)
+        .filter(r -> r.getIntent() == UserTaskIntent.SUSPENDED)
+        .map(r -> ((UserTaskRecordValue) r.getValue()).getElementInstanceKey())
+        .toList();
   }
 
   /** Returns the walk commands of all process instances until the given one is suspended. */

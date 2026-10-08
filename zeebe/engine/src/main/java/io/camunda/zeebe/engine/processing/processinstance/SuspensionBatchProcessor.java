@@ -17,10 +17,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -31,6 +33,9 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
  * <p>Each command writes exactly one follow-up command, so the walk needs no recursion and its
  * batch size does not grow with the tree. Called process instances are not children of their call
  * activity in the element instance tree, so the walk does not enter them.
+ *
+ * <p>Writes {@link UserTaskIntent#SUSPENDED} for each visited element instance with a user task,
+ * whatever the task's lifecycle state.
  *
  * <p>Cursor of {@link SuspensionBatchIntent#SUSPEND_ELEMENT_INSTANCE}: {@code indexKey} is the
  * element instance to visit and {@code parentKey} is its parent, or {@code -1} for the process
@@ -59,6 +64,7 @@ public final class SuspensionBatchProcessor
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
   private final SuspensionState suspensionState;
+  private final UserTaskState userTaskState;
   private final SuspensionMetrics suspensionMetrics;
 
   private long foundChildKey;
@@ -68,6 +74,7 @@ public final class SuspensionBatchProcessor
       final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState,
       final SuspensionState suspensionState,
+      final UserTaskState userTaskState,
       final SuspensionMetrics suspensionMetrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -75,6 +82,7 @@ public final class SuspensionBatchProcessor
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.suspensionState = suspensionState;
+    this.userTaskState = userTaskState;
     this.suspensionMetrics = suspensionMetrics;
   }
 
@@ -138,12 +146,29 @@ public final class SuspensionBatchProcessor
   /** Visits the element instance, then descends into its first child or moves on. */
   private boolean suspendElementInstance(final SuspensionBatchRecord value) {
     final long elementInstanceKey = value.getIndexKey();
+    suspendUserTask(elementInstanceKey);
     final long firstChildKey = findChild(elementInstanceKey, NO_KEY);
     if (firstChildKey != NO_KEY) {
       appendSuspendElementInstance(value, firstChildKey, elementInstanceKey);
       return false;
     }
     return continueAfter(value, elementInstanceKey, value.getParentKey());
+  }
+
+  /** Writes {@link UserTaskIntent#SUSPENDED} if the element instance has a user task. */
+  private void suspendUserTask(final long elementInstanceKey) {
+    final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+    if (elementInstance == null) {
+      return;
+    }
+    final long userTaskKey = elementInstance.getUserTaskKey();
+    if (userTaskKey <= 0) {
+      return;
+    }
+    final var userTask = userTaskState.getUserTask(userTaskKey);
+    if (userTask != null) {
+      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.SUSPENDED, userTask);
+    }
   }
 
   /**
