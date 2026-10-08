@@ -14,7 +14,9 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import java.util.Map;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
@@ -37,11 +39,13 @@ public class SecondaryStorageReadinessConfiguration {
   public SecondaryStorageReadiness searchEngineSecondaryStorageReadiness(
       final PhysicalTenantIds physicalTenantIds,
       final SchemaManagerContainer schemaManagerContainer,
-      final ObjectProvider<BrokerTopologyManager> brokerTopologyManager) {
+      final ObjectProvider<BrokerTopologyManager> brokerTopologyManager,
+      final ObjectProvider<SchemaInitializer> schemaInitializer) {
     return new SchemaInitializationSecondaryStorageReadiness(
         physicalTenantIds,
         schemaManagerContainer::isInitialized,
-        recovering(brokerTopologyManager));
+        recovering(brokerTopologyManager),
+        statuses(schemaInitializer));
   }
 
   @Bean
@@ -49,11 +53,13 @@ public class SecondaryStorageReadinessConfiguration {
   public SecondaryStorageReadiness rdbmsSecondaryStorageReadiness(
       final PhysicalTenantIds physicalTenantIds,
       final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
-      final ObjectProvider<BrokerTopologyManager> brokerTopologyManager) {
+      final ObjectProvider<BrokerTopologyManager> brokerTopologyManager,
+      final ObjectProvider<SchemaInitializer> schemaInitializer) {
     return new SchemaInitializationSecondaryStorageReadiness(
         physicalTenantIds,
         rdbmsSchemaManagerRegistry::isInitialized,
-        recovering(brokerTopologyManager));
+        recovering(brokerTopologyManager),
+        statuses(schemaInitializer));
   }
 
   @Bean
@@ -68,6 +74,15 @@ public class SecondaryStorageReadinessConfiguration {
     return physicalTenantId -> {
       final var topologyManager = brokerTopologyManager.getIfAvailable();
       return topologyManager != null && topologyManager.isRecoveringOrUnknown(physicalTenantId);
+    };
+  }
+
+  /** None on a node without a schema initializer. */
+  private static Supplier<Map<String, SchemaInitializationStatus>> statuses(
+      final ObjectProvider<SchemaInitializer> schemaInitializer) {
+    return () -> {
+      final var initializer = schemaInitializer.getIfAvailable();
+      return initializer == null ? Map.of() : initializer.statuses();
     };
   }
 

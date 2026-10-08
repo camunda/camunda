@@ -39,6 +39,11 @@ public interface SecondaryStorageReadiness {
         public boolean isRecovering(final String physicalTenantId) {
           return false;
         }
+
+        @Override
+        public NodeReadiness nodeReadiness() {
+          return NodeReadiness.READY;
+        }
       };
 
   /**
@@ -61,4 +66,17 @@ public interface SecondaryStorageReadiness {
    *     while brokers of it are visible; such a tenant is not ready, whatever its schema state.
    */
   boolean isRecovering(String physicalTenantId);
+
+  /**
+   * @return how ready the node is across its physical tenants: {@link NodeReadiness#READY} when
+   *     every tenant is ready, {@link NodeReadiness#NOT_READY} when every tenant stopped without
+   *     becoming ready, {@link NodeReadiness#DEGRADED} otherwise.
+   */
+  NodeReadiness nodeReadiness();
+
+  enum NodeReadiness {
+    READY,
+    DEGRADED,
+    NOT_READY
+  }
 }

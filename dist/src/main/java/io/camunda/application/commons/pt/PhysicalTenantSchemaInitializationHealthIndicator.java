@@ -7,7 +7,7 @@
  */
 package io.camunda.application.commons.pt;
 
-import java.util.Collection;
+import io.camunda.cluster.SecondaryStorageReadiness.NodeReadiness;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -54,30 +54,22 @@ public final class PhysicalTenantSchemaInitializationHealthIndicator implements 
     final var details = new LinkedHashMap<String, Object>();
     statusesByTenant.forEach(
         (tenantId, status) -> details.put(tenantId, detailsOf(statusOf(status.state()), status)));
-    return Health.status(rollUp(statusesByTenant.values())).withDetails(details).build();
+    final var overall =
+        SchemaInitializationSecondaryStorageReadiness.rollUp(
+            statusesByTenant.values().stream().map(SchemaInitializationStatus::state).toList());
+    return Health.status(statusOf(overall)).withDetails(details).build();
   }
 
-  /** UP if every tenant is, DOWN if every tenant is, DEGRADED otherwise. */
-  public static Status rollUp(final Collection<SchemaInitializationStatus> statuses) {
-    var allUp = true;
-    var allDown = !statuses.isEmpty();
-    for (final var status : statuses) {
-      final var tenantStatus = statusOf(status.state());
-      allUp &= Status.UP.equals(tenantStatus);
-      allDown &= Status.DOWN.equals(tenantStatus);
-    }
-    if (allUp) {
-      return Status.UP;
-    }
-    return allDown ? Status.DOWN : DEGRADED;
+  public static Status statusOf(final NodeReadiness readiness) {
+    return switch (readiness) {
+      case READY -> Status.UP;
+      case DEGRADED -> DEGRADED;
+      case NOT_READY -> Status.DOWN;
+    };
   }
 
   private static Status statusOf(final SchemaInitializationStatus.State state) {
-    return switch (state) {
-      case INITIALIZED -> Status.UP;
-      case INITIALIZING, RETRYING, RECOVERING -> DEGRADED;
-      case FAILED, GAVE_UP, ABORTED -> Status.DOWN;
-    };
+    return statusOf(SchemaInitializationSecondaryStorageReadiness.readinessOf(state));
   }
 
   /**
