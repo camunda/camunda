@@ -1598,6 +1598,7 @@
 					"resultCountMore": "{{count}}+ results"
 				},
 				"diagramShell": {
+					"loading": "Loading diagram",
 					"forbiddenMessage": "Missing permissions to view the Definition",
 					"forbiddenAdditionalInfo": "Contact your organization owner or admin to give you the necessary permissions to read this definition"
 				},
