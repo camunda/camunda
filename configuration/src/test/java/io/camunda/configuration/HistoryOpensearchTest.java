@@ -196,7 +196,7 @@ public class HistoryOpensearchTest {
     }
 
     @Test
-    void shouldDefaultArchiveByIdEnabledToTrue() {
+    void shouldDefaultRolloverBatchSize() {
       final ExporterConfiguration exporterConfiguration =
           getExporterConfiguration(brokerBasedProperties);
 
