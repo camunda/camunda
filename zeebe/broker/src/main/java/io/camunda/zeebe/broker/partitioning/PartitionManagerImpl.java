@@ -81,6 +81,7 @@ public final class PartitionManagerImpl
   private final TopologyManagerImpl topologyManager;
   private final BrokerHealthCheckService healthCheckService;
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
+  private volatile boolean stopped = false;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerClient brokerClient;
   private final DefaultPartitionManagementService managementService;
@@ -321,6 +322,7 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> stop() {
+    stopped = true;
     clusterConfigurationService.removePartitionChangeExecutor(partitionGroup);
 
     final var result = concurrencyControl.<Void>createFuture();
@@ -343,6 +345,12 @@ public final class PartitionManagerImpl
   }
 
   private ActorFuture<Void> startPartitions(final CurrentClusterConfiguration configuration) {
+    if (stopped) {
+      LOGGER.info(
+          "Not starting the partitions of partition group {}, the manager was stopped",
+          partitionGroup);
+      return CompletableActorFuture.completed();
+    }
     final var localMemberId = localMemberId();
     final var memberPartitions = localPartitions(configuration);
 
