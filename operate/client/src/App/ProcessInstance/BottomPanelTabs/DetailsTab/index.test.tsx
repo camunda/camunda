@@ -530,6 +530,31 @@ describe('<DetailsTab />', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should search the user task even when tasklistUrl is not configured', async () => {
+    const fetchSpy = vi.spyOn(window, 'fetch');
+    mockFetchProcessDefinitionXml().withSuccess(CAMUNDA_USER_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    });
+    mockSearchUserTasks().withSuccess(searchResult([mockUserTask]));
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        fetchSpy.mock.calls.some(([input]) =>
+          String(input instanceof Request ? input.url : input).includes(
+            'user-tasks/search',
+          ),
+        ),
+      ).toBe(true);
+    });
+  });
+
   it('should not display open tasklist link for non-user-task elements', async () => {
     vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
       ...clientConfig.getClientConfig(),
