@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Optional;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Holds configuration for the {@link S3BackupStore S3 Backup Store}.
@@ -132,18 +133,18 @@ public record S3BackupConfig(
 
   public static class Builder {
 
-    private String bucketName;
-    private String endpoint;
-    private String region;
-    private Duration apiCallTimeoutMs;
+    private @Nullable String bucketName;
+    private @Nullable String endpoint;
+    private @Nullable String region;
+    private @Nullable Duration apiCallTimeoutMs;
     private boolean forcePathStyleAccess = false;
-    private String compressionAlgorithm;
-    private Credentials credentials;
-    private String basePath;
+    private @Nullable String compressionAlgorithm;
+    private @Nullable Credentials credentials;
+    private @Nullable String basePath;
     private boolean supportLegacyMd5 = false;
-    private String ssecKey;
-    private Duration readTimeout;
-    private Duration writeTimeout;
+    private @Nullable String ssecKey;
+    private @Nullable Duration readTimeout;
+    private @Nullable Duration writeTimeout;
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -222,6 +223,9 @@ public record S3BackupConfig(
     }
 
     public S3BackupConfig build() {
+      if (bucketName == null) {
+        throw new IllegalArgumentException("Bucket name must not be empty.");
+      }
       return new S3BackupConfig(
           bucketName,
           Optional.ofNullable(endpoint),

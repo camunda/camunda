@@ -56,6 +56,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -73,6 +74,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CommonPrefix;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
@@ -401,7 +403,7 @@ public final class S3BackupStore implements BackupStore {
     return client
         .headBucket(HeadBucketRequest.builder().bucket(config.bucketName()).build())
         .whenCompleteAsync(
-            (ignore, err) -> {
+            (HeadBucketResponse ignore, @Nullable Throwable err) -> {
               if (err != null) {
                 throw new ConfigurationException("Failed to connect to S3", err);
               }

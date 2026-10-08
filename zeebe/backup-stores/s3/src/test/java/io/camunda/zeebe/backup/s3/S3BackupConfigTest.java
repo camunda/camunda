@@ -42,6 +42,14 @@ final class S3BackupConfigTest {
   }
 
   @Test
+  void shouldRejectBuildWithoutBucketName() {
+    // when - then
+    assertThatThrownBy(() -> new Builder().build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Bucket name must not be empty.");
+  }
+
+  @Test
   void shouldRejectSsecKeyThatDoesNotDecodeTo32Bytes() {
     // given
     final var shortKey =
