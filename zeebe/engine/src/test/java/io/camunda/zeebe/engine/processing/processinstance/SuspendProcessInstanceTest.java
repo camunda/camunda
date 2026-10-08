@@ -259,6 +259,46 @@ public final class SuspendProcessInstanceTest {
   }
 
   @Test
+  public void shouldNotSuspendTerminatingUserTask() {
+    // given - an interrupting boundary event terminates the task, and a canceling task listener
+    // keeps the task in ELEMENT_TERMINATING
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(
+                    "task",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.canceling().type(processId)))
+                .boundaryEvent(
+                    "boundary",
+                    b -> b.message(m -> m.name(processId).zeebeCorrelationKeyExpression("\"key\"")))
+                .endEvent()
+                .moveToActivity("task")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.message().withName(processId).withCorrelationKey("key").publish();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(processId)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // then
+    assertThat(suspendedUserTasks(processInstanceKey))
+        .describedAs("Expect no SUSPENDED for a user task that is about to be canceled")
+        .isEmpty();
+  }
+
+  @Test
   public void shouldNotVisitCalledProcessInstance() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
@@ -302,6 +342,55 @@ public final class SuspendProcessInstanceTest {
             tuple(SUSPEND_ELEMENT_INSTANCE, callActivityKey, processInstanceKey),
             tuple(COMPLETE_SUSPENDING_ELEMENT_INSTANCE, processInstanceKey, -1L));
     assertThat(suspendedUserTasks(processInstanceKey)).isEmpty();
+  }
+
+  @Test
+  public void shouldProcessEachWalkCommandInItsOwnBatch() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("a", t -> t.zeebeUserTask())
+                .endEvent()
+                .moveToNode("fork")
+                .userTask("b", t -> t.zeebeUserTask())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .limit(2)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // then
+    final var walkRecords =
+        RecordingExporter.records()
+            .limit(r -> r.getIntent() == SUSPENDED && r.getKey() == processInstanceKey)
+            .filter(r -> r.getValueType() == ValueType.SUSPENSION_BATCH)
+            .toList();
+    final var commandPositions =
+        walkRecords.stream()
+            .filter(r -> r.getRecordType() == RecordType.COMMAND)
+            .map(Record::getPosition)
+            .toList();
+    final var eventSourcePositions =
+        walkRecords.stream()
+            .filter(r -> r.getRecordType() == RecordType.EVENT)
+            .map(Record::getSourceRecordPosition)
+            .toList();
+    assertThat(commandPositions).hasSize(4);
+    // the first walk command is written by SUSPEND and runs in that command's batch
+    assertThat(eventSourcePositions.subList(1, 4))
+        .describedAs("Expect each walk command to be processed in its own batch")
+        .containsExactlyElementsOf(commandPositions.subList(1, 4));
   }
 
   /** Returns the element instance keys of user tasks suspended until the given one is suspended. */

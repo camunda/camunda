@@ -10,8 +10,11 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -51,7 +54,26 @@ public final class CommandBufferingBehavior {
    * by this key, so it must be the real instance key for the command to drain on resume.
    */
   public void bufferCommand(final TypedRecord<?> command, final long processInstanceKey) {
-    final var commandValue = command.getValue();
+    appendBufferedCommand(
+        command.getKey(),
+        command.getValueType(),
+        command.getIntent(),
+        command.getValue(),
+        processInstanceKey);
+    suspensionMetrics.commandBuffered();
+  }
+
+  /**
+   * Buffers a command created by the engine itself, to be written when the process instance is
+   * resumed. Unlike {@link #bufferCommand}, it doesn't record the buffered-command metric, so the
+   * caller can record it after all its other writes.
+   */
+  public void appendBufferedCommand(
+      final long commandKey,
+      final ValueType valueType,
+      final Intent intent,
+      final UnifiedRecordValue commandValue,
+      final long processInstanceKey) {
     final String tenantId =
         commandValue instanceof final TenantOwned tenantOwned
             ? tenantOwned.getTenantId()
@@ -66,9 +88,9 @@ public final class CommandBufferingBehavior {
             .setProcessInstanceKey(processInstanceKey)
             .setProcessDefinitionKey(processDefinitionKey)
             .setTenantId(tenantId)
-            .setCommandKey(command.getKey())
-            .setValueType(command.getValueType())
-            .setIntent(command.getIntent())
+            .setCommandKey(commandKey)
+            .setValueType(valueType)
+            .setIntent(intent)
             .setCommandValue(commandValue);
 
     final long bufferedCommandKey = keyGenerator.nextKey();
@@ -76,6 +98,5 @@ public final class CommandBufferingBehavior {
         .state()
         .appendFollowUpEvent(
             bufferedCommandKey, BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
-    suspensionMetrics.commandBuffered();
   }
 }
