@@ -42,34 +42,20 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * REST counterpart of {@link PhysicalTenantGrpcOidcClaimMappingIT}, the regression test for <a
  * href="https://github.com/camunda/camunda/issues/64685">camunda/camunda#64685</a>: the REST API
  * rejected a bearer token issued for a physical tenant's own OIDC provider with {@code 401} while
- * gRPC accepted it, because the REST bearer path resolved every token with the cluster-default
- * claim configuration instead of the tenant's own.
+ * gRPC accepted it.
  *
- * <p>All PTs trust the SAME issuer (one shared Keycloak realm), so the issuer alone cannot be the
- * discriminator — exactly the hard case. Each PT maps identity from its OWN distinct custom claim
- * (used as both {@code usernameClaim} and {@code clientIdClaim}), and each client's token carries a
- * distinct custom claim (injected via a Keycloak hardcoded-claim mapper). Crucially, the
- * cluster-default (root / {@code default} physical tenant) resolves identity from a custom claim
- * ({@code root-id}) that none of the per-tenant tokens carry: so before the fix, a tenant's own
- * token — resolved with the root config on the REST path — matched neither claim and was rejected
- * with {@code 401}. After the fix (per-scope bearer-token claim resolution in the
- * camunda-security-library), the REST path resolves each tenant's token with that tenant's own
- * claim configuration, mirroring gRPC.
+ * <p>The hard case this guards: all PTs share ONE issuer (a single Keycloak realm), so the issuer
+ * cannot discriminate them; each PT instead maps identity from its OWN custom claim, and the
+ * cluster-default resolves from a claim ({@code root-id}) that no per-tenant token carries. Before
+ * the fix the REST path resolved every token with that cluster-default config, so a tenant's own
+ * token matched no claim and was rejected with {@code 401}; the fix resolves each token with the
+ * target tenant's own claim config, mirroring gRPC.
  *
- * <p>Tests call {@code newOwnAuthorizationSearchRequest()} over REST ({@code
- * preferRestOverGrpc(true)}), which maps to {@code POST
- * /physical-tenants/<id>/v2/authentication/me/authorizations/search}: the controller resolves the
- * current principal via {@code CamundaAuthenticationProvider#getCamundaAuthentication()} (returning
- * {@code 401} when it cannot be resolved), so it actually exercises the REST bearer claim
- * conversion — unlike {@code /v2/topology}, which only validates the JWT. In-memory H2 ({@link
- * Storage#rdbmsH2}) backs the authorization store the endpoint reads; it needs no container. Tokens
- * come from the same OAuth client the gRPC counterpart uses, so they are byte-for-byte what the
- * per-tenant decoder already accepts.
- *
- * <p><b>Dependency note:</b> this test only passes once the monorepo consumes a
- * camunda-security-library version that contains the per-scope bearer-token claim-resolution fix
- * (camunda-security-library#712). Until that version bump lands it is expected to fail with the
- * very {@code 401} it guards against, which is why the PR carrying it is opened as a draft.
+ * <p>Tests go through {@code newOwnAuthorizationSearchRequest()} over REST ({@code
+ * preferRestOverGrpc(true)}) because that endpoint resolves the principal (returning {@code 401}
+ * when it cannot), so it actually exercises bearer claim conversion — unlike {@code /v2/topology},
+ * which only validates the JWT. In-memory H2 ({@link Storage#rdbmsH2}) backs the authorization
+ * store it reads.
  */
 @Testcontainers
 @ZeebeIntegration

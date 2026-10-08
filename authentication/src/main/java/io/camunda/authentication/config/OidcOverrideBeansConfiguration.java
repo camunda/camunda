@@ -131,24 +131,17 @@ public class OidcOverrideBeansConfiguration {
   /**
    * REST bearer-token converter.
    *
-   * <p>{@code tokenClaimsConvertersByIssuer} is CSL's per-issuer map of {@link
-   * LazyTokenClaimsConverter}s (see {@code OidcBeansConfiguration}), built from every configured
-   * provider's own {@code usernameClaim}/{@code clientIdClaim}/{@code preferUsernameClaim} —
-   * without it, a bearer token from any non-default provider (e.g. a BYOIDP additional IdP) is
-   * misclassified using the primary provider's claim config instead of its own (issue #61920). That
-   * map is used for the cluster/default surface.
+   * <p>Per-issuer: {@code tokenClaimsConvertersByIssuer} (CSL's map, keyed by {@code iss}) resolves
+   * a token from any configured provider with that provider's own claim config, not the primary
+   * provider's (issue #61920); it serves the cluster/default surface.
    *
-   * <p>On top of per-issuer selection, the converter is made PHYSICAL-TENANT-AWARE
-   * (camunda/camunda#64685): when physical tenants are configured, a bearer token on {@code
-   * /physical-tenants/<id>/v2/**} is resolved with THAT tenant's own claim configuration, selected
-   * by {@link io.camunda.spring.utils.PhysicalTenantContext} at conversion time. Per-issuer
-   * selection alone is insufficient here: {@code physicalTenantClusterAuthUnification} collapses
-   * CSL's cluster config to the default tenant, so the per-issuer map holds only the default
-   * tenant's providers; a non-default tenant's token would otherwise fall back to the default/root
-   * claim config and be rejected with {@code 401}. Two tenants may also legitimately share one
-   * issuer with different claims, which an issuer-only key cannot tell apart. This mirrors the
-   * per-provider login converter ({@link #oidcUserAuthenticationConverter}) and the per-tenant gRPC
-   * interceptor.
+   * <p>Physical-tenant-aware: when physical tenants are configured, a token on {@code
+   * /physical-tenants/<id>/v2/**} is resolved with that tenant's own claim config. This is required
+   * because {@code physicalTenantClusterAuthUnification} collapses the cluster config onto the
+   * default tenant, so the per-issuer map alone holds only the default tenant's providers and a
+   * non-default tenant's token would otherwise be rejected with {@code 401}
+   * (camunda/camunda#64685). See {@link PhysicalTenantAwareOidcTokenAuthenticationConverter} for
+   * why selection is keyed by tenant rather than issuer.
    */
   @Bean
   public CamundaAuthenticationConverter<Authentication> oidcTokenAuthenticationConverter(
@@ -202,6 +195,15 @@ public class OidcOverrideBeansConfiguration {
     if (convertersByPhysicalTenant.isEmpty()) {
       return defaultConverter;
     }
+    // Mirror the per-issuer log above: a one-time record, at bean-build time, of exactly which
+    // tenants got a dedicated claim converter — so an operator can confirm the expected tenants are
+    // covered and spot a missing one (every other tenant, and the cluster surface, uses the
+    // default).
+    LOG.info(
+        "Physical-tenant-aware OIDC bearer-token conversion enabled; dedicated claim converters"
+            + " built for physical tenants {}; any other tenant and the cluster surface use the"
+            + " default claim converter",
+        convertersByPhysicalTenant.keySet());
     return new PhysicalTenantAwareOidcTokenAuthenticationConverter(
         convertersByPhysicalTenant, defaultConverter);
   }
