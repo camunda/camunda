@@ -112,8 +112,6 @@ const fetchUserTaskLogic = fromPromise<UserTask, {queryClient: QueryClient; user
 	input.queryClient.fetchQuery(queries.getUserTask(input.userTaskKey)),
 );
 
-// Also handled in the success states: they only hold the machine for SUCCESS_RESET_DELAY while the
-// button is already enabled, so dropping the event there would silently swallow the user's click.
 const toggleTransitions = [
 	{guard: 'isTaskAssigned', target: 'Unassigning'},
 	{guard: 'hasCurrentUser', target: 'Assigning'},
