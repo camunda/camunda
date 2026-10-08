@@ -1143,6 +1143,7 @@
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Delete Decision Definition \"{{name}} - Version {{version}}\"",
+					"loadingMessage": "Deleting decision definition",
 					"title": "Delete DRD",
 					"description": "You are about to delete the following DRD:",
 					"confirmation": "Yes, I confirm I want to delete this DRD and all related instances.",

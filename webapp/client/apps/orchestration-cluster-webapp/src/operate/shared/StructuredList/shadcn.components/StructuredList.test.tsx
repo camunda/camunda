@@ -67,8 +67,10 @@ describe('<StructuredList />', () => {
 		// then: both the caller-rendered dynamic row and the auto-rendered static row are flush
 		const dynamicCell = screen.getByText('Dynamic content').element().closest('td')!;
 		const staticCell = screen.getByText('Static').element().closest('td')!;
+		const headerCell = screen.getByText('Name').element().closest('th')!;
 		expect(getComputedStyle(dynamicCell).paddingLeft).toBe('0px');
 		expect(getComputedStyle(staticCell).paddingLeft).toBe('0px');
+		expect(getComputedStyle(headerCell).paddingLeft).toBe('0px');
 	});
 
 	it('should render multiple rows and columns, preserving row order', async () => {
