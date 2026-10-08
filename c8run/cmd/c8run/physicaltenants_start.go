@@ -23,7 +23,7 @@ import (
 )
 
 // firstTenantConnectorsPort is the first port handed to a per-tenant connectors runtime;
-// the default tenant's connectors keep 8086.
+// the default tenant's connectors keep --connectors-port.
 const firstTenantConnectorsPort = 8087
 
 // applyPhysicalTenants resolves the tenants for this start, validates them before Java is
@@ -60,7 +60,7 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 
 	res, err := physicaltenants.Resolve(physicaltenants.ResolveInput{
 		EnvDeclaresTenants:  envDeclaresTenants(),
-		ReservedPorts:       reservedPorts(settings.Port),
+		ReservedPorts:       reservedPorts(settings.Port, settings.ConnectorsPort),
 		Store:               store,
 		FlagIDs:             flagIDs,
 		DefaultUsername:     settings.Username,
@@ -206,9 +206,16 @@ func envDeclaresTenants() bool {
 		strings.Contains(os.Getenv("JDK_JAVA_OPTIONS"), "-Dcamunda.physical-tenants.")
 }
 
+// camundaPorts are the ports the Camunda process binds.
+func camundaPorts(camundaPort int) map[int]bool {
+	return map[int]bool{camundaPort: true, 9600: true, 26500: true, 26501: true, 26502: true}
+}
+
 // reservedPorts are ports c8run's own processes bind, never handed to a tenant connectors runtime.
-func reservedPorts(camundaPort int) map[int]bool {
-	return map[int]bool{camundaPort: true, 8086: true, 9600: true, 26500: true, 26501: true, 26502: true}
+func reservedPorts(camundaPort, connectorsPort int) map[int]bool {
+	ports := camundaPorts(camundaPort)
+	ports[connectorsPort] = true
+	return ports
 }
 
 // configureTenantSecretStores gives every physical tenant its own local secret directory, so

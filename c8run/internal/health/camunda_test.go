@@ -77,7 +77,7 @@ func TestShouldUsePortFlagForStatusOutput(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chdir(cwd) })
 
-	settings := types.C8RunSettings{Port: 9090}
+	settings := types.C8RunSettings{Port: 9090, ConnectorsPort: 9086}
 
 	// when
 	out := captureOutput(t, func() {
@@ -88,6 +88,7 @@ func TestShouldUsePortFlagForStatusOutput(t *testing.T) {
 
 	// then
 	expectedEndpoints := map[string]string{
+		"Inbound Connectors API":    "http://localhost:9086/",
 		"Operate":                   "http://localhost:9090/operate",
 		"Tasklist":                  "http://localhost:9090/tasklist",
 		"Admin":                     "http://localhost:9090/admin",
@@ -223,7 +224,7 @@ func TestShouldQueryConnectorsHealthEndpoint(t *testing.T) {
 		if name != "Connectors" {
 			t.Fatalf("expected name Connectors, got %s", name)
 		}
-		if url != "http://localhost:8086/actuator/health" {
+		if url != "http://localhost:9086/actuator/health" {
 			t.Fatalf("expected connectors health endpoint, got %s", url)
 		}
 		if retries != 3 {
@@ -236,7 +237,7 @@ func TestShouldQueryConnectorsHealthEndpoint(t *testing.T) {
 	}
 
 	// when
-	err := QueryConnectors(context.Background(), "Connectors", 3)
+	err := QueryConnectorsOnPort(context.Background(), "Connectors", 9086, 3)
 
 	// then
 	if err != nil {
@@ -256,7 +257,7 @@ func TestShouldReturnErrorWhenConnectorsHealthEndpointDoesNotStart(t *testing.T)
 	}
 
 	// when
-	err := QueryConnectors(context.Background(), "Connectors", 0)
+	err := QueryConnectorsOnPort(context.Background(), "Connectors", DefaultConnectorsPort, 0)
 
 	// then
 	if err == nil {

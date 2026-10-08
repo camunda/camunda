@@ -229,9 +229,10 @@ func TestEnvDeclaresTenants(t *testing.T) {
 }
 
 func TestReservedPortsIncludeCamundaPort(t *testing.T) {
-	reserved := reservedPorts(8087)
+	reserved := reservedPorts(8087, 9086)
 	assert.True(t, reserved[8087])
-	assert.True(t, reserved[8086])
+	assert.True(t, reserved[9086])
+	assert.False(t, reserved[8086], "8086 is free when Connectors runs on another port")
 	assert.True(t, reserved[26500])
 }
 

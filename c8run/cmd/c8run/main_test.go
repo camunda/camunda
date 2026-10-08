@@ -226,6 +226,39 @@ func TestShouldParseDisableConnectorsFlagOnStart(t *testing.T) {
 	assert.True(t, settings.DisableConnectors)
 }
 
+func TestShouldParseConnectorsPortFlagOnStart(t *testing.T) {
+	oldArgs := os.Args
+	t.Cleanup(func() {
+		os.Args = oldArgs
+	})
+
+	os.Args = []string{"c8run", "start"}
+	settings, _, err := getBaseCommandSettings("start")
+	require.NoError(t, err)
+	assert.Equal(t, 8086, settings.ConnectorsPort)
+
+	os.Args = []string{"c8run", "start", "--connectors-port", "9086"}
+	settings, _, err = getBaseCommandSettings("start")
+	require.NoError(t, err)
+	assert.Equal(t, 9086, settings.ConnectorsPort)
+
+	os.Args = []string{"c8run", "start", "--connectors-port", "70000"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.ErrorContains(t, err, "--connectors-port must be between 1 and 65535")
+
+	os.Args = []string{"c8run", "start", "--connectors-port", "9600"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.ErrorContains(t, err, "--connectors-port 9600 is already used by Camunda")
+
+	os.Args = []string{"c8run", "start", "--port", "8086"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.ErrorContains(t, err, "--connectors-port 8086 is already used by Camunda")
+
+	os.Args = []string{"c8run", "start", "--port", "8086", "--disable-connectors"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.NoError(t, err)
+}
+
 func TestShouldParseNoBrowserFlagOnStart(t *testing.T) {
 	// given
 	oldArgs := os.Args

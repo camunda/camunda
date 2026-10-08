@@ -43,6 +43,12 @@ func TestConnectorsEnvDropsTenantProperties(t *testing.T) {
 	}
 }
 
+func TestDefaultConnectorsEnvSetsPortOnlyWhenChanged(t *testing.T) {
+	assert.NotContains(t, defaultConnectorsEnv([]string{"PATH=/bin"}, 8086), "SERVER_PORT=8086")
+	env := defaultConnectorsEnv([]string{"PATH=/bin", "CAMUNDA_PHYSICALTENANTS_A_X=1"}, 9086)
+	assert.Equal(t, []string{"PATH=/bin", "SERVER_PORT=9086"}, env)
+}
+
 func TestWithTenantEnvOnlyAddsToCamunda(t *testing.T) {
 	env := withTenantEnv([]string{"A=1"}, map[string]string{"CAMUNDA_PHYSICALTENANTS_X_Y": "z"})
 	assert.Equal(t, []string{"A=1", "CAMUNDA_PHYSICALTENANTS_X_Y=z"}, env)
