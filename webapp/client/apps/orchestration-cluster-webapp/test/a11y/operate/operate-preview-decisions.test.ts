@@ -35,7 +35,7 @@ test('should have no accessibility violations in the decisions placeholder shell
 	);
 
 	await operatePreviewDecisionsPage.goto();
-	await expect(operatePreviewDecisionsPage.filtersPanelPlaceholder).toBeVisible();
+	await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
