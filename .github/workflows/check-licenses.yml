@@ -165,6 +165,13 @@ jobs:
         path: ${{ matrix.project.path }}
         revision-id: ${{ steps.info.outputs.head-revision }}
 
+    # Both attempts otherwise fire back-to-back within seconds, so a brief FOSSA API outage
+    # (a transient 5xx that fails instantly rather than hanging, see INC-8587) takes out both.
+    # Pause between them to let such a window clear before retrying.
+    - name: Backoff before FOSSA retry
+      if: steps.analyze1.outcome != 'success'
+      run: sleep 90
+
     - name: Analyze project (attempt 2)
       if: steps.analyze1.outcome != 'success'
       timeout-minutes: 30
