@@ -32,6 +32,13 @@ management:
         prometheus: metrics
       exposure:
         include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: connectionReady
 
 # Camunda client configuration (auto-configured by camunda-spring-boot-starter)
 camunda:
@@ -99,6 +106,9 @@ load-tester:
     # closed: at most 1 * the rate per second requests wait for a response, so a slow cluster
     #   lowers the achieved rate.
     workload-model: ${LOAD_TESTER_STARTER_WORKLOAD_MODEL:open}
+    # Liveness fails when no start request succeeded for this long. Backpressure answers count
+    # as success; every other failure does not. Keep it above the interval between two requests.
+    liveness-max-no-success-age: ${LOAD_TESTER_STARTER_LIVENESS_MAX_NO_SUCCESS_AGE:2m}
     msg-name: msg
     start-via-message: false
   # Worker-specific properties consumed by Worker.java.
@@ -125,6 +135,16 @@ load-tester:
     evaluation-interval: ${OPTIMIZE_EVALUATION_INTERVAL:60s}
     initial-delay: ${OPTIMIZE_INITIAL_DELAY:10s}
     request-timeout: ${OPTIMIZE_REQUEST_TIMEOUT:30s}
+
+# Starter-profile override: only the starter has a liveness indicator.
+---
+spring.config.activate.on-profile: starter
+management:
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: starterLiveness
 
 # Worker-profile override: worker pods actually handle jobs, so they need a real
 # thread pool. Matches the old HOCON app.worker.threads=10 default.
