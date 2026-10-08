@@ -12,5 +12,7 @@ import {validateDecisionsSearch} from '#/operate/pages/Decisions/decisionsSearch
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/decisions/')({
 	validateSearch: validateDecisionsSearch,
-	component: Decisions,
+	component: function DecisionsRoute() {
+		return <Decisions search={Route.useSearch()} />;
+	},
 });

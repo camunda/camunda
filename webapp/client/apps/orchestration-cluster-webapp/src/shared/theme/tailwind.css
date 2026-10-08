@@ -23,3 +23,11 @@
  * subtree remount.
  */
 @source inline("[&_[data-slot=table-row]]:border-b-[var(--border)]");
+
+/*
+ * Same scanner limitation for the compound arbitrary-variant candidates that
+ * strip the DS DataTable's rounded border in Decisions' InstancesTable.tsx;
+ * important is needed because the DS stylesheet's rounded-xl is unlayered.
+ */
+@source inline("[&_[data-slot=table-container]]:{rounded-none!,border-0!,shadow-none!}");
+@source inline("[&_[data-slot=data-table]>div.rounded-xl]:{rounded-none!,border-0!}");
