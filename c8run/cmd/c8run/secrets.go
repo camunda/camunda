@@ -27,10 +27,11 @@ type secretsCommand struct {
 	output       io.Writer
 	// plainOutput receives values printed verbatim, such as paths, which must
 	// never be rewritten by C8RUN_CLI_NAME. Falls back to output when nil.
-	plainOutput  io.Writer
-	errorOutput  io.Writer
-	isTerminal   func() bool
-	readPassword func() ([]byte, error)
+	plainOutput      io.Writer
+	errorOutput      io.Writer
+	plainErrorOutput io.Writer
+	isTerminal       func() bool
+	readPassword     func() ([]byte, error)
 }
 
 func (c *secretsCommand) warnPathChanged(baseDir string) {
@@ -49,17 +50,18 @@ func (c *secretsCommand) warnPathChanged(baseDir string) {
 	if err != nil || len(entries) == 0 {
 		return
 	}
-	_, _ = fmt.Fprintf(c.errorOutput, "Warning: the platform-default directory also contains entries:\n  %s\nThis command uses:\n  %s\nReview both directories and remove unused secrets deliberately.\n", defaultDirectory, current)
+	_, _ = fmt.Fprintf(c.plainError(), "Warning: the platform-default directory also contains entries:\n  %s\nThis command uses:\n  %s\nReview both directories and remove unused secrets deliberately.\n", defaultDirectory, current)
 }
 
 func newSecretsCommand() *secretsCommand {
 	return &secretsCommand{
-		input:        os.Stdin,
-		output:       brandWriter(os.Stdout),
-		plainOutput:  os.Stdout,
-		errorOutput:  brandWriter(os.Stderr),
-		isTerminal:   stdinIsTerminal,
-		readPassword: readSecretFromTerminal,
+		input:            os.Stdin,
+		output:           brandWriter(os.Stdout),
+		plainOutput:      os.Stdout,
+		errorOutput:      brandWriter(os.Stderr),
+		plainErrorOutput: os.Stderr,
+		isTerminal:       stdinIsTerminal,
+		readPassword:     readSecretFromTerminal,
 	}
 }
 
@@ -481,4 +483,11 @@ func (c *secretsCommand) plain() io.Writer {
 		return c.plainOutput
 	}
 	return c.output
+}
+
+func (c *secretsCommand) plainError() io.Writer {
+	if c.plainErrorOutput != nil {
+		return c.plainErrorOutput
+	}
+	return c.errorOutput
 }
