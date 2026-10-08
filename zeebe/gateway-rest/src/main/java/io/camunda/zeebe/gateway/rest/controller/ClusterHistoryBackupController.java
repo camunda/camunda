@@ -44,7 +44,6 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 @CamundaRestController
 @ClusterScoped
-@RequiresSecondaryStorage({ELASTICSEARCH, OPENSEARCH})
 @RequestMapping("/cluster/v2/backups/history")
 @NullMarked
 public final class ClusterHistoryBackupController {
@@ -55,6 +54,7 @@ public final class ClusterHistoryBackupController {
     this.serviceRegistry = serviceRegistry;
   }
 
+  @RequiresSecondaryStorage({ELASTICSEARCH, OPENSEARCH})
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> takeBackup(
       @RequestParam(required = false) final @Nullable String physicalTenantId,
