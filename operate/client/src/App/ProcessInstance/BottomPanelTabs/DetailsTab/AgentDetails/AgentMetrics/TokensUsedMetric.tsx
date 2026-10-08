@@ -7,6 +7,7 @@
  */
 
 import {LimitIndicator, MetricCard} from './MetricCard';
+import {getTotalTokens, TOTAL_TOKENS_DESCRIPTION} from '../getTotalTokens';
 import {
   TokenBreakdownContainer,
   TokenBreakdown,
@@ -16,8 +17,8 @@ import {
 type TokensUsedMetricProps = {
   inputTokens: number;
   outputTokens: number;
-  cacheReadTokens: number;
-  cacheCreationTokens: number;
+  cacheReadTokenCount: number;
+  cacheCreationTokenCount: number;
   reasoningTokens: number;
   maxTokens: number;
 };
@@ -25,15 +26,24 @@ type TokensUsedMetricProps = {
 const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
   inputTokens,
   outputTokens,
-  cacheReadTokens,
-  cacheCreationTokens,
+  cacheReadTokenCount,
+  cacheCreationTokenCount,
   reasoningTokens,
   maxTokens,
 }) => {
-  const totalTokens = inputTokens + outputTokens;
+  const totalTokens = getTotalTokens({
+    inputTokens,
+    outputTokens,
+    cacheReadTokenCount,
+    cacheCreationTokenCount,
+  });
 
   return (
-    <MetricCard title="Tokens Used" value={totalTokens}>
+    <MetricCard
+      title="Tokens Used"
+      value={totalTokens}
+      valueInfo={TOTAL_TOKENS_DESCRIPTION}
+    >
       <LimitIndicator current={totalTokens} limit={maxTokens} />
       <TokenBreakdownContainer>
         <TokenBreakdownColumn>
@@ -52,15 +62,15 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
             </TokenBreakdown>
           )}
         </TokenBreakdownColumn>
-        {(cacheReadTokens > 0 || cacheCreationTokens > 0) && (
+        {(cacheReadTokenCount > 0 || cacheCreationTokenCount > 0) && (
           <TokenBreakdownColumn>
             <TokenBreakdown $dotColor="var(--cds-status-gray)">
               <span>Cache read</span>
-              <span>{cacheReadTokens.toLocaleString()}</span>
+              <span>{cacheReadTokenCount.toLocaleString()}</span>
             </TokenBreakdown>
             <TokenBreakdown $dotColor="var(--cds-status-gray)">
               <span>Cache write</span>
-              <span>{cacheCreationTokens.toLocaleString()}</span>
+              <span>{cacheCreationTokenCount.toLocaleString()}</span>
             </TokenBreakdown>
           </TokenBreakdownColumn>
         )}

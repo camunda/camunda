@@ -7,10 +7,14 @@
  */
 
 import {useId} from 'react';
+import {Information} from '@carbon/react/icons';
+import {Tooltip} from '@carbon/react';
 import {
   MetricCardContainer,
   MetricCardTitle,
   MetricCardValue,
+  MetricCardValueRow,
+  InfoButton,
   MetricHelperText,
   LimitMeter,
   LimitMeterContainer,
@@ -19,15 +23,30 @@ import {
 type MetricCardProps = {
   title: string;
   value: number | string;
+  valueInfo?: string;
   children?: React.ReactNode;
 };
 
-const MetricCard: React.FC<MetricCardProps> = ({title, value, children}) => {
+const MetricCard: React.FC<MetricCardProps> = ({
+  title,
+  value,
+  valueInfo,
+  children,
+}) => {
   const id = useId();
   return (
     <MetricCardContainer aria-labelledby={id}>
       <MetricCardTitle id={id}>{title}</MetricCardTitle>
-      <MetricCardValue>{value.toLocaleString()}</MetricCardValue>
+      <MetricCardValueRow>
+        <MetricCardValue>{value.toLocaleString()}</MetricCardValue>
+        {valueInfo !== undefined && (
+          <Tooltip description={valueInfo} align="bottom">
+            <InfoButton type="button" aria-label={`${title} calculation`}>
+              <Information size={16} />
+            </InfoButton>
+          </Tooltip>
+        )}
+      </MetricCardValueRow>
       {children}
     </MetricCardContainer>
   );
