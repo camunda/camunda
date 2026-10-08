@@ -313,10 +313,11 @@ jobs:
           path: c8run
 
       - name: Get version of camunda-dist
+        id: dist-version
         run: |
           for file in camunda-zeebe*.zip; do
             version=$(echo "$file" | sed -E 's/camunda-zeebe-(.*)\.zip/\1/')
-            echo "CAMUNDA_VERSION=$version" >> "$GITHUB_ENV"
+            echo "version=$version" >> "$GITHUB_OUTPUT"
             break  # just use the first matching file
           done
         shell: bash
@@ -334,6 +335,7 @@ jobs:
         run: .\packager.exe package
         working-directory: .\c8run
         env:
+          CAMUNDA_VERSION: ${{ steps.dist-version.outputs.version }}
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
