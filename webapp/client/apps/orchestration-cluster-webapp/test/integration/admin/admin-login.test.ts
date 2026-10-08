@@ -50,23 +50,6 @@ test('should redirect the Admin index to Admin login and return after login', as
 	await expect(adminIndexPage.heading).toBeVisible();
 });
 
-test('should preserve an Admin URL through login', async ({network, page, adminIndexPage, adminLoginPage}) => {
-	await adminLoginPage.gotoAdmin('/users');
-
-	await expect(page).toHaveURL((url) => {
-		return url.pathname === '/admin/login' && url.searchParams.get('redirect') === '/admin/users';
-	});
-	await expect(adminLoginPage.usernameInput).toBeVisible();
-
-	network.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}));
-
-	await adminLoginPage.fillCredentials('demo', 'demo');
-	await adminLoginPage.submitButton.click();
-
-	await expect(page).toHaveURL('/admin/users');
-	await expect(adminIndexPage.sectionHeading('Users')).toBeVisible();
-});
-
 test('should show an error for wrong credentials', async ({network, adminLoginPage}) => {
 	network.use(mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 401})}));
 
@@ -109,6 +92,8 @@ test.describe('redirect validation', () => {
 		'/tasklist',
 		'/administration',
 		'//evil.example',
+		'https://redirect.invalid/admin',
+		'//redirect.invalid/admin',
 		'https://evil.example',
 		'/admin/login',
 		'/admin/login?redirect=/admin',

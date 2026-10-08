@@ -12,14 +12,13 @@ import {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {isTasklistPath} from '#/shared/auth/isTasklistPath';
+import {resolveAppLoginRedirect} from '#/shared/auth/resolveLoginRedirect';
 
 const SessionWatcher: React.FC = observer(() => {
 	const location = useLocation();
 	const {status} = authenticationStore;
 	const removeNotification = useRef<(() => void) | null>(null);
 	const {t} = useTranslation();
-	const isTasklistIndex = location.href === '/tasklist';
 
 	const isSessionExpired =
 		status === 'logged-out' ||
@@ -47,13 +46,12 @@ const SessionWatcher: React.FC = observer(() => {
 	}, [status]);
 
 	if (isSessionExpired) {
-		return (
-			<Navigate
-				to={isTasklistPath(location.pathname) ? '/tasklist/login' : '/login'}
-				search={location.href === '/' || isTasklistIndex ? {} : {redirect: location.href}}
-				replace
-			/>
-		);
+		const {to, search} = resolveAppLoginRedirect(location) ?? {
+			to: '/login',
+			search: location.href === '/' ? {} : {redirect: location.href},
+		};
+
+		return <Navigate to={to} search={search} replace />;
 	}
 
 	return null;

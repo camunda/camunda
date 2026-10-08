@@ -29,11 +29,18 @@ type LoginRedirect = {
 // A dummy origin lets `URL` resolve `..` segments and backslash separators the same way a
 // browser would before comparing, so a value like `/admin/../tasklist` cannot pass this check
 // by looking like an admin path and then land outside it once the router normalizes it. Any
-// input that resolves to a different origin -- an absolute URL or a protocol-relative one -- is
-// rejected outright rather than compared, since it was never a path within this app to begin with.
+// input that is not a plain root-relative path -- an absolute URL, a protocol-relative one, or one
+// with backslashes or control characters that `URL` would silently rewrite -- is rejected before
+// resolution, since it was never a path within this app to begin with.
 const REDIRECT_RESOLUTION_ORIGIN = 'https://redirect.invalid';
 
+const RAW_PATH = /^\/(?![\\/])[^\\\t\r\n]*$/;
+
 function isPathWithin(path: string, base: string) {
+	if (!RAW_PATH.test(path)) {
+		return false;
+	}
+
 	let url: URL;
 
 	try {
@@ -45,20 +52,30 @@ function isPathWithin(path: string, base: string) {
 	return url.origin === REDIRECT_RESOLUTION_ORIGIN && (url.pathname === base || url.pathname.startsWith(`${base}/`));
 }
 
-function resolveLoginRedirect({pathname, href}: {pathname: string; href: string}): LoginRedirect {
+function resolveAppLoginRedirect({pathname, href}: {pathname: string; href: string}): LoginRedirect | undefined {
 	const app = APP_LOGINS.find(({home}) => isPathWithin(pathname, home));
 
 	if (app === undefined) {
-		// Outside any known app — the root included. Each login page only accepts a `redirect` into its own
-		// app, so passing this href on would fail the login route's own search validation and render the
-		// generic error page instead of a form. Tasklist is where /_shadcn/_auth/ sends the root anyway.
-		return {to: TASKLIST_LOGIN.login, search: {}};
+		return undefined;
 	}
 
 	return {
 		to: app.login,
 		search: href === app.home ? {} : {redirect: href},
 	};
+}
+
+function resolveLoginRedirect(location: {pathname: string; href: string}): LoginRedirect {
+	const redirect = resolveAppLoginRedirect(location);
+
+	if (redirect === undefined) {
+		// Outside any known app — the root included. Each login page only accepts a `redirect` into its own
+		// app, so passing this href on would fail the login route's own search validation and render the
+		// generic error page instead of a form. Tasklist is where /_shadcn/_auth/ sends the root anyway.
+		return {to: TASKLIST_LOGIN.login, search: {}};
+	}
+
+	return redirect;
 }
 
 /**
@@ -81,4 +98,4 @@ function appLoginSearchSchema({home, login}: AppLogin) {
 	});
 }
 
-export {ADMIN_LOGIN, appLoginSearchSchema, resolveLoginRedirect, TASKLIST_LOGIN};
+export {ADMIN_LOGIN, appLoginSearchSchema, resolveAppLoginRedirect, resolveLoginRedirect, TASKLIST_LOGIN};

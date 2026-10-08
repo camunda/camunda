@@ -7,7 +7,13 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {ADMIN_LOGIN, appLoginSearchSchema, resolveLoginRedirect, TASKLIST_LOGIN} from './resolveLoginRedirect';
+import {
+	ADMIN_LOGIN,
+	appLoginSearchSchema,
+	resolveAppLoginRedirect,
+	resolveLoginRedirect,
+	TASKLIST_LOGIN,
+} from './resolveLoginRedirect';
 
 function at(href: string) {
 	return {pathname: new URL(href, 'http://localhost').pathname, href};
@@ -45,6 +51,21 @@ describe('resolveLoginRedirect', () => {
 	});
 });
 
+describe('resolveAppLoginRedirect', () => {
+	it('should resolve Admin and Tasklist URLs to their login page', () => {
+		expect(resolveAppLoginRedirect(at('/admin/users'))).toEqual({
+			to: '/admin/login',
+			search: {redirect: '/admin/users'},
+		});
+		expect(resolveAppLoginRedirect(at('/tasklist'))).toEqual({to: '/tasklist/login', search: {}});
+	});
+
+	it('should resolve nothing outside Admin and Tasklist, so the caller can use its own login', () => {
+		expect(resolveAppLoginRedirect(at('/operate/processes'))).toBeUndefined();
+		expect(resolveAppLoginRedirect(at('/'))).toBeUndefined();
+	});
+});
+
 describe('appLoginSearchSchema', () => {
 	function accepts(app: typeof ADMIN_LOGIN | typeof TASKLIST_LOGIN, redirect: string) {
 		return appLoginSearchSchema(app).safeParse({redirect}).success;
@@ -70,6 +91,9 @@ describe('appLoginSearchSchema', () => {
 		expect(accepts(ADMIN_LOGIN, 'https://evil.example')).toBe(false);
 		expect(accepts(ADMIN_LOGIN, '//evil.example')).toBe(false);
 		expect(accepts(ADMIN_LOGIN, '/admin.evil.example')).toBe(false);
+		expect(accepts(ADMIN_LOGIN, 'https://redirect.invalid/admin')).toBe(false);
+		expect(accepts(ADMIN_LOGIN, '//redirect.invalid/admin')).toBe(false);
+		expect(accepts(ADMIN_LOGIN, '/\t/redirect.invalid/admin')).toBe(false);
 	});
 
 	it('should reject a path that only escapes the app once its dot segments or backslashes are resolved', () => {
