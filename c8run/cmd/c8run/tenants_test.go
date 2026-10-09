@@ -46,11 +46,68 @@ func testTenantsCommand(t *testing.T, input string, terminal bool, passwords ...
 func TestTenantsHelp(t *testing.T) {
 	cmd, out, _ := testTenantsCommand(t, "", false, "")
 	require.NoError(t, cmd.run(t.TempDir(), nil))
-	assert.Contains(t, out.String(), "c8run tenants add")
+	assert.Contains(t, out.String(), "c8run physical-tenants add")
 	out.Reset()
 	require.NoError(t, cmd.run(t.TempDir(), []string{"add", "--help"}))
 	assert.Contains(t, out.String(), "--no-connectors")
-	assert.ErrorContains(t, cmd.run(t.TempDir(), []string{"bogus"}), "unsupported tenants operation")
+	assert.ErrorContains(t, cmd.run(t.TempDir(), []string{"bogus"}), "unsupported physical-tenants operation")
+}
+
+func TestPhysicalTenantCommandRouting(t *testing.T) {
+	previous := os.Args
+	t.Cleanup(func() { os.Args = previous })
+	for _, operation := range []string{"add", "list", "remove", "reset", "path", "help"} {
+		for _, command := range []string{"physical-tenants", "tenants", "pt"} {
+			t.Run(command+"/"+operation, func(t *testing.T) {
+				os.Args = []string{"c8run", command, operation}
+				base, err := getBaseCommand()
+				if command == "physical-tenants" {
+					require.NoError(t, err)
+					assert.Equal(t, command, base)
+					return
+				}
+				require.ErrorContains(t, err, "has been removed")
+				assert.Empty(t, base)
+				assert.Contains(t, err.Error(), "use `c8run physical-tenants` instead")
+				assert.Contains(t, withCLIName(err.Error(), "c8ctl cluster"), "use `c8ctl cluster physical-tenants` instead")
+			})
+		}
+	}
+}
+
+func TestSecretsRejectsRemovedTenantSelectors(t *testing.T) {
+	for _, selector := range [][]string{{"--tenant", "sales"}, {"--tenant=sales"}, {"--tenant"}, {"--tenant="}} {
+		for _, operation := range []string{"set", "list", "path", "delete", "import", "help"} {
+			t.Run(strings.Join(selector, " ")+"/"+operation, func(t *testing.T) {
+				command, output, _ := testSecretsCommand("", false)
+				err := command.run(t.TempDir(), append([]string{operation}, selector...))
+				require.EqualError(t, err, "--tenant has been removed; use --physical-tenant <id> instead")
+				assert.Empty(t, output.String())
+			})
+		}
+	}
+}
+
+func TestPhysicalTenantSelectorParsing(t *testing.T) {
+	for _, args := range [][]string{
+		{"--physical-tenant", "sales", "list"},
+		{"list", "--physical-tenant", "sales"},
+		{"list", "--physical-tenant=sales"},
+	} {
+		rest, tenant, err := extractTenantArgument(args)
+		require.NoError(t, err)
+		assert.Equal(t, "sales", tenant)
+		assert.Equal(t, []string{"list"}, rest)
+	}
+	for _, args := range [][]string{
+		{"--physical-tenant"},
+		{"--physical-tenant="},
+		{"--physical-tenant", "--help"},
+		{"--physical-tenant=sales", "--physical-tenant", "hr"},
+	} {
+		_, _, err := extractTenantArgument(args)
+		assert.Error(t, err, "%v", args)
+	}
 }
 
 func TestTenantsAddListRemove(t *testing.T) {
@@ -160,23 +217,27 @@ func TestApplyPhysicalTenantsFromFlag(t *testing.T) {
 	assert.ErrorContains(t, applyPhysicalTenants(base, "8.9.1", &old), "8.10 or newer")
 }
 
-func TestSecretsTenantFlagUsesTenantDirectory(t *testing.T) {
-	baseDir := t.TempDir()
-	command, output, _ := testSecretsCommand("tenant-value\n", false)
-	require.NoError(t, command.run(baseDir, []string{"--tenant", "sales", "set", "API_KEY", "--stdin"}))
-	assert.Contains(t, output.String(), "for physical tenant sales")
+func TestSecretsPhysicalTenantFlagUsesTenantDirectory(t *testing.T) {
+	for _, selector := range [][]string{{"--physical-tenant", "sales"}, {"--physical-tenant=sales"}} {
+		t.Run(strings.Join(selector, " "), func(t *testing.T) {
+			baseDir := t.TempDir()
+			t.Setenv(localsecrets.DirectoryEnv, filepath.Join(baseDir, "secrets"))
+			command, output, _ := testSecretsCommand("tenant-value\n", false)
+			require.NoError(t, command.run(baseDir, append(selector, "set", "API_KEY", "--stdin")))
+			assert.Contains(t, output.String(), "for physical tenant sales")
 
-	tenantDir, err := localsecrets.TenantDirectory(baseDir, "sales")
-	require.NoError(t, err)
-	content, err := os.ReadFile(filepath.Join(tenantDir, "API_KEY"))
-	require.NoError(t, err)
-	assert.Equal(t, "tenant-value", string(content))
-	_, err = os.Stat(filepath.Join(baseDir, "secrets", "API_KEY"))
-	assert.True(t, os.IsNotExist(err), "tenant secret must not land in the default store")
-
-	_, _, err = extractTenantArgument([]string{"--tenant", "Bad-Id", "list"})
+			tenantDir, err := localsecrets.TenantDirectory(baseDir, "sales")
+			require.NoError(t, err)
+			content, err := os.ReadFile(filepath.Join(tenantDir, "API_KEY"))
+			require.NoError(t, err)
+			assert.Equal(t, "tenant-value", string(content))
+			_, err = os.Stat(filepath.Join(baseDir, "secrets", "API_KEY"))
+			assert.True(t, os.IsNotExist(err), "tenant secret must not land in the default store")
+		})
+	}
+	_, _, err := extractTenantArgument([]string{"--physical-tenant", "Bad-Id", "list"})
 	assert.ErrorContains(t, err, "lowercase")
-	_, _, err = extractTenantArgument([]string{"--tenant=a", "--tenant=b"})
+	_, _, err = extractTenantArgument([]string{"--physical-tenant=a", "--physical-tenant=b"})
 	assert.ErrorContains(t, err, "only be specified once")
 }
 
@@ -277,7 +338,7 @@ func TestStartRejectsExplicitlyEmptyPhysicalTenantsFlag(t *testing.T) {
 	for _, value := range []string{"--physical-tenants=,", "--physical-tenants= "} {
 		os.Args = []string{"c8run", "start", value}
 		_, _, err := getBaseCommandSettings("start")
-		assert.ErrorContains(t, err, "needs at least one tenant ID", value)
+		assert.ErrorContains(t, err, "needs at least one physical tenant ID", value)
 	}
 }
 
@@ -341,7 +402,7 @@ func TestApplyPhysicalTenantsRejectsIDsTooLongForRDBMS(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
 	settings := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"salesemea1"}, SecondaryStorageType: "rdbms"}
-	assert.ErrorContains(t, applyPhysicalTenants(base, "8.10.0", &settings), "c8run tenants remove salesemea1")
+	assert.ErrorContains(t, applyPhysicalTenants(base, "8.10.0", &settings), "c8run physical-tenants remove salesemea1")
 
 	es := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"salesemea1"}, SecondaryStorageType: "elasticsearch"}
 	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &es))

@@ -5,7 +5,7 @@
 # Set CHECK_CONNECTORS=1 (with C8RUN_DIR pointing at the c8run directory) to also verify that the
 # tenant's own connectors runtime serves its jobs and no other runtime does.
 # Set TENANT_SECRET_VALUE to the value of C8RUN_E2E_SECRET stored with
-# `c8run secrets --tenant <id> set` to verify the tenant resolves its own secret, not the default one.
+# `c8run secrets --physical-tenant <id> set` to verify the physical tenant resolves its own secret, not the default one.
 # Use C8RUN_AUTH for the tenant login and C8RUN_DEFAULT_AUTH for the default tenant login.
 set -euo pipefail
 
@@ -18,6 +18,28 @@ grpc_address="${C8RUN_GRPC_URL:-http://localhost:26500}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 fail() { printf "test failed: %s\n" "$1"; exit 1; }
+
+if [[ -n "${C8RUN_DIR:-}" ]]; then
+        binary="$C8RUN_DIR/c8run"
+        [[ ! -f "$C8RUN_DIR/c8run.exe" ]] || binary="$C8RUN_DIR/c8run.exe"
+        printf "\nTest: removed physical tenant command aliases report migration guidance\n"
+        for alias in tenants pt; do
+                if output="$("$binary" "$alias" list 2>&1)"; then
+                        fail "removed command $alias was accepted"
+                fi
+                [[ "$output" == *"has been removed"* && "$output" == *"c8run physical-tenants"* ]] \
+                        || fail "missing migration guidance for $alias: $output"
+        done
+        for selector in "--tenant" "--tenant=$tenant"; do
+                args=("$selector")
+                [[ "$selector" != "--tenant" ]] || args+=("$tenant")
+                if output="$("$binary" secrets "${args[@]}" list 2>&1)"; then
+                        fail "removed selector $selector was accepted"
+                fi
+                [[ "$output" == *"--tenant has been removed"* && "$output" == *"--physical-tenant"* ]] \
+                        || fail "missing selector migration guidance: $output"
+        done
+fi
 
 count_definitions() {
         curl --silent --show-error --fail -u "$2" -X POST "$1/v2/process-definitions/search" \

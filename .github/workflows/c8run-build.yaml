@@ -199,8 +199,8 @@ jobs:
         run: |
           ./c8run stop
           cp "$GITHUB_WORKSPACE/c8run/e2e_tests/physical-tenants-auth.yaml" .
-          printf '%s' 'pt1-e2e-password' | ./c8run tenants add pt1 --username alice --password-stdin
-          printf '%s' 'pt1-only-secret-value' | ./c8run secrets --tenant pt1 set C8RUN_E2E_SECRET --stdin
+          printf '%s' 'pt1-e2e-password' | ./c8run physical-tenants add pt1 --username alice --password-stdin
+          printf '%s' 'pt1-only-secret-value' | ./c8run secrets --physical-tenant pt1 set C8RUN_E2E_SECRET --stdin
           ./c8run start --no-browser --config physical-tenants-auth.yaml
         working-directory: ${{ env.C8RUN_E2E_DIR }}
 
@@ -381,8 +381,8 @@ jobs:
         run: |
           ./c8run.exe stop
           cp ../../e2e_tests/physical-tenants-auth.yaml .
-          printf '%s' 'pt1-e2e-password' | ./c8run.exe tenants add pt1 --username alice --password-stdin
-          printf '%s' 'pt1-only-secret-value' | ./c8run.exe secrets --tenant pt1 set C8RUN_E2E_SECRET --stdin
+          printf '%s' 'pt1-e2e-password' | ./c8run.exe physical-tenants add pt1 --username alice --password-stdin
+          printf '%s' 'pt1-only-secret-value' | ./c8run.exe secrets --physical-tenant=pt1 set C8RUN_E2E_SECRET --stdin
           ./c8run.exe start --no-browser --config physical-tenants-auth.yaml
         working-directory: ${{ env.C8RUN_E2E_DIR }}
 

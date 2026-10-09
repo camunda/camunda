@@ -21,15 +21,14 @@ import (
 )
 
 func TestWithCLINameRewritesRunnableCommands(t *testing.T) {
-	in := "Run `./c8run stop && ./c8run start`. Add one with `c8run tenants add <id>` or `c8run tenants list`; see `c8run help`."
+	in := "Run `./c8run stop && ./c8run start`. Add one with `c8run physical-tenants add <id>` or `c8run physical-tenants list`; see `c8run help`."
 	assert.Equal(t,
-		"Run `c8ctl cluster stop && c8ctl cluster start`. Add one with `c8ctl cluster tenants add <id>` or `c8ctl cluster tenants list`; see `c8ctl cluster help`.",
+		"Run `c8ctl cluster stop && c8ctl cluster start`. Add one with `c8ctl cluster physical-tenants add <id>` or `c8ctl cluster physical-tenants list`; see `c8ctl cluster help`.",
 		withCLIName(in, "c8ctl cluster"))
 	// Unrelated mentions of c8run (product name, file names) stay intact.
 	assert.Equal(t, "the c8run .env file", withCLIName("the c8run .env file", "c8ctl cluster"))
 	assert.Equal(t, in, withCLIName(in, ""), "unset name must keep c8run output unchanged")
-	// Wrappers delegate only canonical subcommands, so aliases are left alone.
-	assert.Equal(t, "`c8run pt list`", withCLIName("`c8run pt list`", "c8ctl cluster"))
+	assert.Equal(t, "`c8ctl cluster pt` has been removed", withCLIName("`c8run pt` has been removed", "c8ctl cluster"))
 }
 
 func TestTenantsHintsUseConfiguredCLIName(t *testing.T) {
@@ -39,13 +38,13 @@ func TestTenantsHintsUseConfiguredCLIName(t *testing.T) {
 	var out bytes.Buffer
 	cmd.output = brandWriter(&out)
 	require.NoError(t, cmd.run(base, []string{"list"}))
-	assert.Contains(t, out.String(), "`c8ctl cluster tenants add <id>`")
-	assert.NotContains(t, out.String(), "c8run tenants")
+	assert.Contains(t, out.String(), "`c8ctl cluster physical-tenants add <id>`")
+	assert.NotContains(t, out.String(), "c8run physical-tenants")
 }
 
 func TestUsageTextUsesConfiguredCLIName(t *testing.T) {
 	help := usageText("/opt/c8run/c8run", "c8ctl cluster")
-	assert.Contains(t, help, "c8ctl cluster tenants add sales")
+	assert.Contains(t, help, "c8ctl cluster physical-tenants add sales")
 	assert.NotContains(t, help, "/opt/c8run/c8run")
 	assert.Contains(t, usageText("./c8run", ""), "./c8run stop", "unset name keeps the executable path")
 }
@@ -60,10 +59,13 @@ func TestConfirmReadFailureIsAnError(t *testing.T) {
 	}
 }
 
-func TestTenantsHelpHidesAliasesForWrapper(t *testing.T) {
+func TestTenantsHelpUsesOnlyCanonicalCommand(t *testing.T) {
 	cmd, out, _ := testTenantsCommand(t, "", false, "")
 	require.NoError(t, cmd.run(t.TempDir(), []string{"help"}))
-	assert.Contains(t, out.String(), "without saving them.\n\nAliases: c8run pt, c8run physical-tenants.\nC8RUN_TENANTS_FILE")
+	assert.Contains(t, out.String(), "without saving them.\n\nC8RUN_TENANTS_FILE")
+	assert.Contains(t, out.String(), "c8run physical-tenants add")
+	assert.NotContains(t, out.String(), "c8run tenants")
+	assert.NotContains(t, out.String(), "Aliases")
 
 	t.Setenv(cliNameEnv, "c8ctl cluster")
 	cmd, out, _ = testTenantsCommand(t, "", false, "")
@@ -71,6 +73,7 @@ func TestTenantsHelpHidesAliasesForWrapper(t *testing.T) {
 	require.NoError(t, cmd.run(t.TempDir(), []string{"help"}))
 	assert.NotContains(t, out.String(), "Aliases")
 	assert.NotContains(t, out.String(), " pt")
+	assert.Contains(t, out.String(), "c8ctl cluster physical-tenants add")
 }
 
 func TestPathOutputIsNotRewritten(t *testing.T) {
