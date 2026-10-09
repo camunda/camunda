@@ -61,6 +61,10 @@ lookupTeamMedic["@camunda/reliability-testing"]=$reliabilityTestingTeam
 qaMedic="<!subteam^S09UBFWENKF|qa-medic>"
 lookupTeamMedic["@camunda/qa-engineering"]=$qaMedic
 
+# @test-automation-medic
+testAutomationMedic="<!subteam^S09UF0EV0HG|test-automation-medic>"
+lookupTeamMedic["@camunda/test-automation-team"]=$testAutomationMedic
+
 # @monorepo-ci-medic
 monorepoCIMedic="<!subteam^S07D6C6B18T|monorepo-ci-medic>"
 lookupTeamMedic["@camunda/engineering-operations"]=$monorepoCIMedic

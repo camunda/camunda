@@ -111,6 +111,7 @@ mwnw*                       @camunda/engineering-operations
 # Other team overrides
 /qa/archunit-tests/         @camunda/orchestration-cluster
 /qa/util/                   @camunda/orchestration-cluster
+/qa/c8-orchestration-cluster-e2e-test-suite/ @camunda/test-automation-team
 
 # Acceptance tests shared utilities (dual ownership)
 /qa/acceptance-tests/src/test/java/io/camunda/it/util/       @camunda/qa-engineering @camunda/orchestration-cluster
