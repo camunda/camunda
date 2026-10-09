@@ -147,7 +147,9 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
 
 ### Which tests are deployed?
 
-* `default`: checks the cluster topology. Runs for every storage type and version.
+* `default` runs for every storage type and version:
+  - checks the cluster topology
+  - deploys a small BPMN diagram through `/v2/deployments` (sanity check, not a load test)
 * `data-read`: reads data through the search APIs, so it needs a secondary
   storage. It is disabled when read benchmarks are off (for
   `secondary_storage=none` and when the `perform-read-benchmarks` workflow
@@ -222,9 +224,6 @@ mocks. Run them from this directory:
 make -C k6 test
 ```
 
-It prints the coverage of each script and fails below 95% lines, branches or functions.
-The CI job `Load Test / k6` runs them on changes under `load-tests/setup/charts/load-test-setup/k6/`.
-
 ### Reusing common helpers
 
 [`k6/scripts/lib.camunda.js`](k6/scripts/lib.camunda.js) provides the shared Camunda client:
@@ -256,4 +255,9 @@ Known issues and limitations of the k6 tests:
    [not reported into Prometheus](https://github.com/grafana/k6/issues/4587).
    Thresholds support is anyway disabled by default as it increases k6 memory
    usage drastically.
+7. Don't build large multipart bodies with the [`FormData`
+   jslib](https://jslib.k6.io/formdata/0.0.2/index.js): it's not memory efficient for large payload
+   (see [k6#3888](https://github.com/grafana/k6/issues/3888),
+   [k6#5760](https://github.com/grafana/k6/issues/5760)). Instead, pass an `http.file()` to
+   `Client.post()` with `{ multipart: true }`.
 

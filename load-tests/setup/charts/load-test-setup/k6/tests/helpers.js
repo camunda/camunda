@@ -19,12 +19,17 @@ const camundaEnv = () => ({
 
 // Mocks the k6 runtime modules, sets the Camunda environment, imports the module and registers the
 // `beforeEach` hook that resets the mocks. Call it once at the top level of a test file.
-export async function loadK6Module(path) {
-  const http = { request: mock.fn(), post: mock.fn() };
+export async function loadK6Module(path, { data } = {}) {
+  const http = { request: mock.fn(), post: mock.fn(), file: mock.fn() };
   const check = mock.fn();
   const sleep = mock.fn();
   mock.module("k6/http", { exports: { default: http } });
   mock.module("k6", { exports: { check, sleep } });
+  if (data) {
+    mock.module(new URL("../scripts/lib.data.js", import.meta.url).href, {
+      exports: { loadData: data },
+    });
+  }
 
   globalThis.__ENV = camundaEnv();
 
@@ -34,10 +39,12 @@ export async function loadK6Module(path) {
     globalThis.__ENV = camundaEnv();
     http.request.mock.resetCalls();
     http.post.mock.resetCalls();
+    http.file.mock.resetCalls();
     check.mock.resetCalls();
     sleep.mock.resetCalls();
     http.request.mock.mockImplementation(() => okResponse);
     http.post.mock.mockImplementation(() => tokenResponse());
+    http.file.mock.mockImplementation((content, name) => ({ content, name }));
     for (const method of ["log", "debug", "info", "error"]) {
       mock.method(console, method, () => {});
     }
@@ -47,6 +54,7 @@ export async function loadK6Module(path) {
     script,
     http,
     sleep,
+    check,
     respondWith: (...responses) =>
       http.request.mock.mockImplementation(() => responses.shift()),
     checkResults: () => statusCheckResults(check),

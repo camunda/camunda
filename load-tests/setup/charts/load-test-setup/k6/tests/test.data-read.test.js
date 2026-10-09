@@ -1,4 +1,5 @@
 // Unit tests for `scripts/test.data-read.js`. The k6 modules are mocked, the Camunda client is real.
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -16,6 +17,11 @@ const definitions = (...ids) => ({
     items: ids.map((processDefinitionId) => ({ processDefinitionId })),
   }),
 });
+
+const deployedProcessId = readFileSync(
+  new URL("../data/micro.bpmn", import.meta.url),
+  "utf8",
+).match(/<bpmn:process id="([^"]+)"/)[1];
 
 describe("test.data-read.js k6 test script", () => {
   it("should reference an exported function in every scenario", () => {
@@ -40,6 +46,18 @@ describe("test.data-read.js k6 test script", () => {
       sleep.mock.calls.map((c) => c.arguments[0]),
       [10, 10],
     );
+  });
+
+  it("should ignore the process definition deployed by the default test", async () => {
+    // given
+    respondWith({ status: 200 }, definitions(deployedProcessId, "other"));
+
+    // when
+    const data = await script.setup();
+
+    // then
+    assert.deepEqual(data, { processDefinitionId: "other" });
+    assert.equal(sleep.mock.callCount(), 0);
   });
 
   it("should search instances of the process definition and check that status code is 200", async () => {

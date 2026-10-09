@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-data
+  labels:
+    app.kubernetes.io/component: k6
+data:
+  {{- (.Files.Glob "k6/data/*").AsConfig | nindent 2 }}
