@@ -406,12 +406,25 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public long updateByQuery(final String index, final Query query, final Script script) {
-    final UpdateByQueryRequest request =
+    return updateByQuery(index, query, script, null);
+  }
+
+  /**
+   * @param scrollSize number of documents OpenSearch reindexes per batch, or {@code null} to keep
+   *     the OpenSearch default (1000). Lower it when the matched documents are large, as each batch
+   *     becomes one bulk request that is subject to the indexing pressure limit.
+   */
+  public long updateByQuery(
+      final String index, final Query query, final Script script, final Integer scrollSize) {
+    final UpdateByQueryRequest.Builder requestBuilder =
         applyIndexPrefix(updateByQueryRequestBuilder(List.of(index)))
             .query(query)
             .refresh(Refresh.True)
-            .script(script)
-            .build();
+            .script(script);
+    if (scrollSize != null) {
+      requestBuilder.scrollSize(scrollSize);
+    }
+    final UpdateByQueryRequest request = requestBuilder.build();
     final UpdateByQueryResponse response;
     Long status;
     try {
