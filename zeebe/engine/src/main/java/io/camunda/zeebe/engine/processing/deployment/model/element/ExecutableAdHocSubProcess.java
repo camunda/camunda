@@ -16,6 +16,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -35,6 +36,11 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
 
   private final Map<String, ExecutableFlowNode> adHocActivitiesById = new HashMap<>();
   private final DirectBuffer adHocActivitiesMetadata = new UnsafeBuffer();
+
+  // derived lazily from the model instead of in the (frozen) transformer, so that the shared joins
+  // also apply to processes that were deployed before they were introduced; not volatile, as the
+  // model is only used by the processing thread of the partition that cached it
+  private Set<ExecutableFlowNode> sharedJoins;
 
   public ExecutableAdHocSubProcess(final String id) {
     super(id);
@@ -77,6 +83,20 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
   public void addAdHocActivity(final ExecutableFlowNode adHocActivity) {
     final String elementId = BufferUtil.bufferAsString(adHocActivity.getId());
     adHocActivitiesById.put(elementId, adHocActivity);
+  }
+
+  /**
+   * Returns {@code true} if the element is a joining gateway that is reached from more than one
+   * ad-hoc activity. Such a join lives in the ad-hoc sub-process instance instead of in an inner
+   * instance, so that it can count the sequence flows coming from different inner instances.
+   */
+  public boolean isSharedJoin(final ExecutableFlowElement element) {
+    var joins = sharedJoins;
+    if (joins == null) {
+      joins = AdHocSubProcessSharedJoins.compute(adHocActivitiesById.values());
+      sharedJoins = joins;
+    }
+    return joins.contains(element);
   }
 
   public ZeebeAdHocImplementationType getImplementationType() {
