@@ -21,9 +21,7 @@ func TestRewriteAs(t *testing.T) {
 		"`./c8run start`":            "`c8ctl cluster start`",
 		"`c8run stop`":               "`c8ctl cluster stop`",
 		"`c8run help`":               "`c8ctl cluster help`",
-		"`c8run tenants list`":       "`c8ctl cluster tenants list`",
 		"`c8run secrets set X`":      "`c8ctl cluster secrets set X`",
-		"`c8run pt list`":            "`c8ctl cluster pt list`",
 		"`c8run physical-tenants`":   "`c8ctl cluster physical-tenants`",
 		"the c8run .env file":        "the c8run .env file",
 		"c8run startup is complete":  "c8run startup is complete",
@@ -35,7 +33,7 @@ func TestRewriteAs(t *testing.T) {
 }
 
 func TestRewriteAsUsesNameLiterally(t *testing.T) {
-	assert.Equal(t, "`/opt/$TOOLS/c8ctl cluster tenants list`", RewriteAs("`c8run tenants list`", "/opt/$TOOLS/c8ctl cluster"))
+	assert.Equal(t, "`/opt/$TOOLS/c8ctl cluster physical-tenants list`", RewriteAs("`c8run physical-tenants list`", "/opt/$TOOLS/c8ctl cluster"))
 	assert.Equal(t, "`x${1}$$y stop`", RewriteAs("`c8run stop`", "x${1}$$y"))
 }
 

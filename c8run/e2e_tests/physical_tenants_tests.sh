@@ -19,28 +19,6 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 fail() { printf "test failed: %s\n" "$1"; exit 1; }
 
-if [[ -n "${C8RUN_DIR:-}" ]]; then
-        binary="$C8RUN_DIR/c8run"
-        [[ ! -f "$C8RUN_DIR/c8run.exe" ]] || binary="$C8RUN_DIR/c8run.exe"
-        printf "\nTest: removed physical tenant command aliases report migration guidance\n"
-        for alias in tenants pt; do
-                if output="$("$binary" "$alias" list 2>&1)"; then
-                        fail "removed command $alias was accepted"
-                fi
-                [[ "$output" == *"has been removed"* && "$output" == *"c8run physical-tenants"* ]] \
-                        || fail "missing migration guidance for $alias: $output"
-        done
-        for selector in "--tenant" "--tenant=$tenant"; do
-                args=("$selector")
-                [[ "$selector" != "--tenant" ]] || args+=("$tenant")
-                if output="$("$binary" secrets "${args[@]}" list 2>&1)"; then
-                        fail "removed selector $selector was accepted"
-                fi
-                [[ "$output" == *"--tenant has been removed"* && "$output" == *"--physical-tenant"* ]] \
-                        || fail "missing selector migration guidance: $output"
-        done
-fi
-
 count_definitions() {
         curl --silent --show-error --fail -u "$2" -X POST "$1/v2/process-definitions/search" \
                 -H 'Content-Type: application/json' -H 'Accept: application/json' \

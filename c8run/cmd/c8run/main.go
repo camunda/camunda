@@ -147,8 +147,6 @@ func getBaseCommand() (string, error) {
 		return "secrets", nil
 	case "physical-tenants":
 		return "physical-tenants", nil
-	case "tenants", "pt":
-		return "", fmt.Errorf("`c8run %s` has been removed; use `c8run physical-tenants` instead", os.Args[1])
 	case "help":
 		usage(0)
 	case "-h", "--help":

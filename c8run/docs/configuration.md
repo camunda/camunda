@@ -80,7 +80,7 @@ Existing `JDK_JAVA_OPTIONS` values are preserved and only missing flags are appe
 
 ## Physical Tenants
 
-`c8run physical-tenants` and `start --physical-tenants` are implemented in `cmd/c8run/tenants.go`, `cmd/c8run/physicaltenants_start.go` and `internal/physicaltenants/`. See the [breaking-change migration guide](../README.md#breaking-change-physical-tenant-command-names) for removed command and selector aliases.
+`c8run physical-tenants` and `start --physical-tenants` are implemented in `cmd/c8run/tenants.go`, `cmd/c8run/physicaltenants_start.go` and `internal/physicaltenants/`.
 
 Resolution on `start` (`physicaltenants.Resolve`), first match wins:
 1. Tenants declared outside c8run — a user `--config` with `camunda.physical-tenants`, `CAMUNDA_PHYSICALTENANTS_*` environment variables, or `-Dcamunda.physical-tenants.*` in `JAVA_OPTS`. c8run applies nothing and logs a notice. Combining any of these with `--physical-tenants` is an error.
@@ -110,6 +110,6 @@ c8run-managed tenants require `C8RUN_SECRETS_MODE=local`; in external mode start
 
 After Camunda reports healthy, each tenant is probed with `POST /physical-tenants/<id>/v2/process-definitions/search` using the tenant's login. That endpoint returns 503 until the tenant's secondary storage is ready, so a 2xx means the tenant can serve requests. Unknown tenants are rejected with 404 before security runs, so a 401/403 proves the tenant is configured; because security runs before the storage check, the tenant is then shown as "up (unverified)" with a warning (under OIDC, that no token was available; under Basic auth, that the seeded login was rejected). The startup summary prints a per-tenant table. If a tenant is not ready, Camunda and the healthy tenants keep running, and `start` exits 1 naming the failed tenants.
 
-Wrappers set `C8RUN_CLI_NAME` (for example `c8ctl cluster`) so that printed commands can be run as shown. `internal/cliname` rewrites `c8run <subcommand>` and `./c8run <subcommand>` in help text, `physical-tenants`/`secrets` output, startup errors and notices, and the startup summary. Removed command names are also rewritten in migration errors. Print new hints through `cliname.Writer` or `cliname.Rewrite`, and add new subcommands to its pattern. Values printed verbatim, such as `physical-tenants path` and `secrets path`, use the command's `plainOutput` so they are never rewritten.
+Wrappers set `C8RUN_CLI_NAME` (for example `c8ctl cluster`) so that printed commands can be run as shown. `internal/cliname` rewrites `c8run <subcommand>` and `./c8run <subcommand>` in help text, `physical-tenants`/`secrets` output, startup errors and notices, and the startup summary. Print new hints through `cliname.Writer` or `cliname.Rewrite`, and add new subcommands to its pattern. Values printed verbatim, such as `physical-tenants path` and `secrets path`, use the command's `plainOutput` so they are never rewritten.
 
 `e2e_tests/physical_tenants_tests.sh` checks REST and gRPC (`Camunda-Physical-Tenant`) routing, cross-tenant login rejection, deployment isolation, per-tenant secrets, and per-tenant connectors. CI runs it in the c8run unix job with authorizations on and a tenant-specific user.
