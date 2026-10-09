@@ -40,6 +40,8 @@ jobs:
           proxy: camunda.teleport.sh:443
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER }}
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
       - name: Verify Load test
         run: load-tests/docs/scripts/verify-test.sh "${NAMESPACE}"
       - name: Observe build status
