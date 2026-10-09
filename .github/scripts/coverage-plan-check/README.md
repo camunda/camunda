@@ -16,8 +16,8 @@ See camunda/camunda#65183 and camunda/team-test-automation#83.
 
 ## Used by
 
-| Workflow | Trigger |
-|---|---|
+|                                Workflow                                |                                              Trigger                                               |
+|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
 | [`check-coverage-plans.yml`](../../workflows/check-coverage-plans.yml) | PRs touching a plan or the suite paths plans point at; every push to `main`; weekdays at 06:00 UTC |
 
 ## Running it locally
@@ -37,11 +37,11 @@ node .github/scripts/coverage-plan-check/coverage-plan.mjs summary qa/coverage/<
 Schema validity of every plan, plus two drift directions between a plan and the
 suite:
 
-| Drift | Severity | Why |
-|---|---|---|
-| A case marked `automated` or `stub` whose spec file does not exist | **error** | The plan claims coverage that does not exist |
-| A case marked `automated` or `stub` whose id appears nowhere in its spec file | **error** | Same claim, one level finer: the file exists but the case does not |
-| A case marked `planned` whose id already appears in its spec file | warning | The suite is ahead of its paperwork — it under-reports, it does not overstate |
+|                                     Drift                                     | Severity  |                                      Why                                      |
+|-------------------------------------------------------------------------------|-----------|-------------------------------------------------------------------------------|
+| A case marked `automated` or `stub` whose spec file does not exist            | **error** | The plan claims coverage that does not exist                                  |
+| A case marked `automated` or `stub` whose id appears nowhere in its spec file | **error** | Same claim, one level finer: the file exists but the case does not            |
+| A case marked `planned` whose id already appears in its spec file             | warning   | The suite is ahead of its paperwork — it under-reports, it does not overstate |
 
 ### Carrying a case id in a test
 

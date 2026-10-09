@@ -34,3 +34,4 @@ The usual causes, in order of likelihood:
    is a warning, not an error: the suite is ahead of its paperwork.
 4. **The test does not carry its case id.** Add the marker — see *Carrying a
    case id in a test* in the check's README.
+
