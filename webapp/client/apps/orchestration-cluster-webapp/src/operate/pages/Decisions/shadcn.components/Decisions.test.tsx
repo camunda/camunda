@@ -71,8 +71,8 @@ describe('<Decisions />', () => {
 		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
 
 		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
-		await expect.element(screen.getByText('There is no Decision selected')).toBeVisible();
-		await expect.element(screen.getByText('Decision Instances')).toBeVisible();
+		await expect.element(screen.getByText('There is no decision selected')).toBeVisible();
+		await expect.element(screen.getByText('Decision instances')).toBeVisible();
 	});
 
 	it('should show optional filters that are active in the URL', async ({worker}) => {
@@ -144,11 +144,11 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&processInstanceKey=%22123%22',
 		});
 
-		await userEvent.fill(screen.getByLabelText('Process Instance Key', {exact: true}), 'abc');
+		await userEvent.fill(screen.getByLabelText('Process instance key', {exact: true}), 'abc');
 		await expect
-			.element(screen.getByLabelText('Process Instance Key', {exact: true}))
+			.element(screen.getByLabelText('Process instance key', {exact: true}))
 			.toHaveAttribute('aria-invalid', 'true');
-		(screen.getByRole('button', {name: 'Remove Business ID Filter'}).element() as HTMLElement).click();
+		(screen.getByRole('button', {name: 'Remove Business ID filter'}).element() as HTMLElement).click();
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
 		await expect.poll(() => screen.router.state.location.search).not.toHaveProperty('businessId');
@@ -161,11 +161,11 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&processInstanceKey=%22123%22',
 		});
 
-		await userEvent.fill(screen.getByLabelText('Process Instance Key', {exact: true}), 'abc');
-		(screen.getByRole('button', {name: 'Remove Business ID Filter'}).element() as HTMLElement).click();
+		await userEvent.fill(screen.getByLabelText('Process instance key', {exact: true}), 'abc');
+		(screen.getByRole('button', {name: 'Remove Business ID filter'}).element() as HTMLElement).click();
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
-		await expect.element(screen.getByLabelText('Process Instance Key', {exact: true})).toHaveValue('abc');
+		await expect.element(screen.getByLabelText('Process instance key', {exact: true})).toHaveValue('abc');
 	});
 	it('should restore URL values when navigating back with a pending draft', async ({worker}) => {
 		worker.use(mockInstances());
@@ -188,36 +188,38 @@ describe('<Decisions />', () => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
 
-		(screen.getByRole('button', {name: 'More Filters'}).element() as HTMLElement).focus();
+		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
+		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
 		await userEvent.keyboard('{Enter}');
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key'}));
-		await userEvent.fill(screen.getByLabelText('Process Instance Key', {exact: true}), 'abc');
-		(screen.getByRole('button', {name: 'More Filters'}).element() as HTMLElement).focus();
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
+		await userEvent.fill(screen.getByLabelText('Process instance key', {exact: true}), 'abc');
+		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
 		await userEvent.keyboard('{Enter}');
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Business ID'}));
-		(screen.getByRole('button', {name: 'Remove Business ID Filter'}).element() as HTMLElement).click();
+		(screen.getByRole('button', {name: 'Remove Business ID filter'}).element() as HTMLElement).click();
 		(screen.getByRole('button', {name: 'Reset filters'}).element() as HTMLElement).click();
-		(screen.getByRole('button', {name: 'More Filters'}).element() as HTMLElement).focus();
+		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
 		await userEvent.keyboard('{Enter}');
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
 
-		await expect.element(screen.getByLabelText('Process Instance Key', {exact: true})).toHaveValue('');
+		await expect.element(screen.getByLabelText('Process instance key', {exact: true})).toHaveValue('');
 	});
 
 	it('should discard an invalid draft when resetting', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
 
-		(screen.getByRole('button', {name: 'More Filters'}).element() as HTMLElement).focus();
+		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
+		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
 		await userEvent.keyboard('{Enter}');
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key'}));
-		await userEvent.fill(screen.getByLabelText('Process Instance Key', {exact: true}), 'abc');
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
+		await userEvent.fill(screen.getByLabelText('Process instance key', {exact: true}), 'abc');
 		(screen.getByRole('button', {name: 'Reset filters'}).element() as HTMLElement).click();
-		(screen.getByRole('button', {name: 'More Filters'}).element() as HTMLElement).focus();
+		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
 		await userEvent.keyboard('{Enter}');
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
 
-		await expect.element(screen.getByLabelText('Process Instance Key', {exact: true})).toHaveValue('');
+		await expect.element(screen.getByLabelText('Process instance key', {exact: true})).toHaveValue('');
 	});
 
 	it('should enable reset when a sort is applied in the URL', async ({worker}) => {
@@ -237,7 +239,7 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&failed=false',
 		});
 
-		await screen.getByRole('button', {name: 'Remove Business ID Filter'}).element().click();
+		await screen.getByRole('button', {name: 'Remove Business ID filter'}).element().click();
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
 		expect(screen.router.state.location.search).not.toHaveProperty('businessId');
@@ -252,7 +254,7 @@ describe('<Decisions />', () => {
 		});
 
 		const input = screen.getByLabelText('Business ID', {exact: true}).element().getBoundingClientRect();
-		const button = screen.getByRole('button', {name: 'Remove Business ID Filter'}).element().getBoundingClientRect();
+		const button = screen.getByRole('button', {name: 'Remove Business ID filter'}).element().getBoundingClientRect();
 
 		expect(input.top + input.height / 2 - (button.top + button.height / 2)).toBe(0);
 	});
@@ -312,7 +314,7 @@ describe('<Decisions />', () => {
 		});
 
 		await expect
-			.element(screen.getByText('There is more than one Version selected for Decision "Invoice Classification"'))
+			.element(screen.getByText('There is more than one version selected for decision "Invoice Classification"'))
 			.toBeVisible();
 	});
 
@@ -347,7 +349,7 @@ describe('<Decisions />', () => {
 		});
 
 		await expect
-			.element(screen.getByText('Decision "Invoice Classification" exists in more than one Tenant'))
+			.element(screen.getByText('Decision "Invoice Classification" exists in more than one tenant'))
 			.toBeVisible();
 	});
 
@@ -371,11 +373,11 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
-		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeVisible();
 
 		await screen.router.navigate({to: '.', search: {decisionDefinitionId: 'invoice'}});
 
-		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).not.toBeInTheDocument();
 	});
 
 	it('should keep a newly selected version blocked until the previous deletion finishes', async ({worker}) => {
@@ -409,16 +411,16 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
-		await userEvent.click(screen.getByRole('button', {name: /Delete Decision Definition/}));
+		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
 		await screen.router.navigate({to: '.', search: {decisionDefinitionId: 'invoice', decisionDefinitionVersion: 2}});
 
-		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
 		await expect
 			.poll(() => notificationsStore.notifications.some(({title}) => title === 'Operation created'))
 			.toBe(true);
-		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).toBeEnabled();
+		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeEnabled();
 		expect(screen.router.state.location.search).toMatchObject({
 			decisionDefinitionId: 'invoice',
 			decisionDefinitionVersion: 2,
