@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 public class SimpleVoteQuorum implements VoteQuorum {
 
@@ -24,19 +25,31 @@ public class SimpleVoteQuorum implements VoteQuorum {
   private boolean complete;
   private final Set<MemberId> members;
   private int succeeded;
-  private int failed;
+  private final int totalMembers;
   private final int quorum;
   private final Map<MemberId, VoteErrorStatus> failedStatuses;
+  private final String name;
 
   /**
    * @param callback will be called with the result of the vote, either true or false.
    * @param members All members participating, including the local member.
    */
   public SimpleVoteQuorum(final Consumer<Boolean> callback, final Collection<MemberId> members) {
+    this(callback, members, "Quorum");
+  }
+
+  /**
+   * @param name identifies this quorum in failure reports, e.g. to tell the old and new
+   *     configuration apart during joint consensus.
+   */
+  public SimpleVoteQuorum(
+      final Consumer<Boolean> callback, final Collection<MemberId> members, final String name) {
     this.callback = callback;
     this.members = new HashSet<>(members);
     failedStatuses = new HashMap<>();
+    totalMembers = members.size();
     quorum = members.size() / 2 + 1;
+    this.name = name;
   }
 
   @Override
@@ -50,7 +63,6 @@ public class SimpleVoteQuorum implements VoteQuorum {
   @Override
   public void fail(final MemberId member, final VoteErrorStatus status) {
     if (members.remove(member)) {
-      failed++;
       failedStatuses.put(member, status);
       checkComplete();
     }
@@ -62,6 +74,30 @@ public class SimpleVoteQuorum implements VoteQuorum {
    */
   @Override
   public void cancel() {
+    close(reportLevel());
+  }
+
+  /**
+   * Cancels the quorum whose result is no longer needed because the election is already decided,
+   * e.g. the sibling configuration failed a joint election. Unlike {@link #cancel()}, the collected
+   * member states are only logged at debug so a single election produces a single default-level
+   * report.
+   */
+  void abandon() {
+    close(Level.DEBUG);
+  }
+
+  private void close(final Level level) {
+    if (!complete && !failedStatuses.isEmpty()) {
+      LOG.atLevel(level)
+          .log(
+              "{} cancelled before completion with {}/{} failed members: {}, pending members: {}",
+              name,
+              failedStatuses.size(),
+              totalMembers,
+              failedStatuses,
+              members);
+    }
     callback = null;
     complete = true;
   }
@@ -71,13 +107,23 @@ public class SimpleVoteQuorum implements VoteQuorum {
       if (succeeded >= quorum) {
         complete = true;
         callback.accept(true);
-      } else if (failed >= quorum) {
+      } else if (failedStatuses.size() >= quorum) {
         complete = true;
-        final int memberCount = succeeded + failed + members.size();
-        LOG.warn(
-            "Quorum failed with {}/{} failed members: {}", failed, memberCount, failedStatuses);
+        LOG.atLevel(reportLevel())
+            .log(
+                "{} failed with {}/{} failed members: {}",
+                name,
+                failedStatuses.size(),
+                totalMembers,
+                failedStatuses);
         callback.accept(false);
       }
     }
+  }
+
+  private Level reportLevel() {
+    return failedStatuses.values().stream().allMatch(VoteErrorStatus::isProtocolOutcome)
+        ? Level.DEBUG
+        : Level.WARN;
   }
 }
