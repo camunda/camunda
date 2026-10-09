@@ -64,6 +64,31 @@ check() {
 
 # ── CI-relevant paths: should trigger CI ─────────────────────────────────────
 
+@test "should not be CI-relevant when only the coverage-plan workflow changed" {
+  # given a PR that only changes the coverage-plan validation workflow
+  # when checking CI relevance
+  run check ".github/workflows/check-coverage-plans.yml"
+  # then CI should not be triggered
+  [ "$status" -eq 1 ]
+}
+
+@test "should not be CI-relevant when only a nested coverage-plan-check file changed" {
+  # given a PR that only changes a file nested under the validator directory
+  # when checking CI relevance
+  run check ".github/scripts/coverage-plan-check/coverage-plan.mjs"
+  # then CI should not be triggered
+  [ "$status" -eq 1 ]
+}
+
+@test "should be CI-relevant when a coverage-plan file and a CI workflow both changed" {
+  # given a PR that changes the validator alongside a CI-relevant workflow
+  # when checking CI relevance
+  run check ".github/scripts/coverage-plan-check/package.json
+.github/workflows/ci.yml"
+  # then CI should be triggered
+  [ "$status" -eq 0 ]
+}
+
 @test "should be CI-relevant when a CI workflow changed" {
   # given a PR that changes the main CI workflow
   # when checking CI relevance
