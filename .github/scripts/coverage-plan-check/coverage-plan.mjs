@@ -3,7 +3,7 @@
 // VENDORED FILE — do not edit here.
 //
 // Source of truth: camunda/c8-cross-component-e2e-tests, scripts/coverage-plan.mjs
-// Vendored at:     c737d6abcbeed6d3724e3261f5a494ca7e1aedaf
+// Vendored at:     f24068dad40e2ed9c0eb9e5f91801a942c78fc85
 //
 // The schema this enforces is owned by that repository, which also holds the
 // validator's tests. Editing the copy here makes this repository enforce a
@@ -335,6 +335,20 @@ export function validateCoveragePlan(plan, options = {}) {
         //     flipped. A warning: the suite is ahead of its paperwork, which
         //     misreports but does not overstate.
         //
+        // Only where the suite actually uses the convention. Grepping for
+        // `<ID>:` is a real check when the generator wrote the test title: a
+        // hit means a TEST by that name exists. Over a suite that predates the
+        // plan it confirms only that the id appears SOMEWHERE in the file,
+        // which a comment satisfies -- a token someone typed, bound to no test
+        // that runs. That reads as verification while verifying nothing, so a
+        // caller whose suite does not carry ids turns it off and keeps the
+        // existence check, which is the drift that is real there: the file
+        // deleted, moved or renamed.
+        //
+        // Off is a per-RUN choice, not a per-plan one. Whether the tests carry
+        // ids is a fact about the suite, so the caller that knows it decides,
+        // and no plan can wave the check off for itself.
+        //
         // Match `<ID>:`, the documented title form, not a bare substring. A
         // bare one lets a longer id satisfy a shorter one -- a test titled
         // "DUP-010: ..." would make DUP-01 look present while its own test is
@@ -346,7 +360,9 @@ export function validateCoveragePlan(plan, options = {}) {
         // let an automated case point at an empty spec and pass.
         let source = null;
         try {
-          source = fs.readFileSync(abs, 'utf-8');
+          if (options.checkCaseIds !== false) {
+            source = fs.readFileSync(abs, 'utf-8');
+          }
         } catch {
           // Unreadable is not the same as absent, and the existsSync above
           // already passed. Say nothing rather than report a false drift.
@@ -527,7 +543,13 @@ function runCli(argv) {
   const [command, target] = argv;
 
   if (command === 'validate') {
-    const dir = target ?? path.join(process.cwd(), 'coverage');
+    // A suite that predates the plan carries no case ids in its test titles,
+    // and nothing but a comment could put them there. Such a caller runs the
+    // existence check alone rather than one a comment can satisfy.
+    const checkCaseIds = !argv.includes('--no-case-ids');
+    const dir =
+      (target === '--no-case-ids' ? undefined : target) ??
+      path.join(process.cwd(), 'coverage');
     const files =
       fs.existsSync(dir) && fs.statSync(dir).isFile()
         ? [dir]
@@ -550,6 +572,7 @@ function runCli(argv) {
       }
       const {errors, warnings} = validateCoveragePlan(plan, {
         checkSpecFiles: true,
+        checkCaseIds,
         repoRoot: process.cwd(),
         fileName: path.basename(file),
       });
@@ -582,7 +605,9 @@ function runCli(argv) {
     return 0;
   }
 
-  console.error('Usage: node scripts/coverage-plan.mjs validate [dir|file]');
+  console.error(
+    'Usage: node scripts/coverage-plan.mjs validate [dir|file] [--no-case-ids]',
+  );
   console.error('       node scripts/coverage-plan.mjs summary <file>');
   return 1;
 }

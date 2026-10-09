@@ -34,26 +34,34 @@ node .github/scripts/coverage-plan-check/coverage-plan.mjs summary qa/coverage/<
 
 ## What it checks
 
-Schema validity of every plan, plus two drift directions between a plan and the
-suite:
+Schema validity of every plan, plus drift between a plan and the suite:
 
-|                                     Drift                                     | Severity  |                                      Why                                      |
-|-------------------------------------------------------------------------------|-----------|-------------------------------------------------------------------------------|
-| A case marked `automated` or `stub` whose spec file does not exist            | **error** | The plan claims coverage that does not exist                                  |
-| A case marked `automated` or `stub` whose id appears nowhere in its spec file | **error** | Same claim, one level finer: the file exists but the case does not            |
-| A case marked `planned` whose id already appears in its spec file             | warning   | The suite is ahead of its paperwork — it under-reports, it does not overstate |
+|                                     Drift                                     |      Severity       |                     Why                      |
+|-------------------------------------------------------------------------------|---------------------|----------------------------------------------|
+| A case marked `automated` or `stub` whose spec file does not exist            | **error**           | The plan claims coverage that does not exist |
+| A case marked `automated` or `stub` whose id appears nowhere in its spec file | **error**, off here | See below                                    |
+| A case marked `planned` whose id already appears in its spec file             | warning, off here   | The suite is ahead of its paperwork          |
 
-### Carrying a case id in a test
+### Why the id check is off here (`--no-case-ids`)
 
-The id check looks for the literal `<ID>:` anywhere in the spec file — a title
-token, not a bare substring, so `DUP-010:` cannot satisfy `DUP-01`.
+The validator can require each case id to appear in its spec file. Over a suite
+**generated from the plan** that is a real check: the generator writes the id as
+the first token of the test title, so a hit means a test by that name exists.
+That is how it runs in `camunda/c8-cross-component-e2e-tests`.
 
-For a generated Playwright spec the id is the first token of the test title, and
-nothing extra is needed. For a test that predates its plan — the Java and vitest
-cases in `product-hub-3526.yml` are all of these — put the id in a comment above
-the class, the `describe`, or the specific methods the case counts, and say what
-the case is and that moving it means updating the plan. The marker is what makes
-the plan's claim checkable rather than merely asserted.
+This repository's suites predate the plans that point at them — the JUnit ITs,
+the vitest component tests, and the hand-written Playwright API specs alike. No
+test title carries an id, and only a comment could put one there. A comment
+makes the grep pass while binding to no test that runs, so the check would read
+as verification while verifying nothing, and the price of switching it on is a
+case-id comment pasted into every product test file a plan names.
+
+So this repository runs the existence check alone. It is the drift that is real
+for such a suite, and the one a comment cannot fake: a test file deleted, moved
+or renamed is exactly how a plan entry pointing at pre-existing tests goes
+stale.
+
+If a future suite here **is** generated from its plan, drop the flag for it.
 
 ## Vendoring
 

@@ -32,6 +32,19 @@ The usual causes, in order of likelihood:
    Do not leave it `automated`.
 3. **A new test exists for a `planned` case.** Flip it to `automated`. This one
    is a warning, not an error: the suite is ahead of its paperwork.
-4. **The test does not carry its case id.** Add the marker — see *Carrying a
-   case id in a test* in the check's README.
+4. **The case id is missing from a generated spec.** Only applies where the
+   check runs with case ids on, which this repository's job does not — see
+   *Why the id check is off here* in the check's README.
 
+## Known gap: a plan can under-report silently
+
+The checks catch a plan claiming coverage that is gone. They do **not** catch a
+plan that forgot to record coverage that landed, unless the suite carries case
+ids — and this repository's does not.
+
+`product-hub-3526.yml` is in that state today: every `SR-API-*` case is marked
+`planned`, but the four spec files they name exist on `main` with 40 tests
+between them, and `processInstanceSuspendResume.spec.ts` has 10 more. The
+coverage gate reports from the plan, so it has been under-reporting this epic.
+Confirming which cases those tests actually satisfy is a review judgement, not
+a mechanical one, so it is not done here.

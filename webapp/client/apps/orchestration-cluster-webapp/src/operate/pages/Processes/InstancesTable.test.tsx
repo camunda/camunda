@@ -81,10 +81,6 @@ function renderSearchHarness(initial: ProcessesSearch, next: ProcessesSearch) {
 
 const EMPTY_BATCH_OPERATION_ITEMS_RESPONSE = HttpResponse.json(createQueryBatchOperationItemsResponse({items: []}));
 
-// Coverage plan SR-C-01: the Suspended filter, the suspended indicator, the suspend and
-// resume row actions, and polling a suspended-only view are the cases
-// qa/coverage/product-hub-3526.yml counts in this file. If they move out of it, update
-// that plan — CI fails when the plan claims a case the suite no longer carries.
 describe('<InstancesTable />', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));

@@ -291,10 +291,6 @@ public final class ProcessInstanceServiceTest {
         .isEqualTo(authentication);
   }
 
-  // Coverage plan SR-U-01: suspending an instance dispatches the correct service
-  // command. This test and shouldResumeProcessInstanceBatchOperationWithResult are the
-  // two cases qa/coverage/product-hub-3526.yml counts; if you move or rename them,
-  // update that plan — CI fails when the plan claims a case the suite no longer carries.
   @Test
   void shouldSuspendProcessInstanceBatchOperationWithResult() {
     // given

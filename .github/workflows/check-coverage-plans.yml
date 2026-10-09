@@ -70,9 +70,20 @@ jobs:
           # `path` in a plan against the working directory, so this is what lets
           # it check the plan against the suite rather than only against itself.
           #
+          # --no-case-ids: the validator can also require each case id to appear
+          # in its spec file, which is a real check over a suite generated from
+          # the plan, because the id is the first token of the generated test
+          # title. This repository's suites predate the plans that point at
+          # them -- the JUnit ITs, the vitest component tests, and the
+          # hand-written Playwright API specs alike -- so no title carries an
+          # id and only a comment could put one there. A comment makes the
+          # grep pass without binding to any test that runs, so the check would
+          # read as verification while verifying nothing. The existence check
+          # below is the drift that is real here, and a comment cannot fake it.
+          #
           # `shell: bash` runs with `pipefail`, so a validation failure still
           # fails this step through the tee.
-          node "$CHECK_DIR/coverage-plan.mjs" validate qa/coverage \
+          node "$CHECK_DIR/coverage-plan.mjs" validate qa/coverage --no-case-ids \
             2>&1 | tee "$RUNNER_TEMP/coverage-plans.txt"
 
       - name: Report result in summary

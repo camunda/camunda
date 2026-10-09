@@ -24,10 +24,6 @@ import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
-// Coverage plan SR-I-03: timers buffered across a suspension fire once on resume.
-// This file is the whole case in
-// qa/coverage/product-hub-3526.yml; if it moves or is renamed, update that plan —
-// CI fails when the plan claims a case the suite no longer carries.
 /**
  * End-to-end coverage of timer due-date checks against a live broker while an instance is
  * suspended. EngineRule tests drive time in-process; this class lets {@code
