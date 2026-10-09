@@ -163,14 +163,12 @@ public final class RestoreValidator
             ids[ids.length - 1], restoredPartitionCount, exportedPartitionCount.size());
       }
     }
-    final var backups =
-        awaitResult(
-                FuturesUtil.parTraverse(
-                    IntStream.rangeClosed(1, restoredPartitionCount).boxed().toList(),
-                    partition -> verifyBackupsExist(store, partition, ids)))
-            .stream()
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    return backups;
+    return awaitResult(
+            FuturesUtil.parTraverse(
+                IntStream.rangeClosed(1, restoredPartitionCount).boxed().toList(),
+                partition -> verifyBackupsExist(store, partition, ids)))
+        .stream()
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
 
   private CompletableFuture<Entry<Integer, long[]>> verifyBackupsExist(
@@ -232,7 +230,7 @@ public final class RestoreValidator
         RestorePointResolver.resolve(
             metadataByPartition, instantFrom, instantTo, exportedPositions);
     if (exportedPositions != null) {
-      verifyLastBackupHoldsThePartitions(restorableBackups, exportedPositions.size());
+      verifyLastBackupsHoldThePartitions(restorableBackups, exportedPositions.size());
     }
     return restorableBackups;
   }
@@ -251,16 +249,19 @@ public final class RestoreValidator
         latestBackup);
   }
 
-  private void verifyLastBackupHoldsThePartitions(
+  @VisibleForTesting
+  void verifyLastBackupsHoldThePartitions(
       final RestorableBackups restorableBackups, final int exportedPartitionCount) {
-    final var lastBackup =
-        requireNonNull(restorableBackups.backupsByPartitionId().get(1)).getLast().checkpointId();
-    verifyPartitionCountsAgree(
-        lastBackup,
-        backupPartitionCount(
-            requireNonNull(backupStore, "Backup store must be configured to load backups"),
-            lastBackup),
-        exportedPartitionCount);
+    final var store =
+        requireNonNull(backupStore, "Backup store must be configured to load backups");
+    restorableBackups.backupsByPartitionId().values().stream()
+        .map(backups -> backups.getLast().checkpointId())
+        .distinct()
+        .sorted()
+        .forEach(
+            lastBackup ->
+                verifyPartitionCountsAgree(
+                    lastBackup, backupPartitionCount(store, lastBackup), exportedPartitionCount));
   }
 
   /**
@@ -283,11 +284,7 @@ public final class RestoreValidator
    */
   private int backupPartitionCount(final BackupStore store, final long backupId) {
     final var backupPartitionCount =
-        awaitResult(
-                store.list(
-                    new BackupIdentifierWildcardImpl(
-                        Optional.empty(), Optional.empty(), CheckpointPattern.of(backupId))))
-            .stream()
+        awaitResult(store.list(lookupWildcard(backupId))).stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
             .findAny()
             .flatMap(BackupStatus::descriptor)
@@ -387,6 +384,11 @@ public final class RestoreValidator
       LOG.warn("Failed to parse backup metadata for partition {}", partitionId, e);
       return Optional.empty();
     }
+  }
+
+  private BackupIdentifierWildcardImpl lookupWildcard(final long backupId) {
+    return new BackupIdentifierWildcardImpl(
+        Optional.empty(), Optional.empty(), CheckpointPattern.of(backupId));
   }
 
   private static <T> T awaitResult(final CompletableFuture<T> future) {

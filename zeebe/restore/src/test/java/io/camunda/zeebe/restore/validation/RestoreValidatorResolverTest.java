@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore.validation;
 
 import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.Arrays;
@@ -710,6 +712,42 @@ final class RestoreValidatorResolverTest {
 
       // then
       assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
+    @Test
+    void shouldCheckTheLastBackupOfEveryPartitionAgainstTheExportedPositions() {
+      // given - partitions whose last backups differ, one of them taken with another partition
+      // count than the exported positions
+      stubBackupPartitionCount(5L, 2);
+      stubBackupPartitionCount(6L, 3);
+      final var restorableBackups =
+          new RestorableBackups(
+              5L,
+              Map.of(
+                  1,
+                      List.of(
+                          new CheckpointEntry(
+                              5L,
+                              100L,
+                              CHECKPOINT_TIMESTAMP,
+                              CheckpointType.SCHEDULED_BACKUP,
+                              OptionalLong.of(1L))),
+                  2,
+                      List.of(
+                          new CheckpointEntry(
+                              6L,
+                              100L,
+                              CHECKPOINT_TIMESTAMP,
+                              CheckpointType.SCHEDULED_BACKUP,
+                              OptionalLong.of(1L)))));
+      final var validator = new RestoreValidator(3, backupStore, null);
+
+      // when / then
+      assertThatThrownBy(() -> validator.verifyLastBackupsHoldThePartitions(restorableBackups, 2))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Cannot restore: backup 6 was taken with 3 partitions, but the RDBMS holds exported "
+                  + "positions for 2");
     }
 
     private static RestoreRequest rdbmsRequestWithBackupIds(final long backupId) {
