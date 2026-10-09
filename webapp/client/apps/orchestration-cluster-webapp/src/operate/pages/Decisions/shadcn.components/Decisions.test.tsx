@@ -40,8 +40,13 @@ function mockInstances() {
 }
 
 describe('<Decisions />', () => {
-	beforeEach(() => {
+	beforeEach(({worker}) => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []})),
+			}),
+		);
 	});
 
 	afterEach(() => {
@@ -147,6 +152,52 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeEnabled();
 	});
 
+	it('should render the decision filters with the version disabled until a decision is selected', async ({worker}) => {
+		worker.use(mockInstances());
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+
+		await expect.element(screen.getByText('Instances states')).toBeVisible();
+		await expect.element(screen.getByLabelText('Name')).toBeVisible();
+		await expect.element(screen.getByLabelText('Version')).toBeDisabled();
+	});
+
+	it('should write the instance state checkboxes to the URL', async ({worker}) => {
+		worker.use(mockInstances());
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+
+		await expect.element(screen.getByLabelText('Failed')).toBeVisible();
+		await screen.getByLabelText('Failed').element().click();
+
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({failed: false});
+	});
+
+	it('should list the versions of the selected decision and enable the version select', async ({worker}) => {
+		worker.use(
+			mockInstances(),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+			mockQueryDecisionDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [
+							createDecisionDefinition({decisionDefinitionId: 'invoice', name: 'Invoice', version: 1}),
+							createDecisionDefinition({decisionDefinitionId: 'invoice', name: 'Invoice', version: 2}),
+						],
+					}),
+				),
+			}),
+		);
+		const screen = await renderWithRouter(DecisionsWithSearch, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice',
+		});
+
+		await expect.element(screen.getByLabelText('Version')).toBeEnabled();
+		await screen.getByLabelText('Version').element().click();
+		await screen.getByRole('option', {name: '2'}).element().click();
+
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
+	});
+
 	it('should remove a single optional filter from the URL when its remove button is clicked', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
@@ -154,6 +205,7 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&failed=false',
 		});
 
+		await expect.element(screen.getByRole('button', {name: 'Remove Business ID filter'})).toBeVisible();
 		await screen.getByRole('button', {name: 'Remove Business ID filter'}).element().click();
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
@@ -168,6 +220,7 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
 		});
 
+		await expect.element(screen.getByRole('button', {name: 'Remove Business ID filter'})).toBeVisible();
 		const input = screen.getByLabelText('Business ID', {exact: true}).element().getBoundingClientRect();
 		const button = screen.getByRole('button', {name: 'Remove Business ID filter'}).element().getBoundingClientRect();
 
