@@ -26,6 +26,8 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -34,6 +36,7 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -85,24 +88,26 @@ public final class ClusterRestore {
   }
 
   /**
-   * Restores the physical tenants named in {@code selectionPerTenant}, each from what its own
-   * selection names, and then writes the topology file if this broker is the coordinator.
+   * Restores the physical tenants named in {@code backupIdsPerTenant}, each from its own resolved
+   * backups, and then writes the topology file if this broker is the coordinator.
    *
    * <p>The selection may cover a strict subset of the configured tenants — restoring one tenant of
    * a multi-tenant cluster is a supported operation. What it may not do is name a tenant this
    * cluster has no configuration for: there would be no backup store to read it from and no
    * partition count to restore.
    *
-   * @param selectionPerTenant which backups each targeted physical tenant is restored from
+   * @param backupIdsPerTenant the backups each targeted physical tenant is restored from, per
+   *     partition. A tenant's partitions are those of its backups, which can be fewer than are
+   *     configured when the cluster was scaled up since.
    */
   public void restore(
-      final Map<String, RestoreSelection> selectionPerTenant,
+      final Map<String, Map<Integer, long[]>> backupIdsPerTenant,
       final TargetDataPolicy targetDataPolicy,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     final var unknown =
-        selectionPerTenant.keySet().stream()
+        backupIdsPerTenant.keySet().stream()
             .filter(id -> !targets.containsKey(id))
             .sorted()
             .toList();
@@ -111,18 +116,27 @@ public final class ClusterRestore {
           "Cannot restore physical tenants %s: not configured in this cluster, which has %s"
               .formatted(unknown, targets.keySet().stream().sorted().toList()));
     }
-    if (selectionPerTenant.isEmpty()) {
+    if (backupIdsPerTenant.isEmpty()) {
       throw new IllegalArgumentException(
           "Expected at least one physical tenant to restore, but got none");
     }
 
-    final var wholeCluster = selectionPerTenant.keySet().containsAll(targets.keySet());
+    final Map<String, Integer> restoredPartitionCounts = new HashMap<>();
+    final var wholeCluster = backupIdsPerTenant.keySet().containsAll(targets.keySet());
+    final var recreateTopology = shouldRewriteTopologyFile(targetDataPolicy, wholeCluster);
+    // A recreated topology places the partitions of the backups, so their data has to be restored
+    // to the brokers it places them on; otherwise the existing placement of the configuration holds
+    final var placementPartitionCounts =
+        recreateTopology ? partitionCountsOf(backupIdsPerTenant) : configuredPartitionCounts();
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
+    if (!recreateTopology) {
+      requireTopologyOfTenantsWithFewerPartitions(backupIdsPerTenant, dataDirectory);
+    }
     prepareTarget(
-        dataDirectory, selectionPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
+        dataDirectory, backupIdsPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
 
     try {
-      for (final var entry : selectionPerTenant.entrySet()) {
+      for (final var entry : backupIdsPerTenant.entrySet()) {
         final var physicalTenantId = entry.getKey();
         // non-null: every key was checked against targets above
         final var target = requireNonNull(targets.get(physicalTenantId));
@@ -132,26 +146,32 @@ public final class ClusterRestore {
                 configuration,
                 physicalTenantId,
                 target.configuration(),
-                localPartitionsOf(configuration, physicalTenantConfigurations(), physicalTenantId),
+                localPartitionsOf(
+                    configuration,
+                    physicalTenantConfigurations(),
+                    placementPartitionCounts,
+                    physicalTenantId),
                 target.backupStore().get(),
                 target.exporterPositionMapper(),
                 meterRegistry)) {
           manager.restore(entry.getValue(), validateConfig);
+          restoredPartitionCounts.put(physicalTenantId, entry.getValue().size());
         }
         LOG.info("Successfully restored physical tenant '{}'", physicalTenantId);
       }
 
-      if (shouldRewriteTopologyFile(targetDataPolicy, wholeCluster)
-          && configuration.getCluster().getNodeId() == 0) {
-        restoreTopologyFile();
+      if (!recreateTopology) {
+        updateTopologyFile(restoredPartitionCounts);
+      } else if (configuration.getCluster().getNodeId() == 0) {
+        restoreTopologyFile(restoredPartitionCounts);
       }
-    } catch (final ExecutionException | InterruptedException | RuntimeException e) {
+    } catch (final ExecutionException | InterruptedException | IOException | RuntimeException e) {
       LOG.error(
           "Failed to restore physical tenants {}. Deleting their data",
-          selectionPerTenant.keySet(),
+          backupIdsPerTenant.keySet(),
           e);
       deleteRestoredData(
-          dataDirectory, selectionPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
+          dataDirectory, backupIdsPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
       throw e;
     }
   }
@@ -237,8 +257,7 @@ public final class ClusterRestore {
    *       alone and must keep their entry in the topology file.
    * </ul>
    */
-  @VisibleForTesting
-  static boolean shouldRewriteTopologyFile(
+  public static boolean shouldRewriteTopologyFile(
       final TargetDataPolicy targetDataPolicy, final boolean wholeCluster) {
     return targetDataPolicy == TargetDataPolicy.REQUIRE_EMPTY && wholeCluster;
   }
@@ -264,13 +283,21 @@ public final class ClusterRestore {
    */
   @VisibleForTesting
   void restoreTopologyFile() throws IOException {
+    restoreTopologyFile(configuredPartitionCounts());
+  }
+
+  /**
+   * @param partitionCounts the partition count of each tenant, that of the backups it was restored
+   *     from; the topology is generated for these partitions rather than the configured ones
+   */
+  void restoreTopologyFile(final Map<String, Integer> partitionCounts) throws IOException {
     LOG.info("Restoring topology file");
     final var file =
         Path.of(configuration.getData().getDirectory())
             .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
     final var generated =
         StaticConfigurationGenerator.getStaticConfiguration(
-                configuration, physicalTenantConfigurations(), COORDINATOR_ID)
+                configuration, physicalTenantConfigurations(), partitionCounts, COORDINATOR_ID)
             .generateCurrentClusterConfiguration();
     final var restored = withRestorePlan(generated, generated.partitionGroups().keySet());
 
@@ -279,6 +306,143 @@ public final class ClusterRestore {
         "Successfully restored topology file {} for physical tenants {}",
         file,
         restored.partitionGroups().keySet());
+  }
+
+  /**
+   * Rejects, before any data is touched, a restore that would leave a tenant started with the
+   * partitions its backup does not hold. A tenant restored from fewer partitions than configured
+   * only has its count applied by updating the existing topology file; without the file, or without
+   * the tenant in it, the next start generates the configured partition count from the static
+   * configuration.
+   */
+  @VisibleForTesting
+  void requireTopologyOfTenantsWithFewerPartitions(
+      final Map<String, Map<Integer, long[]>> backupIdsPerTenant, final Path dataDirectory)
+      throws IOException {
+    final var configuredCounts = configuredPartitionCounts();
+    final var tenantsWithFewerPartitions =
+        backupIdsPerTenant.entrySet().stream()
+            .filter(
+                entry ->
+                    !Integer.valueOf(entry.getValue().size())
+                        .equals(configuredCounts.get(entry.getKey())))
+            .map(Map.Entry::getKey)
+            .sorted()
+            .toList();
+    if (tenantsWithFewerPartitions.isEmpty()) {
+      return;
+    }
+    final var file = dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+    final var persisted =
+        Files.exists(file)
+            ? PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer())
+                .getConfiguration()
+            : null;
+    final var tenantsWithoutTopology =
+        tenantsWithFewerPartitions.stream()
+            .filter(tenant -> persisted == null || persisted.partitionGroup(tenant) == null)
+            .toList();
+    if (!tenantsWithoutTopology.isEmpty()) {
+      throw new IllegalStateException(
+          ("Cannot restore physical tenants %s from fewer partitions than are configured: the "
+                  + "topology file %s, so the restored count cannot be applied and the next start "
+                  + "would run the configured partitions without data. Restore every tenant into "
+                  + "an empty directory instead.")
+              .formatted(
+                  tenantsWithoutTopology,
+                  persisted == null ? "does not exist" : "does not list them"));
+    }
+  }
+
+  /**
+   * Brings this broker's own copy of the topology file in line with what was restored, for a run
+   * that replaced some tenants only. Nothing else about the file is touched: the cluster's other
+   * tenants, and the dynamic state outside the restored tenants' partition placement and routing,
+   * stay as they are.
+   *
+   * <p>A tenant whose backup holds fewer partitions than the topology does (the cluster was scaled
+   * up after the backup) would otherwise be started with partitions that have no data and be routed
+   * requests. Every broker updates only its own entry, since a broker shuts down when another
+   * member changed its entry, and all write the same routing state.
+   */
+  @VisibleForTesting
+  void updateTopologyFile(final Map<String, Integer> restoredPartitionCounts) throws IOException {
+    final var file =
+        Path.of(configuration.getData().getDirectory())
+            .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+    if (restoredPartitionCounts.isEmpty() || !Files.exists(file)) {
+      return;
+    }
+    final var cluster = configuration.getCluster();
+    final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
+    final var persisted =
+        PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer());
+    final var current = persisted.getConfiguration();
+    final var updated =
+        withoutUnroutedPartitions(
+            withRoutingOver(current, restoredPartitionCounts),
+            restoredPartitionCounts.keySet(),
+            localMember);
+    if (!updated.equals(current)) {
+      persisted.update(updated);
+      LOG.info(
+          "Updated the topology file to the restored partition counts {}", restoredPartitionCounts);
+    }
+  }
+
+  /**
+   * {@code configuration} without the partitions of {@code member} that the restored tenants no
+   * longer route over, by the same rule a broker applies when it leaves recovery after an
+   * in-process restore.
+   */
+  private static CurrentClusterConfiguration withoutUnroutedPartitions(
+      final CurrentClusterConfiguration configuration,
+      final Set<String> restoredPhysicalTenantIds,
+      final MemberId member) {
+    var result = configuration;
+    for (final var physicalTenantId : restoredPhysicalTenantIds) {
+      if (result.partitionGroup(physicalTenantId) != null) {
+        result =
+            result.updatePartitionGroupConfig(
+                physicalTenantId, group -> group.withoutUnroutedPartitions(member));
+      }
+    }
+    return result;
+  }
+
+  /**
+   * {@code configuration} with each restored tenant routing requests over its restored partitions.
+   * Message correlation is kept: a scale-up widens request handling but never changes it, so it
+   * already is what the restored data was written with.
+   */
+  @VisibleForTesting
+  static CurrentClusterConfiguration withRoutingOver(
+      final CurrentClusterConfiguration configuration, final Map<String, Integer> partitionCounts) {
+    var result = configuration;
+    for (final var entry : partitionCounts.entrySet()) {
+      if (result.partitionGroup(entry.getKey()) == null) {
+        continue;
+      }
+      final var partitionCount = entry.getValue();
+      result =
+          result.updatePartitionGroupConfig(
+              entry.getKey(),
+              group ->
+                  group
+                      .routingState()
+                      .filter(
+                          routing ->
+                              !routing.requestHandling().equals(new AllPartitions(partitionCount)))
+                      .map(
+                          routing ->
+                              group.setRoutingState(
+                                  new RoutingState(
+                                      routing.version() + 1,
+                                      new AllPartitions(partitionCount),
+                                      routing.messageCorrelation())))
+                      .orElse(group));
+    }
+    return result;
   }
 
   /** {@code base} carrying an activated restore plan over the restored groups. */
@@ -316,17 +480,53 @@ public final class ClusterRestore {
       final BrokerCfg configuration,
       final Map<String, BrokerCfg> physicalTenantConfigurations,
       final String physicalTenantId) {
+    return localPartitionsOf(
+        configuration,
+        physicalTenantConfigurations,
+        configuredPartitionCounts(physicalTenantConfigurations),
+        physicalTenantId);
+  }
+
+  /**
+   * The partitions of {@code physicalTenantId} that the local broker replicates when every tenant
+   * has the given partition count, as in a topology recreated for the partition counts of the
+   * backups. See {@link #localPartitionsOf(BrokerCfg, Map, String)} for why every tenant counts.
+   */
+  static Set<PartitionMetadata> localPartitionsOf(
+      final BrokerCfg configuration,
+      final Map<String, BrokerCfg> physicalTenantConfigurations,
+      final Map<String, Integer> partitionCounts,
+      final String physicalTenantId) {
     final var cluster = configuration.getCluster();
     final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
     final var distribution =
         new PartitionDistribution(
             StaticConfigurationGenerator.getStaticConfiguration(
-                    configuration, physicalTenantConfigurations, localMember)
+                    configuration, physicalTenantConfigurations, partitionCounts, localMember)
                 .generatePartitionDistribution());
     return distribution.partitions().stream()
         .filter(partition -> partition.id().group().equals(physicalTenantId))
         .filter(partition -> partition.members().contains(localMember))
         .collect(Collectors.toUnmodifiableSet());
+  }
+
+  /** The partition count of the backups of each tenant. */
+  static Map<String, Integer> partitionCountsOf(
+      final Map<String, Map<Integer, long[]>> backupIdsPerTenant) {
+    return backupIdsPerTenant.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size()));
+  }
+
+  private Map<String, Integer> configuredPartitionCounts() {
+    return configuredPartitionCounts(physicalTenantConfigurations());
+  }
+
+  private static Map<String, Integer> configuredPartitionCounts(
+      final Map<String, BrokerCfg> physicalTenantConfigurations) {
+    return physicalTenantConfigurations.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey, entry -> entry.getValue().getCluster().getPartitionsCount()));
   }
 
   private Map<String, BrokerCfg> physicalTenantConfigurations() {

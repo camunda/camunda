@@ -39,6 +39,7 @@ import io.camunda.zeebe.restore.validation.PostRestoreValidator;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -138,7 +139,11 @@ public class RestoreNodeIdProviderConfiguration {
       final PostRestoreActionContext context) {
     final var postRestore =
         createPostRestoreValidator(
-            brokerCfg, physicalTenantConfigurations, context.restoredPhysicalTenantIds());
+            brokerCfg,
+            physicalTenantConfigurations,
+            context.restoredPhysicalTenantIds(),
+            context.restoredPartitionCounts(),
+            context.recreatedTopology());
     if (!postRestore.verifyRestore()) {
       final String message;
       if (context.skippedRestore()) {
@@ -220,15 +225,31 @@ public class RestoreNodeIdProviderConfiguration {
   private static PostRestoreValidator createPostRestoreValidator(
       final BrokerCfg brokerCfg,
       final PhysicalTenantBrokerConfigurations physicalTenantConfigurations,
-      final Set<String> restoredPhysicalTenantIds) {
+      final Set<String> restoredPhysicalTenantIds,
+      final Map<String, Integer> restoredPartitionCounts,
+      final boolean recreatedTopology) {
     final var cluster = brokerCfg.getCluster();
     final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
     final var dataDir = brokerCfg.getData().getDirectory();
 
     final var partitionDirectories = new HashMap<PartitionMetadata, Path>();
     for (final var physicalTenantId : restoredPhysicalTenantIds) {
-      ClusterRestore.localPartitionsOf(
-              brokerCfg, physicalTenantConfigurations.configurations(), physicalTenantId)
+      // a recreated topology places the backups' partitions, as the restore did
+      final var localPartitions =
+          recreatedTopology
+              ? ClusterRestore.localPartitionsOf(
+                  brokerCfg,
+                  physicalTenantConfigurations.configurations(),
+                  restoredPartitionCounts,
+                  physicalTenantId)
+              : ClusterRestore.localPartitionsOf(
+                  brokerCfg, physicalTenantConfigurations.configurations(), physicalTenantId);
+      localPartitions.stream()
+          // partitions above the backup's partition count were not restored, so hold no data
+          .filter(
+              partitionMetadata ->
+                  partitionMetadata.id().number()
+                      <= restoredPartitionCounts.getOrDefault(physicalTenantId, Integer.MAX_VALUE))
           .forEach(
               partitionMetadata ->
                   partitionDirectories.put(

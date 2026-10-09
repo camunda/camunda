@@ -145,7 +145,14 @@ public class RestoreApp implements ApplicationRunner {
   public void run(final ApplicationArguments args) throws Exception {
     final var selectionPerTenant =
         arguments.selectionPerPhysicalTenant(physicalTenantConfigurations.physicalTenantIds());
-    validateParameters(selectionPerTenant);
+    final var backupIdsPerTenant = validateParameters(selectionPerTenant);
+    final var restoredPartitionCounts = partitionCounts(backupIdsPerTenant);
+    final var recreatesTopology =
+        ClusterRestore.shouldRewriteTopologyFile(
+            arguments.targetDataPolicy(),
+            selectionPerTenant
+                .keySet()
+                .containsAll(physicalTenantConfigurations.physicalTenantIds()));
 
     final var restoreId = getRestoreId(selectionPerTenant);
     final var preRestoreActionResult =
@@ -155,18 +162,25 @@ public class RestoreApp implements ApplicationRunner {
 
     final PostRestoreActionContext postRestoreActionContext;
     if (!preRestoreActionResult.skipRestore()) {
-      restore(clusterRestore, selectionPerTenant);
+      restore(clusterRestore, backupIdsPerTenant);
       postRestoreActionContext =
           new PostRestoreActionContext(
               restoreId,
               configuration.getCluster().getNodeId(),
               false,
-              selectionPerTenant.keySet());
+              selectionPerTenant.keySet(),
+              restoredPartitionCounts,
+              recreatesTopology);
     } else {
       LOG.info("Skipping restore: {}", preRestoreActionResult.message());
       postRestoreActionContext =
           new PostRestoreActionContext(
-              restoreId, configuration.getCluster().getNodeId(), true, selectionPerTenant.keySet());
+              restoreId,
+              configuration.getCluster().getNodeId(),
+              true,
+              selectionPerTenant.keySet(),
+              restoredPartitionCounts,
+              recreatesTopology);
     }
     // We have to run post restore anyway even if post restore action decided to skip restore,
     // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
@@ -212,18 +226,19 @@ public class RestoreApp implements ApplicationRunner {
   }
 
   private void restore(
-      final ClusterRestore clusterRestore, final Map<String, RestoreSelection> selectionPerTenant)
+      final ClusterRestore clusterRestore,
+      final Map<String, Map<Integer, long[]>> backupIdsPerTenant)
       throws IOException, ExecutionException, InterruptedException {
     LOG.info(
         "Starting to restore physical tenants {} with the following configuration: {}",
-        selectionPerTenant,
+        backupIdsPerTenant.keySet(),
         restoreConfiguration);
     clusterRestore.restore(
-        selectionPerTenant,
+        backupIdsPerTenant,
         arguments.targetDataPolicy(),
         restoreConfiguration.validateConfig(),
         restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored physical tenants {}", selectionPerTenant.keySet());
+    LOG.info("Successfully restored physical tenants {}", backupIdsPerTenant.keySet());
   }
 
   /**
@@ -232,8 +247,14 @@ public class RestoreApp implements ApplicationRunner {
    * All of them are validated before any data is touched: a restore that cannot succeed for one
    * tenant must not leave the others restored, since a run's data is deleted on failure and the
    * cluster would otherwise come up with a partial set of tenants.
+   *
+   * @return the backups each tenant is restored from, per partition, as resolved by the validation.
+   *     Their partitions are the ones to restore, which can be fewer than are configured when the
+   *     cluster was scaled up since the backups were taken.
    */
-  private void validateParameters(final Map<String, RestoreSelection> selectionPerTenant) {
+  private Map<String, Map<Integer, long[]>> validateParameters(
+      final Map<String, RestoreSelection> selectionPerTenant) {
+    final Map<String, Map<Integer, long[]>> backupIdsPerTenant = new LinkedHashMap<>();
     selectionPerTenant.forEach(
         (physicalTenantId, selection) -> {
           final var environment =
@@ -258,7 +279,17 @@ public class RestoreApp implements ApplicationRunner {
           if (result.isLeft()) {
             throw (RuntimeException) result.getLeft();
           }
+          backupIdsPerTenant.put(physicalTenantId, result.get().backups());
         });
+    return backupIdsPerTenant;
+  }
+
+  private static Map<String, Integer> partitionCounts(
+      final Map<String, Map<Integer, long[]>> backupIdsPerTenant) {
+    final Map<String, Integer> partitionCounts = new LinkedHashMap<>();
+    backupIdsPerTenant.forEach(
+        (physicalTenantId, backupIds) -> partitionCounts.put(physicalTenantId, backupIds.size()));
+    return partitionCounts;
   }
 
   private @Nullable IntFunction<@Nullable Long> exportedPositionSupplier(
@@ -304,12 +335,20 @@ public class RestoreApp implements ApplicationRunner {
    *     validation checks these and no others: a run restoring one tenant of a multi-tenant cluster
    *     leaves the rest as they were, and demanding restored data for them would fail every partial
    *     restore.
+   * @param restoredPartitionCounts the number of partitions restored for each of those tenants, the
+   *     partition count of their backups. Post-restore validation expects restored data for no more
+   *     partitions than that, even when the configuration holds more.
+   * @param recreatedTopology whether the restore recreated the topology for the restored partition
+   *     counts, which then also decide which partitions each broker holds, rather than the
+   *     configured ones
    */
   public record PostRestoreActionContext(
       String restoreId,
       int nodeId,
       boolean skippedRestore,
-      Set<String> restoredPhysicalTenantIds) {}
+      Set<String> restoredPhysicalTenantIds,
+      Map<String, Integer> restoredPartitionCounts,
+      boolean recreatedTopology) {}
 
   public interface PreRestoreAction {
     PreRestoreActionResult beforeRestore(final String restoreId, int nodeId)

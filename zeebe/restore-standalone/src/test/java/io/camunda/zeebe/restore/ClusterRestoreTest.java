@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import static io.camunda.zeebe.restore.ClusterRestore.TargetDataPolicy.REPLACE_SELECTED;
 import static io.camunda.zeebe.restore.ClusterRestore.TargetDataPolicy.REQUIRE_EMPTY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
@@ -21,6 +22,9 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.restore.ClusterRestore.PhysicalTenantRestoreTarget;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -32,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -53,10 +59,10 @@ final class ClusterRestoreTest {
         .hasMessageContaining("at least one physical tenant");
   }
 
-  private static Map<String, RestoreSelection> selection(final String... physicalTenantIds) {
-    final Map<String, RestoreSelection> selection = new LinkedHashMap<>();
+  private static Map<String, Map<Integer, long[]>> selection(final String... physicalTenantIds) {
+    final Map<String, Map<Integer, long[]>> selection = new LinkedHashMap<>();
     for (final var physicalTenantId : physicalTenantIds) {
-      selection.put(physicalTenantId, RestoreSelection.ofBackupIds(List.of(1L)));
+      selection.put(physicalTenantId, Map.of(1, new long[] {1L}));
     }
     return selection;
   }
@@ -376,6 +382,206 @@ final class ClusterRestoreTest {
 
       // then — a partial run does not write one either; the brokers generate what they need on
       // boot, exactly as they do for a tenant that was never provisioned
+      assertThat(dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)).doesNotExist();
+    }
+  }
+
+  /**
+   * A tenant restored from a backup taken before the cluster was scaled up: the topology still
+   * holds the scaled-up partitions, which have no data and must not be started or routed to.
+   */
+  @Nested
+  class RestoredPartitionCount {
+
+    private static final int SCALED_UP = 5;
+    private static final int RESTORED = 3;
+
+    @Test
+    void shouldDropThePartitionsAboveTheRestoredCountFromTheGeneratedTopology(
+        @TempDir final Path dir) throws IOException {
+      // given - a topology generated for 5 partitions, restored from a backup with 3
+      final var clusterRestore = clusterRestore(dir, Map.of("default", SCALED_UP));
+
+      // when
+      clusterRestore.restoreTopologyFile(Map.of("default", RESTORED));
+
+      // then
+      assertThat(read(dir).partitionGroup("default").getMember(LOCAL_MEMBER).partitions().keySet())
+          .containsExactlyInAnyOrder(1, 2, 3);
+    }
+
+    @Test
+    void shouldGenerateTheTopologyForMorePartitionsThanConfiguredWhenTheBackupHoldsThem(
+        @TempDir final Path dir) throws IOException {
+      // given - the configuration still holds the partition count the cluster was created with,
+      // while the backup was taken after the cluster was scaled up
+      final var clusterRestore = clusterRestore(dir, Map.of("default", RESTORED));
+
+      // when
+      clusterRestore.restoreTopologyFile(Map.of("default", SCALED_UP));
+
+      // then - the fresh topology holds every partition of the backup
+      assertThat(read(dir).partitionGroup("default").getMember(LOCAL_MEMBER).partitions().keySet())
+          .containsExactlyInAnyOrder(1, 2, 3, 4, 5);
+    }
+
+    @Test
+    void shouldKeepEveryPartitionWhenTheBackupHoldsThemAll(@TempDir final Path dir)
+        throws IOException {
+      // given
+      final var clusterRestore = clusterRestore(dir, Map.of("default", SCALED_UP));
+
+      // when
+      clusterRestore.restoreTopologyFile(Map.of("default", SCALED_UP));
+
+      // then
+      assertThat(read(dir).partitionGroup("default").getMember(LOCAL_MEMBER).partitions().keySet())
+          .containsExactlyInAnyOrder(1, 2, 3, 4, 5);
+    }
+
+    @Test
+    void shouldUpdateTheExistingTopologyOfARestoredTenantOnly(@TempDir final Path dir)
+        throws IOException {
+      // given - a topology file of two tenants, both scaled up to 5 partitions, with routing
+      final var clusterRestore =
+          clusterRestore(dir, Map.of("default", SCALED_UP, OTHER_TENANT, SCALED_UP));
+      clusterRestore.restoreTopologyFile();
+      final var scaledUpRouting =
+          new RoutingState(7, new AllPartitions(SCALED_UP), new HashMod(RESTORED));
+      PersistedCurrentClusterConfiguration.ofFile(
+              dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME),
+              new ProtoBufSerializer())
+          .update(
+              read(dir)
+                  .updatePartitionGroupConfig(
+                      OTHER_TENANT, group -> group.setRoutingState(scaledUpRouting)));
+      final var untouchedGroup = read(dir).partitionGroup("default");
+
+      // when - the other tenant is restored from a backup with 3 partitions
+      clusterRestore.updateTopologyFile(Map.of(OTHER_TENANT, RESTORED));
+
+      // then - it holds and routes over 3 partitions, with message correlation unchanged
+      final var updated = read(dir).partitionGroup(OTHER_TENANT);
+      assertThat(updated.getMember(LOCAL_MEMBER).partitions().keySet())
+          .containsExactlyInAnyOrder(1, 2, 3);
+      assertThat(updated.routingState())
+          .contains(new RoutingState(8, new AllPartitions(RESTORED), new HashMod(RESTORED)));
+      // and - the tenant that was not restored is untouched
+      assertThat(read(dir).partitionGroup("default")).isEqualTo(untouchedGroup);
+    }
+
+    @Test
+    void shouldKeepTheMessageCorrelationOfAScaledUpGroup() {
+      // given - scaled up from 2 to 5 partitions: messages still correlate over the original 2
+      final var routing = new RoutingState(7, new AllPartitions(SCALED_UP), new HashMod(2));
+      final var configuration =
+          CurrentClusterConfiguration.init()
+              .initPartitionGroup("default")
+              .updatePartitionGroupConfig("default", group -> group.setRoutingState(routing));
+
+      // when
+      final var updated = ClusterRestore.withRoutingOver(configuration, Map.of("default", 3));
+
+      // then
+      assertThat(updated.partitionGroup("default").routingState())
+          .contains(new RoutingState(8, new AllPartitions(3), new HashMod(2)));
+    }
+
+    @Test
+    void shouldNotChangeTheRoutingWhenItAlreadyRoutesOverTheRestoredPartitions() {
+      // given
+      final var routing = new RoutingState(7, new AllPartitions(RESTORED), new HashMod(RESTORED));
+      final var configuration =
+          CurrentClusterConfiguration.init()
+              .initPartitionGroup("default")
+              .updatePartitionGroupConfig("default", group -> group.setRoutingState(routing));
+
+      // when
+      final var updated =
+          ClusterRestore.withRoutingOver(configuration, Map.of("default", RESTORED));
+
+      // then
+      assertThat(updated).isEqualTo(configuration);
+    }
+
+    @Test
+    void shouldRejectFewerPartitionsThanConfiguredWhenThereIsNoTopologyFile(
+        @TempDir final Path dir) {
+      // given
+      final var clusterRestore = clusterRestore(dir, Map.of("default", SCALED_UP));
+
+      // when / then - the restored count could not be applied, so nothing may be restored
+      assertThatThrownBy(
+              () ->
+                  clusterRestore.requireTopologyOfTenantsWithFewerPartitions(
+                      Map.of("default", backupsOf(RESTORED)), dir))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("[default]")
+          .hasMessageContaining("does not exist");
+    }
+
+    @Test
+    void shouldRejectFewerPartitionsThanConfiguredForATenantMissingFromTheTopology(
+        @TempDir final Path dir) throws IOException {
+      // given - a topology that only lists the default tenant
+      clusterRestore(dir, Map.of("default", SCALED_UP)).restoreTopologyFile();
+      final var clusterRestore =
+          clusterRestore(dir, Map.of("default", SCALED_UP, OTHER_TENANT, SCALED_UP));
+
+      // when / then
+      assertThatThrownBy(
+              () ->
+                  clusterRestore.requireTopologyOfTenantsWithFewerPartitions(
+                      Map.of(OTHER_TENANT, backupsOf(RESTORED)), dir))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("[" + OTHER_TENANT + "]")
+          .hasMessageContaining("does not list them");
+    }
+
+    @Test
+    void shouldAcceptFewerPartitionsThanConfiguredWhenTheTopologyListsTheTenant(
+        @TempDir final Path dir) throws IOException {
+      // given
+      final var clusterRestore = clusterRestore(dir, Map.of("default", SCALED_UP));
+      clusterRestore.restoreTopologyFile();
+
+      // when / then
+      assertThatCode(
+              () ->
+                  clusterRestore.requireTopologyOfTenantsWithFewerPartitions(
+                      Map.of("default", backupsOf(RESTORED)), dir))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldNotRequireATopologyWhenTheBackupHoldsTheConfiguredPartitions(
+        @TempDir final Path dir) {
+      // given
+      final var clusterRestore = clusterRestore(dir, Map.of("default", SCALED_UP));
+
+      // when / then - nothing to apply, so no topology is needed
+      assertThatCode(
+              () ->
+                  clusterRestore.requireTopologyOfTenantsWithFewerPartitions(
+                      Map.of("default", backupsOf(SCALED_UP)), dir))
+          .doesNotThrowAnyException();
+    }
+
+    private static Map<Integer, long[]> backupsOf(final int partitionCount) {
+      return IntStream.rangeClosed(1, partitionCount)
+          .boxed()
+          .collect(Collectors.toMap(partition -> partition, partition -> new long[] {1L}));
+    }
+
+    @Test
+    void shouldLeaveTheTopologyAloneWhenThereIsNoFile(@TempDir final Path dir) throws IOException {
+      // given
+      final var clusterRestore = clusterRestore(dir, Map.of("default", SCALED_UP));
+
+      // when
+      clusterRestore.updateTopologyFile(Map.of("default", RESTORED));
+
+      // then
       assertThat(dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)).doesNotExist();
     }
   }
