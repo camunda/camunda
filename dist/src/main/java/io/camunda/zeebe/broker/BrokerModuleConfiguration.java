@@ -27,6 +27,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -66,6 +68,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final BrokerBasedConfiguration configuration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorScheduler actorScheduler;
+  private final Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final BrokerShutdownHelper shutdownHelper;
@@ -91,6 +94,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerBasedConfiguration configuration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorScheduler actorScheduler,
+      final Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
@@ -113,6 +117,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
+    this.actorSchedulerBuilderFactory = actorSchedulerBuilderFactory;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
@@ -148,6 +153,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withRootBrokerCfg(configuration.config())
             .withRootCamunda(unifiedConfiguration.getCamunda())
             .withActorScheduler(actorScheduler)
+            .withActorSchedulerBuilderFactory(actorSchedulerBuilderFactory)
             .withCluster(cluster)
             .withBrokerClient(brokerClient)
             .withMeterRegistry(meterRegistry)

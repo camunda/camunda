@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -79,7 +80,10 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
   private final ExporterRepository exporterRepository = mock(ExporterRepository.class);
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
-  private final Map<String, ActorScheduler> physicalTenantActorSchedulers = new LinkedHashMap<>();
+  private Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory =
+      ActorScheduler::newActorScheduler;
+  private final Map<String, PhysicalTenantActorScheduler> physicalTenantActorSchedulers =
+      new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
@@ -138,26 +142,30 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   @Override
   public ActorSchedulerBuilder newActorSchedulerBuilder() {
-    return actorSchedulingService instanceof final ActorScheduler scheduler
-        ? scheduler.derive()
-        : ActorScheduler.newActorScheduler();
+    return actorSchedulerBuilderFactory.get();
   }
 
   @Override
   public ActorSchedulingService getPartitionActorSchedulingService(final String physicalTenantId) {
-    final ActorSchedulingService dedicated = physicalTenantActorSchedulers.get(physicalTenantId);
-    return dedicated != null ? dedicated : actorSchedulingService;
+    final var dedicated = physicalTenantActorSchedulers.get(physicalTenantId);
+    return dedicated != null ? dedicated.scheduler() : actorSchedulingService;
   }
 
   @Override
   public void addPhysicalTenantActorScheduler(
-      final String physicalTenantId, final ActorScheduler scheduler) {
+      final String physicalTenantId, final PhysicalTenantActorScheduler scheduler) {
     physicalTenantActorSchedulers.put(physicalTenantId, scheduler);
   }
 
   @Override
-  public ActorScheduler removePhysicalTenantActorScheduler(final String physicalTenantId) {
+  public PhysicalTenantActorScheduler removePhysicalTenantActorScheduler(
+      final String physicalTenantId) {
     return physicalTenantActorSchedulers.remove(physicalTenantId);
+  }
+
+  public void setActorSchedulerBuilderFactory(
+      final Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory) {
+    this.actorSchedulerBuilderFactory = actorSchedulerBuilderFactory;
   }
 
   public void setActorSchedulingService(final ActorSchedulingService actorSchedulingService) {

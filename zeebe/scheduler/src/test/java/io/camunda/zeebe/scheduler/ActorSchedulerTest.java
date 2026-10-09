@@ -18,36 +18,6 @@ import org.junit.jupiter.api.Test;
 final class ActorSchedulerTest {
 
   @Test
-  void shouldNameThreadsOfDerivedSchedulerWithPrefix() throws Exception {
-    // given
-    final var parent = ActorScheduler.newActorScheduler().build();
-    final var derived =
-        parent
-            .derive()
-            .setThreadNamePrefix("tenant-a-")
-            .setCpuBoundActorThreadCount(1)
-            .setIoBoundActorThreadCount(1)
-            .build();
-    derived.start();
-    final var threadName = new java.util.concurrent.CompletableFuture<String>();
-    final var actor =
-        new Actor() {
-          @Override
-          protected void onActorStarted() {
-            threadName.complete(Thread.currentThread().getName());
-          }
-        };
-
-    // when
-    derived.submitActor(actor);
-
-    // then
-    assertThat(threadName.get(5, java.util.concurrent.TimeUnit.SECONDS))
-        .isEqualTo("tenant-a-zb-actors-0");
-    derived.close();
-  }
-
-  @Test
   void shouldCloseUnscheduledTask() {
     // given
     final var testActor = new TestActor();

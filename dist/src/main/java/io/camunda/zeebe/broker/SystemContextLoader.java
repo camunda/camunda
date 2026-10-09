@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
@@ -40,6 +41,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -63,6 +65,7 @@ public final class SystemContextLoader {
   private BrokerCfg rootBrokerCfg;
   private Camunda rootCamunda;
   private ActorScheduler actorScheduler;
+  private Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory;
   private AtomixCluster cluster;
   private BrokerClient brokerClient;
   private MeterRegistry meterRegistry;
@@ -106,6 +109,12 @@ public final class SystemContextLoader {
 
   public SystemContextLoader withActorScheduler(final ActorScheduler actorScheduler) {
     this.actorScheduler = actorScheduler;
+    return this;
+  }
+
+  public SystemContextLoader withActorSchedulerBuilderFactory(
+      final Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory) {
+    this.actorSchedulerBuilderFactory = actorSchedulerBuilderFactory;
     return this;
   }
 
@@ -221,6 +230,7 @@ public final class SystemContextLoader {
         shutdownTimeout,
         rootBrokerCfg,
         actorScheduler,
+        actorSchedulerBuilderFactory,
         cluster,
         brokerClient,
         meterRegistry,

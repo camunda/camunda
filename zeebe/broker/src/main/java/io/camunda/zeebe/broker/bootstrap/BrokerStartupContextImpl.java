@@ -35,7 +35,6 @@ import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -51,6 +50,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -61,8 +61,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final BrokerInfo brokerInfo;
   private final BrokerCfg configuration;
   private final SpringBrokerBridge springBrokerBridge;
-  private final ActorScheduler actorScheduler;
-  private final Map<String, ActorScheduler> physicalTenantActorSchedulers =
+  private final ActorSchedulingService actorScheduler;
+  private final Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory;
+  private final Map<String, PhysicalTenantActorScheduler> physicalTenantActorSchedulers =
       new ConcurrentHashMap<>();
   private final BrokerHealthCheckService healthCheckService;
   private final ClusterServicesImpl clusterServices;
@@ -99,7 +100,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
       final SpringBrokerBridge springBrokerBridge,
-      final ActorScheduler actorScheduler,
+      final ActorSchedulingService actorScheduler,
+      final Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory,
       final BrokerHealthCheckService healthCheckService,
       final ClusterServicesImpl clusterServices,
       final BrokerClient brokerClient,
@@ -120,6 +122,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.configuration = requireNonNull(configuration);
     this.springBrokerBridge = requireNonNull(springBrokerBridge);
     this.actorScheduler = requireNonNull(actorScheduler);
+    this.actorSchedulerBuilderFactory = requireNonNull(actorSchedulerBuilderFactory);
     this.healthCheckService = requireNonNull(healthCheckService);
     this.clusterServices = requireNonNull(clusterServices);
     this.brokerClient = brokerClient;
@@ -164,22 +167,24 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   @Override
   public ActorSchedulerBuilder newActorSchedulerBuilder() {
-    return actorScheduler.derive();
+    return actorSchedulerBuilderFactory.get();
   }
 
   @Override
   public ActorSchedulingService getPartitionActorSchedulingService(final String physicalTenantId) {
-    return physicalTenantActorSchedulers.getOrDefault(physicalTenantId, actorScheduler);
+    final var dedicated = physicalTenantActorSchedulers.get(physicalTenantId);
+    return dedicated != null ? dedicated.scheduler() : actorScheduler;
   }
 
   @Override
   public void addPhysicalTenantActorScheduler(
-      final String physicalTenantId, final ActorScheduler scheduler) {
+      final String physicalTenantId, final PhysicalTenantActorScheduler scheduler) {
     physicalTenantActorSchedulers.put(physicalTenantId, scheduler);
   }
 
   @Override
-  public ActorScheduler removePhysicalTenantActorScheduler(final String physicalTenantId) {
+  public PhysicalTenantActorScheduler removePhysicalTenantActorScheduler(
+      final String physicalTenantId) {
     return physicalTenantActorSchedulers.remove(physicalTenantId);
   }
 

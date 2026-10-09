@@ -32,7 +32,6 @@ import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -71,8 +70,8 @@ public interface BrokerStartupContext {
   ActorSchedulingService getActorSchedulingService();
 
   /**
-   * Returns a builder for a scheduler that shares clock, idle strategy, and meter registry with the
-   * broker-wide scheduler but owns its threads.
+   * Returns a builder for a scheduler that shares name, clock, idle strategy, and meter registry
+   * with the broker-wide scheduler but owns its threads, which still have to be sized.
    */
   ActorSchedulerBuilder newActorSchedulerBuilder();
 
@@ -82,10 +81,10 @@ public interface BrokerStartupContext {
    */
   ActorSchedulingService getPartitionActorSchedulingService(String physicalTenantId);
 
-  void addPhysicalTenantActorScheduler(String physicalTenantId, ActorScheduler scheduler);
+  void addPhysicalTenantActorScheduler(
+      String physicalTenantId, PhysicalTenantActorScheduler scheduler);
 
-  /** Returns the removed scheduler, or {@code null} if the tenant had none. */
-  @Nullable ActorScheduler removePhysicalTenantActorScheduler(String physicalTenantId);
+  PhysicalTenantActorScheduler removePhysicalTenantActorScheduler(String physicalTenantId);
 
   ConcurrencyControl getConcurrencyControl();
 

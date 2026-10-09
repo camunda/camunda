@@ -61,6 +61,7 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.TlsConfigUtil;
@@ -77,6 +78,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -127,6 +129,7 @@ public final class SystemContext {
   private final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
+  private final Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
@@ -149,6 +152,7 @@ public final class SystemContext {
       final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
       final ActorScheduler scheduler,
+      final Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
@@ -164,6 +168,7 @@ public final class SystemContext {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.scheduler = scheduler;
+    this.actorSchedulerBuilderFactory = actorSchedulerBuilderFactory;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
@@ -792,6 +797,10 @@ public final class SystemContext {
       throw new IllegalArgumentException(
           tenantScopedMessage(tenantId, "Backup retention schedule is mandatory, none provided."));
     }
+  }
+
+  public Supplier<ActorSchedulerBuilder> getActorSchedulerBuilderFactory() {
+    return actorSchedulerBuilderFactory;
   }
 
   public ActorScheduler getScheduler() {

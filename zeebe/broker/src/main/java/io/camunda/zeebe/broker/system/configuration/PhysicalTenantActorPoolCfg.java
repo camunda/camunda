@@ -7,41 +7,45 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
-public final class ThreadsCfg implements ConfigurationEntry {
+/** Sizing of the dedicated actor thread pool of each physical tenant, if enabled. */
+public final class PhysicalTenantActorPoolCfg {
+  private boolean enabled = false;
   private int cpuThreadCount = 2;
-  private int ioThreadCount = 2;
-  private final PhysicalTenantActorPoolCfg physicalTenantActorPool =
-      new PhysicalTenantActorPoolCfg();
+  private int ioThreadCount = 1;
+
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  public void setEnabled(final boolean enabled) {
+    this.enabled = enabled;
+  }
 
   public int getCpuThreadCount() {
     return cpuThreadCount;
   }
 
-  public void setCpuThreadCount(final int cpuThreads) {
-    cpuThreadCount = cpuThreads;
+  public void setCpuThreadCount(final int cpuThreadCount) {
+    this.cpuThreadCount = cpuThreadCount;
   }
 
   public int getIoThreadCount() {
     return ioThreadCount;
   }
 
-  public void setIoThreadCount(final int ioThreads) {
-    ioThreadCount = ioThreads;
-  }
-
-  public PhysicalTenantActorPoolCfg getPhysicalTenantActorPool() {
-    return physicalTenantActorPool;
+  public void setIoThreadCount(final int ioThreadCount) {
+    this.ioThreadCount = ioThreadCount;
   }
 
   @Override
   public String toString() {
-    return "ThreadsCfg{"
-        + "cpuThreadCount="
+    return "PhysicalTenantActorPoolCfg{"
+        + "enabled="
+        + enabled
+        + ", cpuThreadCount="
         + cpuThreadCount
         + ", ioThreadCount="
         + ioThreadCount
-        + ", physicalTenantActorPool="
-        + physicalTenantActorPool
         + '}';
   }
 }

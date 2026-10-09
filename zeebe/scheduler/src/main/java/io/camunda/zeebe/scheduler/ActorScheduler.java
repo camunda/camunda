@@ -22,26 +22,11 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
   private final ActorExecutor actorTaskExecutor;
   private final ActorMetrics metrics;
-  private final ActorSchedulerBuilder builder;
 
   public ActorScheduler(final ActorSchedulerBuilder builder) {
     state.set(SchedulerState.NEW);
-    this.builder = builder;
     actorTaskExecutor = builder.getActorExecutor();
     metrics = builder.getActorMetrics();
-  }
-
-  /**
-   * Returns a new builder pre-populated with the name, clock, idle strategy, and meter registry of
-   * this scheduler. The returned builder yields an independent scheduler with its own threads, so
-   * callers still have to set the thread counts and may set a thread name prefix.
-   */
-  public ActorSchedulerBuilder derive() {
-    return newActorScheduler()
-        .setSchedulerName(builder.getSchedulerName())
-        .setActorClock(builder.getActorClock())
-        .setIdleStrategySupplier(builder.getIdleStrategySupplier())
-        .setMeterRegistry(builder.getMeterRegistry());
   }
 
   /**
@@ -154,7 +139,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     private Supplier<IdleStrategy> idleStrategySupplier =
         ActorSchedulerBuilder::defaultIdleStrategySupplier;
     private MeterRegistry meterRegistry;
-    private ActorMetrics actorMetrics;
+    private ActorMetrics actorMetrics = ActorMetrics.disabled();
 
     public static IdleStrategy defaultIdleStrategySupplier() {
       return new BackoffIdleStrategy(
@@ -252,9 +237,6 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
 
     ActorMetrics getActorMetrics() {
-      if (actorMetrics == null) {
-        actorMetrics = ActorMetrics.ofNullable(meterRegistry);
-      }
       return actorMetrics;
     }
 
@@ -264,7 +246,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
     public ActorSchedulerBuilder setMeterRegistry(final MeterRegistry meterRegistry) {
       this.meterRegistry = meterRegistry;
-      actorMetrics = null;
+      actorMetrics = ActorMetrics.ofNullable(meterRegistry);
       return this;
     }
 
