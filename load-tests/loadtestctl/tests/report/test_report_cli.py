@@ -1,15 +1,11 @@
-import io
-import sys
 from datetime import UTC
 from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
-from unittest import mock
 
 import pytest
 
 import loadtestctl.report
-from loadtestctl.cli import build_parser
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.prometheus import auth_headers
 
@@ -20,24 +16,20 @@ PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
 
 
 def test_should_register_report_subcommand() -> None:
-    args = build_parser().parse_args(["report", "c8-ck-test"])
+    options = parse_args(["c8-ck-test"])
 
-    assert args.command == "report"
-    assert args.namespace == "c8-ck-test"
+    assert options.namespace == "c8-ck-test"
 
 
-def test_should_return_argparse_exit_code_for_help() -> None:
+def test_should_return_zero_exit_code_for_help() -> None:
     assert run(["--help"]) == 0
 
 
-def test_should_return_error_for_missing_namespace() -> None:
-    stderr = io.StringIO()
-
-    with mock.patch.object(sys, "stderr", stderr):
-        exit_code = run([])
+def test_should_return_error_for_missing_namespace(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run([])
 
     assert exit_code == 2
-    assert "the following arguments are required: namespace" in stderr.getvalue()
+    assert "Missing argument 'NAMESPACE'" in capsys.readouterr().err
 
 
 def test_should_parse_auth_flags(tmp_path: Path) -> None:
@@ -97,9 +89,11 @@ def test_should_default_to_window_ending_now() -> None:
     assert options.time_anchor == options.end_label
 
 
-def test_should_reject_window_ending_in_the_future() -> None:
-    with pytest.raises(ReportError, match="must not end in the future"):
-        parse_args(["c8-ck-test", "--start", "2999-01-01T00:00:00Z"])
+def test_should_reject_window_ending_in_the_future(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-test", "--start", "2999-01-01T00:00:00Z"])
+
+    assert exit_code == 1
+    assert "must not end in the future" in capsys.readouterr().err
 
 
 def test_should_normalize_timezone_less_time_window() -> None:
@@ -186,70 +180,36 @@ def test_should_reject_incomplete_basic_auth() -> None:
         auth_headers("user", "")
 
 
-def test_should_reject_unrepresentable_reporting_window_with_no_start() -> None:
-    with pytest.raises(ReportError, match="reporting window is outside the supported timestamp range"):
-        parse_args(
-            [
-                "c8-ck-test",
-                "--duration-seconds",
-                "999999999999999999999",
-            ]
-        )
+def test_should_reject_unrepresentable_reporting_window_with_no_start(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-test", "--duration-seconds", "999999999999999999999"])
+
+    assert exit_code == 1
+    assert "reporting window is outside the supported timestamp range" in capsys.readouterr().err
 
 
-def test_should_reject_unrepresentable_reporting_window() -> None:
-    with pytest.raises(ReportError, match="reporting window is outside the supported timestamp range"):
-        parse_args(
-            [
-                "c8-ck-test",
-                "--start",
-                "0",
-                "--duration-seconds",
-                "999999999999999999999",
-            ]
-        )
+def test_should_reject_unrepresentable_reporting_window(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-test", "--start", "0", "--duration-seconds", "999999999999999999999"])
+
+    assert exit_code == 1
+    assert "reporting window is outside the supported timestamp range" in capsys.readouterr().err
 
 
 def test_should_reject_negative_duration(capsys: pytest.CaptureFixture[str]) -> None:
-    with pytest.raises(SystemExit):
-        parse_args(
-            [
-                "c8-ck-test",
-                "--start",
-                "2026-08-14T10:00:00",
-                "--duration-seconds",
-                "-1",
-            ]
-        )
+    exit_code = run(["c8-ck-test", "--duration-seconds", "-1"])
 
-    assert "'-1' must be a positive integer" in capsys.readouterr().err
+    assert exit_code == 2
+    assert "-1 is not in the range x>=1" in capsys.readouterr().err
 
 
 def test_should_reject_too_long_namespace(capsys: pytest.CaptureFixture[str]) -> None:
-    with pytest.raises(SystemExit):
-        parse_args(
-            [
-                "a" * 64,
-                "--start",
-                "2026-08-14T10:00:00",
-                "--duration-seconds",
-                "123",
-            ]
-        )
+    exit_code = run(["a" * 64])
 
-    assert "(max 63 characters; lowercase alphanumeric or '-', and must start and end " in capsys.readouterr().err
+    assert exit_code == 2
+    assert "max 63 characters; lowercase alphanumeric or '-', and must start and end" in capsys.readouterr().err
 
 
 def test_should_reject_invalid_namespace(capsys: pytest.CaptureFixture[str]) -> None:
-    with pytest.raises(SystemExit):
-        parse_args(
-            [
-                "Invalid_Namespace",
-                "--start",
-                "2026-08-14T10:00:00",
-                "--duration-seconds",
-                "123",
-            ]
-        )
+    exit_code = run(["Invalid_Namespace"])
 
-    assert "(max 63 characters; lowercase alphanumeric or '-', and must start and end " in capsys.readouterr().err
+    assert exit_code == 2
+    assert "max 63 characters; lowercase alphanumeric or '-', and must start and end" in capsys.readouterr().err

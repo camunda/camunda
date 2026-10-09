@@ -11,6 +11,7 @@ requires-python = ">=3.13"
 dependencies = [
     "pydantic==2.13.5",
     "pyyaml>=6.0.3",
+    "typer>=0.27.3",
 ]
 
 [project.scripts]
