@@ -11,8 +11,14 @@ import type {ProcessInstance, CreateCancellationBatchOperationRequestBody} from 
 import {mapProcessInstancesFilter, type ProcessesSearch} from './processesFilter';
 import {buildInstanceKeyCriterion} from '#/operate/shared/utils/buildInstanceKeyCriterion';
 import {useInstancesSelection} from '#/operate/shared/hooks/useInstancesSelection';
+import {narrowTopLevelState} from './narrowTopLevelState';
 
 type ProcessBulkAction = 'delete' | 'cancel' | 'retry' | 'suspend' | 'resume';
+const ALLOWED_BATCH_STATES: Partial<Record<ProcessBulkAction, readonly string[]>> = {
+	cancel: ['ACTIVE', 'SUSPENDED'],
+	suspend: ['ACTIVE'],
+	resume: ['SUSPENDED'],
+};
 type SelectedInstance = Pick<ProcessInstance, 'processInstanceKey' | 'state' | 'hasIncident'>;
 
 function useProcessInstancesSelection(
@@ -57,11 +63,6 @@ function useProcessInstancesSelection(
 	const hasStateFilter = search.active || search.incidents || search.completed || search.canceled || search.suspended;
 	const eligibility = {
 		delete: mode === 'INCLUDE' ? finished.length > 0 : !hasStateFilter || search.completed || search.canceled,
-		// A single-instance cancel command accepts a suspended instance, but the batch cancellation
-		// operation only ever picks up ACTIVE root instances — a suspended key in the batch request
-		// is silently dropped with no per-instance error. Keep bulk cancel scoped to running so it
-		// doesn't look eligible for a selection it would only partially (or invisibly) act on; a
-		// suspended instance can still be canceled individually via its row action.
 		cancel: mode === 'INCLUDE' ? running.length > 0 : !hasStateFilter || search.active || search.incidents,
 		retry: mode === 'INCLUDE' ? incidents.length > 0 : !hasStateFilter || search.incidents,
 		// Suspend targets the same running set as Cancel — legacy suspends any active instance
@@ -88,9 +89,11 @@ function useProcessInstancesSelection(
 			const criterion = buildInstanceKeyCriterion(mode === 'INCLUDE' ? included : [], selection.excludedIds);
 			const baseKey = filter?.processInstanceKey;
 			const baseCriterion = typeof baseKey === 'string' ? {$eq: baseKey} : baseKey;
+			const allowedStates = ALLOWED_BATCH_STATES[action];
+			const baseFilter = filter && allowedStates ? narrowTopLevelState(filter, allowedStates) : filter;
 			return {
 				filter: {
-					...filter,
+					...baseFilter,
 					...(criterion ? {processInstanceKey: {...baseCriterion, ...criterion}} : {}),
 				},
 			};

@@ -194,6 +194,47 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
+  describe('suspend', () => {
+    it('should leave finished states out of the filter', () => {
+      const {result} = renderHook(
+        () => useSuspendProcessInstancesBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            completed: 'true',
+            canceled: 'true',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          state: {$eq: 'ACTIVE'},
+          hasIncident: false,
+        },
+      });
+    });
+
+    it('should leave finished states out of the filter when incidents are included', () => {
+      const {result} = renderHook(
+        () => useSuspendProcessInstancesBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            completed: 'true',
+            incidents: 'true',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          $or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}],
+        },
+      });
+    });
+  });
+
   describe('retry', () => {
     it('should ignore the suspended filter', () => {
       const {result} = renderHook(
