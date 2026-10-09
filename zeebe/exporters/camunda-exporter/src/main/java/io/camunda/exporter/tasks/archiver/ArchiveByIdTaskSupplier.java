@@ -34,7 +34,8 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
           SocketTimeoutException.class,
           ElasticsearchException.class,
           OpenSearchException.class,
-          BatchCountMismatchException.class);
+          BatchCountMismatchException.class,
+          VersionConflictOnArchiveDeleteException.class);
 
   private final HistoryConfiguration config;
   private final String sourceIdx;
@@ -248,9 +249,9 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     }
   }
 
-  public record IdWithRouting(String id, String routing) {
+  public record IdWithRouting(String id, String routing, Long seqNo, Long primaryTerm) {
     public static IdWithRouting of(final String id) {
-      return new IdWithRouting(id, null);
+      return new IdWithRouting(id, null, null, null);
     }
   }
 

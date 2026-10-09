@@ -1323,6 +1323,11 @@ final class OpenSearchArchiverRepositoryIT {
         .extracting(IdWithRouting::id)
         .containsExactlyInAnyOrder("1", "2", "4");
     assertThat(batch.documents()).extracting(IdWithRouting::routing).containsOnly("111");
+    // need to ensure we have these for deletes
+    for (final var doc : batch.documents()) {
+      assertThat(doc.seqNo()).isNotNull();
+      assertThat(doc.primaryTerm()).isNotNull();
+    }
     assertThat(batch.searchAfter()).hasSize(1);
     assertThat(batch.searchAfter().getFirst().stringValue()).isEqualTo("4");
 
@@ -1518,7 +1523,7 @@ final class OpenSearchArchiverRepositoryIT {
     // when - delete with the routing each doc was indexed under
     final var idsWithRouting =
         docs.stream()
-            .map(d -> new IdWithRouting(d.id(), "r-" + (Integer.parseInt(d.id()) % 7)))
+            .map(d -> new IdWithRouting(d.id(), "r-" + (Integer.parseInt(d.id()) % 7), null, null))
             .toList();
     final var result = repository.deleteDocumentsById(indexName, idsWithRouting);
 
@@ -1532,6 +1537,37 @@ final class OpenSearchArchiverRepositoryIT {
         .isEqualTo(total);
     testClient.indices().refresh(r -> r.index(indexName));
     assertThat(testClient.count(c -> c.index(indexName)).count()).isEqualTo(0L);
+  }
+
+  @Test
+  void shouldFailToDeleteDocumentIfWrongSeqNoAndPrimaryTermProvided() throws IOException {
+    // given
+    final var indexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    final var documents = List.of(new TestDocument("1"));
+    documents.forEach(doc -> index(indexName, doc));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when
+    final var result =
+        repository.deleteDocumentsById(
+            indexName, List.of(new IdWithRouting("1", null, Long.MAX_VALUE, Long.MAX_VALUE)));
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(30))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(VersionConflictOnArchiveDeleteException.class);
+
+    testClient.indices().refresh(r -> r.index(indexName));
+    final var remaining =
+        testClient.search(r -> r.index(indexName).requestCache(false), TestDocument.class);
+    assertThat(remaining.hits().hits())
+        .as("document has not been deleted")
+        .hasSize(1)
+        .first()
+        .extracting(Hit::id)
+        .isEqualTo("1");
   }
 
   @Test
