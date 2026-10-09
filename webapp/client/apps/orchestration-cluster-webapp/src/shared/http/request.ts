@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {reactQueryClient} from '#/shared/http/reactQueryClient';
+import {reactQueryClient} from './reactQueryClient';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {z} from 'zod';
 

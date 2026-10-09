@@ -15,11 +15,11 @@ import {ErrorBoundary} from 'react-error-boundary';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import emptyStateIconUrl from '#/operate/assets/empty-state-process-instances-by-name.svg';
-import {ExpandableList} from '../ExpandableList';
-import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
-import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
+import {ExpandableList} from '#/operate/pages/Dashboard/ExpandableList';
+import {ExpandedRowErrorFallback} from '#/operate/pages/Dashboard/ExpandedRowErrorFallback';
+import {useDashboardScrollPagination} from '#/operate/pages/Dashboard/useDashboardScrollPagination';
 import {truncateErrorMessage} from './truncateErrorMessage';
-import {LinkWrapper, LoadingRow} from '../styled';
+import {LinkWrapper, LoadingRow} from '#/operate/pages/Dashboard/styled';
 import {incidentsByErrorInfiniteQuery, PAGE_SIZE} from './incidentsByError.queries';
 import {IncidentsByErrorDefinitions} from './IncidentsByErrorDefinitions';
 

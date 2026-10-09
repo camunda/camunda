@@ -9,8 +9,8 @@
 import type {QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {OffsetPagedRequestBody} from '#/shared/http/queries';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
-import {advancedStringFilterCodec} from '#/tasklist/modules/available-tasks/advancedStringFilter';
-import {isBuiltInFilter, type TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
+import {advancedStringFilterCodec} from './advancedStringFilter';
+import {isBuiltInFilter, type TasklistIndexSearch} from './searchSchema';
 
 const SORT_BY_FIELD: Record<
 	TasklistIndexSearch['sortBy'],

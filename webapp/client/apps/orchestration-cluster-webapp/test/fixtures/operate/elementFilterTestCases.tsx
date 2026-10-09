@@ -14,8 +14,8 @@ import {
 	endpoints as apiEndpoints,
 	queryProcessDefinitionsRequestBodySchema,
 } from '@camunda/camunda-api-zod-schemas/8.11';
-import {it} from '../../../src/vitest-modules/test-extend';
-import {renderWithRouter} from '../../../src/vitest-modules/render-with-router';
+import {it} from '#/vitest-modules/test-extend';
+import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {render} from 'vitest-browser-react';
 import {QueryClient, QueryClientProvider, useQuery} from '@tanstack/react-query';
 import {selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
@@ -25,17 +25,17 @@ import {
 	mockCurrentUserEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
-} from '../../../shared-test-modules/mock-handlers';
+} from '#/shared-test-modules/mock-handlers';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
-} from '../../../shared-test-modules/api-mocks/process-definitions';
-import {createGetProcessDefinitionStatisticsResponse} from '../../../shared-test-modules/api-mocks/process-definition-statistics';
-import {BPMN_XML} from '../../../shared-test-modules/api-mocks/process-definition-xmls';
-import {createQueryProcessInstancesResponse} from '../../../shared-test-modules/api-mocks/process-instances';
-import {createSystemConfiguration} from '../../../shared-test-modules/api-mocks/system-configuration';
-import {createCurrentUser} from '../../../shared-test-modules/api-mocks/current-user';
-import {isCursorForwardPagination} from '../../../shared-test-modules/api-mocks/shared';
+} from '#/shared-test-modules/api-mocks/process-definitions';
+import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
+import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {isCursorForwardPagination} from '#/shared-test-modules/api-mocks/shared';
 import {ProcessesHarness} from '#/operate/pages/Processes/ProcessesHarness';
 
 const DEFINITIONS = HttpResponse.json(

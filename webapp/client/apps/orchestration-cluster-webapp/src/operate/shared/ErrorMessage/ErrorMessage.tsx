@@ -7,7 +7,7 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {EmptyMessage} from '../EmptyMessage/EmptyMessage';
+import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
 
 type Props = {
 	message?: string;

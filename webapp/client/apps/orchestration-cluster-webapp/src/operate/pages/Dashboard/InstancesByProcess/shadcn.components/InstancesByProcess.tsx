@@ -14,14 +14,18 @@ import {Link} from '@tanstack/react-router';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ErrorBoundary} from 'react-error-boundary';
 import {InstancesBar} from '#/operate/components/InstancesBar/shadcn.components/InstancesBar';
-import {ExpandableList} from '../../shadcn.components/ExpandableList';
-import {ExpandedRowErrorFallback} from '../../shadcn.components/ExpandedRowErrorFallback';
-import {dashboardTenantId, runningOrAllInstancesFilter, useDashboardTenants} from '../../processesLinkFilters';
+import {ExpandableList} from '#/operate/pages/Dashboard/shadcn.components/ExpandableList';
+import {ExpandedRowErrorFallback} from '#/operate/pages/Dashboard/shadcn.components/ExpandedRowErrorFallback';
+import {
+	dashboardTenantId,
+	runningOrAllInstancesFilter,
+	useDashboardTenants,
+} from '#/operate/pages/Dashboard/processesLinkFilters';
 import {
 	drainingByIdKey,
 	drainingProcessDefinitionsQuery,
 	instancesByProcessInfiniteQuery,
-} from '../instancesByProcess.queries';
+} from '#/operate/pages/Dashboard/InstancesByProcess/instancesByProcess.queries';
 import {InstancesByProcessVersions} from './InstancesByProcessVersions';
 
 const InstancesByProcess: React.FC = () => {

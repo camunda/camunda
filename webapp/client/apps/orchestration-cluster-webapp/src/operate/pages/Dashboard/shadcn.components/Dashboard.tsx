@@ -9,11 +9,11 @@
 import {useTranslation} from 'react-i18next';
 import {DataTable, Heading, PageLayout, Separator, type DataTableColumn} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
-import {useRunningInstancesCount} from '../useRunningInstancesCount';
+import {useRunningInstancesCount} from '#/operate/pages/Dashboard/useRunningInstancesCount';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
-import {MetricPanel} from '../MetricPanel/shadcn.components/MetricPanel';
-import {InstancesByProcess} from '../InstancesByProcess/shadcn.components/InstancesByProcess';
-import {IncidentsByError} from '../IncidentsByError/shadcn.components/IncidentsByError';
+import {MetricPanel} from '#/operate/pages/Dashboard/MetricPanel/shadcn.components/MetricPanel';
+import {InstancesByProcess} from '#/operate/pages/Dashboard/InstancesByProcess/shadcn.components/InstancesByProcess';
+import {IncidentsByError} from '#/operate/pages/Dashboard/IncidentsByError/shadcn.components/IncidentsByError';
 
 type NoInstancesTableSkeletonRow = {id: string; name: string};
 

@@ -11,8 +11,8 @@ import {useTranslation} from 'react-i18next';
 import {Link} from '@tanstack/react-router';
 import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {InstancesBar} from '#/operate/components/InstancesBar/shadcn.components/InstancesBar';
-import {incidentsByErrorDefinitionsQuery} from '../incidentsByError.queries';
-import {dashboardTenantId, useDashboardTenants} from '../../processesLinkFilters';
+import {incidentsByErrorDefinitionsQuery} from '#/operate/pages/Dashboard/IncidentsByError/incidentsByError.queries';
+import {dashboardTenantId, useDashboardTenants} from '#/operate/pages/Dashboard/processesLinkFilters';
 
 type Props = {
 	errorHashCode: number;

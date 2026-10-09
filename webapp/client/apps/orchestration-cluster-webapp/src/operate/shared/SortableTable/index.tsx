@@ -30,7 +30,7 @@ import {
 	FailureDetailRow,
 } from './styled';
 import {ColumnHeader} from './ColumnHeader';
-import {InfiniteScroller} from '../InfiniteScroller/InfiniteScroller';
+import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
 
 type TableSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 

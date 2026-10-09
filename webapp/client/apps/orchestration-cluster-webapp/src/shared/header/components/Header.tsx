@@ -20,7 +20,7 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {LanguageSelector} from './LanguageSelector';
 import {Link} from '@tanstack/react-router';
-import {useNavbar} from '../useNavbar';
+import {useNavbar} from '#/shared/header/useNavbar';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
 	const BASE_INFO_SIDEBAR_ITEMS = [

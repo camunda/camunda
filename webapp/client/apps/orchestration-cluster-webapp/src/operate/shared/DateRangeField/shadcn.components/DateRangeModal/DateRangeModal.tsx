@@ -19,7 +19,7 @@ import {
 	type DateRange,
 } from '@camunda/design-system';
 import {logger} from '#/operate/shared/utils/logger';
-import {formatDate} from '../../formatDate';
+import {formatDate} from '#/operate/shared/DateRangeField/formatDate';
 import {DateInput} from './DateInput';
 import {TimeInput} from './TimeInput';
 import {parseCompleteDate} from './dateValidation';

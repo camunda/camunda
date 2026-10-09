@@ -16,7 +16,7 @@ import {
 	getSortParams,
 	type TaskDetailsHistorySearch,
 	type TaskDetailsHistorySortField,
-} from '../sortUtils';
+} from '#/tasklist/modules/task-details-history/sortUtils';
 
 const OrderIcon: React.FC<{sortOrder: QuerySortOrder; isActive: boolean}> = ({sortOrder, isActive}) => {
 	if (!isActive) {

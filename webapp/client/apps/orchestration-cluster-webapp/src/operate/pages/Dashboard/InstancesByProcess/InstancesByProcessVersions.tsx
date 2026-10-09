@@ -11,8 +11,8 @@ import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.11';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {instancesByProcessVersionsQuery, type DrainingLookup} from './instancesByProcess.queries';
-import {dashboardTenantId, runningOrAllInstancesFilter} from '../processesLinkFilters';
-import {Li, LinkWrapper} from '../styled';
+import {dashboardTenantId, runningOrAllInstancesFilter} from '#/operate/pages/Dashboard/processesLinkFilters';
+import {Li, LinkWrapper} from '#/operate/pages/Dashboard/styled';
 
 type Props = {
 	processDefinitionId: string;
