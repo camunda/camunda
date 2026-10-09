@@ -93,9 +93,10 @@
               <exclude>.github/agents/**/*.md</exclude>
               <exclude>.github/workflows/**/*.md</exclude>
               <exclude>load-tests/skills/**/*.md</exclude>
-              <!-- product-context files: flexmark would rewrite their YAML front matter -->
+              <!-- product-context and plan-feature files: flexmark would rewrite their YAML front matter -->
               <exclude>SYSTEM.md</exclude>
               <exclude>**/ARCHITECTURE.md</exclude>
+              <exclude>**/docs/plans/**/*.md</exclude>
               <exclude>docs/monorepo-docs/**/*.md</exclude>
             </excludes>
             <flexmark/>
