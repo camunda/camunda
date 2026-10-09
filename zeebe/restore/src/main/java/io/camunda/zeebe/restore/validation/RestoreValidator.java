@@ -219,7 +219,7 @@ public final class RestoreValidator
     final var exportedPositions =
         requireExportedPositions(
             exportedPositions(
-                requireNonNull(exportedPositionSupplier, "Exported positions are required"),
+                Objects.requireNonNull(exportedPositionSupplier, "Exported positions are required"),
                 partitionCount));
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
     final var metadataByPartition = loadMetadataForAllPartitions(exportedPositions.size());
@@ -234,7 +234,7 @@ public final class RestoreValidator
   void verifyLastBackupsHoldThePartitions(
       final RestorableBackups restorableBackups, final int exportedPartitionCount) {
     final var store =
-        requireNonNull(backupStore, "Backup store must be configured to load backups");
+        Objects.requireNonNull(backupStore, "Backup store must be configured to load backups");
     restorableBackups.backupsByPartitionId().values().stream()
         .map(backups -> backups.getLast().checkpointId())
         .distinct()
