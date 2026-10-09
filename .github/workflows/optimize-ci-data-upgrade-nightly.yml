@@ -45,7 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         database: [ elasticsearch, opensearch ]
-        branch: [ main, stable/8.8, stable/8.9 ]
+        branch: [ main, stable/8.8, stable/8.9, stable/8.10 ]
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     steps:
