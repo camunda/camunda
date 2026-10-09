@@ -20,7 +20,6 @@ import io.camunda.configuration.Data;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -391,8 +390,8 @@ final class ClusterAdminRestoreAcceptanceIT {
    * <p>Deploy it before the backup is taken, so the restored state still knows it.
    */
   private static void deployProbeProcess(final CamundaClient client, final String processId) {
-    deploy(
-        client, processId, Bpmn.createExecutableProcess(processId).startEvent().endEvent().done());
+    TENANTS.deploy(
+        client, Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(), processId);
   }
 
   /**
@@ -416,24 +415,6 @@ final class ClusterAdminRestoreAcceptanceIT {
   /** Completes every pending job of the type, leaving none behind for a later backup to capture. */
   private static void completeEveryJob(final CamundaClient client, final String jobType) {
     InProcessRestoreTestUtil.completeEveryJob(client, jobType, PARTITIONS_COUNT);
-  }
-
-  /** Deploys a process, idempotent under retry so a transient rejection is simply retried. */
-  private static void deploy(
-      final CamundaClient client, final String processId, final BpmnModelInstance process) {
-    Awaitility.await("process " + processId + " is deployed")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, processId + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
   }
 
   /**

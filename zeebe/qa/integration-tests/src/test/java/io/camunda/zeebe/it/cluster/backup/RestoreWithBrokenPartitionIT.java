@@ -500,19 +500,7 @@ final class RestoreWithBrokenPartitionIT {
    */
   private static void deployProbeProcess(final CamundaClient client, final String processId) {
     final var process = Bpmn.createExecutableProcess(processId).startEvent().endEvent().done();
-    Awaitility.await("process " + processId + " is deployed")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, processId + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
+    TENANTS.deploy(client, process, processId);
   }
 
   /**

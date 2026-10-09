@@ -187,19 +187,7 @@ final class ClusterAdminPhysicalTenantModeChangeIT {
   private static void deployProcess(final CamundaClient client, final String processId) {
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess(processId).startEvent().endEvent().done();
-    Awaitility.await("process deployed to the tenant's partitions")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newDeployResourceCommand()
-                            .addProcessModel(model, processId + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
+    TENANTS.deploy(client, model, processId);
   }
 
   private static long createInstance(final CamundaClient client, final String processId) {

@@ -325,20 +325,7 @@ final class PhysicalTenantExporterConfigIT {
   private static void deployAndCreateInstance(final CamundaClient client, final String processId) {
     final var process = Bpmn.createExecutableProcess(processId).startEvent().endEvent().done();
 
-    // the tenant's Raft group may need a moment to elect a leader after startup
-    await("deployment succeeds for " + processId)
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, processId + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
+    TENANTS.deploy(client, process, processId);
 
     client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }

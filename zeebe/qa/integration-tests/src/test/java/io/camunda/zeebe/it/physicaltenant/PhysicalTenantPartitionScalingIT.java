@@ -10,9 +10,6 @@ package io.camunda.zeebe.it.physicaltenant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
-import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
-import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
@@ -76,20 +73,21 @@ final class PhysicalTenantPartitionScalingIT {
   @Test
   void shouldScaleUpOnlyTheTargetedPhysicalTenant() {
     // given — the default tenant's partition count before tenant A is scaled
-    awaitPartitionCount(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, DEFAULT_TENANT_PARTITIONS_COUNT);
-    awaitPartitionCount(TENANT_A, TENANT_A_PARTITIONS_COUNT);
+    TENANTS.awaitPartitionCount(
+        actuator, PhysicalTenantsITHelper.DEFAULT_TENANT_ID, DEFAULT_TENANT_PARTITIONS_COUNT);
+    TENANTS.awaitPartitionCount(actuator, TENANT_A, TENANT_A_PARTITIONS_COUNT);
 
     // when — scale only tenant A up by one partition
     final var targetPartitionCount = TENANT_A_PARTITIONS_COUNT + 1;
-    awaitAccepted(
+    TENANTS.awaitAccepted(
         "tenant A accepts a scale-up scoped to it",
         () -> scalePartitions(targetPartitionCount, TENANT_A));
 
     // then — tenant A's partition count increased and its new partition really started for it;
     // the default tenant's is untouched
-    awaitPartitionCount(TENANT_A, targetPartitionCount);
+    TENANTS.awaitPartitionCount(actuator, TENANT_A, targetPartitionCount);
     awaitTopologyPartitionCount(TENANT_A, targetPartitionCount);
-    assertThat(partitionCount(PhysicalTenantsITHelper.DEFAULT_TENANT_ID))
+    assertThat(TENANTS.partitionCount(actuator, PhysicalTenantsITHelper.DEFAULT_TENANT_ID))
         .isEqualTo(DEFAULT_TENANT_PARTITIONS_COUNT);
     assertTopologyPartitionCount(
         PhysicalTenantsITHelper.DEFAULT_TENANT_ID, DEFAULT_TENANT_PARTITIONS_COUNT);
@@ -98,20 +96,22 @@ final class PhysicalTenantPartitionScalingIT {
   @Test
   void shouldScaleUpOnlyTheDefaultPhysicalTenantWhenUnscoped() {
     // given
-    awaitPartitionCount(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, DEFAULT_TENANT_PARTITIONS_COUNT);
-    awaitPartitionCount(TENANT_A, TENANT_A_PARTITIONS_COUNT);
+    TENANTS.awaitPartitionCount(
+        actuator, PhysicalTenantsITHelper.DEFAULT_TENANT_ID, DEFAULT_TENANT_PARTITIONS_COUNT);
+    TENANTS.awaitPartitionCount(actuator, TENANT_A, TENANT_A_PARTITIONS_COUNT);
 
     // when — no physicalTenant parameter is given
     final var targetPartitionCount = DEFAULT_TENANT_PARTITIONS_COUNT + 1;
-    awaitAccepted(
+    TENANTS.awaitAccepted(
         "the default physical tenant accepts the unscoped scale-up",
         () -> scalePartitions(targetPartitionCount));
 
     // then — the default tenant's partition count increased and its new partition really started
     // for it; tenant A's is untouched
-    awaitPartitionCount(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, targetPartitionCount);
+    TENANTS.awaitPartitionCount(
+        actuator, PhysicalTenantsITHelper.DEFAULT_TENANT_ID, targetPartitionCount);
     awaitTopologyPartitionCount(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, targetPartitionCount);
-    assertThat(partitionCount(TENANT_A)).isEqualTo(TENANT_A_PARTITIONS_COUNT);
+    assertThat(TENANTS.partitionCount(actuator, TENANT_A)).isEqualTo(TENANT_A_PARTITIONS_COUNT);
     assertTopologyPartitionCount(TENANT_A, TENANT_A_PARTITIONS_COUNT);
   }
 
@@ -135,10 +135,10 @@ final class PhysicalTenantPartitionScalingIT {
 
     // when — tenant A is scaled up by one partition
     final var targetPartitionCount = TENANT_A_PARTITIONS_COUNT + 1;
-    awaitAccepted(
+    TENANTS.awaitAccepted(
         "tenant A accepts a scale-up scoped to it",
         () -> scalePartitions(targetPartitionCount, TENANT_A));
-    awaitPartitionCount(TENANT_A, targetPartitionCount);
+    TENANTS.awaitPartitionCount(actuator, TENANT_A, targetPartitionCount);
     awaitTopologyPartitionCount(TENANT_A, targetPartitionCount);
 
     // then — an instance of tenant A's process can be created on the new partition; round-robin
@@ -174,65 +174,24 @@ final class PhysicalTenantPartitionScalingIT {
             .endEvent()
             .done();
     try (final var client = TENANTS.newClientBuilder(broker, physicalTenantId).build()) {
-      // the tenant's partition group may still be electing a leader right after startup; retry
-      // the first command until it lands
-      await("deployment to physical tenant '%s' succeeds".formatted(physicalTenantId))
-          .atMost(Duration.ofSeconds(30))
-          .ignoreExceptions()
-          .untilAsserted(
-              () ->
-                  assertThat(
-                          client
-                              .newDeployResourceCommand()
-                              .addProcessModel(process, processId + ".bpmn")
-                              .send()
-                              .join()
-                              .getProcesses())
-                      .isNotEmpty());
+      TENANTS.deploy(client, process, processId);
     }
   }
 
   private void scalePartitions(final int targetPartitionCount, final String physicalTenant) {
     actuator.patchCluster(
-        new ClusterConfigPatchRequest()
-            .partitions(new ClusterConfigPatchRequestPartitions().count(targetPartitionCount)),
-        false,
-        false,
-        physicalTenant);
+        TENANTS.toPartitionCount(targetPartitionCount), false, false, physicalTenant);
   }
 
   private void scalePartitions(final int targetPartitionCount) {
-    actuator.patchCluster(
-        new ClusterConfigPatchRequest()
-            .partitions(new ClusterConfigPatchRequestPartitions().count(targetPartitionCount)),
-        false,
-        false);
-  }
-
-  /**
-   * Retries {@code request} until the cluster accepts it. The request is not an assertion — it
-   * either returns or throws a {@link feign.FeignException} — so it cannot be handed to {@code
-   * untilAsserted}, which only retries on {@link AssertionError}. A retry is needed because the
-   * cluster can still be applying its own initial configuration change when the test starts, and
-   * rejects a scale-up while another change is in progress.
-   */
-  private void awaitAccepted(final String alias, final Runnable request) {
-    await(alias)
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .until(
-            () -> {
-              request.run();
-              return true;
-            });
+    actuator.patchCluster(TENANTS.toPartitionCount(targetPartitionCount), false, false);
   }
 
   /**
    * Asserts against the client-facing, physical-tenant-scoped topology that {@code
-   * physicalTenantId} really runs {@code expectedCount} partitions, each with a leader. The routing
-   * state {@link #partitionCount(String)} reads only records what the cluster configuration says
-   * the count should be; it is written when the change is planned, before any partition has
-   * actually been bootstrapped for that tenant.
+   * physicalTenantId} really runs {@code expectedCount} partitions, each with a leader, as a client
+   * sees it, rather than only the cluster configuration's routing state that {@link
+   * PhysicalTenantsITHelper#partitionCount} reads.
    */
   private void awaitTopologyPartitionCount(final String physicalTenantId, final int expectedCount) {
     try (final var client = TENANTS.newClientBuilder(broker, physicalTenantId).build()) {
@@ -255,19 +214,5 @@ final class PhysicalTenantPartitionScalingIT {
       TopologyAssert.assertThat(client.newTopologyRequest().send().join())
           .isComplete(1, expectedCount, 1);
     }
-  }
-
-  private void awaitPartitionCount(final String physicalTenantId, final int expectedCount) {
-    await("physical tenant '%s' reports %d partitions".formatted(physicalTenantId, expectedCount))
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(() -> assertThat(partitionCount(physicalTenantId)).isEqualTo(expectedCount));
-  }
-
-  private int partitionCount(final String physicalTenantId) {
-    final var routing = actuator.getTopology(physicalTenantId).getRouting();
-    assertThat(routing).isNotNull();
-    final var requestHandling = routing.getRequestHandling();
-    assertThat(requestHandling).isInstanceOf(RequestHandlingAllPartitions.class);
-    return ((RequestHandlingAllPartitions) requestHandling).getPartitionCount();
   }
 }
