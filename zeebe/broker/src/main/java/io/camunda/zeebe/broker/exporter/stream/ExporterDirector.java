@@ -69,6 +69,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private static final String EXPORTER_STATE_TOPIC_FORMAT = "%s-exporterState-%d";
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
+  private static final Duration LEADER_EXPORT_DELAY =
+      Duration.ofMillis(Long.getLong("zeebe.experimental.leaderExportDelayMs", 0));
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   // using primitive boolean since it is only used in actor
   private boolean allExportersOpened;
@@ -634,7 +636,17 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           if (state.hasExporters()) {
             final long snapshotPosition = state.getLowestPosition();
             // start reading and exporting
-            startActiveExportingFrom(snapshotPosition);
+            if (LEADER_EXPORT_DELAY.isZero()) {
+              startActiveExportingFrom(snapshotPosition);
+            } else {
+              actor.schedule(
+                  LEADER_EXPORT_DELAY,
+                  () -> {
+                    if (!isClosed()) {
+                      startActiveExportingFrom(snapshotPosition);
+                    }
+                  });
+            }
           } else {
             becomeIdle();
           }
