@@ -150,7 +150,7 @@ class SchemaInitializationSecondaryStorageReadinessTest {
     final var readiness = readinessOf(Map.of(TENANT_A, State.FAILED, TENANT_B, State.GAVE_UP), "");
 
     // when/then
-    assertThat(readiness.nodeReadiness()).isEqualTo(NodeReadiness.NOT_READY);
+    assertThat(readiness.nodeReadiness()).isEqualTo(NodeReadiness.DOWN);
   }
 
   @Test

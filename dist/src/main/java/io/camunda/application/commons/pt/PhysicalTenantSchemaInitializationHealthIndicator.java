@@ -64,7 +64,7 @@ public final class PhysicalTenantSchemaInitializationHealthIndicator implements 
     return switch (readiness) {
       case READY -> Status.UP;
       case DEGRADED -> DEGRADED;
-      case NOT_READY -> Status.DOWN;
+      case DOWN -> Status.DOWN;
     };
   }
 

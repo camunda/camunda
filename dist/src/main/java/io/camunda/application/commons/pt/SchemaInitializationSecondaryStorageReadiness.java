@@ -77,27 +77,27 @@ public class SchemaInitializationSecondaryStorageReadiness implements SecondaryS
             .toList());
   }
 
-  /** READY if every tenant is, NOT_READY if every tenant is, DEGRADED otherwise. */
+  /** READY if every tenant is, DOWN if every tenant is, DEGRADED otherwise. */
   static NodeReadiness rollUp(final Collection<State> states) {
     var allReady = true;
     var allNotReady = !states.isEmpty();
     for (final var state : states) {
       final var readiness = readinessOf(state);
       allReady &= readiness == NodeReadiness.READY;
-      allNotReady &= readiness == NodeReadiness.NOT_READY;
+      allNotReady &= readiness == NodeReadiness.DOWN;
     }
     if (allReady) {
       return NodeReadiness.READY;
     }
-    return allNotReady ? NodeReadiness.NOT_READY : NodeReadiness.DEGRADED;
+    return allNotReady ? NodeReadiness.DOWN : NodeReadiness.DEGRADED;
   }
 
-  /** One tenant's readiness: still trying or recovering is DEGRADED, stopped for good NOT_READY. */
+  /** One tenant's readiness: still trying or recovering is DEGRADED, stopped for good DOWN. */
   static NodeReadiness readinessOf(final State state) {
     return switch (state) {
       case INITIALIZED -> NodeReadiness.READY;
       case INITIALIZING, RETRYING, RECOVERING -> NodeReadiness.DEGRADED;
-      case FAILED, GAVE_UP, ABORTED -> NodeReadiness.NOT_READY;
+      case FAILED, GAVE_UP, ABORTED -> NodeReadiness.DOWN;
     };
   }
 }

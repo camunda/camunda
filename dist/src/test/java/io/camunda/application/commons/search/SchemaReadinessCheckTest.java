@@ -47,7 +47,7 @@ class SchemaReadinessCheckTest {
   @Test
   void shouldBeDownWhenTheNodeIsNotReady() {
     // given
-    final var readinessCheck = readinessCheck(NodeReadiness.NOT_READY);
+    final var readinessCheck = readinessCheck(NodeReadiness.DOWN);
 
     // when
     final var health = readinessCheck.health();
