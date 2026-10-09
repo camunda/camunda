@@ -222,26 +222,20 @@ specs:
         status: automated
 
       - id: SR-UI-04
-        traces_to: The suspended indicator and the Suspended filter render correctly
+        traces_to: >
+          A suspended instance is returned by the Suspended filter in a real
+          browser against a real backend
         surface: ui
-        status: excluded
-        already_covered_by:
-          surface: component
-          repo: camunda/camunda
-          test: webapp/client/apps/orchestration-cluster-webapp/src/operate/pages/Processes/InstancesTable.test.tsx
-          why: >
-            Eight component tests already cover the Suspended filter, the
-            indicator, and polling a suspended-only view, against a mocked API.
-            What they cannot see is whether the backend actually reports the
-            state — and SR-API-04 covers that. An E2E case here would re-assert
-            a render that is already asserted, through a browser.
+        status: automated
         notes: >
-          REVIEWER: this exclusion is mine, not #63902's — that issue listed the
-          indicator and filter as E2E cases. I think the component tests plus
-          SR-API-04 cover it between them, but the counter-argument is that
-          neither proves the two halves agree in a real browser against a real
-          backend. If you want one thin case asserting exactly that join, say so
-          and this becomes planned with a count of 1.
+          The exclusion here was overruled by the implementation, and the
+          reviewer note that carried it named the condition: "if you want one
+          thin case asserting exactly that join ... this becomes planned with a
+          count of 1". That case exists — "The Suspended filter returns the
+          suspended instance" — so the case is automated rather than planned.
+          traces_to is narrower than the excluded entry claimed: the test
+          asserts the filter join only. The suspended *indicator* is not
+          asserted here and stays with SR-C-01's component tests.
 
       - id: SR-UI-05
         traces_to: >
@@ -287,17 +281,26 @@ specs:
             nothing the IT does not.
 
       - id: SR-UI-09
-        traces_to: Batch suspension targeting and counters
+        traces_to: >
+          A suspend, resume or cancel issued from the instances-table toolbar
+          acts on exactly the selected instances and leaves the rest alone
         surface: ui
-        status: excluded
-        already_covered_by:
-          surface: integration
-          repo: camunda/camunda
-          test: io.camunda.it.client.BatchOperationSuspendResumeProcessInstanceIT
-          why: >
-            Batch targeting is engine behaviour. The UI's own batch-operation
-            affordances are a batch-operations concern, not a suspension one —
-            see out_of_scope.
+        count: 2
+        status: automated
+        notes: >
+          The exclusion here was overruled by the implementation. It argued
+          that toolbar batch affordances are a batch-operations concern; the
+          two tests that exist assert suspension targeting specifically, each
+          carrying an unselected control instance that must survive untouched,
+          which io.camunda.it.client.BatchOperationSuspendResumeProcessInstanceIT
+          cannot see because it never goes through the toolbar.
+          traces_to drops the "counters" half the excluded entry claimed: the
+          cancel test reads the operation's listed items rather than its summary
+          badges, deliberately, because the badges come and go while the batch
+          runs. No test asserts a counter value, so no entry claims one. The
+          out_of_scope exclusions this cited remain in force — batch-operation
+          filter semantics and suspending a batch operation are still untested
+          here.
 
 # ---------------------------------------------------------------------------
 
