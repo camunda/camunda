@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -17,6 +19,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -607,6 +610,89 @@ public final class ProcessInstanceCommandRejectionTest {
   }
 
   @Test
+  public void shouldRejectResumeWhileSuspending() {
+    // given
+    final var processInstanceKey =
+        createProcessInstance(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("a", t -> t.zeebeJobType("a"))
+                .done());
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine.writeRecords(
+        suspendProcessInstanceCommand(processInstanceKey),
+        resumeProcessInstanceCommand(processInstanceKey));
+
+    // then
+    final var rejectedCommand =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUME)
+            .onlyCommandRejections()
+            .withRecordKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(rejectedCommand)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                "Expected to resume a process instance with key '%d', but it is not currently suspended",
+                processInstanceKey));
+
+    final var suspended =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SUSPENDED)
+            .withRecordKey(processInstanceKey)
+            .getFirst();
+    assertThat(suspended.getPosition()).isGreaterThan(rejectedCommand.getPosition());
+  }
+
+  @Test
+  public void shouldStopSuspendingIfProcessInstanceIsCanceled() {
+    // given
+    final var processInstanceKey =
+        createProcessInstance(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("a", t -> t.zeebeJobType("a"))
+                .done());
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine.writeRecords(
+        suspendProcessInstanceCommand(processInstanceKey),
+        cancelProcessInstanceCommand(processInstanceKey));
+
+    // then
+    final var rejectedCommand =
+        RecordingExporter.suspensionBatchRecords(SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE)
+            .onlyCommandRejections()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(rejectedCommand)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                "Expected to continue suspending process instance '%d', but it is being terminated.",
+                processInstanceKey));
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .processInstanceRecords()
+                .withRecordKey(processInstanceKey)
+                .withIntent(ProcessInstanceIntent.SUSPENDED)
+                .exists())
+        .isFalse();
+  }
+
+  @Test
   public void shouldRejectTerminateIfElementIsTerminated() {
     // given
     final var processInstanceKey =
@@ -663,6 +749,12 @@ public final class ProcessInstanceCommandRejectionTest {
   private RecordToWrite suspendProcessInstanceCommand(final long processInstanceKey) {
     return RecordToWrite.command()
         .processInstance(ProcessInstanceIntent.SUSPEND, new ProcessInstanceRecord())
+        .key(processInstanceKey);
+  }
+
+  private RecordToWrite resumeProcessInstanceCommand(final long processInstanceKey) {
+    return RecordToWrite.command()
+        .processInstance(ProcessInstanceIntent.RESUME, new ProcessInstanceRecord())
         .key(processInstanceKey);
   }
 

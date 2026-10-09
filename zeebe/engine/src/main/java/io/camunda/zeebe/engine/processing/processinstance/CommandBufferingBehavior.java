@@ -10,11 +10,13 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 /**
@@ -45,13 +47,21 @@ public final class CommandBufferingBehavior {
   }
 
   /**
-   * Buffers the command for the given process instance. The key is resolved by the gate (see {@code
-   * SuspensionCheck}) rather than read off the command value, since external {@code JOB}/{@code
-   * INCIDENT}/{@code USER_TASK} commands don't carry it on the wire; the buffered record is indexed
-   * by this key, so it must be the real instance key for the command to drain on resume.
+   * Buffers a command for the given process instance, to be written when it is resumed. The process
+   * instance key is passed in rather than read off the command value, since external {@code
+   * JOB}/{@code INCIDENT}/{@code USER_TASK} commands don't carry it on the wire; the buffered
+   * record is indexed by this key, so it must be the real instance key for the command to drain on
+   * resume.
+   *
+   * <p>The buffered-command metric is recorded as a side effect, so it is only recorded once the
+   * batch is committed and not on replay.
    */
-  public void bufferCommand(final TypedRecord<?> command, final long processInstanceKey) {
-    final var commandValue = command.getValue();
+  public void bufferCommand(
+      final long commandKey,
+      final ValueType valueType,
+      final Intent intent,
+      final UnifiedRecordValue commandValue,
+      final long processInstanceKey) {
     final String tenantId =
         commandValue instanceof final TenantOwned tenantOwned
             ? tenantOwned.getTenantId()
@@ -66,9 +76,9 @@ public final class CommandBufferingBehavior {
             .setProcessInstanceKey(processInstanceKey)
             .setProcessDefinitionKey(processDefinitionKey)
             .setTenantId(tenantId)
-            .setCommandKey(command.getKey())
-            .setValueType(command.getValueType())
-            .setIntent(command.getIntent())
+            .setCommandKey(commandKey)
+            .setValueType(valueType)
+            .setIntent(intent)
             .setCommandValue(commandValue);
 
     final long bufferedCommandKey = keyGenerator.nextKey();
@@ -76,6 +86,6 @@ public final class CommandBufferingBehavior {
         .state()
         .appendFollowUpEvent(
             bufferedCommandKey, BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
-    suspensionMetrics.commandBuffered();
+    writers.sideEffect().appendSideEffect(suspensionMetrics::commandBuffered);
   }
 }
