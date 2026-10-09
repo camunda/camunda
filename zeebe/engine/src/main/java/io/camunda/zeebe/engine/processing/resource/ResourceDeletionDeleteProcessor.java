@@ -355,8 +355,7 @@ public class ResourceDeletionDeleteProcessor
     }
 
     // Recovers definitions orphaned before #62820: gone here, but other partitions still owe a
-    // drain report, so their delete is retried. See
-    // https://github.com/camunda/camunda/issues/64586
+    // drain report, so their delete is retried. See https://github.com/camunda/camunda/issues/64586
     final var pendingPartitions = processState.getPendingDeletionPartitions(processDefinitionKey);
     if (pendingPartitions.isEmpty()) {
       return DeletionResult.NOT_DELETED;
@@ -366,6 +365,7 @@ public class ResourceDeletionDeleteProcessor
     if (command.isCommandDistributed() || command.getValue().isDeleteHistory()) {
       throw new ResourceDeletionInProgressException(processDefinitionKey);
     }
+    stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, command.getValue());
     return DeletionResult.deletedOn(pendingPartitions);
   }
 
