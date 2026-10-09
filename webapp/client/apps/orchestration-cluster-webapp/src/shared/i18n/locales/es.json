@@ -1061,8 +1061,7 @@
 				"title": "Decisiones",
 				"scaffold": {
 					"filtersPanelPlaceholder": "Marcador de posición del panel de filtros",
-					"decisionPanelPlaceholder": "Marcador de posición del panel de decisión",
-					"instancesTablePlaceholder": "Marcador de posición de la tabla de instancias"
+					"decisionPanelPlaceholder": "Marcador de posición del panel de decisión"
 				},
 				"diagramHeader": {
 					"title": "Decisión",
@@ -1111,7 +1110,10 @@
 					"emptyMessage": "No hay instancias que coincidan con este conjunto de filtros",
 					"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
 					"selectAll": "Seleccionar todas las filas",
-					"selectRow": "Seleccionar fila {{key}}"
+					"selectRow": "Seleccionar fila {{key}}",
+					"tableLabel": "Instancias de decisión",
+					"loadingPreviousPage": "Cargando instancias de decisión anteriores",
+					"loadingNextPage": "Cargando instancias de decisión siguientes"
 				},
 				"toolbar": {
 					"delete": "Eliminar",

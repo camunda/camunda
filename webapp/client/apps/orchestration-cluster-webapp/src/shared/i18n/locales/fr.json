@@ -1064,8 +1064,7 @@
 				"title": "Décisions",
 				"scaffold": {
 					"filtersPanelPlaceholder": "Espace réservé pour le panneau de filtres",
-					"decisionPanelPlaceholder": "Espace réservé pour le panneau de décision",
-					"instancesTablePlaceholder": "Espace réservé pour le tableau des instances"
+					"decisionPanelPlaceholder": "Espace réservé pour le panneau de décision"
 				},
 				"diagramHeader": {
 					"title": "Décision",
@@ -1114,7 +1113,10 @@
 					"emptyMessage": "Aucune instance ne correspond à cet ensemble de filtres",
 					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
 					"selectAll": "Sélectionner toutes les lignes",
-					"selectRow": "Sélectionner la ligne {{key}}"
+					"selectRow": "Sélectionner la ligne {{key}}",
+					"tableLabel": "Instances de décision",
+					"loadingPreviousPage": "Chargement des instances de décision précédentes",
+					"loadingNextPage": "Chargement des instances de décision suivantes"
 				},
 				"toolbar": {
 					"delete": "Supprimer",

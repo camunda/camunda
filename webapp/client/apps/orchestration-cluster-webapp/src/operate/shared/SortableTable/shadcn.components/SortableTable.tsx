@@ -73,6 +73,12 @@ type BaseProps<TRow> = {
 	loadingNextPageLabel: string;
 	emptyState?: React.ReactNode;
 	hideHeaderWhenEmpty?: boolean;
+	/**
+	 * Extra classes for the outer wrapper. Use descendant selectors (e.g.
+	 * `[&_[data-slot=table-container]]:rounded-none`) to restyle the design system's own table
+	 * container, which `DataTable` does not expose.
+	 */
+	className?: string;
 	onSort?: (sortKey: string, order: SortOrder) => void;
 	onVerticalScrollStartReach?: () => void;
 	onVerticalScrollEndReach?: () => void;
@@ -528,6 +534,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		loadingNextPageLabel,
 		emptyState,
 		hideHeaderWhenEmpty = false,
+		className,
 		onSort,
 		onVerticalScrollStartReach,
 		onVerticalScrollEndReach,
@@ -748,7 +755,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 	);
 
 	return (
-		<div className={cn('relative', hasScrollHandlers && 'h-full min-h-0 flex-1')}>
+		<div className={cn('relative', hasScrollHandlers && 'h-full min-h-0 flex-1', className)}>
 			{isFetching && !isInitialLoad && (
 				<div
 					aria-hidden

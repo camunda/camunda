@@ -1061,8 +1061,7 @@
 				"title": "Entscheidungen",
 				"scaffold": {
 					"filtersPanelPlaceholder": "Platzhalter für den Filterbereich",
-					"decisionPanelPlaceholder": "Platzhalter für den Entscheidungsbereich",
-					"instancesTablePlaceholder": "Platzhalter für die Instanzentabelle"
+					"decisionPanelPlaceholder": "Platzhalter für den Entscheidungsbereich"
 				},
 				"diagramHeader": {
 					"title": "Entscheidung",
@@ -1111,7 +1110,10 @@
 					"emptyMessage": "Es gibt keine Instanzen, die diesem Filter entsprechen",
 					"emptyAdditionalInfo": "Um Ergebnisse zu sehen, wählen Sie mindestens einen Instanzstatus aus",
 					"selectAll": "Alle Zeilen auswählen",
-					"selectRow": "Zeile {{key}} auswählen"
+					"selectRow": "Zeile {{key}} auswählen",
+					"tableLabel": "Entscheidungsinstanzen",
+					"loadingPreviousPage": "Vorherige Entscheidungsinstanzen werden geladen",
+					"loadingNextPage": "Nächste Entscheidungsinstanzen werden geladen"
 				},
 				"toolbar": {
 					"delete": "Löschen",
