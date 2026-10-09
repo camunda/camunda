@@ -383,7 +383,7 @@ public class IncidentIT {
     assertThat(instance).isNotNull();
     assertThat(instance)
         .usingRecursiveComparison()
-        .ignoringFields("bpmnProcessId", "key", "creationTime", "treePath")
+        .ignoringFields("bpmnProcessId", "key", "creationTime", "treePath", "storageOrdinal")
         .isEqualTo(original);
     assertThat(instance.incidentKey()).isEqualTo(original.incidentKey());
     assertThat(instance.processDefinitionId()).isEqualTo(original.processDefinitionId());
