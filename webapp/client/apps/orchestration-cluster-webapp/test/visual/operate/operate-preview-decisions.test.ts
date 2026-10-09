@@ -42,5 +42,9 @@ test('should match the resized decisions panels snapshot after dragging the resi
 		force: true,
 	});
 
+	await expect(page.locator('body')).not.toHaveClass(/cursor-ns-resize/);
+	await expect
+		.poll(() => page.evaluate(() => localStorage.getItem('operate.panelStates')))
+		.toContain('decisions-instances-vertical-panel');
 	await expect(page).toHaveScreenshot();
 });
