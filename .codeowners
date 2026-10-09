@@ -113,6 +113,21 @@ mwnw*                       @camunda/engineering-operations
 /qa/util/                   @camunda/orchestration-cluster
 /qa/c8-orchestration-cluster-e2e-test-suite/ @camunda/test-automation-team
 
+# Orchestration Cluster E2E suite: each area owns its specs, so a failure routes to the area's
+# team (#65305). Shared flows, page objects and the framework stay with the rule above.
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/                                @camunda/operate-admin-pod
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/swagger.spec.ts                @camunda/core-features
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/identity/                               @camunda/operate-admin-pod
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/tasklist/                               @camunda/employee-engagement-tasklist
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/api/                                    @camunda/core-features
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/authorization/                   @camunda/identity
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/group/                           @camunda/identity
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/role/                            @camunda/identity
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/tenant/                          @camunda/identity
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/authentication-api-tests.spec.ts @camunda/identity
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/mapping-rule-api-tests.spec.ts   @camunda/identity
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/user-api-tests.spec.ts           @camunda/identity
+
 # Acceptance tests shared utilities (dual ownership)
 /qa/acceptance-tests/src/test/java/io/camunda/it/util/       @camunda/qa-engineering @camunda/orchestration-cluster
 /qa/acceptance-tests/src/main/java/io/camunda/it/util/       @camunda/qa-engineering @camunda/orchestration-cluster
