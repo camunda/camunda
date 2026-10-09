@@ -70,7 +70,6 @@ public final class SuspensionBatchProcessor
   private final List<ElementInstanceSuspensionVisitor> visitors;
 
   private long foundChildKey;
-  private int bufferedCommands;
 
   public SuspensionBatchProcessor(
       final Writers writers,
@@ -103,7 +102,6 @@ public final class SuspensionBatchProcessor
     stateWriter.appendFollowUpEvent(
         command.getKey(), SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED, value);
 
-    bufferedCommands = 0;
     final boolean suspended =
         switch ((SuspensionBatchIntent) command.getIntent()) {
           case SUSPEND_ELEMENT_INSTANCE -> suspendElementInstance(value);
@@ -114,9 +112,6 @@ public final class SuspensionBatchProcessor
                   "Unexpected suspension batch intent " + command.getIntent());
         };
 
-    for (int i = 0; i < bufferedCommands; i++) {
-      suspensionMetrics.commandBuffered();
-    }
     if (suspended) {
       suspensionMetrics.instanceSuspended();
     }
@@ -180,7 +175,7 @@ public final class SuspensionBatchProcessor
       return;
     }
     for (final var visitor : visitors) {
-      bufferedCommands += visitor.visit(elementInstance);
+      visitor.visit(elementInstance);
     }
   }
 

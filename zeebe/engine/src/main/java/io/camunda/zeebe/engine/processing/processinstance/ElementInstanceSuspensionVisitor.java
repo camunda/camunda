@@ -12,16 +12,9 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 /**
  * Suspends one concern of an element instance, such as its user task, while {@link
  * SuspensionBatchProcessor} walks the element instance tree.
- *
- * <p>Visitors only write events and buffered commands. They must not record metrics, since the
- * processor records them after all writes.
  */
 interface ElementInstanceSuspensionVisitor {
 
-  /**
-   * Suspends what the element instance owns for this concern.
-   *
-   * @return the number of commands buffered for resume
-   */
-  int visit(ElementInstance elementInstance);
+  /** Suspends what the element instance owns for this concern. */
+  void visit(ElementInstance elementInstance);
 }

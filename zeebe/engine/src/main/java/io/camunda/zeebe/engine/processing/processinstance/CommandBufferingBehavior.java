@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 /**
@@ -48,27 +47,16 @@ public final class CommandBufferingBehavior {
   }
 
   /**
-   * Buffers the command for the given process instance. The key is resolved by the gate (see {@code
-   * SuspensionCheck}) rather than read off the command value, since external {@code JOB}/{@code
-   * INCIDENT}/{@code USER_TASK} commands don't carry it on the wire; the buffered record is indexed
-   * by this key, so it must be the real instance key for the command to drain on resume.
+   * Buffers a command for the given process instance, to be written when it is resumed. The process
+   * instance key is passed in rather than read off the command value, since external {@code
+   * JOB}/{@code INCIDENT}/{@code USER_TASK} commands don't carry it on the wire; the buffered
+   * record is indexed by this key, so it must be the real instance key for the command to drain on
+   * resume.
+   *
+   * <p>The buffered-command metric is recorded as a side effect, so it is only recorded once the
+   * batch is committed and not on replay.
    */
-  public void bufferCommand(final TypedRecord<?> command, final long processInstanceKey) {
-    appendBufferedCommand(
-        command.getKey(),
-        command.getValueType(),
-        command.getIntent(),
-        command.getValue(),
-        processInstanceKey);
-    suspensionMetrics.commandBuffered();
-  }
-
-  /**
-   * Buffers a command created by the engine itself, to be written when the process instance is
-   * resumed. Unlike {@link #bufferCommand}, it doesn't record the buffered-command metric, so the
-   * caller can record it after all its other writes.
-   */
-  public void appendBufferedCommand(
+  public void bufferCommand(
       final long commandKey,
       final ValueType valueType,
       final Intent intent,
@@ -98,5 +86,6 @@ public final class CommandBufferingBehavior {
         .state()
         .appendFollowUpEvent(
             bufferedCommandKey, BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
+    writers.sideEffect().appendSideEffect(suspensionMetrics::commandBuffered);
   }
 }
