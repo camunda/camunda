@@ -45,7 +45,7 @@ Physical tenants are fully isolated engines inside one c8run. Each one has its o
 ./c8run physical-tenants remove sales
 ```
 
-A physical tenant is served under `http://localhost:8080/physical-tenants/<id>/`, for example `/physical-tenants/sales/operate` or `/physical-tenants/sales/v2/`. The `default` physical tenant always exists and keeps the unprefixed URLs. gRPC clients select a physical tenant with the `Camunda-Physical-Tenant` header; the Java client and Spring starter use `camunda.client.physical-tenant-id`. The startup summary lists every physical tenant's URLs and readiness.
+A physical tenant is served under `http://localhost:8080/physical-tenants/<id>/`, for example `/physical-tenants/sales/operate` or `/physical-tenants/sales/v2/`. The `default` physical tenant always exists and keeps the unprefixed URLs. gRPC clients select a physical tenant with the `Camunda-Physical-Tenant` header; the Java client uses `camunda.client.physicalTenantId`, and the Spring starter uses `camunda.client.physical-tenant-id`. The startup summary lists every physical tenant's URLs and readiness.
 
 Physical tenant IDs use lowercase letters and digits only, up to 64 characters (8 with RDBMS or H2 storage, see below). By default every physical tenant gets the same login as `c8run start` (`--username`/`--password`, `demo`/`demo` unless changed). To give a physical tenant its own user, run `./c8run physical-tenants add hr --username alice`; c8run prompts for the password (or reads it with `--password-stdin`) and saves it in the physical tenants file, which only you can read. It never appears in the generated Camunda configuration, a command line, or your shell history.
 
