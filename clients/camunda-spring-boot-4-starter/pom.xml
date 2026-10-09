@@ -57,6 +57,12 @@
         <artifactId>jackson-databind</artifactId>
         <version>3.1.7</version>
       </dependency>
+      <!-- jackson-core 3.1.5 is pulled in by jackson-databind 3.1.7 via spring-boot-jackson; pin the patched 3.1.7 (GHSA-p6pp-m3f8-5c89, GHSA-7hhh-6rmp-j9qf). -->
+      <dependency>
+        <groupId>tools.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>3.1.7</version>
+      </dependency>
       <!-- Override the parent's version.httpclient5 (5.4.4) pin, which the vulnerability gate
       flags for GHSA-hjcp-jmpx-g3qm. Scoped to this module only, matching the pattern above. -->
       <dependency>
