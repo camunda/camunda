@@ -1,0 +1,11 @@
+# label | arguments (see WorkloadConfig for all keys; cf.<name>=<value> are RocksDB CF options)
+# readMode=UPPER_BOUND and deleteMode=SINGLE_DELETE are code-level changes prototyped in the harness,
+# everything prefixed with cf. can be set today through the broker's columnFamilyOptions.
+# Recorded against the pre-tuning defaults; preTuningDefaults=true reproduces them on newer code.
+baseline              | preTuningDefaults=true
+upper-bound           | preTuningDefaults=true readMode=UPPER_BOUND
+single-delete         | preTuningDefaults=true deleteMode=SINGLE_DELETE
+ub+sd                 | preTuningDefaults=true readMode=UPPER_BOUND deleteMode=SINGLE_DELETE
+min-merge-1           | preTuningDefaults=true cf.min_write_buffer_number_to_merge=1
+wb-8mb                | preTuningDefaults=true cf.write_buffer_size=8388608
+ub+sd+wb-8mb+merge-1  | preTuningDefaults=true readMode=UPPER_BOUND deleteMode=SINGLE_DELETE cf.write_buffer_size=8388608 cf.min_write_buffer_number_to_merge=1

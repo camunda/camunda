@@ -24,6 +24,7 @@ import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
+import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -64,6 +65,7 @@ class TransactionalColumnFamily<
   private final ColumnFamilyContext columnFamilyContext;
   private final ForeignKeyChecker foreignKeyChecker;
   private final ColumnFamilyMetrics metrics;
+  private final ArrayDeque<PrefixBoundedReadOptions> boundedReadOptions = new ArrayDeque<>(2);
 
   TransactionalColumnFamily(
       final ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
@@ -436,6 +438,20 @@ class TransactionalColumnFamily<
         () -> operation.run((ZeebeTransaction) context.getCurrentTransaction()));
   }
 
+  /**
+   * Every prefix iteration bounds its iterator to the prefix, see {@link PrefixBoundedReadOptions}.
+   * Iterations can nest (a visitor may iterate again), so each open iterator takes its own instance
+   * from this small free list; instances are created on demand and closed with the database.
+   */
+  private PrefixBoundedReadOptions acquireReadOptions() {
+    final var readOptions = boundedReadOptions.poll();
+    return readOptions != null ? readOptions : transactionDb.newPrefixBoundedReadOptions();
+  }
+
+  private void releaseReadOptions(final PrefixBoundedReadOptions readOptions) {
+    boundedReadOptions.push(readOptions);
+  }
+
   RocksIterator newIterator(final TransactionContext context, final ReadOptions options) {
     final var currentTransaction = (ZeebeTransaction) context.getCurrentTransaction();
     return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
@@ -483,8 +499,9 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
+            final var readOptions = acquireReadOptions();
             try (final RocksIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+                newIterator(context, readOptions.forward(prefixKey, prefixLength))) {
 
               boolean shouldVisitNext = true;
 
@@ -498,6 +515,8 @@ class TransactionalColumnFamily<
 
                 shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
               }
+            } finally {
+              releaseReadOptions(readOptions);
             }
           });
     }
@@ -524,8 +543,9 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
+            final var readOptions = acquireReadOptions();
             try (final RocksIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+                newIterator(context, readOptions.reverse(prefixKey, prefixLength))) {
 
               final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
 
@@ -541,6 +561,8 @@ class TransactionalColumnFamily<
 
                 shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
               }
+            } finally {
+              releaseReadOptions(readOptions);
             }
           });
     }
@@ -573,8 +595,9 @@ class TransactionalColumnFamily<
     columnFamilyContext.withPrefixKey(
         prefix,
         (prefixKey, prefixLength) -> {
+          final var readOptions = acquireReadOptions();
           try (final RocksIterator iterator =
-              newIterator(context, transactionDb.getPrefixReadOptions())) {
+              newIterator(context, readOptions.forward(prefixKey, prefixLength))) {
 
             for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
                 iterator.isValid();
@@ -586,6 +609,8 @@ class TransactionalColumnFamily<
 
               count.increment();
             }
+          } finally {
+            releaseReadOptions(readOptions);
           }
         });
 
@@ -624,8 +649,9 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
+            final var readOptions = acquireReadOptions();
             try (final RocksIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+                newIterator(context, readOptions.forward(prefixKey, prefixLength))) {
 
               boolean shouldVisitNext = true;
 
@@ -639,6 +665,8 @@ class TransactionalColumnFamily<
 
                 shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
               }
+            } finally {
+              releaseReadOptions(readOptions);
             }
           });
     }
@@ -663,8 +691,9 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
+            final var readOptions = acquireReadOptions();
             try (final RocksIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+                newIterator(context, readOptions.reverse(prefixKey, prefixLength))) {
 
               final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
 
@@ -680,6 +709,8 @@ class TransactionalColumnFamily<
 
                 shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
               }
+            } finally {
+              releaseReadOptions(readOptions);
             }
           });
     }

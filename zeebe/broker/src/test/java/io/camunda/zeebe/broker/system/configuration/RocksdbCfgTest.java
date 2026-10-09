@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -75,6 +76,8 @@ public final class RocksdbCfgTest {
     assertThat(rocksDbConfiguration.getMaxOpenFiles()).isEqualTo(-1);
     assertThat(rocksDbConfiguration.getMaxWriteBufferNumber()).isEqualTo(6);
     assertThat(rocksDbConfiguration.getMinWriteBufferNumberToMerge()).isEqualTo(3);
+    assertThat(rocksDbConfiguration.getCompactOnDeletion())
+        .isEqualTo(RocksDbConfiguration.DEFAULT_COMPACT_ON_DELETION);
     assertThat(rocksDbConfiguration.getIoRateBytesPerSecond()).isZero();
     assertThat(rocksDbConfiguration.isWalDisabled()).isTrue();
   }

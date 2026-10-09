@@ -1,0 +1,6 @@
+baseline.log:aged 3000000 jobs in 31.9 s (93948 jobs/s): flushWrite=196.8MB compactRead=191.1MB compactWrite=6.1MB stall=0.0s memtables=68432072B L0=0
+cod.log:aged 3000000 jobs in 33.3 s (90135 jobs/s): flushWrite=196.8MB compactRead=197.2MB compactWrite=12.3MB stall=0.0s memtables=68431824B L0=0
+sd+wb8+merge1.log:aged 3000000 jobs in 34.2 s (87806 jobs/s): flushWrite=280.4MB compactRead=308.3MB compactWrite=37.3MB stall=0.0s memtables=5454728B L0=4
+wb16+merge1+cod.log:aged 3000000 jobs in 33.0 s (90888 jobs/s): flushWrite=296.9MB compactRead=394.5MB compactWrite=110.5MB stall=0.0s memtables=10907368B L0=0
+wb8+merge1+cod.log:aged 3000000 jobs in 33.1 s (90564 jobs/s): flushWrite=411.6MB compactRead=622.8MB compactWrite=225.4MB stall=0.0s memtables=5454728B L0=0
+wb8+merge1.log:aged 3000000 jobs in 33.7 s (88972 jobs/s): flushWrite=411.2MB compactRead=431.9MB compactWrite=37.3MB stall=0.0s memtables=5454728B L0=3
