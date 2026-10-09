@@ -84,6 +84,10 @@ public class ConnectionMonitor {
     }
   }
 
+  public boolean isConnected() {
+    return connected.get() == 1;
+  }
+
   private static void sleep() {
     try {
       Thread.sleep(1000);
