@@ -74,7 +74,7 @@ describe('<Decisions />', () => {
 
 		const screen = await renderDecisionsPage();
 
-		await expect.element(screen.getByText('Instances States')).toBeVisible();
+		await expect.element(screen.getByText('Instances states')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toBeVisible();
 		await expect.element(screen.getByRole('checkbox', {name: 'Evaluated'})).toBeVisible();
 		await expect.element(screen.getByRole('checkbox', {name: 'Failed'})).toBeVisible();
@@ -205,7 +205,7 @@ describe('<Decisions />', () => {
 			tenantId: 'all',
 		});
 
-		await expect.element(screen.getByText('Decision "Invoice Approval" exists in more than one Tenant')).toBeVisible();
+		await expect.element(screen.getByText('Decision "Invoice Approval" exists in more than one tenant')).toBeVisible();
 	});
 
 	describe('legacy bookmarks', () => {
@@ -216,7 +216,7 @@ describe('<Decisions />', () => {
 
 			await expect.element(screen.getByRole('checkbox', {name: 'Evaluated'})).not.toBeChecked();
 			await expect.element(screen.getByRole('checkbox', {name: 'Failed'})).not.toBeChecked();
-			await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
+			await expect.element(screen.getByText('To see some results, select at least one instance state')).toBeVisible();
 		});
 
 		it('should hide previous rows and deletion when returning to a no-state bookmark', async ({worker}) => {
@@ -241,7 +241,7 @@ describe('<Decisions />', () => {
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
 
 			screen.router.history.back();
-			await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
+			await expect.element(screen.getByText('To see some results, select at least one instance state')).toBeVisible();
 			await expect.element(screen.getByTitle('View decision instance 123567')).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
 		});

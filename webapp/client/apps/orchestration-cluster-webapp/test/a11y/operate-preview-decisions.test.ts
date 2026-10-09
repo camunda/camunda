@@ -135,3 +135,33 @@ test('should have no accessibility violations with a selected decision definitio
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
 });
+
+test('should have no accessibility violations with a selected decision and the delete dialog open', async ({
+	page,
+	network,
+	operatePreviewDecisionsPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+		mockQueryDecisionDefinitionsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryDecisionDefinitionsResponse({
+					items: [
+						createDecisionDefinition({
+							name: 'Invoice Classification',
+							decisionDefinitionId: 'invoiceClassification',
+							version: 1,
+						}),
+					],
+				}),
+			),
+		}),
+	);
+	await operatePreviewDecisionsPage.goto('?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1');
+	await page.getByRole('button', {name: /Delete decision definition/}).click();
+	await expect(page.getByRole('dialog')).toBeVisible();
+
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
+});

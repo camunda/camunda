@@ -11,9 +11,9 @@ import {describe, expect, vi, beforeEach, afterEach} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
-import {FiltersPanel} from './FiltersPanel';
+import {FilterSidebar} from './FilterSidebar';
 
-describe('<FiltersPanel />', () => {
+describe('<FilterSidebar />', () => {
 	let previousPanelStates: string | null;
 
 	beforeEach(() => {
@@ -31,9 +31,9 @@ describe('<FiltersPanel />', () => {
 
 	it('should render children', async () => {
 		const screen = await render(
-			<FiltersPanel localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
+			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
 				<div>my filters</div>
-			</FiltersPanel>,
+			</FilterSidebar>,
 		);
 
 		await expect.element(screen.getByText('my filters')).toBeInTheDocument();
@@ -42,9 +42,9 @@ describe('<FiltersPanel />', () => {
 	it('should call onResetClick when the reset filters button is clicked', async () => {
 		const onResetClick = vi.fn();
 		const screen = await render(
-			<FiltersPanel localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false} onResetClick={onResetClick}>
+			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false} onResetClick={onResetClick}>
 				<div>my filters</div>
-			</FiltersPanel>,
+			</FilterSidebar>,
 		);
 
 		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
@@ -55,9 +55,9 @@ describe('<FiltersPanel />', () => {
 	it('should disable the reset filters button when isResetButtonDisabled is true', async () => {
 		const onResetClick = vi.fn();
 		const screen = await render(
-			<FiltersPanel localStorageKey="isFiltersCollapsed" isResetButtonDisabled={true} onResetClick={onResetClick}>
+			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={true} onResetClick={onResetClick}>
 				<div>my filters</div>
-			</FiltersPanel>,
+			</FilterSidebar>,
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeDisabled();
@@ -67,9 +67,9 @@ describe('<FiltersPanel />', () => {
 		storeStateLocally('operate.panelStates', {isFiltersCollapsed: true});
 
 		const screen = await render(
-			<FiltersPanel localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
+			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
 				<div>my filters</div>
-			</FiltersPanel>,
+			</FilterSidebar>,
 		);
 
 		await expect.element(screen.getByTestId('collapsed-panel')).toBeInTheDocument();
@@ -77,9 +77,9 @@ describe('<FiltersPanel />', () => {
 
 	it('should persist the collapsed state to local storage when toggled', async () => {
 		const screen = await render(
-			<FiltersPanel localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
+			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
 				<div>my filters</div>
-			</FiltersPanel>,
+			</FilterSidebar>,
 		);
 
 		await expect.element(screen.getByTestId('expanded-panel')).toBeInTheDocument();
@@ -93,9 +93,9 @@ describe('<FiltersPanel />', () => {
 
 	it('should keep the filter icon visible in the expanded header', async () => {
 		const screen = await render(
-			<FiltersPanel localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
+			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
 				<div>my filters</div>
-			</FiltersPanel>,
+			</FilterSidebar>,
 		);
 
 		await expect.element(screen.getByTestId('expanded-panel').getByRole('heading', {name: 'Filter'})).toBeVisible();
@@ -106,9 +106,9 @@ describe('<FiltersPanel />', () => {
 		storeStateLocally('operate.panelStates', {isFiltersCollapsed: true});
 
 		const screen = await render(
-			<FiltersPanel localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
+			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
 				<div>my filters</div>
-			</FiltersPanel>,
+			</FilterSidebar>,
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'Expand Filter'})).toBeVisible();

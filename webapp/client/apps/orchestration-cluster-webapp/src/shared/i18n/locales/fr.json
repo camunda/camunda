@@ -1133,7 +1133,8 @@
 					"deleteSuccessActionLabel": "Voir les détails de l'opération"
 				},
 				"definitionDeletion": {
-					"buttonTitle": "Supprimer la définition de décision \"{{name}} - Version {{version}}\"",
+					"buttonTitle": "Supprimer la définition de décision \"{{name}} - version {{version}}\"",
+					"loadingMessage": "Suppression de la définition de décision en cours",
 					"title": "Supprimer le DRD",
 					"description": "Vous êtes sur le point de supprimer le DRD suivant :",
 					"confirmation": "Oui, je confirme vouloir supprimer ce DRD et toutes les instances associées.",

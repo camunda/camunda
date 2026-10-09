@@ -14,7 +14,8 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockDeleteResourceEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createDecisionDefinition} from '#/shared-test-modules/api-mocks/decision-definitions';
-import {Notifications} from '#/shared/notifications/components/Notifications';
+import {Toaster, toast} from '@camunda/design-system';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {DecisionOperations} from './DecisionOperations';
 
@@ -29,6 +30,7 @@ function renderOperations(definition = DEFINITION) {
 		() => (
 			<>
 				<DecisionOperations definition={definition} />
+				<Toaster />
 				<Notifications />
 			</>
 		),
@@ -43,7 +45,10 @@ async function submit(screen: Awaited<ReturnType<typeof renderOperations>>) {
 }
 
 describe('<DecisionOperations />', () => {
-	afterEach(() => notificationsStore.reset());
+	afterEach(() => {
+		notificationsStore.reset();
+		toast.dismiss();
+	});
 
 	it('should explain DRD-wide deletion and require fresh confirmation after cancel', async () => {
 		const screen = await renderOperations();
@@ -88,6 +93,7 @@ describe('<DecisionOperations />', () => {
 		await submit(screen);
 
 		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeDisabled();
+		await expect.element(screen.getByRole('status')).toHaveTextContent('Deleting decision definition');
 		await expect.element(screen.getByRole('heading', {name: 'Delete DRD', exact: true})).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeEnabled();

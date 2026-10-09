@@ -24,7 +24,7 @@ type Props = {
 	isResetButtonDisabled: boolean;
 };
 
-const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
+const FilterSidebar: React.FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
 	const {t} = useTranslation();
 	const storedState = getStateLocally('operate.panelStates')?.[localStorageKey];
 	const isCollapsed = typeof storedState === 'boolean' ? storedState : false;
@@ -71,4 +71,4 @@ const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick,
 	);
 };
 
-export {FiltersPanel};
+export {FilterSidebar};

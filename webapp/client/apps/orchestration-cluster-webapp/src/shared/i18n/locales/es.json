@@ -1130,7 +1130,8 @@
 					"deleteSuccessActionLabel": "Ir a los detalles de la operación"
 				},
 				"definitionDeletion": {
-					"buttonTitle": "Eliminar la definición de decisión \"{{name}} - Versión {{version}}\"",
+					"buttonTitle": "Eliminar la definición de decisión \"{{name}} - versión {{version}}\"",
+					"loadingMessage": "Eliminando la definición de decisión",
 					"title": "Eliminar DRD",
 					"description": "Está a punto de eliminar el siguiente DRD:",
 					"confirmation": "Sí, confirmo que quiero eliminar este DRD y todas las instancias relacionadas.",

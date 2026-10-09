@@ -114,7 +114,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByRole('button', {name: 'Evaluation Date'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Evaluation date'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Business ID'})).not.toBeInTheDocument();
 	});
 
@@ -140,7 +140,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 		const screen = await renderInstancesTable({search: {evaluated: false, failed: false}});
 
-		await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
+		await expect.element(screen.getByText('To see some results, select at least one instance state')).toBeVisible();
 	});
 
 	it('should render an empty message when no instances match the filter', async ({worker}) => {
@@ -148,7 +148,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
+		await expect.element(screen.getByText('There are no instances matching this filter set')).toBeVisible();
 	});
 
 	it('should render an error message when the request fails', async ({worker}) => {

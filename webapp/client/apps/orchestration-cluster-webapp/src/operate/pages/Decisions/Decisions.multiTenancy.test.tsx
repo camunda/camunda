@@ -87,7 +87,7 @@ describe('Multi tenancy', () => {
 
 		const screen = await renderDecisionsPage();
 
-		await expect.element(screen.getByText('Instances States')).toBeVisible();
+		await expect.element(screen.getByText('Instances states')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).not.toBeInTheDocument();
 	});
 
