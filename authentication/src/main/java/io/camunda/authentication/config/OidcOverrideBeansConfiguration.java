@@ -52,6 +52,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.ssl.NoSuchSslBundleException;
 import org.springframework.boot.ssl.SslBundles;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -98,6 +99,9 @@ public class OidcOverrideBeansConfiguration {
       "camunda_authentication_external_requests";
   private static final KeyValues CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS =
       KeyValues.of("domain", "identity");
+
+  // Spring Security's FilterChainProxy registers at SecurityProperties.DEFAULT_FILTER_ORDER (-100).
+  private static final int UNKNOWN_OIDC_REGISTRATION_ID_FILTER_ORDER = -102;
 
   private final CamundaSecurityLibraryProperties cslProperties;
 
@@ -467,6 +471,21 @@ public class OidcOverrideBeansConfiguration {
 
     oauthUserService.setRestOperations(restTemplate);
     return oidcUserService;
+  }
+
+  /**
+   * Runs before Spring Security's filter chain (order {@code -100}) so that an unknown registration
+   * id never reaches the authorization request resolver; see {@link
+   * UnknownOidcRegistrationIdFilter}.
+   */
+  @Bean
+  public FilterRegistrationBean<UnknownOidcRegistrationIdFilter> unknownOidcRegistrationIdFilter(
+      final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepository) {
+    final var registration =
+        new FilterRegistrationBean<>(
+            new UnknownOidcRegistrationIdFilter(clientRegistrationRepository));
+    registration.setOrder(UNKNOWN_OIDC_REGISTRATION_ID_FILTER_ORDER);
+    return registration;
   }
 
   /**
