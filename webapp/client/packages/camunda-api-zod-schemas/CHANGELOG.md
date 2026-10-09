@@ -2,6 +2,10 @@
 
 ## v0.0.95
 
+### 🚀 Enhancements
+
+- Add `isSuspended` to the 8.11 user task schema and user task search filter, matching the spec ([#64270](https://github.com/camunda/camunda/pull/64270))
+
 ### 🩹 Fixes
 
 - Add `businessId` to the 8.9, 8.10 and 8.11 process definition statistics filter schemas, matching the spec ([#64678](https://github.com/camunda/camunda/pull/64678))
