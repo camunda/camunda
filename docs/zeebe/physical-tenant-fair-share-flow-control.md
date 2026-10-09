@@ -1,5 +1,10 @@
 # Fair-share flow control across Physical Tenants
 
+> **Superseded.** The controller-based design below was simplified: the next step is a spike of a
+> dedicated actor thread pool per Physical Tenant, relying on the OS scheduler for fairness. See
+> [spikes/physical-tenant-actor-pools.md](spikes/physical-tenant-actor-pools.md). This document is
+> kept as background for the escalation options.
+>
 > Status: **Draft requirements**, input for the Define phase of
 > [product-hub#3778](https://github.com/camunda/product-hub/issues/3778) (Reduce Noisy Neighbour
 > Risks for Physical Tenants). Nothing here is implemented yet.
