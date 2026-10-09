@@ -613,6 +613,12 @@ components:
           allOf:
             - $ref: '#/components/schemas/UserTaskStateFilterProperty'
           description: The user task state.
+        isSuspended:
+          description: >
+            Whether the user task is suspended because its owning process instance is
+            suspended.
+          type: boolean
+          nullable: true
         assignee:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
@@ -725,6 +731,8 @@ components:
           addedInVersion: "8.9"
         - propertyName: businessId
           addedInVersion: "8.10"
+        - propertyName: isSuspended
+          addedInVersion: "8.11"
 
     UserTaskSearchQueryResult:
       description: User task search query response.
@@ -760,6 +768,7 @@ components:
         - creationDate
         - customHeaders
         - priority
+        - isSuspended
         - tags
         - assignee
         - completionDate
@@ -837,6 +846,11 @@ components:
           minimum: 0
           maximum: 100
           default: 50
+        isSuspended:
+          type: boolean
+          description: >
+            Whether the user task is suspended because its owning process instance is
+            suspended.
         userTaskKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
@@ -931,6 +945,8 @@ components:
           addedInVersion: "8.10"
         - propertyName: formKey
           addedInVersion: "8.6"
+        - propertyName: isSuspended
+          addedInVersion: "8.11"
         - propertyName: tags
           addedInVersion: "8.9"
 

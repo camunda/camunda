@@ -390,6 +390,7 @@ public class SimpleSearchQueryMapper {
     ofNullable(source.getPriority())
         .map(SimpleSearchQueryMapper::getIntegerFilter)
         .ifPresent(target::priority);
+    ofNullable(source.getIsSuspended()).ifPresent(target::isSuspended);
     ofNullable(source.getElementId()).ifPresent(target::elementId);
     ofNullable(source.getName())
         .map(SimpleSearchQueryMapper::getStringFilter)
@@ -447,6 +448,7 @@ public class SimpleSearchQueryMapper {
         .assignee(source.getAssignee())
         .businessId(source.getBusinessId())
         .priority(source.getPriority())
+        .isSuspended(source.getIsSuspended())
         .elementId(source.getElementId())
         .name(source.getName())
         .candidateGroup(source.getCandidateGroup())

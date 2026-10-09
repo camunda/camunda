@@ -110,6 +110,9 @@ public interface UserTask {
   /** Priority of the task */
   Integer getPriority();
 
+  /** Whether the task is suspended */
+  Boolean isSuspended();
+
   /** Tags associated with the task */
   Set<String> getTags();
 }
