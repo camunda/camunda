@@ -109,14 +109,14 @@ func probeOne(ctx context.Context, client *http.Client, settings types.C8RunSett
 					if settings.OIDC {
 						result.Warning = "storage readiness can't be checked without an OIDC token; open its Operate URL to confirm"
 					} else {
-						result.Warning = fmt.Sprintf("the login for %s was rejected (HTTP %d), so storage readiness was not checked; if this tenant ID was used before, it keeps the users from that time", t.Username, resp.StatusCode)
+						result.Warning = fmt.Sprintf("the login for %s was rejected (HTTP %d), so storage readiness was not checked; if this physical tenant ID was used before, it keeps the users from that time", t.Username, resp.StatusCode)
 					}
 					break
 				}
 				result.Err = fmt.Sprintf("POST %s returned HTTP %d", url, resp.StatusCode)
 				switch resp.StatusCode {
 				case http.StatusNotFound:
-					result.Err += " (the tenant is not configured; check log/camunda.log for physical tenant validation errors)"
+					result.Err += " (the physical tenant is not configured; check log/camunda.log for physical tenant validation errors)"
 				case http.StatusServiceUnavailable:
 					result.Err += " (its secondary storage is not ready; check log/camunda.log for schema errors)"
 				}
@@ -126,7 +126,7 @@ func probeOne(ctx context.Context, client *http.Client, settings types.C8RunSett
 			select {
 			case <-ctx.Done():
 				if result.Err == "" {
-					result.Err = "timed out waiting for the tenant"
+					result.Err = "timed out waiting for the physical tenant"
 				}
 				return result
 			case <-time.After(delay):
@@ -189,8 +189,8 @@ func PrintSummary(w io.Writer, settings types.C8RunSettings, results []ProbeResu
 	_, _ = fmt.Fprintf(w, "  - gRPC (:26500):   send header \"Camunda-Physical-Tenant: %s\"\n", example.ID)
 	_, _ = fmt.Fprintf(w, "  - Java/Spring:     camunda.client.physical-tenant-id=%s\n", example.ID)
 	_, _ = fmt.Fprintf(w, "  - MCP:             %s\n", ex.MCP)
-	_, _ = fmt.Fprintf(w, "Each tenant has its own local secrets: `c8run secrets --tenant %s set <NAME>`.\n", example.ID)
-	_, _ = fmt.Fprintln(w, "Manage tenants with `c8run tenants list|add|remove`.")
+	_, _ = fmt.Fprintf(w, "Each physical tenant has its own local secrets: `c8run secrets --physical-tenant %s set <NAME>`.\n", example.ID)
+	_, _ = fmt.Fprintln(w, "Manage physical tenants with `c8run physical-tenants list|add|remove`.")
 	_, _ = fmt.Fprintln(w)
 }
 

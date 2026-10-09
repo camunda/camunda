@@ -94,7 +94,7 @@ func (s *Store) read() (document, error) {
 		return doc, fmt.Errorf("failed to read %s: %w", s.path, err)
 	}
 	if err := yaml.Unmarshal(content, &doc); err != nil {
-		return doc, fmt.Errorf("%s is not valid YAML (fix or delete it, or run `c8run tenants reset`): %w", s.path, err)
+		return doc, fmt.Errorf("%s is not valid YAML (fix or delete it, or run `c8run physical-tenants reset`): %w", s.path, err)
 	}
 	seen := map[string]bool{}
 	for _, t := range doc.Tenants {
@@ -170,7 +170,7 @@ func (s *Store) Remove(ids []string) error {
 				missing = append(missing, id)
 			}
 			sort.Strings(missing)
-			return fmt.Errorf("unknown physical tenant(s): %s (run `c8run tenants list`)", strings.Join(missing, ", "))
+			return fmt.Errorf("unknown physical tenant(s): %s (run `c8run physical-tenants list`)", strings.Join(missing, ", "))
 		}
 		doc.Tenants = kept
 		for _, id := range ids {
@@ -228,7 +228,7 @@ func (s *Store) write(doc document) error {
 	if err != nil {
 		return err
 	}
-	header := "# Physical tenants managed by `c8run tenants`. Edit with the CLI rather than by hand.\n" +
+	header := "# Physical tenants managed by `c8run physical-tenants`. Edit with the CLI rather than by hand.\n" +
 		"# Readable only by you: it holds the passwords of tenants with their own login.\n"
 	return localsecrets.WriteOwnerOnlyFile(s.path, append([]byte(header), content...))
 }

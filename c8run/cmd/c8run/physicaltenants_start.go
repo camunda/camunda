@@ -76,12 +76,12 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 		log.Info().Msg(withCLIName(notice, cliName()))
 	}
 	if len(res.Tenants) > 0 && camundaVersion != "" && !physicaltenants.SupportsVersion(camundaVersion) {
-		return fmt.Errorf("physical tenants require Camunda 8.%d or newer, but this c8run bundles Camunda %s. Upgrade c8run, or delete the saved tenants file (`c8run tenants path` shows where) and drop --physical-tenants", physicaltenants.MinCamundaMinor, camundaVersion)
+		return fmt.Errorf("physical tenants require Camunda 8.%d or newer, but this c8run bundles Camunda %s. Upgrade c8run, or delete the saved physical tenants file (`c8run physical-tenants path` shows where) and drop --physical-tenants", physicaltenants.MinCamundaMinor, camundaVersion)
 	}
-	// Re-checked here because the storage type can change after `c8run tenants add`.
+	// Re-checked here because the storage type can change after `c8run physical-tenants add`.
 	for _, t := range res.Tenants {
 		if err := physicaltenants.ValidateIDForStorage(t.ID, settings.SecondaryStorageType); err != nil {
-			return fmt.Errorf("%w. Remove it with `c8run tenants remove %s` or switch secondary storage", err, t.ID)
+			return fmt.Errorf("%w. Remove it with `c8run physical-tenants remove %s` or switch secondary storage", err, t.ID)
 		}
 	}
 
@@ -91,7 +91,7 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 	}
 	settings.PhysicalTenants = res.Tenants
 	// Written by StartCommand only once startup is certain to proceed (after the port check),
-	// so a refused second start never changes what `c8run tenants list` reports as active.
+	// so a refused second start never changes what `c8run physical-tenants list` reports as active.
 	settings.PhysicalTenantsConfig = content
 	if len(res.Tenants) > 0 {
 		settings.PhysicalTenantsConfigPath = physicaltenants.GeneratedConfigPath(baseDir)
