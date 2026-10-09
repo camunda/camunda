@@ -92,7 +92,7 @@ test('should delete the selected DRD, refresh decisions and preserve tenant and 
 	await refresh;
 	await expect(page.getByText('Operation created', {exact: true})).toBeVisible();
 	await expect(operateDecisionsPage.deleteDefinitionButton).not.toBeVisible();
-	await expect(page.getByText('There is no Decision selected')).toBeVisible();
+	await expect(page.getByText('There is no decision selected')).toBeVisible();
 	await expect(page).toHaveURL(
 		(url) =>
 			!url.searchParams.has('decisionDefinitionId') &&
