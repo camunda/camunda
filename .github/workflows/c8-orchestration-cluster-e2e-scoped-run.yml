@@ -78,6 +78,18 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
 
+      # The workspace above is the TARGET branch, which does not carry this
+      # workflow's own helper -- a stable branch predates it, so reading the
+      # verdict would die on a missing module instead of producing one. Take
+      # the helper from the revision the workflow itself is running from.
+      - name: Check out the verdict helper from this workflow's revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .scoped-run-helper
+          sparse-checkout: .github/scripts/e2e-scoped-verdict.mjs
+          sparse-checkout-cone-mode: false
+
       - name: Set CAMUNDA_DOCKER_IMAGE
         env:
           BRANCH: ${{ inputs.branch }}
@@ -85,7 +97,19 @@ jobs:
           if [[ "$BRANCH" == "main" ]]; then
             echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
           elif [[ "$BRANCH" == stable/* ]]; then
-            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${BRANCH#stable/}-SNAPSHOT" >> "$GITHUB_ENV"
+            minor="${BRANCH#stable/}"
+            # The unified `camunda` container is an 8.8-and-later shape.
+            # stable/8.7's compose defines separate zeebe, operate and tasklist
+            # services, so `docker compose pull camunda` there fails at once.
+            # Supporting it would mean carrying that whole second architecture
+            # -- its own service list, its own readiness probes on :8080/:8081,
+            # its own ZEEBE_REST_ADDRESS -- which is what the reusable nightly
+            # already does. Refuse it here instead of half-supporting it.
+            if [[ "$(printf '%s\n%s\n' "$minor" 8.8 | sort -V | head -1)" != "8.8" ]]; then
+              echo "::error::$BRANCH predates the unified camunda container; its compose has no 'camunda' service. Use the reusable nightly E2E workflow for 8.7 and older."
+              exit 1
+            fi
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
           else
             # A feature branch has no published image. Say so here rather than
             # failing twenty minutes later on an image pull.
@@ -233,7 +257,7 @@ jobs:
             echo "::error::no JSON report was produced; cannot verify that the case ran"
             exit 1
           fi
-          node "$GITHUB_WORKSPACE/.github/scripts/e2e-scoped-verdict.mjs" \
+          node "$GITHUB_WORKSPACE/.scoped-run-helper/.github/scripts/e2e-scoped-verdict.mjs" \
             "$report" "$CASE_ID"
 
       - name: Upload the report
