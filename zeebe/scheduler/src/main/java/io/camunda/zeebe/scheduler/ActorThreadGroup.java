@@ -39,7 +39,8 @@ public abstract class ActorThreadGroup {
     threads = new ActorThread[numOfThreads];
 
     for (int t = 0; t < numOfThreads; t++) {
-      final String threadName = String.format("%s-%d", groupName, t);
+      final String threadName =
+          String.format("%s%s-%d", builder.getThreadNamePrefix(), groupName, t);
       final ActorThread thread =
           builder
               .getActorThreadFactory()

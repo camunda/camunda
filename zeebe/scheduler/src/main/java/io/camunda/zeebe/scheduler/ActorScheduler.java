@@ -10,6 +10,7 @@ package io.camunda.zeebe.scheduler;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -22,11 +23,25 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
   private final ActorExecutor actorTaskExecutor;
   private final ActorMetrics metrics;
+  private final ActorSchedulerBuilder builder;
 
   public ActorScheduler(final ActorSchedulerBuilder builder) {
     state.set(SchedulerState.NEW);
+    this.builder = builder;
     actorTaskExecutor = builder.getActorExecutor();
     metrics = builder.getActorMetrics();
+  }
+
+  /**
+   * Returns a new builder pre-populated with the clock, idle strategy, and meter registry of this
+   * scheduler. The returned builder yields an independent scheduler with its own threads, so
+   * callers still have to set the name, thread counts, and any metric tags.
+   */
+  public ActorSchedulerBuilder derive() {
+    return newActorScheduler()
+        .setActorClock(builder.getActorClock())
+        .setIdleStrategySupplier(builder.getIdleStrategySupplier())
+        .setMeterRegistry(builder.getMeterRegistry());
   }
 
   /**
@@ -126,6 +141,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     public static final long DEFAULT_MAX_PARK_PERIOD_NS = 20_000_000;
 
     private String schedulerName = "";
+    private String threadNamePrefix = "";
     private ActorClock actorClock;
     private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
     private ActorThreadGroup cpuBoundActorGroup;
@@ -137,7 +153,9 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     private final boolean enableMetrics = false;
     private Supplier<IdleStrategy> idleStrategySupplier =
         ActorSchedulerBuilder::defaultIdleStrategySupplier;
-    private ActorMetrics actorMetrics = ActorMetrics.disabled();
+    private MeterRegistry meterRegistry;
+    private Tags metricsTags = Tags.empty();
+    private ActorMetrics actorMetrics;
 
     public static IdleStrategy defaultIdleStrategySupplier() {
       return new BackoffIdleStrategy(
@@ -153,6 +171,16 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
     public ActorSchedulerBuilder setSchedulerName(final String schedulerName) {
       this.schedulerName = schedulerName;
+      return this;
+    }
+
+    public String getThreadNamePrefix() {
+      return threadNamePrefix;
+    }
+
+    /** Prefix of every actor thread name, e.g. to attribute threads to a physical tenant. */
+    public ActorSchedulerBuilder setThreadNamePrefix(final String threadNamePrefix) {
+      this.threadNamePrefix = Objects.requireNonNull(threadNamePrefix);
       return this;
     }
 
@@ -225,11 +253,26 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
 
     ActorMetrics getActorMetrics() {
+      if (actorMetrics == null) {
+        actorMetrics = ActorMetrics.ofNullable(meterRegistry, metricsTags);
+      }
       return actorMetrics;
     }
 
+    MeterRegistry getMeterRegistry() {
+      return meterRegistry;
+    }
+
     public ActorSchedulerBuilder setMeterRegistry(final MeterRegistry meterRegistry) {
-      actorMetrics = ActorMetrics.ofNullable(meterRegistry);
+      this.meterRegistry = meterRegistry;
+      actorMetrics = null;
+      return this;
+    }
+
+    /** Tags added to every actor metric of this scheduler, e.g. to tell schedulers apart. */
+    public ActorSchedulerBuilder setMetricsTags(final Tags metricsTags) {
+      this.metricsTags = Objects.requireNonNull(metricsTags);
+      actorMetrics = null;
       return this;
     }
 
