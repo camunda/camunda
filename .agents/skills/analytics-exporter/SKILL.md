@@ -101,11 +101,11 @@ with downstream consumers, done in its own PR that updates the pinning tests
 README. A new constant also has to be added to the matching pinning test.
 
 **Key types follow the contract.** Use the `AttributeKey` type that matches the contract's type:
-`longKey` for `int` (all keys and versions), `stringKey` for `string` and enums, `doubleKey` for
-`double`. In the handler:
+`longKey` for the contract's `int` (record keys and versions), `stringKey` for `string` and enums,
+`doubleKey` for `double`. In the handler:
 
-- `int` getters such as `getVersion()` do not fit an `AttributeKey<Long>`; cast with
-  `(long) value.getVersion()`.
+- Record-key getters already return `long`. Version getters such as `getVersion()` return `int`,
+  which does not fit an `AttributeKey<Long>`; widen with `(long) value.getVersion()`.
 - Send an enum as `value.getStatus().name()` on a `stringKey`.
 - OTel silently drops an attribute whose value is `null`, so a nullable field (for example
   `getTenantId()`) disappears rather than failing. Check the contract's requirement level: if
@@ -367,11 +367,12 @@ class MyEventHandlerTest {
 - Happy path: correct attributes are emitted for a matching record
 - PII sweep: set *every* PII-carrying field on the record value (assignee, candidate users and
   groups, names, variables, error messages) to recognisable values, and assert that no emitted
-  attribute value *contains* any of them (`noneMatch(v -> v.contains(pii))`), and that no
-  attribute derived from them (a hash, a length) exists
+  attribute value *contains* any of them (`noneMatch(v -> v.contains(pii))`). A derived attribute
+  (a hash, a length) contains none of them, so also assert the emitted attribute keys are exactly
+  the contracted set (`containsOnlyKeys(...)` on `getAttributes().asMap()`)
 - Skip path (if the handler filters internally): no event emitted for a non-matching record. A
   skip guard on a field that feeds a contractual count must match the engine's own guard exactly
-  (for example `isEmpty`, not `isBlank`), or the count diverges from the engine's
+  (for example `isEmpty`, not `isBlank`), or the count diverges from the engine's counting rule
 
 **Required test cases for a counter handler** (model: `DecisionInstanceEvaluatedHandlerTest`):
 - One increment per source record, accumulating across calls
