@@ -50,7 +50,7 @@ final class PhysicalTenantAwareOidcTokenAuthenticationConverterTest {
   }
 
   @Test
-  void supportsOnlyJwtAuthenticationToken() {
+  void shouldSupportOnlyJwtAuthenticationToken() {
     assertThat(converter.supports(JWT_TOKEN)).isTrue();
     assertThat(converter.supports(mock(JwtAuthenticationToken.class))).isTrue();
     assertThat(converter.supports(new UsernamePasswordAuthenticationToken("u", "p"))).isFalse();
@@ -58,7 +58,7 @@ final class PhysicalTenantAwareOidcTokenAuthenticationConverterTest {
   }
 
   @Test
-  void usesThePerTenantConverterWhenTheRequestTargetsThatTenant() {
+  void shouldUseThePerTenantConverterWhenTheRequestTargetsThatTenant() {
     bindRequestForTenant("tenanta");
     when(tenantAConverter.convert(JWT_TOKEN)).thenReturn(tenantAResult);
 
@@ -67,7 +67,7 @@ final class PhysicalTenantAwareOidcTokenAuthenticationConverterTest {
   }
 
   @Test
-  void fallsBackToTheDefaultConverterForATenantWithoutADedicatedConverter() {
+  void shouldFallBackToTheDefaultConverterForATenantWithoutADedicatedConverter() {
     bindRequestForTenant("tenantz");
     when(defaultConverter.convert(JWT_TOKEN)).thenReturn(defaultResult);
 
@@ -76,7 +76,7 @@ final class PhysicalTenantAwareOidcTokenAuthenticationConverterTest {
   }
 
   @Test
-  void fallsBackToTheDefaultConverterWhenNoTenantIsBoundToTheRequest() {
+  void shouldFallBackToTheDefaultConverterWhenNoTenantIsBoundToTheRequest() {
     // No request bound → PhysicalTenantContext.currentOrNull() is null (off-request).
     when(defaultConverter.convert(JWT_TOKEN)).thenReturn(defaultResult);
 
@@ -85,7 +85,7 @@ final class PhysicalTenantAwareOidcTokenAuthenticationConverterTest {
   }
 
   @Test
-  void anUnstampedRequestResolvesToTheDefaultTenant() {
+  void shouldResolveAnUnstampedRequestToTheDefaultTenant() {
     // A request with no physical-tenant stamp resolves to DEFAULT_PHYSICAL_TENANT_ID; with no
     // dedicated converter for it, the default converter is used.
     RequestContextHolder.setRequestAttributes(
