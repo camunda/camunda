@@ -72,6 +72,13 @@ import {
 	type QueryAuthorizationsRequestBody,
 	type QueryRolesRequestBody,
 	type QueryGroupsRequestBody,
+	type Role,
+	type CreateRoleRequestBody,
+	type UpdateRoleRequestBody,
+	type QueryUsersByRoleRequestBody,
+	type QueryClientsByRoleRequestBody,
+	type QueryGroupsByRoleRequestBody,
+	type QueryMappingRulesByRoleRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -908,6 +915,116 @@ const endpoints = {
 			method: unifiedAPIEndpoints.queryGroups.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getRole: ({roleId}: Pick<Role, 'roleId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getRole.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createRole: (body: CreateRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createRole.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	updateRole: ({roleId, ...body}: Pick<Role, 'roleId'> & UpdateRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteRole: ({roleId}: Pick<Role, 'roleId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteRole.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUsersByRole: ({roleId, ...body}: {roleId: string} & QueryUsersByRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUsersByRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUsersByRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryGroupsByRole: ({roleId, ...body}: {roleId: string} & QueryGroupsByRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryGroupsByRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryGroupsByRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryMappingRulesByRole: ({roleId, ...body}: {roleId: string} & QueryMappingRulesByRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMappingRulesByRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMappingRulesByRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryClientsByRole: ({roleId, ...body}: {roleId: string} & QueryClientsByRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryClientsByRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryClientsByRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	assignUserToRole: ({roleId, username}: {roleId: string; username: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignUserToRole.getUrl({roleId, username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignUserToRole.method,
+		}),
+
+	unassignUserFromRole: ({roleId, username}: {roleId: string; username: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignUserFromRole.getUrl({roleId, username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignUserFromRole.method,
+		}),
+
+	assignGroupToRole: ({roleId, groupId}: {roleId: string; groupId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignGroupToRole.getUrl({roleId, groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignGroupToRole.method,
+		}),
+
+	unassignGroupFromRole: ({roleId, groupId}: {roleId: string; groupId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignGroupFromRole.getUrl({roleId, groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignGroupFromRole.method,
+		}),
+
+	assignMappingToRole: ({roleId, mappingRuleId}: {roleId: string; mappingRuleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignMappingToRole.getUrl({roleId, mappingRuleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignMappingToRole.method,
+		}),
+
+	unassignMappingFromRole: ({roleId, mappingRuleId}: {roleId: string; mappingRuleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignMappingFromRole.getUrl({roleId, mappingRuleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignMappingFromRole.method,
+		}),
+
+	assignClientToRole: ({roleId, clientId}: {roleId: string; clientId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignClientToRole.getUrl({roleId, clientId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignClientToRole.method,
+		}),
+
+	unassignClientFromRole: ({roleId, clientId}: {roleId: string; clientId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignClientFromRole.getUrl({roleId, clientId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignClientFromRole.method,
 		}),
 
 	// Served as `window.clientConfig = {...};` by the Admin client config controller.

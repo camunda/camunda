@@ -53,6 +53,15 @@ import type {
 	QueryAuthorizationsResponseBody,
 	QueryRolesRequestBody,
 	QueryRolesResponseBody,
+	Role,
+	QueryUsersByRoleRequestBody,
+	QueryUsersByRoleResponseBody,
+	QueryGroupsByRoleRequestBody,
+	QueryGroupsByRoleResponseBody,
+	QueryMappingRulesByRoleRequestBody,
+	QueryMappingRulesByRoleResponseBody,
+	QueryClientsByRoleRequestBody,
+	QueryClientsByRoleResponseBody,
 	QueryGroupsRequestBody,
 	QueryGroupsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
@@ -109,6 +118,13 @@ const queryKeys = {
 	getAuthorization: (authorization: Pick<Authorization, 'authorizationKey'>) =>
 		['getAuthorization', authorization] as const,
 	queryRoles: (body: QueryRolesRequestBody) => ['queryRoles', body] as const,
+	role: (roleId: string) => ['role', roleId] as const,
+	roleUsers: (roleId: string, body: QueryUsersByRoleRequestBody) => ['roleMembers', roleId, 'users', body] as const,
+	roleGroups: (roleId: string, body: QueryGroupsByRoleRequestBody) => ['roleMembers', roleId, 'groups', body] as const,
+	roleMappingRules: (roleId: string, body: QueryMappingRulesByRoleRequestBody) =>
+		['roleMembers', roleId, 'mappingRules', body] as const,
+	roleClients: (roleId: string, body: QueryClientsByRoleRequestBody) =>
+		['roleMembers', roleId, 'clients', body] as const,
 	queryGroups: (body: QueryGroupsRequestBody) => ['queryGroups', body] as const,
 	adminClientConfig: () => ['adminClientConfig'] as const,
 };
@@ -616,6 +632,66 @@ const queries = {
 			queryKey: queryKeys.queryGroups(body),
 			queryFn: async (): Promise<QueryGroupsResponseBody> => {
 				const {response, error} = await request(endpoints.queryGroups(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getRole: (roleId: string) =>
+		queryOptions({
+			queryKey: queryKeys.role(roleId),
+			queryFn: async (): Promise<Role> => {
+				const {response, error} = await request(endpoints.getRole({roleId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUsersByRole: (roleId: string, body: QueryUsersByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleUsers(roleId, body),
+			queryFn: async (): Promise<QueryUsersByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsersByRole({roleId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryGroupsByRole: (roleId: string, body: QueryGroupsByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleGroups(roleId, body),
+			queryFn: async (): Promise<QueryGroupsByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryGroupsByRole({roleId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMappingRulesByRole: (roleId: string, body: QueryMappingRulesByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleMappingRules(roleId, body),
+			queryFn: async (): Promise<QueryMappingRulesByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryMappingRulesByRole({roleId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClientsByRole: (roleId: string, body: QueryClientsByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleClients(roleId, body),
+			queryFn: async (): Promise<QueryClientsByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryClientsByRole({roleId, ...body}));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
