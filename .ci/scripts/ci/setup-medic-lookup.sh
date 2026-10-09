@@ -62,6 +62,10 @@ lookupTeamMedic["@camunda/reliability-testing"]=$reliabilityTestingTeam
 qaMedic="<!subteam^S09UBFWENKF|qa-medic>"
 lookupTeamMedic["@camunda/qa-engineering"]=$qaMedic
 
+# @test-automation-medic
+testAutomationMedic="<!subteam^S09UF0EV0HG|test-automation-medic>"
+lookupTeamMedic["@camunda/test-automation-team"]=$testAutomationMedic
+
 # @monorepo-ci-medic
 monorepoCIMedic="<!subteam^S07D6C6B18T|monorepo-ci-medic>"
 lookupTeamMedic["@camunda/engineering-operations"]=$monorepoCIMedic
@@ -76,15 +80,17 @@ lookupTeamMedic["General"]="General Test, requires investigation"
 resolve_test_source_file() {
     # Resolves a JUnit test class name to the exact repo-relative test source file path.
     #
-    # Input: Java FQCN (e.g. io.camunda.foo.BarTest) or webapp spec path
-    #        (e.g. src/operate/foo/Bar.test.tsx, a11y/foo.test.ts)
+    # Input: Java FQCN (e.g. io.camunda.foo.BarTest), webapp spec path
+    #        (e.g. src/operate/foo/Bar.test.tsx, a11y/foo.test.ts) or Orchestration
+    #        Cluster E2E spec path (e.g. tests/operate/processes.spec.ts)
     # Output: prints a single repo-relative path or empty string.
     local fqcn="$1"
 
     if [[ "${fqcn}" == *.ts || "${fqcn}" == *.tsx ]]; then
         local webapp_dir="webapp/client/apps/orchestration-cluster-webapp"
+        local e2e_suite_dir="qa/c8-orchestration-cluster-e2e-test-suite"
         local candidate
-        for candidate in "${webapp_dir}/${fqcn}" "${webapp_dir}/test/${fqcn}"; do
+        for candidate in "${webapp_dir}/${fqcn}" "${webapp_dir}/test/${fqcn}" "${e2e_suite_dir}/${fqcn}"; do
             if [[ -f "${candidate}" ]]; then
                 echo "${candidate}"
                 return 0

@@ -2767,6 +2767,8 @@ jobs:
         run: bats .github/scripts/validate-flattened-poms.bats
       - name: Run release merge-back script tests
         run: bats .github/scripts/mergeback/mergeback.bats
+      - name: Run failing-test owner resolver tests
+        run: bats .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.bats
       - name: Observe build status
         if: always()
         continue-on-error: true
