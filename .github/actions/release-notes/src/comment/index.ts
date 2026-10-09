@@ -1,5 +1,6 @@
 import { githubHeaders, repoApiUrl } from '../github';
-import type { GateOutcome } from '../types';
+import { SECTION_HEADING } from '../parser';
+import type { GateOutcome, PolicyCode } from '../types';
 
 /**
  * The single sticky PR comment the gate maintains — one per PR, upserted by
@@ -30,6 +31,26 @@ export type StickyAction = 'created' | 'updated' | 'resolved' | 'noop';
 /** Where the comment sends authors for the full list of causes and fixes. */
 export const GATE_DOCS_URL = 'https://camunda.github.io/camunda/ci/#release-notes-pr-gate';
 
+/** The template's opt-out line. The parser matches OPT_OUT_PHRASE anywhere
+ *  after the ticked box, so the label may extend it; a test pins that. */
+export const OPT_OUT_LINE = '- [ ] This PR does not need a linked issue (no tracked issue, or it is tracked in another repository)';
+
+/** What a failing link check should look like, shown only when that check
+ *  fails. The placeholder is deliberately not a number: pasted unchanged it
+ *  matches nothing, whereas `#1234` would link a real, unrelated issue. */
+function linkExample(code: PolicyCode): string | null {
+  if (code === 'pr-ref-in-section') {
+    return 'Replace the PR number with the issue it tracks (a PR number is never accepted here):\n\n```md\n'
+      + `## ${SECTION_HEADING}\n\ncloses #<issue-number>\n\`\`\`\n`;
+  }
+  if (code === 'unlinked-undeclared') {
+    return `Expected format in the PR description:\n\n\`\`\`md\n## ${SECTION_HEADING}\n\ncloses #<issue-number>\n\n${OPT_OUT_LINE}\n\`\`\`\n\n`
+      + '- `closes #<issue-number>` when this PR fully resolves the issue, or `relates to #<issue-number>` when it is one of several PRs for it.\n'
+      + '- No tracked issue (hotfix, dep bump, CI/refactor)? Tick the checkbox instead.\n';
+  }
+  return null;
+}
+
 /** Deliberately terse: the reasons name the exact fix; everything else (why
  *  the rule exists, rollout state) lives behind GATE_DOCS_URL. */
 export function renderStickyComment(gate: GateOutcome): string {
@@ -41,8 +62,10 @@ export function renderStickyComment(gate: GateOutcome): string {
     .filter((check) => check.outcome === 'fail')
     .map((check) => `**${check.label}**\n${check.reasons.map((reason) => `- ${reason}`).join('\n')}`)
     .join('\n\n');
-  const footer = `[Causes and fixes](${GATE_DOCS_URL}) · advisory, does not block merge`;
-  return `${STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${footer}\n`;
+  // A backport hop's reasons already speak to the marker; the section example would be noise.
+  const example = gate.link.outcome === 'fail' && gate.deliveryPath === 'direct' ? linkExample(gate.link.code) : null;
+  const footer = `[Causes and fixes](${GATE_DOCS_URL}) · fix this to turn the check green`;
+  return `${STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${example ? `${example}\n` : ''}${footer}\n`;
 }
 
 /** fail: update or create. pass: update to the resolved body if a comment
