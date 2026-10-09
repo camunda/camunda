@@ -62,7 +62,8 @@ export function renderStickyComment(gate: GateOutcome): string {
     .filter((check) => check.outcome === 'fail')
     .map((check) => `**${check.label}**\n${check.reasons.map((reason) => `- ${reason}`).join('\n')}`)
     .join('\n\n');
-  const example = gate.link.outcome === 'fail' ? linkExample(gate.link.code) : null;
+  // A backport hop's reasons already speak to the marker; the section example would be noise.
+  const example = gate.link.outcome === 'fail' && gate.deliveryPath === 'direct' ? linkExample(gate.link.code) : null;
   const footer = `[Causes and fixes](${GATE_DOCS_URL}) · fix this to turn the check green`;
   return `${STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${example ? `${example}\n` : ''}${footer}\n`;
 }

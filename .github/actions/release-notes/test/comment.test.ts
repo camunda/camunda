@@ -56,6 +56,11 @@ test('pr-ref-in-section tells the author to link the issue, not the PR', () => {
   assert.ok(!body.includes('does not need a linked issue'));
 });
 
+test('a failed backport hop shows no section example', () => {
+  const body = renderStickyComment({ ...FAIL, deliveryPath: 'backportHop' });
+  assert.ok(!body.includes('closes #<issue-number>'));
+});
+
 test('a title-only failure shows no link example', () => {
   const title = { outcome: 'fail', reasons: ['Bad title.'] } as const;
   const body = renderStickyComment({ ...FAIL, link: PASS.link, checks: [{ label: 'PR title', ...title }] });
