@@ -39,6 +39,7 @@ public class WebappsConfigurationInitializer
       Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId(), ADMIN.getId());
   private static final String RESOURCES_LOCATION_PROPERTY = "spring.web.resources.static-locations";
   private static final String DEFAULT_RESOURCES_LOCATION = "classpath:/META-INF/resources/";
+  private static final String OPERATE_TASKLIST_URL_PROPERTY = "camunda.operate.tasklist-url";
   private static final String AUTHORIZATIONS_ENABLED_PROPERTY =
       "camunda.security.authorizations.enabled";
   private static final String MULTITENANCY_CHECKSENABLED_PROPERTY =
@@ -94,6 +95,14 @@ public class WebappsConfigurationInitializer
         locations.add(DEFAULT_RESOURCES_LOCATION + "tasklist/");
         if (defaultWebapp == null) {
           defaultWebapp = TASKLIST.getId();
+        }
+
+        // Operate links to Tasklist only when both UIs are served by this application; as a
+        // default property source, an explicit camunda.operate.tasklist-url still takes precedence
+        if (activeProfiles.contains(OPERATE.getId())
+            && WebappsHelper.isOperateUiEnabled(environment)) {
+          propertyMap.put(
+              OPERATE_TASKLIST_URL_PROPERTY, "${server.servlet.context-path:}/tasklist");
         }
       }
 
