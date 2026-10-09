@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any
 
 from .errors import MissingMetric
+from .errors import PrometheusError
 from .errors import ReportError
 from .prometheus import MetricValue
 from .prometheus import PrometheusClient
@@ -33,9 +34,8 @@ def build_report(
         try:
             response = client.query(query.query)
             metrics[key] = response.extract_metric_value(query.value_label or "", key)
-        except MissingMetric:
-            metrics[key] = None
-        except ReportError:
+        except (MissingMetric, ReportError, PrometheusError, OSError, ValueError):
+            # A single failed query leaves its column empty instead of aborting the report.
             metrics[key] = None
 
     return {

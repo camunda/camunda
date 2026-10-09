@@ -231,3 +231,16 @@ def test_should_reject_scalar_sample() -> None:
                 },
             }
         )
+
+
+@pytest.mark.parametrize("raw_value", ["NaN", "+Inf", "-Inf"])
+def test_should_treat_non_finite_values_as_missing(raw_value: str) -> None:
+    response = PrometheusResponse.model_validate(
+        {
+            "status": "success",
+            "data": {"resultType": "vector", "result": [{"metric": {}, "value": [123, raw_value]}]},
+        }
+    )
+
+    with pytest.raises(MissingMetric, match="non-finite value for: ratio"):
+        response.extract_metric_value("", "ratio")

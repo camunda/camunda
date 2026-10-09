@@ -129,6 +129,10 @@ uv run loadtestctl report c8-ck-base-8736-endurance \
   --queries report-queries-stable-87.yaml
 ```
 
+[`report-queries-comparison.yaml`](src/loadtestctl/report/report-queries-comparison.yaml)
+holds the nine metrics that the daily load test results and the PR load test comparison
+use. Its keys match the metric names in `docs/scripts/optimal.json`.
+
 Custom files use the same top-level `queries:` schema.
 
 The custom file case is useful when a report needs its own column set or custom PromQL queries.

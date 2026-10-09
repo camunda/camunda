@@ -37,18 +37,19 @@ See `load-tests/README.md` → **Accessing metrics via Claude Code (Grafana MCP)
 ## Via local script (kubectl + port-forward)
 
 Faster when you have cluster access. First port-forward the monitoring Prometheus pod, then run
-the script directly against `http://localhost:9090`:
+the report directly against `http://localhost:9090`:
 
 ```bash
 # Port-forward the monitoring Prometheus service (leave running in a separate terminal)
 kubectl port-forward svc/kube-prometheus-stack-prometheus -n monitoring 9090:9090
 
-# Then run the metrics script
-cd load-tests/docs/scripts
-./loadTestMetrics.sh <full-namespace-with-c8-prefix> 1200 > /tmp/results.json
+# Then build the headline metrics report
+cd load-tests/loadtestctl
+uv run loadtestctl report <full-namespace-with-c8-prefix> --duration-seconds 1200 \
+  --queries report-queries-comparison.yaml > /tmp/results.json
 ```
 
-Args: `<namespace> [duration_seconds] [endpoint] [extra_curl_opts]`.
+Omit `--queries` for the full report. See `load-tests/loadtestctl/README.md` for all options.
 
 ## Via GCS archive (namespace/Prometheus retention already expired)
 

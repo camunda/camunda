@@ -2,6 +2,7 @@
 
 import base64
 import json
+import math
 from typing import Any
 from typing import Literal
 from urllib.parse import urlencode
@@ -60,8 +61,10 @@ class PrometheusResponse(BaseModel):
         if len(result) != 1:
             raise MissingMetric(f"Expected one result but got {len(result)} results for: {key}")
 
-        raw_value = result[0].value
-        return float(raw_value)
+        value = float(result[0].value)
+        if not math.isfinite(value):
+            raise MissingMetric(f"non-finite value for: {key}")
+        return value
 
 
 class PrometheusClient:
