@@ -1,7 +1,6 @@
 ###
 # @name login-get
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/login?username=demo&password=demo
-Content-Type: application/json
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/login
 Accept: application/json
 
 > {%
@@ -28,11 +27,13 @@ Accept: application/json
 
 ###
 # @name login-post
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/login?username=demo&password=demo
-Content-Type: application/json
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/login
+Content-Type: application/x-www-form-urlencoded
 Accept: application/json
 Cookie: X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
+
+username=demo&password=demo
 
 > {%
   client.test("Login POST should succeed", function () {
