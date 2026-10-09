@@ -15,6 +15,10 @@ on:
         description: 'Branch to run tests on'
         required: true
         default: 'main'
+      camunda-version:
+        description: 'Camunda version to package (e.g. 8.10.0). Empty = version of the checked-out source (pom.xml parent)'
+        required: false
+        default: ''
 
 # Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
 # Exception for main + stable/* branches: complete builds for every commit needed for confidence
@@ -85,6 +89,25 @@ jobs:
             secret/data/products/qa/ci/nexus USER | NEXUS_USERNAME;
             secret/data/products/qa/ci/nexus PASSWORD | NEXUS_PASSWORD;
 
+      # c8run/.env pins a released CAMUNDA_VERSION that goes stale as main moves on. Resolve the version
+      # explicitly instead: the dispatch input for release validation, otherwise the checked-out source.
+      - name: Resolve Camunda version
+        id: camunda
+        env:
+          INPUT_VERSION: ${{ inputs.camunda-version }}
+        run: |
+          if [[ -n "$INPUT_VERSION" ]]; then
+            version="$INPUT_VERSION"
+          else
+            version=$(awk '/<parent>/{p=1} p && /<version>/{gsub(/.*<version>|<\/version>.*/,""); print; exit}' pom.xml)
+          fi
+          if [[ -z "$version" ]]; then
+            echo "::error::Could not resolve Camunda version"
+            exit 1
+          fi
+          echo "Packaging Camunda version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Build c8run
         working-directory: ./c8run
         run: go build -o c8run ./cmd/c8run
@@ -93,6 +116,7 @@ jobs:
         run: ./package.sh
         working-directory: ./c8run
         env:
+          CAMUNDA_VERSION: ${{ steps.camunda.outputs.version }}
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
@@ -113,6 +137,18 @@ jobs:
       - name: Wait for app to start
         run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done'
         timeout-minutes: 5
+
+      # Fail fast if the running broker is not the version we packaged (e.g. a stale .env leaked into the archive).
+      - name: Verify running Camunda version
+        env:
+          EXPECTED_VERSION: ${{ steps.camunda.outputs.version }}
+        run: |
+          actual=$(curl -fsS --retry 5 --retry-all-errors -u demo:demo http://localhost:8080/v2/topology | jq -r '.gatewayVersion')
+          echo "Expected: $EXPECTED_VERSION, running: $actual"
+          if [[ "$actual" != "$EXPECTED_VERSION" ]]; then
+            echo "::error::Running gateway version '$actual' does not match requested '$EXPECTED_VERSION'"
+            exit 1
+          fi
 
       - name: Install IntelliJ HTTP Client
         shell: bash
