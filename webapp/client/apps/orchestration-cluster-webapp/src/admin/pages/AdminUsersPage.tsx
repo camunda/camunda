@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
+import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import {useTranslation} from 'react-i18next';
 import {Pencil, Trash2} from '@camunda/design-system/icons';
 import {
@@ -28,7 +29,6 @@ import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type UsersSearch} from '#/admin/modules/u
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
 
-const SEARCH_DEBOUNCE = 500;
 const USERS_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/user/';
 
 type ModalState = {type: 'create'} | {type: 'edit'; user: User} | {type: 'delete'; user: User} | null;
@@ -44,26 +44,10 @@ type AdminUsersPageProps = {
 const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, search, onSearchChange, onOpenUser}) => {
 	const {t} = useTranslation();
 	const appliedSearchTerm = search.search ?? '';
-	const [searchDraft, setSearchDraft] = useState(appliedSearchTerm);
-	const [lastAppliedSearchTerm, setLastAppliedSearchTerm] = useState(appliedSearchTerm);
+	const [searchDraft, setSearchDraft] = useDebouncedUrlFilter(appliedSearchTerm, (search) =>
+		onSearchChange({search, page: undefined}),
+	);
 	const [modalState, setModalState] = useState<ModalState>(null);
-
-	if (lastAppliedSearchTerm !== appliedSearchTerm) {
-		setLastAppliedSearchTerm(appliedSearchTerm);
-		setSearchDraft(appliedSearchTerm);
-	}
-
-	useEffect(() => {
-		if (searchDraft === appliedSearchTerm) {
-			return;
-		}
-
-		const timeoutId = setTimeout(() => {
-			onSearchChange({search: searchDraft === '' ? undefined : searchDraft, page: undefined});
-		}, SEARCH_DEBOUNCE);
-
-		return () => clearTimeout(timeoutId);
-	}, [appliedSearchTerm, onSearchChange, searchDraft]);
 
 	const closeModal = useCallback(() => setModalState(null), []);
 
