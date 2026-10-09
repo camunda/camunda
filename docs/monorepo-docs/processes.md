@@ -77,8 +77,6 @@ We use a [daily GitHub Actions workflow](https://github.com/camunda/camunda/blob
 
 When a DRI is assigned, the script dismisses the approval from `renovate-approve[bot]`, so that changes pushed by the DRI require a human approval before merging.
 
-The script also checks all open Renovate PRs for commits not authored by Renovate. If it finds any, it dismisses the approval from `renovate-approve[bot]` and comments that a human approval is required before merging.
-
 ### DRI Responsibilities
 
 The DRI for an open Renovate PR is responsible for addressing the dependency upgrade and getting it merged in a timely manner. They are expected to:

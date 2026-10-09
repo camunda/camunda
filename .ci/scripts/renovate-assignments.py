@@ -40,26 +40,10 @@ COMMENT_TEMPLATE = (
     "Thank you!"
 )
 
-DISMISS_APPROVAL_MODIFIED_MESSAGE = (
-    "This Renovate PR contains commits not authored by Renovate, "
-    "so the automated approval is dismissed and a human approval is required."
-)
-
-DISMISS_APPROVAL_ASSIGNED_MESSAGE = (
+DISMISS_APPROVAL_MESSAGE = (
     "This Renovate PR is assigned to a DRI for manual changes, "
     "so the automated approval is dismissed and a human approval is required. "
     "See https://camunda.github.io/camunda/processes/#dri-responsibilities"
-)
-
-HUMAN_APPROVAL_COMMENT_DETECTION_LINE = "contains commits not authored by Renovate"
-
-HUMAN_APPROVAL_COMMENT_TEMPLATE = (
-    "_this is an automated message_\n\n"
-    "This PR " + HUMAN_APPROVAL_COMMENT_DETECTION_LINE + " ({authors}). "
-    "The approval by " + RENOVATE_APPROVE_BOT + " has been dismissed, "
-    "please request a review from a human before merging: "
-    "https://camunda.github.io/camunda/processes/#dri-responsibilities\n\n"
-    "Thank you!"
 )
 
 REMINDER_COMMENT_DETECTION_LINE = "reminder about your assigned Renovate PR"
@@ -171,64 +155,21 @@ def post_dri_comment(pr_number, assignee):
     resp.raise_for_status()
     print(f"Posted DRI comment on PR #{pr_number} mentioning @{assignee}")
 
-def get_non_renovate_commit_authors(pr_number):
-    authors = set()
-    page = 1
-    while True:
-        url = f"https://api.github.com/repos/{REPO}/pulls/{pr_number}/commits?per_page=100&page={page}"
-        resp = requests.get(url, headers=headers)
-        resp.raise_for_status()
-        data = resp.json()
-        if not data:
-            break
-        for commit in data:
-            # author is null when the commit email is not linked to a GitHub account
-            login = (commit.get('author') or {}).get('login') or commit['commit']['author']['name']
-            if login != RENOVATE_BOT:
-                authors.add(login)
-        page += 1
-    return authors
-
-def dismiss_renovate_approval(pr_number, message):
-    """Dismiss all approvals by the Renovate approve bot. Returns True if any were dismissed."""
+def dismiss_renovate_approval(pr_number):
     url = f"https://api.github.com/repos/{REPO}/pulls/{pr_number}/reviews?per_page=100"
     resp = requests.get(url, headers=headers)
     resp.raise_for_status()
-    dismissed = False
     for review in resp.json():
         if review['user']['login'] != RENOVATE_APPROVE_BOT or review['state'] != "APPROVED":
             continue
-        dismissed = True
         review_id = review['id']
         if DRY_RUN:
             print(f"[DRY-RUN] Would dismiss review {review_id} by {RENOVATE_APPROVE_BOT} on PR #{pr_number}")
             continue
         dismiss_url = f"https://api.github.com/repos/{REPO}/pulls/{pr_number}/reviews/{review_id}/dismissals"
-        dismiss_resp = requests.put(dismiss_url, headers=headers, json={"message": message})
+        dismiss_resp = requests.put(dismiss_url, headers=headers, json={"message": DISMISS_APPROVAL_MESSAGE})
         dismiss_resp.raise_for_status()
         print(f"Dismissed review {review_id} by {RENOVATE_APPROVE_BOT} on PR #{pr_number}")
-    return dismissed
-
-def post_human_approval_comment(pr_number, authors):
-    comments = get_pr_comments(pr_number)
-    if any(HUMAN_APPROVAL_COMMENT_DETECTION_LINE in comment['body'] for comment in comments):
-        return
-    comment = HUMAN_APPROVAL_COMMENT_TEMPLATE.format(authors=", ".join(sorted(authors)))
-    if DRY_RUN:
-        print(f"[DRY-RUN] Would post comment on PR #{pr_number}:\n{comment}\n")
-        return
-    url = f"https://api.github.com/repos/{REPO}/issues/{pr_number}/comments"
-    resp = requests.post(url, headers=headers, json={"body": comment})
-    resp.raise_for_status()
-    print(f"Posted human approval comment on PR #{pr_number}")
-
-def require_human_approval_if_modified(pr_number):
-    authors = get_non_renovate_commit_authors(pr_number)
-    if not authors:
-        return
-    print(f"PR #{pr_number} has commits by {', '.join(sorted(authors))}")
-    if dismiss_renovate_approval(pr_number, DISMISS_APPROVAL_MODIFIED_MESSAGE):
-        post_human_approval_comment(pr_number, authors)
 
 def add_label_to_pr(pr_number, label):
     if DRY_RUN:
@@ -437,8 +378,6 @@ def main():
         labels = get_labels(pr)
         pr_number = pr['number']
 
-        require_human_approval_if_modified(pr_number)
-
         # Skip assignment logic if PR is not old enough
         if age_days < DAYS_THRESHOLD:
             continue
@@ -471,7 +410,7 @@ def main():
             print(f"PR #{pr['number']} not assigned reviewer (no area label match)")
             continue
 
-        dismiss_renovate_approval(pr_number, DISMISS_APPROVAL_ASSIGNED_MESSAGE)
+        dismiss_renovate_approval(pr_number)
 
         # Check if PR needs a reminder for assigned user
         assignee, assignment_age_days, has_reminder = check_dri_assignment_status(pr_number)
