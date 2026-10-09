@@ -238,6 +238,80 @@ class ExpressionProcessorTest {
   }
 
   @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
+  class EvaluateBooleanExpressionWithLabelTest {
+
+    @Test
+    void shouldUseGenericWordingWhenLabelIsNone() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(
+              parsedExpression, -1L, "tenant_1", ExpressionLabel.NONE);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the expression 'x' to be 'BOOLEAN', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelKindAndTargetInFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("condition expression", "sequence flow 's2'");
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the condition expression 'x' of sequence flow 's2' to be 'BOOLEAN', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelKindWithoutTargetInFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("condition expression", null);
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the condition expression 'x' to be 'BOOLEAN', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+  }
+
+  @Nested
   class EvaluateBooleanExpressionWithStringTest {
 
     @Test
