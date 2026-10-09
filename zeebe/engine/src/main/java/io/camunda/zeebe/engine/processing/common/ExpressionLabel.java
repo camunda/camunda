@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+
 /**
  * Describes the business role of an expression and, optionally, the specific element it belongs to,
  * so that {@link ExpressionProcessor} can build failure messages that identify what failed and what
@@ -37,6 +40,20 @@ public record ExpressionLabel(String kind, String target) {
 
   /** A label that adds no additional context to the failure message. */
   public static final ExpressionLabel NONE = new ExpressionLabel(null, null);
+
+  /**
+   * Labels an expression as the condition expression of a sequence flow, e.g. for the gateway
+   * failure message "Expected result of the condition expression '...' of sequence flow 's2' to be
+   * 'BOOLEAN', but was '...'.".
+   *
+   * @param sequenceFlowId the id of the sequence flow the condition expression belongs to
+   * @return a label identifying the expression as the given sequence flow's condition expression
+   */
+  public static ExpressionLabel conditionExpression(final DirectBuffer sequenceFlowId) {
+    return new ExpressionLabel(
+        "condition expression",
+        "sequence flow '%s'".formatted(BufferUtil.bufferAsString(sequenceFlowId)));
+  }
 
   /**
    * @return {@code true} if this label has a {@code kind} and should be used to add context to a

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableInclusiveGateway;
@@ -127,7 +128,10 @@ public final class InclusiveGatewayProcessor
         final Expression condition = sequenceFlow.getCondition();
         final Either<Failure, Boolean> isFulfilledOrFailure =
             expressionBehavior.evaluateBooleanExpression(
-                condition, context.getElementInstanceKey(), context.getTenantId());
+                condition,
+                context.getElementInstanceKey(),
+                context.getTenantId(),
+                ExpressionLabel.conditionExpression(sequenceFlow.getId()));
         if (isFulfilledOrFailure.isLeft()) {
           return Either.left(isFulfilledOrFailure.getLeft());
         } else if (isFulfilledOrFailure.get()) {
