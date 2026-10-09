@@ -57,7 +57,8 @@ public final class ProcessInstanceSuspensionJobBehavior {
   }
 
   /**
-   * Appends {@link JobIntent#SUSPENDED} for every job in {@link #SUSPENDABLE_STATES}.
+   * Appends {@link JobIntent#SUSPENDED} for every job in {@link #SUSPENDABLE_STATES} that is not
+   * {@link #isExemptFromSuspension exempt from suspension}.
    *
    * @return the number of jobs suspended; the caller records the metric after all writes complete
    */
@@ -70,15 +71,29 @@ public final class ProcessInstanceSuspensionJobBehavior {
     walk(
         processInstance,
         elementInstance ->
-            visitJobInStates(
-                elementInstance,
-                SUSPENDABLE_STATES,
-                (jobKey, job) -> {
-                  stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
-                  count.incrementAndGet();
-                  return true;
-                }));
+            isExemptFromSuspension(elementInstance)
+                || visitJobInStates(
+                    elementInstance,
+                    SUSPENDABLE_STATES,
+                    (jobKey, job) -> {
+                      stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
+                      count.incrementAndGet();
+                      return true;
+                    }));
     return count.get();
+  }
+
+  /**
+   * Whether the job stays available while its process instance is suspended. Jobs of a terminating
+   * element are exempt, because the termination waits for them, e.g. a canceling task listener job.
+   */
+  public boolean isExemptFromSuspension(final JobRecord job) {
+    final var elementInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
+    return elementInstance != null && isExemptFromSuspension(elementInstance);
+  }
+
+  private static boolean isExemptFromSuspension(final ElementInstance elementInstance) {
+    return elementInstance.isTerminating();
   }
 
   /**
