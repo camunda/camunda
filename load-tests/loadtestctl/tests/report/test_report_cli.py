@@ -227,3 +227,62 @@ def test_should_pass_output_path(tmp_path: Path) -> None:
     options = parse_args(["c8-ck-test", "--output", str(output_file)])
 
     assert options.output_file == output_file
+
+
+def test_should_accept_namespace_option_aliases() -> None:
+    assert parse_args(["--namespace", "c8-ck-test"]).namespace == "c8-ck-test"
+    assert parse_args(["--ns", "c8-ck-test"]).namespace == "c8-ck-test"
+    assert parse_args(["-n", "c8-ck-test"]).namespace == "c8-ck-test"
+
+
+def test_should_reject_conflicting_namespaces(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-one", "--ns", "c8-ck-two"])
+
+    assert exit_code == 2
+    assert "conflicting namespaces 'c8-ck-one' and 'c8-ck-two'" in capsys.readouterr().err
+
+
+def test_should_accept_short_and_alias_options(tmp_path: Path) -> None:
+    output_file = tmp_path / "report.json"
+
+    options = parse_args(
+        ["c8-ck-test", "-d", "60", "-r", "1m", "-s", "30s", "-e", "http://prom:9090", "-u", "user", "-p", "pass"]
+        + ["-f", "tsv", "-o", str(output_file)]
+    )
+
+    assert options.duration_seconds == 60
+    assert options.rate_interval == "1m"
+    assert options.sample_step == "30s"
+    assert options.endpoint == "http://prom:9090"
+    assert options.basic_auth_user == "user"
+    assert options.basic_auth_password == "pass"
+    assert options.output_format == "tsv"
+    assert options.output_file == output_file
+    assert parse_args(["c8-ck-test", "--duration", "60"]).duration_seconds == 60
+    assert parse_args(["c8-ck-test", "--rate", "1m"]).rate_interval == "1m"
+    assert parse_args(["c8-ck-test", "--step", "30s"]).sample_step == "30s"
+
+
+def test_should_accept_short_queries_alias(tmp_path: Path) -> None:
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("queries: []", encoding="utf-8")
+
+    options = parse_args(["c8-ck-test", "-q", str(queries_file)])
+
+    assert options.queries_file == queries_file
+
+
+def test_should_accept_same_namespace_as_argument_and_option() -> None:
+    assert parse_args(["c8-ck-test", "--ns", "c8-ck-test"]).namespace == "c8-ck-test"
+
+
+def test_should_accept_namespace_option_before_argument() -> None:
+    assert parse_args(["--ns", "c8-ck-test", "c8-ck-test"]).namespace == "c8-ck-test"
+
+
+@pytest.mark.parametrize("args", [["-n", ""], [""], ["--", "-abc"]])
+def test_should_reject_invalid_namespace_forms(args: list[str], capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(args)
+
+    assert exit_code == 2
+    assert "must be a valid Kubernetes DNS label" in capsys.readouterr().err
