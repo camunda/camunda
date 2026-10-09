@@ -102,10 +102,12 @@ jobs:
             echo '```'
             echo ''
             if [[ "$VALIDATE_OUTCOME" == 'failure' ]]; then
-              echo 'A plan under `qa/coverage/` no longer matches the suite. Either the'
-              echo 'case was not written, its test does not carry the case id, or the test'
-              echo 'moved and the plan was not updated. The coverage gate reports these'
-              echo 'statuses onto product PRs, so a wrong one is read as fact.'
+              echo 'A plan under `qa/coverage/` is wrong. With `--no-case-ids` this'
+              echo 'step fails for two reasons only: a case marked `automated` or'
+              echo '`stub` whose spec file is not on disk — deleted, moved or'
+              echo 'renamed — or a plan that breaks the schema. The coverage gate'
+              echo 'reports these statuses onto product PRs, so a wrong one is read'
+              echo 'as fact.'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 

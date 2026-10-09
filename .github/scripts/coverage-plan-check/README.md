@@ -28,9 +28,13 @@ rather than only against itself:
 
 ```bash
 npm ci --prefix .github/scripts/coverage-plan-check
-node .github/scripts/coverage-plan-check/coverage-plan.mjs validate qa/coverage
+node .github/scripts/coverage-plan-check/coverage-plan.mjs validate qa/coverage --no-case-ids
 node .github/scripts/coverage-plan-check/coverage-plan.mjs summary qa/coverage/<plan>.yml
 ```
+
+`--no-case-ids` is not optional here, and the workflow passes it too — see
+below. Without it the command reports six errors against the valid checked-in
+plan, because these suites carry no case ids in their test titles.
 
 ## What it checks
 
