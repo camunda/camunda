@@ -9,8 +9,10 @@ package io.camunda.application.commons.actor;
 
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,22 +38,32 @@ public final class ActorSchedulerConfiguration {
     this.registry = registry;
   }
 
-  @Bean(destroyMethod = "close")
-  public ActorScheduler scheduler() {
-    final var cpuThreads = schedulerConfiguration.cpuThreads();
-    final var ioThreads = schedulerConfiguration.ioThreads();
+  /**
+   * Creates builders pre-populated with everything but the thread counts, so that further
+   * schedulers, e.g. one per physical tenant, share clock, idle strategy and metrics with the
+   * broker-wide one.
+   */
+  @Bean
+  public Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory() {
     final var metricsEnabled = schedulerConfiguration.metricsEnabled();
     final var prefix = schedulerConfiguration.schedulerPrefix();
     final var nodeId = schedulerConfiguration.nodeId();
 
-    final var scheduler =
+    return () ->
         ActorScheduler.newActorScheduler()
             .setActorClock(actorClockConfiguration.getClock().orElse(null))
-            .setCpuBoundActorThreadCount(cpuThreads)
-            .setIoBoundActorThreadCount(ioThreads)
             .setMeterRegistry(metricsEnabled ? registry : null)
             .setSchedulerName(String.format("%s-%s", prefix, nodeId))
-            .setIdleStrategySupplier(idleStrategySupplier)
+            .setIdleStrategySupplier(idleStrategySupplier);
+  }
+
+  @Bean(destroyMethod = "close")
+  public ActorScheduler scheduler() {
+    final var scheduler =
+        actorSchedulerBuilderFactory()
+            .get()
+            .setCpuBoundActorThreadCount(schedulerConfiguration.cpuThreads())
+            .setIoBoundActorThreadCount(schedulerConfiguration.ioThreads())
             .build();
     scheduler.start();
 

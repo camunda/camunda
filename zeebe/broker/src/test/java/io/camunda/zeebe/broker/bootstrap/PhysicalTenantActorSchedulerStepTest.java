@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -41,13 +42,14 @@ final class PhysicalTenantActorSchedulerStepTest {
   void setUp() {
     brokerScheduler =
         ActorScheduler.newActorScheduler()
-            .setSchedulerName("broker")
             .setMeterRegistry(registry)
             .setCpuBoundActorThreadCount(1)
             .setIoBoundActorThreadCount(1)
             .build();
     brokerScheduler.start();
     context.setActorSchedulingService(brokerScheduler);
+    context.setActorSchedulerBuilderFactory(
+        () -> ActorScheduler.newActorScheduler().setMeterRegistry(registry));
     context.setBrokerConfiguration(brokerCfg);
   }
 
@@ -57,20 +59,10 @@ final class PhysicalTenantActorSchedulerStepTest {
   }
 
   @Test
-  void shouldRunPartitionActorsOnBrokerSchedulerWhenDisabled() {
-    // when
-    startup();
-
-    // then
-    assertThat(context.getPartitionActorSchedulingService(TENANT_ID)).isSameAs(brokerScheduler);
-  }
-
-  @Test
-  void shouldRunPartitionActorsOnDedicatedThreadsWhenEnabled() throws Exception {
+  void shouldRunPartitionActorsOnDedicatedThreads() throws Exception {
     // given
-    brokerCfg.getThreads().setPhysicalTenantActorPoolEnabled(true);
-    brokerCfg.getThreads().setPhysicalTenantCpuThreadCount(1);
-    brokerCfg.getThreads().setPhysicalTenantIoThreadCount(1);
+    brokerCfg.getThreads().getPhysicalTenantActorPool().setCpuThreadCount(1);
+    brokerCfg.getThreads().getPhysicalTenantActorPool().setIoThreadCount(1);
 
     // when
     startup();
@@ -88,7 +80,6 @@ final class PhysicalTenantActorSchedulerStepTest {
   @Test
   void shouldTagActorMetricsOfDedicatedSchedulerWithTenant() throws Exception {
     // given
-    brokerCfg.getThreads().setPhysicalTenantActorPoolEnabled(true);
     startup();
 
     // when
@@ -106,7 +97,6 @@ final class PhysicalTenantActorSchedulerStepTest {
   @Test
   void shouldStopDedicatedSchedulerOnShutdown() {
     // given
-    brokerCfg.getThreads().setPhysicalTenantActorPoolEnabled(true);
     startup();
     final var scheduler = (ActorScheduler) context.getPartitionActorSchedulingService(TENANT_ID);
 
@@ -128,9 +118,7 @@ final class PhysicalTenantActorSchedulerStepTest {
   }
 
   private static String threadNameOf(
-      final io.camunda.zeebe.scheduler.ActorSchedulingService scheduler,
-      final SchedulingHints hints)
-      throws Exception {
+      final ActorSchedulingService scheduler, final SchedulingHints hints) throws Exception {
     final var name = new CompletableFuture<String>();
     scheduler.submitActor(
         new Actor() {

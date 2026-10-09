@@ -10,9 +10,8 @@ package io.camunda.zeebe.broker.system.configuration;
 public final class ThreadsCfg implements ConfigurationEntry {
   private int cpuThreadCount = 2;
   private int ioThreadCount = 2;
-  private boolean physicalTenantActorPoolEnabled = false;
-  private int physicalTenantCpuThreadCount = 2;
-  private int physicalTenantIoThreadCount = 1;
+  private final PhysicalTenantActorPoolCfg physicalTenantActorPool =
+      new PhysicalTenantActorPoolCfg();
 
   public int getCpuThreadCount() {
     return cpuThreadCount;
@@ -30,29 +29,8 @@ public final class ThreadsCfg implements ConfigurationEntry {
     ioThreadCount = ioThreads;
   }
 
-  /** Whether each physical tenant runs its partition actors on a dedicated actor thread pool. */
-  public boolean isPhysicalTenantActorPoolEnabled() {
-    return physicalTenantActorPoolEnabled;
-  }
-
-  public void setPhysicalTenantActorPoolEnabled(final boolean enabled) {
-    physicalTenantActorPoolEnabled = enabled;
-  }
-
-  public int getPhysicalTenantCpuThreadCount() {
-    return physicalTenantCpuThreadCount;
-  }
-
-  public void setPhysicalTenantCpuThreadCount(final int cpuThreads) {
-    physicalTenantCpuThreadCount = cpuThreads;
-  }
-
-  public int getPhysicalTenantIoThreadCount() {
-    return physicalTenantIoThreadCount;
-  }
-
-  public void setPhysicalTenantIoThreadCount(final int ioThreads) {
-    physicalTenantIoThreadCount = ioThreads;
+  public PhysicalTenantActorPoolCfg getPhysicalTenantActorPool() {
+    return physicalTenantActorPool;
   }
 
   @Override
@@ -62,12 +40,8 @@ public final class ThreadsCfg implements ConfigurationEntry {
         + cpuThreadCount
         + ", ioThreadCount="
         + ioThreadCount
-        + ", physicalTenantActorPoolEnabled="
-        + physicalTenantActorPoolEnabled
-        + ", physicalTenantCpuThreadCount="
-        + physicalTenantCpuThreadCount
-        + ", physicalTenantIoThreadCount="
-        + physicalTenantIoThreadCount
+        + ", physicalTenantActorPool="
+        + physicalTenantActorPool
         + '}';
   }
 }
