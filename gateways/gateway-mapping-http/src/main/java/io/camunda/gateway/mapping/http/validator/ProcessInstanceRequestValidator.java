@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
@@ -57,6 +56,10 @@ public class ProcessInstanceRequestValidator {
 
   private static final List<String> CANCELLABLE_PROCESS_INSTANCE_STATES =
       List.of(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name());
+  private static final List<String> SUSPENDABLE_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.ACTIVE.name());
+  private static final List<String> RESUMABLE_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.SUSPENDED.name());
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
       final ProcessInstanceCreationInstruction request) {
@@ -149,28 +152,41 @@ public class ProcessInstanceRequestValidator {
         });
   }
 
-  /** Rejects explicitly named states that can't be cancelled. */
+  /** Rejects top-level state conditions that name a state that can't be cancelled. */
   public static Optional<ProblemDetail> validateCancelProcessInstanceBatchOperationFilter(
       final ProcessInstanceFilter filter) {
+    return validateBatchOperationStates(filter, CANCELLABLE_PROCESS_INSTANCE_STATES);
+  }
+
+  /** Rejects top-level state conditions that name a state that can't be suspended. */
+  public static Optional<ProblemDetail> validateSuspendProcessInstanceBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validateBatchOperationStates(filter, SUSPENDABLE_PROCESS_INSTANCE_STATES);
+  }
+
+  /** Rejects top-level state conditions that name a state that can't be resumed. */
+  public static Optional<ProblemDetail> validateResumeProcessInstanceBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validateBatchOperationStates(filter, RESUMABLE_PROCESS_INSTANCE_STATES);
+  }
+
+  private static Optional<ProblemDetail> validateBatchOperationStates(
+      final ProcessInstanceFilter filter, final List<String> allowedStates) {
     return validate(
         violations ->
-            Stream.concat(
-                    Stream.of(filter), Stream.ofNullable(filter.orFilters()).flatMap(List::stream))
-                .flatMap(f -> f.stateOperations().stream())
+            filter.stateOperations().stream()
                 .filter(
                     operation ->
                         operation.operator() == Operator.EQUALS
                             || operation.operator() == Operator.IN)
                 .flatMap(operation -> operation.values().stream())
-                .filter(state -> !CANCELLABLE_PROCESS_INSTANCE_STATES.contains(state))
+                .filter(state -> !allowedStates.contains(state))
                 .distinct()
                 .forEach(
                     state ->
                         violations.add(
                             ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                                "state",
-                                toProtocolStateName(state),
-                                "one of " + CANCELLABLE_PROCESS_INSTANCE_STATES))));
+                                "state", toProtocolStateName(state), "one of " + allowedStates))));
   }
 
   // The API calls CANCELED instances TERMINATED; report the value the caller actually sent.

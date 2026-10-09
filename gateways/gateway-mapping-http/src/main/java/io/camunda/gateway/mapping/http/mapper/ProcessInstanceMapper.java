@@ -21,7 +21,9 @@ import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestVa
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchOperationRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceRequest;
+import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateResumeProcessInstanceRequest;
+import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateSuspendProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
 
@@ -253,6 +255,24 @@ public class ProcessInstanceMapper {
             filter ->
                 RequestMapper.getResult(
                     validateCancelProcessInstanceBatchOperationFilter(filter), () -> filter));
+  }
+
+  public Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceSuspensionFilter(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter request) {
+    return toRequiredProcessInstanceFilter(request)
+        .flatMap(
+            filter ->
+                RequestMapper.getResult(
+                    validateSuspendProcessInstanceBatchOperationFilter(filter), () -> filter));
+  }
+
+  public Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceResumptionFilter(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter request) {
+    return toRequiredProcessInstanceFilter(request)
+        .flatMap(
+            filter ->
+                RequestMapper.getResult(
+                    validateResumeProcessInstanceBatchOperationFilter(filter), () -> filter));
   }
 
   public Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest>
