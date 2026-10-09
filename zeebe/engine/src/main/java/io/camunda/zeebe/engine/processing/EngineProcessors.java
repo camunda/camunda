@@ -333,6 +333,7 @@ public final class EngineProcessors {
         routingInfo,
         expressionLanguageMetrics,
         processDefinitionMetrics);
+    // TODO: @yohanfernando >> Add ordinal support to  (message start events)
     addMessageProcessors(
         typedRecordProcessorContext.getPartitionId(),
         bpmnBehaviors,
@@ -412,6 +413,8 @@ public final class EngineProcessors {
         cslCheck,
         tenantCheck,
         incidentMetrics);
+    // TODO: @yohanfernando >> needs looking, depends on CatchEventBehaviour and
+    //   StartEventSubscriptionManager
     addResourceDeletionProcessors(
         partitionId,
         typedRecordProcessors,
@@ -472,6 +475,7 @@ public final class EngineProcessors {
         keyGenerator,
         processingState);
 
+    // TODO: @yohanfernando >> next need to apply storage ordinal changes here onwards
     TenantProcessors.addTenantProcessors(
         typedRecordProcessors,
         processingState,
@@ -489,6 +493,7 @@ public final class EngineProcessors {
     addResourceFetchProcessors(
         typedRecordProcessors, writers, processingState, permissionsBehavior, tenantCheck, config);
 
+    // TODO: @yohanfernando >> implement https://github.com/camunda/camunda/issues/62849
     BatchOperationSetupProcessors.addBatchOperationProcessors(
         keyGenerator,
         typedRecordProcessors,
@@ -523,6 +528,7 @@ public final class EngineProcessors {
         keyGenerator,
         tenantMetrics);
 
+    // TODO: @yohanfernando >> implement https://github.com/camunda/camunda/issues/65229
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
         typedRecordProcessors, writers, processingState, cslCheck);
     GlobalListenersProcessors.addGlobalListenersProcessors(
@@ -534,6 +540,7 @@ public final class EngineProcessors {
         processingState,
         cslCheck);
 
+    // TODO: @yohanfernando >> implement https://github.com/camunda/camunda/issues/65258
     ExpressionProcessors.addProcessors(
         keyGenerator,
         typedRecordProcessors,
@@ -558,6 +565,7 @@ public final class EngineProcessors {
     AgentHistoryProcessors.addAgentHistoryProcessors(
         typedRecordProcessors, writers, processingState);
 
+    // TODO: @yohanfernando >> next need to apply storage ordinal changes here onwards
     AgentHistoryBatchProcessors.addAgentHistoryBatchProcessors(
         typedRecordProcessors, writers, processingState);
 
