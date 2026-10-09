@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspensionJobBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -34,6 +35,7 @@ public final class JobTimeOutProcessor
       "Expected to time out activated job with key '%d', but %s";
   private final JobState jobState;
   private final SuspensionState suspensionState;
+  private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final JobProcessingMetrics jobMetrics;
@@ -50,6 +52,9 @@ public final class JobTimeOutProcessor
       final InstantSource clock) {
     jobState = state.getJobState();
     suspensionState = state.getSuspensionState();
+    suspensionJobBehavior =
+        new ProcessInstanceSuspensionJobBehavior(
+            state.getElementInstanceState(), state.getJobState(), writers.state());
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.jobMetrics = jobMetrics;
@@ -68,11 +73,10 @@ public final class JobTimeOutProcessor
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
       jobMetrics.countJobEvent(JobAction.TIMED_OUT, job.getJobKind(), job.getType());
 
-      // TIMED_OUT made the job ACTIVATABLE. If the instance is still SUSPENDED, park it in the same
-      // batch so it is not handed out. Use getSuspensionState == SUSPENDED (not isSuspended): while
-      // RESUMING the instance is draining and the job must become available again.
+      // park only while SUSPENDED; RESUMING must release it
       if (suspensionState.getSuspensionState(job.getProcessInstanceKey())
-          == SuspensionState.State.SUSPENDED) {
+              == SuspensionState.State.SUSPENDED
+          && !suspensionJobBehavior.isExemptFromSuspension(job)) {
         stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
         suspensionMetrics.jobSuspended();
       } else {
