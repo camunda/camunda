@@ -15,7 +15,7 @@
 services:
   elasticsearch-waitstates-isolated:
     container_name: elasticsearch-waitstates-isolated
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.19.16}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-9.5.5}
     environment:
       - discovery.type=single-node
       - cluster.name=elasticsearch-waitstates-isolated

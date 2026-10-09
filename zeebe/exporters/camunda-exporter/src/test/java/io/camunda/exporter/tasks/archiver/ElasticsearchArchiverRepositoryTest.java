@@ -445,7 +445,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
       final var getIndexResponse = mock(GetIndexResponse.class);
       when(indicesClient.get(any(Function.class)))
           .thenReturn(CompletableFuture.completedFuture(getIndexResponse));
-      when(getIndexResponse.result()).thenReturn(Map.of());
+      when(getIndexResponse.indices()).thenReturn(Map.of());
     }
 
     config.setRetention(retention);

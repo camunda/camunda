@@ -98,10 +98,10 @@ public class UsageMetricsRetentionConfigurationIT {
     try {
       final var policy = client.ilm().getLifecycle(req -> req.name(USAGE_METRICS_POLICY_NAME));
 
-      assertThat(policy.result()).containsKey(USAGE_METRICS_POLICY_NAME);
+      assertThat(policy.lifecycles()).containsKey(USAGE_METRICS_POLICY_NAME);
       assertThat(
               policy
-                  .result()
+                  .lifecycles()
                   .get(USAGE_METRICS_POLICY_NAME)
                   .policy()
                   .phases()

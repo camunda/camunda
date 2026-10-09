@@ -19,7 +19,9 @@ import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Request;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
@@ -63,10 +65,8 @@ import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
 import org.awaitility.Awaitility;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +90,7 @@ final class ElasticsearchArchiverRepositoryIT {
 
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
-  @AutoClose private final RestClientTransport transport = createRestClient();
+  @AutoClose private final Rest5ClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private HistoryConfiguration config;
@@ -109,7 +109,7 @@ final class ElasticsearchArchiverRepositoryIT {
   void afterEach() throws IOException {
     // wipes all data in ES between tests
     final var response = transport.restClient().performRequest(new Request("DELETE", "_all"));
-    assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
+    assertThat(response.getStatusCode()).isEqualTo(200);
   }
 
   @BeforeEach
@@ -979,7 +979,12 @@ final class ElasticsearchArchiverRepositoryIT {
   private <T extends TDocument> void index(
       final String index, final T document, final String routing) {
     try {
-      testClient.index(b -> b.index(index).document(document).id(document.id()).routing(routing));
+      testClient.index(
+          b -> {
+            b.index(index).document(document).id(document.id());
+            // a null or empty routing is sent by the ES 9 client as an empty routing= parameter
+            return routing == null || routing.isEmpty() ? b : b.routing(routing);
+          });
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -1151,7 +1156,7 @@ final class ElasticsearchArchiverRepositoryIT {
                     testClient
                         .indices()
                         .getSettings(b -> b.index(template.getIndexPattern()))
-                        .result();
+                        .settings();
                 // Check runtime index (should not have ILM policy)
                 assertThat(
                         settings
@@ -1609,9 +1614,15 @@ final class ElasticsearchArchiverRepositoryIT {
         partitionId, config, resourceProvider, client, Runnable::run, metrics, LOGGER);
   }
 
-  private RestClientTransport createRestClient() {
-    final var restClient = RestClient.builder(HttpHost.create(SEARCH_DB.esUrl())).build();
-    return new RestClientTransport(restClient, new JacksonJsonpMapper());
+  private Rest5ClientTransport createRestClient() {
+    final HttpHost host;
+    try {
+      host = HttpHost.create(SEARCH_DB.esUrl());
+    } catch (final java.net.URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+    final var restClient = Rest5Client.builder(host).build();
+    return new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
   }
 
   private void createProcessInstanceIndex() throws IOException {

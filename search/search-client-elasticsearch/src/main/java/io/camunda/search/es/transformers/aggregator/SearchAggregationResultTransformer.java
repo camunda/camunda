@@ -72,7 +72,9 @@ public class SearchAggregationResultTransformer<T>
 
   private AggregationResult transformSingleMetricAggregate(
       final SingleMetricAggregateBase aggregate) {
-    return new Builder().docCount((long) aggregate.value()).build();
+    // the ES 9 client returns a null value for a metric over an empty bucket
+    final var value = aggregate.value();
+    return new Builder().docCount(value == null ? 0 : value.longValue()).build();
   }
 
   private SearchTopHitsAggregator findTopHitsAggregatorRecursively(

@@ -21,13 +21,13 @@ import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.ErrorResponse;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -44,7 +44,7 @@ public class OptimizeElasticsearchClientTest {
   private ElasticsearchIndicesClient elasticsearchIndicesClient;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
-  private RestClient restClient;
+  private Rest5Client restClient;
 
   @Mock private OptimizeIndexNameService indexNameService;
   @Mock private ObjectMapper objectMapper;

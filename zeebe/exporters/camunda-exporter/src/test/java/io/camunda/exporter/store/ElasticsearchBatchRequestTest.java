@@ -537,7 +537,7 @@ class ElasticsearchBatchRequestTest {
   }
 
   private static Script realScript(final String source) {
-    return Script.of(s -> s.source(source));
+    return Script.of(s -> s.source(src -> src.scriptString(source)));
   }
 
   @Test

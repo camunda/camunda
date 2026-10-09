@@ -9,9 +9,12 @@ package io.camunda.search.connect.plugin;
 
 import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import java.util.SequencedCollection;
+import org.apache.hc.core5.http.EntityDetails;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
+import org.apache.hc.core5.http.protocol.HttpContext;
 
-/** See {@link CompatHttpRequestInterceptor} */
-final class PluginRepositoryInterceptor implements CompatHttpRequestInterceptor {
+final class PluginRepositoryInterceptor implements HttpRequestInterceptor {
 
   // The order of plugins is important.
   private final SequencedCollection<DatabaseCustomHeaderSupplier> databaseHeaderPlugins;
@@ -27,18 +30,7 @@ final class PluginRepositoryInterceptor implements CompatHttpRequestInterceptor 
 
   @Override
   public void process(
-      final org.apache.hc.core5.http.HttpRequest request,
-      final org.apache.hc.core5.http.EntityDetails entity,
-      final org.apache.hc.core5.http.protocol.HttpContext context) {
-    for (final var plugin : databaseHeaderPlugins) {
-      setHeader(plugin, request::setHeader);
-    }
-  }
-
-  @Override
-  public void process(
-      final org.apache.http.HttpRequest request,
-      final org.apache.http.protocol.HttpContext context) {
+      final HttpRequest request, final EntityDetails entity, final HttpContext context) {
     for (final var plugin : databaseHeaderPlugins) {
       setHeader(plugin, request::setHeader);
     }

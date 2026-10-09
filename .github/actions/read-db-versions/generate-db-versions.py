@@ -31,13 +31,11 @@ def main():
         versions = yaml.safe_load(f)
 
     # ── Search database versions ──────────────────────────────────────────────
-    es8_versions = versions["elasticsearch"]["es8"]
     es9_versions = versions["elasticsearch"]["es9"]
     os2_versions = versions["opensearch"]["os2"]
     os3_versions = versions["opensearch"]["os3"]
 
     # Single-version outputs: last entry = newest supported minor version.
-    set_output("elasticsearch-8", es8_versions[-1])
     set_output("elasticsearch-9", es9_versions[-1])
     set_output("opensearch-2",    os2_versions[-1])
     set_output("opensearch-3",    os3_versions[-1])
@@ -49,15 +47,6 @@ def main():
     # versions are skipped to keep CI costs proportional to supported minors.
     # database-type encodes both the DB family and the version for test filtering.
     es_os_matrix = {"include": []}
-
-    for v in min_max(es8_versions):
-        es_os_matrix["include"].append({
-            "database-name":          f"Elasticsearch {v}",
-            "database-type":          f"elasticsearch8_{version_slug(v)}",
-            "database-container":     "elasticsearch",
-            "database-image-version": v,
-            "it-database-type":       "es",
-        })
 
     for v in min_max(es9_versions):
         es_os_matrix["include"].append({
@@ -92,13 +81,6 @@ def main():
     # One entry per major series using the latest supported minor, plus a static
     # H2 entry. H2 is an embedded database with no Docker image version to track.
     ci_db_matrix = {"include": [
-        {
-            "name":                   "Elasticsearch 8",
-            "database-type":          "elasticsearch",
-            "database-image-version": es8_versions[-1],
-            "database-name":          "Elasticsearch 8",
-            "it-database-type":       "es",
-        },
         {
             "name":                   "Elasticsearch 9",
             "database-type":          "elasticsearch9",

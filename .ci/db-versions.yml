@@ -18,19 +18,16 @@
 #
 # ── SaaS version ────────────────────────────────────────────────────────────────
 #   The `saas` field under elasticsearch identifies which version is recommended to be deployed to
-#   SaaS environments. It must always reference one of the listed es8 versions via
+#   SaaS environments. It must always reference one of the listed versions via
 #   a YAML anchor so that the SaaS version cannot drift from what is tested in CI.
 # ────────────────────────────────────────────────────────────────────────────────
 
 elasticsearch:
-  es8:
-    # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
-    - &saas '8.19.16'
   es9:
     # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
     - '9.4.5'
     # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
-    - '9.5.2'
+    - &saas '9.5.5'
   saas: *saas
 
 opensearch:

@@ -11,8 +11,6 @@ import static io.camunda.search.test.utils.SearchDBExtension.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -37,10 +35,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
-import org.apache.http.HttpHost;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -101,8 +97,7 @@ abstract class BatchOperationUpdateRepositoryIT {
 
   static final class ElasticsearchIT extends BatchOperationUpdateRepositoryIT {
 
-    @AutoClose private final RestClientTransport transport = createTransport();
-    private final ElasticsearchAsyncClient client;
+    @AutoClose private final ElasticsearchAsyncClient client;
 
     public ElasticsearchIT() {
       super("http://" + searchDB.esUrl(), true);
@@ -152,11 +147,6 @@ abstract class BatchOperationUpdateRepositoryIT {
       } catch (final ExecutionException e) {
         throw new RuntimeException(e);
       }
-    }
-
-    private RestClientTransport createTransport() {
-      final var restClient = RestClient.builder(HttpHost.create(searchDB.esUrl())).build();
-      return new RestClientTransport(restClient, new JacksonJsonpMapper());
     }
   }
 

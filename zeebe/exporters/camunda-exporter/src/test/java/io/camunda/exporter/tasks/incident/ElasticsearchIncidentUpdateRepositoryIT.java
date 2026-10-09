@@ -14,16 +14,12 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepositoryIT.RoutedDocument;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.slf4j.Logger;
@@ -43,8 +39,12 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefaultElasticsearchContainer();
 
-  @AutoClose private final RestClientTransport transport = createTransport();
-  private final ElasticsearchAsyncClient client = new ElasticsearchAsyncClient(transport);
+  @AutoClose
+  private final ElasticsearchClient esClient =
+      ElasticsearchClient.of(b -> b.host("http://" + CONTAINER.getHttpHostAddress()));
+
+  private final ElasticsearchAsyncClient client =
+      new ElasticsearchAsyncClient(esClient._transport());
 
   public ElasticsearchIncidentUpdateRepositoryIT() {
     super("http://" + CONTAINER.getHttpHostAddress(), true);
@@ -68,18 +68,16 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
 
   @Override
   protected void refresh(final String index) throws IOException {
-    final var client = new ElasticsearchClient(transport);
-    client.indices().refresh(r -> r.index(index));
+    esClient.indices().refresh(r -> r.index(index));
   }
 
   @Override
   protected <T> Collection<T> search(
       final String index, final String field, final List<String> terms, final Class<T> documentType)
       throws IOException {
-    final var client = new ElasticsearchClient(transport);
     final var values = terms.stream().map(FieldValue::of).toList();
     final var query = QueryBuilders.terms(t -> t.field(field).terms(v -> v.value(values)));
-    return client.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
+    return esClient.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
         .map(Hit::source)
         .toList();
   }
@@ -87,10 +85,9 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
   @Override
   protected Collection<RoutedDocument> searchWithRouting(
       final String index, final String field, final List<String> terms) throws IOException {
-    final var client = new ElasticsearchClient(transport);
     final var values = terms.stream().map(FieldValue::of).toList();
     final var query = QueryBuilders.terms(t -> t.field(field).terms(v -> v.value(values)));
-    return client.search(s -> s.index(index).query(query), Object.class).hits().hits().stream()
+    return esClient.search(s -> s.index(index).query(query), Object.class).hits().hits().stream()
         .map(hit -> new RoutedDocument(hit.id(), hit.routing()))
         .toList();
   }
@@ -99,19 +96,12 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
   protected void assertRoutedEntriesAreColocatedOnSingleShard(
       final String index, final String routing, final String field, final int expectedHits)
       throws IOException {
-    final var client = new ElasticsearchClient(transport);
     final var query = QueryBuilders.term(t -> t.field(field).value(routing));
     final var response =
-        client.search(s -> s.index(index).routing(routing).query(query), Object.class);
+        esClient.search(s -> s.index(index).routing(routing).query(query), Object.class);
     // a routed search is directed to exactly one shard...
     assertThat(response.shards().total().intValue()).isEqualTo(1);
     // ...and that single shard holds all of the partition's entries, proving co-location
     assertThat(response.hits().hits()).hasSize(expectedHits);
-  }
-
-  private RestClientTransport createTransport() {
-    final var restClient =
-        RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress())).build();
-    return new RestClientTransport(restClient, new JacksonJsonpMapper());
   }
 }

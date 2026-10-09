@@ -105,7 +105,7 @@ public class ElasticsearchDataStoreClientTest {
     // then
     assertThat(getRequestCaptor.getValue().id()).isEqualTo("foo");
     assertThat(getRequestCaptor.getValue().index()).isEqualTo("bar");
-    assertThat(getRequestCaptor.getValue().routing()).isEqualTo("foobar");
+    assertThat(getRequestCaptor.getValue().routing()).singleElement().isEqualTo("foobar");
   }
 
   @Test
@@ -146,7 +146,7 @@ public class ElasticsearchDataStoreClientTest {
     // then
     assertThat(indexRequestCaptor.getValue().id()).isEqualTo("foo");
     assertThat(indexRequestCaptor.getValue().index()).isEqualTo("bar");
-    assertThat(indexRequestCaptor.getValue().routing()).isEqualTo("foobar");
+    assertThat(indexRequestCaptor.getValue().routing()).singleElement().isEqualTo("foobar");
     assertThat(indexRequestCaptor.getValue().document()).isEqualTo(doc);
   }
 
