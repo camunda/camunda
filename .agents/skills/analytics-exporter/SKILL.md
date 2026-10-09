@@ -134,10 +134,11 @@ the module README.
 
 > **Handlers must be named classes.** Do not treat `AnalyticsHandler` as a functional interface.
 > A lambda, anonymous class, or local class compiles, but `AnalyticsHandler.digestInput()` hashes
-> the handler's `.class` bytes and throws `IllegalArgumentException` for those forms — so a lambda
-> registered in the catalog fails at `configure()` time, when the exporter digest is computed, if
-> its category is active. (Routing tests that never compute a digest may still use lambdas; see
-> `HandlerRegistryTest`.)
+> the handler's `.class` bytes and throws `IllegalArgumentException` for those forms. For a lambda
+> in an active category, `AnalyticsExporter.resolveDigest()` catches that, logs a warning, and
+> continues with an empty `camunda.exporter.digest`, so `configure()` succeeds and the exporter's
+> fingerprint silently disappears from every record. (Routing tests that never compute a digest may
+> still use lambdas; see `HandlerRegistryTest`.)
 
 ```java
 package io.camunda.exporter.analytics.handler;
