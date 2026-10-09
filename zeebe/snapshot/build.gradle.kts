@@ -1,0 +1,28 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.test-jar-conventions")
+}
+
+dependencies {
+  implementation(project(":camunda-cluster"))
+  implementation(libs.org.jspecify.jspecify)
+  implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-scheduler"))
+  api(libs.io.micrometer.micrometer.core)
+  api(libs.io.micrometer.micrometer.commons)
+  implementation(project(":zeebe-protocol"))
+  api(libs.org.agrona.agrona)
+  implementation(libs.org.slf4j.slf4j.api)
+  api(libs.com.fasterxml.jackson.core.jackson.databind)
+  api(libs.com.fasterxml.jackson.core.jackson.annotations)
+  testImplementation(libs.org.awaitility.awaitility)
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
+  testImplementation(libs.junit.junit)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
+  testImplementation(project(":zeebe-test-util"))
+  testImplementation(libs.org.mockito.mockito.core)
+}
+
+description = "Zeebe Snapshots"

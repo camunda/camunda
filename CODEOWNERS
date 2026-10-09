@@ -28,6 +28,19 @@
 /.github/actions/release-notes/**                        @camunda/engineering-operations
 /.github/workflows/release-notes*                        @camunda/engineering-operations
 
+# Gradle build (parallel path to Maven)
+/build.gradle.kts                                        @camunda/orchestration-cluster
+/settings.gradle.kts                                     @camunda/orchestration-cluster
+/gradle.properties                                       @camunda/orchestration-cluster
+/gradlew                                                 @camunda/orchestration-cluster
+/gradlew.bat                                             @camunda/orchestration-cluster
+/gradle/                                                 @camunda/orchestration-cluster
+# Convention-plugin exceptions (owned by the domain team, last match wins)
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/core-features
+
 ###################
 ## Core Features ##
 ###################
@@ -185,6 +198,8 @@
 /.agents/skills/ci-security-compliance/**        @camunda/engineering-operations
 /.agents/skills/ci-validation/**                 @camunda/engineering-operations
 /.agents/skills/ci-workflow-authoring/**         @camunda/engineering-operations
+/.agents/skills/gradle-build-parity/**           @camunda/engineering-operations
+
 
 # Engine-expert skill
 /.agents/skills/engine-expert/  @korthout @camunda/core-features

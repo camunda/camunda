@@ -14,8 +14,9 @@ on:
         default: false
         description: >-
           When true, skip uploading the distball/m2 tarball to the GitHub artifact API.
-          Only ci.yml's docker-checks job consumes that artifact; standalone callers with no
-          such consumer should set this to true to skip the unused upload.
+          Only ci.yml's docker-checks and Gradle distribution parity jobs consume that artifact;
+          standalone callers with no such consumer should set this to true to skip the unused
+          upload.
 
 env:
   GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
@@ -79,15 +80,19 @@ jobs:
             --exclude='*.repositories' \
             -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" .
           ls -lh m2-installed.tar
-      # docker-checks (GitHub-hosted, ci.yml only) consumes these via the artifact API.
+      # docker-checks and Gradle distribution parity (GitHub-hosted, ci.yml only) consume
+      # these via the artifact API. Upload both Maven archive formats so the Gradle job can
+      # compare its ZIP with the Maven ZIP without rebuilding Maven in that job.
       - name: Upload distball (artifact)
         if: ${{ !inputs.skip-artifact-upload }}
         uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: distball-${{ github.run_id }}
-          path: ${{ steps.build-zeebe.outputs.distball }}
+          path: |
+            ${{ steps.build-zeebe.outputs.distball }}
+            dist/target/camunda-zeebe-*.zip
           retention-days: 2
-          compression-level: 0  # tarball is already gzipped
+          compression-level: 0  # archives are already compressed
           if-no-files-found: error
       - name: Upload local Maven SNAPSHOT artifacts (artifact)
         if: ${{ !inputs.skip-artifact-upload }}

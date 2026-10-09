@@ -1,0 +1,12 @@
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.test-jar-conventions")
+}
+
+dependencies {
+  api(libs.com.auth0.java.jwt)
+  api(libs.com.fasterxml.jackson.core.jackson.databind)
+  api(libs.com.fasterxml.jackson.core.jackson.core)
+}
+
+description = "Zeebe Auth"

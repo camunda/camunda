@@ -1,0 +1,9 @@
+plugins { id("buildlogic.server-conventions") }
+
+dependencies {
+  implementation(project(":camunda-search-domain"))
+  implementation(libs.io.camunda.security.library.core)
+  implementation(libs.org.jspecify.jspecify)
+}
+
+description = "Camunda Search Client - Reader"

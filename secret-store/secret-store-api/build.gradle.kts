@@ -1,0 +1,10 @@
+plugins { id("buildlogic.server-conventions") }
+
+dependencies {
+  implementation(libs.org.jspecify.jspecify)
+  implementation(libs.com.github.ben.manes.caffeine.caffeine)
+  api(libs.io.micrometer.micrometer.commons)
+  api(libs.io.micrometer.micrometer.core)
+}
+
+description = "Camunda Secret Store API"

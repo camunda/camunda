@@ -1,0 +1,24 @@
+plugins { id("buildlogic.server-conventions") }
+
+dependencies {
+  implementation(project(":camunda-search-client-connect"))
+  implementation(project(":webapps-schema"))
+  implementation(libs.org.slf4j.slf4j.api)
+  implementation(libs.co.elastic.clients.elasticsearch.java)
+  implementation(libs.org.opensearch.client.opensearch.java)
+  implementation(libs.jakarta.json.jakarta.json.api)
+  implementation(libs.com.fasterxml.jackson.core.jackson.databind)
+  implementation(libs.com.fasterxml.jackson.core.jackson.core)
+  implementation(libs.org.apache.commons.commons.lang3)
+  implementation(libs.org.agrona.agrona)
+  implementation(libs.org.testcontainers.testcontainers)
+  implementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
+  implementation(libs.org.testcontainers.testcontainers.elasticsearch)
+  implementation(libs.org.opensearch.opensearch.testcontainers)
+  implementation(libs.org.junit.jupiter.junit.jupiter.api)
+  testImplementation(libs.org.mockito.mockito.core)
+  testImplementation(libs.org.assertj.assertj.core)
+  implementation(project(":zeebe-test-util"))
+}
+
+description = "Camunda Search Test Utils"

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "gradle-best-practices": {
+      "source": "gradle/gradle-skills",
+      "sourceType": "github",
+      "computedHash": "76abd823ddcd970d10020213e749dc00cd5cf7af25616d93c8c5bb505ddf6c0a"
+    },
+    "gradle-wrapper-upgrade": {
+      "source": "gradle/gradle-skills",
+      "sourceType": "github",
+      "computedHash": "a4bc4aa7086322f7aa881c37436b166dc71c5ef4d52ba182231f87b2bd9f80e1"
+    }
+  }
+}

@@ -38,6 +38,7 @@ faces-config.NavData
 *.DS_Store
 .java-version
 .gradle
+gradle/build-logic/**/.kotlin/
 .worktree
 work/
 tngp-data
@@ -111,3 +112,13 @@ load-tests/setup/c8-*
 
 # Broker data written by `spring-boot:run` in dist/ (e.g. webapp `make env-up`)
 /dist/data/
+
+# Gradle
+build/
+build-cache/
+gradle/build-logic/.kotlin/
+
+# configuration/src/build is a Maven source root wired via build-helper-maven-plugin,
+# not a Gradle output directory; keep it trackable despite the build/ rule above.
+!/configuration/src/build/
+!/configuration/src/build/**
