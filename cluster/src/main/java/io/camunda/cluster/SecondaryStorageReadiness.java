@@ -69,7 +69,7 @@ public interface SecondaryStorageReadiness {
 
   /**
    * @return how ready the node is across its physical tenants: {@link NodeReadiness#READY} when
-   *     every tenant is ready, {@link NodeReadiness#NOT_READY} when every tenant stopped without
+   *     every tenant is ready, {@link NodeReadiness#DOWN} when every tenant stopped without
    *     becoming ready, {@link NodeReadiness#DEGRADED} otherwise.
    */
   NodeReadiness nodeReadiness();
@@ -77,6 +77,6 @@ public interface SecondaryStorageReadiness {
   enum NodeReadiness {
     READY,
     DEGRADED,
-    NOT_READY
+    DOWN
   }
 }
