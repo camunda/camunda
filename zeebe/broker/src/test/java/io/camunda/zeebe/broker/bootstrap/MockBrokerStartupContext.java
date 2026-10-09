@@ -40,6 +40,8 @@ import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -77,6 +79,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
   private final ExporterRepository exporterRepository = mock(ExporterRepository.class);
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
+  private final Map<String, ActorScheduler> physicalTenantActorSchedulers = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
@@ -131,6 +134,28 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public ActorSchedulingService getActorSchedulingService() {
     return actorSchedulingService;
+  }
+
+  @Override
+  public ActorSchedulerBuilder newActorSchedulerBuilder() {
+    return ActorScheduler.newActorScheduler();
+  }
+
+  @Override
+  public ActorSchedulingService getPartitionActorSchedulingService(final String physicalTenantId) {
+    final ActorSchedulingService dedicated = physicalTenantActorSchedulers.get(physicalTenantId);
+    return dedicated != null ? dedicated : actorSchedulingService;
+  }
+
+  @Override
+  public void addPhysicalTenantActorScheduler(
+      final String physicalTenantId, final ActorScheduler scheduler) {
+    physicalTenantActorSchedulers.put(physicalTenantId, scheduler);
+  }
+
+  @Override
+  public ActorScheduler removePhysicalTenantActorScheduler(final String physicalTenantId) {
+    return physicalTenantActorSchedulers.remove(physicalTenantId);
   }
 
   public void setActorSchedulingService(final ActorSchedulingService actorSchedulingService) {

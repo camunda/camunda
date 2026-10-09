@@ -33,12 +33,13 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   }
 
   /**
-   * Returns a new builder pre-populated with the clock, idle strategy, and meter registry of this
-   * scheduler. The returned builder yields an independent scheduler with its own threads, so
-   * callers still have to set the name, thread counts, and any metric tags.
+   * Returns a new builder pre-populated with the name, clock, idle strategy, and meter registry of
+   * this scheduler. The returned builder yields an independent scheduler with its own threads, so
+   * callers still have to set the thread counts and may set metric tags and a thread name prefix.
    */
   public ActorSchedulerBuilder derive() {
     return newActorScheduler()
+        .setSchedulerName(builder.getSchedulerName())
         .setActorClock(builder.getActorClock())
         .setIdleStrategySupplier(builder.getIdleStrategySupplier())
         .setMeterRegistry(builder.getMeterRegistry());
