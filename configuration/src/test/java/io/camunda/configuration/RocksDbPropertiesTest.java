@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.CompactOnDeletion;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import java.util.Properties;
 import org.junit.jupiter.api.Nested;
@@ -47,7 +48,11 @@ public class RocksDbPropertiesTest {
         "camunda.data.primary-storage.rocks-db.column-family-options.write_buffer_size=67108864",
         "camunda.data.primary-storage.rocks-db.column-family-options.compaction_pri=kOldestLargestSeqFirst",
         "camunda.data.primary-storage.rocks-db.memory-fraction=0.5",
-        "camunda.data.primary-storage.rocks-db.max-memory-fraction=0.8"
+        "camunda.data.primary-storage.rocks-db.max-memory-fraction=0.8",
+        "camunda.data.primary-storage.rocks-db.compact-on-deletion.enabled=true",
+        "camunda.data.primary-storage.rocks-db.compact-on-deletion.window-size=2000",
+        "camunda.data.primary-storage.rocks-db.compact-on-deletion.deletion-trigger=800",
+        "camunda.data.primary-storage.rocks-db.compact-on-deletion.deletion-ratio=0.4"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -121,6 +126,12 @@ public class RocksDbPropertiesTest {
     }
 
     @Test
+    void shouldSetCompactOnDeletion() {
+      assertThat(brokerCfg.getExperimental().getRocksdb().getCompactOnDeletion())
+          .isEqualTo(new CompactOnDeletion(2000, 800, 0.4));
+    }
+
+    @Test
     void shouldInitializeColumnFamilyOptions() {
       final Properties columnFamilyOptions =
           brokerCfg.getExperimental().getRocksdb().getColumnFamilyOptions();
@@ -156,6 +167,11 @@ public class RocksDbPropertiesTest {
 
     WithOnlyLegacySet(@Autowired final BrokerBasedProperties brokerCfg) {
       this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldNotEnableCompactOnDeletionByDefault() {
+      assertThat(brokerCfg.getExperimental().getRocksdb().getCompactOnDeletion()).isNull();
     }
 
     @Test

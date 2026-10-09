@@ -12,12 +12,14 @@ import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_ROCK
 import com.sun.management.OperatingSystemMXBean;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.CompactOnDeletion;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import java.lang.management.ManagementFactory;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.unit.DataSize;
@@ -57,6 +59,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
       DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
   private double memoryFraction = 0.1;
   private double maxMemoryFraction = -1;
+  private @Nullable CompactOnDeletion compactOnDeletion;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -281,6 +284,14 @@ public final class RocksdbCfg implements ConfigurationEntry {
     this.accessMetrics = accessMetrics;
   }
 
+  public @Nullable CompactOnDeletion getCompactOnDeletion() {
+    return compactOnDeletion;
+  }
+
+  public void setCompactOnDeletion(final @Nullable CompactOnDeletion compactOnDeletion) {
+    this.compactOnDeletion = compactOnDeletion;
+  }
+
   public RocksDbConfiguration createRocksDbConfiguration() {
     return new RocksDbConfiguration()
         .setColumnFamilyOptions(columnFamilyOptions)
@@ -293,7 +304,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         .setWalDisabled(disableWal)
         .setSstPartitioningEnabled(enableSstPartitioning)
         .setMemoryAllocationStrategy(memoryAllocationStrategy)
-        .setMemoryFraction(memoryFraction);
+        .setMemoryFraction(memoryFraction)
+        .setCompactOnDeletion(compactOnDeletion);
   }
 
   @Override
@@ -313,6 +325,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         + memoryFraction
         + ", maxMemoryFraction="
         + maxMemoryFraction
+        + ", compactOnDeletion="
+        + compactOnDeletion
         + ", maxOpenFiles="
         + maxOpenFiles
         + ", maxWriteBufferNumber="
