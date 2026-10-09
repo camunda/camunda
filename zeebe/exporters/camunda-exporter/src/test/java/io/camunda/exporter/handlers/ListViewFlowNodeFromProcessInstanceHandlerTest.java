@@ -311,4 +311,18 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
 
     assertThat(entity.getActivityState()).isEqualTo(FlowNodeState.TERMINATED);
   }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecord() {
+    // given
+    final Record<ProcessInstanceRecordValue> record =
+        factory.generateRecord(ValueType.PROCESS_INSTANCE);
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(record.getValue().getStorageOrdinal());
+  }
 }

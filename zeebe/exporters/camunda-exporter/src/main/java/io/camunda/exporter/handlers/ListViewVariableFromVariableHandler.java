@@ -87,7 +87,8 @@ public class ListViewVariableFromVariableHandler
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setVarName(recordValue.getName())
         .setVarValue(truncatedValue)
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setStorageOrdinal(recordValue.getStorageOrdinal());
 
     // set parent
     final long processInstanceKey = recordValue.getProcessInstanceKey();
