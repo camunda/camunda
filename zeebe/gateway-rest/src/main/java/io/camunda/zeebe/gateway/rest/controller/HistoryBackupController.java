@@ -32,12 +32,15 @@ import org.springframework.web.bind.annotation.RequestParam;
  * History (secondary-storage snapshot) backups for a single physical tenant.
  *
  * <p>The bean is registered unconditionally; {@link RequiresSecondaryStorage} makes the interceptor
- * answer 403 on a cluster whose secondary storage cannot serve these endpoints, and 503 to taking a
- * backup while the request's tenant's storage is degraded; reading and deleting keep working, as
- * during recovery. The {@code /physical-tenants/{id}/v2/...} form of every path comes from the
- * physical-tenant request mapping, not from a second mapping here.
+ * answer 403 on a cluster whose secondary storage cannot serve these endpoints. They stay available
+ * while the request's tenant's storage is degraded, as during recovery: they act on snapshots and
+ * do not need the Camunda schema. The {@code /physical-tenants/{id}/v2/...} form of every path
+ * comes from the physical-tenant request mapping, not from a second mapping here.
  */
 @CamundaRestController
+@RequiresSecondaryStorage(
+    value = {ELASTICSEARCH, OPENSEARCH},
+    availableWhileDegraded = true)
 @RequestMapping("/v2/backups/history")
 public class HistoryBackupController {
 
@@ -51,7 +54,6 @@ public class HistoryBackupController {
     this.authenticationProvider = authenticationProvider;
   }
 
-  @RequiresSecondaryStorage({ELASTICSEARCH, OPENSEARCH})
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> takeBackup(
       @PhysicalTenantId final String physicalTenantId,
@@ -66,9 +68,6 @@ public class HistoryBackupController {
         HttpStatus.ACCEPTED);
   }
 
-  @RequiresSecondaryStorage(
-      value = {ELASTICSEARCH, OPENSEARCH},
-      availableWhileDegraded = true)
   @CamundaGetMapping
   public CompletableFuture<ResponseEntity<Object>> listBackups(
       @PhysicalTenantId final String physicalTenantId,
@@ -84,9 +83,6 @@ public class HistoryBackupController {
         HttpStatus.OK);
   }
 
-  @RequiresSecondaryStorage(
-      value = {ELASTICSEARCH, OPENSEARCH},
-      availableWhileDegraded = true)
   @CamundaGetMapping(path = "/{backupId}")
   public CompletableFuture<ResponseEntity<Object>> getBackup(
       @PhysicalTenantId final String physicalTenantId, @PathVariable final long backupId) {
@@ -100,9 +96,6 @@ public class HistoryBackupController {
         HttpStatus.OK);
   }
 
-  @RequiresSecondaryStorage(
-      value = {ELASTICSEARCH, OPENSEARCH},
-      availableWhileDegraded = true)
   @CamundaDeleteMapping(path = "/{backupId}")
   public CompletableFuture<ResponseEntity<Object>> deleteBackup(
       @PhysicalTenantId final String physicalTenantId, @PathVariable final long backupId) {
