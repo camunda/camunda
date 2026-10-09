@@ -295,13 +295,10 @@ public final class ZeebeRocksDbFactory<
     final var maxWriteBuffers = rocksDbConfiguration.getMaxWriteBufferNumber();
     props.setProperty("max_write_buffer_number", RocksDbOptionsFormatter.format(maxWriteBuffers));
 
-    // the budget is an upper bound: large write buffers keep tombstones in memory for long
     final var writeBufferSize =
-        Math.min(
-            RocksDbConfiguration.DEFAULT_MAX_WRITE_BUFFER_SIZE,
-            Math.round(
-                ((double) memory.writeBufferBudgetPerPartition() / maxWriteBuffers)
-                    * (1 - memtablePrefixFilterMemory)));
+        Math.round(
+            ((double) memory.writeBufferBudgetPerPartition() / maxWriteBuffers)
+                * (1 - memtablePrefixFilterMemory));
 
     props.setProperty("write_buffer_size", RocksDbOptionsFormatter.format(writeBufferSize));
 

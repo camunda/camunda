@@ -637,10 +637,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         memory-limit: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT
         # Configures how many write buffers should be full before they are merged and flushed to disk. Having
         # a higher number here means you may flush less often, but will flush more data at once. Have a lower
-        # one means flushing more often, but flushing less data at once. Flushing each write buffer on its own
-        # keeps deleted entries (tombstones) from piling up in memory, where every iteration has to step over
-        # them.
-        min-write-buffer-number-to-merge: 1 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MINWRITEBUFFERNUMBERTOMERGE
+        # one means flushing more often, but flushing less data at once.
+        min-write-buffer-number-to-merge: 3 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MINWRITEBUFFERNUMBERTOMERGE
         # Configures if the RocksDB SST files should be partitioned based on some virtual column families. By
         # default, RocksDB will not partition the SST files, which might have influence on the compacting of
         # certain key ranges. Enabling this option gives RocksDB some good hints how to improve compaction and

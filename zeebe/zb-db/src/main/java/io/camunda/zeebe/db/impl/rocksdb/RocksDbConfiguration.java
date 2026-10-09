@@ -16,21 +16,7 @@ public final class RocksDbConfiguration {
   public static final double DEFAULT_MEMORY_FRACTION = 0.1;
   public static final int DEFAULT_UNLIMITED_MAX_OPEN_FILES = -1;
   public static final int DEFAULT_MAX_WRITE_BUFFER_NUMBER = 6;
-
-  /**
-   * Flush every write buffer on its own: merging several before flushing keeps deleted entries
-   * (tombstones) in memory for longer, where every iteration over their key range has to step over
-   * them one by one.
-   */
-  public static final int DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE = 1;
-
-  /**
-   * Upper bound for the size of a single write buffer, regardless of the memory budget. Small write
-   * buffers are flushed sooner, which moves tombstones out of memory into SST files where they can
-   * be compacted away. Can be overridden with the {@code write_buffer_size} column family option.
-   */
-  public static final long DEFAULT_MAX_WRITE_BUFFER_SIZE = 16 * 1024 * 1024L;
-
+  public static final int DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE = 3;
   public static final boolean DEFAULT_STATISTICS_ENABLED = false;
 
   /**
