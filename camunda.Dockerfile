@@ -246,7 +246,6 @@ ARG BUILDARCH
 RUN --mount=type=bind,from=aot-training,source=/aot-training,target=/aot-training \
     if [ "${AOT_CACHE}" = "true" ] && [ "${TARGETARCH}" = "${BUILDARCH}" ]; then \
       printf -- '%s\n' -XX:+UnlockDiagnosticVMOptions -XX:-AOTAdapterCaching -XX:-AOTStubCaching \
-        -XX:TypeProfileWidth=8 \
         >> "${CAMUNDA_HOME}/config/jvm.options" && \
       sh /aot-training/train.sh "${CAMUNDA_HOME}/camunda.aot" /aot-training && \
       find "${CAMUNDA_HOME}/data" "${CAMUNDA_HOME}/logs" -mindepth 1 -delete && \
