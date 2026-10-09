@@ -18,9 +18,9 @@ The workflows are `c8-orchestration-cluster-nightly-<version>-<type>.yml`. Each 
 
 ## Who owns which test
 
-`.codeowners` names the owner of each test area. When a nightly fails, CI Analytics attributes the failure to the code owner of the failing specs, if all of them have the same owner. Otherwise it attributes the failure to the workflow's `TEST_OWNER`, `@camunda/test-automation-team`, and the job log lists the candidate owners.
+`.codeowners` names the owner of each test area. Once [#65325](https://github.com/camunda/camunda/pull/65325) is merged, CI Analytics attributes a nightly failure to the code owner of the failing specs, if all of them have the same owner. Otherwise it attributes the failure to the workflow's `TEST_OWNER`, `@camunda/test-automation-team`, and the job log lists the candidate owners. Until then, CI Analytics reads only Java test reports, so every failure of this suite goes to `TEST_OWNER`.
 
-The proposed area owners ([#65326](https://github.com/camunda/camunda/pull/65326)):
+The proposed area owners are not live yet. They wait for the area teams to approve [#65326](https://github.com/camunda/camunda/pull/65326):
 
 |                                   Specs under `tests/`                                    |                  Owner                  |
 |-------------------------------------------------------------------------------------------|-----------------------------------------|
@@ -42,8 +42,8 @@ The proposed area owners ([#65326](https://github.com/camunda/camunda/pull/65326
 
 Triage reads the newest run of each nightly, collects the tests that failed from its JSON report, and groups them by version.
 
-- **One fix agent per version.** At most 5 a day, one for each supported version.
-- **No second agent.** Triage does not dispatch for a version that already has an open fix-agent pull request against the same branch.
+- **One fix agent per version.** Triage dispatches at most one agent per version for its failing tests, up to 5 a run. A nightly that failed before it produced test results gets its own dispatch, up to 5 more. A version that already had an agent on the same UTC day is not dispatched again.
+- **Open fix pull requests.** Triage leaves out the failing specs whose file an open fix-agent pull request on the same branch already covers. It still dispatches an agent for the other failing specs of that version, so one branch can have more than one open fix-agent pull request.
 - **Weekends.** Triage runs Monday to Friday, so a Saturday or Sunday failure appears only if it still fails on Monday.
 
 ## The fix agent
@@ -51,7 +51,7 @@ Triage reads the newest run of each nightly, collects the tests that failed from
 `C8 Orchestration Cluster Nightly Fix Agent` reads the failing tests and their screenshots, applies a minimal fix, and opens a draft pull request against the failing branch, `main` or `stable/<version>`. It starts the on-demand workflow for that branch and adds the run link to the pull request, so you can see the fix pass before you merge. The `Nightly Fix Agent` section of [`AGENTS.md`](../AGENTS.md) holds its instructions.
 
 - **Labels.** Fix-agent pull requests have the label `failing-test-fix`.
-- **Stale pull requests.** `Close Stale Fix PRs` runs Monday to Friday at 03:00 UTC and closes the fix-agent pull requests of the previous day that are not merged. A review comment does not keep a pull request open. To keep it, add the label `do-not-close`.
+- **Stale pull requests.** `Close Stale Fix PRs` runs Monday to Friday at 03:00 UTC and closes the fix-agent pull requests that were opened more than 24 hours earlier and are not merged. Triage runs after it, so a pull request normally stays open until the second cleanup after it was opened: about two days, or until Monday for a pull request opened on Friday. A review comment does not keep a pull request open. To keep it, add the label `do-not-close`.
 - **Other branches.** Fix the affected branch first, then forward-port up to `main`. If `main` fails too, fix `main` first and backport.
 
 ## Fix, skip with a linked bug, or escalate
