@@ -18,7 +18,7 @@ The workflows are `c8-orchestration-cluster-nightly-<version>-<type>.yml`. Each 
 
 ## Who owns which test
 
-`.codeowners` names the owner of each test area. Once [#65325](https://github.com/camunda/camunda/pull/65325) is merged, CI Analytics attributes a nightly failure to the code owner of the failing specs, if all of them have the same owner. Otherwise it attributes the failure to the workflow's `TEST_OWNER`, `@camunda/test-automation-team`, and the job log lists the candidate owners. Until then, CI Analytics reads only Java test reports, so every failure of this suite goes to `TEST_OWNER`.
+`.codeowners` names the owner of each test area. CI Analytics attributes a nightly failure to the code owner of the failing specs, if all of them have the same owner. Failing specs owned by the workflow's `TEST_OWNER`, `@camunda/test-automation-team`, do not count against one area owner: a `common-flows/` spec usually fails because of a change in an area. Otherwise CI Analytics attributes the failure to `TEST_OWNER`, and the job log lists the candidate owners.
 
 The proposed area owners are not live yet. They wait for the area teams to approve [#65326](https://github.com/camunda/camunda/pull/65326):
 
