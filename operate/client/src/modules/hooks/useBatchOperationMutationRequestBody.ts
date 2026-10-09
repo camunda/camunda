@@ -126,6 +126,7 @@ const useDeleteDecisionInstancesBatchOperationRequestBody =
   };
 
 export {
+  FINISHED_STATE_SEARCH_PARAMS,
   useBatchOperationMutationRequestBody,
   useCancelProcessInstancesBatchOperationMutationRequestBody,
   useSuspendProcessInstancesBatchOperationMutationRequestBody,
