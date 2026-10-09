@@ -15,8 +15,8 @@ describe('<TokensUsedMetric />', () => {
       <TokensUsedMetric
         inputTokens={4}
         outputTokens={2}
-        cacheReadTokens={0}
-        cacheCreationTokens={0}
+        cacheReadTokenCount={0}
+        cacheCreationTokenCount={0}
         reasoningTokens={0}
         maxTokens={10}
       />,
@@ -35,8 +35,8 @@ describe('<TokensUsedMetric />', () => {
       <TokensUsedMetric
         inputTokens={4}
         outputTokens={2}
-        cacheReadTokens={0}
-        cacheCreationTokens={0}
+        cacheReadTokenCount={0}
+        cacheCreationTokenCount={0}
         reasoningTokens={0}
         maxTokens={10}
       />,
@@ -55,8 +55,8 @@ describe('<TokensUsedMetric />', () => {
       <TokensUsedMetric
         inputTokens={4}
         outputTokens={2}
-        cacheReadTokens={0}
-        cacheCreationTokens={0}
+        cacheReadTokenCount={0}
+        cacheCreationTokenCount={0}
         reasoningTokens={0}
         maxTokens={-1}
       />,
@@ -76,8 +76,8 @@ describe('<TokensUsedMetric />', () => {
       <TokensUsedMetric
         inputTokens={4}
         outputTokens={2}
-        cacheReadTokens={0}
-        cacheCreationTokens={0}
+        cacheReadTokenCount={0}
+        cacheCreationTokenCount={0}
         reasoningTokens={0}
         maxTokens={10}
       />,
@@ -96,8 +96,8 @@ describe('<TokensUsedMetric />', () => {
       <TokensUsedMetric
         inputTokens={4}
         outputTokens={2}
-        cacheReadTokens={7}
-        cacheCreationTokens={9}
+        cacheReadTokenCount={7}
+        cacheCreationTokenCount={9}
         reasoningTokens={3}
         maxTokens={10}
       />,
@@ -117,8 +117,8 @@ describe('<TokensUsedMetric />', () => {
       <TokensUsedMetric
         inputTokens={4}
         outputTokens={2}
-        cacheReadTokens={7}
-        cacheCreationTokens={0}
+        cacheReadTokenCount={7}
+        cacheCreationTokenCount={0}
         reasoningTokens={0}
         maxTokens={10}
       />,
@@ -136,8 +136,8 @@ describe('<TokensUsedMetric />', () => {
       <TokensUsedMetric
         inputTokens={3}
         outputTokens={0}
-        cacheReadTokens={0}
-        cacheCreationTokens={0}
+        cacheReadTokenCount={0}
+        cacheCreationTokenCount={0}
         reasoningTokens={0}
         maxTokens={0}
       />,

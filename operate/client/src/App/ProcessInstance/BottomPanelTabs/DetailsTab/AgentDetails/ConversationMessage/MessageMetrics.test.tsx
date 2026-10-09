@@ -45,7 +45,7 @@ describe('<MessageMetrics />', () => {
     const {user} = render(<MessageMetrics metrics={FULL_METRICS} />);
 
     expect(screen.getByTestId('message-token-metric')).toHaveTextContent(
-      '12,801 tokens',
+      '29,801 tokens',
     );
     expect(screen.getByTestId('message-duration-metric')).toHaveTextContent(
       '2.50s',
@@ -53,9 +53,10 @@ describe('<MessageMetrics />', () => {
 
     await user.hover(screen.getByTestId('message-token-metric'));
     const tooltip = await screen.findByRole('tooltip');
-    expect(tooltip).toHaveTextContent('Input: 12,345 (7,000 cached)');
-    expect(tooltip).toHaveTextContent('Output: 456 (200 reasoning)');
+    expect(tooltip).toHaveTextContent('Input: 12,345');
+    expect(tooltip).toHaveTextContent('Cache read: 7,000');
     expect(tooltip).toHaveTextContent('Cache write: 10,000');
+    expect(tooltip).toHaveTextContent('Output: 456 (200 reasoning)');
   });
 
   it('should render token and duration tags when all metrics are 0', async () => {
@@ -81,7 +82,8 @@ describe('<MessageMetrics />', () => {
 
     await user.hover(screen.getByTestId('message-token-metric'));
     const tooltip = await screen.findByRole('tooltip');
-    expect(tooltip).toHaveTextContent('Input: 0 (0 cached)');
+    expect(tooltip).toHaveTextContent('Input: 0');
+    expect(tooltip).toHaveTextContent('Cache read: 0');
     expect(tooltip).toHaveTextContent('Output: 0 (0 reasoning)');
     expect(tooltip).toHaveTextContent('Cache write: 0');
   });
@@ -98,7 +100,7 @@ describe('<MessageMetrics />', () => {
     );
 
     expect(screen.getByTestId('message-token-metric')).toHaveTextContent(
-      '456 tokens',
+      '10,456 tokens',
     );
 
     await user.hover(screen.getByTestId('message-token-metric'));
@@ -117,14 +119,14 @@ describe('<MessageMetrics />', () => {
     );
 
     expect(screen.getByTestId('message-token-metric')).toHaveTextContent(
-      '12,345 tokens',
+      '29,345 tokens',
     );
 
     await user.hover(screen.getByTestId('message-token-metric'));
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Output: ---');
   });
 
-  it('should omit the cached/reasoning/cache write hints when their metrics are null', async () => {
+  it('should omit the cache read/reasoning/cache write hints when their metrics are null', async () => {
     const {user} = render(
       <MessageMetrics
         metrics={{
@@ -139,16 +141,44 @@ describe('<MessageMetrics />', () => {
     await user.hover(screen.getByTestId('message-token-metric'));
     const tooltip = await screen.findByRole('tooltip');
     expect(tooltip).toHaveTextContent('Input: 12,345');
-    expect(tooltip).not.toHaveTextContent('cached');
+    expect(tooltip).not.toHaveTextContent('Cache read');
     expect(tooltip).toHaveTextContent('Output: 456');
     expect(tooltip).not.toHaveTextContent('reasoning');
     expect(tooltip).not.toHaveTextContent('Cache write');
   });
 
-  it('should not render the token tag when both inputTokens and outputTokens are null', () => {
+  it('should render the token tag when only cache tokens are present', async () => {
+    const {user} = render(
+      <MessageMetrics
+        metrics={{
+          ...FULL_METRICS,
+          inputTokens: null,
+          outputTokens: null,
+          reasoningTokenCount: null,
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId('message-token-metric')).toHaveTextContent(
+      '17,000 tokens',
+    );
+
+    await user.hover(screen.getByTestId('message-token-metric'));
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent('Cache read: 7,000');
+    expect(tooltip).toHaveTextContent('Cache write: 10,000');
+  });
+
+  it('should not render the token tag when all token metrics are null', () => {
     render(
       <MessageMetrics
-        metrics={{...FULL_METRICS, inputTokens: null, outputTokens: null}}
+        metrics={{
+          ...FULL_METRICS,
+          inputTokens: null,
+          outputTokens: null,
+          cacheReadTokenCount: null,
+          cacheCreationTokenCount: null,
+        }}
       />,
     );
 

@@ -222,6 +222,43 @@ class ZeebeAgentInstanceImportServiceTest {
   }
 
   @Test
+  void shouldIncludeCacheTokensInAgentTotalTokens() {
+    // given — two agents; reasoning is a subset of output and must not be added
+    final long agent2Key = AGENT_KEY + 1;
+    final ZeebeAgentInstanceDataDto data1 = baseData(PROCESS_INSTANCE_KEY);
+    final AgentMetricsValueDto metrics1 = metrics(100, 50, 2, 3);
+    metrics1.setCacheReadTokenCount(1000);
+    metrics1.setCacheCreationTokenCount(20);
+    metrics1.setReasoningTokenCount(30);
+    data1.setMetrics(metrics1);
+    final ZeebeAgentInstanceDataDto data2 = baseData(PROCESS_INSTANCE_KEY);
+    final AgentMetricsValueDto metrics2 = metrics(200, 75, 4, 6);
+    metrics2.setCacheReadTokenCount(5);
+    data2.setMetrics(metrics2);
+
+    // when
+    final List<ProcessInstanceDto> result =
+        underTest.filterAndMapZeebeRecordsToOptimizeEntities(
+            List.of(
+                record(AGENT_KEY, 1000L, data1, AgentInstanceStatus.THINKING, CREATED),
+                record(agent2Key, 1000L, data2, AgentInstanceStatus.THINKING, CREATED)));
+
+    // then
+    final ProcessInstanceDto instance = result.getFirst();
+    final AgentInstanceDto.AgentMetricsDto m =
+        instance.getAgentInstances().stream()
+            .filter(a -> a.getAgentInstanceId().equals(String.valueOf(AGENT_KEY)))
+            .findFirst()
+            .orElseThrow()
+            .getMetrics();
+    assertThat(m.getCacheReadTokens()).isEqualTo(1000L);
+    assertThat(m.getCacheCreationTokens()).isEqualTo(20L);
+    assertThat(instance.getAgentTotalInputTokens()).isEqualTo(300L);
+    assertThat(instance.getAgentTotalOutputTokens()).isEqualTo(125L);
+    assertThat(instance.getAgentTotalTokens()).isEqualTo(300L + 125L + 1000L + 20L + 5L);
+  }
+
+  @Test
   void shouldReplaceToolsWithLatestRecord() {
     // given
     final ZeebeAgentInstanceDataDto updatedData = baseData(PROCESS_INSTANCE_KEY);

@@ -142,6 +142,8 @@ public class ZeebeAgentInstanceImportService
       final AgentInstanceDto.AgentMetricsDto metrics = new AgentInstanceDto.AgentMetricsDto();
       metrics.setInputTokens(zeebeMetrics.getInputTokens());
       metrics.setOutputTokens(zeebeMetrics.getOutputTokens());
+      metrics.setCacheReadTokens(zeebeMetrics.getCacheReadTokenCount());
+      metrics.setCacheCreationTokens(zeebeMetrics.getCacheCreationTokenCount());
       metrics.setModelCalls(zeebeMetrics.getModelCalls());
       metrics.setToolCalls(zeebeMetrics.getToolCalls());
       agentDto.setMetrics(metrics);
@@ -172,6 +174,7 @@ public class ZeebeAgentInstanceImportService
       final ProcessInstanceDto instance, final List<AgentInstanceDto> agentInstances) {
     long totalInputTokens = 0;
     long totalOutputTokens = 0;
+    long totalCacheTokens = 0;
     long totalModelCalls = 0;
     long totalToolCalls = 0;
     for (final AgentInstanceDto agent : agentInstances) {
@@ -179,6 +182,7 @@ public class ZeebeAgentInstanceImportService
       if (m != null) {
         totalInputTokens += m.getInputTokens();
         totalOutputTokens += m.getOutputTokens();
+        totalCacheTokens += m.getCacheReadTokens() + m.getCacheCreationTokens();
         totalModelCalls += m.getModelCalls();
         totalToolCalls += m.getToolCalls();
       }
@@ -187,7 +191,7 @@ public class ZeebeAgentInstanceImportService
     instance.setAgentTotalOutputTokens(totalOutputTokens);
     instance.setAgentTotalModelCalls(totalModelCalls);
     instance.setAgentTotalToolCalls(totalToolCalls);
-    instance.setAgentTotalTokens(totalInputTokens + totalOutputTokens);
+    instance.setAgentTotalTokens(totalInputTokens + totalCacheTokens + totalOutputTokens);
   }
 
   private void updateEveryIntent(
