@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type ReactElement} from 'react';
+import type {ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@camunda/design-system';
-import {Filter} from '@camunda/design-system/icons';
+import {Combobox, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
+import {Plus} from '@camunda/design-system/icons';
 
 interface Props<T> {
 	visibleFilters: T[];
@@ -25,29 +25,53 @@ const OptionalFiltersMenu = <T extends string>({
 	const {t} = useTranslation();
 	const unselectedOptionalFilters = optionalFilters.filter((filter) => !visibleFilters.includes(filter.id));
 
-	return unselectedOptionalFilters.length > 0 ? (
-		<div className="flex justify-end">
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button type="button" variant="ghost">
-						<span>{t('operate.shared.optionalFiltersMenu.moreFilters')}</span>
-						<Filter aria-hidden />
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent side="top" align="end">
-					{unselectedOptionalFilters.map((filter) => (
-						<DropdownMenuItem
-							key={filter.id}
-							onClick={() => onFilterSelect(filter.id)}
-							data-testid={`optional-filter-menuitem-${filter.id}`}
-						>
-							{filter.label}
-						</DropdownMenuItem>
-					))}
-				</DropdownMenuContent>
-			</DropdownMenu>
+	if (unselectedOptionalFilters.length === 0) {
+		return (
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<span className="relative block w-full">
+						<Plus aria-hidden className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2" />
+						<Combobox
+							className="w-full pl-8"
+							size="sm"
+							options={[]}
+							value=""
+							aria-label={t('operate.shared.optionalFiltersMenu.moreFilters')}
+							placeholder={t('operate.shared.optionalFiltersMenu.moreFilters')}
+							disabled
+						/>
+					</span>
+				</TooltipTrigger>
+				<TooltipContent>{t('operate.shared.optionalFiltersMenu.allFiltersAdded')}</TooltipContent>
+			</Tooltip>
+		);
+	}
+
+	return (
+		<div className="relative w-full">
+			<Plus aria-hidden className="pointer-events-none absolute left-2 top-1/2 z-10 size-4 -translate-y-1/2" />
+			<Combobox
+				className="w-full pl-8"
+				size="sm"
+				options={unselectedOptionalFilters.map(({id, label}) => ({value: id, label}))}
+				// Stays empty so the trigger keeps showing the placeholder after a filter is added
+				value=""
+				aria-label={t('operate.shared.optionalFiltersMenu.moreFilters')}
+				placeholder={t('operate.shared.optionalFiltersMenu.moreFilters')}
+				onValueChange={(value) => {
+					const filter = unselectedOptionalFilters.find(({id}) => id === value)?.id;
+					if (filter === undefined) {
+						return;
+					}
+					onFilterSelect(filter);
+					// The popover returns focus to its trigger on close, so wait for the new field to mount
+					requestAnimationFrame(() => {
+						requestAnimationFrame(() => document.getElementById(filter)?.focus());
+					});
+				}}
+			/>
 		</div>
-	) : null;
+	);
 };
 
 export {OptionalFiltersMenu};

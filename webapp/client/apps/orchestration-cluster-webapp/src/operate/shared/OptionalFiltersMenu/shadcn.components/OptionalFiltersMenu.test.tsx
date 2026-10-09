@@ -13,7 +13,7 @@ import {it} from '#/vitest-modules/test-extend';
 import {OptionalFiltersMenu} from './OptionalFiltersMenu';
 
 describe('<OptionalFiltersMenu />', () => {
-	it('should render nothing when all filters are visible', async () => {
+	it('should disable the combobox with a tooltip when all filters are visible', async () => {
 		const screen = await render(
 			<OptionalFiltersMenu
 				visibleFilters={['a', 'b']}
@@ -25,7 +25,9 @@ describe('<OptionalFiltersMenu />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByRole('button')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('combobox')).toBeDisabled();
+		await userEvent.hover(screen.getByRole('combobox'), {force: true});
+		await expect.element(screen.getByRole('tooltip')).toHaveTextContent('All filters are already added');
 	});
 
 	it('should list only the unselected optional filters', async () => {
@@ -41,14 +43,14 @@ describe('<OptionalFiltersMenu />', () => {
 			/>,
 		);
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
 
-		await expect.element(screen.getByTestId('optional-filter-menuitem-b')).toHaveTextContent('Filter B');
-		await expect.element(screen.getByTestId('optional-filter-menuitem-c')).toHaveTextContent('Filter C');
-		await expect.element(screen.getByTestId('optional-filter-menuitem-a')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('option', {name: 'Filter B'})).toHaveTextContent('Filter B');
+		await expect.element(screen.getByRole('option', {name: 'Filter C'})).toHaveTextContent('Filter C');
+		await expect.element(screen.getByRole('option', {name: 'Filter A'})).not.toBeInTheDocument();
 	});
 
-	it('should call onFilterSelect with the clicked filter id', async () => {
+	it('should call onFilterSelect with the selected filter id', async () => {
 		const onFilterSelect = vi.fn();
 		const screen = await render(
 			<OptionalFiltersMenu
@@ -61,8 +63,8 @@ describe('<OptionalFiltersMenu />', () => {
 			/>,
 		);
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
-		await userEvent.click(screen.getByTestId('optional-filter-menuitem-b'));
+		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('option', {name: 'Filter B'}));
 
 		expect(onFilterSelect).toHaveBeenCalledWith('b');
 	});

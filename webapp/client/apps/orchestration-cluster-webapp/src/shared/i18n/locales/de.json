@@ -1612,7 +1612,8 @@
 					"allTenants": "Alle Mandanten"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "Weitere Filter"
+					"moreFilters": "Weitere Filter",
+					"allFiltersAdded": "Alle Filter wurden bereits hinzugefügt"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "ist gleich",

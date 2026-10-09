@@ -1624,7 +1624,8 @@
 					"allTenants": "All tenants"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "More Filters"
+					"moreFilters": "More filters",
+					"allFiltersAdded": "All filters are already added"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "equals",

@@ -1615,7 +1615,8 @@
 					"allTenants": "Tous les clients"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "Plus de filtres"
+					"moreFilters": "Plus de filtres",
+					"allFiltersAdded": "Tous les filtres sont déjà ajoutés"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "est égal à",

@@ -9,7 +9,8 @@
 import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Button} from '@camunda/design-system';
-import {Filter} from '@camunda/design-system/icons';
+import {Filter, FunnelX} from '@camunda/design-system/icons';
+import {cn} from '#/shared/cn';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {CollapsablePanel} from '#/operate/shared/CollapsablePanel/shadcn.components/CollapsablePanel';
 
@@ -24,7 +25,7 @@ type Props = {
 	isResetButtonDisabled: boolean;
 };
 
-const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
+const FilterSidebar: React.FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
 	const {t} = useTranslation();
 	const storedState = getStateLocally('operate.panelStates')?.[localStorageKey];
 	const isCollapsed = typeof storedState === 'boolean' ? storedState : false;
@@ -57,12 +58,26 @@ const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick,
 				<Button
 					variant="secondary"
 					size="sm"
-					className="w-full"
+					className={cn(
+						'justify-start overflow-hidden transition-[width] duration-150 ease-out motion-reduce:transition-none',
+						panelState === 'collapsed' ? 'w-8 px-0' : 'w-full',
+					)}
 					disabled={isResetButtonDisabled}
 					type="reset"
+					aria-label={t('operate.shared.filtersPanel.resetFilters')}
 					onClick={onResetClick}
 				>
-					{t('operate.shared.filtersPanel.resetFilters')}
+					<span className="flex size-8 shrink-0 items-center justify-center">
+						<FunnelX aria-hidden className="size-4" />
+					</span>
+					<span
+						className={cn(
+							'whitespace-nowrap transition-opacity duration-150 motion-reduce:transition-none',
+							panelState === 'collapsed' && 'opacity-0',
+						)}
+					>
+						{t('operate.shared.filtersPanel.resetFilters')}
+					</span>
 				</Button>
 			}
 		>
@@ -71,4 +86,4 @@ const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick,
 	);
 };
 
-export {FiltersPanel};
+export {FilterSidebar};

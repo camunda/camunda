@@ -92,11 +92,29 @@ describe('<OptionalFiltersFormGroup /> (shared, design system)', () => {
 		expect(onSubmit.mock.calls[0]?.[0]).toEqual(expect.objectContaining({hasRetriesLeft: true}));
 	});
 
+	it('should focus a text filter after it is selected from the menu', async () => {
+		const screen = await render(<Harness />);
+
+		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('option', {name: 'Error message'}));
+
+		await expect.element(screen.getByLabelText('Error message')).toHaveFocus();
+	});
+
+	it('should focus a checkbox filter after it is selected from the menu', async () => {
+		const screen = await render(<Harness />);
+
+		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('option', {name: 'Has retries left'}));
+
+		await expect.element(screen.getByRole('checkbox', {name: 'Has retries left'})).toHaveFocus();
+	});
+
 	it('should open the date range modal for the selected date filter only', async () => {
 		const screen = await render(<Harness />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'End date range'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('option', {name: 'End date range'}));
 
 		await expect.element(screen.getByTestId('date-range-modal')).toBeVisible();
 		await expect.element(screen.getByText('Filter by end date')).toBeVisible();

@@ -17,6 +17,8 @@ import {
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryDecisionDefinitionsResponse} from '#/shared-test-modules/api-mocks/decision-definitions';
+import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {
@@ -39,6 +41,12 @@ test.beforeEach(({network}) => {
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockQueryDecisionDefinitionsEndpoint({
+			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []})),
+		}),
+		mockQueryDecisionInstancesEndpoint({
+			successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 		}),
 	);
 });

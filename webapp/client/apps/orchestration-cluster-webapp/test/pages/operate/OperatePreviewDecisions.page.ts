@@ -24,8 +24,8 @@ class OperatePreviewDecisionsPage extends BasePage {
 		return this.page.getByRole('heading', {name: 'Decisions'});
 	}
 
-	get moreFiltersButton() {
-		return this.page.getByRole('button', {name: 'More Filters'});
+	get moreFiltersCombobox() {
+		return this.page.getByRole('combobox', {name: 'More filters'});
 	}
 
 	get decisionPanel() {

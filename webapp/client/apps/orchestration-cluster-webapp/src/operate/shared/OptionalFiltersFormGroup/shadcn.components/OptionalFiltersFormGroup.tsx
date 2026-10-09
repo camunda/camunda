@@ -9,7 +9,8 @@
 import {useEffect, useState} from 'react';
 import type {FieldValidator} from 'final-form';
 import {Field, useForm} from 'react-final-form';
-import {Checkbox, IconButton, Label} from '@camunda/design-system';
+import {cn} from '#/shared/cn';
+import {Checkbox, IconButton, Label, Separator} from '@camunda/design-system';
 import {X} from '@camunda/design-system/icons';
 import {OptionalFiltersMenu} from '#/operate/shared/OptionalFiltersMenu/shadcn.components/OptionalFiltersMenu';
 import {DateRangeField} from '#/operate/shared/DateRangeField/shadcn.components/DateRangeField';
@@ -132,6 +133,7 @@ const OptionalFiltersFormGroup = <Id extends string>({
 
 	return (
 		<div className="flex flex-col gap-8">
+			<Separator />
 			<OptionalFiltersMenu<Id>
 				visibleFilters={visibleFilters}
 				optionalFilters={definitions.map(({id, label}) => ({id, label}))}
@@ -146,26 +148,27 @@ const OptionalFiltersFormGroup = <Id extends string>({
 				{visibleDefinitions.map((definition) => (
 					<div key={definition.id} className="flex items-start gap-1">
 						<div className="min-w-0 flex-1">{renderFilter(definition)}</div>
-						<IconButton
-							className="mt-[25px]"
-							variant="ghost"
-							size="sm"
-							icon={X}
-							label={getRemoveFilterLabel(definition.label)}
-							tooltipSide="top"
-							onClick={() => {
-								onVisibleFilterChange((currentVisibleFilters) =>
-									currentVisibleFilters.filter((visibleFilter) => visibleFilter !== definition.id),
-								);
-								definition.keys.forEach((key) => {
-									form.change(key, undefined);
-								});
-								if (definition.type === 'custom') {
-									definition.onRemove?.();
-								}
-								form.submit();
-							}}
-						/>
+						<div className={cn('flex items-center', definition.type === 'checkbox' ? 'self-center' : 'mt-6 h-9')}>
+							<IconButton
+								variant="ghost"
+								size="sm"
+								icon={X}
+								label={getRemoveFilterLabel(definition.label)}
+								tooltipSide="top"
+								onClick={() => {
+									onVisibleFilterChange((currentVisibleFilters) =>
+										currentVisibleFilters.filter((visibleFilter) => visibleFilter !== definition.id),
+									);
+									definition.keys.forEach((key) => {
+										form.change(key, undefined);
+									});
+									if (definition.type === 'custom') {
+										definition.onRemove?.();
+									}
+									form.submit();
+								}}
+							/>
+						</div>
 					</div>
 				))}
 			</div>

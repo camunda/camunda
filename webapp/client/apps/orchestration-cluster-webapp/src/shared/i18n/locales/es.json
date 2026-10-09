@@ -1612,7 +1612,8 @@
 					"allTenants": "Todos los arrendatarios"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "Más filtros"
+					"moreFilters": "Más filtros",
+					"allFiltersAdded": "Ya se han añadido todos los filtros"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "es igual a",

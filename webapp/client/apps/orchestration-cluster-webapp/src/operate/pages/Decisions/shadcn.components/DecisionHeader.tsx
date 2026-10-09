@@ -25,7 +25,7 @@ const DecisionHeader: React.FC<Props> = ({decisionDefinitionSelection, children}
 			: getDecisionDefinitionName(decisionDefinitionSelection.definition);
 
 	return (
-		<PanelHeader title={title} className="pr-0">
+		<PanelHeader title={title} className="bg-transparent pr-0">
 			{decisionDefinitionSelection.kind !== 'no-match' && (
 				<CopiableContent
 					className="relative ml-12 before:absolute before:-left-4 before:h-6 before:w-px before:bg-[var(--neutral-border-subtle)]"
