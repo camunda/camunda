@@ -6,6 +6,14 @@ the GitHub API and downloaded artifacts; `classify.py` and `plan.py` are pure
 functions over that data, which is what keeps them unit-testable without a cluster
 or a token.
 
+`notify.py` renders the Slack message, also as pure functions over the plan JSON. It
+is a separate module because that message is the only part of a triage decision most
+people ever read, so its wording is unit-tested rather than assembled in workflow bash.
+Two rules it keeps: a reason is stated as a sentence (the `SUPPRESSED_*` codes stay in
+the job summary and the plan artifact), and the PR or issue that accounts for a
+suppressed failure is linked by number — `discover.py` emits that mapping under
+`references`, built from the same PR listing the plan was decided from.
+
 The classification rules were derived from every failed run of
 `docker-build-helm-integration.yml` in a 300-run window (29 failures). See the
 module docstring in [`classify.py`](classify.py) for the non-obvious findings from
