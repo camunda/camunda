@@ -10678,8 +10678,8 @@
           "allValue": ".*",
           "allowCustomValue": false,
           "current": {
-            "text": "c8-medic-2026-32-b83a2ddd-realistic",
-            "value": "c8-medic-2026-32-b83a2ddd-realistic"
+            "text": "c8-release-8-10-x",
+            "value": "c8-release-8-10-x"
           },
           "definition": "label_values(atomix_role,namespace)",
           "hide": "dontHide",
