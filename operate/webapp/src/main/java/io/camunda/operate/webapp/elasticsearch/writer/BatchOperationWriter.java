@@ -140,47 +140,75 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       return List.of();
     }
 
-    final BulkRequest bulkRequest =
-        new BulkRequest().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    final long maxBulkRequestSizeInBytes =
+        operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes();
+    final List<OperationEntity> lockedOperations = new ArrayList<>();
+    BulkRequest bulkRequest = newLockBulkRequest();
+    final List<VersionedOperation> chunk = new ArrayList<>();
     for (final VersionedOperation candidate : candidates) {
       final OperationEntity operation = candidate.operation();
       operation.setState(OperationState.LOCKED);
       operation.setLockOwner(workerId);
       operation.setLockExpirationTime(OffsetDateTime.now().plus(lockTimeout, ChronoUnit.MILLIS));
+      final UpdateRequest updateRequest;
       try {
-        bulkRequest.add(
+        updateRequest =
             new UpdateRequest()
                 .index(operationTemplate.getFullQualifiedName())
                 .id(operation.getId())
                 .doc(objectMapper.writeValueAsString(operation), XContentType.JSON)
                 .setIfSeqNo(candidate.seqNo())
-                .setIfPrimaryTerm(candidate.primaryTerm()));
+                .setIfPrimaryTerm(candidate.primaryTerm());
       } catch (final JsonProcessingException e) {
         throw new PersistenceException(
             String.format("Error preparing the lock of operation [%s]", operation.getId()), e);
       }
+      if (updateRequest.ramBytesUsed() > maxBulkRequestSizeInBytes) {
+        throw new PersistenceException(
+            String.format(
+                "Operation [%s] with size of %d bytes is greater than max allowed %d bytes",
+                operation.getId(), updateRequest.ramBytesUsed(), maxBulkRequestSizeInBytes));
+      }
+      if (!chunk.isEmpty()
+          && bulkRequest.estimatedSizeInBytes() + updateRequest.ramBytesUsed()
+              >= maxBulkRequestSizeInBytes) {
+        lockedOperations.addAll(executeLockBulkRequest(bulkRequest, chunk));
+        bulkRequest = newLockBulkRequest();
+        chunk.clear();
+      }
+      bulkRequest.add(updateRequest);
+      chunk.add(candidate);
     }
+    lockedOperations.addAll(executeLockBulkRequest(bulkRequest, chunk));
+    LOGGER.debug("{} of {} operations locked", lockedOperations.size(), candidates.size());
+    return lockedOperations;
+  }
 
+  private static BulkRequest newLockBulkRequest() {
+    return new BulkRequest().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+  }
+
+  private List<OperationEntity> executeLockBulkRequest(
+      final BulkRequest bulkRequest, final List<VersionedOperation> chunk)
+      throws PersistenceException {
     final BulkResponse bulkResponse;
     try {
       bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
     } catch (final IOException e) {
       throw new PersistenceException("Error while locking operations: " + e.getMessage(), e);
     }
-
     final List<OperationEntity> lockedOperations = new ArrayList<>();
     final BulkItemResponse[] items = bulkResponse.getItems();
     for (int i = 0; i < items.length; i++) {
       final BulkItemResponse item = items[i];
       if (!item.isFailed()) {
-        lockedOperations.add(candidates.get(i).operation());
+        lockedOperations.add(chunk.get(i).operation());
       } else if (item.getFailure().getStatus() != RestStatus.CONFLICT) {
         throw new PersistenceException(
             String.format(
                 "Error while locking operation [%s]: %s", item.getId(), item.getFailureMessage()));
       }
     }
-    LOGGER.debug("{} of {} operations locked", lockedOperations.size(), candidates.size());
     return lockedOperations;
   }
 

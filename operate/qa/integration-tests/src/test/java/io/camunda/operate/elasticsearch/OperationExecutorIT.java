@@ -124,23 +124,26 @@ public class OperationExecutorIT extends OperateAbstractIT {
     createData(instancesCount);
     final var executorService = Executors.newFixedThreadPool(concurrentExecutors);
     final var startSignal = new CountDownLatch(1);
+    final List<String> lockedOperationIds = new ArrayList<>();
 
     // when
-    final List<Future<List<OperationEntity>>> lockResults = new ArrayList<>();
-    for (int i = 0; i < concurrentExecutors; i++) {
-      lockResults.add(
-          executorService.submit(
-              () -> {
-                startSignal.await();
-                return batchOperationWriter.lockBatch();
-              }));
+    try {
+      final List<Future<List<OperationEntity>>> lockResults = new ArrayList<>();
+      for (int i = 0; i < concurrentExecutors; i++) {
+        lockResults.add(
+            executorService.submit(
+                () -> {
+                  startSignal.await();
+                  return batchOperationWriter.lockBatch();
+                }));
+      }
+      startSignal.countDown();
+      for (final var lockResult : lockResults) {
+        lockResult.get().forEach(operation -> lockedOperationIds.add(operation.getId()));
+      }
+    } finally {
+      executorService.shutdownNow();
     }
-    startSignal.countDown();
-    final List<String> lockedOperationIds = new ArrayList<>();
-    for (final var lockResult : lockResults) {
-      lockResult.get().forEach(operation -> lockedOperationIds.add(operation.getId()));
-    }
-    executorService.shutdown();
 
     // then
     final int acquirableOperations = instancesCount * 2;
