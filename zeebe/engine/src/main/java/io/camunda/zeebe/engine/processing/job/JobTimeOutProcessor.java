@@ -12,12 +12,12 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspensionJobBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -35,7 +35,7 @@ public final class JobTimeOutProcessor
       "Expected to time out activated job with key '%d', but %s";
   private final JobState jobState;
   private final SuspensionState suspensionState;
-  private final ElementInstanceState elementInstanceState;
+  private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final JobProcessingMetrics jobMetrics;
@@ -52,7 +52,9 @@ public final class JobTimeOutProcessor
       final InstantSource clock) {
     jobState = state.getJobState();
     suspensionState = state.getSuspensionState();
-    elementInstanceState = state.getElementInstanceState();
+    suspensionJobBehavior =
+        new ProcessInstanceSuspensionJobBehavior(
+            state.getElementInstanceState(), state.getJobState(), writers.state());
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.jobMetrics = jobMetrics;
@@ -71,10 +73,10 @@ public final class JobTimeOutProcessor
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
       jobMetrics.countJobEvent(JobAction.TIMED_OUT, job.getJobKind(), job.getType());
 
-      // park only while SUSPENDED (RESUMING must release it), unless a termination waits for it
+      // park only while SUSPENDED; RESUMING must release it
       if (suspensionState.getSuspensionState(job.getProcessInstanceKey())
               == SuspensionState.State.SUSPENDED
-          && !isElementTerminating(job)) {
+          && !suspensionJobBehavior.isExemptFromSuspension(job)) {
         stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
         suspensionMetrics.jobSuspended();
       } else {
@@ -100,11 +102,6 @@ public final class JobTimeOutProcessor
 
   private boolean hasTimedOut(final JobRecord job) {
     return job.getDeadline() < clock.millis();
-  }
-
-  private boolean isElementTerminating(final JobRecord job) {
-    final var elementInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
-    return elementInstance != null && elementInstance.isTerminating();
   }
 
   @Override
