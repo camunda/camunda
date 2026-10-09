@@ -15,6 +15,7 @@ import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.regex.Pattern;
 
 class RecordExporter {
 
@@ -27,16 +28,19 @@ class RecordExporter {
   private boolean shouldExport;
   private int exporterIndex;
   private final InstantSource clock;
+  private final Pattern sensitiveVariablePattern;
 
   RecordExporter(
       final ExporterMetrics exporterMetrics,
       final List<ExporterContainer> containers,
       final int partitionId,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final Pattern sensitiveVariablePattern) {
     this.containers = containers;
     typedEvent = new TypedRecordImpl(partitionId);
     this.exporterMetrics = exporterMetrics;
     this.clock = clock;
+    this.sensitiveVariablePattern = sensitiveVariablePattern;
   }
 
   void wrap(final LoggedEvent rawEvent) {
@@ -47,6 +51,10 @@ class RecordExporter {
 
     shouldExport = recordValue != null;
     if (shouldExport) {
+      // Redact before the fan-out, so every exporter -- including customer-built ones -- receives
+      // an already-redacted record. export() is retried per record, wrap() runs once, so the
+      // rewrite belongs here.
+      VariableRedaction.apply(sensitiveVariablePattern, rawMetadata.getValueType(), recordValue);
       typedEvent.wrap(rawEvent, rawMetadata, recordValue);
       exporterIndex = 0;
     }
