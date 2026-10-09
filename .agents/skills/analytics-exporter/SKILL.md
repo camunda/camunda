@@ -100,12 +100,23 @@ with downstream consumers, done in its own PR that updates the pinning tests
 (`AnalyticsEventNamesTest`, `AnalyticsAttributeKeysTest`, `AnalyticsMetricNamesTest`) and the
 README. A new constant also has to be added to the matching pinning test.
 
+**Key types follow the contract.** Use the `AttributeKey` type that matches the contract's type:
+`longKey` for `int` (all keys and versions), `stringKey` for `string` and enums, `doubleKey` for
+`double`. In the handler:
+
+- `int` getters such as `getVersion()` do not fit an `AttributeKey<Long>`; cast with
+  `(long) value.getVersion()`.
+- Send an enum as `value.getStatus().name()` on a `stringKey`.
+- OTel silently drops an attribute whose value is `null`, so a nullable field (for example
+  `getTenantId()`) disappears rather than failing. Check the contract's requirement level: if
+  the attribute is required, decide explicitly whether to skip the record.
+
 Adding a new domain (e.g. `Job`):
 
 ```java
 public static final class Job {
   public static final AttributeKey<String> TYPE = AttributeKey.stringKey("camunda.job.type");
-  public static final AttributeKey<String> WORKER = AttributeKey.stringKey("camunda.job.worker");
+  public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.job.key");
 
   private Job() {}
 }
@@ -128,9 +139,11 @@ Create `handler/MyEventHandler.java` in the same package as the other handlers.
 
 **Choose the category** by implementing `category()`: `AnalyticsCategory.CONTRACTUAL` or
 `AnalyticsCategory.OPTIONAL`. There is no default, and the category is not a judgement call: take it
-from the signal's entry in the data contract (its `contractual` / `optional` category). How the
-`categories` configuration activates handlers is described under **Configuration reference** in
-the module README.
+from the signal's entry in the data contract (its `contractual` / `optional` category). Without
+the contract entry there is no handler to add, category included. How the `categories`
+configuration activates handlers is described under **Configuration reference** in the module
+README. Only handlers registered in the catalog are category-gated: the heartbeat is not, so do
+not model a new signal on `emitHeartbeat()`.
 
 > **Handlers must be named classes.** Do not treat `AnalyticsHandler` as a functional interface.
 > A lambda, anonymous class, or local class compiles, but `AnalyticsHandler.digestInput()` hashes
@@ -272,7 +285,7 @@ The five types the test needs, in full:
 
 - `io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter` — captures emitted log records
 - `io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader` — captures metrics (only if the
-  handler increments one)
+  handler increments one; the log exporter above is still needed to build the manager)
 - `io.camunda.zeebe.test.broker.protocol.ProtocolFactory` — random record generator, from
   `zeebe-protocol-test-util` (already a test dependency of this module)
 - `io.camunda.exporter.analytics.TestOtelSdkManager` — in-memory `OtelSdkManager` factory
@@ -293,8 +306,9 @@ class MyEventHandlerTest {
     final var value = ImmutableMyRecordValue.builder()
         .withBpmnProcessId("my-process")
         .withTenantId("tenant-a")
-        // PII fields — must NOT appear in the emitted event
+        // every PII field — none may appear in the emitted event
         .withAssignee("john.doe@example.com")
+        .withCandidateUsersList(List.of("jane.roe@example.com"))
         .build();
     final var record = FACTORY.generateRecord(
         ValueType.MY_VALUE_TYPE,
@@ -318,7 +332,8 @@ class MyEventHandlerTest {
 
           // PII must not appear in any attribute value
           final var allValues = attrs.values().stream().map(Object::toString).toList();
-          assertThat(allValues).doesNotContain("john.doe@example.com");
+          assertThat(allValues)
+              .noneMatch(v -> v.contains("john.doe@example.com") || v.contains("jane.roe@example.com"));
         });
   }
 
@@ -348,12 +363,21 @@ class MyEventHandlerTest {
 }
 ```
 
-**Required test cases per handler:**
+**Required test cases for a log-event handler** (model: `UserTaskAssignedHandlerTest`):
 - Happy path: correct attributes are emitted for a matching record
-- PII sweep: set the record's PII-carrying fields to recognisable values and assert none of them
-  appear in *any* emitted attribute value, not just the ones you happen to assert on
-- Skip path (if the handler filters internally): no event emitted for a non-matching record
-- If the handler emits a counter metric: verify `incrementMetric()` accumulates across multiple calls
+- PII sweep: set *every* PII-carrying field on the record value (assignee, candidate users and
+  groups, names, variables, error messages) to recognisable values, and assert that no emitted
+  attribute value *contains* any of them (`noneMatch(v -> v.contains(pii))`), and that no
+  attribute derived from them (a hash, a length) exists
+- Skip path (if the handler filters internally): no event emitted for a non-matching record. A
+  skip guard on a field that feeds a contractual count must match the engine's own guard exactly
+  (for example `isEmpty`, not `isBlank`), or the count diverges from the engine's
+
+**Required test cases for a counter handler** (model: `DecisionInstanceEvaluatedHandlerTest`):
+- One increment per source record, accumulating across calls
+- The contracted unit (`metric.getUnit()`)
+- The dimensions on each point are exactly the contracted set, and split per dimension value
+- PII sweep over the point attributes, as above
 
 **Testing a metric.** `TestOtelSdkManager.inMemory(logExporter)` creates a metric reader you have
 no handle on, so metrics emitted through it cannot be asserted. A handler that calls
@@ -372,7 +396,11 @@ See `DecisionInstanceEvaluatedHandlerTest` for the full pattern.
 
 Add a test to `AnalyticsExporterTest` that feeds a record of the new type through the full
 exporter (`exporter.export(record)`) and asserts the expected event name appears. The test
-setup (`exporter`, `memoryExporter`, `controller`) is already provided by `@BeforeEach`:
+setup (`exporter`, `memoryExporter`, `controller`) is already provided by `@BeforeEach` for a
+log-event handler. A counter handler emits no log record and the `@BeforeEach` exporter has no
+reachable metric reader: build the exporter with `TestOtelSdkManager.inMemoryWithMetrics(...)` and
+assert on `metricReader.collectAllMetrics()`, as `shouldIncrementDecisionInstanceEvaluatedCounter`
+does. For a log-event handler:
 
 ```java
 @Test
@@ -414,7 +442,9 @@ void shouldEmitMyEventWhenRecordExported() {
 
 ## Step 7 — Update the module docs
 
-Two files in the module document the event set, and both drift silently if skipped.
+Two files in the module document the event set, and both drift silently if skipped. A counter goes
+in the README's **Pre-aggregated counters** table (unit, source record, dimensions) instead of the
+event tables below.
 
 **`zeebe/exporters/analytics-exporter/AGENTS.md`** — add a row to the **Current Event Handlers**
 table (ValueType, Intent, handler class, `event.name`, extra filter). This one is easy to miss
@@ -471,10 +501,10 @@ Before opening the PR, go through this checklist:
 6. **Names match the contract** — every new name and unit is copied from the data contract and
    pinned in `AnalyticsAttributeKeysTest`, `AnalyticsEventNamesTest` or `AnalyticsMetricNamesTest`.
 7. **Tests pass** — the module's `./mvnw verify` from Step 8 is green.
-8. **Module docs updated** — the new event is a row in the **Current Event Handlers** table in
-   `zeebe/exporters/analytics-exporter/AGENTS.md`, and is listed in the **Event types** table in
-   `zeebe/exporters/analytics-exporter/README.md` with its specific attributes documented and
-   attribute names matching the `AnalyticsAttributes` constants.
+8. **Module docs updated** — the new handler is a row in the **Current Event Handlers** table in
+   `zeebe/exporters/analytics-exporter/AGENTS.md`; an event is listed in the README **Event
+   types** table with its specific attributes, a counter in **Pre-aggregated counters**; every
+   attribute name and type in the README matches the `AnalyticsAttributes` constant.
 
 ## Quick-reference: key files
 
