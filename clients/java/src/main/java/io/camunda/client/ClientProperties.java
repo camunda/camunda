@@ -119,6 +119,11 @@ public final class ClientProperties {
   public static final String DEFAULT_REQUEST_TIMEOUT_OFFSET = "camunda.client.requestTimeoutOffset";
 
   /**
+   * @see CamundaClientBuilder#responseDeadlineMargin(Duration)
+   */
+  public static final String RESPONSE_DEADLINE_MARGIN = "camunda.client.responseDeadlineMargin";
+
+  /**
    * @see CamundaClientBuilder#caCertificatePath(String)
    */
   public static final String CA_CERTIFICATE_PATH = "camunda.client.security.certpath";

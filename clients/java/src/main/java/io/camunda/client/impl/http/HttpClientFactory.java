@@ -229,6 +229,12 @@ public class HttpClientFactory {
     builder.addRequestInterceptorLast(
         (request, entity, context) -> credentialsProvider.applyCredentials(request::setHeader));
 
+    // httpclient5 5.6.1+ no longer applies the response timeout on HTTP/2 connections, so bound
+    // every exchange client-side to avoid requests (and e.g. job workers) hanging forever.
+    builder.addExecInterceptorFirst(
+        ResponseDeadlineChainHandler.NAME,
+        new ResponseDeadlineChainHandler(config.getResponseDeadlineMargin()));
+
     final List<AsyncExecChainHandler> chainHandlers = config.getChainHandlers();
     IntStream.range(0, chainHandlers.size())
         .forEach(

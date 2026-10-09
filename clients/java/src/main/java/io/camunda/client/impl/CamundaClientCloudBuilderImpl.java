@@ -257,6 +257,12 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder responseDeadlineMargin(final Duration margin) {
+    innerBuilder.responseDeadlineMargin(margin);
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder caCertificatePath(final String certificatePath) {
     innerBuilder.caCertificatePath(certificatePath);
     return this;
