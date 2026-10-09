@@ -65,6 +65,7 @@ const userTaskSchema = z.object({
 	tags: z.array(z.string()),
 	priority: z.number().int().min(0).max(100),
 	businessId: z.string().nullable(),
+	isSuspended: z.boolean(),
 });
 type UserTask = z.infer<typeof userTaskSchema>;
 
@@ -91,6 +92,7 @@ const queryUserTasksRequestBodySchema = getQueryRequestBodySchema({
 				assignee: advancedStringFilterSchema,
 				businessId: advancedStringFilterSchema,
 				priority: advancedIntegerFilterSchema,
+				isSuspended: z.boolean().nullable(),
 				candidateGroup: advancedStringFilterSchema,
 				candidateUser: advancedStringFilterSchema,
 				creationDate: advancedDateTimeFilterSchema,

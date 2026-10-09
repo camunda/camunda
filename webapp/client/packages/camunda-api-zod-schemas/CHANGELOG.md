@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.96
+
+### 🚀 Enhancements
+
+- Add `isSuspended` to the 8.11 user task schema and user task search filter, matching the spec ([#64270](https://github.com/camunda/camunda/pull/64270))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
 ## v0.0.95
 
 ### 🩹 Fixes
