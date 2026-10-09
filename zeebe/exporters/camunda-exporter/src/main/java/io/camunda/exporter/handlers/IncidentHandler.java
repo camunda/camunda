@@ -105,7 +105,8 @@ public class IncidentHandler
         .setState(IncidentState.PENDING)
         .setCreationTime(
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC))
-        .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()));
+        .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()))
+        .setStorageOrdinal(recordValue.getStorageOrdinal());
 
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
