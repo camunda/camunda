@@ -503,6 +503,7 @@ components:
         - rootProcessInstanceKey
         - jobKey
         - tenantId
+        - storageOrdinal
       properties:
         processDefinitionId:
           allOf:
@@ -560,6 +561,13 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
+        storageOrdinal:
+          description: |
+            The storage ordinal this incident's data belongs to. This is `null` for
+            data exported before storage ordinals were introduced in version 8.11.
+          nullable: true
+          type: integer
+          format: int32
       x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.6"
@@ -587,6 +595,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: jobKey
           addedInVersion: "8.6"
+        - propertyName: storageOrdinal
+          addedInVersion: "8.11"
 
     IncidentResolutionRequest:
       type: object

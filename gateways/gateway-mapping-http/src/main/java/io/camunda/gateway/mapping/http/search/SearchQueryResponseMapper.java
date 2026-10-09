@@ -1316,6 +1316,7 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(t.rootProcessInstanceKey()))
         .jobKey(keyToStringOrNull(t.jobKey()))
         .tenantId(t.tenantId())
+        .storageOrdinal(t.storageOrdinal())
         .build();
   }
 

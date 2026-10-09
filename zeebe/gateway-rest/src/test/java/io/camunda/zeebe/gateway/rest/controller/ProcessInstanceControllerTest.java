@@ -3018,7 +3018,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                         OffsetDateTime.parse("2025-05-23T17:41:24.406Z"),
                         IncidentState.ACTIVE,
                         1L,
-                        "<default>")))
+                        "<default>",
+                        1001)))
             .startCursor("<cursor before>")
             .endCursor("<cursor after>")
             .build();
@@ -3042,7 +3043,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "processInstanceKey": "2251799814751255",
                 "rootProcessInstanceKey": "3751799814751237",
                 "elementInstanceKey": "2251799814751258",
-                "jobKey": "1"
+                "jobKey": "1",
+                "storageOrdinal": 1001
             }
         ],
         "page": {
