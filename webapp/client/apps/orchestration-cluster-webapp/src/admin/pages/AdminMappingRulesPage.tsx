@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Pencil, Plus, Trash2} from '@camunda/design-system/icons';
 import {
@@ -20,6 +20,7 @@ import {
 	type SortingConfig,
 } from '@camunda/design-system';
 import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.11';
+import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import {AddMappingRuleModal} from '#/admin/modules/mapping-rules/AddMappingRuleModal';
 import {EditMappingRuleModal} from '#/admin/modules/mapping-rules/EditMappingRuleModal';
 import {DeleteMappingRuleModal} from '#/admin/modules/mapping-rules/DeleteMappingRuleModal';
@@ -29,7 +30,6 @@ type SortingState = NonNullable<SortingConfig['sortState']>;
 
 type ModalState = {type: 'add'} | {type: 'edit'; mappingRule: MappingRule} | {type: 'delete'; mappingRule: MappingRule};
 
-const SEARCH_DEBOUNCE = 500;
 const MAPPING_RULES_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/mapping-rules/';
 
 type AdminMappingRulesPageProps = {
@@ -48,29 +48,9 @@ const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 	const {t} = useTranslation();
 	const [modal, setModal] = useState<ModalState | null>(null);
 	const appliedSearchTerm = search.search ?? '';
-	const [searchDraft, setSearchDraft] = useState(appliedSearchTerm);
-	const [lastAppliedSearchTerm, setLastAppliedSearchTerm] = useState(appliedSearchTerm);
-
-	// Back/forward navigation changes the applied term without touching the draft, which
-	// would otherwise leave the input showing a term the table is no longer filtered by. Only
-	// sync the draft in that case (draft still matches what was last applied) — otherwise a
-	// slow round-trip for an earlier debounce would clobber input typed in the meantime.
-	if (lastAppliedSearchTerm !== appliedSearchTerm) {
-		if (searchDraft === lastAppliedSearchTerm) {
-			setSearchDraft(appliedSearchTerm);
-		}
-		setLastAppliedSearchTerm(appliedSearchTerm);
-	}
-
-	useEffect(() => {
-		if (searchDraft === appliedSearchTerm) {
-			return;
-		}
-		const timeoutId = setTimeout(() => {
-			onSearchChange({search: searchDraft === '' ? undefined : searchDraft, page: undefined});
-		}, SEARCH_DEBOUNCE);
-		return () => clearTimeout(timeoutId);
-	}, [appliedSearchTerm, onSearchChange, searchDraft]);
+	const [searchDraft, setSearchDraft] = useDebouncedUrlFilter(appliedSearchTerm, (search) =>
+		onSearchChange({search, page: undefined}),
+	);
 
 	const columns = useMemo<DataTableColumn<MappingRule>[]>(
 		() => [
