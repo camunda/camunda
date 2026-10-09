@@ -25,10 +25,13 @@ setup() {
     .ci/scripts/ci/observe-build-status/
   cp "${MEDIC_LOOKUP}" .ci/scripts/ci/
 
-  mkdir -p "${SUITE}/tests/operate" "${SUITE}/tests/tasklist" "${SUITE}/test-results" \
-    zeebe/engine/src/test/java/io/camunda/engine
+  mkdir -p "${SUITE}/tests/operate" "${SUITE}/tests/tasklist" "${SUITE}/tests/common-flows" \
+    "${SUITE}/test-results" zeebe/engine/src/test/java/io/camunda/engine \
+    db/rdbms/src/test/java/io/camunda/db
   touch "${SUITE}/tests/operate/processes.spec.ts" "${SUITE}/tests/tasklist/task-panel.spec.ts" \
-    zeebe/engine/src/test/java/io/camunda/engine/EngineTest.java
+    "${SUITE}/tests/common-flows/login.spec.ts" \
+    zeebe/engine/src/test/java/io/camunda/engine/EngineTest.java \
+    db/rdbms/src/test/java/io/camunda/db/RdbmsTest.java
   git add -A && git commit -qm fixtures
 
   cat > "${BATS_TEST_TMPDIR}/bin/codeowners-cli" <<'STUB'
@@ -38,7 +41,9 @@ file="${!#}"
 case "${file}" in
   */tests/operate/*) owner="@camunda/operate-admin-pod" ;;
   */tests/tasklist/*) owner="@camunda/employee-engagement-tasklist" ;;
+  qa/c8-orchestration-cluster-e2e-test-suite/*) owner="@camunda/test-automation-team" ;;
   zeebe/*) owner="@camunda/core-features" ;;
+  db/*) owner="@camunda/data-layer" ;;
   *) owner="" ;;
 esac
 jq -n --arg f "${file}" --arg o "${owner}" '{($f): {required: (if $o == "" then [] else [$o] end)}}'
@@ -66,6 +71,21 @@ playwright_report() {
 
 resolve() {
   bash .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.sh
+}
+
+# surefire_report <fqcn>... — writes one failing TEST-*.xml report per Java test class.
+surefire_report() {
+  mkdir -p target/surefire-reports
+  local fqcn
+  for fqcn in "$@"; do
+    cat > "target/surefire-reports/TEST-${fqcn}.xml" <<XML
+<testsuite name="${fqcn}" time="1">
+  <testcase name="shouldWork" classname="${fqcn}" time="1">
+    <failure message="failed">boom</failure>
+  </testcase>
+</testsuite>
+XML
+  done
 }
 
 @test "attributes Playwright failures of one area to that area's owner" {
@@ -111,4 +131,45 @@ XML
 
   [ "$status" -eq 0 ]
   [ "$output" = "@camunda/core-features" ]
+}
+
+@test "attributes to the area when the other failing specs belong to the job's TEST_OWNER" {
+  playwright_report "tests/operate/processes.spec.ts=failed" "tests/common-flows/login.spec.ts=failed"
+
+  TEST_OWNER="@camunda/test-automation-team" run --separate-stderr resolve
+
+  [ "$status" -eq 0 ]
+  [ "$output" = "@camunda/operate-admin-pod" ]
+  [[ "$stderr" == *"owned by TEST_OWNER (@camunda/test-automation-team) do not compete"* ]]
+}
+
+@test "falls back when two areas fail besides the TEST_OWNER's specs" {
+  playwright_report "tests/operate/processes.spec.ts=failed" "tests/tasklist/task-panel.spec.ts=failed" \
+    "tests/common-flows/login.spec.ts=failed"
+
+  TEST_OWNER="@camunda/test-automation-team" run --separate-stderr resolve
+
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"Candidates: @camunda/employee-engagement-tasklist @camunda/operate-admin-pod @camunda/test-automation-team."* ]]
+}
+
+@test "keeps the strict rule for Java tests owned by the job's TEST_OWNER" {
+  surefire_report io.camunda.engine.EngineTest io.camunda.db.RdbmsTest
+
+  TEST_OWNER="@camunda/core-features" run --separate-stderr resolve
+
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"Candidates: @camunda/core-features @camunda/data-layer."* ]]
+}
+
+@test "keeps the strict rule for Playwright specs when TEST_OWNER is not set" {
+  playwright_report "tests/operate/processes.spec.ts=failed" "tests/common-flows/login.spec.ts=failed"
+
+  run --separate-stderr env -u TEST_OWNER bash .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.sh
+
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"Candidates: @camunda/operate-admin-pod @camunda/test-automation-team."* ]]
 }

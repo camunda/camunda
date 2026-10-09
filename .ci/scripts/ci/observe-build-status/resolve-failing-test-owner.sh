@@ -12,6 +12,8 @@
 #   other case (no failing test class, an unresolvable test class, or mixed ownership
 #   across the failing tests) it prints nothing, so the caller falls back to the job's
 #   static `TEST_OWNER`. This avoids confidently misrouting an incident to the wrong team.
+#   One exception: failing Playwright specs owned by `TEST_OWNER` do not compete with a
+#   single other owner.
 #
 # Requires: codeowners-cli on PATH, python3, jq and git. The test reports (TEST-*.xml,
 # and the Playwright report of the Orchestration Cluster E2E suite) must be present on disk. The script resolves the repository root itself and scans from
@@ -53,6 +55,7 @@ if [[ "${#failing_classes[@]}" -eq 0 ]]; then
 fi
 
 declare -A owners=()
+declare -A owners_of_non_specs=()
 unattributed=()
 for fqcn in "${failing_classes[@]}"; do
   [[ -z "${fqcn}" ]] && continue
@@ -64,8 +67,19 @@ for fqcn in "${failing_classes[@]}"; do
     unattributed+=("${fqcn}")
   else
     owners["${owner}"]=1
+    [[ "${fqcn}" != *.spec.ts ]] && owners_of_non_specs["${owner}"]=1
   fi
 done
+
+# In the Playwright suite, the job's TEST_OWNER owns the shared flows and the framework. Those specs
+# fail together with the area whose change broke them, so they do not compete with one area owner.
+# Java tests owned by TEST_OWNER still compete.
+fallback_owner="${TEST_OWNER:-}"
+if [[ -n "${fallback_owner}" && "${#owners[@]}" -eq 2 && -n "${owners[${fallback_owner}]+set}" \
+  && -z "${owners_of_non_specs[${fallback_owner}]+set}" ]]; then
+  unset "owners[${fallback_owner}]"
+  echo "Failing specs owned by TEST_OWNER (${fallback_owner}) do not compete with one area owner." >&2
+fi
 
 # Strict: one owner for every failing class, or fall back to the job owner.
 if [[ "${#unattributed[@]}" -eq 0 && "${#owners[@]}" -eq 1 ]]; then
