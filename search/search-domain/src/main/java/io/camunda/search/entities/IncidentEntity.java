@@ -27,7 +27,8 @@ public record IncidentEntity(
     OffsetDateTime creationTime,
     @Nullable IncidentState state,
     @Nullable Long jobKey,
-    String tenantId)
+    String tenantId,
+    @Nullable Integer storageOrdinal)
     implements TenantOwnedEntity {
 
   public IncidentEntity {

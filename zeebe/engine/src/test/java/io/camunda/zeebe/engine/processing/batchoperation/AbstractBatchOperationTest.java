@@ -488,7 +488,8 @@ abstract class AbstractBatchOperationTest {
         java.time.OffsetDateTime.now(), // creationTime
         IncidentEntity.IncidentState.ACTIVE,
         -1L, // jobKey
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER // tenantId
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER, // tenantId
+        null // storageOrdinal
         );
   }
 
