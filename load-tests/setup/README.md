@@ -197,7 +197,7 @@ The default ECK Elasticsearch configuration (defined in `charts/load-test-setup/
 
 |     Setting      |               Default                |
 |------------------|--------------------------------------|
-| Version          | 8.18.0                               |
+| Version          | 9.5.5                                |
 | Node count       | 3                                    |
 | CPU per node     | 7 cores                              |
 | Memory per node  | 8 Gi                                 |
