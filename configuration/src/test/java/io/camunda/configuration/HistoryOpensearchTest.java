@@ -35,7 +35,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class HistoryOpensearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
-  private static final boolean EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED = false;
   private static final int EXPECTED_HISTORY_ARCHIVER_ROLLOVER_BATCH_SIZE = 199;
   private static final String EXPECTED_HISTORY_POLICY_NAME = "policy-name-foo";
   private static final String EXPECTED_HISTORY_PROCESS_INSTANCE_RETENTION_MODE = "PI";
@@ -58,8 +57,6 @@ public class HistoryOpensearchTest {
         "camunda.data.secondary-storage.type=opensearch",
         "camunda.data.secondary-storage.opensearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
-        "camunda.data.secondary-storage.opensearch.history.archive-by-id-enabled="
-            + EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED,
         "camunda.data.secondary-storage.opensearch.history.rollover-batch-size="
             + EXPECTED_HISTORY_ARCHIVER_ROLLOVER_BATCH_SIZE,
         "camunda.data.secondary-storage.opensearch.history.policy-name="
@@ -91,8 +88,6 @@ public class HistoryOpensearchTest {
 
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
-      assertThat(exporterConfiguration.getHistory().isArchiveByIdEnabled())
-          .isEqualTo(EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED);
       assertThat(exporterConfiguration.getHistory().getRolloverBatchSize())
           .isEqualTo(EXPECTED_HISTORY_ARCHIVER_ROLLOVER_BATCH_SIZE);
       assertThat(exporterConfiguration.getHistory().getRetention().getPolicyName())
@@ -191,30 +186,6 @@ public class HistoryOpensearchTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.data.secondary-storage.opensearch.history.archive-by-id-enabled=false",
-        "camunda.data.secondary-storage.type=opensearch",
-      })
-  class WithDefaultValuesWhenArchiveByIdDisabled {
-    final BrokerBasedProperties brokerBasedProperties;
-
-    WithDefaultValuesWhenArchiveByIdDisabled(
-        @Autowired final BrokerBasedProperties brokerBasedProperties) {
-      this.brokerBasedProperties = brokerBasedProperties;
-    }
-
-    @Test
-    void shouldDefaultArchiveByIdEnabledToTrue() {
-      final ExporterConfiguration exporterConfiguration =
-          getExporterConfiguration(brokerBasedProperties);
-
-      assertThat(exporterConfiguration.getHistory().isArchiveByIdEnabled()).isFalse();
-      assertThat(exporterConfiguration.getHistory().getRolloverBatchSize()).isEqualTo(100);
-    }
-  }
-
-  @Nested
-  @TestPropertySource(
-      properties = {
         "camunda.data.secondary-storage.type=opensearch",
       })
   class WithDefaultValues {
@@ -225,11 +196,10 @@ public class HistoryOpensearchTest {
     }
 
     @Test
-    void shouldDefaultArchiveByIdEnabledToTrue() {
+    void shouldDefaultRolloverBatchSize() {
       final ExporterConfiguration exporterConfiguration =
           getExporterConfiguration(brokerBasedProperties);
 
-      assertThat(exporterConfiguration.getHistory().isArchiveByIdEnabled()).isTrue();
       assertThat(exporterConfiguration.getHistory().getRolloverBatchSize()).isEqualTo(500);
     }
   }

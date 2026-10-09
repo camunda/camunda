@@ -119,6 +119,27 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
                 processInstanceTemplate.getFullQualifiedName(),
                 processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
                 Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "variable"),
+                executor),
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "activity"),
+                executor),
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of(),
+                Map.of("joinRelation", "processInstance"),
+                executor),
+            // then move process instances
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "processInstance"),
                 executor));
   }
 
@@ -159,10 +180,32 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
                     sequenceFlowTemplate.getProcessInstanceDependantField(),
                     List.of("1", "2", "3")),
                 executor),
+            // moving just variables, activity and anything else not processInstance
             new DocumentMove(
                 processInstanceTemplate.getFullQualifiedName(),
                 processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
                 Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "variable"),
+                executor),
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "activity"),
+                executor),
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of(),
+                Map.of("joinRelation", "processInstance"),
+                executor),
+            // then move process instances
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "processInstance"),
                 executor));
   }
 
@@ -184,6 +227,9 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
             waitStateTemplate.getFullQualifiedName(),
             decisionInstanceTemplate.getFullQualifiedName(),
             sequenceFlowTemplate.getFullQualifiedName(),
+            processInstanceTemplate.getFullQualifiedName(),
+            processInstanceTemplate.getFullQualifiedName(),
+            processInstanceTemplate.getFullQualifiedName(),
             processInstanceTemplate.getFullQualifiedName());
   }
 

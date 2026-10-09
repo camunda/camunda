@@ -30,9 +30,9 @@ import org.slf4j.Logger;
  * node instances, variable updates, etc).
  */
 public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchiveBatch> {
+
   private static final int MAX_LARGE_BATCH_SIZE = 5_000;
   private static final int SUB_BATCHES_PER_LARGE_BATCH = 10;
-
   private final HistoryConfiguration config;
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
@@ -66,7 +66,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
 
   @Override
   String getJobName() {
-    return "process-instance";
+    return "process-instance-by-id";
   }
 
   @Override
@@ -99,9 +99,41 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   @Override
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
+    // 1. First archive docs from dependent indices and `joinRelation={variable OR activity}`
+    // from operate-list-view index
+    // 2. Then archive all docs except `joinRelation=processInstance` from operate-list-view index;
+    // we use this as a catch-all clause to move all related documents.
+    // 3. Then archive all `joinRelation=processInstance` docs from operate-list-view index
     return archiveProcessDependants(batch)
-        .thenComposeAsync(v -> archive(templateDescriptor, batch, Map.of()), getExecutor())
+        .thenComposeAsync(
+            v ->
+                archive(
+                    templateDescriptor,
+                    batch,
+                    Map.of(),
+                    Map.of(
+                        ListViewTemplate.JOIN_RELATION,
+                        ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)),
+            getExecutor())
+        .thenComposeAsync(
+            ignored ->
+                archive(
+                    templateDescriptor,
+                    batch,
+                    Map.of(
+                        ListViewTemplate.JOIN_RELATION,
+                        ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
+                    Map.of()),
+            getExecutor())
         .thenApply(FunctionUtil.peek(archived -> markBatchRecentlyArchived(batch)));
+  }
+
+  @Override
+  protected CompletableFuture<Integer> archive(
+      final IndexTemplateDescriptor templateDescriptor,
+      final ProcessInstanceArchiveBatch batch,
+      final Map<String, String> inclusionFilters) {
+    return archive(templateDescriptor, batch, inclusionFilters, Map.of());
   }
 
   @Override
@@ -138,8 +170,51 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
 
   protected CompletableFuture<Void> archiveProcessDependants(
       final ProcessInstanceArchiveBatch batch) {
+    // get the usual process instance dependent archive tasks
     final List<CompletableFuture<?>> dependentFutures = getProcessDependentArchiveFutures(batch);
+
+    // add archiving tasks to archive data from list-view in parallel with the dependent indexes.
+
+    // Note: We can archive all data except documents with `joinRelation: processInstance`.
+    // These must be moved last to avoid dangling data (i.e., child/dependent records that cannot
+    // be moved independently of their parent instance). We use fields from the parent
+    // document (e.g., `endDate`, `status`) to decide whether to archive documents from the
+    // main index.
+
+    // add archiving variables from the list view index as a parallel task
+    dependentFutures.add(
+        archive(
+            getTemplateDescriptor(),
+            batch,
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.VARIABLES_JOIN_RELATION)));
+
+    // add archiving flownodes/activities from the list view index as a parallel task
+    dependentFutures.add(
+        archive(
+            getTemplateDescriptor(),
+            batch,
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.ACTIVITIES_JOIN_RELATION)));
+
     return CompletableFuture.allOf(dependentFutures.toArray(CompletableFuture[]::new));
+  }
+
+  protected CompletableFuture<Integer> archive(
+      final IndexTemplateDescriptor templateDescriptor,
+      final ProcessInstanceArchiveBatch batch,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters) {
+    final var sourceIdxName = templateDescriptor.getFullQualifiedName();
+    final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
+    final var finishDate = batch.finishDate();
+    return getArchiverRepository()
+        .moveDocumentsById(
+            sourceIdxName,
+            sourceIdxName + finishDate,
+            idsMap,
+            inclusionFilters,
+            exclusionFilters,
+            getExecutor())
+        .thenApplyAsync(ok -> batch.size(), getExecutor());
   }
 
   protected void markBatchRecentlyArchived(final ProcessInstanceArchiveBatch batch) {
