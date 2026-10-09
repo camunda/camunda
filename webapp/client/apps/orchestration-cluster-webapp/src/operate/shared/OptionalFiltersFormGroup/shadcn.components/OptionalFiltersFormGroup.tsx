@@ -8,8 +8,9 @@
 
 import {useEffect, useState} from 'react';
 import type {FieldValidator} from 'final-form';
+import {useTranslation} from 'react-i18next';
 import {Field, useForm} from 'react-final-form';
-import {Checkbox, IconButton, Label} from '@camunda/design-system';
+import {Button, Checkbox, Label, Separator, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
 import {X} from '@camunda/design-system/icons';
 import {OptionalFiltersMenu} from '#/operate/shared/OptionalFiltersMenu/shadcn.components/OptionalFiltersMenu';
 import {DateRangeField} from '#/operate/shared/DateRangeField/shadcn.components/DateRangeField';
@@ -34,7 +35,11 @@ type OptionalFilterDefinition<Id extends string> =
 	| (BaseDefinition<Id> & {type: 'checkbox'})
 	| (BaseDefinition<Id> & {type: 'advancedString'; selectableOperators: AdvancedStringFilterOperator[]})
 	| (BaseDefinition<Id> & {type: 'dateRange'; popoverTitle: string; fromKey: string; toKey: string})
-	| (BaseDefinition<Id> & {type: 'custom'; render: () => React.ReactNode; onRemove?: () => void});
+	| (BaseDefinition<Id> & {
+			type: 'custom';
+			render: (removeButton: React.ReactNode) => React.ReactNode;
+			onRemove?: () => void;
+	  });
 
 type Props<Id extends string> = {
 	definitions: OptionalFilterDefinition<Id>[];
@@ -51,6 +56,7 @@ const OptionalFiltersFormGroup = <Id extends string>({
 	onVisibleFilterChange,
 	getRemoveFilterLabel,
 }: Props<Id>) => {
+	const {t} = useTranslation();
 	const form = useForm();
 	const [openDateRangeFilter, setOpenDateRangeFilter] = useState<Id | undefined>();
 
@@ -65,7 +71,7 @@ const OptionalFiltersFormGroup = <Id extends string>({
 		.map((id) => definitions.find((definition) => definition.id === id))
 		.filter((definition) => definition !== undefined);
 
-	const renderFilter = (definition: OptionalFilterDefinition<Id>) => {
+	const renderFilter = (definition: OptionalFilterDefinition<Id>, removeButton: React.ReactNode) => {
 		switch (definition.type) {
 			case 'advancedString':
 				return (
@@ -104,7 +110,7 @@ const OptionalFiltersFormGroup = <Id extends string>({
 					</Field>
 				);
 			case 'custom':
-				return definition.render();
+				return definition.render(removeButton);
 			case 'text':
 			case 'multiline':
 				return (
@@ -132,6 +138,7 @@ const OptionalFiltersFormGroup = <Id extends string>({
 
 	return (
 		<div className="flex flex-col gap-8">
+			<Separator />
 			<OptionalFiltersMenu<Id>
 				visibleFilters={visibleFilters}
 				optionalFilters={definitions.map(({id, label}) => ({id, label}))}
@@ -143,31 +150,54 @@ const OptionalFiltersFormGroup = <Id extends string>({
 				}}
 			/>
 			<div className="flex flex-col gap-5">
-				{visibleDefinitions.map((definition) => (
-					<div key={definition.id} className="flex items-start gap-1">
-						<div className="min-w-0 flex-1">{renderFilter(definition)}</div>
-						<IconButton
-							className="mt-[25px]"
-							variant="ghost"
-							size="sm"
-							icon={X}
-							label={getRemoveFilterLabel(definition.label)}
-							tooltipSide="top"
-							onClick={() => {
-								onVisibleFilterChange((currentVisibleFilters) =>
-									currentVisibleFilters.filter((visibleFilter) => visibleFilter !== definition.id),
-								);
-								definition.keys.forEach((key) => {
-									form.change(key, undefined);
-								});
-								if (definition.type === 'custom') {
-									definition.onRemove?.();
-								}
-								form.submit();
-							}}
-						/>
-					</div>
-				))}
+				{visibleDefinitions.map((definition) => {
+					const removeButton = (
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant="ghost"
+									size="icon-xs"
+									aria-label={getRemoveFilterLabel(definition.label)}
+									onClick={() => {
+										onVisibleFilterChange((currentVisibleFilters) =>
+											currentVisibleFilters.filter((visibleFilter) => visibleFilter !== definition.id),
+										);
+										definition.keys.forEach((key) => {
+											form.change(key, undefined);
+										});
+										if (definition.type === 'custom') {
+											definition.onRemove?.();
+										}
+										form.submit();
+									}}
+								>
+									<X aria-hidden />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent side="top">{t('operate.shared.optionalFiltersMenu.removeFilter')}</TooltipContent>
+						</Tooltip>
+					);
+
+					if (definition.type === 'custom') {
+						return <div key={definition.id}>{renderFilter(definition, removeButton)}</div>;
+					}
+
+					if (definition.type === 'checkbox') {
+						return (
+							<div key={definition.id} className="flex items-center gap-1">
+								<div className="min-w-0 flex-1">{renderFilter(definition, removeButton)}</div>
+								{removeButton}
+							</div>
+						);
+					}
+
+					return (
+						<div key={definition.id} className="relative">
+							{renderFilter(definition, removeButton)}
+							<div className="absolute -top-1.5 right-0">{removeButton}</div>
+						</div>
+					);
+				})}
 			</div>
 		</div>
 	);

@@ -88,7 +88,7 @@ const DecisionPanel: React.FC<Props> = ({
 	};
 
 	return (
-		<section aria-label="Decision Panel" className="flex h-full flex-col">
+		<section aria-label={t('operate.decisions.diagramPanel.ariaLabel')} className="flex h-full flex-col">
 			<DecisionHeader decisionDefinitionSelection={decisionDefinitionSelection}>{headerActions}</DecisionHeader>
 			{(() => {
 				if (isDefinitionSelectionLoading) {
