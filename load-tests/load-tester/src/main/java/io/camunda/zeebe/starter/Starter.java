@@ -82,6 +82,7 @@ public class Starter implements CommandLineRunner {
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
   private final ConnectionMonitor connectionMonitor;
+  private final StarterLivenessIndicator livenessIndicator;
   private final WebClient.Builder webClientBuilder;
   private final ObjectMapper objectMapper;
   private final AtomicLong businessKey = new AtomicLong(0);
@@ -103,6 +104,7 @@ public class Starter implements CommandLineRunner {
       final MeterRegistry registry,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
+      final StarterLivenessIndicator livenessIndicator,
       final WebClient.Builder webClientBuilder,
       final ObjectMapper objectMapper) {
     this.client = client;
@@ -111,6 +113,7 @@ public class Starter implements CommandLineRunner {
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
+    this.livenessIndicator = livenessIndicator;
     this.webClientBuilder = webClientBuilder;
     this.objectMapper = objectMapper;
 
@@ -129,6 +132,7 @@ public class Starter implements CommandLineRunner {
   @Override
   public void run(final String... args) {
     connectionMonitor.awaitAndPrintTopology();
+    livenessIndicator.recordStarted();
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
@@ -176,6 +180,7 @@ public class Starter implements CommandLineRunner {
     }
 
     runFinished.set(1);
+    livenessIndicator.recordFinished();
     LOG.info(
         "Starter finished. Total process instance start requests submitted: {}",
         processInstancesStartedCounter == null ? 0 : (long) processInstancesStartedCounter.count());
@@ -290,6 +295,7 @@ public class Starter implements CommandLineRunner {
             } else {
               requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
             }
+<<<<<<< HEAD
             requestFuture.whenComplete(
                 (noop, error) -> {
                   final long durationNanos = System.nanoTime() - startTime;
@@ -301,6 +307,35 @@ public class Starter implements CommandLineRunner {
                           businessKey.get(),
                           error);
                     }
+=======
+            processInstancesSubmittedCounter.increment();
+          } catch (final Exception e) {
+            inFlight.release();
+            THROTTLED_LOGGER.error("Error on creating new process instance", e);
+            return;
+          } catch (final Error e) {
+            // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
+            // stop the starter and fail the application instead.
+            LOG.error("Fatal error on creating new process instance, stopping the starter", e);
+            fatalError.set(e);
+            countDownLatch.countDown();
+            return;
+          }
+
+          requestFuture.whenComplete(
+              (noop, error) -> {
+                inFlight.release();
+                livenessIndicator.recordResult(error);
+                final long durationNanos = System.nanoTime() - startTime;
+                responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+                resultMetrics.record(error);
+                if (error instanceof final StatusRuntimeException statusRuntimeException) {
+                  if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
+                    THROTTLED_LOGGER.warn(
+                        "Error on creating new process instance with business key {}",
+                        businessKey.get(),
+                        error);
+>>>>>>> fc86507b8 (feat: add readiness and liveness probes to the load tester)
                   }
                 });
           } catch (final Exception e) {
