@@ -16,7 +16,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.stream.Collectors;
@@ -62,19 +61,6 @@ public class RestorePointResolver {
         "Resolved restore point with globalCheckpointId={}",
         restorableBackups.globalCheckpointId());
     return restorableBackups;
-  }
-
-  /**
-   * The id of the latest backup in the metadata taken at or before {@code to}, or of its latest
-   * backup if there is no {@code to}.
-   */
-  public static OptionalLong latestBackup(
-      @NonNull final BackupMetadata metadata, @Nullable final Instant to) {
-    return metadata.checkpoints().stream()
-        .filter(checkpoint -> checkpoint.checkpointType().shouldCreateBackup())
-        .filter(checkpoint -> to == null || !checkpoint.checkpointTimestamp().isAfter(to))
-        .mapToLong(CheckpointEntry::checkpointId)
-        .max();
   }
 
   /** Finds all backup-type checkpoints that are required to cover the common checkpoint. */

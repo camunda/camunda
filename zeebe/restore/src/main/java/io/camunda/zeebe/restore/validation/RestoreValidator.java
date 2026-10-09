@@ -214,39 +214,20 @@ public final class RestoreValidator
   private RestorableBackups findBackups(final RestoreRequest request) {
     final Instant instantTo = parseTimestamp(request.arguments().parameters().to(), "to");
     final Instant instantFrom = parseTimestamp(request.arguments().parameters().from(), "from");
+    // Exported positions are mandatory for a range restore: validateParameters rejects the request
+    // without a way to read them, and they are what the partitions to restore are taken from.
     final var exportedPositions =
-        exportedPositionSupplier == null
-            ? null
-            : requireExportedPositions(exportedPositions(exportedPositionSupplier, partitionCount));
+        requireExportedPositions(
+            exportedPositions(
+                requireNonNull(exportedPositionSupplier, "Exported positions are required"),
+                partitionCount));
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
-    // Only an RDBMS has exported positions to take the partition count from. Without one, the
-    // backups are the only record of it.
-    final var restoredPartitionCount =
-        exportedPositions == null
-            ? latestBackupPartitionCount(instantTo)
-            : exportedPositions.size();
-    final var metadataByPartition = loadMetadataForAllPartitions(restoredPartitionCount);
+    final var metadataByPartition = loadMetadataForAllPartitions(exportedPositions.size());
     final var restorableBackups =
         RestorePointResolver.resolve(
             metadataByPartition, instantFrom, instantTo, exportedPositions);
-    if (exportedPositions != null) {
-      verifyLastBackupsHoldThePartitions(restorableBackups, exportedPositions.size());
-    }
+    verifyLastBackupsHoldThePartitions(restorableBackups, exportedPositions.size());
     return restorableBackups;
-  }
-
-  /**
-   * The partition count recorded in the latest backup of partition 1 taken at or before {@code to},
-   * or its latest backup if there is no {@code to}.
-   */
-  private int latestBackupPartitionCount(final @Nullable Instant to) {
-    final var latestBackup =
-        RestorePointResolver.latestBackup(loadMetadataForAllPartitions(1).getFirst(), to)
-            .orElseThrow(
-                () -> new IllegalStateException("No backup of partition 1 found before " + to));
-    return backupPartitionCount(
-        requireNonNull(backupStore, "Backup store must be configured to load backups"),
-        latestBackup);
   }
 
   @VisibleForTesting
@@ -281,6 +262,10 @@ public final class RestoreValidator
   /**
    * The partition count recorded in the descriptor of the given backup, on any partition since
    * every partition's backup records the same count, rejected if the group holds fewer partitions.
+   *
+   * <p>Restoring a backup taken before a scale up leaves the group with that backup's partitions,
+   * so restoring forward again to a backup with more partitions than that is rejected here: the
+   * group has no partitions to restore them into.
    */
   private int backupPartitionCount(final BackupStore store, final long backupId) {
     final var backupPartitionCount =
@@ -291,8 +276,7 @@ public final class RestoreValidator
             .orElseThrow(
                 () ->
                     new NoSuchElementException(
-                        "No completed backup found for partition 1 with backup id %d"
-                            .formatted(backupId)))
+                        "No completed backup found with backup id %d".formatted(backupId)))
             .numberOfPartitions();
     if (backupPartitionCount > partitionCount) {
       throw new IllegalArgumentException(
@@ -315,7 +299,9 @@ public final class RestoreValidator
     for (int partition = 1; partition <= partitionCount; partition++) {
       final var position = positionSupplier.apply(partition);
       if (position == null) {
-        firstMissing = firstMissing == 0 ? partition : firstMissing;
+        if (firstMissing == 0) {
+          firstMissing = partition;
+        }
       } else if (firstMissing != 0) {
         throw new IllegalStateException(
             "The RDBMS holds an exported position for partition %d but none for partition %d"
