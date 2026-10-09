@@ -55,7 +55,7 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		await expect(operatePreviewDecisionsPage.heading).toBeAttached();
 		await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
 		await expect(operatePreviewDecisionsPage.decisionPanel).toBeVisible();
-		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no Decision selected')).toBeVisible();
+		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no decision selected')).toBeVisible();
 		await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
 	});
 
@@ -76,7 +76,7 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 
 		await expect(page).not.toHaveURL(/decisionDefinitionId/);
 		await expect(page.getByText("Couldn't find the decision", {exact: true})).toBeVisible();
-		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no Decision selected')).toBeVisible();
+		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no decision selected')).toBeVisible();
 	});
 
 	test('should offer deleting the selected decision definition version', async ({
@@ -101,7 +101,7 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		await operatePreviewDecisionsPage.goto('?decisionDefinitionId=invoice&decisionDefinitionVersion=1');
 
 		await expect(
-			operatePreviewDecisionsPage.decisionPanel.getByRole('button', {name: /Delete Decision Definition/}),
+			operatePreviewDecisionsPage.decisionPanel.getByRole('button', {name: /Delete decision definition/}),
 		).toBeVisible();
 	});
 

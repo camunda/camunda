@@ -71,8 +71,8 @@ describe('<Decisions />', () => {
 		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
 
 		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
-		await expect.element(screen.getByText('There is no Decision selected')).toBeVisible();
-		await expect.element(screen.getByText('Decision Instances')).toBeVisible();
+		await expect.element(screen.getByText('There is no decision selected')).toBeVisible();
+		await expect.element(screen.getByText('Decision instances')).toBeVisible();
 	});
 
 	it('should show optional filters that are active in the URL', async ({worker}) => {
@@ -154,7 +154,7 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&failed=false',
 		});
 
-		await screen.getByRole('button', {name: 'Remove Business ID Filter'}).element().click();
+		await screen.getByRole('button', {name: 'Remove Business ID filter'}).element().click();
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
 		expect(screen.router.state.location.search).not.toHaveProperty('businessId');
@@ -169,7 +169,7 @@ describe('<Decisions />', () => {
 		});
 
 		const input = screen.getByLabelText('Business ID', {exact: true}).element().getBoundingClientRect();
-		const button = screen.getByRole('button', {name: 'Remove Business ID Filter'}).element().getBoundingClientRect();
+		const button = screen.getByRole('button', {name: 'Remove Business ID filter'}).element().getBoundingClientRect();
 
 		expect(input.top + input.height / 2 - (button.top + button.height / 2)).toBe(0);
 	});
@@ -229,7 +229,7 @@ describe('<Decisions />', () => {
 		});
 
 		await expect
-			.element(screen.getByText('There is more than one Version selected for Decision "Invoice Classification"'))
+			.element(screen.getByText('There is more than one version selected for decision "Invoice Classification"'))
 			.toBeVisible();
 	});
 
@@ -264,7 +264,7 @@ describe('<Decisions />', () => {
 		});
 
 		await expect
-			.element(screen.getByText('Decision "Invoice Classification" exists in more than one Tenant'))
+			.element(screen.getByText('Decision "Invoice Classification" exists in more than one tenant'))
 			.toBeVisible();
 	});
 
@@ -288,11 +288,11 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
-		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeVisible();
 
 		await screen.router.navigate({to: '.', search: {decisionDefinitionId: 'invoice'}});
 
-		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).not.toBeInTheDocument();
 	});
 
 	it('should keep a newly selected version blocked until the previous deletion finishes', async ({worker}) => {
@@ -326,16 +326,16 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
-		await userEvent.click(screen.getByRole('button', {name: /Delete Decision Definition/}));
+		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
 		await screen.router.navigate({to: '.', search: {decisionDefinitionId: 'invoice', decisionDefinitionVersion: 2}});
 
-		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
 		await expect
 			.poll(() => notificationsStore.notifications.some(({title}) => title === 'Operation created'))
 			.toBe(true);
-		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).toBeEnabled();
+		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeEnabled();
 		expect(screen.router.state.location.search).toMatchObject({
 			decisionDefinitionId: 'invoice',
 			decisionDefinitionVersion: 2,
