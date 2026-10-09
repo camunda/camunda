@@ -69,7 +69,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "creationTime": "2024-05-23T23:05:00.000Z",
                       "state": "ACTIVE",
                       "jobKey": "101",
-                      "tenantId": "tenantId"
+                      "tenantId": "tenantId",
+                      "storageOrdinal": 1001
                   }
               ],
               "page": {
@@ -98,7 +99,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
                       IncidentState.ACTIVE,
                       101L,
-                      "tenantId")))
+                      "tenantId",
+                      1001)))
           .startCursor("f")
           .endCursor("v")
           .build();
@@ -118,7 +120,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                           "creationTime": "2024-05-23T23:05:00.000Z",
                           "state": "ACTIVE",
                           "jobKey": "101",
-                          "tenantId": "tenantId"
+                          "tenantId": "tenantId",
+                          "storageOrdinal": 1001
                       }
           """;
 
@@ -136,7 +139,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
           IncidentState.ACTIVE,
           101L,
-          "tenantId");
+          "tenantId",
+          1001);
   static final SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity>
       INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_QUERY_RESULT =
           new SearchQueryResult.Builder<IncidentProcessInstanceStatisticsByDefinitionEntity>()

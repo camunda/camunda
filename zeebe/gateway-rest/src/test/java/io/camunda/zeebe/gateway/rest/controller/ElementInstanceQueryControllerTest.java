@@ -169,7 +169,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
           OffsetDateTime.parse("2023-05-17T00:00:00Z"),
           IncidentEntity.IncidentState.ACTIVE,
           99L,
-          "tenant1");
+          "tenant1",
+          1001);
 
   static final String EXPECTED_INCIDENT_SEARCH_RESPONSE =
       """
@@ -188,7 +189,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
             "creationTime": "2023-05-17T00:00:00.000Z",
             "state": "ACTIVE",
             "jobKey": "99",
-            "tenantId": "tenant1"
+            "tenantId": "tenant1",
+            "storageOrdinal": 1001
           }
         ],
         "page": {
@@ -221,7 +223,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                   "creationTime": "2024-01-02T00:00:00.000Z",
                   "state": "ACTIVE",
                   "jobKey": "567",
-                  "tenantId": "tenantId"
+                  "tenantId": "tenantId",
+                  "storageOrdinal": 1001
                 }
               ],
               "page": {
@@ -250,7 +253,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2024-01-02T00:00:00.000Z"),
                       IncidentState.ACTIVE,
                       567L,
-                      "tenantId")))
+                      "tenantId",
+                      1001)))
           .startCursor("f")
           .endCursor("v")
           .build();

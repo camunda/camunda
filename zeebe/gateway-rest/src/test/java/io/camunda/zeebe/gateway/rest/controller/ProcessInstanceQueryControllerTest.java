@@ -187,7 +187,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "creationTime": "2024-01-02T00:00:00.000Z",
                   "state": "ACTIVE",
                   "jobKey": "567",
-                  "tenantId": "tenantId"
+                  "tenantId": "tenantId",
+                  "storageOrdinal": 1001
                 }
               ],
               "page": {
@@ -224,7 +225,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2024-01-02T00:00:00Z"),
                       IncidentState.ACTIVE,
                       567L,
-                      "tenantId")))
+                      "tenantId",
+                      1001)))
           .startCursor("f")
           .endCursor("v")
           .build();
