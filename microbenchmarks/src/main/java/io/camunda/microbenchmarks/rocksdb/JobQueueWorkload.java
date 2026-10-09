@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.SplittableRandom;
 import java.util.stream.Stream;
 import org.agrona.collections.LongArrayQueue;
@@ -163,9 +164,23 @@ public final class JobQueueWorkload implements AutoCloseable {
             .setMemoryAllocationStrategy(config.memoryStrategy())
             .setSstPartitioningEnabled(config.sstPartitioning())
             .setStatisticsEnabled(config.statistics())
-            .setColumnFamilyOptions(config.cfOptions())
             .setCompactOnDeletion(config.compactOnDeletion());
     resources = RocksDbResources.of(rocksDbConfiguration, new RuntimeInfo(config.partitions()));
+    final var cfOptions = new Properties();
+    if (config.preTuningDefaults()) {
+      // the defaults before tuning for tombstones: write buffers sized by the budget alone and
+      // merged three at a time before flushing (compact-on-deletion is resolved by WorkloadConfig)
+      final long budgetSized =
+          Math.round(
+              (double) resources.writeBufferBudgetPerPartition()
+                  / rocksDbConfiguration.getMaxWriteBufferNumber()
+                  * 0.85);
+      cfOptions.setProperty("write_buffer_size", Long.toString(budgetSized));
+      cfOptions.setProperty("min_write_buffer_number_to_merge", "3");
+    }
+    // explicit cf.* arguments win over the pre-tuning defaults
+    cfOptions.putAll(config.cfOptions());
+    rocksDbConfiguration.setColumnFamilyOptions(cfOptions);
     final var factory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
             rocksDbConfiguration,

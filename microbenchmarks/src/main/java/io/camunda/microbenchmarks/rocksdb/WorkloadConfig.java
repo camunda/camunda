@@ -7,6 +7,7 @@
  */
 package io.camunda.microbenchmarks.rocksdb;
 
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.CompactOnDeletion;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import java.nio.file.Path;
@@ -37,6 +38,7 @@ record WorkloadConfig(
     boolean statistics,
     Properties cfOptions,
     @Nullable CompactOnDeletion compactOnDeletion,
+    boolean preTuningDefaults,
     // background state
     long preloadKeys,
     int preloadPrefixes,
@@ -95,6 +97,7 @@ record WorkloadConfig(
     }
 
     final var params = new Params(kv);
+    final boolean preTuningDefaults = params.bool("preTuningDefaults", false);
     final var config =
         new WorkloadConfig(
             Path.of(params.str("dbDir", "/tmp/zeebe-rocksdb-bench/db")),
@@ -110,7 +113,10 @@ record WorkloadConfig(
             params.bool("sstPartitioning", true),
             params.bool("statistics", true),
             cfOptions,
-            params.compactOnDeletion("compactOnDeletion"),
+            params.compactOnDeletion(
+                "compactOnDeletion",
+                preTuningDefaults ? null : RocksDbConfiguration.DEFAULT_COMPACT_ON_DELETION),
+            preTuningDefaults,
             params.lng("preloadKeys", 4_000_000),
             params.integer("preloadPrefixes", 8),
             params.integer("preloadValueSize", 24),
@@ -189,10 +195,17 @@ record WorkloadConfig(
       return Long.parseLong(number.trim()) * multiplier;
     }
 
-    /** Format: {@code windowSize:deletionTrigger:deletionRatio}, e.g. {@code 1000:500:0.5}. */
-    @Nullable CompactOnDeletion compactOnDeletion(final String key) {
+    /**
+     * Format: {@code windowSize:deletionTrigger:deletionRatio}, e.g. {@code 1000:500:0.5}, or
+     * {@code off}.
+     */
+    @Nullable CompactOnDeletion compactOnDeletion(
+        final String key, final @Nullable CompactOnDeletion defaultValue) {
       final var raw = values.remove(key);
       if (raw == null) {
+        return defaultValue;
+      }
+      if (raw.equals("off")) {
         return null;
       }
       final var parts = raw.split(":");
