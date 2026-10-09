@@ -81,6 +81,15 @@ public class TaskRepositoryES extends TaskRepository {
       final Script updateScript,
       final Query filterQuery,
       final String... indices) {
+    return tryUpdateByQueryRequest(updateItemIdentifier, updateScript, filterQuery, null, indices);
+  }
+
+  public boolean tryUpdateByQueryRequest(
+      final String updateItemIdentifier,
+      final Script updateScript,
+      final Query filterQuery,
+      final Integer scrollSize,
+      final String... indices) {
     LOG.debug("Updating {}", updateItemIdentifier);
     final boolean clusterTaskCheckingEnabled =
         configurationService
@@ -90,13 +99,18 @@ public class TaskRepositoryES extends TaskRepository {
 
     final UpdateByQueryRequest updateByQueryRequest =
         UpdateByQueryRequest.of(
-            b ->
-                b.index(esClient.addPrefixesToIndices(indices))
-                    .query(filterQuery)
-                    .conflicts(Conflicts.Proceed)
-                    .script(updateScript)
-                    .waitForCompletion(!clusterTaskCheckingEnabled)
-                    .refresh(true));
+            b -> {
+              b.index(esClient.addPrefixesToIndices(indices))
+                  .query(filterQuery)
+                  .conflicts(Conflicts.Proceed)
+                  .script(updateScript)
+                  .waitForCompletion(!clusterTaskCheckingEnabled)
+                  .refresh(true);
+              if (scrollSize != null) {
+                b.scrollSize(scrollSize.longValue());
+              }
+              return b;
+            });
 
     if (clusterTaskCheckingEnabled) {
       return asyncUpdate(updateItemIdentifier, filterQuery, updateByQueryRequest);
