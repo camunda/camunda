@@ -44,22 +44,22 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
 
-		await expect.element(screen.getByRole('menuitem', {name: 'Decision Instance Key(s)'})).toBeVisible();
-		await expect.element(screen.getByRole('menuitem', {name: 'Process Instance Key'})).toBeVisible();
+		await expect.element(screen.getByRole('menuitem', {name: 'Decision instance key(s)'})).toBeVisible();
+		await expect.element(screen.getByRole('menuitem', {name: 'Process instance key'})).toBeVisible();
 		await expect.element(screen.getByRole('menuitem', {name: 'Business ID'})).toBeVisible();
-		await expect.element(screen.getByRole('menuitem', {name: 'Evaluation Date Range'})).toBeVisible();
+		await expect.element(screen.getByRole('menuitem', {name: 'Evaluation date range'})).toBeVisible();
 	});
 
 	it('should show a filter selected from the menu and hide it from the menu', async () => {
 		const screen = await render(<Harness />);
 
 		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
 
-		await expect.element(screen.getByLabelText('Process Instance Key')).toBeVisible();
+		await expect.element(screen.getByLabelText('Process instance key')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
-		await expect.element(screen.getByRole('menuitem', {name: 'Process Instance Key'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('menuitem', {name: 'Process instance key'})).not.toBeInTheDocument();
 	});
 
 	it('should show filters that are active in the initial values', async () => {
@@ -67,7 +67,7 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 			<Harness initialValues={{decisionEvaluationInstanceKey: '2251799813688001', businessId: 'eq_order-1'}} />,
 		);
 
-		await expect.element(screen.getByLabelText('Decision Instance Key(s)')).toHaveValue('2251799813688001');
+		await expect.element(screen.getByLabelText('Decision instance key(s)')).toHaveValue('2251799813688001');
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
 	});
 
@@ -77,7 +77,7 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 			const screen = await render(<Harness initialValues={initialValues} />);
 
 			await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
-			await expect.element(screen.getByRole('menuitem', {name: 'Evaluation Date Range'})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('menuitem', {name: 'Evaluation date range'})).not.toBeInTheDocument();
 		},
 	);
 
@@ -85,7 +85,7 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		const onSubmit = vi.fn();
 		const screen = await render(<Harness initialVisible={['processInstanceKey']} onSubmit={onSubmit} />);
 
-		await userEvent.fill(screen.getByLabelText('Process Instance Key'), '2251799813688001');
+		await userEvent.fill(screen.getByLabelText('Process instance key'), '2251799813688001');
 		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
 		expect(onSubmit).toHaveBeenCalledWith(
@@ -98,10 +98,10 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 	it('should show a validation error for invalid keys', async () => {
 		const screen = await render(<Harness initialVisible={['processInstanceKey']} />);
 
-		await userEvent.fill(screen.getByLabelText('Process Instance Key'), 'abc');
+		await userEvent.fill(screen.getByLabelText('Process instance key'), 'abc');
 		await userEvent.tab();
 
-		await expect.element(screen.getByLabelText('Process Instance Key')).toHaveAttribute('aria-invalid', 'true');
+		await expect.element(screen.getByLabelText('Process instance key')).toHaveAttribute('aria-invalid', 'true');
 	});
 
 	it('should remove a filter, clear its value and submit', async () => {
@@ -114,9 +114,9 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 			/>,
 		);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Remove Process Instance Key Filter'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Remove Process instance key filter'}));
 
-		await expect.element(screen.getByLabelText('Process Instance Key')).not.toBeInTheDocument();
+		await expect.element(screen.getByLabelText('Process instance key')).not.toBeInTheDocument();
 		expect(onSubmit).toHaveBeenCalledTimes(1);
 		expect(onSubmit.mock.calls[0]?.[0].processInstanceKey).toBeUndefined();
 	});
@@ -125,7 +125,7 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		const screen = await render(<Harness />);
 
 		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Evaluation Date Range'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Evaluation date range'}));
 
 		await expect.element(screen.getByTestId('date-range-modal')).toBeVisible();
 	});

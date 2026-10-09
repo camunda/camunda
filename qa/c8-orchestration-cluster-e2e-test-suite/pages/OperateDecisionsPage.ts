@@ -9,10 +9,10 @@
 import {Page, Locator, expect} from '@playwright/test';
 
 type OptionalFilter =
-  | 'Process Instance Key'
-  | 'Decision Instance Key(s)'
+  | 'Process instance key'
+  | 'Decision instance key(s)'
   | 'Business ID'
-  | 'Evaluation Date Range';
+  | 'Evaluation date range';
 
 export type AdvancedStringFilterOperator = 'equals' | 'contains' | 'is one of';
 
