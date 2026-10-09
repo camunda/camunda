@@ -116,6 +116,7 @@ mwnw*                       @camunda/engineering-operations
 # Orchestration Cluster E2E suite: each area owns its specs, so a failure routes to the area's
 # team (#65305). Shared flows, page objects and the framework stay with the rule above.
 /qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/                                @camunda/operate-admin-pod
+/qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/swagger.spec.ts                @camunda/core-features
 /qa/c8-orchestration-cluster-e2e-test-suite/tests/identity/                               @camunda/operate-admin-pod
 /qa/c8-orchestration-cluster-e2e-test-suite/tests/tasklist/                               @camunda/employee-engagement-tasklist
 /qa/c8-orchestration-cluster-e2e-test-suite/tests/api/                                    @camunda/core-features
