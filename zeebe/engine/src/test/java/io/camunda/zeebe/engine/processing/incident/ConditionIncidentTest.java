@@ -115,7 +115,63 @@ public final class ConditionIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'foo > 10' to be 'BOOLEAN', but was 'NULL'. \
+            Expected result of the condition expression 'foo > 10' of sequence flow 's2' \
+            to be 'BOOLEAN', but was 'NULL'. \
+            The evaluation reported the following warnings:
+            [NOT_COMPARABLE] Can't compare '"bar"' with '10'""")
+        .hasBpmnProcessId(failingEvent.getValue().getBpmnProcessId())
+        .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
+        .hasElementId(failingEvent.getValue().getElementId())
+        .hasElementInstanceKey(failingEvent.getKey())
+        .hasVariableScopeKey(failingEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldCreateIncidentIfInclusiveGatewayConditionFailsToEvaluate() {
+    // given
+    final BpmnModelInstance inclusiveGatewayProcess =
+        Bpmn.createExecutableProcess("inclusive-process")
+            .startEvent()
+            .inclusiveGateway("inclusive")
+            .sequenceFlowId("inclusive-s1")
+            .conditionExpression("foo < 5")
+            .endEvent()
+            .moveToLastGateway()
+            .sequenceFlowId("inclusive-s2")
+            .conditionExpression("foo > 10")
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(inclusiveGatewayProcess).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("inclusive-process")
+            .withVariable("foo", "bar")
+            .create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> failingEvent =
+        RecordingExporter.processInstanceRecords()
+            .withElementType(BpmnElementType.INCLUSIVE_GATEWAY)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Expected result of the condition expression 'foo > 10' of sequence flow \
+            'inclusive-s2' to be 'BOOLEAN', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NOT_COMPARABLE] Can't compare '"bar"' with '10'""")
         .hasBpmnProcessId(failingEvent.getValue().getBpmnProcessId())
