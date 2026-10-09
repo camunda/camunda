@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { type CommentApi, GithubCommentApi, type IssueComment, OPT_OUT_LINE, renderStickyComment, STICKY_MARKER, syncStickyComment } from '../src/comment';
-import { OPT_OUT_PHRASE } from '../src/parser';
+import { isOptOutTicked, OPT_OUT_PHRASE } from '../src/parser';
 import type { GateOutcome } from '../src/types';
 
 const FAIL: GateOutcome = {
@@ -43,10 +43,12 @@ test('unlinked-undeclared shows the expected section format with a non-numeric p
   const body = renderStickyComment(FAIL);
   assert.ok(body.includes('## Related issues\n\ncloses #<issue-number>'));
   assert.ok(body.includes('- [ ] This PR does not need a linked issue'));
+  assert.ok(body.includes('tracked in another repository'));
 });
 
-test('the example opt-out line is what the parser matches', () => {
-  assert.equal(OPT_OUT_LINE.replace('- [ ] ', '').toLowerCase(), OPT_OUT_PHRASE);
+test('the example opt-out line is what the parser matches once ticked', () => {
+  assert.ok(isOptOutTicked(OPT_OUT_LINE.replace('[ ]', '[x]')));
+  assert.ok(OPT_OUT_LINE.toLowerCase().includes(OPT_OUT_PHRASE));
 });
 
 test('pr-ref-in-section tells the author to link the issue, not the PR', () => {
