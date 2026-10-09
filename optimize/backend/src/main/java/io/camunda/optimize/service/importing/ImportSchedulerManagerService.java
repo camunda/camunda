@@ -7,9 +7,12 @@
  */
 package io.camunda.optimize.service.importing;
 
+import static io.camunda.optimize.MetricEnum.CONFIGURED_PARTITIONS_METRIC;
+import static io.camunda.optimize.MetricEnum.MAX_PAGE_SIZE_METRIC;
 import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.SchedulerConfig;
 import io.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -23,6 +26,7 @@ import io.camunda.optimize.service.importing.zeebe.mediator.factory.ZeebeVariabl
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ZeebeConfiguration;
+import io.micrometer.core.instrument.Tags;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.util.ArrayList;
@@ -150,6 +154,10 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
 
     final ZeebeConfiguration zeebeConfig = configurationService.getConfiguredZeebe();
     if (zeebeConfig.isEnabled()) {
+      OptimizeMetrics.setGauge(
+          CONFIGURED_PARTITIONS_METRIC, Tags.empty(), zeebeConfig.getPartitionCount());
+      OptimizeMetrics.setGauge(
+          MAX_PAGE_SIZE_METRIC, Tags.empty(), zeebeConfig.getMaxImportPageSize());
       final List<ImportMediator> zeebeMediatorList = new ArrayList<>();
       // We create a separate mediator for each Zeebe partition configured
       for (int partitionId = 1; partitionId <= zeebeConfig.getPartitionCount(); partitionId++) {

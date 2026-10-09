@@ -38,6 +38,20 @@ public enum MetricEnum {
       "importedUntil",
       "Epoch time up to which all exported records of this type and partition are imported",
       "seconds"),
+  FETCH_PAGE_SIZE_METRIC(
+      MetricType.IMPORT,
+      "fetchPageSize",
+      "Page size used to fetch Zeebe records, reduced after failed fetches and gradually restored"),
+  MAX_PAGE_SIZE_METRIC(
+      MetricType.IMPORT, "maxPageSize", "Configured maximum page size of Zeebe record fetches"),
+  CONFIGURED_PARTITIONS_METRIC(
+      MetricType.IMPORT,
+      "configuredPartitions",
+      "Number of Zeebe partitions Optimize is configured to import from"),
+  ZEEBE_INDEX_MISSING_METRIC(
+      MetricType.IMPORT,
+      "zeebeIndexMissing",
+      "Counts fetches that found no Zeebe record index to read from"),
   REPORT_LATENCY_METRIC(
       MetricType.REPORT, "reportLatency", "Records the time taken to evaluate a report"),
   ERROR_METRIC(MetricType.GENERAL, "error", "Counter for errors occurring across Optimize");

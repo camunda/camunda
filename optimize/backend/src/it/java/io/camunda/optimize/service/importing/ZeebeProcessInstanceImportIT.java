@@ -78,6 +78,8 @@ import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -992,11 +994,13 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, secondInstanceKey);
     // Wait for instance 2's var1 + var2 CREATED events
     waitUntilMinimumVariableDocumentsForInstanceExportedCount(2, secondInstanceKey);
+    final double skippedDocumentsBefore = getNestedLimitSkippedDocuments();
 
     // when
     importAllZeebeEntitiesFromScratch();
 
     // then the first instance does not get updated with new nested data
+    assertThat(getNestedLimitSkippedDocuments()).isGreaterThan(skippedDocumentsBefore);
     final ProcessInstanceDto firstInstanceAfterSecondRoundImport =
         getProcessInstanceForId(String.valueOf(startedInstanceKey));
     assertThat(firstInstanceAfterSecondRoundImport.getVariables())
@@ -1183,5 +1187,14 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
             savedInstance ->
                 assertThat(savedInstance.getProcessInstanceId())
                     .isEqualTo(String.valueOf(keptInstance.getProcessInstanceKey())));
+  }
+
+  private static double getNestedLimitSkippedDocuments() {
+    final Counter counter =
+        Metrics.globalRegistry
+            .find("optimize.import.nestedLimitSkippedDocuments")
+            .tag("ITEM", "Zeebe process instances")
+            .counter();
+    return counter == null ? 0 : counter.count();
   }
 }
