@@ -12,12 +12,13 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
 /**
  * Writes {@link UserTaskIntent#SUSPENDED} for the element instance's user task, whatever the task's
- * lifecycle state, and buffers a {@link UserTaskIntent#RESUME} command for it. Since the command is
- * buffered before the walk finishes, it drains first on resume.
+ * lifecycle state, and buffers a {@link UserTaskIntent#RESUME} command for it. On resume, all
+ * {@code RESUME} commands drain in walk order, before {@link ProcessInstanceIntent#RESUMED}.
  */
 final class UserTaskSuspensionVisitor implements ElementInstanceSuspensionVisitor {
 

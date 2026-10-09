@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
+import org.agrona.collections.MutableLong;
 
 /**
  * Walks the element instance tree of a suspending process instance depth-first, one element
@@ -68,8 +69,6 @@ public final class SuspensionBatchProcessor
   private final SuspensionState suspensionState;
   private final SuspensionMetrics suspensionMetrics;
   private final List<ElementInstanceSuspensionVisitor> visitors;
-
-  private long foundChildKey;
 
   public SuspensionBatchProcessor(
       final Writers writers,
@@ -222,7 +221,7 @@ public final class SuspensionBatchProcessor
    * if there is none. Starts at the first child when {@code afterKey} is {@code -1}.
    */
   private long findChild(final long parentKey, final long afterKey) {
-    foundChildKey = NO_KEY;
+    final MutableLong foundChildKey = new MutableLong(NO_KEY);
     elementInstanceState.forEachChild(
         parentKey,
         afterKey,
@@ -230,10 +229,10 @@ public final class SuspensionBatchProcessor
           if (childKey == afterKey) {
             return true;
           }
-          foundChildKey = childKey;
+          foundChildKey.set(childKey);
           return false;
         });
-    return foundChildKey;
+    return foundChildKey.get();
   }
 
   private void appendSuspendElementInstance(
