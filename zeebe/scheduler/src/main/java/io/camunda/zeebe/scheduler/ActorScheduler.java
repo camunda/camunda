@@ -10,7 +10,6 @@ package io.camunda.zeebe.scheduler;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +34,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   /**
    * Returns a new builder pre-populated with the name, clock, idle strategy, and meter registry of
    * this scheduler. The returned builder yields an independent scheduler with its own threads, so
-   * callers still have to set the thread counts and may set metric tags and a thread name prefix.
+   * callers still have to set the thread counts and may set a thread name prefix.
    */
   public ActorSchedulerBuilder derive() {
     return newActorScheduler()
@@ -155,7 +154,6 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     private Supplier<IdleStrategy> idleStrategySupplier =
         ActorSchedulerBuilder::defaultIdleStrategySupplier;
     private MeterRegistry meterRegistry;
-    private Tags metricsTags = Tags.empty();
     private ActorMetrics actorMetrics;
 
     public static IdleStrategy defaultIdleStrategySupplier() {
@@ -255,24 +253,17 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
     ActorMetrics getActorMetrics() {
       if (actorMetrics == null) {
-        actorMetrics = ActorMetrics.ofNullable(meterRegistry, metricsTags);
+        actorMetrics = ActorMetrics.ofNullable(meterRegistry);
       }
       return actorMetrics;
     }
 
-    MeterRegistry getMeterRegistry() {
+    public MeterRegistry getMeterRegistry() {
       return meterRegistry;
     }
 
     public ActorSchedulerBuilder setMeterRegistry(final MeterRegistry meterRegistry) {
       this.meterRegistry = meterRegistry;
-      actorMetrics = null;
-      return this;
-    }
-
-    /** Tags added to every actor metric of this scheduler, e.g. to tell schedulers apart. */
-    public ActorSchedulerBuilder setMetricsTags(final Tags metricsTags) {
-      this.metricsTags = Objects.requireNonNull(metricsTags);
       actorMetrics = null;
       return this;
     }

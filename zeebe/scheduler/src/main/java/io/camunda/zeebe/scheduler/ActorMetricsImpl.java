@@ -14,7 +14,6 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import java.util.EnumMap;
 import java.util.Map;
@@ -26,11 +25,9 @@ final class ActorMetricsImpl implements ActorMetrics {
   private final Map<SubscriptionType, Timer> schedulingLatency =
       new EnumMap<>(SubscriptionType.class);
   private final MeterRegistry registry;
-  private final Tags tags;
 
-  public ActorMetricsImpl(final MeterRegistry registry, final Tags tags) {
+  public ActorMetricsImpl(final MeterRegistry registry) {
     this.registry = Objects.requireNonNull(registry, "registry cannot be null");
-    this.tags = Objects.requireNonNull(tags, "tags cannot be null");
     for (final SubscriptionType type : SubscriptionType.values()) {
       schedulingLatency.put(type, createSchedulingTimer(type));
     }
@@ -40,7 +37,6 @@ final class ActorMetricsImpl implements ActorMetrics {
     return Timer.builder(SCHEDULING_LATENCY.getName())
         .description(SCHEDULING_LATENCY.getDescription())
         .tag(ActorMetricsKeyName.SUBSCRIPTION_TYPE.asString(), subscriptionType.getName())
-        .tags(tags)
         .serviceLevelObjectives(SCHEDULING_LATENCY.getTimerSLOs())
         .register(registry);
   }
@@ -49,7 +45,6 @@ final class ActorMetricsImpl implements ActorMetrics {
     return Timer.builder(EXECUTION_LATENCY.getName())
         .description(EXECUTION_LATENCY.getDescription())
         .tag(ActorMetricsKeyName.ACTOR_NAME.asString(), actorName)
-        .tags(tags)
         .serviceLevelObjectives(EXECUTION_LATENCY.getTimerSLOs())
         .register(registry);
   }
@@ -58,7 +53,6 @@ final class ActorMetricsImpl implements ActorMetrics {
     return Counter.builder(EXECUTION_COUNT.getName())
         .description(EXECUTION_COUNT.getDescription())
         .tag(ActorMetricsKeyName.ACTOR_NAME.asString(), actorName)
-        .tags(tags)
         .register(registry);
   }
 
@@ -66,7 +60,6 @@ final class ActorMetricsImpl implements ActorMetrics {
     return Gauge.builder(JOB_QUEUE_LENGTH.getName(), value::get)
         .description(JOB_QUEUE_LENGTH.getDescription())
         .tag(ActorMetricsKeyName.ACTOR_NAME.asString(), actorName)
-        .tags(tags)
         .register(registry);
   }
 

@@ -16,6 +16,8 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +34,7 @@ final class PhysicalTenantActorSchedulerStepTest {
       new PhysicalTenantActorSchedulerStep(TENANT_ID);
   private final BrokerCfg brokerCfg = new BrokerCfg();
   private final MockBrokerStartupContext context = new MockBrokerStartupContext();
+  private final MeterRegistry registry = new SimpleMeterRegistry();
   private ActorScheduler brokerScheduler;
 
   @BeforeEach
@@ -39,6 +42,7 @@ final class PhysicalTenantActorSchedulerStepTest {
     brokerScheduler =
         ActorScheduler.newActorScheduler()
             .setSchedulerName("broker")
+            .setMeterRegistry(registry)
             .setCpuBoundActorThreadCount(1)
             .setIoBoundActorThreadCount(1)
             .build();
@@ -79,6 +83,24 @@ final class PhysicalTenantActorSchedulerStepTest {
     assertThat(threadNameOf(scheduler, SchedulingHints.ioBound()))
         .isEqualTo("tenant-a-zb-fs-workers-0");
     assertThat(threadNameOf(brokerScheduler, SchedulingHints.cpuBound())).isEqualTo("zb-actors-0");
+  }
+
+  @Test
+  void shouldTagActorMetricsOfDedicatedSchedulerWithTenant() throws Exception {
+    // given
+    brokerCfg.getThreads().setPhysicalTenantActorPoolEnabled(true);
+    startup();
+
+    // when
+    threadNameOf(context.getPartitionActorSchedulingService(TENANT_ID), SchedulingHints.cpuBound());
+
+    // then
+    assertThat(
+            registry
+                .find("zeebe.actor_task_execution_count")
+                .tag("physicalTenant", TENANT_ID)
+                .counters())
+        .isNotEmpty();
   }
 
   @Test

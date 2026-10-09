@@ -9,7 +9,6 @@ package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
 
 public interface ActorMetrics {
 
@@ -20,14 +19,10 @@ public interface ActorMetrics {
   void observeJobSchedulingLatency(final long waitTimeNs, final SubscriptionType subscriptionType);
 
   static ActorMetrics ofNullable(final MeterRegistry registry) {
-    return ofNullable(registry, Tags.empty());
-  }
-
-  static ActorMetrics ofNullable(final MeterRegistry registry, final Tags tags) {
     if (registry == null) {
       return disabled();
     } else {
-      return new ActorMetricsImpl(registry, tags);
+      return new ActorMetricsImpl(registry);
     }
   }
 

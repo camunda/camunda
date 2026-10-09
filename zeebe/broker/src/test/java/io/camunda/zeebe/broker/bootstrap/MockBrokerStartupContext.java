@@ -138,7 +138,9 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   @Override
   public ActorSchedulerBuilder newActorSchedulerBuilder() {
-    return ActorScheduler.newActorScheduler();
+    return actorSchedulingService instanceof final ActorScheduler scheduler
+        ? scheduler.derive()
+        : ActorScheduler.newActorScheduler();
   }
 
   @Override
