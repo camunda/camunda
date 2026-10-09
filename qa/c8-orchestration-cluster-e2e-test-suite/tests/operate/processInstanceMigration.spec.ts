@@ -878,17 +878,6 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Exclusive gateway incident migration', async () => {
-      // Same async-incident race as the "Business rule task incident
-      // migration" step above (nightly run 37868097495): the popover opened on
-      // the right flow node, but its instance was still `running` with an empty
-      // `Retries Left` and no Incident section, because the migrated incident
-      // had not been raised on Exclusive gateway 2 yet. The old
-      // click-then-assert spent its full popover budget waiting on a
-      // precondition that had not happened. Wait for the flow node's own
-      // incidents overlay first — Operate repolls the per-flow-node statistics
-      // that drive it every 5s while the instance is running, so the wait
-      // absorbs engine/import lag on its own — then open the popover, retrying
-      // with a single reload recovery only when the store has wedged.
       await waitForAssertion({
         assertion: async () => {
           await expect(
@@ -913,7 +902,7 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
           await operateDiagramPage.resetDiagramZoomButton.click();
         },
-        maxRetries: 10,
+        maxRetries: 2,
       });
     });
   });
