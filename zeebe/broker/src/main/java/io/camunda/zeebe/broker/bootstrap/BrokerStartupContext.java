@@ -32,6 +32,8 @@ import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -67,6 +69,23 @@ public interface BrokerStartupContext {
   SpringBrokerBridge getSpringBrokerBridge();
 
   ActorSchedulingService getActorSchedulingService();
+
+  /**
+   * Returns a builder for a scheduler that shares clock, idle strategy, and meter registry with the
+   * broker-wide scheduler but owns its threads.
+   */
+  ActorSchedulerBuilder newActorSchedulerBuilder();
+
+  /**
+   * Returns the scheduler on which the partition actors of the given physical tenant run: its
+   * dedicated scheduler if one was registered, otherwise the broker-wide scheduler.
+   */
+  ActorSchedulingService getPartitionActorSchedulingService(String physicalTenantId);
+
+  void addPhysicalTenantActorScheduler(String physicalTenantId, ActorScheduler scheduler);
+
+  /** Returns the removed scheduler, or {@code null} if the tenant had none. */
+  @Nullable ActorScheduler removePhysicalTenantActorScheduler(String physicalTenantId);
 
   ConcurrencyControl getConcurrencyControl();
 

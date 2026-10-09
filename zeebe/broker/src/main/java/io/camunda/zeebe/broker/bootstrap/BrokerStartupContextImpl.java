@@ -35,6 +35,8 @@ import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -59,7 +61,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final BrokerInfo brokerInfo;
   private final BrokerCfg configuration;
   private final SpringBrokerBridge springBrokerBridge;
-  private final ActorSchedulingService actorScheduler;
+  private final ActorScheduler actorScheduler;
+  private final Map<String, ActorScheduler> physicalTenantActorSchedulers =
+      new ConcurrentHashMap<>();
   private final BrokerHealthCheckService healthCheckService;
   private final ClusterServicesImpl clusterServices;
   private final BrokerClient brokerClient;
@@ -95,7 +99,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
       final SpringBrokerBridge springBrokerBridge,
-      final ActorSchedulingService actorScheduler,
+      final ActorScheduler actorScheduler,
       final BrokerHealthCheckService healthCheckService,
       final ClusterServicesImpl clusterServices,
       final BrokerClient brokerClient,
@@ -156,6 +160,27 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public ActorSchedulingService getActorSchedulingService() {
     return actorScheduler;
+  }
+
+  @Override
+  public ActorSchedulerBuilder newActorSchedulerBuilder() {
+    return actorScheduler.derive();
+  }
+
+  @Override
+  public ActorSchedulingService getPartitionActorSchedulingService(final String physicalTenantId) {
+    return physicalTenantActorSchedulers.getOrDefault(physicalTenantId, actorScheduler);
+  }
+
+  @Override
+  public void addPhysicalTenantActorScheduler(
+      final String physicalTenantId, final ActorScheduler scheduler) {
+    physicalTenantActorSchedulers.put(physicalTenantId, scheduler);
+  }
+
+  @Override
+  public ActorScheduler removePhysicalTenantActorScheduler(final String physicalTenantId) {
+    return physicalTenantActorSchedulers.remove(physicalTenantId);
   }
 
   @Override

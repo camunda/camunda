@@ -85,7 +85,7 @@ public interface PartitionManager {
     return new PartitionManagerImpl(
         physicalTenantId,
         brokerStartupContext.getConcurrencyControl(),
-        brokerStartupContext.getActorSchedulingService(),
+        brokerStartupContext.getPartitionActorSchedulingService(physicalTenantId),
         // Use the physicalTenantConfig which contains both the shared broker-wide properties and
         // the properties overridden for the physical tenant.
         physicalTenantContext.config(),
