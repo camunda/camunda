@@ -21,7 +21,7 @@ import {DecisionOperations} from './DecisionOperations';
 const DEFINITION = createDecisionDefinition({tenantId: 'tenant-a'});
 const INITIAL_ENTRY =
 	'/operate/decisions?decisionDefinitionId=my-decision&decisionDefinitionVersion=1&tenantId=tenant-a&businessId=order-1&failed=false';
-const ACTION_NAME = 'Delete Decision Definition "My Decision - Version 1"';
+const ACTION_NAME = 'Delete decision definition "My Decision - version 1"';
 const CONFIRMATION = 'Yes, I confirm I want to delete this DRD and all related instances.';
 
 function renderOperations(definition = DEFINITION) {
