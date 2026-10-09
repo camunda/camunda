@@ -134,6 +134,7 @@ public class RdbmsSchemaInitializer implements InitializingBean, DisposableBean,
    * manager's own, as on a single-tenant node's aborted startup: the carrier it crossed the retry
    * loop in names only the tenant, which the report is already keyed by.
    */
+  @Override
   public Map<String, SchemaInitializationStatus> statuses() {
     final var statuses = new LinkedHashMap<String, SchemaInitializationStatus>();
     initialization

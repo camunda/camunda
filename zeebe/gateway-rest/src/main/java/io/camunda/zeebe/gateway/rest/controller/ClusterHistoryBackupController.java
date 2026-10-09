@@ -37,14 +37,17 @@ import org.springframework.web.bind.annotation.RequestParam;
  * only way to keep working while another tenant is broken: the fan-out is all-or-nothing.
  *
  * <p>{@link RequiresSecondaryStorage} answers 403 on a cluster whose storage cannot serve history
- * backups. It resolves the type through the request's physical tenant, which for an unstamped
- * {@code /cluster/v2} request is the default one — sound cluster-wide because {@code
+ * backups; the endpoints stay available while no tenant's storage is ready, as during recovery. It
+ * resolves the type through the request's physical tenant, which for an unstamped {@code
+ * /cluster/v2} request is the default one — sound cluster-wide because {@code
  * SecondaryStorageTypeHomogeneityValidation} refuses a cluster that mixes document stores with
  * other storages, so one tenant's type answers for all of them.
  */
 @CamundaRestController
 @ClusterScoped
-@RequiresSecondaryStorage({ELASTICSEARCH, OPENSEARCH})
+@RequiresSecondaryStorage(
+    value = {ELASTICSEARCH, OPENSEARCH},
+    availableWhileDegraded = true)
 @RequestMapping("/cluster/v2/backups/history")
 @NullMarked
 public final class ClusterHistoryBackupController {

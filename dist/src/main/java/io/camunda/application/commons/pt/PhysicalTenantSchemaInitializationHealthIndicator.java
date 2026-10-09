@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.pt;
 
+import io.camunda.cluster.SecondaryStorageReadiness.NodeReadiness;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -29,7 +30,7 @@ import org.springframework.boot.health.contributor.Status;
 @NullMarked
 public final class PhysicalTenantSchemaInitializationHealthIndicator implements HealthIndicator {
 
-  static final Status DEGRADED = new Status("DEGRADED");
+  public static final Status DEGRADED = new Status("DEGRADED");
 
   /**
    * Long enough to name the cause, short enough that the endpoint stays readable with many tenants:
@@ -50,34 +51,25 @@ public final class PhysicalTenantSchemaInitializationHealthIndicator implements 
   @Override
   public Health health() {
     final var statusesByTenant = statuses.get();
-    var allUp = true;
-    var allDown = !statusesByTenant.isEmpty();
     final var details = new LinkedHashMap<String, Object>();
-    for (final var tenant : statusesByTenant.entrySet()) {
-      final var status = tenant.getValue();
-      final var tenantStatus = statusOf(status.state());
-      allUp &= Status.UP.equals(tenantStatus);
-      allDown &= Status.DOWN.equals(tenantStatus);
-      details.put(tenant.getKey(), detailsOf(tenantStatus, status));
-    }
+    statusesByTenant.forEach(
+        (tenantId, status) -> details.put(tenantId, detailsOf(statusOf(status.state()), status)));
+    final var overall =
+        SchemaInitializationSecondaryStorageReadiness.rollUp(
+            statusesByTenant.values().stream().map(SchemaInitializationStatus::state).toList());
+    return Health.status(statusOf(overall)).withDetails(details).build();
+  }
 
-    final Health.Builder health;
-    if (allUp) {
-      health = Health.up();
-    } else if (allDown) {
-      health = Health.down();
-    } else {
-      health = Health.status(DEGRADED);
-    }
-    return health.withDetails(details).build();
+  public static Status statusOf(final NodeReadiness readiness) {
+    return switch (readiness) {
+      case READY -> Status.UP;
+      case DEGRADED -> DEGRADED;
+      case DOWN -> Status.DOWN;
+    };
   }
 
   private static Status statusOf(final SchemaInitializationStatus.State state) {
-    return switch (state) {
-      case INITIALIZED -> Status.UP;
-      case INITIALIZING, RETRYING, RECOVERING -> DEGRADED;
-      case FAILED, GAVE_UP, ABORTED -> Status.DOWN;
-    };
+    return statusOf(SchemaInitializationSecondaryStorageReadiness.readinessOf(state));
   }
 
   /**

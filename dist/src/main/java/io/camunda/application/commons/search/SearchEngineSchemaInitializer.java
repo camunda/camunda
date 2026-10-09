@@ -171,6 +171,7 @@ public class SearchEngineSchemaInitializer
   }
 
   /** Where each physical tenant's schema initialization stands, in configuration order. */
+  @Override
   public Map<String, SchemaInitializationStatus> statuses() {
     return initialization.statuses();
   }

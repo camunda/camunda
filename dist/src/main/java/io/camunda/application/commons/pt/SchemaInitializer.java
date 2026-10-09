@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.pt;
 
+import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 
 /** Applies one physical tenant's secondary-storage schema immediately. */
@@ -15,4 +16,6 @@ public interface SchemaInitializer {
 
   /** Applies the schema of the given physical tenant without using a startup retry loop. */
   void initializeNow(String physicalTenantId);
+
+  Map<String, SchemaInitializationStatus> statuses();
 }
