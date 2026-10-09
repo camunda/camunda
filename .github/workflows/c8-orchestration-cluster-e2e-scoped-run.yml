@@ -1,0 +1,246 @@
+# description: Runs ONE case of the orchestration-cluster E2E suite against a
+#              local stack, on demand. The verify step of coverage-plan test
+#              generation — see camunda/team-test-automation#83.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster - Scoped E2E Run
+
+# The nightly workflows run the whole suite and report to Slack. A generation
+# loop needs the opposite: one case, a machine-readable verdict, and an answer
+# in minutes, because it runs this on every iteration until the test it just
+# wrote is green.
+#
+# Dispatch-only. Nothing schedules this and no PR triggers it; it exists to be
+# called, by a person or by the loop in camunda/c8-cross-component-e2e-tests.
+#
+# The project MUST be pinned alongside the grep. Several projects in
+# playwright.config.ts declare a `teardown:` project, and Playwright runs a
+# teardown project in full whatever --grep says — selecting one case by pattern
+# alone pulls in five browser projects and an unrelated spec. Use
+# `scripts/camunda-suite-run.mjs` in the cross-component repository to resolve
+# the right project for a spec; it carries the table and the reasoning.
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: "Spec file, relative to the suite root (e.g. tests/operate/x.spec.ts)"
+        required: true
+        type: string
+      case_id:
+        description: "Coverage-plan case id carried in the test title (e.g. SR-UI-04)"
+        required: true
+        type: string
+      project:
+        description: "Playwright project to scope to"
+        required: true
+        type: choice
+        options:
+          - operate-e2e
+          - identity-e2e
+          - tasklist-e2e
+          - api-tests
+          - request-validation-tests
+      branch:
+        description: "Branch to test"
+        required: false
+        default: main
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SUITE_DIR: qa/c8-orchestration-cluster-e2e-test-suite
+
+jobs:
+  scoped-run:
+    name: ${{ inputs.case_id }} in ${{ inputs.project }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Set CAMUNDA_DOCKER_IMAGE
+        env:
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          if [[ "$BRANCH" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$BRANCH" == stable/* ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${BRANCH#stable/}-SNAPSHOT" >> "$GITHUB_ENV"
+          else
+            # A feature branch has no published image. Say so here rather than
+            # failing twenty minutes later on an image pull.
+            echo "::error::no SNAPSHOT image is published for '$BRANCH' — dispatch against main or a stable/* branch"
+            exit 1
+          fi
+
+      - name: Import Docker Hub secrets
+        id: dockerhub-secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY | dockerhub-token;
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ steps.dockerhub-secrets.outputs.dockerhub-username }}
+          password: ${{ steps.dockerhub-secrets.outputs.dockerhub-token }}
+
+      - name: Start Camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          # Pull separately from `up`, with backoff: the nightly has seen
+          # transient Docker Hub failures ("context deadline exceeded") and a
+          # blip should retry the pull, not fail the run. Both are idempotent.
+          attempts=5
+          delay=15
+          for attempt in $(seq 1 "$attempts"); do
+            if DATABASE=elasticsearch docker compose pull --include-deps camunda; then
+              break
+            fi
+            if [[ "$attempt" -eq "$attempts" ]]; then
+              echo "::error::failed to pull Camunda images after ${attempts} attempts"
+              exit 1
+            fi
+            echo "Attempt ${attempt}/${attempts} failed; retrying in ${delay}s..."
+            sleep "$delay"
+            delay=$(( delay * 2 ))
+          done
+          DATABASE=elasticsearch docker compose up -d camunda
+
+      - name: Wait for services to be ready
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          # Fail fast on a container that crashed rather than waiting out the
+          # full timeout. Resolved through compose, and --all, so an already
+          # exited container is still found. Two consecutive observations, so a
+          # single legitimate restart does not fail the job.
+          non_running=0
+          for i in {1..90}; do
+            cid="$(DATABASE=elasticsearch docker compose ps --all --quiet camunda 2>/dev/null || true)"
+            running=""
+            if [[ -n "$cid" ]]; then
+              running="$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/null || true)"
+            fi
+            if [[ "$running" == "true" ]]; then
+              non_running=0
+            else
+              non_running=$(( non_running + 1 ))
+              if (( non_running >= 2 )); then
+                DATABASE=elasticsearch docker compose logs --tail 200 camunda || true
+                echo "::error::the camunda container is not running; it will never become ready"
+                exit 1
+              fi
+            fi
+
+            tasklist=$(curl -s -m 5 http://localhost:8080/tasklist || echo Failed)
+            operate=$(curl -s -m 5 http://localhost:8080/operate || echo Failed)
+            identity=$(curl -s -m 5 http://localhost:8080/identity || echo Failed)
+            if [[ "$tasklist" != Failed && "$operate" != Failed && "$identity" != Failed ]]; then
+              echo "Services are ready."
+              exit 0
+            fi
+            echo "Waiting for services... ($i/90)"
+            sleep 10
+          done
+          DATABASE=elasticsearch docker compose logs --tail 200 camunda || true
+          echo "::error::services failed to start in time"
+          exit 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Install dependencies
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the scoped case
+        id: run
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        env:
+          LOCAL_TEST: "false"
+          CAMUNDA_AUTH_STRATEGY: BASIC
+          CAMUNDA_BASIC_AUTH_USERNAME: demo
+          CAMUNDA_BASIC_AUTH_PASSWORD: demo
+          CORE_APPLICATION_URL: http://localhost:8080
+          ZEEBE_REST_ADDRESS: http://localhost:8080
+          # Never the Slack reporter: this is a loop iteration, not a nightly.
+          INCLUDE_SLACK_REPORTER: "false"
+          SPEC: ${{ inputs.spec }}
+          CASE_ID: ${{ inputs.case_id }}
+          PROJECT: ${{ inputs.project }}
+        run: |
+          # The id is interpolated into a regex, so a metacharacter in it would
+          # change what the pattern means. Reject rather than escape: a case id
+          # is an identifier, and one carrying a metacharacter is a mistake
+          # upstream that should be seen there.
+          if [[ ! "$CASE_ID" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::case_id '$CASE_ID' must be letters, digits, hyphen or underscore"
+            exit 1
+          fi
+          set +e
+          npx playwright test \
+            "--project=$PROJECT" \
+            "--grep=${CASE_ID}:" \
+            "$SPEC"
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Read the verdict
+        if: always()
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        env:
+          CASE_ID: ${{ inputs.case_id }}
+        run: |
+          # Playwright's exit code alone is not the verdict -- a run whose
+          # --grep selected nothing exits 0. See the script's header.
+          report=$(find . -maxdepth 3 -name 'results.json' -path '*json*' | head -1)
+          if [[ -z "$report" ]]; then
+            echo "::error::no JSON report was produced; cannot verify that the case ran"
+            exit 1
+          fi
+          node "$GITHUB_WORKSPACE/.github/scripts/e2e-scoped-verdict.mjs" \
+            "$report" "$CASE_ID"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scoped-run-${{ inputs.case_id }}
+          path: |
+            qa/c8-orchestration-cluster-e2e-test-suite/**/results.json
+            qa/c8-orchestration-cluster-e2e-test-suite/test-results/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Print Docker logs on failure
+        if: failure()
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: DATABASE=elasticsearch docker compose logs --tail 300 camunda
