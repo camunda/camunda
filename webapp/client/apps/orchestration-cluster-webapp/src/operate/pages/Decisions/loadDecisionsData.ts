@@ -15,6 +15,7 @@ type LoadDecisionsDataOptions = {
 	decisionDefinitionId?: string;
 	decisionDefinitionVersion?: number;
 	tenantId?: string;
+	prefetchDefinitions?: boolean;
 };
 
 async function loadDecisionsData({
@@ -22,9 +23,12 @@ async function loadDecisionsData({
 	decisionDefinitionId,
 	decisionDefinitionVersion,
 	tenantId,
+	prefetchDefinitions = true,
 }: LoadDecisionsDataOptions) {
 	const specificTenantId = isSpecificTenant(tenantId) ? tenantId : undefined;
-	await queryClient.ensureQueryData(decisionDefinitionsOptions(specificTenantId));
+	if (prefetchDefinitions) {
+		await queryClient.ensureQueryData(decisionDefinitionsOptions(specificTenantId));
+	}
 
 	if (decisionDefinitionId === undefined) {
 		return true;

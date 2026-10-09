@@ -32,6 +32,9 @@ test.beforeEach(({network}) => {
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
 		}),
+		mockQueryDecisionDefinitionsEndpoint({
+			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
+		}),
 	);
 });
 
@@ -46,8 +49,29 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 
 		await expect(operatePreviewDecisionsPage.heading).toBeAttached();
 		await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
-		await expect(operatePreviewDecisionsPage.decisionPanelPlaceholder).toBeVisible();
+		await expect(operatePreviewDecisionsPage.decisionPanel).toBeVisible();
+		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no Decision selected')).toBeVisible();
 		await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
+	});
+
+	test('should clear a stale decision selection from the URL and notify', async ({
+		network,
+		operatePreviewDecisionsPage,
+		page,
+	}) => {
+		network.use(
+			mockQueryDecisionDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []})),
+			}),
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
+			}),
+		);
+		await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true&decisionDefinitionId=missing');
+
+		await expect(page).not.toHaveURL(/decisionDefinitionId/);
+		await expect(page.getByText("Couldn't find the decision", {exact: true})).toBeVisible();
+		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no Decision selected')).toBeVisible();
 	});
 
 	test('should keep the Carbon Decisions route working', async ({network, operateDecisionsPage, page}) => {

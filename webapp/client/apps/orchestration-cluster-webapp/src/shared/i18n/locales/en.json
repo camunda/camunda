@@ -1072,8 +1072,7 @@
 			"decisions": {
 				"title": "Decisions",
 				"scaffold": {
-					"filtersPanelPlaceholder": "Filters panel placeholder",
-					"decisionPanelPlaceholder": "Decision panel placeholder"
+					"filtersPanelPlaceholder": "Filters panel placeholder"
 				},
 				"diagramHeader": {
 					"title": "Decision",
@@ -1498,6 +1497,7 @@
 					"resultCountMore": "{{count}}+ results"
 				},
 				"diagramShell": {
+					"loading": "Loading diagram",
 					"forbiddenMessage": "Missing permissions to view the Definition",
 					"forbiddenAdditionalInfo": "Contact your organization owner or admin to give you the necessary permissions to read this definition"
 				},
