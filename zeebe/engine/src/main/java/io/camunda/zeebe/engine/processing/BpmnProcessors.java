@@ -196,6 +196,7 @@ public final class BpmnProcessors {
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final InstantSource clock,
       final SuspensionMetrics suspensionMetrics) {
+    // TODO: @yohanfernando >> Need to add StorageOrdinalKey to commands (mainly command rejection)
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
