@@ -7,19 +7,18 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
-import static io.camunda.zeebe.engine.processing.resource.OrphanedProcessDefinitions.orphanOnPartition;
+import static io.camunda.zeebe.engine.processing.resource.OrphanedProcessDefinitions.assertFullyDeleted;
+import static io.camunda.zeebe.engine.processing.resource.OrphanedProcessDefinitions.orphanOnPartitions;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.api.model.config.initialization.ConfiguredTenant;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
-import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -28,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -39,6 +37,8 @@ public class OrphanedProcessDeletionMultiTenancyTest {
   private static final int STUCK_PARTITION = 2;
   private static final String USER_A = UUID.randomUUID().toString();
   private static final String USER_B = UUID.randomUUID().toString();
+  private static final String TENANT_A = Strings.newRandomValidTenantId();
+  private static final String TENANT_B = Strings.newRandomValidTenantId();
 
   @Rule
   public final EngineRule engine =
@@ -57,32 +57,29 @@ public class OrphanedProcessDeletionMultiTenancyTest {
                 final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
                 defaultRoles.put("admin", Map.of("users", List.of(USER_A, USER_B)));
                 cfg.getInitialization().setDefaultRoles(defaultRoles);
-              });
+              })
+          .withSecurityConfig(
+              cfg ->
+                  cfg.getInitialization()
+                      .setTenants(
+                          List.of(
+                              tenantWithUser(TENANT_A, USER_A), tenantWithUser(TENANT_B, USER_B))));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-
-  private final String tenantA = Strings.newRandomValidTenantId();
-  private final String tenantB = Strings.newRandomValidTenantId();
-
-  @Before
-  public void setUp() {
-    createTenantWithUser(tenantA, USER_A);
-    createTenantWithUser(tenantB, USER_B);
-  }
 
   @Test
   public void shouldNotRecoverOrphanedDeletionOfAnotherTenant() {
     // given
-    final var metadata = deployOnAllPartitions(tenantA);
+    final var metadata = deployOnAllPartitions(TENANT_A);
     final long processDefinitionKey = metadata.getProcessDefinitionKey();
-    orphanOnPartition(engine, metadata, PARTITION_COUNT, STUCK_PARTITION);
+    orphanOnPartitions(engine, metadata, PARTITION_COUNT, STUCK_PARTITION);
 
     // when
     final var deletion =
         engine
             .resourceDeletion()
             .withResourceKey(processDefinitionKey)
-            .withAuthorizedTenantIds(tenantB)
+            .withAuthorizedTenantIds(TENANT_B)
             .delete(USER_B);
 
     // then - the deployment partition no longer knows the definition's tenant and accepts the retry
@@ -112,31 +109,16 @@ public class OrphanedProcessDeletionMultiTenancyTest {
     engine
         .resourceDeletion()
         .withResourceKey(processDefinitionKey)
-        .withAuthorizedTenantIds(tenantA)
+        .withAuthorizedTenantIds(TENANT_A)
         .delete(USER_A);
 
     // then
-    assertThat(
-            RecordingExporter.processRecords()
-                .withIntent(ProcessIntent.FULLY_DELETED)
-                .withProcessDefinitionKey(processDefinitionKey)
-                .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
-                .exists())
-        .isTrue();
+    assertFullyDeleted(processDefinitionKey);
   }
 
-  private void createTenantWithUser(final String tenantId, final String username) {
-    engine.tenant().newTenant().withTenantId(tenantId).create();
-    engine
-        .tenant()
-        .addEntity(tenantId)
-        .withEntityId(username)
-        .withEntityType(EntityType.USER)
-        .add();
-    RecordingExporter.tenantRecords(TenantIntent.ENTITY_ADDED)
-        .withTenantId(tenantId)
-        .withPartitionId(STUCK_PARTITION)
-        .await();
+  private static ConfiguredTenant tenantWithUser(final String tenantId, final String username) {
+    return new ConfiguredTenant(
+        tenantId, tenantId, "", List.of(username), List.of(), List.of(), List.of(), List.of());
   }
 
   private ProcessMetadataValue deployOnAllPartitions(final String tenantId) {

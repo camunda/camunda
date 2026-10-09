@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.Protocol;
@@ -22,20 +24,25 @@ final class OrphanedProcessDefinitions {
   private OrphanedProcessDefinitions() {}
 
   /**
-   * Leaves the definition deleted on every partition but {@code stuckPartition}, where it rests in
-   * PENDING_DELETION, and the deployment partition still awaiting that partition's drain report.
+   * Leaves the definition deleted on every partition but the {@code stuckPartitions}, where it
+   * rests in PENDING_DELETION, and the deployment partition still awaiting their drain reports.
    */
-  static void orphanOnPartition(
+  static void orphanOnPartitions(
       final EngineRule engine,
       final ProcessMetadataValue metadata,
       final int partitionCount,
-      final int stuckPartition) {
+      final int... stuckPartitions) {
     final var allPartitions = IntStream.rangeClosed(1, partitionCount).boxed().toList();
+    final var stuck = IntStream.of(stuckPartitions).boxed().toList();
 
     engine.stop();
-    engine.writeRecordsOnPartition(stuckPartition, processEvent(ProcessIntent.DELETING, metadata));
     for (final int partitionId : allPartitions) {
-      if (partitionId != Protocol.DEPLOYMENT_PARTITION && partitionId != stuckPartition) {
+      if (partitionId == Protocol.DEPLOYMENT_PARTITION) {
+        continue;
+      }
+      if (stuck.contains(partitionId)) {
+        engine.writeRecordsOnPartition(partitionId, processEvent(ProcessIntent.DELETING, metadata));
+      } else {
         engine.writeRecordsOnPartition(
             partitionId,
             processEvent(ProcessIntent.DELETING, metadata),
@@ -52,15 +59,27 @@ final class OrphanedProcessDefinitions {
 
     engine.writeRecords(
         allPartitions.stream()
-            .filter(partitionId -> partitionId != stuckPartition)
+            .filter(partitionId -> !stuck.contains(partitionId))
             .map(partitionId -> drainReport(metadata, partitionId))
             .toArray(RecordToWrite[]::new));
+    // wait until all non-stuck partitions completed their deletion
     RecordingExporter.processRecords()
         .withIntent(ProcessIntent.DELETE_COMPLETED)
         .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
         .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
-        .limit(partitionCount - 1)
-        .await();
+        .limit(partitionCount - stuck.size())
+        .toList();
+  }
+
+  static void assertFullyDeleted(final long processDefinitionKey) {
+    assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.FULLY_DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
+                .exists())
+        .describedAs("definition %d is fully deleted", processDefinitionKey)
+        .isTrue();
   }
 
   private static RecordToWrite processEvent(
