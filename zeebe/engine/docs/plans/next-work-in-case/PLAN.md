@@ -22,6 +22,9 @@ mechanism hands the work out is still open ([Q3](#open-questions)).
 ## Open items
 **Status:** draft — next: this team settles Q1–Q3 by 2026-10-20; then the plan goes to c8-api-team and identity for review.
 
+To answer a question, comment on its row in the plan PR. The plan author folds answers into the
+plan each round and links answers given elsewhere.
+
 - [Q1](#open-questions) — Do a task and its local variables read in one command always agree? · this team · blocks the design
 - [Q2](#open-questions) — What does a client do when a wait times out or a response is lost? · this team · blocks the design
 - [Q3](#open-questions) — Which candidate hands out the work? · this team · blocks the design
