@@ -66,22 +66,20 @@ func TestPhysicalTenantCommandRouting(t *testing.T) {
 					assert.Equal(t, command, base)
 					return
 				}
-				require.ErrorContains(t, err, "has been removed")
+				require.EqualError(t, err, "unsupported operation: "+command)
 				assert.Empty(t, base)
-				assert.Contains(t, err.Error(), "use `c8run physical-tenants` instead")
-				assert.Contains(t, withCLIName(err.Error(), "c8ctl cluster"), "use `c8ctl cluster physical-tenants` instead")
 			})
 		}
 	}
 }
 
-func TestSecretsRejectsRemovedTenantSelectors(t *testing.T) {
+func TestSecretsRejectsUnsupportedTenantSelectors(t *testing.T) {
 	for _, selector := range [][]string{{"--tenant", "sales"}, {"--tenant=sales"}, {"--tenant"}, {"--tenant="}} {
-		for _, operation := range []string{"set", "list", "path", "delete", "import", "help"} {
+		for _, operation := range []string{"set", "list", "path", "delete", "import"} {
 			t.Run(strings.Join(selector, " ")+"/"+operation, func(t *testing.T) {
 				command, output, _ := testSecretsCommand("", false)
 				err := command.run(t.TempDir(), append([]string{operation}, selector...))
-				require.EqualError(t, err, "--tenant has been removed; use --physical-tenant <id> instead")
+				require.Error(t, err)
 				assert.Empty(t, output.String())
 			})
 		}

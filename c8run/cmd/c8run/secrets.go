@@ -124,8 +124,6 @@ func extractTenantArgument(args []string) ([]string, string, error) {
 		arg := args[i]
 		value, isTenant := "", false
 		switch {
-		case arg == "--tenant" || strings.HasPrefix(arg, "--tenant="):
-			return nil, "", errors.New("--tenant has been removed; use --physical-tenant <id> instead")
 		case arg == "--physical-tenant":
 			if i+1 >= len(args) {
 				return nil, "", errors.New("--physical-tenant requires a physical tenant ID")

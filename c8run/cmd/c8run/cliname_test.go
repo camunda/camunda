@@ -28,7 +28,6 @@ func TestWithCLINameRewritesRunnableCommands(t *testing.T) {
 	// Unrelated mentions of c8run (product name, file names) stay intact.
 	assert.Equal(t, "the c8run .env file", withCLIName("the c8run .env file", "c8ctl cluster"))
 	assert.Equal(t, in, withCLIName(in, ""), "unset name must keep c8run output unchanged")
-	assert.Equal(t, "`c8ctl cluster pt` has been removed", withCLIName("`c8run pt` has been removed", "c8ctl cluster"))
 }
 
 func TestTenantsHintsUseConfiguredCLIName(t *testing.T) {

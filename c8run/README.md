@@ -57,17 +57,7 @@ To run with physical tenants for one start only, without saving them (useful in 
 
 Tools that wrap c8run, such as `c8ctl cluster`, can set `C8RUN_CLI_NAME` to the command users type, for example `C8RUN_CLI_NAME="c8ctl cluster"`. c8run then shows that name in help output and in command hints such as `c8ctl cluster physical-tenants list`. When the variable is unset, output names `c8run`.
 
-### Breaking change: physical-tenant command names
-
-The `tenants` and `pt` command aliases and the secrets selector `--tenant` have been removed. Update scripts and commands as follows:
-
-- Replace `c8run tenants …` or `c8run pt …` with `c8run physical-tenants …`.
-- Replace `c8run secrets --tenant <id> …` with `c8run secrets --physical-tenant <id> …`. The `--physical-tenant=<id>` form is also supported.
-- With c8ctl, use `c8ctl cluster physical-tenants …` and `c8ctl cluster secrets --physical-tenant <id> …`.
-
 Physical tenants are isolated engines; logical tenants, such as those managed by `c8ctl list tenants` and `c8ctl use tenant`, are a separate concept.
-
-Upgrade c8run and c8ctl together to compatible releases. Older c8ctl versions translate the canonical names back to the removed forms and cannot manage physical tenants or physical-tenant secrets with this c8run. The coordinated c8ctl release must forward the canonical names unchanged and remove its legacy aliases. Existing saved physical tenant configuration, secret directories, and `C8RUN_TENANTS_FILE` / `C8RUN_TENANTS_MODE` settings do not need migration.
 
 ### Limitations
 
