@@ -9,7 +9,6 @@
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
-import {Trash2} from '@camunda/design-system/icons';
 import type {CreateDecisionInstancesDeletionBatchOperationResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
@@ -87,7 +86,6 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 					{
 						key: 'delete',
 						label: t('operate.decisions.toolbar.delete'),
-						icon: <Trash2 aria-hidden />,
 						loading: isDeleting,
 						variant: 'destructive',
 						onClick: () => setShowDeleteModal(true),

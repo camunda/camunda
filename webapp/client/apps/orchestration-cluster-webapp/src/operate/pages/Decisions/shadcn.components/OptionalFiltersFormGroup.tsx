@@ -8,10 +8,12 @@
 
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
+import {Heading} from '@camunda/design-system';
 import {
 	OptionalFiltersFormGroup as SharedOptionalFiltersFormGroup,
 	type OptionalFilterDefinition,
 } from '#/operate/shared/OptionalFiltersFormGroup/shadcn.components/OptionalFiltersFormGroup';
+import {DateTimeRangeField} from '#/operate/shared/DateTimeRangeField/shadcn.components/DateTimeRangeField';
 import {mergeValidators} from '#/operate/shared/utils/mergeValidators';
 import {
 	validateIdsCharacters,
@@ -66,10 +68,26 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 				id: 'evaluationDateRange',
 				keys: ['evaluationDateFrom', 'evaluationDateTo'],
 				label: t('operate.decisions.filters.evaluationDateRange'),
-				type: 'dateRange',
-				popoverTitle: t('operate.decisions.filters.evaluationDatePopoverTitle'),
-				fromKey: 'evaluationDateFrom',
-				toKey: 'evaluationDateTo',
+				type: 'custom',
+				render: (removeButton) => (
+					<div
+						role="group"
+						aria-labelledby="optional-filter-evaluationDateRange-label"
+						className="flex flex-col gap-1.5"
+					>
+						<div className="flex items-center justify-between">
+							<Heading as="h3" variant="heading-xs" id="optional-filter-evaluationDateRange-label">
+								{t('operate.decisions.filters.evaluationDateRange')}
+							</Heading>
+							{removeButton}
+						</div>
+						<DateTimeRangeField
+							idPrefix="optional-filter-evaluationDateRange"
+							fromKey="evaluationDateFrom"
+							toKey="evaluationDateTo"
+						/>
+					</div>
+				),
 			},
 		],
 		[t],

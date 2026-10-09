@@ -41,7 +41,10 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createLicense()),
 		}),
 		mockQueryDecisionDefinitionsEndpoint({
-			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
+			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []})),
+		}),
+		mockQueryDecisionInstancesEndpoint({
+			successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 		}),
 	);
 });

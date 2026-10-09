@@ -127,7 +127,7 @@ describe('Processes variable filter', () => {
 		);
 		const screen = await renderProcessesPage();
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'status');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Value'}), '"open"');
@@ -144,7 +144,7 @@ describe('Processes variable filter', () => {
 		);
 		const screen = await renderProcessesPage();
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'status');
 		await userEvent.type(screen.getByRole('textbox', {name: 'Value'}), '"open"{Enter}');
@@ -186,7 +186,7 @@ describe('Processes variable filter', () => {
 		);
 		const screen = await renderProcessesPage();
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'status');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Value'}), '"NEW');
@@ -266,7 +266,7 @@ describe('Processes variable filter', () => {
 		);
 		const screen = await renderProcessesPage();
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Error Message'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Error Message'}), 'timeout');
 
@@ -287,7 +287,7 @@ describe('Processes variable filter', () => {
 		);
 		const screen = await renderProcessesPage();
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Error Message'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Error Message'}), 'timeout');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Value'}), '"open2"');
@@ -304,7 +304,7 @@ describe('Processes variable filter', () => {
 		);
 		const screen = await renderProcessesPage('/operate/processes?errorMessage=timeout');
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'status');
 		await userEvent.click(screen.getByRole('button', {name: 'Add condition'}));
@@ -393,7 +393,7 @@ describe('Processes variable filter', () => {
 		);
 		const screen = await renderProcessesPage('/operate/processes?errorMessage=timeout', ['/operate/previous']);
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'status');
 		await userEvent.click(screen.getByRole('button', {name: 'Add condition'}));
@@ -471,7 +471,7 @@ describe('Processes variable filter', () => {
 		);
 		const screen = await renderProcessesPage();
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Error Message'}));
 		await userEvent.type(screen.getByRole('textbox', {name: 'Error Message'}), 'timeout');
 		await userEvent.hover(screen.getByRole('list', {name: 'Active variable filters'}));
@@ -499,7 +499,7 @@ describe('Processes variable filter', () => {
 		expect(getStoredConditions()).toBeNull();
 		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeDisabled();
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
 
 		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('');

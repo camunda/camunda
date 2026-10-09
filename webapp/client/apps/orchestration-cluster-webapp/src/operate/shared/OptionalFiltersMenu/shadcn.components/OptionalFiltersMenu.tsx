@@ -6,10 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type ReactElement} from 'react';
+import {useRef, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@camunda/design-system';
-import {Filter} from '@camunda/design-system/icons';
+import {
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@camunda/design-system';
+import {Plus} from '@camunda/design-system/icons';
 
 interface Props<T> {
 	visibleFilters: T[];
@@ -23,31 +32,64 @@ const OptionalFiltersMenu = <T extends string>({
 	onFilterSelect,
 }: Props<T>): ReactElement | null => {
 	const {t} = useTranslation();
+	const isFilterSelectedRef = useRef(false);
+	const triggerRef = useRef<HTMLButtonElement>(null);
 	const unselectedOptionalFilters = optionalFilters.filter((filter) => !visibleFilters.includes(filter.id));
 
-	return unselectedOptionalFilters.length > 0 ? (
-		<div className="flex justify-end">
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button type="button" variant="ghost">
-						<span>{t('operate.shared.optionalFiltersMenu.moreFilters')}</span>
-						<Filter aria-hidden />
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent side="top" align="end">
-					{unselectedOptionalFilters.map((filter) => (
-						<DropdownMenuItem
-							key={filter.id}
-							onClick={() => onFilterSelect(filter.id)}
-							data-testid={`optional-filter-menuitem-${filter.id}`}
-						>
-							{filter.label}
-						</DropdownMenuItem>
-					))}
-				</DropdownMenuContent>
-			</DropdownMenu>
-		</div>
-	) : null;
+	const label = t('operate.shared.optionalFiltersMenu.moreFilters');
+
+	if (unselectedOptionalFilters.length === 0) {
+		return (
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<span className="inline-block self-start">
+						<Button variant="secondary" size="sm" disabled>
+							<Plus aria-hidden data-icon="inline-start" />
+							{label}
+						</Button>
+					</span>
+				</TooltipTrigger>
+				<TooltipContent>{t('operate.shared.optionalFiltersMenu.allFiltersAdded')}</TooltipContent>
+			</Tooltip>
+		);
+	}
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button ref={triggerRef} variant="secondary" size="sm" className="self-start">
+					<Plus aria-hidden data-icon="inline-start" />
+					{label}
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent
+				align="start"
+				onCloseAutoFocus={(event) => {
+					// Only a selection moves focus to the new field; dismissing keeps the default trigger refocus
+					if (isFilterSelectedRef.current) {
+						event.preventDefault();
+						isFilterSelectedRef.current = false;
+					}
+				}}
+			>
+				{unselectedOptionalFilters.map(({id, label}) => (
+					<DropdownMenuItem
+						key={id}
+						onSelect={() => {
+							isFilterSelectedRef.current = true;
+							onFilterSelect(id);
+							// Skip the trigger refocus on close and wait for the new field to mount
+							requestAnimationFrame(() => {
+								requestAnimationFrame(() => (document.getElementById(id) ?? triggerRef.current)?.focus());
+							});
+						}}
+					>
+						{label}
+					</DropdownMenuItem>
+				))}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
 };
 
 export {OptionalFiltersMenu};

@@ -42,7 +42,7 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 	it('should list all optional filters in the menu', async () => {
 		const screen = await render(<Harness />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 
 		await expect.element(screen.getByRole('menuitem', {name: 'Decision instance key(s)'})).toBeVisible();
 		await expect.element(screen.getByRole('menuitem', {name: 'Process instance key'})).toBeVisible();
@@ -53,12 +53,12 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 	it('should show a filter selected from the menu and hide it from the menu', async () => {
 		const screen = await render(<Harness />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
 
 		await expect.element(screen.getByLabelText('Process instance key')).toBeVisible();
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await expect.element(screen.getByRole('menuitem', {name: 'Process instance key'})).not.toBeInTheDocument();
 	});
 
@@ -76,7 +76,7 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		async (initialValues) => {
 			const screen = await render(<Harness initialValues={initialValues} />);
 
-			await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+			await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 			await expect.element(screen.getByRole('menuitem', {name: 'Evaluation date range'})).not.toBeInTheDocument();
 		},
 	);
@@ -121,12 +121,72 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		expect(onSubmit.mock.calls[0]?.[0].processInstanceKey).toBeUndefined();
 	});
 
-	it('should open the date range modal when selecting the evaluation date range', async () => {
+	it('should show the from, to and quick range fields when selecting the evaluation date range', async () => {
 		const screen = await render(<Harness />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Evaluation date range'}));
 
-		await expect.element(screen.getByTestId('date-range-modal')).toBeVisible();
+		await expect.element(screen.getByRole('textbox', {name: 'From'})).toBeVisible();
+		await expect.element(screen.getByRole('textbox', {name: 'To'})).toBeVisible();
+		await expect.element(screen.getByRole('combobox', {name: 'Quick ranges'})).toBeVisible();
+	});
+
+	it('should show a validation error for a malformed date and time', async () => {
+		const screen = await render(<Harness initialVisible={['evaluationDateRange']} />);
+
+		await userEvent.fill(screen.getByRole('textbox', {name: 'From'}), '2026-13-45 99:00');
+		await userEvent.tab();
+
+		await expect.element(screen.getByRole('textbox', {name: 'From'})).toHaveAttribute('aria-invalid', 'true');
+		await expect.element(screen.getByText('Enter a date and time as YYYY-MM-DD HH:mm:ss')).toBeVisible();
+	});
+
+	it('should keep the picker closed after picking a date and clicking outside', async () => {
+		const screen = await render(<Harness initialVisible={['evaluationDateRange']} />);
+
+		await userEvent.click(screen.getByRole('textbox', {name: 'From'}));
+		await userEvent.click(screen.getByRole('gridcell', {name: /15/}).getByRole('button').first());
+		await userEvent.click(screen.getByText('Evaluation date range'));
+
+		await expect.element(screen.getByRole('grid')).not.toBeInTheDocument();
+	});
+
+	it('should show an error on the empty field when only one end of the range is set', async () => {
+		const screen = await render(
+			<Harness
+				initialVisible={['evaluationDateRange']}
+				initialValues={{evaluationDateFrom: '2026-10-07T00:00:00.000+00:00'}}
+			/>,
+		);
+
+		await expect.element(screen.getByRole('textbox', {name: 'To'})).toHaveAttribute('aria-invalid', 'true');
+		await expect.element(screen.getByText('Enter a date and time')).toBeVisible();
+	});
+
+	it('should replace malformed text when selecting a quick range', async () => {
+		const screen = await render(<Harness initialVisible={['evaluationDateRange']} />);
+
+		await userEvent.fill(screen.getByRole('textbox', {name: 'From'}), 'not a date');
+		await userEvent.tab();
+		await userEvent.click(screen.getByRole('combobox', {name: 'Quick ranges'}));
+		await userEvent.click(screen.getByRole('option', {name: 'Last 1 hour'}));
+
+		await expect.element(screen.getByRole('textbox', {name: 'From'})).toHaveAttribute('aria-invalid', 'false');
+		await expect.element(screen.getByRole('textbox', {name: 'From'})).not.toHaveValue('not a date');
+	});
+
+	it('should fill the evaluation date range when selecting a quick range', async () => {
+		const onSubmit = vi.fn();
+		const screen = await render(<Harness initialVisible={['evaluationDateRange']} onSubmit={onSubmit} />);
+
+		await userEvent.click(screen.getByRole('combobox', {name: 'Quick ranges'}));
+		await userEvent.click(screen.getByRole('option', {name: 'Last 3 hours'}));
+		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+
+		const {evaluationDateFrom, evaluationDateTo} = onSubmit.mock.calls[0]?.[0] ?? {};
+		const rangeMs = new Date(evaluationDateTo).getTime() - new Date(evaluationDateFrom).getTime();
+		expect(rangeMs).toBeGreaterThanOrEqual(3 * 60 * 60 * 1000 - 1000);
+		expect(rangeMs).toBeLessThanOrEqual(3 * 60 * 60 * 1000 + 1000);
 	});
 });
