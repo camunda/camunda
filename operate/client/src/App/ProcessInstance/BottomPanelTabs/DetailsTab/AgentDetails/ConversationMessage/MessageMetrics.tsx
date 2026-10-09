@@ -35,12 +35,17 @@ type Props = {
 const MessageMetrics: React.FC<Props> = memo(function MessageMetrics({
   metrics,
 }) {
-  if (
-    metrics === null ||
-    (metrics.inputTokens === null &&
-      metrics.outputTokens === null &&
-      metrics.durationMs === null)
-  ) {
+  if (metrics === null) {
+    return null;
+  }
+
+  const hasTokenMetrics =
+    metrics.inputTokens !== null ||
+    metrics.outputTokens !== null ||
+    metrics.cacheReadTokenCount !== null ||
+    metrics.cacheCreationTokenCount !== null;
+
+  if (!hasTokenMetrics && metrics.durationMs === null) {
     return null;
   }
 
@@ -58,7 +63,7 @@ const MessageMetrics: React.FC<Props> = memo(function MessageMetrics({
 
   return (
     <MetricsContainer>
-      {(metrics.inputTokens !== null || metrics.outputTokens !== null) && (
+      {hasTokenMetrics && (
         <Tooltip
           description={
             <>

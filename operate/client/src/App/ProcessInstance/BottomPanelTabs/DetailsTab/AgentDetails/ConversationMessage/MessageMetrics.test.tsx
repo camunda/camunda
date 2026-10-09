@@ -147,10 +147,38 @@ describe('<MessageMetrics />', () => {
     expect(tooltip).not.toHaveTextContent('Cache write');
   });
 
-  it('should not render the token tag when both inputTokens and outputTokens are null', () => {
+  it('should render the token tag when only cache tokens are present', async () => {
+    const {user} = render(
+      <MessageMetrics
+        metrics={{
+          ...FULL_METRICS,
+          inputTokens: null,
+          outputTokens: null,
+          reasoningTokenCount: null,
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId('message-token-metric')).toHaveTextContent(
+      '17,000 tokens',
+    );
+
+    await user.hover(screen.getByTestId('message-token-metric'));
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent('Cache read: 7,000');
+    expect(tooltip).toHaveTextContent('Cache write: 10,000');
+  });
+
+  it('should not render the token tag when all token metrics are null', () => {
     render(
       <MessageMetrics
-        metrics={{...FULL_METRICS, inputTokens: null, outputTokens: null}}
+        metrics={{
+          ...FULL_METRICS,
+          inputTokens: null,
+          outputTokens: null,
+          cacheReadTokenCount: null,
+          cacheCreationTokenCount: null,
+        }}
       />,
     );
 
