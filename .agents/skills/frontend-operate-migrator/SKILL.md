@@ -53,7 +53,7 @@ Ask once if the surviving ticket's scope is unclear.
 
    Run the cheapest affected checks first, then the full applicable **local** tier before publication; the PR tier and visual CI follow draft creation.
    Never suppress warnings, weaken tests, or regenerate visual snapshots to hide a regression.
-   From the repo root, run `node .claude/skills/frontend-operate-migrator/scripts/fidelity.mjs --ported <component-dir>` after the edit tier; all `operate.*` keys must exist in en/de/fr/es.
+   From the repo root, run `node .agents/skills/frontend-operate-migrator/scripts/fidelity.mjs --ported <component-dir>` after the edit tier; all `operate.*` keys must exist in en/de/fr/es.
    Omit this scoped gate from the untouched-branch baseline if the component does not exist yet.
 4. **Review locally before pushing.** Get independent Operate/frontend and high-confidence code reviews, plus a read-only **legacy -> migrated** branch/effect review (including shared logic not copied per consumer).
    These are briefs, not prescribed agent types.

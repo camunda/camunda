@@ -29,13 +29,14 @@ safe-outputs:
     draft: true
     excluded-files:
       - ".github/workflows/**"
+      - ".agents/**"
       - ".claude/**"
       - "**/*.lock"
 ---
 
 # Bug Investigation
 
-Read `.claude/skills/bug-investigation/SKILL.md` in full and execute it exactly, for issue
+Read `.agents/skills/bug-investigation/SKILL.md` in full and execute it exactly, for issue
 `#${{ github.event.issue.number }}` in `${{ github.repository }}`.
 
 Follow the skill's phases and hard rules as written, with these adaptations for running

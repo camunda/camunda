@@ -225,15 +225,15 @@ Example prompt: _"I'd like to run the commit-level checks script for `main` over
 
 ```bash
 # Table output (default) — last 6 hours on main
-python .claude/skills/ci-push-workflow-health/scripts/main_branch_health.py \
+python .agents/skills/ci-push-workflow-health/scripts/main_branch_health.py \
   --branch main --hours 6 --output table --fallback-to-statuses
 
 # JSON output for programmatic analysis
-python .claude/skills/ci-push-workflow-health/scripts/main_branch_health.py \
+python .agents/skills/ci-push-workflow-health/scripts/main_branch_health.py \
   --branch main --hours 6 --output json --fallback-to-statuses
 
 # Stable branch, minimal window
-python .claude/skills/ci-push-workflow-health/scripts/main_branch_health.py \
+python .agents/skills/ci-push-workflow-health/scripts/main_branch_health.py \
   --branch stable/8.8 --hours 3 --output table --fallback-to-statuses
 ```
 
