@@ -44,7 +44,12 @@ test('should match the resized decisions panels snapshot after dragging the resi
 
 	await expect(page.locator('body')).not.toHaveClass(/cursor-ns-resize/);
 	await expect
-		.poll(() => page.evaluate(() => localStorage.getItem('operate.panelStates')))
-		.toContain('decisions-instances-vertical-panel');
+		.poll(() =>
+			page.evaluate(() => {
+				const panelStates = JSON.parse(localStorage.getItem('operate.panelStates') ?? '{}');
+				return panelStates['decisions-instances-vertical-panel']?.[0];
+			}),
+		)
+		.toBeLessThan(50);
 	await expect(page).toHaveScreenshot();
 });
