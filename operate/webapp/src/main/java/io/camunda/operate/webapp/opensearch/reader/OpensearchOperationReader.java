@@ -37,6 +37,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.dsl.AggregationDSL;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.reader.VersionedOperation;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
@@ -78,7 +79,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
    * @return
    */
   @Override
-  public List<OperationEntity> acquireOperations(final int batchSize) {
+  public List<VersionedOperation> acquireOperations(final int batchSize) {
     final Query query =
         constantScore(
             and(
@@ -97,9 +98,17 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
             .sort(sortOptions(BATCH_OPERATION_ID, Asc))
             .from(0)
             .size(batchSize)
+            .seqNoPrimaryTerm(true)
             .query(query);
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, OperationEntity.class);
+    return richOpenSearchClient
+        .doc()
+        .search(searchRequestBuilder, OperationEntity.class)
+        .hits()
+        .hits()
+        .stream()
+        .map(hit -> new VersionedOperation(hit.source(), hit.seqNo(), hit.primaryTerm()))
+        .toList();
   }
 
   @Override

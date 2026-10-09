@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface OperationReader {
-  List<OperationEntity> acquireOperations(int batchSize);
+  List<VersionedOperation> acquireOperations(int batchSize);
 
   Map<Long, List<OperationEntity>> getOperationsPerProcessInstanceKey(
       List<Long> processInstanceKeys);

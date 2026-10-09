@@ -35,6 +35,7 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.reader.VersionedOperation;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
@@ -91,7 +92,7 @@ public class OperationReader extends AbstractReader
    * @return
    */
   @Override
-  public List<OperationEntity> acquireOperations(final int batchSize) {
+  public List<VersionedOperation> acquireOperations(final int batchSize) {
     // filter for operations that are legacy (i.e. do not have the property ITEM_KEY)
     final QueryBuilder legacyOperationsQuery =
         QueryBuilders.boolQuery().mustNot(existsQuery(ITEM_KEY));
@@ -117,13 +118,20 @@ public class OperationReader extends AbstractReader
             .source(
                 new SearchSourceBuilder()
                     .query(constantScoreQuery)
+                    .seqNoAndPrimaryTerm(true)
                     .sort(BATCH_OPERATION_ID, SortOrder.ASC)
                     .from(0)
                     .size(batchSize));
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return ElasticsearchUtil.mapSearchHits(
-          searchResponse.getHits().getHits(), objectMapper, OperationEntity.class);
+          searchResponse.getHits().getHits(),
+          hit ->
+              new VersionedOperation(
+                  ElasticsearchUtil.fromSearchHit(
+                      hit.getSourceAsString(), objectMapper, OperationEntity.class),
+                  hit.getSeqNo(),
+                  hit.getPrimaryTerm()));
     } catch (final IOException e) {
       final String message =
           String.format(

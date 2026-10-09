@@ -14,12 +14,12 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VAR
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
@@ -28,6 +28,7 @@ import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.elasticsearch.QueryHelper;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
+import io.camunda.operate.webapp.reader.VersionedOperation;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
@@ -53,14 +54,23 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,26 +135,53 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     final long lockTimeout = operateProperties.getOperationExecutor().getLockTimeout();
     final int batchSize = operateProperties.getOperationExecutor().getBatchSize();
 
-    // select process instances, which has scheduled operations, or locked with expired
-    // lockExpirationTime
-    final List<OperationEntity> operationEntities = operationReader.acquireOperations(batchSize);
+    final List<VersionedOperation> candidates = operationReader.acquireOperations(batchSize);
+    if (candidates.isEmpty()) {
+      return List.of();
+    }
 
-    final BatchRequest batchRequest = operationStore.newBatchRequest();
-
-    // lock the operations
-    for (final OperationEntity operation : operationEntities) {
-      // lock operation: update workerId, state, lockExpirationTime
+    final BulkRequest bulkRequest =
+        new BulkRequest().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    for (final VersionedOperation candidate : candidates) {
+      final OperationEntity operation = candidate.operation();
       operation.setState(OperationState.LOCKED);
       operation.setLockOwner(workerId);
       operation.setLockExpirationTime(OffsetDateTime.now().plus(lockTimeout, ChronoUnit.MILLIS));
-
-      // TODO decide with index refresh
-      batchRequest.update(operationTemplate.getFullQualifiedName(), operation.getId(), operation);
+      try {
+        bulkRequest.add(
+            new UpdateRequest()
+                .index(operationTemplate.getFullQualifiedName())
+                .id(operation.getId())
+                .doc(objectMapper.writeValueAsString(operation), XContentType.JSON)
+                .setIfSeqNo(candidate.seqNo())
+                .setIfPrimaryTerm(candidate.primaryTerm()));
+      } catch (final JsonProcessingException e) {
+        throw new PersistenceException(
+            String.format("Error preparing the lock of operation [%s]", operation.getId()), e);
+      }
     }
-    // TODO decide with index refresh
-    batchRequest.executeWithRefresh();
-    LOGGER.debug("{} operations locked", operationEntities.size());
-    return operationEntities;
+
+    final BulkResponse bulkResponse;
+    try {
+      bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+    } catch (final IOException e) {
+      throw new PersistenceException("Error while locking operations: " + e.getMessage(), e);
+    }
+
+    final List<OperationEntity> lockedOperations = new ArrayList<>();
+    final BulkItemResponse[] items = bulkResponse.getItems();
+    for (int i = 0; i < items.length; i++) {
+      final BulkItemResponse item = items[i];
+      if (!item.isFailed()) {
+        lockedOperations.add(candidates.get(i).operation());
+      } else if (item.getFailure().getStatus() != RestStatus.CONFLICT) {
+        throw new PersistenceException(
+            String.format(
+                "Error while locking operation [%s]: %s", item.getId(), item.getFailureMessage()));
+      }
+    }
+    LOGGER.debug("{} of {} operations locked", lockedOperations.size(), candidates.size());
+    return lockedOperations;
   }
 
   @Override

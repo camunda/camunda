@@ -20,6 +20,7 @@ import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.webapp.zeebe.operation.OperationHandler;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -35,6 +36,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,6 +56,8 @@ public class OperationExecutorIT extends OperateAbstractIT {
   @MockitoBean private Map<OperationType, OperationHandler> handlers;
 
   @Autowired private OperationReader operationReader;
+
+  @Autowired private BatchOperationWriter batchOperationWriter;
 
   private OffsetDateTime approxLockExpirationTime;
 
@@ -108,6 +114,37 @@ public class OperationExecutorIT extends OperateAbstractIT {
     // then
     assertThat(futures).isEmpty();
     assertNoOperationsLocked(operationReader.getOperationsByProcessInstanceKey(null));
+  }
+
+  @Test
+  public void testConcurrentLockBatchNeverLocksAnOperationTwice() throws Exception {
+    // given
+    final int instancesCount = 50;
+    final int concurrentExecutors = 4;
+    createData(instancesCount);
+    final var executorService = Executors.newFixedThreadPool(concurrentExecutors);
+    final var startSignal = new CountDownLatch(1);
+
+    // when
+    final List<Future<List<OperationEntity>>> lockResults = new ArrayList<>();
+    for (int i = 0; i < concurrentExecutors; i++) {
+      lockResults.add(
+          executorService.submit(
+              () -> {
+                startSignal.await();
+                return batchOperationWriter.lockBatch();
+              }));
+    }
+    startSignal.countDown();
+    final List<String> lockedOperationIds = new ArrayList<>();
+    for (final var lockResult : lockResults) {
+      lockResult.get().forEach(operation -> lockedOperationIds.add(operation.getId()));
+    }
+    executorService.shutdown();
+
+    // then
+    final int acquirableOperations = instancesCount * 2;
+    assertThat(lockedOperationIds).doesNotHaveDuplicates().hasSize(acquirableOperations);
   }
 
   private void assertOperationsLocked(
