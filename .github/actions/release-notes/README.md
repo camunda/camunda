@@ -133,7 +133,12 @@ re-runs never stack duplicates (`src/comment`):
 - **never failed** → no comment at all, so the gate stays silent on the ~800
   PRs that already link correctly.
 
-The body is deliberately terse — the failing reasons and a link to
+When the PR-issue link check fails, the comment also shows the expected
+`## Related issues` section (tailored: a full example for a missing link, a
+"link the issue, not the PR" hint for a PR ref). The example never shows on a
+title-only failure.
+
+The body is otherwise terse — the failing reasons and a link to
 [Causes and fixes](https://camunda.github.io/camunda/ci/#release-notes-pr-gate).
 Everything else (why the rule exists, the full cause list, the rollout history)
 lives in the docs rather than being restated on every failing PR.
