@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.CompactOnDeletion;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.PerPartition;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.Shared;
@@ -42,6 +43,7 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.Statistics;
 import org.rocksdb.StatsLevel;
 import org.rocksdb.TableFormatConfig;
+import org.rocksdb.TablePropertiesCollectorFactory;
 
 public final class ZeebeRocksDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
@@ -230,7 +232,35 @@ public final class ZeebeRocksDbFactory<
     // Apply configuration that cannot be set via Properties
     final var tableConfig = createTableFormatConfig(closeables, rocksDbResources);
     columnFamilyOptions.setTableFormatConfig(tableConfig);
+
+    final var compactOnDeletion = rocksDbConfiguration.getCompactOnDeletion();
+    if (compactOnDeletion != null) {
+      return withCompactOnDeletion(columnFamilyOptions, compactOnDeletion, closeables);
+    }
     return columnFamilyOptions;
+  }
+
+  /**
+   * RocksJava only exposes table properties collectors on the combined {@link Options}, so the
+   * collector is set there and the column family part is copied back out; the native copy shares
+   * every other already configured component (table factory, prefix extractor, partitioner).
+   */
+  private static ColumnFamilyOptions withCompactOnDeletion(
+      final ColumnFamilyOptions columnFamilyOptions,
+      final CompactOnDeletion compactOnDeletion,
+      final List<AutoCloseable> closeables) {
+    final var collectorFactory =
+        TablePropertiesCollectorFactory.NewCompactOnDeletionCollectorFactory(
+            compactOnDeletion.windowSize(),
+            compactOnDeletion.deletionTrigger(),
+            compactOnDeletion.deletionRatio());
+    closeables.add(collectorFactory);
+    try (columnFamilyOptions;
+        final var dbOptions = new DBOptions();
+        final var options = new Options(dbOptions, columnFamilyOptions)) {
+      options.setTablePropertiesCollectorFactory(List.of(collectorFactory));
+      return new ColumnFamilyOptions(options);
+    }
   }
 
   /**

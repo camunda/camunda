@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.rocksdb;
 
 import java.util.Properties;
+import org.jspecify.annotations.Nullable;
 
 public final class RocksDbConfiguration {
 
@@ -76,6 +77,14 @@ public final class RocksDbConfiguration {
 
   private MemoryAllocationStrategy memoryAllocationStrategy =
       DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
+
+  /**
+   * When set, SST files whose entries contain a high density of deletions are marked for compaction
+   * as soon as they are written. Disabled ({@code null}) by default.
+   *
+   * <p>https://github.com/facebook/rocksdb/wiki/Implement-Queue-Service-Using-RocksDB
+   */
+  private @Nullable CompactOnDeletion compactOnDeletion;
 
   public RocksDbConfiguration() {}
 
@@ -178,6 +187,36 @@ public final class RocksDbConfiguration {
   public RocksDbConfiguration setMemoryFraction(final double memoryFraction) {
     this.memoryFraction = memoryFraction;
     return this;
+  }
+
+  public @Nullable CompactOnDeletion getCompactOnDeletion() {
+    return compactOnDeletion;
+  }
+
+  public RocksDbConfiguration setCompactOnDeletion(
+      final @Nullable CompactOnDeletion compactOnDeletion) {
+    this.compactOnDeletion = compactOnDeletion;
+    return this;
+  }
+
+  /**
+   * Settings of RocksDB's {@code CompactOnDeletionCollector}: a file is marked for compaction if
+   * any sliding window of {@code windowSize} consecutive entries contains at least {@code
+   * deletionTrigger} deletions, or if the share of deletions in the whole file is at least {@code
+   * deletionRatio} (a ratio of 0 disables the latter).
+   */
+  public record CompactOnDeletion(long windowSize, long deletionTrigger, double deletionRatio) {
+    public CompactOnDeletion {
+      if (windowSize <= 0 || deletionTrigger <= 0 || deletionTrigger > windowSize) {
+        throw new IllegalArgumentException(
+            "Expected 0 < deletionTrigger <= windowSize, but got deletionTrigger=%d, windowSize=%d"
+                .formatted(deletionTrigger, windowSize));
+      }
+      if (deletionRatio < 0 || deletionRatio > 1) {
+        throw new IllegalArgumentException(
+            "Expected deletionRatio in [0, 1], but got " + deletionRatio);
+      }
+    }
   }
 
   public enum MemoryAllocationStrategy {

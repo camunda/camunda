@@ -23,6 +23,7 @@ import io.camunda.zeebe.db.impl.DbByte;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.CompactOnDeletion;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc;
@@ -33,7 +34,10 @@ import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbTickerMetricsDoc;
 import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Properties;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
@@ -130,6 +134,52 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::numLevels)
         // numLevels is not overridden, so the default of 4 should remain
         .containsExactly(ByteValue.ofMegabytes(16), CompactionPriority.ByCompensatedSize, 4);
+  }
+
+  @Test
+  void shouldNotCollectDeletionsByDefault(final @TempDir File pathName) throws Exception {
+    // given
+    final var factory =
+        new ZeebeRocksDbFactory<DefaultColumnFamily>(
+            new RocksDbConfiguration(),
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE),
+            SimpleMeterRegistry::new);
+
+    // when
+    try (final var db = factory.createDb(pathName)) {
+      // then
+      assertThat(readPersistedOptions(pathName)).doesNotContain("CompactOnDeletionCollector");
+    }
+  }
+
+  @Test
+  void shouldOpenDbWithCompactOnDeletionCollector(final @TempDir File pathName) throws Exception {
+    // given
+    final var factory =
+        new ZeebeRocksDbFactory<DefaultColumnFamily>(
+            new RocksDbConfiguration().setCompactOnDeletion(new CompactOnDeletion(1000, 500, 0.5)),
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE),
+            SimpleMeterRegistry::new);
+
+    // when
+    try (final var db = factory.createDb(pathName)) {
+      // then - the collector is active and the rest of the table config survived the options copy
+      final var persistedOptions = readPersistedOptions(pathName);
+      assertThat(persistedOptions)
+          .contains("CompactOnDeletionCollector")
+          .contains("block_size=32768")
+          .contains("prefix_extractor=rocksdb.FixedPrefix.8");
+    }
+  }
+
+  @Test
+  void shouldRejectInvalidCompactOnDeletionSettings() {
+    assertThatThrownBy(() -> new CompactOnDeletion(100, 200, 0.5))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> new CompactOnDeletion(100, 50, 1.5))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -392,6 +442,17 @@ final class ZeebeRocksDbFactoryTest {
     // them. Re-opening succeeds, proving no native resource leaks block reopen.
     try (final var db = factory.createDb(firstPath)) {
       assertThat(db).isNotNull();
+    }
+  }
+
+  private static String readPersistedOptions(final File pathName) throws IOException {
+    try (final var files = Files.list(pathName.toPath())) {
+      final var optionsFile =
+          files
+              .filter(file -> file.getFileName().toString().startsWith("OPTIONS-"))
+              .max(Comparator.naturalOrder())
+              .orElseThrow();
+      return Files.readString(optionsFile);
     }
   }
 
