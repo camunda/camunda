@@ -6,13 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, onTestFinished, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse, http} from 'msw';
 import {queryElementInstancesRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {holdResponse} from '#/vitest-modules/hold-response';
 import {useParams, useRouterState} from '@tanstack/react-router';
 import {
 	mockCurrentUserEndpoint,
@@ -274,11 +275,7 @@ describe('<ProcessInstance />', () => {
 	});
 
 	it('should open the details tab when switching to a call activity before XML loads', async ({worker}) => {
-		let releaseXml!: () => void;
-		const pendingXml = new Promise<void>((resolve) => {
-			releaseXml = resolve;
-		});
-		onTestFinished(releaseXml);
+		const {held: pendingXml, release: releaseXml} = holdResponse();
 		worker.use(
 			http.get(endpoints.getProcessDefinitionXml({processDefinitionKey: '2251799813685279'}).url, async () => {
 				await pendingXml;
