@@ -38,7 +38,9 @@ inputs:
     default: '.'
 outputs:
   customer-body:
-    description: The curated, customer-facing release notes body (Markdown).
+    description: >
+      The release description (Markdown): everything in the full changelog, or — when that would
+      exceed GitHub's 125,000-character release body limit — a truncated version with a warning banner.
 runs:
   using: node24
   main: dist/index.js

@@ -249,7 +249,7 @@ async function run(): Promise<void> {
     );
     if (internalKind) {
       issueFactsWarnings.push(
-        `PR #${entry.renderPr.number}: linked issue is ${internalKind} — kept in the full asset, hidden from the customer body.`,
+        `PR #${entry.renderPr.number}: linked issue is ${internalKind} — dropped from the release description only if it has to be truncated to fit.`,
       );
     }
     for (const issueNumber of entry.renderPr.issueNumbers) {
@@ -277,6 +277,7 @@ async function run(): Promise<void> {
     version: input.targetVersion,
     allowUnattributed: input.allowUnattributed,
     unattributedReason: input.unattributedReason,
+    repository: `${input.owner}/${input.repo}`,
     warnings: auditWarnings,
   });
 
@@ -299,9 +300,9 @@ async function run(): Promise<void> {
 
   await core.summary // both bodies, written even when the unattributed guard trips, never skipped on failure
     .addHeading(`Release notes — ${input.targetVersion}`, 2)
-    .addHeading('Customer-facing body', 3)
+    .addHeading('Release description (customer-facing)', 3)
     .addRaw(result.customerBody)
-    .addHeading('Full asset (includes internal-only sections)', 3)
+    .addHeading(`CHANGELOG-${input.targetVersion}.md — release asset, also lists internal-only sections`, 3)
     .addRaw(result.fullAsset)
     .write();
 
