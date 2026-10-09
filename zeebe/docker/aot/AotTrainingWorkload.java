@@ -18,9 +18,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.Writer;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -34,15 +32,18 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 
 /**
  * Drives a synthetic workload through the broker of an AOT training run, so that the cache carries
@@ -396,18 +397,26 @@ public final class AotTrainingWorkload {
   }
 
   /**
-   * Accepts bulk requests on the default Elasticsearch address, so that the exporter runs its real
-   * path -- handlers, batching, serialization and the client -- instead of failing its first flush
-   * forever. Anything else, such as the searches of the exporter's background tasks, gets a 404,
-   * which they retry.
+   * Answers the exporter on the default Elasticsearch address the way a cluster holding a little
+   * history would, so that the exporter runs its real path -- handlers, batching, serialization,
+   * the client and the parsing of each kind of response its background tasks read -- instead of
+   * failing every request but the bulk ones. Whatever it does not know gets a 404, which the
+   * exporter retries.
    */
   private static final class FakeElasticsearch {
 
     private static final byte[] NOT_FOUND =
-        "{\"error\":{\"type\":\"index_not_found_exception\",\"reason\":\"AOT training\"},\"status\":404}"
+        ("{\"error\":{\"type\":\"index_not_found_exception\",\"reason\":\"AOT training\"},"
+                + "\"status\":404}")
             .getBytes(UTF_8);
+    private static final String SHARDS =
+        "\"_shards\":{\"total\":2,\"successful\":1,\"skipped\":0,\"failed\":0}";
+    private static final Pattern FIELD = Pattern.compile("\"field\"\\s*:\\s*\"([^\"]+)\"");
+    private static final int SEARCHES_WITH_A_HIT = 3;
 
     private final AtomicLong documents = new AtomicLong();
+    private final AtomicLong hits = new AtomicLong();
+    private final Map<String, AtomicLong> searches = new ConcurrentHashMap<>();
     private final HttpServer server;
 
     private FakeElasticsearch() throws IOException {
@@ -419,34 +428,95 @@ public final class AotTrainingWorkload {
 
     private void handle(final HttpExchange exchange) throws IOException {
       try (exchange) {
-        final boolean bulk = exchange.getRequestURI().getPath().endsWith("/_bulk");
-        final byte[] body = bulk ? bulkResponse(exchange.getRequestBody()) : NOT_FOUND;
-        exchange.getRequestBody().transferTo(OutputStream.nullOutputStream());
+        final String request = new String(exchange.getRequestBody().readAllBytes(), UTF_8);
+        final String path = exchange.getRequestURI().getPath();
+        final String query = Objects.requireNonNullElse(exchange.getRequestURI().getQuery(), "");
+        int status = 200;
+        final byte[] body;
+        if (path.endsWith("/_bulk")) {
+          body = bulkResponse(request);
+        } else if (path.endsWith("/_search")) {
+          body = searchResponse(path, query, request);
+        } else if (path.endsWith("/_count")) {
+          body = ("{\"count\":0," + SHARDS + "}").getBytes(UTF_8);
+        } else if (path.endsWith("/_refresh")) {
+          body = ("{" + SHARDS + "}").getBytes(UTF_8);
+        } else if (exchange.getRequestMethod().equals("GET") && path.contains("/_doc/")) {
+          body = documentResponse(path).getBytes(UTF_8);
+        } else {
+          status = 404;
+          body = NOT_FOUND;
+        }
         // The Elasticsearch client refuses any response without this header.
         exchange.getResponseHeaders().add("X-Elastic-Product", "Elasticsearch");
         exchange.getResponseHeaders().add("Content-Type", "application/json");
-        exchange.sendResponseHeaders(bulk ? 200 : 404, body.length);
+        exchange.sendResponseHeaders(status, body.length);
         exchange.getResponseBody().write(body);
       }
     }
 
     /** Answers every action of the bulk request with success. */
-    private byte[] bulkResponse(final InputStream request) throws IOException {
+    private byte[] bulkResponse(final String request) {
       final var items = new StringJoiner(",", "{\"took\":1,\"errors\":false,\"items\":[", "]}");
-      final var reader = new BufferedReader(new InputStreamReader(request, UTF_8));
-      for (String action = reader.readLine(); action != null; action = reader.readLine()) {
-        if (action.isBlank()) {
-          continue;
-        }
+      final var lines = request.lines().filter(line -> !line.isBlank()).iterator();
+      while (lines.hasNext()) {
+        final String action = lines.next();
         final String type = action.substring(2, action.indexOf('"', 2));
-        if (!type.equals("delete")) {
-          reader.readLine();
+        if (!type.equals("delete") && lines.hasNext()) {
+          lines.next();
         }
+        final long id = documents.incrementAndGet();
+        final boolean created = type.equals("index") || type.equals("create");
         items.add(
-            "{\"%s\":{\"_index\":\"aot-training\",\"_id\":\"%d\",\"status\":200}}"
-                .formatted(type, documents.incrementAndGet()));
+            ("{\"%s\":{\"_index\":\"aot-training\",\"_id\":\"%d\",\"_version\":1,"
+                    + "\"result\":\"%s\",%s,\"_seq_no\":%d,\"_primary_term\":1,\"status\":%d}}")
+                .formatted(
+                    type,
+                    id,
+                    created ? "created" : type.equals("update") ? "updated" : "deleted",
+                    SHARDS,
+                    id,
+                    created ? 201 : 200));
       }
       return items.toString().getBytes(UTF_8);
+    }
+
+    /**
+     * The first searches of an index find one document carrying every field the request asks for,
+     * so that the tasks read a hit; later ones find nothing, so that they do not loop on it.
+     */
+    private byte[] searchResponse(final String path, final String query, final String request) {
+      final boolean found =
+          searches.computeIfAbsent(path, key -> new AtomicLong()).incrementAndGet()
+              <= SEARCHES_WITH_A_HIT;
+      final var fields = new StringJoiner(",", "{", "}");
+      FIELD
+          .matcher(request)
+          .results()
+          .map(match -> match.group(1))
+          .distinct()
+          .forEach(
+              field -> fields.add("\"%s\":[\"2026-01-01T00:00:00.000+0000\"]".formatted(field)));
+      final String hit =
+          ("{\"_index\":\"aot-training\",\"_id\":\"%d\",\"_score\":null,\"_source\":{},"
+                  + "\"fields\":%s,\"sort\":[1767225600000]}")
+              .formatted(hits.incrementAndGet(), fields);
+      return ("{\"took\":1,\"timed_out\":false,%s%s,\"hits\":{\"total\":"
+              + "{\"value\":%d,\"relation\":\"eq\"},\"max_score\":null,\"hits\":[%s]}}")
+          .formatted(
+              query.contains("scroll=") ? "\"_scroll_id\":\"aot-training\"," : "",
+              SHARDS,
+              found ? 1 : 0,
+              found ? hit : "")
+          .getBytes(UTF_8);
+    }
+
+    private String documentResponse(final String path) {
+      final String id = path.substring(path.lastIndexOf('/') + 1);
+      return ("{\"_index\":\"aot-training\",\"_id\":\"%s\",\"_version\":1,\"_seq_no\":0,"
+              + "\"_primary_term\":1,\"found\":true,\"_source\":{\"key\":%s,"
+              + "\"bpmnProcessId\":\"aot-training\",\"name\":\"aot-training\",\"version\":1}}")
+          .formatted(id, id);
     }
 
     /** Waits until the exporter has caught up, and fails if it never exported anything. */
