@@ -15,12 +15,13 @@ import io.camunda.zeebe.journal.JournalException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of {@link RaftLogFlusher} which treats calls to {@link #flush(Journal)} as
- * signals that there is data to be flushed. When that happens, an asynchronous operation is
+ * An implementation of {@link RaftLogFlusher} which treats calls to {@link #flush(Journal, long)}
+ * as signals that there is data to be flushed. When that happens, an asynchronous operation is
  * scheduled with a predefined delay. If a flush was already scheduled, then the signal is ignored.
  *
  * <p>In other words, this implementation flushes at least every given period, if there is anything
@@ -46,8 +47,9 @@ public final class DelayedFlusher implements RaftLogFlusher {
   }
 
   @Override
-  public void flush(final Journal journal) {
+  public CompletableFuture<Void> flush(final Journal journal, final long ignoredIndex) {
     scheduleFlush(journal);
+    return CompletableFuture.completedFuture(null);
   }
 
   @Override
