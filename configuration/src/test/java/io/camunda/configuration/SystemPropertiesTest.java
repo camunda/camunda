@@ -44,7 +44,10 @@ public class SystemPropertiesTest {
         "camunda.system.actor.idle.max-yields=500",
         "camunda.system.actor.idle.min-park-period=10ms",
         "camunda.system.actor.idle.max-park-period=100ms",
-        "camunda.system.legacy-query-api.enabled=true"
+        "camunda.system.legacy-query-api.enabled=true",
+        "camunda.system.physical-tenant-actor-pool.enabled=true",
+        "camunda.system.physical-tenant-actor-pool.cpu-thread-count=3",
+        "camunda.system.physical-tenant-actor-pool.io-thread-count=2"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -98,6 +101,13 @@ public class SystemPropertiesTest {
     @Test
     void shouldSetActorIdleMaxParkPeriod() {
       assertThat(idleCfg.maxParkPeriod()).isEqualTo(Duration.ofMillis(100));
+    }
+
+    @Test
+    void shouldSetPhysicalTenantActorPool() {
+      assertThat(brokerCfg.getThreads().isPhysicalTenantActorPoolEnabled()).isTrue();
+      assertThat(brokerCfg.getThreads().getPhysicalTenantCpuThreadCount()).isEqualTo(3);
+      assertThat(brokerCfg.getThreads().getPhysicalTenantIoThreadCount()).isEqualTo(2);
     }
 
     @Test

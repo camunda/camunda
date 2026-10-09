@@ -42,6 +42,10 @@ public class System {
   private boolean clockControlled = false;
 
   @NestedConfigurationProperty private Actor actor = new Actor();
+
+  @NestedConfigurationProperty
+  private PhysicalTenantActorPool physicalTenantActorPool = new PhysicalTenantActorPool();
+
   @NestedConfigurationProperty private Upgrade upgrade = new Upgrade();
   @NestedConfigurationProperty private Restore restore = new Restore();
   @NestedConfigurationProperty private LegacyQueryApi legacyQueryApi = new LegacyQueryApi();
@@ -91,6 +95,14 @@ public class System {
 
   public void setActor(final Actor actor) {
     this.actor = actor;
+  }
+
+  public PhysicalTenantActorPool getPhysicalTenantActorPool() {
+    return physicalTenantActorPool;
+  }
+
+  public void setPhysicalTenantActorPool(final PhysicalTenantActorPool physicalTenantActorPool) {
+    this.physicalTenantActorPool = physicalTenantActorPool;
   }
 
   public Upgrade getUpgrade() {
