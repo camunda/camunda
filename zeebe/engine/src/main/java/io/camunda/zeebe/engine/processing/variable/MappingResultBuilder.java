@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.el.ContextValue;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
@@ -20,21 +21,30 @@ import org.jspecify.annotations.Nullable;
  * <p>The two implementations differ in how a nested target relates to the value already in scope,
  * and they share no such logic: {@link InputMappingResultBuilder} writes only what was mapped and
  * layers the scope value in on read; {@link OutputMappingResultBuilder} merges the scope value in
- * while accumulating and reads back plainly.
+ * while accumulating and reads back plainly. What they do share is purely at the MessagePack
+ * boundary, which both reach through {@link MsgPackBoundary}.
  */
 @NullMarked
 public sealed interface MappingResultBuilder
     permits InputMappingResultBuilder, OutputMappingResultBuilder {
 
-  /** Puts a copy of the given MsgPack value at the nested target path. */
-  void put(List<String> targetPath, DirectBuffer value);
+  /**
+   * Puts the given value at the nested target path, {@linkplain MsgPackBoundary#copyIfMsgPack
+   * copied} first if it needs to be.
+   */
+  void put(List<String> targetPath, ContextValue value);
 
   /**
    * Returns the accumulated value of the given top-level variable, or {@code null} if no mapping
    * has produced it yet — {@code null} tells the caller to fall back to the scope lookup.
    */
-  @Nullable DirectBuffer get(String name);
+  @Nullable ContextValue getVariable(String name);
 
-  /** Returns all accumulated results as a single MsgPack document (a map). */
+  /**
+   * Returns everything accumulated as a single MsgPack document (a map) — only what the mappings
+   * actually assigned. Never layered over a scope value, unlike {@link #getVariable}: a later
+   * mapping reading a name should see what that name means now, but the written document must
+   * contain only what was mapped.
+   */
   DirectBuffer toDocument();
 }
