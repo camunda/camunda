@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-64920/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-64920/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-64920/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64920/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64920/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/pr-preview/pr-64920/ci"},{"@type":"ListItem","position":2,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/pr-preview/pr-64920/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-64920/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-64920/assets/js/runtime~main.cd335d94.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-64920/assets/js/main.a1ee7700.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64920/assets/js/runtime~main.e276f718.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64920/assets/js/main.68d5e0b8.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -68,6 +68,11 @@ merging is genuinely time-critical (e.g. a fix for the outage itself).</li>
 <li class="">If a non-essential step (e.g. a license scan, a non-blocking smoke test) is the only thing
 failing, consider temporarily disabling it rather than blocking all merges — see <a href="#temporarily-disable-tests-to-lessen-impact" class="">Temporarily
 Disable Tests To Lessen Impact</a>.</li>
+<li class="">Keep workarounds in our workflows bounded in complexity and effort. Retries for network
+errors and timeouts for network operations (e.g. <code>git checkout</code>) are fine. If a workaround
+needs substantial or fragile logic, decide against it and accept the upstream outage, because
+that logic has to be maintained long after the outage is gone. For example, see <a class="" href="/camunda/pr-preview/pr-64920/ci/#github-api-job-names-vs-workflow-job-keys">why we do not
+map GitHub API job names to workflow YAML job keys</a>.</li>
 </ul>
 </li>
 <li class=""><strong>Communicate status.</strong> Note in the incident channel/ticket which dependency is affected, a
