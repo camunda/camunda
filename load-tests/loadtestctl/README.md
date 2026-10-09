@@ -25,6 +25,18 @@ uv run loadtestctl --help
 
 ## Features
 
+### verify
+
+`loadtestctl verify` checks that a deployed load test is up and running: the Camunda platform and load test client pods are ready, the k6 TestRuns (if any) are healthy, the client is connected to the gateway, and k6 reports metrics to Prometheus.
+
+```bash
+uv run loadtestctl verify <namespace> [options]
+```
+
+It needs `kubectl` access to the cluster. Progress is logged to stderr, stdout only gets `status=success` or `status=failure`, and the exit code is `0` on success and `1` on failure. See `--help` for the timeouts and the Prometheus options (also read from `PROMETHEUS_URL`, `PROMETHEUS_USER`, `PROMETHEUS_PASSWORD` and `K6_METRICS_TIMEOUT`).
+
+[`load-tests/docs/scripts/verify-test.sh`](../docs/scripts/verify-test.sh) wraps it and appends the status line to `$GITHUB_OUTPUT` for GitHub Actions.
+
 ### report
 
 `loadtestctl report` builds a wide report for one load-test namespace by querying
