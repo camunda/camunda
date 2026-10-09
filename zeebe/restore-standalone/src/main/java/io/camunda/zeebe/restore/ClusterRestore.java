@@ -129,6 +129,9 @@ public final class ClusterRestore {
     final var placementPartitionCounts =
         recreateTopology ? partitionCountsOf(backupIdsPerTenant) : configuredPartitionCounts();
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
+    if (!recreateTopology) {
+      requireTopologyOfTenantsWithFewerPartitions(backupIdsPerTenant, dataDirectory);
+    }
     prepareTarget(
         dataDirectory, backupIdsPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
 
@@ -162,7 +165,7 @@ public final class ClusterRestore {
       } else if (configuration.getCluster().getNodeId() == 0) {
         restoreTopologyFile(restoredPartitionCounts);
       }
-    } catch (final ExecutionException | InterruptedException | RuntimeException e) {
+    } catch (final ExecutionException | InterruptedException | IOException | RuntimeException e) {
       LOG.error(
           "Failed to restore physical tenants {}. Deleting their data",
           backupIdsPerTenant.keySet(),
@@ -303,6 +306,52 @@ public final class ClusterRestore {
         "Successfully restored topology file {} for physical tenants {}",
         file,
         restored.partitionGroups().keySet());
+  }
+
+  /**
+   * Rejects, before any data is touched, a restore that would leave a tenant started with the
+   * partitions its backup does not hold. A tenant restored from fewer partitions than configured
+   * only has its count applied by updating the existing topology file; without the file, or without
+   * the tenant in it, the next start generates the configured partition count from the static
+   * configuration.
+   */
+  @VisibleForTesting
+  void requireTopologyOfTenantsWithFewerPartitions(
+      final Map<String, Map<Integer, long[]>> backupIdsPerTenant, final Path dataDirectory)
+      throws IOException {
+    final var configuredCounts = configuredPartitionCounts();
+    final var tenantsWithFewerPartitions =
+        backupIdsPerTenant.entrySet().stream()
+            .filter(
+                entry ->
+                    !Integer.valueOf(entry.getValue().size())
+                        .equals(configuredCounts.get(entry.getKey())))
+            .map(Map.Entry::getKey)
+            .sorted()
+            .toList();
+    if (tenantsWithFewerPartitions.isEmpty()) {
+      return;
+    }
+    final var file = dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+    final var persisted =
+        Files.exists(file)
+            ? PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer())
+                .getConfiguration()
+            : null;
+    final var tenantsWithoutTopology =
+        tenantsWithFewerPartitions.stream()
+            .filter(tenant -> persisted == null || persisted.partitionGroup(tenant) == null)
+            .toList();
+    if (!tenantsWithoutTopology.isEmpty()) {
+      throw new IllegalStateException(
+          ("Cannot restore physical tenants %s from fewer partitions than are configured: the "
+                  + "topology file %s, so the restored count cannot be applied and the next start "
+                  + "would run the configured partitions without data. Restore every tenant into "
+                  + "an empty directory instead.")
+              .formatted(
+                  tenantsWithoutTopology,
+                  persisted == null ? "does not exist" : "does not list them"));
+    }
   }
 
   /**

@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import static io.camunda.zeebe.restore.ClusterRestore.TargetDataPolicy.REPLACE_SELECTED;
 import static io.camunda.zeebe.restore.ClusterRestore.TargetDataPolicy.REQUIRE_EMPTY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
@@ -35,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -499,6 +502,75 @@ final class ClusterRestoreTest {
 
       // then
       assertThat(updated).isEqualTo(configuration);
+    }
+
+    @Test
+    void shouldRejectFewerPartitionsThanConfiguredWhenThereIsNoTopologyFile(
+        @TempDir final Path dir) {
+      // given
+      final var clusterRestore = clusterRestore(dir, Map.of("default", SCALED_UP));
+
+      // when / then - the restored count could not be applied, so nothing may be restored
+      assertThatThrownBy(
+              () ->
+                  clusterRestore.requireTopologyOfTenantsWithFewerPartitions(
+                      Map.of("default", backupsOf(RESTORED)), dir))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("[default]")
+          .hasMessageContaining("does not exist");
+    }
+
+    @Test
+    void shouldRejectFewerPartitionsThanConfiguredForATenantMissingFromTheTopology(
+        @TempDir final Path dir) throws IOException {
+      // given - a topology that only lists the default tenant
+      clusterRestore(dir, Map.of("default", SCALED_UP)).restoreTopologyFile();
+      final var clusterRestore =
+          clusterRestore(dir, Map.of("default", SCALED_UP, OTHER_TENANT, SCALED_UP));
+
+      // when / then
+      assertThatThrownBy(
+              () ->
+                  clusterRestore.requireTopologyOfTenantsWithFewerPartitions(
+                      Map.of(OTHER_TENANT, backupsOf(RESTORED)), dir))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("[" + OTHER_TENANT + "]")
+          .hasMessageContaining("does not list them");
+    }
+
+    @Test
+    void shouldAcceptFewerPartitionsThanConfiguredWhenTheTopologyListsTheTenant(
+        @TempDir final Path dir) throws IOException {
+      // given
+      final var clusterRestore = clusterRestore(dir, Map.of("default", SCALED_UP));
+      clusterRestore.restoreTopologyFile();
+
+      // when / then
+      assertThatCode(
+              () ->
+                  clusterRestore.requireTopologyOfTenantsWithFewerPartitions(
+                      Map.of("default", backupsOf(RESTORED)), dir))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldNotRequireATopologyWhenTheBackupHoldsTheConfiguredPartitions(
+        @TempDir final Path dir) {
+      // given
+      final var clusterRestore = clusterRestore(dir, Map.of("default", SCALED_UP));
+
+      // when / then - nothing to apply, so no topology is needed
+      assertThatCode(
+              () ->
+                  clusterRestore.requireTopologyOfTenantsWithFewerPartitions(
+                      Map.of("default", backupsOf(SCALED_UP)), dir))
+          .doesNotThrowAnyException();
+    }
+
+    private static Map<Integer, long[]> backupsOf(final int partitionCount) {
+      return IntStream.rangeClosed(1, partitionCount)
+          .boxed()
+          .collect(Collectors.toMap(partition -> partition, partition -> new long[] {1L}));
     }
 
     @Test
