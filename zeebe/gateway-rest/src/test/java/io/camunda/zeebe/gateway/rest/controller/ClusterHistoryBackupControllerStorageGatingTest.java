@@ -12,10 +12,8 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -23,7 +21,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.service.ClusterHistoryBackupServices;
-import io.camunda.service.exception.SecondaryStorageDegradedException;
 import io.camunda.service.exception.SecondaryStorageTypeNotSupportedException;
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.service.registry.ServiceRegistry;
@@ -31,11 +28,16 @@ import io.camunda.zeebe.gateway.rest.GlobalControllerExceptionHandler;
 import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
@@ -100,35 +102,46 @@ class ClusterHistoryBackupControllerStorageGatingTest {
     mockMvc.perform(get(BASE_URL)).andExpect(request().asyncStarted());
   }
 
-  @Test
-  void shouldServeReadsAndDeletesWhileNoPhysicalTenantIsReady() throws Exception {
-    // given
-    final var readiness = mock(SecondaryStorageReadiness.class);
-    when(readiness.anyReady()).thenReturn(false);
-    final var mockMvc = mockMvcFor(DatabaseType.ELASTICSEARCH, readiness);
-
-    // when - then
-    mockMvc.perform(get(BASE_URL)).andExpect(request().asyncStarted());
-    mockMvc.perform(delete(BASE_URL + "/1")).andExpect(request().asyncStarted());
+  /** The endpoints marked {@code availableWhenRecovering}, as method and path. */
+  static Stream<Arguments> availableWhenRecoveringEndpoints() {
+    return Stream.of(
+        Arguments.of(HttpMethod.POST, BASE_URL),
+        Arguments.of(HttpMethod.GET, BASE_URL),
+        Arguments.of(HttpMethod.GET, BASE_URL + "/1"),
+        Arguments.of(HttpMethod.DELETE, BASE_URL + "/1"));
   }
 
-  @Test
-  void shouldRejectTakingABackupWhenNoPhysicalTenantIsReady() throws Exception {
+  @ParameterizedTest
+  @MethodSource("availableWhenRecoveringEndpoints")
+  void shouldServeAnAvailableWhenRecoveringEndpointWhileNoPhysicalTenantIsReady(
+      final HttpMethod method, final String path) throws Exception {
     // given
     final var readiness = mock(SecondaryStorageReadiness.class);
     when(readiness.anyReady()).thenReturn(false);
     final var mockMvc = mockMvcFor(DatabaseType.ELASTICSEARCH, readiness);
 
     // when - then
-    mockMvc
-        .perform(
-            post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content("{\"backupId\": 1}"))
-        .andExpect(status().isServiceUnavailable())
-        .andExpect(header().string("Retry-After", "5"))
-        .andExpect(
-            jsonPath("$.detail")
-                .value(
-                    SecondaryStorageDegradedException.CLUSTER_SECONDARY_STORAGE_DEGRADED_MESSAGE));
+    mockMvc.perform(withBody(method, path)).andExpect(request().asyncStarted());
+  }
+
+  @ParameterizedTest
+  @MethodSource("availableWhenRecoveringEndpoints")
+  void shouldStillRejectAnAvailableWhenRecoveringEndpointOnAStorageThatCannotServeIt(
+      final HttpMethod method, final String path) throws Exception {
+    // given
+    final var readiness = mock(SecondaryStorageReadiness.class);
+    when(readiness.anyReady()).thenReturn(false);
+    final var mockMvc = mockMvcFor(DatabaseType.RDBMS, readiness);
+
+    // when - then
+    mockMvc.perform(withBody(method, path)).andExpect(status().isForbidden());
+  }
+
+  private static MockHttpServletRequestBuilder withBody(
+      final HttpMethod method, final String path) {
+    return request(method, path)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"backupId\": 1}");
   }
 
   /**
@@ -153,6 +166,10 @@ class ClusterHistoryBackupControllerStorageGatingTest {
     when(clusterHistoryBackupServices.listBackups(any(), any(), anyBoolean()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
     final var serviceRegistry = mock(ServiceRegistry.class);
+    when(clusterHistoryBackupServices.takeBackup(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(clusterHistoryBackupServices.getBackup(any(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(null));
     when(clusterHistoryBackupServices.deleteBackup(any(), anyLong()))
         .thenReturn(CompletableFuture.completedFuture(null));
     when(serviceRegistry.clusterHistoryBackupServices()).thenReturn(clusterHistoryBackupServices);
