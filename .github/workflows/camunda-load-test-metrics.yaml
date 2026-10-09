@@ -1,7 +1,7 @@
 # description: Renders load-test metrics for a given namespace as a job
 #              summary. Reusable via workflow_call (returns JSON for other
 #              workflows) or runnable ad-hoc via workflow_dispatch.
-# calls: load-tests/docs/scripts/loadTestMetrics.sh
+# calls: loadtestctl report (load-tests/loadtestctl)
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda Load Test Metrics
@@ -27,7 +27,7 @@ on:
   workflow_call:
     inputs:
       namespace:
-        description: 'Namespace passed to loadTestMetrics.sh'
+        description: 'Namespace passed to loadtestctl report'
         required: true
         type: string
       duration-seconds:
@@ -42,7 +42,7 @@ on:
         default: ''
     outputs:
       results-json:
-        description: 'JSON object {name: number, ...} from loadTestMetrics.sh stdout (queries that scrape no data are omitted)'
+        description: 'JSON object {name: number, ...} from loadtestctl report (metrics that scrape no data are omitted)'
         value: ${{ jobs.query-and-summarize.outputs.results-json }}
 
 defaults:
@@ -89,30 +89,33 @@ jobs:
             secret/data/products/qa/ci/common LDAP_QA_USER | PROM_USER;
             secret/data/products/qa/ci/common LDAP_QA_PASSWORD | PROM_PASS;
 
-      - name: Run PromQL queries via loadTestMetrics.sh
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Run PromQL queries via loadtestctl report
         id: run-queries
-        # Reads queries.yaml, substitutes $NAMESPACE / $DURATION_S, hits
-        # $PROM_URL with HTTP basic auth, emits {name: number} JSON to stdout
-        # (queries that scrape no data are omitted).
+        working-directory: load-tests/loadtestctl
+        env:
+          LOADTESTCTL_REPORT_USER: ${{ env.PROM_USER }}
+          LOADTESTCTL_REPORT_PASSWORD: ${{ env.PROM_PASS }}
+        # `report-queries-comparison.yaml` holds the metrics of the comparison table. Metrics that
+        # scrape no data are null in the report and dropped here. `AT` is the end of the window
+        # (RFC3339 or Unix timestamp); empty means the window ends now. The resolved end is shared
+        # with the full report step so both cover the same window. A failing report leaves
+        # every metric out of the summary instead of failing the workflow.
         run: |
-          set +e
-          bash load-tests/docs/scripts/loadTestMetrics.sh \
-            "$NAMESPACE" \
-            "$DURATION_SECONDS" \
-            "$PROM_URL" \
-            "--user $PROM_USER:$PROM_PASS" \
-            "$AT" \
-            > /tmp/results-raw.json
-          rc=$?
-          if [[ $rc -ne 0 ]]; then
-            echo "::warning::loadTestMetrics.sh exited ${rc}; some metrics may be missing from the summary"
+          args=()
+          if [[ -n "$AT" ]]; then args+=(--end "$AT"); fi
+          if ! uv run --frozen loadtestctl report "$NAMESPACE" \
+              --duration-seconds "$DURATION_SECONDS" \
+              --endpoint "$PROM_URL" \
+              --queries report-queries-comparison.yaml \
+              "${args[@]}" > "$RUNNER_TEMP/comparison.json"; then
+            echo "::warning::loadtestctl report failed; some metrics may be missing from the summary"
+            echo '{"metrics": {}}' > "$RUNNER_TEMP/comparison.json"
           fi
-          # Drop entries whose value is null. Fallback to the raw file if jq
-          # chokes (defensive — script is expected to always emit valid JSON).
-          if ! jq 'with_entries(select(.value != null))' /tmp/results-raw.json > /tmp/results.json 2>/dev/null; then
-            echo "::warning::Failed to filter null entries; using raw script output"
-            cp /tmp/results-raw.json /tmp/results.json
-          fi
+          echo "END=$(jq -r '.end // empty' "$RUNNER_TEMP/comparison.json")" >> "$GITHUB_ENV"
+          jq '.metrics | with_entries(select(.value != null))' "$RUNNER_TEMP/comparison.json" > /tmp/results.json
           echo "--- /tmp/results.json (null entries stripped) ---"
           cat /tmp/results.json
           {
@@ -120,6 +123,33 @@ jobs:
             cat /tmp/results.json
             echo "__VQ_EOF__"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Build full load test report
+        # Artifact for later analysis; the comparison above does not depend on it.
+        continue-on-error: true
+        timeout-minutes: 3
+        working-directory: load-tests/loadtestctl
+        env:
+          LOADTESTCTL_REPORT_USER: ${{ env.PROM_USER }}
+          LOADTESTCTL_REPORT_PASSWORD: ${{ env.PROM_PASS }}
+        run: |
+          args=()
+          if [[ -n "$END" ]]; then args+=(--end "$END"); fi
+          uv run --frozen loadtestctl report "$NAMESPACE" \
+            --duration-seconds "$DURATION_SECONDS" \
+            --endpoint "$PROM_URL" \
+            "${args[@]}" \
+            --output "$RUNNER_TEMP/report.json"
+
+      - name: Upload full load test report
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: load-test-report-${{ inputs.namespace }}
+          path: ${{ runner.temp }}/report.json
+          retention-days: 90
+          if-no-files-found: ignore
+          overwrite: true
 
       - name: Convert queries.yaml to JSON for render step
         run: |

@@ -3,11 +3,13 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 from unittest import mock
+from urllib.error import URLError
 
 import pytest
 
 import loadtestctl.report
 from loadtestctl.report.cli import Options
+from loadtestctl.report.errors import PrometheusError
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.prometheus import PrometheusResponse
 from loadtestctl.report.queries import QueriesDocument
@@ -15,6 +17,7 @@ from loadtestctl.report.queries import Query
 from loadtestctl.report.report import build_report
 from loadtestctl.report.report import render_report
 
+from .helpers import parse_args
 from .helpers import run
 
 PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
@@ -311,3 +314,45 @@ def test_should_build_report_without_network_side_effects() -> None:
     assert report["metrics"]["image"] == "camunda:SNAPSHOT"
     assert report["metrics"]["missing"] is None
     assert "missing" not in report
+
+
+def test_should_leave_failed_queries_empty_and_keep_the_others(tmp_path: Path) -> None:
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text(
+        """queries:
+- key: rejected
+  description: Rejected by Prometheus.
+  header: Rejected
+  query: rejected_query
+- key: unreachable
+  description: Transport failure.
+  header: Unreachable
+  query: unreachable_query
+- key: malformed
+  description: Malformed response.
+  header: Malformed
+  query: malformed_query
+- key: throughput
+  description: Throughput.
+  header: Throughput
+  query: up
+""",
+        encoding="utf-8",
+    )
+    options = parse_args(["c8-ck-test", "--queries", str(queries_file)])
+    query_document = QueriesDocument.from_file(queries_file, {})
+    client = FakePrometheusClient(
+        [
+            PrometheusError("Prometheus returned non-success status: timeout"),
+            URLError("connection reset"),
+            {"status": "success", "data": {"resultType": "vector", "result": "not-a-list"}},
+            {
+                "status": "success",
+                "data": {"resultType": "vector", "result": [{"metric": {}, "value": [123, "7"]}]},
+            },
+        ]
+    )
+
+    report = build_report(options, query_document, client)  # type: ignore
+
+    assert report["metrics"] == {"rejected": None, "unreachable": None, "malformed": None, "throughput": 7}
