@@ -39,14 +39,14 @@ final class UserTaskSuspensionVisitor implements ElementInstanceSuspensionVisito
   }
 
   @Override
-  public int visit(final ElementInstance elementInstance) {
+  public void visit(final ElementInstance elementInstance) {
     final long userTaskKey = elementInstance.getUserTaskKey();
     if (userTaskKey <= 0 || elementInstance.isTerminating()) {
-      return 0;
+      return;
     }
     final var userTask = userTaskState.getUserTask(userTaskKey);
     if (userTask == null) {
-      return 0;
+      return;
     }
     resumeCommand
         .setUserTaskKey(userTaskKey)
@@ -55,12 +55,11 @@ final class UserTaskSuspensionVisitor implements ElementInstanceSuspensionVisito
         .setProcessDefinitionKey(userTask.getProcessDefinitionKey())
         .setTenantId(userTask.getTenantId());
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.SUSPENDED, userTask);
-    bufferingBehavior.appendBufferedCommand(
+    bufferingBehavior.bufferCommand(
         userTaskKey,
         ValueType.USER_TASK,
         UserTaskIntent.RESUME,
         resumeCommand,
         userTask.getProcessInstanceKey());
-    return 1;
   }
 }
