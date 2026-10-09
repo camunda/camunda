@@ -30,6 +30,8 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.hc.client5.http.HttpRoute;
 import org.apache.hc.client5.http.async.AsyncExecCallback;
@@ -190,6 +192,45 @@ class ResponseDeadlineChainHandlerTest {
 
     // then
     await().untilAsserted(() -> verify(cancellableDependency).cancel());
+  }
+
+  @Test
+  void shouldNotKeepCancelledDeadlinesQueued() throws Exception {
+    // given
+    final ScheduledThreadPoolExecutor timer = ResponseDeadlineChainHandler.timer();
+    final int queuedBefore = timer.getQueue().size();
+
+    // when many exchanges end long before their deadline
+    for (int i = 0; i < 100; i++) {
+      final AtomicReference<AsyncExecCallback> exchange =
+          proceed(scope(Timeout.ofSeconds(60)), null);
+      exchange.get().completed();
+    }
+
+    // then their deadlines do not wait in the queue until they are due
+    assertThat(timer.getQueue().size()).isLessThan(queuedBefore + 50);
+  }
+
+  @Test
+  void shouldKeepEnforcingDeadlinesAfterTheTimerThreadEndedWhenIdle() throws Exception {
+    // given the timer thread has ended after being idle
+    final ScheduledThreadPoolExecutor timer = ResponseDeadlineChainHandler.timer();
+    final long keepAliveMillis = timer.getKeepAliveTime(TimeUnit.MILLISECONDS);
+    timer.setKeepAliveTime(50, TimeUnit.MILLISECONDS);
+    try {
+      final AsyncExecCallback first = mock(AsyncExecCallback.class);
+      handler.execute(request, null, scope(Timeout.ofMilliseconds(100)), chain, first);
+      await().untilAsserted(() -> verify(first).failed(any(SocketTimeoutException.class)));
+      await().until(() -> timer.getPoolSize() == 0);
+
+      // when
+      handler.execute(request, null, scope(Timeout.ofMilliseconds(100)), chain, callback);
+
+      // then a new thread enforces the deadline
+      await().untilAsserted(() -> verify(callback).failed(any(SocketTimeoutException.class)));
+    } finally {
+      timer.setKeepAliveTime(keepAliveMillis, TimeUnit.MILLISECONDS);
+    }
   }
 
   @Test

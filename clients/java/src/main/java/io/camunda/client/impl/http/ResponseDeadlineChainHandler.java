@@ -82,6 +82,11 @@ final class ResponseDeadlineChainHandler implements AsyncExecChainHandler {
     marginMillis = margin.toMillis();
   }
 
+  /** Gives tests access to the shared timer, to observe its thread and its queue. */
+  static ScheduledThreadPoolExecutor timer() {
+    return TIMER;
+  }
+
   private static ScheduledThreadPoolExecutor createTimer() {
     final ScheduledThreadPoolExecutor timer =
         new ScheduledThreadPoolExecutor(
