@@ -40,7 +40,7 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		await operatePreviewDecisionsPage.goto();
 
 		await expect(operatePreviewDecisionsPage.heading).toBeAttached();
-		await expect(operatePreviewDecisionsPage.filtersPanelPlaceholder).toBeVisible();
+		await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
 		await expect(operatePreviewDecisionsPage.decisionPanelPlaceholder).toBeVisible();
 		await expect(operatePreviewDecisionsPage.instancesTablePlaceholder).toBeVisible();
 	});

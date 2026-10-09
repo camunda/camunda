@@ -90,4 +90,28 @@ describe('<FiltersPanel />', () => {
 		await expect.element(screen.getByTestId('collapsed-panel')).toBeInTheDocument();
 		expect(getStateLocally('operate.panelStates')?.isFiltersCollapsed).toBe(true);
 	});
+
+	it('should keep the filter icon visible in the expanded header', async () => {
+		const screen = await render(
+			<FiltersPanel localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
+				<div>my filters</div>
+			</FiltersPanel>,
+		);
+
+		await expect.element(screen.getByTestId('expanded-panel').getByRole('heading', {name: 'Filter'})).toBeVisible();
+		expect(document.querySelector('[data-testid="expanded-panel"] header svg')).not.toBeNull();
+	});
+
+	it('should collapse to an icon-only rail that keeps the filters mounted but hidden', async () => {
+		storeStateLocally('operate.panelStates', {isFiltersCollapsed: true});
+
+		const screen = await render(
+			<FiltersPanel localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
+				<div>my filters</div>
+			</FiltersPanel>,
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'Expand Filter'})).toBeVisible();
+		await expect.element(screen.getByText('my filters')).not.toBeVisible();
+	});
 });

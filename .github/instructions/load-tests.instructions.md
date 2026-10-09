@@ -59,6 +59,10 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
    A plain `make -n <target>` dry run — or the golden file tests, which never set this variable on
    the command line — will not catch this class of regression.
 
+5. **Client usage in `load-tests/load-tester`**: Read queries must use the
+   `@Qualifier("queryCamundaClient")` client, not the default `CamundaClient`, which is only for
+   generating load. Flag a change that sends a read query through the default client.
+
 ## Choosing a language for new tooling
 
 When adding or extending a load-test script (metrics, reporting, profiling, ops helpers), follow
