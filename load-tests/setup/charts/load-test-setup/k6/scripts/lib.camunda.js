@@ -6,6 +6,7 @@
  */
 import http from "k6/http";
 import { sleep } from "k6";
+import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 
 export class Client {
   constructor() {
@@ -26,7 +27,8 @@ export class Client {
   /* Send an authenticated JSON request to a Camunda endpoint, renewing the token if needed.
    *
    * The endpoint is also used as the `name` tag, so that metrics are grouped per endpoint.
-   * `payload` is optional and is serialized as JSON.
+   * `payload` is optional and is serialized as JSON, unless it is a `FormData`, which is sent as
+   * multipart/form-data.
    * `params` is optional: these k6 request params are merged into the default ones, and its
    * `headers` and `tags` take precedence over the default headers and tags. */
   request(method, endpoint, payload, params = {}) {
@@ -40,8 +42,32 @@ export class Client {
       },
       tags: { name: endpoint, ...params.tags },
     };
-    const body = payload === undefined ? null : JSON.stringify(payload);
+
+    let body = null;
+    if (payload instanceof FormData) {
+      body = payload.body();
+      mergedParams.headers["Content-Type"] =
+        "multipart/form-data; boundary=" + payload.boundary;
+    } else if (payload !== undefined) {
+      body = JSON.stringify(payload);
+    }
+
     return http.request(method, this.baseURL + endpoint, body, mergedParams);
+  }
+
+  // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/create-deployment/
+  deploy(name, resourceContent) {
+    const payload = new FormData();
+    payload.append("resources", http.file(resourceContent, name));
+    return this.post("/v2/deployments", payload);
+  }
+
+  // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/evaluate-decision/
+  decisionDefinitionEvaluation(decisionDefinitionId, variables = {}) {
+    return this.post("/v2/decision-definitions/evaluation", {
+      decisionDefinitionId: decisionDefinitionId,
+      variables: variables,
+    });
   }
 
   // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/search-process-definitions/
