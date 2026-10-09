@@ -210,8 +210,29 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, Boolean> evaluateBooleanExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
+    return evaluateBooleanExpression(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Evaluates the given expression and returns the result as boolean. If the evaluation fails or
+   * the result is not a boolean then a failure is returned.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @param label describes the business role of this expression (and, optionally, the specific
+   *     element it belongs to) so that the failure message, if any, identifies what failed and what
+   *     it targets; pass {@link ExpressionLabel#NONE} for the generic wording
+   * @return either the evaluation result as boolean, or a failure
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
+   */
+  public Either<Failure, Boolean> evaluateBooleanExpression(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
     return evaluateExpressionAsEither(expression, scopeKey, tenantId)
-        .flatMap(result -> typeCheck(result, ResultType.BOOLEAN, scopeKey))
+        .flatMap(result -> typeCheck(result, ResultType.BOOLEAN, scopeKey, label))
         .map(EvaluationResult::getBoolean);
   }
 
@@ -504,13 +525,25 @@ public final class ExpressionProcessor {
 
   private Either<Failure, EvaluationResult> typeCheck(
       final EvaluationResult result, final ResultType expectedResultType, final long scopeKey) {
+    return typeCheck(result, expectedResultType, scopeKey, ExpressionLabel.NONE);
+  }
+
+  private Either<Failure, EvaluationResult> typeCheck(
+      final EvaluationResult result,
+      final ResultType expectedResultType,
+      final long scopeKey,
+      final ExpressionLabel label) {
     if (result.getType() != expectedResultType) {
       return Either.left(
           createFailureMessage(
               result,
-              String.format(
-                  "Expected result of the expression '%s' to be '%s', but was '%s'.",
-                  result.getExpression(), expectedResultType, result.getType()),
+              "Expected result of the %s '%s'%s to be '%s', but was '%s'."
+                  .formatted(
+                      label.hasKind() ? label.kind() : "expression",
+                      result.getExpression(),
+                      label.describeTarget(),
+                      expectedResultType,
+                      result.getType()),
               scopeKey));
     }
     return Either.right(result);
