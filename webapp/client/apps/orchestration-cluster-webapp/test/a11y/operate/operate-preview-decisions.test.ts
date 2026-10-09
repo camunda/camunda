@@ -66,7 +66,7 @@ test('should have no accessibility violations in the decisions shell with the in
 	makeAxeBuilder,
 }) => {
 	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
-	await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
+	await expect(operatePreviewDecisionsPage.moreFiltersCombobox).toBeVisible();
 	await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
 	await expect(page.getByText('Invoice Approval')).toBeVisible();
 

@@ -1352,6 +1352,7 @@
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour la décision \"{{name}}\"",
+					"ariaLabel": "Panneau de décision",
 					"selectSingleVersion": "Pour voir une table de décision ou une expression littérale, sélectionnez une seule version",
 					"multipleTenantsSelected": "La décision \"{{name}}\" existe dans plusieurs locataires",
 					"selectSingleTenant": "Pour voir une table de décision ou une expression littérale, sélectionnez un seul locataire",
@@ -2169,7 +2170,40 @@
 					"allTenants": "Tous les clients"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "Plus de filtres"
+					"moreFilters": "Plus de filtres",
+					"allFiltersAdded": "Tous les filtres sont déjà ajoutés",
+					"removeFilter": "Retirer"
+				},
+				"dateRangeField": {
+					"custom": "Personnalisé",
+					"enterDateRange": "Saisir une plage de dates",
+					"openModal": "Ouvrir la boîte de dialogue de plage de dates",
+					"datePlaceholder": "AAAA-MM-JJ",
+					"timePlaceholder": "hh:mm:ss",
+					"fromDate": "Date de début",
+					"toDate": "Date de fin",
+					"fromTime": "Heure de début",
+					"toTime": "Heure de fin",
+					"timeZone": "Fuseau horaire : {{timeZone}}",
+					"cancel": "Annuler",
+					"apply": "Appliquer"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Saisissez une date et une heure",
+					"endBeforeStart": "La fin ne peut pas précéder le début",
+					"timeZone": "Fuseau horaire : {{timeZone}}",
+					"invalidDateTime": "Saisissez une date et une heure au format YYYY-MM-DD HH:mm:ss",
+					"from": "De",
+					"to": "À",
+					"time": "Heure",
+					"quickRanges": "Plages rapides",
+					"selectQuickRange": "Sélectionner une plage rapide",
+					"lastMinutes_one": "Dernière {{count}} minute",
+					"lastMinutes_other": "Dernières {{count}} minutes",
+					"lastHours_one": "Dernière {{count}} heure",
+					"lastHours_other": "Dernières {{count}} heures",
+					"lastDays_one": "Dernier {{count}} jour",
+					"lastDays_other": "Derniers {{count}} jours"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "est égal à",

@@ -110,21 +110,29 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 						)}
 					</header>
 					{isCollapsed && (
-						<Heading
-							as="h2"
-							variant="heading-xs"
-							aria-hidden
-							className="m-0 mx-auto mt-6 text-foreground [writing-mode:vertical-lr] rotate-180"
-						>
-							{label}
-						</Heading>
+						<div className="mt-6 flex justify-center" style={{width: COLLAPSED_WIDTH}}>
+							<Heading
+								as="h2"
+								variant="heading-xs"
+								aria-hidden
+								className="m-0 text-foreground [writing-mode:vertical-lr] rotate-180"
+							>
+								{label}
+							</Heading>
+						</div>
 					)}
-					<div className={cn('flex min-h-0 grow flex-col', isCollapsed && 'invisible')} inert={isCollapsed}>
+					<div
+						className={cn(
+							'flex min-h-0 grow flex-col transition-[opacity,visibility] duration-150 ease-out motion-reduce:transition-none',
+							isCollapsed && 'invisible opacity-0',
+						)}
+						inert={isCollapsed}
+					>
 						<div ref={ref} className={cn('relative grow', scrollable ? 'overflow-auto' : 'overflow-hidden')}>
 							{children}
 						</div>
-						{footer !== undefined && <div className="border-t border-border p-2">{footer}</div>}
 					</div>
+					{footer !== undefined && <div className="border-t border-border px-3 py-2">{footer}</div>}
 				</div>
 			</section>
 		);

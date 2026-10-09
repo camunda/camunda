@@ -1349,6 +1349,7 @@
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Hay más de una versión seleccionada para la decisión \"{{name}}\"",
+					"ariaLabel": "Panel de decisión",
 					"selectSingleVersion": "Para ver una tabla de decisión o una expresión literal, seleccione una sola versión",
 					"multipleTenantsSelected": "La decisión \"{{name}}\" existe en más de un inquilino",
 					"selectSingleTenant": "Para ver una tabla de decisión o una expresión literal, seleccione un solo inquilino",
@@ -2166,7 +2167,40 @@
 					"allTenants": "Todos los arrendatarios"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "Más filtros"
+					"moreFilters": "Más filtros",
+					"allFiltersAdded": "Ya se han añadido todos los filtros",
+					"removeFilter": "Quitar"
+				},
+				"dateRangeField": {
+					"custom": "Personalizado",
+					"enterDateRange": "Introduzca un intervalo de fechas",
+					"openModal": "Abrir el diálogo de intervalo de fechas",
+					"datePlaceholder": "AAAA-MM-DD",
+					"timePlaceholder": "hh:mm:ss",
+					"fromDate": "Fecha de inicio",
+					"toDate": "Fecha de fin",
+					"fromTime": "Hora de inicio",
+					"toTime": "Hora de fin",
+					"timeZone": "Zona horaria: {{timeZone}}",
+					"cancel": "Cancelar",
+					"apply": "Aplicar"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Introduzca una fecha y hora",
+					"endBeforeStart": "El fin no puede ser anterior al inicio",
+					"timeZone": "Zona horaria: {{timeZone}}",
+					"invalidDateTime": "Introduzca una fecha y hora con el formato YYYY-MM-DD HH:mm:ss",
+					"from": "Desde",
+					"to": "Hasta",
+					"time": "Hora",
+					"quickRanges": "Rangos rápidos",
+					"selectQuickRange": "Seleccionar un rango rápido",
+					"lastMinutes_one": "Último {{count}} minuto",
+					"lastMinutes_other": "Últimos {{count}} minutos",
+					"lastHours_one": "Última {{count}} hora",
+					"lastHours_other": "Últimas {{count}} horas",
+					"lastDays_one": "Último {{count}} día",
+					"lastDays_other": "Últimos {{count}} días"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "es igual a",

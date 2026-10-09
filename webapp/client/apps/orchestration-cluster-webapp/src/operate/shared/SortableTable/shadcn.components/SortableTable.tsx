@@ -101,9 +101,11 @@ function SkeletonCell({
 	isFirstCell,
 	edge,
 	testId,
+	isCheckbox = false,
 }: {
 	label: string;
 	isFirstCell: boolean;
+	isCheckbox?: boolean;
 	edge: 'previous' | 'next';
 	testId: string | undefined;
 }) {
@@ -116,7 +118,13 @@ function SkeletonCell({
 			aria-live={isFirstCell ? 'polite' : undefined}
 		>
 			{isFirstCell && <span className="sr-only">{label}</span>}
-			<div aria-hidden className="h-4 w-3/4 animate-pulse rounded bg-neutral-background-strong" />
+			<div
+				aria-hidden
+				className={cn(
+					'h-4 animate-pulse bg-neutral-background-strong',
+					isCheckbox ? 'w-4 rounded-sm' : 'w-3/4 rounded',
+				)}
+			/>
 		</div>
 	);
 }
@@ -133,6 +141,14 @@ type SelectionProps = {
 };
 
 type Props<TRow> = BaseProps<TRow> & ({selectionType?: undefined} | SelectionProps);
+
+const FILL_HEIGHT_WHEN_EMPTY_CLASSES = [
+	'[&>div]:h-full [&_[data-slot=data-table]]:h-full [&_[data-slot=data-table]>div]:h-full',
+	'[&_[data-slot=table-container]]:h-full [&_[data-slot=table]]:h-full [&_[data-slot=table-header]_tr]:h-10',
+].join(' ');
+
+const SELECTION_SKELETON_CLASSES =
+	'[&_[data-slot=data-table-skeleton-row]_td:first-child>div]:w-4 [&_[data-slot=data-table-skeleton-row]_td:first-child>div]:rounded-sm';
 
 const DS_TABLE_SIZE: Record<TableSize, 'sm' | 'md' | 'lg'> = {
 	xs: 'sm',
@@ -654,6 +670,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 					return (
 						<SkeletonCell
 							label={displayRow.label}
+							isCheckbox
 							isFirstCell
 							edge={displayRow.id}
 							testId={displayRow.id === 'previous' ? loadingPreviousTestId : loadingNextTestId}
@@ -774,7 +791,12 @@ function SortableTable<TRow>(props: Props<TRow>) {
 				// fights with our own measured compensation below: both react to the same DOM
 				// mutation, so rows evicted from the top get their height subtracted twice,
 				// overshooting the scroll position. Disable it so our compensation is authoritative.
-				className={cn(hasScrollHandlers && 'h-full overflow-y-auto [overflow-anchor:none]')}
+				className={cn(
+					hasScrollHandlers && 'h-full overflow-y-auto [overflow-anchor:none]',
+					rows.length === 0 && FILL_HEIGHT_WHEN_EMPTY_CLASSES,
+					// The DS skeleton rows draw the same wide bar in every column, including the checkbox one
+					hasSelectionColumn && SELECTION_SKELETON_CLASSES,
+				)}
 				data-testid={dataTestId}
 			>
 				{hasScrollHandlers ? (
