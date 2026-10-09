@@ -11,7 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Heading, PageLayout} from '@camunda/design-system';
-import {FiltersPanel} from '#/operate/shared/FiltersPanel/shadcn.components/FiltersPanel';
+import {FilterSidebar} from '#/operate/shared/FilterSidebar/shadcn.components/FilterSidebar';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {DecisionsSearch} from '../decisionsFilter';
@@ -82,7 +82,7 @@ const Decisions: React.FC<Props> = ({search}) => {
 					{({handleSubmit, form}) => (
 						<form onSubmit={handleSubmit} className="flex h-full min-h-0">
 							<AutoSubmit />
-							<FiltersPanel
+							<FilterSidebar
 								localStorageKey="isDecisionsFiltersCollapsed"
 								isResetButtonDisabled={isResetDisabled}
 								onResetClick={() => {
@@ -96,7 +96,7 @@ const Decisions: React.FC<Props> = ({search}) => {
 									visibleFilters={visibleFilters}
 									onVisibleFilterChange={setVisibleFilters}
 								/>
-							</FiltersPanel>
+							</FilterSidebar>
 						</form>
 					)}
 				</Form>
