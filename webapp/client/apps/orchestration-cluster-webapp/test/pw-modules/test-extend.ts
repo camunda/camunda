@@ -28,6 +28,8 @@ import {AdminLoginPage} from '#/pages/admin/AdminLogin.page';
 import {AdminMcpProcessesPage} from '#/pages/admin/AdminMcpProcesses.page';
 import {AdminOperationsLogPage} from '#/pages/admin/AdminOperationsLog.page';
 import {AdminMappingRulesPage} from '#/pages/admin/AdminMappingRules.page';
+import {AdminGroupsPage} from '#/pages/admin/AdminGroups.page';
+import {AdminGroupDetailPage} from '#/pages/admin/AdminGroupDetail.page';
 import {AdminUsersPage} from '#/pages/AdminUsers.page';
 import {AdminUserDetailPage} from '#/pages/AdminUserDetail.page';
 import {AdminClusterVariablesPage} from '#/pages/admin/AdminClusterVariables.page';
@@ -61,6 +63,8 @@ type Fixtures = {
 	adminMcpProcessesPage: AdminMcpProcessesPage;
 	adminOperationsLogPage: AdminOperationsLogPage;
 	adminMappingRulesPage: AdminMappingRulesPage;
+	adminGroupsPage: AdminGroupsPage;
+	adminGroupDetailPage: AdminGroupDetailPage;
 	adminUsersPage: AdminUsersPage;
 	adminUserDetailPage: AdminUserDetailPage;
 	adminClusterVariablesPage: AdminClusterVariablesPage;
@@ -141,6 +145,12 @@ const test = base.extend<Fixtures>({
 	},
 	adminOperationsLogPage: async ({page}, use) => {
 		await use(new AdminOperationsLogPage(page));
+	},
+	adminGroupsPage: async ({page}, use) => {
+		await use(new AdminGroupsPage(page));
+	},
+	adminGroupDetailPage: async ({page}, use) => {
+		await use(new AdminGroupDetailPage(page));
 	},
 	adminUsersPage: async ({page}, use) => {
 		await use(new AdminUsersPage(page));

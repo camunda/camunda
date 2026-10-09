@@ -58,6 +58,15 @@ import {
 	type CreateUserRequestBody,
 	type UpdateUserRequestBody,
 	type QueryUsersRequestBody,
+	type QueryRolesRequestBody,
+	type QueryUsersByGroupRequestBody,
+	type QueryClientsByGroupRequestBody,
+	type QueryRolesByGroupRequestBody,
+	type QueryMappingRulesByGroupRequestBody,
+	type Group,
+	type CreateGroupRequestBody,
+	type UpdateGroupRequestBody,
+	type QueryGroupsRequestBody,
 	type ClusterVariable,
 	type CreateClusterVariableRequestBody,
 	type UpdateClusterVariableRequestBody,
@@ -70,8 +79,6 @@ import {
 	type Authorization,
 	type CreateAuthorizationRequestBody as ApiCreateAuthorizationRequestBody,
 	type QueryAuthorizationsRequestBody,
-	type QueryRolesRequestBody,
-	type QueryGroupsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -267,6 +274,132 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.deleteUser.method,
 			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryGroups: (body: QueryGroupsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryGroups.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryGroups.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getGroup: ({groupId}: Pick<Group, 'groupId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getGroup.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createGroup: (body: CreateGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createGroup.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	updateGroup: ({groupId, ...body}: Pick<Group, 'groupId'> & UpdateGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteGroup: ({groupId}: Pick<Group, 'groupId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteGroup.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUsersByGroup: ({groupId, ...body}: {groupId: string} & QueryUsersByGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUsersByGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUsersByGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryClientsByGroup: ({groupId, ...body}: {groupId: string} & QueryClientsByGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryClientsByGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryClientsByGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryRolesByGroup: ({groupId, ...body}: {groupId: string} & QueryRolesByGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryRolesByGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryRolesByGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryMappingRulesByGroup: ({groupId, ...body}: {groupId: string} & QueryMappingRulesByGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMappingRulesByGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMappingRulesByGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryRoles: (body: QueryRolesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryRoles.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryRoles.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	assignUserToGroup: ({groupId, username}: {groupId: string; username: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignUserToGroup.getUrl({groupId, username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignUserToGroup.method,
+		}),
+
+	unassignUserFromGroup: ({groupId, username}: {groupId: string; username: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignUserFromGroup.getUrl({groupId, username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignUserFromGroup.method,
+		}),
+
+	assignClientToGroup: ({groupId, clientId}: {groupId: string; clientId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignClientToGroup.getUrl({groupId, clientId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignClientToGroup.method,
+		}),
+
+	unassignClientFromGroup: ({groupId, clientId}: {groupId: string; clientId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignClientFromGroup.getUrl({groupId, clientId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignClientFromGroup.method,
+		}),
+
+	assignMappingToGroup: ({groupId, mappingRuleId}: {groupId: string; mappingRuleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignMappingToGroup.getUrl({groupId, mappingRuleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignMappingToGroup.method,
+		}),
+
+	unassignMappingFromGroup: ({groupId, mappingRuleId}: {groupId: string; mappingRuleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignMappingFromGroup.getUrl({groupId, mappingRuleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignMappingFromGroup.method,
+		}),
+
+	assignGroupToRole: ({roleId, groupId}: {roleId: string; groupId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignGroupToRole.getUrl({roleId, groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignGroupToRole.method,
+		}),
+
+	unassignGroupFromRole: ({roleId, groupId}: {roleId: string; groupId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignGroupFromRole.getUrl({roleId, groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignGroupFromRole.method,
 		}),
 
 	getProcessDefinition: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
@@ -891,22 +1024,6 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.deleteAuthorization.getUrl({authorizationKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.deleteAuthorization.method,
-			headers: {'Content-Type': 'application/json'},
-		}),
-
-	queryRoles: (body: QueryRolesRequestBody) =>
-		new Request(getFullURL(unifiedAPIEndpoints.queryRoles.getUrl()), {
-			...BASE_REQUEST_OPTIONS,
-			method: unifiedAPIEndpoints.queryRoles.method,
-			body: JSON.stringify(body),
-			headers: {'Content-Type': 'application/json'},
-		}),
-
-	queryGroups: (body: QueryGroupsRequestBody) =>
-		new Request(getFullURL(unifiedAPIEndpoints.queryGroups.getUrl()), {
-			...BASE_REQUEST_OPTIONS,
-			method: unifiedAPIEndpoints.queryGroups.method,
-			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
 
