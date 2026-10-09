@@ -231,7 +231,7 @@ public final class ExpressionProcessor {
       final long scopeKey,
       final String tenantId,
       final ExpressionLabel label) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
         .flatMap(result -> typeCheck(result, ResultType.BOOLEAN, scopeKey, label))
         .map(EvaluationResult::getBoolean);
   }
@@ -612,6 +612,29 @@ public final class ExpressionProcessor {
    */
   private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
       final Expression expression, final long variableScopeKey, final String tenantId) {
+    return evaluateExpressionAsEither(expression, variableScopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Evaluates the given expression and returns the result, labeling any failure message with the
+   * given {@link ExpressionLabel} so it identifies what failed and what it targets.
+   *
+   * @param expression the FEEL expression to evaluate
+   * @param variableScopeKey the scope key for variable resolution; use {@code -1} if no process
+   *     scope is needed
+   * @param tenantId the tenant identifier for tenant-scoped variable resolution; may be {@code
+   *     null}, empty, or a specific tenant ID
+   * @param label describes the business role of this expression so that the failure message, if
+   *     any, identifies what failed and what it targets; pass {@link ExpressionLabel#NONE} for the
+   *     generic wording
+   * @return either the evaluation result (right), or a failure (left)
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
+   */
+  private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
+      final Expression expression,
+      final long variableScopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
     final EvaluationContext context;
     if (variableScopeKey < 0 && (tenantId == null || tenantId.isEmpty())) {
       context = scopedEvaluationContext;
@@ -620,7 +643,7 @@ public final class ExpressionProcessor {
     } else {
       context = scopedEvaluationContext.processScoped(variableScopeKey).tenantScoped(tenantId);
     }
-    return evaluateExpressionAsEither(expression, context, variableScopeKey);
+    return evaluateExpressionAsEither(expression, context, variableScopeKey, label);
   }
 
   /**
@@ -634,6 +657,28 @@ public final class ExpressionProcessor {
    */
   private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
       final Expression expression, final EvaluationContext context, final long variableScopeKey) {
+    return evaluateExpressionAsEither(expression, context, variableScopeKey, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Evaluates the given expression within the provided evaluation context, labeling any failure
+   * message (a genuine evaluation failure, or a timeout) with the given {@link ExpressionLabel} so
+   * it identifies what failed and what it targets.
+   *
+   * @param expression the FEEL expression to evaluate
+   * @param context the context to evaluate the expression against
+   * @param variableScopeKey the scope key for error reporting
+   * @param label describes the business role of this expression so that the failure message, if
+   *     any, identifies what failed and what it targets; pass {@link ExpressionLabel#NONE} for the
+   *     generic wording
+   * @return either the evaluation result (right), or a failure (left)
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
+   */
+  private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
+      final Expression expression,
+      final EvaluationContext context,
+      final long variableScopeKey,
+      final ExpressionLabel label) {
     final Future<EvaluationResult> future =
         VIRTUAL_THREAD_EXECUTOR.submit(
             () -> expressionLanguage.evaluateExpression(expression, context));
@@ -649,8 +694,11 @@ public final class ExpressionProcessor {
       future.cancel(true);
       return Either.left(
           new Failure(
-              "Expected to evaluate expression but timed out after %s ms: '%s'"
-                  .formatted(expressionEvaluationTimeout.toMillis(), expression.getExpression()),
+              withLabelContext(
+                  "Expected to evaluate expression but timed out after %s ms: '%s'"
+                      .formatted(
+                          expressionEvaluationTimeout.toMillis(), expression.getExpression()),
+                  label),
               ErrorType.EXTRACT_VALUE_ERROR,
               variableScopeKey));
 
@@ -659,21 +707,40 @@ public final class ExpressionProcessor {
       future.cancel(true);
       Thread.currentThread().interrupt();
       final var message =
-          "Expected to evaluate expression '%s', but the evaluation was interrupted"
-              .formatted(expression.getExpression());
+          withLabelContext(
+              "Expected to evaluate expression '%s', but the evaluation was interrupted"
+                  .formatted(expression.getExpression()),
+              label);
       throw new EvaluationException(message, e);
 
     } catch (final ExecutionException e) {
       LOG.warn("Expression evaluation at scope '{}' failed unexpectedly", variableScopeKey);
       final var message =
-          "Expected to evaluate expression '%s', but an exception was thrown"
-              .formatted(expression.getExpression());
+          withLabelContext(
+              "Expected to evaluate expression '%s', but an exception was thrown"
+                  .formatted(expression.getExpression()),
+              label);
       throw new EvaluationException(message, e.getCause());
     }
 
     return result.isFailure()
-        ? Either.left(createFailureMessage(result, result.getFailureMessage(), variableScopeKey))
+        ? Either.left(
+            createFailureMessage(
+                result, withLabelContext(result.getFailureMessage(), label), variableScopeKey))
         : Either.right(result);
+  }
+
+  /**
+   * Appends the given label's context to a failure message, e.g. turning {@code "Assertion failure
+   * on evaluate the expression '...': The condition is not fulfilled"} into {@code "Assertion
+   * failure on evaluate the expression '...': The condition is not fulfilled (condition expression
+   * of sequence flow 's2')"}. Returns the message unchanged if the label is {@link
+   * ExpressionLabel#NONE}, preserving the existing generic wording byte-for-byte.
+   */
+  private static String withLabelContext(final String message, final ExpressionLabel label) {
+    return label.hasKind()
+        ? "%s (%s%s)".formatted(message, label.kind(), label.describeTarget())
+        : message;
   }
 
   private Failure createFailureMessage(
