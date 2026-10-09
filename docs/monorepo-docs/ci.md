@@ -93,7 +93,7 @@ The check fails the job when the PR cannot be attributed. It is not (yet) a requ
 | No linked issue and no opt-out | The `## Related issues` section has no reference, or the section is missing/renamed — the reference and the checkbox must both be **inside** that section | Add `closes #1234` to the `## Related issues` section, or tick the opt-out checkbox in that same section |
 | The section links a pull request | A closing keyword points at a PR instead of an issue | Reference the tracked **issue**; a PR is never a valid attribution target |
 | The referenced issue does not exist | The number is wrong, or the issue was deleted | Correct the number |
-| Only a cross-repo reference | `owner/repo#N` refers to another repository, which this check cannot validate | Link an issue in this repository, or tick the opt-out |
+| Only a cross-repo reference | `owner/repo#N` refers to another repository, which this check cannot validate | Link an issue in this repository, or tick the opt-out (its label covers an issue tracked in another repository) |
 | `Backport of #N` cannot be followed | The marker points at an issue, at nothing, or at another repository | Fix the marker so it names the original **pull request** in this repository |
 | `Backport of #N`, but that PR is not linked either | The original PR was merged without an issue link | Add the issue link to the **original** PR; the backport inherits it |
 | `Backport of #N`, but that PR's section links a pull request | The original PR itself has the "links a pull request instead of an issue" problem | Fix the **original** PR's link; the backport inherits it |
