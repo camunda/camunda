@@ -12,6 +12,7 @@ import {USER_TASK_FORM_SCHEMA} from './form-schemas';
 function createUserTaskFormResponse(overrides?: Partial<Form>): Form {
 	return {
 		tenantId: '<default>',
+		formId: 'user-task-form',
 		schema: USER_TASK_FORM_SCHEMA,
 		version: 1,
 		formKey: '2251799813685290',

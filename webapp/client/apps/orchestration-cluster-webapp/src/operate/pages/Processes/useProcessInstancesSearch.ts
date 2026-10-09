@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import type {QueryProcessInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
@@ -24,7 +25,7 @@ const RUNNING_INSTANCES_REFETCH_INTERVAL_MS = 5000;
  */
 function useProcessInstancesSearch(search: ProcessesSearch, isPollingEnabled = true) {
 	const filter = mapProcessInstancesFilter(search);
-	const sort = mapProcessInstancesSort(search.sort);
+	const sort = useMemo(() => mapProcessInstancesSort(search.sort), [search.sort]);
 	const isShowingRunningInstances = search.active || search.incidents || search.suspended;
 
 	const query = useInfiniteQuery({

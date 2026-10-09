@@ -27,6 +27,7 @@ import {
 	mockQueryBatchOperationItemsEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {isOffsetPagination} from '#/shared-test-modules/api-mocks/shared';
 import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
 import {useInstanceHistory} from './useInstanceHistory';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
@@ -367,7 +368,7 @@ describe('InstanceHistory', () => {
 					if (body.filter?.elementInstanceScopeKey === instance.processInstanceKey) {
 						return HttpResponse.json(createQueryElementInstancesResponse([scope]));
 					}
-					const from = body.page?.from ?? 0;
+					const from = (isOffsetPagination(body.page) && body.page.from) || 0;
 					if (body.page?.limit === 1) {
 						lookups.push(from);
 					}

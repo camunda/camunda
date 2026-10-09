@@ -34,7 +34,7 @@ const REQUEST_SCHEMA = z.object({
 	sort: z.array(
 		z.object({
 			field: z.enum(['activeInstancesWithIncidentCount', 'activeInstancesWithoutIncidentCount']),
-			order: z.literal('desc'),
+			order: z.literal('DESC'),
 		}),
 	),
 	page: z.object({

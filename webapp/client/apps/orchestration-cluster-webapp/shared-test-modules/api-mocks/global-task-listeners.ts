@@ -11,6 +11,7 @@ import type {GlobalTaskListener, QueryGlobalTaskListenersResponseBody} from '@ca
 function createGlobalTaskListener(overrides?: Partial<GlobalTaskListener>): GlobalTaskListener {
 	return {
 		id: 'my-global-task-listener',
+		source: 'API',
 		type: 'my-listener-type',
 		eventTypes: ['creating'],
 		retries: 3,

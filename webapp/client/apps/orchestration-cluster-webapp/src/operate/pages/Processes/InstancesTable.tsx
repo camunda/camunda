@@ -111,6 +111,9 @@ function selectOperationItems({items}: {items: BatchOperationItem[]}) {
 		failures: items
 			.filter((item) => item.state === 'FAILED')
 			.reduce((messages, item) => {
+				if (item.processInstanceKey === null) {
+					return messages;
+				}
 				const errors = messages.get(item.processInstanceKey) ?? [];
 				errors.push(item.errorMessage);
 				messages.set(item.processInstanceKey, errors);

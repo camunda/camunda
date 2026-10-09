@@ -21,8 +21,8 @@ import {isInstanceRunning, shouldPollProcessInstance} from '#/operate/shared/uti
 
 const POLLING_INTERVAL_MS = 5000;
 const historySort = [
-	{field: 'startDate', order: 'desc'},
-	{field: 'elementInstanceKey', order: 'desc'},
+	{field: 'startDate', order: 'DESC'},
+	{field: 'elementInstanceKey', order: 'DESC'},
 ] satisfies QueryElementInstancesRequestBody['sort'];
 
 async function instanceRequest<T>(input: Request, signal: AbortSignal): Promise<T> {

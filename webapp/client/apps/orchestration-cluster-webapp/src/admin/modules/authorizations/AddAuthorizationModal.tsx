@@ -27,7 +27,7 @@ import {
 	SelectValue,
 	Separator,
 } from '@camunda/design-system';
-import type {OwnerType, ResourceType} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {OwnerType, PermissionType, ResourceType} from '@camunda/camunda-api-zod-schemas/8.11';
 import {OwnerSelection} from './OwnerSelection';
 import {useAuthorizationMutations} from './useAuthorizationMutations';
 import {
@@ -50,14 +50,14 @@ type FormValues = {
 	ownerId: string;
 	resourceId: string;
 	resourcePropertyName: string;
-	permissionTypes: string[];
+	permissionTypes: PermissionType[];
 };
 
 type Props = {
 	isOpen: boolean;
 	onClose: () => void;
 	resourceType: ResourceType;
-	permissions: string[];
+	permissions: PermissionType[];
 	idPattern: string | null | undefined;
 	isOidc: boolean;
 	isCamundaGroupsEnabled: boolean;
@@ -109,14 +109,11 @@ const AddAuthorizationModal: React.FC<Props> = ({
 						initialValues={getInitialValues(resourceType)}
 						onSubmit={async ({ownerType, ownerId, resourceId, resourcePropertyName, permissionTypes}) => {
 							try {
-								await create.mutateAsync({
-									ownerType,
-									ownerId,
-									resourceType,
-									resourceId: resourceType === 'USER_TASK' ? null : resourceId,
-									resourcePropertyName: resourceType === 'USER_TASK' ? resourcePropertyName : null,
-									permissionTypes,
-								});
+								await create.mutateAsync(
+									resourceType === 'USER_TASK'
+										? {ownerType, ownerId, resourceType, resourcePropertyName, permissionTypes}
+										: {ownerType, ownerId, resourceType, resourceId, permissionTypes},
+								);
 								onClose();
 							} catch {
 								// The mutation already surfaces the failure as a toast; keep the modal open to retry.
@@ -325,7 +322,7 @@ const AddAuthorizationModal: React.FC<Props> = ({
 
 										<Separator />
 
-										<Field<string[]> name="permissionTypes">
+										<Field<PermissionType[]> name="permissionTypes">
 											{({input, meta}) => {
 												const showError = !hasPermissions || (meta.submitFailed && Boolean(meta.error));
 												return (

@@ -58,7 +58,7 @@ describe('instanceMigration', () => {
 				version: 2,
 				versionTag: 'v2',
 				tenantId: 'tenant-a',
-				resourceName: null,
+				resourceName: 'unknown',
 				hasStartForm: false,
 				state: 'ACTIVE',
 			},

@@ -19,6 +19,8 @@ function createClusterVariable(overrides?: Partial<ClusterVariable>): ClusterVar
 		scope: 'GLOBAL',
 		tenantId: null,
 		value: '"my value"',
+		metadata: {},
+		kind: 'JSON',
 		...overrides,
 	};
 }

@@ -120,7 +120,7 @@ describe('<AdminClusterVariablesPage />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Name'}));
 
-		expect(onSearchChange).toHaveBeenCalledWith({sortOrder: 'desc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortOrder: 'DESC', page: undefined});
 	});
 
 	it('should return to the first page when the page size changes', async () => {

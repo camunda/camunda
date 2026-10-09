@@ -423,9 +423,9 @@ describe('Processes batch modification', () => {
 
 		expect(screen.router.state.location.pathname).toBe('/operate/processes');
 
-		await screen.router.navigate({to: '.', search: (prev) => ({...prev, sort: 'startDate+asc'})});
+		await screen.router.navigate({to: '.', search: (prev) => ({...prev, sort: 'startDate+ASC'})});
 
-		expect(screen.router.state.location.search).toMatchObject({sort: 'startDate+asc'});
+		expect(screen.router.state.location.search).toMatchObject({sort: 'startDate+ASC'});
 		await expect.element(exitDialog).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Batch Modification Mode')).toBeVisible();
 	});

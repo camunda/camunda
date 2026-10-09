@@ -83,7 +83,7 @@ const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 	);
 
 	const sortState = useMemo<SortingState>(
-		() => [{id: search.sortField ?? 'mappingRuleId', desc: search.sortOrder === 'desc'}],
+		() => [{id: search.sortField ?? 'mappingRuleId', desc: search.sortOrder === 'DESC'}],
 		[search.sortField, search.sortOrder],
 	);
 
@@ -92,7 +92,7 @@ const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 			const [sorted] = state;
 			onSearchChange({
 				sortField: sorted?.id as MappingRulesSearch['sortField'],
-				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'desc' : 'asc',
+				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'DESC' : 'ASC',
 				page: undefined,
 			});
 		},

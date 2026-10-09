@@ -74,7 +74,7 @@ const EditUserModal: React.FC<Props> = ({isOpen, user, onClose}) => {
 			>
 				{isOpen ? (
 					<Form<FormValues>
-						initialValues={{name: user.name, email: user.email, password: '', confirmPassword: ''}}
+						initialValues={{name: user.name ?? '', email: user.email ?? '', password: '', confirmPassword: ''}}
 						onSubmit={handleSubmit}
 						validate={(values) => {
 							const errors: Partial<Record<keyof FormValues, string>> = {};

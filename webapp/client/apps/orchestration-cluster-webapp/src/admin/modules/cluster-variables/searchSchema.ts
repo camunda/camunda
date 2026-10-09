@@ -13,7 +13,7 @@ const DEFAULT_PAGE_SIZE = 20;
 
 const clusterVariablesSearchSchema = z.object({
 	search: z.coerce.string().optional(),
-	sortOrder: z.enum(['asc', 'desc']).optional(),
+	sortOrder: z.enum(['ASC', 'DESC']).optional(),
 	page: z.number().int().positive().optional(),
 	pageSize: z.literal(PAGE_SIZES).optional(),
 });

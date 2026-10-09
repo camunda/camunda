@@ -35,6 +35,7 @@ function createUserTask(overrides?: Partial<UserTask>): UserTask {
 		businessId: null,
 		tags: [],
 		priority: 50,
+		isSuspended: false,
 		...overrides,
 	};
 }

@@ -194,18 +194,18 @@ describe('<AdminAuthorizationsPage />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Owner ID'}));
 
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'ownerId', sortOrder: 'desc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'ownerId', sortOrder: 'DESC', page: undefined});
 	});
 
 	it('should treat the owner ID order as active for user tasks when the URL sorts by resource ID', async () => {
 		const {screen, onSearchChange} = await renderPage({
 			resourceType: 'USER_TASK',
-			search: {sortField: 'resourceId', sortOrder: 'desc'},
+			search: {sortField: 'resourceId', sortOrder: 'DESC'},
 		});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Owner ID'}));
 
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'ownerId', sortOrder: 'desc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'ownerId', sortOrder: 'DESC', page: undefined});
 	});
 
 	it('should not offer sorting by permissions', async () => {
@@ -226,7 +226,7 @@ describe('<AdminAuthorizationsPage />', () => {
 		worker.use(
 			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json(createQueryAuthorizationsResponse())}),
 			mockCreateAuthorizationEndpoint({
-				schema: z.object({
+				schema: z.strictObject({
 					ownerType: z.literal('USER'),
 					ownerId: z.literal('new.user'),
 					resourceType: z.literal('PROCESS_DEFINITION'),
@@ -253,9 +253,12 @@ describe('<AdminAuthorizationsPage />', () => {
 		worker.use(
 			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json(createQueryAuthorizationsResponse())}),
 			mockCreateAuthorizationEndpoint({
-				schema: z.object({
+				schema: z.strictObject({
+					ownerType: z.literal('USER'),
+					ownerId: z.literal('new.user'),
 					resourceType: z.literal('SECRET'),
 					resourceId: z.literal('camunda.secrets.db-password'),
+					permissionTypes: z.tuple([z.literal('READ')]),
 				}),
 				failureResponse: HttpResponse.json({}, {status: 400}),
 				successResponse: HttpResponse.json({authorizationKey: '43'}),
@@ -300,10 +303,12 @@ describe('<AdminAuthorizationsPage />', () => {
 		worker.use(
 			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json(createQueryAuthorizationsResponse())}),
 			mockCreateAuthorizationEndpoint({
-				schema: z.object({
+				schema: z.strictObject({
+					ownerType: z.literal('USER'),
+					ownerId: z.literal('new.user'),
 					resourceType: z.literal('USER_TASK'),
-					resourceId: z.null(),
 					resourcePropertyName: z.literal('assignee'),
+					permissionTypes: z.tuple([z.literal('COMPLETE')]),
 				}),
 				failureResponse: HttpResponse.json({}, {status: 400}),
 				successResponse: HttpResponse.json({authorizationKey: '44'}),
