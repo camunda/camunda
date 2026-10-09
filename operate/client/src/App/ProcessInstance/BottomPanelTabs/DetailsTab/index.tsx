@@ -48,7 +48,7 @@ const formatTaskLink = (
   userTaskKey: string,
   state: UserTask['state'],
 ) => {
-  const url = new URL(tasklistUrl);
+  const url = new URL(tasklistUrl, window.location.origin);
   const filter = state === 'COMPLETED' ? 'completed' : 'all-open';
   url.pathname = mergePathname(url.pathname, userTaskKey);
   url.searchParams.set('filter', filter);
