@@ -16,7 +16,7 @@ spec:
   args:
     # Always expose the current namespace as a dedicated tag/label.
     - --tag
-    - namespace=c8-golden-main-rdbms-physical-tenants
+    - namespace=c8-golden-main-k6
 
   starter:
     image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.6.0
@@ -96,7 +96,7 @@ spec:
         memory: 128Mi
 
     nodeSelector:
-      topology.kubernetes.io/zone: "europe-west1-d"
+      topology.kubernetes.io/zone: "europe-west1-b"
       component: benchmark-n2-standard-4-stable
 
     tolerations:
@@ -123,7 +123,7 @@ spec:
   args:
     # Always expose the current namespace as a dedicated tag/label.
     - --tag
-    - namespace=c8-golden-main-rdbms-physical-tenants
+    - namespace=c8-golden-main-k6
 
   starter:
     image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.6.0
@@ -203,7 +203,7 @@ spec:
         memory: 128Mi
 
     nodeSelector:
-      topology.kubernetes.io/zone: "europe-west1-d"
+      topology.kubernetes.io/zone: "europe-west1-b"
       component: benchmark-n2-standard-4-stable
 
     tolerations:
