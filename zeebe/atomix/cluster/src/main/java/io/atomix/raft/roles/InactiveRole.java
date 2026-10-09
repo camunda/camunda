@@ -68,10 +68,16 @@ public class InactiveRole extends AbstractRole {
     logRequest(request);
     updateTermAndLeader(request.term(), request.leader());
 
+    // Store the term that identifies the configuration, not the term it was disseminated under, so
+    // that Configuration#term() means the same thing here as on the member that appended the entry.
+    // A leader that predates the configurationTerm field sends 0; fall back to its current term,
+    // which is the ambiguous value this member would have stored before.
+    final var configurationTerm =
+        request.configurationTerm() > 0 ? request.configurationTerm() : request.term();
     final Configuration configuration =
         new Configuration(
             request.index(),
-            request.term(),
+            configurationTerm,
             request.timestamp(),
             request.newMembers(),
             request.oldMembers() != null ? request.oldMembers() : List.of());

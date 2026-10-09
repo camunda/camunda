@@ -7,6 +7,7 @@
  */
 
 import {render} from 'vitest-browser-react';
+import {TooltipProvider} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
@@ -23,14 +24,16 @@ const getWrapper = ({
 	initialValues?: SubmittedValues;
 } = {}) => {
 	const Wrapper = ({children}: {children: React.ReactNode}) => (
-		<Form<SubmittedValues> onSubmit={onSubmit} initialValues={initialValues}>
-			{({handleSubmit}) => (
-				<form onSubmit={handleSubmit}>
-					{children}
-					<button type="submit">submit</button>
-				</form>
-			)}
-		</Form>
+		<TooltipProvider>
+			<Form<SubmittedValues> onSubmit={onSubmit} initialValues={initialValues}>
+				{({handleSubmit}) => (
+					<form onSubmit={handleSubmit}>
+						{children}
+						<button type="submit">submit</button>
+					</form>
+				)}
+			</Form>
+		</TooltipProvider>
 	);
 	return Wrapper;
 };
@@ -86,7 +89,8 @@ describe('<AdvancedStringFilter />', () => {
 		);
 
 		await userEvent.click(screen.getByRole('combobox'));
-		await userEvent.keyboard('{ArrowDown}{Enter}');
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'contains'}), {force: true});
 		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
 		expect(onSubmit).toHaveBeenCalledWith(
@@ -132,7 +136,8 @@ describe('<AdvancedStringFilter />', () => {
 		);
 
 		await userEvent.click(screen.getByRole('combobox'));
-		await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'is one of'}), {force: true});
 
 		await expect.element(screen.getByRole('combobox')).toHaveTextContent('is one of');
 	});

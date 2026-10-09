@@ -54,6 +54,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /agent-instances/{agentInstanceKey}:
     get:
@@ -101,6 +102,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
     patch:
       x-eventually-consistent: false
@@ -154,6 +156,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /agent-instances/search:
     post:
@@ -191,6 +194,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /agent-instances/{agentInstanceKey}/history/search:
     post:
@@ -244,6 +248,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -415,7 +420,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/AgentInstanceDefinitionResult'
         metrics:
-          description: Aggregated metrics across all loopIterations of this agent instance.
+          description: |
+            Aggregated metrics across all loopIterations of this agent instance. Includes
+            history items later discarded: metrics are counted when an item is accepted,
+            not when it's committed.
           allOf:
             - $ref: '#/components/schemas/AgentInstanceMetrics'
         limits:
@@ -519,9 +527,10 @@ components:
           nullable: true
           description: A human-readable description of the tool.
         elementId:
-          type: string
-          nullable: true
           description: The BPMN element ID of the tool element within the ad-hoc sub-process.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
 
     AgentInstanceMetrics:
       description: Aggregated metrics for an agent instance across all model calls.
@@ -529,6 +538,9 @@ components:
       required:
         - inputTokens
         - outputTokens
+        - reasoningTokenCount
+        - cacheCreationTokenCount
+        - cacheReadTokenCount
         - modelCalls
         - toolCalls
       properties:
@@ -540,6 +552,18 @@ components:
           type: integer
           format: int64
           description: Total output tokens produced across all model calls.
+        reasoningTokenCount:
+          type: integer
+          format: int64
+          description: Total reasoning tokens consumed across all model calls.
+        cacheCreationTokenCount:
+          type: integer
+          format: int64
+          description: Total tokens used to create prompt cache entries across all model calls.
+        cacheReadTokenCount:
+          type: integer
+          format: int64
+          description: Total tokens read from prompt cache across all model calls.
         modelCalls:
           type: integer
           format: int32
@@ -598,7 +622,7 @@ components:
       required:
         - elementInstanceKey
         - jobKey
-        - jobLease
+        - jobLeaseToken
         - history
       properties:
         elementInstanceKey:
@@ -614,20 +638,24 @@ components:
             A creation must always be attributed to the active job that produced it.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
-        jobLease:
+        jobLeaseToken:
           description: |
             Opaque lease token received from the job activation response. Disambiguates
             this activation from any other activation of the same job: if the job is
             later retried, history items submitted under a superseded lease are discarded
             rather than committed.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
         history:
           description: |
             A batch of history items to append to the agent instance's conversation
             history, in request order. Each created item is echoed back in the
             response's createdHistory, positionally correlated. Must include a
             CONFIGURATION item establishing model, provider, and systemPrompt (and,
-            if needed, limits).
+            if needed, limits). Every item's role must be CONFIGURATION or USER, and
+            no item may carry non-zero usage-token metrics (inputTokens, outputTokens,
+            reasoningTokenCount, cacheCreationTokenCount, cacheReadTokenCount);
+            durationMs is exempt and may be non-zero.
           type: array
           minItems: 1
           items:
@@ -660,7 +688,7 @@ components:
       required:
         - elementInstanceKey
         - jobKey
-        - jobLease
+        - jobLeaseToken
       properties:
         elementInstanceKey:
           nullable: false
@@ -669,7 +697,10 @@ components:
             Used for ownership/equality validation against the stored agent instance
             and, when the supplied key differs from the previous association (re-entry
             of an ad-hoc sub-process or AI Agent task), appended to elementInstanceKeys
-            with the reverse link updated on the supplied element instance.
+            with the reverse link updated on the supplied element instance. Only one
+            element instance may hold this write claim at a time: any update from a
+            different element instance is rejected while the current writer's job is
+            still active.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         status:
@@ -682,13 +713,14 @@ components:
             An update must always be attributed to the active job that produced it.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
-        jobLease:
+        jobLeaseToken:
           description: |
             Opaque lease token received from the job activation response. Disambiguates
             this activation from any other activation of the same job: if the job is
             later retried, history items submitted under a superseded lease are discarded
             rather than committed.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
         history:
           description: |
             A batch of history items to append to the agent instance's conversation
@@ -727,7 +759,8 @@ components:
           description: |
             The historyItemId of the corresponding item in the request, echoed back
             so callers can correlate response entries with request items by id.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         historyItemKey:
           description: |
             The system-generated key for the history item. When isDuplicate is true,
@@ -796,7 +829,8 @@ components:
             item. For example, when a retried job activation resubmits history items
             it already sent in an earlier attempt, those items are not rejected; they
             are flagged via isDuplicate in the response instead. Must be non-blank.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         loopIteration:
           description: The loop iteration this item belongs to.
           allOf:
@@ -824,7 +858,7 @@ components:
           description: Per-call token and latency metrics. Present on ASSISTANT items only.
           nullable: true
           allOf:
-            - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
+            - $ref: '#/components/schemas/AgentInstanceHistoryItemMetricsRequest'
         producedAt:
           description: The agent-side timestamp of when this message was produced.
           type: string
@@ -953,7 +987,7 @@ components:
         - agentInstanceKey
         - elementInstanceKey
         - jobKey
-        - jobLease
+        - jobLeaseToken
         - loopIteration
         - role
         - content
@@ -974,8 +1008,12 @@ components:
         historyItemId:
           description: |
             The client-supplied identifier this item was created with. Empty for items that don't
-            carry one.
-          type: string
+            carry one. Not unique: a job can be re-activated under a superseded lease any number
+            of times before it completes, so one historyItemId can have zero or more DISCARDED
+            records and at most one COMMITTED record, since only historyItemKey is guaranteed
+            unique. Filter by commitStatus rather than assuming one record per historyItemId.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/HistoryItemId'
         agentInstanceKey:
           description: The key of the agent instance this item belongs to.
           allOf:
@@ -988,9 +1026,10 @@ components:
           description: The key of the job activation during which this item was produced.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
-        jobLease:
+        jobLeaseToken:
           description: The lease token of the activation that produced this item.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
         loopIteration:
           description: The loop iteration this item belongs to.
           allOf:
@@ -1172,8 +1211,9 @@ components:
           type: string
         elementId:
           description: The BPMN element ID handling this tool.
-          type: string
           nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
         arguments:
           description: |
             The tool call arguments as provided by the LLM. May be null or populated on
@@ -1182,12 +1222,53 @@ components:
           nullable: true
           additionalProperties: true
 
+    AgentInstanceHistoryItemMetricsRequest:
+      description: |
+        Per-call token and latency metrics for an ASSISTANT history item, as submitted on a
+        create/update request. All fields are optional: omit a field the caller has no value
+        for rather than sending it as an explicit null.
+      type: object
+      properties:
+        inputTokens:
+          description: Input tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        outputTokens:
+          description: Output tokens produced by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        reasoningTokenCount:
+          description: Reasoning tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheCreationTokenCount:
+          description: Cache-creation tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheReadTokenCount:
+          description: Cache-read tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        durationMs:
+          description: Wall-clock duration of the LLM call in milliseconds. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+
     AgentInstanceHistoryItemMetrics:
       description: Per-call token and latency metrics for an ASSISTANT history item.
       type: object
       required:
         - inputTokens
         - outputTokens
+        - reasoningTokenCount
+        - cacheCreationTokenCount
+        - cacheReadTokenCount
         - durationMs
       properties:
         inputTokens:
@@ -1197,6 +1278,21 @@ components:
           format: int64
         outputTokens:
           description: Output tokens produced by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        reasoningTokenCount:
+          description: Reasoning tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheCreationTokenCount:
+          description: Cache-creation tokens consumed by this LLM call. Null when not provided.
+          nullable: true
+          type: integer
+          format: int64
+        cacheReadTokenCount:
+          description: Cache-read tokens consumed by this LLM call. Null when not provided.
           nullable: true
           type: integer
           format: int64

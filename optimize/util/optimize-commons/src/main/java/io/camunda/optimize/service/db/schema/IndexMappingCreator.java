@@ -31,8 +31,8 @@ public interface IndexMappingCreator<TBuilder> {
     return false;
   }
 
-  default boolean isImportIndex() {
-    return false;
+  default BackupPriority getBackupPriority() {
+    return BackupPriority.PRIORITY2;
   }
 
   int getVersion();

@@ -14,17 +14,17 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
-import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -34,7 +34,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.time.Instant;
+import java.time.InstantSource;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -53,18 +53,21 @@ public final class TimerTriggerProcessor
   private final CatchEventBehavior catchEventBehavior;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
-  private final MutableTimerInstanceState timerInstanceState;
+  private final TimerInstanceState timerInstanceState;
   private final ExpressionProcessor expressionProcessor;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
   private final EventHandle eventHandle;
+  private final InstantSource clock;
 
   public TimerTriggerProcessor(
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
+    this.clock = clock;
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionProcessor();
     stateWriter = writers.state();
@@ -81,7 +84,8 @@ public final class TimerTriggerProcessor
             writers,
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
   }
 
   @Override
@@ -95,6 +99,8 @@ public final class TimerTriggerProcessor
           record, RejectionType.NOT_FOUND, NO_TIMER_FOUND_MESSAGE.formatted(record.getKey()));
       return;
     }
+
+    restoreStorageOrdinal(timer, timerInstance);
 
     final var tenantId = timer.getTenantId();
     // this is an additional safeguard to avoid banning unrelated instances
@@ -182,31 +188,68 @@ public final class TimerTriggerProcessor
         event.getId(),
         record.getTenantId(),
         record.getRootProcessInstanceKey(),
+        record.getStorageOrdinal(),
         record.getBpmnProcessId(),
         record.getElementType(),
         refreshedTimer);
   }
 
   private Timer refreshTimer(final Timer timer, final TimerRecord record) {
-    if (timer instanceof CronTimer) {
-      return timer;
-    }
-
-    int repetitions = record.getRepetitions();
-    if (repetitions != RepeatingInterval.INFINITE) {
-      repetitions--;
-    }
-
-    // Use the timer's last due date instead of the current time to avoid a time shift.
-    final Interval refreshedInterval =
-        timer.getInterval().withStart(Instant.ofEpochMilli(record.getDueDate()));
-    return new RepeatingInterval(repetitions, refreshedInterval);
+    return switch (timer) {
+      case final CronTimer cronTimer -> cronTimer;
+      case final RepeatingInterval repeatingInterval -> {
+        int repetitions = record.getRepetitions();
+        if (repetitions != RepeatingInterval.INFINITE) {
+          repetitions--;
+        }
+        yield repeatingInterval.nextOccurrenceAfter(
+            record.getDueDate(), clock.millis(), repetitions);
+      }
+      default ->
+          // Defensive gate; not expected to ever execute.
+          throw new IllegalStateException(
+              "Expected timer to reschedule as a CronTimer or RepeatingInterval, but was '%s'"
+                  .formatted(timer.getClass()));
+    };
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<TimerRecord> record) {
-    // firing a timer advances the token, so reject while suspended. Rejecting does not remove the
-    // due timer, so it may strand or re-trigger until firing is suppressed and re-armed on resume.
-    return SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<TimerRecord> record) {
+    restoreStorageOrdinal(record);
+    stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.SUSPENDED, record.getValue());
+    return SuspensionAction.BUFFER;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<TimerRecord> record) {
+    final long timerKey = record.getKey();
+    final var timer = record.getValue();
+    restoreStorageOrdinal(record);
+    // RESUMED restores a missing due-date entry before the drained TRIGGER removes the timer.
+    stateWriter.appendFollowUpEvent(timerKey, TimerIntent.RESUMED, timer);
+    return SuspensionAction.PROCESS;
+  }
+
+  /** Variant for the suspension callbacks, which run without the NOT_FOUND check above. */
+  private void restoreStorageOrdinal(final TypedRecord<TimerRecord> record) {
+    final var timer = record.getValue();
+    final var timerInstance =
+        timerInstanceState.get(timer.getElementInstanceKey(), record.getKey());
+    if (timerInstance != null) {
+      restoreStorageOrdinal(timer, timerInstance);
+    }
+  }
+
+  /**
+   * Populate the timer record with the storage ordinal of the timer instance to ensure that the
+   * correct ordinal is used for the rescheduled timer.
+   *
+   * <p>The state is the source of truth for the ordinal: a TRIGGER command written before the
+   * ordinal existed carries 0, and every follow-up event (SUSPENDED, RESUMED, TRIGGERED, the
+   * rescheduled CREATED) reuses this record.
+   */
+  private static void restoreStorageOrdinal(
+      final TimerRecord timer, final TimerInstance timerInstance) {
+    timer.setStorageOrdinal(TimerStorageOrdinals.of(timerInstance));
   }
 }

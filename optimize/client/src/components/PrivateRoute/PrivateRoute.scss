@@ -1,3 +1,10 @@
+// The legacy C3 header is fixed, so the content has to reserve its height. The
+// design-system header is sticky and already occupies a row above <main>.
+main.nav-v2 {
+  height: auto;
+  min-height: 0;
+}
+
 .PrivateRoute {
   padding-top: var(--c3-header-height, 48px);
   padding-left: var(--c3-sidebar-width, 0);
@@ -11,6 +18,9 @@
   }
 
   &.nav-v2 {
+    padding-top: 0;
+    padding-left: var(--app-sidebar-width, 0);
+
     .cds--popover,
     .cds--popover-content,
     .Popover .cds--popover {

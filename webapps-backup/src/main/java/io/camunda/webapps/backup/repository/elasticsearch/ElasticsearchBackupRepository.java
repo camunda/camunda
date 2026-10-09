@@ -570,8 +570,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                 + "(backup id [{}]) to complete. The snapshot is likely still running in "
                 + "Elasticsearch. Polling will continue {}. "
                 + "If socket timeouts occur repeatedly, consider increasing the socket timeout via "
-                + "CAMUNDA_OPERATE_ELASTICSEARCH_SOCKETTIMEOUT or "
-                + "CAMUNDA_TASKLIST_ELASTICSEARCH_SOCKETTIMEOUT "
+                + "CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SOCKETTIMEOUT "
                 + "and consider doubling or tripling the current value.",
             snapshotRequest.snapshotName(),
             backupId,

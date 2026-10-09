@@ -54,7 +54,7 @@ public class ZeebeAgentInstanceImportService
   }
 
   @Override
-  protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
+  List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
       final List<ZeebeAgentInstanceRecordDto> zeebeRecords) {
     final List<ProcessInstanceDto> optimizeDtos =
         zeebeRecords.stream()

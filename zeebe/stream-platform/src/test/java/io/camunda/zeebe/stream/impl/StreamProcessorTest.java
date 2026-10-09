@@ -788,6 +788,64 @@ public final class StreamProcessorTest {
         .untilAsserted(() -> assertThat(pendingSideEffects()).isZero());
   }
 
+  @Test
+  public void shouldStopProcessingWhenTooManySideEffectsArePending() {
+    // given - a processor that allows only one processing result to wait for commit
+    final var logStorage = new ListLogStorage();
+    streamPlatform.setLogContext(streamPlatform.createLogContext(logStorage, 1));
+    final var postCommitTask = mock(PostCommitTask.class);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder.appendPostCommitTask(postCommitTask);
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    logStorage.deferCommits();
+    streamPlatform.buildStreamProcessor(
+        streamPlatform.getLogStream(), true, cfg -> cfg.maxPendingSideEffects(1));
+
+    // when - two commands are written but nothing is committed
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(2)));
+
+    // then - only the first command is processed, because its side effects fill the queue
+    await("only the first command is processed")
+        .during(Duration.ofMillis(200))
+        .atMost(Duration.ofMillis(TIMEOUT_MILLIS))
+        .untilAsserted(
+            () -> {
+              verify(defaultMockedRecordProcessor, Mockito.times(1)).process(any(), any());
+              assertThat(pendingSideEffects()).isEqualTo(1);
+            });
+  }
+
+  @Test
+  public void shouldResumeProcessingWhenPendingSideEffectsDrain() {
+    // given - processing stopped because the single allowed side effect is waiting for commit
+    final var logStorage = new ListLogStorage();
+    streamPlatform.setLogContext(streamPlatform.createLogContext(logStorage, 1));
+    final var postCommitTask = mock(PostCommitTask.class);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder.appendPostCommitTask(postCommitTask);
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    logStorage.deferCommits();
+    streamPlatform.buildStreamProcessor(
+        streamPlatform.getLogStream(), true, cfg -> cfg.maxPendingSideEffects(1));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(2)));
+    await("processing stopped on the full side effect queue")
+        .untilAsserted(
+            () -> verify(defaultMockedRecordProcessor, Mockito.times(1)).process(any(), any()));
+
+    // when - the results are committed, which drains the queue
+    logStorage.commitPendingEntries();
+
+    // then - the blocked command is processed and both side effects run
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+    verify(postCommitTask, TIMEOUT.times(2)).flush();
+  }
+
   private double pendingSideEffects() {
     return streamPlatform
         .getProcessorMeterRegistry()

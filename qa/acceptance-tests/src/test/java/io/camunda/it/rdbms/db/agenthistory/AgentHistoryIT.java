@@ -171,6 +171,10 @@ public class AgentHistoryIT {
     assertThat(entity.commitStatus()).isEqualTo(dbModel.commitStatus());
     assertThat(entity.metrics().inputTokens()).isEqualTo(dbModel.inputTokens());
     assertThat(entity.metrics().outputTokens()).isEqualTo(dbModel.outputTokens());
+    assertThat(entity.metrics().reasoningTokenCount()).isEqualTo(dbModel.reasoningTokenCount());
+    assertThat(entity.metrics().cacheCreationTokenCount())
+        .isEqualTo(dbModel.cacheCreationTokenCount());
+    assertThat(entity.metrics().cacheReadTokenCount()).isEqualTo(dbModel.cacheReadTokenCount());
     assertThat(entity.metrics().durationMs()).isEqualTo(dbModel.durationMs());
   }
 }

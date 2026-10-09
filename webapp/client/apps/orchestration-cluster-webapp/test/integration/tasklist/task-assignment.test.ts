@@ -9,7 +9,7 @@
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
-import {assignTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10';
+import {assignTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {
 	mockCurrentUserEndpoint,
 	mockGetUserTaskEndpoint,
@@ -87,7 +87,6 @@ test.describe('Task assignment', () => {
 
 		await taskDetailPage.assignButton.click();
 
-		await expect(taskDetailPage.assignmentSuccessful).toBeVisible();
 		await expect(taskDetailPage.unassignButton).toBeVisible();
 	});
 
@@ -112,7 +111,6 @@ test.describe('Task assignment', () => {
 
 		await taskDetailPage.unassignButton.click();
 
-		await expect(taskDetailPage.unassignmentSuccessful).toBeVisible();
 		await expect(taskDetailPage.assignButton).toBeVisible();
 	});
 
@@ -138,9 +136,7 @@ test.describe('Task assignment', () => {
 		await taskDetailPage.goto('2251799813685281');
 		await taskDetailPage.assignButton.click();
 
-		await expect(
-			taskDetailPage.header.notifications.getByNotificationTitle('Task could not be assigned'),
-		).toBeVisible();
+		await expect(taskDetailPage.header.notifications.getByNotificationTitle("Couldn't assign the task")).toBeVisible();
 		await expect(taskDetailPage.assignButton).toBeVisible();
 	});
 

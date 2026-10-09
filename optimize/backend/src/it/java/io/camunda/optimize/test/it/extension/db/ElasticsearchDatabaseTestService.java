@@ -88,7 +88,6 @@ import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
-import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
@@ -223,19 +222,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                           .refresh(Refresh.True)));
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException("Unable to add an entry to elasticsearch", e);
-    }
-  }
-
-  @Override
-  public void addEntryWithRawIndex(final String rawIndexName, final String id, final Object entry) {
-    try {
-      getOptimizeElasticClient()
-          .elasticsearchClient()
-          .index(
-              IndexRequest.of(
-                  i -> i.index(rawIndexName).id(id).document(entry).refresh(Refresh.True)));
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException("Unable to add a raw entry to elasticsearch", e);
     }
   }
 
@@ -406,39 +392,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             .filter(indexName -> !indexName.contains(recordsToKeep))
             .toArray(String[]::new);
     deleteZeebeIndicesByName(indicesToDelete);
-  }
-
-  private String[] listZeebeIndicesForPrefix(final String prefix) {
-    try {
-      return getOptimizeElasticClient()
-          .elasticsearchClient()
-          .indices()
-          .get(
-              GetIndexRequest.of(
-                  r -> r.index(prefix + "*").ignoreUnavailable(true).allowNoIndices(true)))
-          .result()
-          .keySet()
-          .toArray(String[]::new);
-    } catch (final IOException e) {
-      throw new OptimizeRuntimeException(e);
-    }
-  }
-
-  private void deleteZeebeIndicesByName(final String... indices) {
-    if (indices.length == 0) {
-      return;
-    }
-    // Wrap in a catch so that an ephemeral index (e.g. camunda-history-deletion in Zeebe 8.9)
-    // that vanishes between listing and deletion does not fail the cleanup.
-    try {
-      getOptimizeElasticClient().deleteIndexByRawIndexNames(indices);
-    } catch (final ElasticsearchException e) {
-      if ("index_not_found_exception".equals(e.error().type())) {
-        LOG.debug("Some Zeebe indices already gone by delete time, ignoring: {}", e.getMessage());
-      } else {
-        throw e;
-      }
-    }
   }
 
   @Override
@@ -635,6 +588,19 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public void addEntryWithRawIndex(final String rawIndexName, final String id, final Object entry) {
+    try {
+      getOptimizeElasticClient()
+          .elasticsearchClient()
+          .index(
+              IndexRequest.of(
+                  i -> i.index(rawIndexName).id(id).document(entry).refresh(Refresh.True)));
+    } catch (final IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to add a raw entry to elasticsearch", e);
+    }
+  }
+
+  @Override
   public void deleteProcessInstancesFromIndex(final String indexName, final String id) {
     final DeleteRequest request =
         OptimizeDeleteRequestBuilderES.of(
@@ -705,14 +671,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     } catch (final Exception e) {
       LOG.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
     }
-  }
-
-  @Override
-  public List<String> getImportIndices() {
-    return ElasticSearchSchemaManager.getAllNonDynamicMappings().stream()
-        .filter(IndexMappingCreator::isImportIndex)
-        .map(IndexMappingCreator::getIndexName)
-        .toList();
   }
 
   @Override
@@ -1123,6 +1081,39 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public String[] getIndexNames() throws IOException {
     return getOptimizeElasticClient().getAllIndexNames().toArray(new String[0]);
+  }
+
+  private String[] listZeebeIndicesForPrefix(final String prefix) {
+    try {
+      return getOptimizeElasticClient()
+          .elasticsearchClient()
+          .indices()
+          .get(
+              GetIndexRequest.of(
+                  r -> r.index(prefix + "*").ignoreUnavailable(true).allowNoIndices(true)))
+          .result()
+          .keySet()
+          .toArray(String[]::new);
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
+  }
+
+  private void deleteZeebeIndicesByName(final String... indices) {
+    if (indices.length == 0) {
+      return;
+    }
+    // Wrap in a catch so that an ephemeral index (e.g. camunda-history-deletion in Zeebe 8.9)
+    // that vanishes between listing and deletion does not fail the cleanup.
+    try {
+      getOptimizeElasticClient().deleteIndexByRawIndexNames(indices);
+    } catch (final ElasticsearchException e) {
+      if ("index_not_found_exception".equals(e.error().type())) {
+        LOG.debug("Some Zeebe indices already gone by delete time, ignoring: {}", e.getMessage());
+      } else {
+        throw e;
+      }
+    }
   }
 
   public OptimizeIndexNameService getIndexNameService() {

@@ -35,6 +35,7 @@ type Props = {
 	hasOuterBorderOnSelection?: boolean;
 	onElementDoubleClick?: OnElementDoubleClick;
 	customElementClasses?: [elementId: string, className: string][];
+	download?: {xml: string; filename: string};
 };
 
 const useFullscreen = (
@@ -122,6 +123,7 @@ function Diagram({
 	hasOuterBorderOnSelection = true,
 	onElementDoubleClick,
 	customElementClasses,
+	download,
 }: Props) {
 	const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
 	const diagramRef = useRef<HTMLDivElement | null>(null);
@@ -191,7 +193,7 @@ function Diagram({
 		customElementClasses,
 	]);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		const viewer = viewerRef.current;
 		if (!viewer) {
 			return;
@@ -202,9 +204,13 @@ function Diagram({
 		viewer.onRootChange = undefined;
 
 		if (onElementSelection !== undefined) {
-			viewer.onElementSelection = (elementId, isMultiInstance) => {
+			viewer.onElementSelection = (elementId, isMultiInstance, clickedElementId) => {
 				setSelectedElement(viewer.selectedElement);
-				onElementSelection(elementId, isMultiInstance);
+				if (clickedElementId === undefined) {
+					onElementSelection(elementId, isMultiInstance);
+				} else {
+					onElementSelection(elementId, isMultiInstance, clickedElementId);
+				}
 			};
 			viewer.onViewboxChange = setIsViewboxChanging;
 			viewer.onRootChange = (rootElementId) => {
@@ -236,6 +242,7 @@ function Diagram({
 							isFullscreen={isFullscreen}
 							handleMinimapToggle={handleMinimapToggle}
 							isMinimapOpen={isMinimapOpen}
+							download={download}
 						/>
 						{children}
 					</>

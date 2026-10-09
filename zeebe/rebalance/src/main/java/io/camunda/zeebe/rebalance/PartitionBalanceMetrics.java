@@ -9,7 +9,6 @@ package io.camunda.zeebe.rebalance;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
@@ -40,11 +39,6 @@ public final class PartitionBalanceMetrics implements ClusterConfigurationUpdate
   }
 
   @Override
-  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
-    onClusterConfigurationUpdated(CurrentClusterConfiguration.fromLegacy(clusterConfiguration));
-  }
-
-  @Override
   public synchronized void onClusterConfigurationUpdated(
       final CurrentClusterConfiguration updated) {
     if (updated.isUninitialized()) {
@@ -52,7 +46,7 @@ public final class PartitionBalanceMetrics implements ClusterConfigurationUpdate
     }
     configuration = updated;
     final Set<PartitionId> current =
-        updated.partitionGroups().entrySet().stream()
+        updated.activePartitionGroups().entrySet().stream()
             .flatMap(
                 entry ->
                     entry
@@ -87,7 +81,7 @@ public final class PartitionBalanceMetrics implements ClusterConfigurationUpdate
       return false;
     }
     final var group = known.partitionGroups().get(partition.group());
-    if (group == null) {
+    if (group == null || group.isDisabled()) {
       return false;
     }
     final var desiredLeader = group.getDesiredLeader(partition.number());

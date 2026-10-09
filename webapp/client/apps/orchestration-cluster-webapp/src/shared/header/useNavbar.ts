@@ -9,7 +9,7 @@
 import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {C3NavigationAppProps, C3NavigationNavBarElement} from '@camunda/camunda-composite-components';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
 import {hasComponentAccess} from '#/shared/componentAccess';
 import {useCallback} from 'react';
@@ -137,6 +137,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 							isCurrentPage: hasRouteMatch('/operate/decisions'),
 							routeProps: {
 								to: tabRoutes['operateDecisions'],
+								search: {evaluated: true, failed: true},
 							},
 						},
 						{

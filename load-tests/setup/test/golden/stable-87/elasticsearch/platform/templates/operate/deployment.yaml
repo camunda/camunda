@@ -49,7 +49,7 @@ spec:
         - name: harbor-registry
       initContainers:
         - name: migration
-          image: camunda/operate:8.7.37
+          image: camunda/operate:8.7.42
           command: ['/bin/sh', '/usr/local/operate/bin/migrate']
           securityContext:
             allowPrivilegeEscalation: false
@@ -83,7 +83,7 @@ spec:
               mountPath: /camunda
       containers:
         - name: operate
-          image: camunda/operate:8.7.37
+          image: camunda/operate:8.7.42
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -112,7 +112,7 @@ spec:
                   name: camunda-credentials
                   key: identity-zeebe-client-token
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
-              value: "http://c8-golden-stable-87-elasticsearch.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
+              value: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: ZEEBE_TOKEN_AUDIENCE
               value: "zeebe-api"
             - name: ZEEBE_CLIENT_CONFIG_PATH

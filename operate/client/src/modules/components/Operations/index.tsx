@@ -7,8 +7,8 @@
  */
 
 import {OperationItems} from 'modules/components/OperationItems';
-import {InlineLoading} from '@carbon/react';
-import {LoadingSlot, OperationsContainer} from './styled';
+import {InlineLoading, Stack} from '@carbon/react';
+import {LoadingSlot} from './styled';
 import {OperationRenderer} from './OperationRenderer';
 import type {OperationSlot} from './types';
 
@@ -26,7 +26,7 @@ const Operations: React.FC<Props> = ({
   loadingMessage,
 }) => {
   return (
-    <OperationsContainer orientation="horizontal">
+    <Stack orientation="horizontal">
       <OperationItems>
         <LoadingSlot aria-hidden={isLoading ? undefined : true}>
           {isLoading ? (
@@ -46,7 +46,7 @@ const Operations: React.FC<Props> = ({
           />
         ))}
       </OperationItems>
-    </OperationsContainer>
+    </Stack>
   );
 };
 

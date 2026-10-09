@@ -12,7 +12,7 @@ import static io.camunda.debug.cli.recover.RecoverTestSupport.persistedProcess;
 import static io.camunda.debug.cli.recover.RecoverTestSupport.readResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
@@ -61,8 +61,8 @@ final class RecoveredProcessRecordTest {
 
   @Test
   void shouldProduceSameProcessEntityAsRealHandlerReads() throws IOException {
-    // given — the anti-drift guarantee: driving the real ProcessHandler off a record reconstructed
-    // from primary storage yields a document carrying exactly the persisted-process data.
+    // given — anti-drift guarantee: driving ProcessCreatedHandler off a record reconstructed from
+    // primary storage yields a document carrying exactly the persisted-process data.
     final var resource = readResource(RESOURCE);
     final var persisted =
         persistedProcess(
@@ -75,7 +75,8 @@ final class RecoveredProcessRecordTest {
             resource,
             PersistedProcessState.ACTIVE);
     final var handler =
-        new ProcessHandler("process", new NoopProcessCache(), new ExtensionPropertyConfiguration());
+        new ProcessCreatedHandler(
+            "process", new NoopProcessCache(), new ExtensionPropertyConfiguration());
     final var record = RecoveredProcessRecord.from(persisted);
 
     // when

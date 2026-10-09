@@ -6,24 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, useRouter, type ErrorComponentProps} from '@tanstack/react-router';
+import {useQueryClient} from '@tanstack/react-query';
 import {t} from 'i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {DecisionInstance, DecisionInstanceShell} from '#/operate/pages/DecisionInstance/DecisionInstance';
+import {DecisionInstanceError} from '#/operate/pages/DecisionInstance/DecisionInstanceError';
 import {getHeaderColumns} from '#/operate/pages/DecisionInstance/headerColumns';
 import {decisionInstanceQuery} from '#/operate/pages/DecisionInstance/decisionInstance.queries';
 import {InstanceHeaderSkeleton} from '#/operate/shared/InstanceHeader/InstanceHeaderSkeleton';
 
 export const Route = createFileRoute('/_carbon/_auth/operate/decisions/$decisionInstanceId')({
-	loader: async ({context: {queryClient}, params: {decisionInstanceId}}) => {
-		try {
-			return await queryClient.ensureQueryData(decisionInstanceQuery(decisionInstanceId));
-		} catch {
-			// 403/404/network errors are handled by the page itself (forbidden state, redirect+notify);
-			// the loader only feeds `head()` below, so a missing title is the only consequence here.
-			return undefined;
-		}
-	},
+	loader: ({context: {queryClient}, params: {decisionInstanceId}}) =>
+		queryClient.ensureQueryData(decisionInstanceQuery(decisionInstanceId)),
 	head: ({loaderData, params: {decisionInstanceId}}) => ({
 		meta: loaderData
 			? [
@@ -40,6 +35,7 @@ export const Route = createFileRoute('/_carbon/_auth/operate/decisions/$decision
 	// navigation shows the same loading row legacy did, instead of a blank page while the loader awaits.
 	pendingComponent: () => (
 		<DecisionInstanceShell
+			isPending
 			header={
 				<InstanceHeaderSkeleton
 					headerColumns={getHeaderColumns(t, {
@@ -49,8 +45,26 @@ export const Route = createFileRoute('/_carbon/_auth/operate/decisions/$decision
 			}
 		/>
 	),
+	errorComponent: function DecisionInstanceRouteError({error}: ErrorComponentProps) {
+		const {decisionInstanceId} = Route.useParams();
+		const router = useRouter();
+		const queryClient = useQueryClient();
+
+		if (error !== queryClient.getQueryState(decisionInstanceQuery(decisionInstanceId).queryKey)?.error) {
+			throw error;
+		}
+
+		return (
+			<DecisionInstanceError
+				error={error}
+				decisionInstanceId={decisionInstanceId}
+				onRetry={() => void router.invalidate({filter: (match) => match.routeId === Route.id})}
+			/>
+		);
+	},
 	component: function DecisionInstanceRoute() {
 		const {decisionInstanceId} = Route.useParams();
+
 		return <DecisionInstance decisionInstanceId={decisionInstanceId} />;
 	},
 });

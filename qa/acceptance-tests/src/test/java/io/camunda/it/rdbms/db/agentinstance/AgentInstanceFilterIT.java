@@ -148,6 +148,25 @@ public class AgentInstanceFilterIT {
   }
 
   @TestTemplate
+  public void shouldFilterByProcessDefinitionVersionTag(
+      final CamundaRdbmsTestApplication testApplication) {
+    final String versionTag = "v-" + nextStringId();
+    final var model =
+        createAndSaveRandomAgentInstance(
+            testApplication, b -> b.processDefinitionVersionTag(versionTag));
+    createAndSaveRandomAgentInstance(testApplication, b -> b.processDefinitionVersionTag("other"));
+
+    final var result =
+        search(
+            testApplication,
+            new AgentInstanceFilter.Builder().processDefinitionVersionTags(versionTag).build());
+
+    assertThat(result.total()).isEqualTo(1);
+    assertThat(result.items().getFirst().agentInstanceKey()).isEqualTo(model.agentInstanceKey());
+    assertThat(result.items().getFirst().processDefinitionVersionTag()).isEqualTo(versionTag);
+  }
+
+  @TestTemplate
   public void shouldFilterByStatus(final CamundaRdbmsTestApplication testApplication) {
     final String procDefId = "proc-status-" + nextStringId();
     createAndSaveRandomAgentInstance(

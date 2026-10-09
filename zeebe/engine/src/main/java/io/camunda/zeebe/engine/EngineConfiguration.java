@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine;
 
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 
 public final class EngineConfiguration {
 
@@ -27,6 +28,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_DRG_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
+  public static final boolean DEFAULT_PROCESS_CACHE_SOFT_VALUES = true;
   public static final int DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_GROUP_NAME_CACHE_CAPACITY = 1000;
   public static final boolean DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION = true;
@@ -69,6 +71,7 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY = Duration.ofSeconds(30);
   public static final int DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR = 2;
   public static final int DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT = 20;
+  public static final Duration DEFAULT_SECRET_RESOLUTION_WAKE_DELAY = Duration.ofMillis(50);
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
@@ -107,7 +110,17 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
 
   public static final boolean DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS = false;
-  public static final int DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY = -1;
+  public static final int DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL = -1;
+
+  public enum InputMappingMode {
+    ORDERED,
+    COMBINED
+  }
+
+  public enum OutputMappingMode {
+    ORDERED,
+    COMBINED
+  }
 
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
@@ -124,6 +137,7 @@ public final class EngineConfiguration {
   private int formCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int resourceCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int processCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
+  private boolean processCacheSoftValues = DEFAULT_PROCESS_CACHE_SOFT_VALUES;
   private int authorizationsCacheCapacity = DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
   private Duration authorizationsCacheTtl = DEFAULT_AUTHORIZATIONS_CACHE_TTL;
   private int groupNameCacheCapacity = DEFAULT_GROUP_NAME_CACHE_CAPACITY;
@@ -150,6 +164,7 @@ public final class EngineConfiguration {
   private Duration secretResolutionRetryMaxDelay = DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY;
   private int secretResolutionRetryBackoffFactor = DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR;
   private int secretResolutionBatchLimit = DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT;
+  private Duration secretResolutionWakeDelay = DEFAULT_SECRET_RESOLUTION_WAKE_DELAY;
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
@@ -161,6 +176,10 @@ public final class EngineConfiguration {
   private boolean includeVariablesInJobCompletedEvent =
       DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
   private boolean enableRpaReexportMigration = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
+  private InputMappingMode inputMappingMode = InputMappingMode.COMBINED;
+  private @Nullable InputMappingMode inputComparisonMode = null;
+  private OutputMappingMode outputMappingMode = OutputMappingMode.COMBINED;
+  private @Nullable OutputMappingMode outputComparisonMode = null;
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
@@ -189,10 +208,10 @@ public final class EngineConfiguration {
   private boolean archiverlessEnabled = DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS;
 
   /**
-   * Override default storage ordinal key with fixed value, mainly used during initial testing. The
+   * Override default storage ordinal with fixed value, mainly used during initial testing. The
    * default value of -1 means no override is applied.
    */
-  private int fixedStorageOrdinalKey = DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY;
+  private int fixedStorageOrdinal = DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -247,6 +266,15 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setProcessCacheCapacity(final int processCacheCapacity) {
     this.processCacheCapacity = processCacheCapacity;
+    return this;
+  }
+
+  public boolean isProcessCacheSoftValues() {
+    return processCacheSoftValues;
+  }
+
+  public EngineConfiguration setProcessCacheSoftValues(final boolean processCacheSoftValues) {
+    this.processCacheSoftValues = processCacheSoftValues;
     return this;
   }
 
@@ -471,6 +499,27 @@ public final class EngineConfiguration {
               .formatted(secretResolutionBatchLimit));
     }
     this.secretResolutionBatchLimit = secretResolutionBatchLimit;
+    return this;
+  }
+
+  public Duration getSecretResolutionWakeDelay() {
+    return secretResolutionWakeDelay;
+  }
+
+  /**
+   * How long a cycle that resolved something, or that was woken since it last ran, waits before its
+   * next run. Kept short so a sustained stream of secret references is resolved close to as they
+   * arrive; falls back to {@code secretResolutionInterval} once a cycle finds nothing pending and
+   * was not woken.
+   */
+  public EngineConfiguration setSecretResolutionWakeDelay(
+      final Duration secretResolutionWakeDelay) {
+    if (secretResolutionWakeDelay.isNegative()) {
+      throw new IllegalArgumentException(
+          "secretResolutionWakeDelay must not be negative but was %s"
+              .formatted(secretResolutionWakeDelay));
+    }
+    this.secretResolutionWakeDelay = secretResolutionWakeDelay;
     return this;
   }
 
@@ -729,17 +778,55 @@ public final class EngineConfiguration {
     return this;
   }
 
-  public int getFixedStorageOrdinalKey() {
-    return fixedStorageOrdinalKey;
+  public int getFixedStorageOrdinal() {
+    return fixedStorageOrdinal;
   }
 
-  public EngineConfiguration setFixedStorageOrdinalKey(final int fixedStorageOrdinalKey) {
-    if (fixedStorageOrdinalKey < -1) {
+  public EngineConfiguration setFixedStorageOrdinal(final int fixedStorageOrdinal) {
+    if (fixedStorageOrdinal < -1) {
       throw new IllegalArgumentException(
-          "fixedStorageOrdinalKey must be -1 (no override) or >= 0 but was %d"
-              .formatted(fixedStorageOrdinalKey));
+          "fixedStorageOrdinal must be -1 (no override) or >= 0 but was %d"
+              .formatted(fixedStorageOrdinal));
     }
-    this.fixedStorageOrdinalKey = fixedStorageOrdinalKey;
+    this.fixedStorageOrdinal = fixedStorageOrdinal;
+    return this;
+  }
+
+  public InputMappingMode getInputMappingMode() {
+    return inputMappingMode;
+  }
+
+  public EngineConfiguration setInputMappingMode(final InputMappingMode inputMappingMode) {
+    this.inputMappingMode = inputMappingMode;
+    return this;
+  }
+
+  public @Nullable InputMappingMode getInputComparisonMode() {
+    return inputComparisonMode;
+  }
+
+  public EngineConfiguration setInputComparisonMode(
+      final @Nullable InputMappingMode inputComparisonMode) {
+    this.inputComparisonMode = inputComparisonMode;
+    return this;
+  }
+
+  public OutputMappingMode getOutputMappingMode() {
+    return outputMappingMode;
+  }
+
+  public EngineConfiguration setOutputMappingMode(final OutputMappingMode outputMappingMode) {
+    this.outputMappingMode = outputMappingMode;
+    return this;
+  }
+
+  public @Nullable OutputMappingMode getOutputComparisonMode() {
+    return outputComparisonMode;
+  }
+
+  public EngineConfiguration setOutputComparisonMode(
+      final @Nullable OutputMappingMode outputComparisonMode) {
+    this.outputComparisonMode = outputComparisonMode;
     return this;
   }
 }

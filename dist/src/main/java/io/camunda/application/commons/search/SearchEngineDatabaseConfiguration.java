@@ -9,21 +9,27 @@ package io.camunda.application.commons.search;
 
 import static io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled.AnyHttpGatewayEnabledCondition.isAnyHttpGatewayEnabled;
 
+import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.health.contributor.HealthContributor;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
+@NullMarked
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType({
   SecondaryStorageType.elasticsearch,
@@ -36,6 +42,17 @@ public class SearchEngineDatabaseConfiguration {
    * a physical tenant is serviceable, hence a flag rather than a bean condition. The flag comes
    * from the same predicate that decides whether the schema readiness indicator joins the readiness
    * group, so the socket and the probe cannot disagree about what an HTTP node is.
+   *
+   * <p>The recovery check goes through {@link BrokerTopologyManager}, which every node has - broker
+   * or gateway-only - so a gateway cannot create the indices a broker was careful not to. It is
+   * required rather than optional: the same component scan brings this class and the topology
+   * manager in together, so a context holding one without the other is a wiring defect, and
+   * defaulting it to "nothing is recovering" would answer that defect by recreating the indices of
+   * a tenant mid-restore.
+   *
+   * <p>The check itself is {@link SchemaInitializationRecoveryCheck}, which distinguishes genuine
+   * recovery from pending discovery. Genuine recovery is deferred without holding the gate, while
+   * pending discovery keeps the tenant unsettled until the bounded grace period expires.
    */
   @Bean
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(
@@ -45,14 +62,15 @@ public class SearchEngineDatabaseConfiguration {
           final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
       final MeterRegistry meterRegistry,
       final Environment environment,
-      @Autowired(required = false)
-          final Broker broker // if present, then it will ensure that the broker is started first
-      ) {
+      final BrokerTopologyManager brokerTopologyManager,
+      // if present, then it will ensure that the broker is started first
+      @Autowired(required = false) final @Nullable Broker broker) {
     return new SearchEngineSchemaInitializer(
         searchEngineConfigurationsByTenant,
         physicalTenantScopedIndexDescriptors,
         meterRegistry,
-        isAnyHttpGatewayEnabled(environment));
+        isAnyHttpGatewayEnabled(environment),
+        new SchemaInitializationRecoveryCheck(brokerTopologyManager));
   }
 
   /**
@@ -68,5 +86,16 @@ public class SearchEngineDatabaseConfiguration {
           final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant) {
     return SearchEngineStatusHealthIndicator.forPhysicalTenants(
         searchClients, searchEngineConfigurationsByTenant);
+  }
+
+  /**
+   * Reports each physical tenant's schema initialization for operators, outside every probe group
+   * for the same reason as the search engine status above.
+   */
+  @Bean
+  public HealthIndicator physicalTenantSchemaInitializationHealthIndicator(
+      final SearchEngineSchemaInitializer searchEngineSchemaInitializer) {
+    return new PhysicalTenantSchemaInitializationHealthIndicator(
+        searchEngineSchemaInitializer::statuses);
   }
 }

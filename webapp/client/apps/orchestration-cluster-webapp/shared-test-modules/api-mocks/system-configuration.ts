@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {GetSystemConfigurationResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {GetSystemConfigurationResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 
 function createSystemConfiguration(
 	overrides?: Partial<GetSystemConfigurationResponseBody>,
@@ -23,9 +23,10 @@ function createSystemConfiguration(
 		components: {active: []},
 		deployment: {
 			isMultiTenancyEnabled: false,
+			isTenantsApiEnabled: false,
 			maxRequestSize: 0,
 		},
-		authentication: {canLogout: true, isLoginDelegated: false},
+		authentication: {canLogout: true, isLoginDelegated: false, isCamundaGroupsEnabled: true},
 		cloud: {
 			stage: null,
 		},

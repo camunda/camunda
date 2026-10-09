@@ -31,7 +31,6 @@ import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
@@ -355,8 +354,9 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
-  // Empty when the definition is not ACTIVE, so the caller rejects a repeated delete as
-  // already-being-deleted (INVALID_STATE).
+  // Empty when not active, so the caller rejects a repeated delete of a DRAINING definition as
+  // already-being-deleted (INVALID_STATE). A resting PENDING_DELETION counts as active and stays
+  // deletable, letting an operator clear a stuck row via the normal API.
   private Optional<Boolean> tryDeleteProcessDefinition(
       final TypedRecord<ResourceDeletionRecord> command,
       final long eventKey,
@@ -368,7 +368,7 @@ public class ResourceDeletionDeleteProcessor
         .setResourceType(ResourceType.PROCESS_DEFINITION)
         .setResourceId(process.getBpmnProcessId())
         .setTenantId(process.getTenantId());
-    if (process.getState() != PersistedProcessState.ACTIVE) {
+    if (!process.isActive()) {
       return Optional.empty();
     }
     return Optional.of(
@@ -481,21 +481,29 @@ public class ResourceDeletionDeleteProcessor
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
   }
 
-  // Skip DRAINING/deleted versions — they must not hold start-event subscriptions.
+  /**
+   * Latest active version (see {@link DeployedProcess#isActive()}) strictly below {@code version}.
+   * Skips draining versions so they do not hold start-event subscriptions.
+   *
+   * <p>Loads known versions once and scans newest-first. {@code version >=} the deleted latest is
+   * skipped because that version is already draining.
+   */
   private Optional<DeployedProcess> findLatestActiveVersionBelow(
       final DirectBuffer processIdBuffer,
       final String processId,
       final int version,
       final String tenantId) {
-    var candidate = processState.findProcessVersionBefore(processId, version, tenantId);
-    while (candidate.isPresent()) {
-      final int candidateVersion = candidate.get();
+    final var knownVersions = processState.getKnownProcessVersions(processId, tenantId);
+    for (int i = knownVersions.size() - 1; i >= 0; i--) {
+      final int candidateVersion = knownVersions.get(i).intValue();
+      if (candidateVersion >= version) {
+        continue;
+      }
       final var process =
           processState.getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
-      if (process != null && process.getState() == PersistedProcessState.ACTIVE) {
+      if (process != null && process.isActive()) {
         return Optional.of(process);
       }
-      candidate = processState.findProcessVersionBefore(processId, candidateVersion, tenantId);
     }
     return Optional.empty();
   }

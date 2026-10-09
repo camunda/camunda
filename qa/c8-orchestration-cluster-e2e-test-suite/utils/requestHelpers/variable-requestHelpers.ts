@@ -9,7 +9,7 @@
 import type {APIRequestContext} from 'playwright-core';
 import {expect, test} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {defaultAssertionOptions} from '../constants';
+import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
 import {validateResponse} from '../../json-body-assertions';
 import {createInstances} from '../zeebeClient';
 
@@ -22,6 +22,7 @@ export async function searchVariableByNameAndProcessInstanceKey(
     processInstanceKey: string;
     name: string;
   },
+  assertionOptions = defaultAssertionOptions,
 ) {
   const localState: Record<string, unknown> = {};
 
@@ -53,7 +54,7 @@ export async function searchVariableByNameAndProcessInstanceKey(
     const json = await res.json();
     expect(json.items.length).toBeGreaterThan(0);
     localState['variable'] = json.items[0];
-  }).toPass(defaultAssertionOptions);
+  }).toPass(assertionOptions);
 
   return localState['variable'] as {
     variableKey: string;
@@ -66,6 +67,32 @@ export async function searchVariableByNameAndProcessInstanceKey(
   };
 }
 
+// Polls on the value, not on the variable's existence: an edit lands on a name
+// that is already there, so waiting for the name returns the old value.
+export async function expectVariableValue(
+  request: APIRequestContext,
+  {
+    processInstanceKey,
+    name,
+  }: {
+    processInstanceKey: string;
+    name: string;
+  },
+  expectedValue: string,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    const res = await request.post(buildUrl('/variables/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey, name}},
+    });
+    await assertStatusCode(res, 200);
+    const items = (await res.json()).items ?? [];
+    expect(items).toHaveLength(1);
+    expect(items[0].value).toBe(expectedValue);
+  }).toPass(assertionOptions);
+}
+
 export async function setupVariableTest(
   localState: Record<string, unknown>,
   request: APIRequestContext,
@@ -76,10 +103,18 @@ export async function setupVariableTest(
   });
 
   await test.step('Search variable to get variableKey', async () => {
-    const variable = await searchVariableByNameAndProcessInstanceKey(request, {
-      processInstanceKey: localState['processInstanceKey'] as string,
-      name: 'customerId',
-    });
+    // This is a post-create propagation poll: the variable has to be indexed in
+    // secondary storage before it can be found. On a loaded shared cluster the
+    // default 30s budget was too tight (seen on MySQL 8.4), so wait out the
+    // extended window here rather than fail the whole test in setup.
+    const variable = await searchVariableByNameAndProcessInstanceKey(
+      request,
+      {
+        processInstanceKey: localState['processInstanceKey'] as string,
+        name: 'customerId',
+      },
+      extendedAssertionOptions,
+    );
     localState['variableKey'] = variable.variableKey;
   });
 }

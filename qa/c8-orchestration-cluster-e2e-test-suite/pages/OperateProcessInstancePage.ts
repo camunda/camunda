@@ -8,6 +8,21 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
+
+type InstanceHeaderAction = 'suspend' | 'resume' | 'cancel';
+
+// The header names an operation by menu label or by test id depending on
+// viewport; pairing both spellings lets callers ask for the action instead.
+const INSTANCE_HEADER_ACTIONS: ReadonlyArray<{
+  action: InstanceHeaderAction;
+  testId: string;
+  menuItem: RegExp;
+}> = [
+  {action: 'suspend', testId: 'suspend-operation', menuItem: /^suspend$/i},
+  {action: 'resume', testId: 'resume-operation', menuItem: /^resume$/i},
+  {action: 'cancel', testId: 'cancel-operation', menuItem: /^cancel$/i},
+];
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -21,11 +36,14 @@ class OperateProcessInstancePage {
   readonly messageVariable: Locator;
   readonly statusVariable: Locator;
   readonly instanceHeader: Locator;
+  readonly drainingTag: Locator;
+  readonly suspendedStateIcon: Locator;
   readonly instanceHistory: Locator;
   readonly rootProcessNode: Locator;
   readonly incidentsTable: Locator;
   readonly incidentsTableOperationSpinner: Locator;
   readonly incidentsTableRows: Locator;
+  readonly firstIncidentRetryButton: Locator;
   readonly incidentsTab: Locator;
   readonly variablePanelEmptyText: Locator;
   readonly addVariableButton: Locator;
@@ -146,6 +164,8 @@ class OperateProcessInstancePage {
     });
     this.variableValueInput = page.getByTestId('edit-variable-value');
     this.instanceHeader = page.getByTestId('instance-header');
+    this.drainingTag = this.instanceHeader.getByTestId('draining-tag');
+    this.suspendedStateIcon = this.instanceHeader.getByTestId('SUSPENDED-icon');
     this.instanceHistory = page.getByTestId('instance-history');
     this.rootProcessNode = this.instanceHistory
       .locator('[data-testid^="node-details-"]')
@@ -154,6 +174,10 @@ class OperateProcessInstancePage {
     this.incidentsTableOperationSpinner =
       this.incidentsTable.getByTestId('operation-spinner');
     this.incidentsTableRows = this.incidentsTable.getByRole('row');
+    // A locator, not a click helper: the suspended case asserts it is disabled.
+    this.firstIncidentRetryButton = this.incidentsTableRows
+      .getByRole('button', {name: 'Retry Incident'})
+      .first();
     this.incidentsTab = page
       .getByLabel('Process Instance Bottom Panel Tabs')
       .getByRole('link', {name: /^Incidents$/i});
@@ -322,7 +346,11 @@ class OperateProcessInstancePage {
       readModeValue: this.variableValueCellLocator(name).getByTestId(
         'edit-variable-value-readonly',
       ),
-      editor: this.variableValueCellLocator(name).getByRole('code'),
+      // See the comment on `this.editor` below: the inline variable editor is
+      // CodeMirror now (#62782), not Monaco, so it no longer exposes
+      // `role="code"`.
+      editor:
+        this.variableValueCellLocator(name).getByTestId('code-mirror-editor'),
       editVariableModal: {
         button: this.variableButtonsCellLocator(name).getByRole('button', {
           name: 'Edit',
@@ -367,7 +395,12 @@ class OperateProcessInstancePage {
       },
     });
     this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
-    this.editor = page.getByRole('code');
+    // Operate's inline variable-value editor (InlineJsonEditor) migrated
+    // from Monaco to CodeMirror in #62782. Monaco's container exposed
+    // `role="code"`; CodeMirror's `.cm-content` is `role="textbox"` instead
+    // and isn't uniquely named, so target the CodeMirror instance by the
+    // data-testid it sets explicitly rather than by role.
+    this.editor = page.getByTestId('code-mirror-editor');
     this.openButtonLast = page.locator('[aria-label="Open variable"]').last();
     this.openButtonFirst = page.locator('[aria-label="Open variable"]').first();
     this.editButton = page.getByRole('button', {name: 'Edit'});
@@ -419,9 +452,17 @@ class OperateProcessInstancePage {
     await this.waitForIconWithRetry(this.activeIcon, 'Active', 90000);
   }
   getEditVariableFieldSelector(variableName: string) {
+    // After the inline editor migrated to CodeMirror (#62782), the
+    // `edit-variable-value` group also contains a visually-hidden accessibility
+    // region (e.g. the "Selection deleted" live announcement emitted when the
+    // value is cleared) alongside the actual value, so reading the group's text
+    // returns noise like "fooSelection deleted3". Target the CodeMirror content
+    // textbox instead, which holds just the value -- clicking it also focuses
+    // the editor exactly as clicking the group did.
     return this.page
       .getByTestId(`variable-${variableName}`)
-      .getByTestId('edit-variable-value');
+      .getByTestId('edit-variable-value')
+      .getByRole('textbox');
   }
 
   getNewVariableNameFieldSelector = (variableName: string) => {
@@ -561,14 +602,18 @@ class OperateProcessInstancePage {
     await this.getNewVariableNameFieldSelector(variableIndex).type(name);
     await this.page.keyboard.press('Tab');
 
-    await this.fillVariableValueInput(value);
+    await this.fillVariableValueInput(
+      value,
+      this.getVariableTestId(variableIndex),
+    );
     await this.page.keyboard.press('Tab');
   }
 
   async editVariableValueModificationMode(variableName: string, value: string) {
+    const scope = this.getVariableTestId(variableName);
     await this.getEditVariableFieldSelector(variableName).click();
-    await this.clearVariableValueInput();
-    await this.fillVariableValueInput(value);
+    await this.clearVariableValueInput(scope);
+    await this.fillVariableValueInput(value, scope);
     await this.page.keyboard.press('Tab');
   }
 
@@ -580,14 +625,27 @@ class OperateProcessInstancePage {
     await this.variableValueInput.click();
   }
 
-  async fillVariableValueInput(value: string) {
-    await expect(this.editor).toBeVisible();
+  async fillVariableValueInput(value: string, scope?: Locator) {
+    // In modification mode every variable row renders its own inline
+    // CodeMirror value cell, so the page-wide `this.editor` (all
+    // `code-mirror-editor` testids) matches several elements and trips
+    // Playwright's strict mode. When a caller knows which variable row is being
+    // edited, scope the visibility guard to that row's editor; keyboard input
+    // still goes to the focused field either way.
+    const editor = scope
+      ? scope.getByTestId('code-mirror-editor')
+      : this.editor;
+    await expect(editor).toBeVisible();
     await this.page.keyboard.insertText(value);
   }
 
-  async clearVariableValueInput() {
-    await expect(this.editor).toBeVisible();
-    await this.page.keyboard.press('Control+A');
+  async clearVariableValueInput(scope?: Locator) {
+    const editor = scope
+      ? scope.getByTestId('code-mirror-editor')
+      : this.editor;
+    await expect(editor).toBeVisible();
+    // ControlOrMeta: on macOS, Control+A moves the cursor instead of selecting.
+    await this.page.keyboard.press('ControlOrMeta+A');
     await this.page.keyboard.press('Backspace');
   }
 
@@ -839,6 +897,86 @@ class OperateProcessInstancePage {
     await this.getIncidentRow(incidentType)
       .getByRole('link', {name: failingElement})
       .click();
+  }
+
+  /**
+   * Reloads until the header shows the instance as suspended.
+   *
+   * Operate resolves the instance state when the detail view loads, so a
+   * suspension applied over REST only shows after a reload. One reload is not
+   * enough: the view can still be served the pre-suspension state for a moment
+   * after the API reports SUSPENDED.
+   */
+  async reloadUntilSuspended(timeout = 15000): Promise<void> {
+    await this.page.reload();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.suspendedStateIcon).toBeVisible({timeout});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
+  }
+
+  async suspendInstance(instanceId: string): Promise<void> {
+    await this.clickInstanceHeaderAction(
+      new RegExp(`Suspend Instance ${instanceId}`),
+      'Suspend',
+    );
+  }
+
+  async resumeInstance(instanceId: string): Promise<void> {
+    await this.clickInstanceHeaderAction(
+      new RegExp(`Resume Instance ${instanceId}`),
+      'Resume',
+    );
+  }
+
+  // The tab appears only once the incident reaches Operate's view, and the
+  // table only once the tab is open — so wait for the tab, don't probe it.
+  async openIncidentsTab(): Promise<void> {
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.incidentsTab).toBeVisible({timeout: 15_000});
+        await this.incidentsTab.click();
+        await expect(this.incidentsTable).toBeVisible({timeout: 15_000});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
+  }
+
+  operationsLogEntry(operationType: string): Locator {
+    return this.operationsLogTableRow
+      .getByText(operationType, {exact: false})
+      .first();
+  }
+
+  async instanceHeaderActions(): Promise<InstanceHeaderAction[]> {
+    const actionsMenuButton = this.instanceHeader.getByRole('button', {
+      name: 'Actions',
+    });
+    await actionsMenuButton
+      .or(this.instanceHeader.getByTestId('cancel-operation'))
+      .first()
+      .waitFor();
+    if (await actionsMenuButton.isVisible()) {
+      await actionsMenuButton.click();
+      const names = await this.page.getByRole('menuitem').allInnerTexts();
+      await this.page.keyboard.press('Escape');
+      return INSTANCE_HEADER_ACTIONS.filter(({menuItem}) =>
+        names.some((name) => menuItem.test(name.trim())),
+      ).map(({action}) => action);
+    }
+    const present: InstanceHeaderAction[] = [];
+    for (const {action, testId} of INSTANCE_HEADER_ACTIONS) {
+      if (await this.instanceHeader.getByTestId(testId).isVisible()) {
+        present.push(action);
+      }
+    }
+    return present;
   }
 
   async cancelInstance(instanceId: string): Promise<void> {
@@ -1109,3 +1247,4 @@ class OperateProcessInstancePage {
 }
 
 export {OperateProcessInstancePage};
+export type {InstanceHeaderAction};

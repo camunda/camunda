@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.backup.common;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /** FileSet use in Manifest serialization, in order to list all stored files. */
 public record FileSet(List<NamedFile> files) {
@@ -19,7 +21,7 @@ public record FileSet(List<NamedFile> files) {
       "Expected file name '%s' to be unique, but occurred '%s' times in %s";
 
   public FileSet {
-    Objects.requireNonNull(files);
+    requireNonNull(files);
 
     // It might happen that the manifest has been corrupted, we want to prevent
     // that either on storing or restoring this is silently failing (ignored)
@@ -35,7 +37,7 @@ public record FileSet(List<NamedFile> files) {
     }
   }
 
-  public static FileSet of(final NamedFileSet fileSet) {
+  public static FileSet of(final @Nullable NamedFileSet fileSet) {
     if (fileSet == null) {
       return new FileSet(List.of());
     }
@@ -45,7 +47,7 @@ public record FileSet(List<NamedFile> files) {
 
   public record NamedFile(String name) {
     public NamedFile {
-      Objects.requireNonNull(name);
+      requireNonNull(name);
     }
   }
 }

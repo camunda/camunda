@@ -49,6 +49,13 @@ inputs:
     description: A modifier to use for maven cache key
     required: false
     default: "shared"
+  maven-cache-download-timeout-mins:
+    description: |
+      Upper bound, in minutes, on how long the Maven cache restore may spend downloading a
+      single cache segment before aborting. Raise it only for a job with a legitimately large
+      cache; see the setup-maven-cache action for why the bound exists.
+    required: false
+    default: "3"
   maven-mirrors:
     description: |
       JSON list of extra Maven mirrors.
@@ -101,9 +108,6 @@ runs:
           "optimize": {
             "path": "secret/data/products/optimize/ci/camunda-optimize"
           },
-          "tasklist": {
-            "path": "secret/data/products/tasklist/ci/tasklist"
-          },
           "zeebe": {
             "path": "secret/data/products/zeebe/ci/zeebe"
           }
@@ -128,7 +132,7 @@ runs:
       # Infer team from workflow (.yml) file name if possible, otherwise default to camunda
       worklow=$(basename ${WORKFLOW_REF%@*})  # remove Github ref part and extract filename
       team=camunda
-      if [[ "$worklow" =~ ^(operate|optimize|tasklist|zeebe)-.*\.(yml|yaml)$ ]]; then
+      if [[ "$worklow" =~ ^(operate|optimize|zeebe)-.*\.(yml|yaml)$ ]]; then
         team=${BASH_REMATCH[1]}
       fi
 
@@ -140,7 +144,7 @@ runs:
     # Secrets are imported only if current workflow run is not related to a fork PR
     if: steps.is-fork.outputs.is-fork != 'true'
     id: secrets
-    uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+    uses: ./.github/actions/vault-action-with-retry
     with:
       url: ${{ inputs.vault-address }}
       method: approle
@@ -155,7 +159,9 @@ runs:
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
   - name: Setup Java
-    uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+    # Retries setup-java through transient network/setup failures (INC-7417). The pin for
+    # setup-java itself lives in that action, not here.
+    uses: ./.github/actions/setup-java-with-retry
     with:
       distribution: ${{ inputs.java-distribution }}
       java-version: ${{ inputs.java-version }}
@@ -166,6 +172,7 @@ runs:
     uses: ./.github/actions/setup-maven-cache
     with:
       maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
+      cache-download-timeout-mins: ${{ inputs.maven-cache-download-timeout-mins }}
   # Camunda Nexus and extra mirrors/servers must be merged on ids (extra values have precedence).
   - name: Get Maven mirrors and servers to use
     id: maven
@@ -186,8 +193,8 @@ runs:
       CAMUNDA_NEXUS_MAVEN_SERVER: >-
         [{
           "id": "camunda-nexus",
-          "username": "${{ steps.secrets.outputs.ci-account-username }}",
-          "password": "${{ steps.secrets.outputs.ci-account-password }}"
+          "username": "${{ fromJSON(steps.secrets.outputs.secrets || '{}').ci-account-username }}",
+          "password": "${{ fromJSON(steps.secrets.outputs.secrets || '{}').ci-account-password }}"
         }]
       # Avoid rate limiting on repo.maven.apache.org by mirroring central via Google's
       # public Maven Central mirror. Applies to all artifacts (deps, plugins, extensions, BOM).
@@ -231,22 +238,17 @@ runs:
       githubServer: false
       servers: ${{ steps.maven.outputs.servers }}
       mirrors: ${{ steps.maven.outputs.mirrors }}
-  - uses: ./.github/actions/apt-fast-mirror-failover
-    if: inputs.time-zone != '' && runner.os == 'Linux'
-  # tzdata is not installed in self-hosted runners. `timeout` runs inside the sudo'd
-  # root process tree so it can self-terminate a hung apt-get without nick-fields/retry
-  # having to kill across the privilege boundary -- doing that externally throws
-  # `kill EPERM` and crashes instead of retrying, see
-  # https://github.com/nick-fields/retry/issues/124.
+  # tzdata may be missing on self-hosted runners. skip-if-exists checks the exact
+  # zone file Set Time Zone symlinks -- not just /usr/share/zoneinfo, since a
+  # partial zoneinfo would leave /etc/localtime dangling, which `ln -s` reports as
+  # success -- so a mirror outage cannot fail an otherwise-ready runner.
   - name: Install tzdata
     if: inputs.time-zone != '' && runner.os == 'Linux'
-    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    uses: ./.github/actions/apt-install
     with:
-      max_attempts: 3
-      retry_wait_seconds: 10
-      timeout_minutes: 2
-      shell: bash
-      command: sudo timeout 115 bash -c "apt-get update && apt-get install -y tzdata"
+      packages: tzdata
+      no-install-recommends: "false"
+      skip-if-exists: /usr/share/zoneinfo/${{ inputs.time-zone }}
   - name: Set Time Zone
     if: inputs.time-zone != '' && runner.os == 'Linux'
     env:
@@ -266,8 +268,8 @@ runs:
       )
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ steps.secrets.outputs.dockerhub-username }}
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.dockerhub-token }}
+      DOCKER_USERNAME: ${{ fromJSON(steps.secrets.outputs.secrets).dockerhub-username }}
+      DOCKER_PASSWORD: ${{ fromJSON(steps.secrets.outputs.secrets).dockerhub-token }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
@@ -282,8 +284,8 @@ runs:
       inputs.harbor == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ steps.secrets.outputs.harbor-username }}
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.harbor-password }}
+      DOCKER_USERNAME: ${{ fromJSON(steps.secrets.outputs.secrets).harbor-username }}
+      DOCKER_PASSWORD: ${{ fromJSON(steps.secrets.outputs.secrets).harbor-password }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
@@ -299,7 +301,7 @@ runs:
       inputs.minimus == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.minimus-token }}
+      DOCKER_PASSWORD: ${{ fromJSON(steps.secrets.outputs.secrets).minimus-token }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
@@ -308,3 +310,10 @@ runs:
       command: |
         printf '%s' "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
           --username minimus --password-stdin
+  - name: Configure Testcontainers
+    # `pull.timeout` is the whole budget Testcontainers allows for pulling an image, retries
+    # included. Its 120s default leaves no headroom for a cold multi-hundred-MB pull on a CI
+    # runner, which is what failed the Keycloak-based ITs. Allow the same 10 minutes the compose
+    # action allows per attempt when it pre-pulls Elasticsearch for the database ITs.
+    run: echo "TESTCONTAINERS_PULL_TIMEOUT=600" >> "$GITHUB_ENV"
+    shell: bash

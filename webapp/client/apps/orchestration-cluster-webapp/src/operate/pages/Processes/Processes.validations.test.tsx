@@ -11,11 +11,15 @@ import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockQueryProcessDefinitionsEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockQueryProcessDefinitionsEndpoint,
+	mockQueryProcessInstancesEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessesHarness} from './ProcessesHarness';
 
@@ -38,6 +42,8 @@ const ERRORS = {
 	batchOperationKey: 'Key has to be a 16 to 19 digit number or a UUID',
 } as const;
 
+const EMPTY_PROCESS_INSTANCES = HttpResponse.json(createQueryProcessInstancesResponse());
+
 describe('Validations', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
@@ -47,7 +53,7 @@ describe('Validations', () => {
 		sessionStorage.clear();
 	});
 
-	for (const {filter, label, error, invalidValues} of [
+	it.for([
 		{
 			filter: 'processInstanceKey',
 			label: 'Process Instance Key(s)',
@@ -66,25 +72,26 @@ describe('Validations', () => {
 			error: ERRORS.batchOperationKey,
 			invalidValues: ['g', 'a'],
 		},
-	]) {
-		it(`should validate ${label}`, async ({worker}) => {
-			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+	] as const)('should validate $label', async ({filter, label, error, invalidValues}, {worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
-			const screen = await renderProcessesPage();
-			const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
+		const screen = await renderProcessesPage();
+		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
 
-			await screen.getByRole('button', {name: 'More Filters'}).click();
-			await screen.getByTestId(`optional-filter-menuitem-${filter}`).click();
+		await screen.getByRole('button', {name: 'More Filters'}).click();
+		await screen.getByTestId(`optional-filter-menuitem-${filter}`).click();
 
-			for (const invalidValue of invalidValues) {
-				await userEvent.fill(screen.getByLabelText(label, {exact: true}), invalidValue);
+		for (const invalidValue of invalidValues) {
+			await userEvent.fill(screen.getByLabelText(label, {exact: true}), invalidValue);
 
-				await expect.element(screen.getByText(error)).toBeVisible();
-				expect(getSearch()[filter]).toBeUndefined();
+			await expect.element(screen.getByText(error)).toBeVisible();
+			expect(getSearch()[filter]).toBeUndefined();
 
-				await userEvent.fill(screen.getByLabelText(label, {exact: true}), '');
-				await expect.element(screen.getByText(error)).not.toBeInTheDocument();
-			}
-		});
-	}
+			await userEvent.fill(screen.getByLabelText(label, {exact: true}), '');
+			await expect.element(screen.getByText(error)).not.toBeInTheDocument();
+		}
+	});
 });

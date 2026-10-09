@@ -6,16 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+const DEV_DOMAIN = 'dev.ultrawombat.com';
+const INT_DOMAIN = 'ultrawombat.com';
+const PROD_DOMAIN = 'camunda.io';
+
 function getStage(host: string): 'dev' | 'int' | 'prod' | 'unknown' {
-	if (host.includes(import.meta.env.VITE_DEV_ENV_URL)) {
+	const hostname = host.toLowerCase().split(':')[0] ?? '';
+
+	if (hostname === DEV_DOMAIN || hostname.endsWith(`.${DEV_DOMAIN}`)) {
 		return 'dev';
 	}
 
-	if (host.includes(import.meta.env.VITE_INT_ENV_URL)) {
+	if (hostname === INT_DOMAIN || hostname.endsWith(`.${INT_DOMAIN}`)) {
 		return 'int';
 	}
 
-	if (host.includes(import.meta.env.VITE_PROD_ENV_URL)) {
+	if (hostname === PROD_DOMAIN || hostname.endsWith(`.${PROD_DOMAIN}`)) {
 		return 'prod';
 	}
 

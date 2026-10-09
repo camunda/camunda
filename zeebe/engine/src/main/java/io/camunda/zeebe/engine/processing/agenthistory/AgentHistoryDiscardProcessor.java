@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.agenthistory;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -37,25 +36,30 @@ public final class AgentHistoryDiscardProcessor
   @Override
   public void processRecord(final TypedRecord<AgentHistoryRecord> command) {
     final long jobKey = command.getValue().getJobKey();
-    final String jobLease = command.getValue().getJobLease();
+    final String jobLeaseToken = command.getValue().getJobLeaseToken();
     // Items in state are already trimmed to identity fields by AgentHistoryCreatedApplier,
     // so the DISCARDED event emitted here carries that same trimmed shape for free.
     final AgentHistoryState.AgentHistoryVisitor visitor =
         item ->
             stateWriter.appendFollowUpEvent(
                 item.getAgentHistoryKey(), AgentHistoryIntent.DISCARDED, item);
-    if (jobLease.isEmpty()) {
+    if (jobLeaseToken.isEmpty()) {
       // Job destruction: every activation's items are dead — discard all items for the job.
       agentHistoryState.visitByJobKey(jobKey, visitor);
     } else {
       // Supersession: only the given (dead) activation's items are discarded.
-      agentHistoryState.visitByJobLease(jobKey, jobLease, visitor);
+      agentHistoryState.visitByJobLeaseToken(jobKey, jobLeaseToken, visitor);
     }
     // no-op when no items exist — backward-compatible with non-agentic jobs
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentHistoryRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<AgentHistoryRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AgentHistoryRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

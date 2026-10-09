@@ -25,16 +25,40 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   private final DbAgentHistory dbAgentHistory = new DbAgentHistory();
   private final ColumnFamily<DbLong, DbAgentHistory> agentHistoryColumnFamily;
 
-  // Secondary index: (jobKey, jobLease, historyItemKey) -> nil
-  // Supports prefix search by jobKey alone, or by (jobKey, jobLease)
+  // Secondary index: (jobKey, jobLeaseToken, historyItemKey) -> nil
+  // Supports prefix search by jobKey alone, or by (jobKey, jobLeaseToken)
   private final DbLong jobKey = new DbLong();
-  private final DbString jobLease = new DbString();
-  private final DbCompositeKey<DbLong, DbString> jobKeyAndLease =
-      new DbCompositeKey<>(jobKey, jobLease);
+  private final DbString jobLeaseToken = new DbString();
+  private final DbCompositeKey<DbLong, DbString> jobKeyAndJobLeaseToken =
+      new DbCompositeKey<>(jobKey, jobLeaseToken);
   private final DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbLong>
-      jobKeyLeaseAndHistoryItemKey = new DbCompositeKey<>(jobKeyAndLease, historyItemKey);
+      jobKeyJobLeaseTokenAndHistoryItemKey =
+          new DbCompositeKey<>(jobKeyAndJobLeaseToken, historyItemKey);
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbLong>, DbNil>
       byJobKeyColumnFamily;
+
+  // Committed ids: (agentInstanceKey, historyItemId) -> agentHistoryKey
+  // Supports prefix search by agentInstanceKey alone, for the one-shot delete on instance
+  // completion.
+  private final DbLong committedAgentInstanceKey = new DbLong();
+  private final DbString committedHistoryItemId = new DbString();
+  private final DbCompositeKey<DbLong, DbString> committedKey =
+      new DbCompositeKey<>(committedAgentInstanceKey, committedHistoryItemId);
+  private final DbLong committedAgentHistoryKey = new DbLong();
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbLong>
+      committedHistoryItemIdsColumnFamily;
+
+  // Metrics-accumulated ids: (agentInstanceKey, historyItemId) -> nil
+  // Supports prefix search by agentInstanceKey alone, for the one-shot delete on instance
+  // completion. Kept separate from committedHistoryItemIdsColumnFamily: that store's value is
+  // echoed back as the item's agentHistoryKey, so writing an entry there at creation time would
+  // make a created-then-discarded item look committed on resend.
+  private final DbLong metricsAccumulatedAgentInstanceKey = new DbLong();
+  private final DbString metricsAccumulatedHistoryItemId = new DbString();
+  private final DbCompositeKey<DbLong, DbString> metricsAccumulatedKey =
+      new DbCompositeKey<>(metricsAccumulatedAgentInstanceKey, metricsAccumulatedHistoryItemId);
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
+      metricsAccumulatedIdsColumnFamily;
 
   public DbAgentHistoryState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -45,7 +69,19 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.AGENT_HISTORY_BY_JOB_KEY,
             transactionContext,
-            jobKeyLeaseAndHistoryItemKey,
+            jobKeyJobLeaseTokenAndHistoryItemKey,
+            DbNil.INSTANCE);
+    committedHistoryItemIdsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.AGENT_HISTORY_COMMITTED_IDS,
+            transactionContext,
+            committedKey,
+            committedAgentHistoryKey);
+    metricsAccumulatedIdsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.AGENT_HISTORY_METRICS_ACCUMULATED_IDS,
+            transactionContext,
+            metricsAccumulatedKey,
             DbNil.INSTANCE);
   }
 
@@ -70,12 +106,12 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   }
 
   @Override
-  public void visitByJobLease(
-      final long jobKeyValue, final String leaseValue, final AgentHistoryVisitor visitor) {
+  public void visitByJobLeaseToken(
+      final long jobKeyValue, final String jobLeaseTokenValue, final AgentHistoryVisitor visitor) {
     jobKey.wrapLong(jobKeyValue);
-    jobLease.wrapString(leaseValue);
+    jobLeaseToken.wrapString(jobLeaseTokenValue);
     byJobKeyColumnFamily.whileEqualPrefix(
-        jobKeyAndLease,
+        jobKeyAndJobLeaseToken,
         (compositeKey, nil) -> {
           final var item = get(compositeKey.second().getValue());
           if (item != null) {
@@ -88,10 +124,10 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   public void insert(final long key, final AgentHistoryRecord record) {
     historyItemKey.wrapLong(key);
     jobKey.wrapLong(record.getJobKey());
-    jobLease.wrapString(record.getJobLease());
+    jobLeaseToken.wrapString(record.getJobLeaseToken());
     dbAgentHistory.setRecord(record);
     agentHistoryColumnFamily.insert(historyItemKey, dbAgentHistory);
-    byJobKeyColumnFamily.insert(jobKeyLeaseAndHistoryItemKey, DbNil.INSTANCE);
+    byJobKeyColumnFamily.insert(jobKeyJobLeaseTokenAndHistoryItemKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -107,8 +143,76 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   public void delete(final long key, final AgentHistoryRecord record) {
     historyItemKey.wrapLong(key);
     jobKey.wrapLong(record.getJobKey());
-    jobLease.wrapString(record.getJobLease());
+    jobLeaseToken.wrapString(record.getJobLeaseToken());
     agentHistoryColumnFamily.deleteIfExists(historyItemKey);
-    byJobKeyColumnFamily.deleteIfExists(jobKeyLeaseAndHistoryItemKey);
+    byJobKeyColumnFamily.deleteIfExists(jobKeyJobLeaseTokenAndHistoryItemKey);
+  }
+
+  @Override
+  public Long getCommittedHistoryItemKey(final long agentInstanceKey, final String historyItemId) {
+    committedAgentInstanceKey.wrapLong(agentInstanceKey);
+    committedHistoryItemId.wrapString(historyItemId);
+    final var stored = committedHistoryItemIdsColumnFamily.get(committedKey);
+    return stored == null ? null : stored.getValue();
+  }
+
+  @Override
+  public void putCommittedHistoryItemKey(
+      final long agentInstanceKey, final String historyItemId, final long agentHistoryKeyValue) {
+    committedAgentInstanceKey.wrapLong(agentInstanceKey);
+    committedHistoryItemId.wrapString(historyItemId);
+    committedAgentHistoryKey.wrapLong(agentHistoryKeyValue);
+    committedHistoryItemIdsColumnFamily.upsert(committedKey, committedAgentHistoryKey);
+  }
+
+  @Override
+  public void deleteCommittedHistoryItemKey(
+      final long agentInstanceKey, final String historyItemId) {
+    committedAgentInstanceKey.wrapLong(agentInstanceKey);
+    committedHistoryItemId.wrapString(historyItemId);
+    committedHistoryItemIdsColumnFamily.deleteIfExists(committedKey);
+  }
+
+  @Override
+  public void visitCommittedHistoryItemIds(
+      final long agentInstanceKey, final HistoryItemIdVisitor visitor) {
+    committedAgentInstanceKey.wrapLong(agentInstanceKey);
+    committedHistoryItemIdsColumnFamily.whileEqualPrefix(
+        committedAgentInstanceKey,
+        key -> {
+          return visitor.visit(key.second().toString());
+        });
+  }
+
+  @Override
+  public boolean hasAccumulatedMetrics(final long agentInstanceKey, final String historyItemId) {
+    metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
+    metricsAccumulatedHistoryItemId.wrapString(historyItemId);
+    return metricsAccumulatedIdsColumnFamily.exists(metricsAccumulatedKey);
+  }
+
+  @Override
+  public void markMetricsAccumulated(final long agentInstanceKey, final String historyItemId) {
+    metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
+    metricsAccumulatedHistoryItemId.wrapString(historyItemId);
+    metricsAccumulatedIdsColumnFamily.upsert(metricsAccumulatedKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void deleteMetricsAccumulatedId(final long agentInstanceKey, final String historyItemId) {
+    metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
+    metricsAccumulatedHistoryItemId.wrapString(historyItemId);
+    metricsAccumulatedIdsColumnFamily.deleteIfExists(metricsAccumulatedKey);
+  }
+
+  @Override
+  public void visitMetricsAccumulatedHistoryItemIds(
+      final long agentInstanceKey, final HistoryItemIdVisitor visitor) {
+    metricsAccumulatedAgentInstanceKey.wrapLong(agentInstanceKey);
+    metricsAccumulatedIdsColumnFamily.whileEqualPrefix(
+        metricsAccumulatedAgentInstanceKey,
+        key -> {
+          return visitor.visit(key.second().toString());
+        });
   }
 }

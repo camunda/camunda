@@ -33,7 +33,7 @@ public record AgentInstanceDbModel(
     String processDefinitionId,
     long processDefinitionKey,
     int processDefinitionVersion,
-    String versionTag,
+    String processDefinitionVersionTag,
     String tenantId,
     int partitionId,
     AgentInstanceStatus status,
@@ -45,6 +45,9 @@ public record AgentInstanceDbModel(
     int maxToolCalls,
     long inputTokens,
     long outputTokens,
+    long reasoningTokenCount,
+    long cacheCreationTokenCount,
+    long cacheReadTokenCount,
     int modelCalls,
     int toolCalls,
     String tools,
@@ -74,7 +77,7 @@ public record AgentInstanceDbModel(
       final String processDefinitionId,
       final long processDefinitionKey,
       final int processDefinitionVersion,
-      final String versionTag,
+      final String processDefinitionVersionTag,
       final String tenantId,
       final int partitionId,
       final AgentInstanceStatus status,
@@ -86,6 +89,9 @@ public record AgentInstanceDbModel(
       final int maxToolCalls,
       final long inputTokens,
       final long outputTokens,
+      final long reasoningTokenCount,
+      final long cacheCreationTokenCount,
+      final long cacheReadTokenCount,
       final int modelCalls,
       final int toolCalls,
       final String tools,
@@ -101,7 +107,7 @@ public record AgentInstanceDbModel(
         processDefinitionId,
         processDefinitionKey,
         processDefinitionVersion,
-        versionTag,
+        processDefinitionVersionTag,
         tenantId,
         partitionId,
         status,
@@ -113,6 +119,9 @@ public record AgentInstanceDbModel(
         maxToolCalls,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         modelCalls,
         toolCalls,
         tools,
@@ -146,7 +155,7 @@ public record AgentInstanceDbModel(
         processDefinitionId,
         processDefinitionKey,
         processDefinitionVersion,
-        versionTag,
+        processDefinitionVersionTag,
         tenantId,
         partitionId,
         status,
@@ -158,6 +167,9 @@ public record AgentInstanceDbModel(
         maxToolCalls,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         modelCalls,
         toolCalls,
         tools,
@@ -169,11 +181,11 @@ public record AgentInstanceDbModel(
 
   /**
    * Returns the structured tool list, deserializing the JSON form on every call. Returns null, not
-   * an empty list, when no JSON is stored -- covers both the never-set and the explicit-empty-list
-   * case (an empty list also serializes to a null {@code tools}), as well as the Oracle
-   * empty-string-treated-as-null edge case. Unlike the pre-record class, this implementation cannot
-   * distinguish "never set" from "explicitly set to an empty list", since both collapse to the same
-   * null string; no current caller depends on that distinction.
+   * an empty list, when no JSON is stored -- covers the never-set case and the Oracle
+   * empty-string-treated-as-null edge case. An explicitly-set empty list serializes to the literal
+   * {@code "[]"}, not null (see {@link #serializeTools}) -- {@code AgentInstanceWriter} relies on
+   * that distinction to tell "this write never touched tools" (raw field null, skip) apart from
+   * "tools was changed to empty" (raw field {@code "[]"}, write it).
    */
   public List<AgentInstanceToolDbValue> toolValues() {
     if (tools == null || tools.isEmpty()) {
@@ -186,6 +198,9 @@ public record AgentInstanceDbModel(
    * Returns the structured system-prompt content list, deserializing the JSON form on every call.
    * Returns an empty list, not null, when no JSON is stored.
    */
+  // Raw `systemPrompt` field: null means never written; "[]" means explicitly cleared. See
+  // toolValues() above for why that distinction matters and serializeContentItems() below for how
+  // it's produced.
   public List<ContentItem> systemPromptItems() {
     if (systemPrompt == null || systemPrompt.isEmpty()) {
       return List.of();
@@ -203,7 +218,10 @@ public record AgentInstanceDbModel(
   }
 
   private static String serializeTools(final List<AgentInstanceToolDbValue> toolValues) {
-    if (toolValues == null || toolValues.isEmpty()) {
+    // Deliberately does NOT collapse an empty (but non-null) list to null: null is the sentinel
+    // AgentInstanceWriter uses to mean "this write never touched tools" (see toolValues() above),
+    // so an explicit empty list must serialize to a non-null "[]" to stay distinguishable.
+    if (toolValues == null) {
       return null;
     }
 
@@ -225,7 +243,9 @@ public record AgentInstanceDbModel(
   }
 
   private static String serializeContentItems(final List<ContentItem> items) {
-    if (items == null || items.isEmpty()) {
+    // Same reasoning as serializeTools() above: an empty list must serialize to "[]", not null,
+    // so it stays distinguishable from "never touched".
+    if (items == null) {
       return null;
     }
 
@@ -247,7 +267,7 @@ public record AgentInstanceDbModel(
         .processDefinitionId(processDefinitionId)
         .processDefinitionKey(processDefinitionKey)
         .processDefinitionVersion(processDefinitionVersion)
-        .versionTag(versionTag)
+        .processDefinitionVersionTag(processDefinitionVersionTag)
         .tenantId(tenantId)
         .partitionId(partitionId)
         .status(status)
@@ -259,6 +279,9 @@ public record AgentInstanceDbModel(
         .maxToolCalls(maxToolCalls)
         .inputTokens(inputTokens)
         .outputTokens(outputTokens)
+        .reasoningTokenCount(reasoningTokenCount)
+        .cacheCreationTokenCount(cacheCreationTokenCount)
+        .cacheReadTokenCount(cacheReadTokenCount)
         .modelCalls(modelCalls)
         .toolCalls(toolCalls)
         .creationDate(creationDate)
@@ -277,7 +300,7 @@ public record AgentInstanceDbModel(
     private String processDefinitionId;
     private long processDefinitionKey;
     private int processDefinitionVersion;
-    private String versionTag;
+    private String processDefinitionVersionTag;
     private String tenantId;
     private int partitionId;
     private AgentInstanceStatus status;
@@ -289,6 +312,9 @@ public record AgentInstanceDbModel(
     private int maxToolCalls;
     private long inputTokens;
     private long outputTokens;
+    private long reasoningTokenCount;
+    private long cacheCreationTokenCount;
+    private long cacheReadTokenCount;
     private int modelCalls;
     private int toolCalls;
     private String tools;
@@ -348,8 +374,8 @@ public record AgentInstanceDbModel(
       return this;
     }
 
-    public Builder versionTag(final String versionTag) {
-      this.versionTag = versionTag;
+    public Builder processDefinitionVersionTag(final String processDefinitionVersionTag) {
+      this.processDefinitionVersionTag = processDefinitionVersionTag;
       return this;
     }
 
@@ -419,6 +445,21 @@ public record AgentInstanceDbModel(
       return this;
     }
 
+    public Builder reasoningTokenCount(final long reasoningTokenCount) {
+      this.reasoningTokenCount = reasoningTokenCount;
+      return this;
+    }
+
+    public Builder cacheCreationTokenCount(final long cacheCreationTokenCount) {
+      this.cacheCreationTokenCount = cacheCreationTokenCount;
+      return this;
+    }
+
+    public Builder cacheReadTokenCount(final long cacheReadTokenCount) {
+      this.cacheReadTokenCount = cacheReadTokenCount;
+      return this;
+    }
+
     public Builder modelCalls(final int modelCalls) {
       this.modelCalls = modelCalls;
       return this;
@@ -465,7 +506,7 @@ public record AgentInstanceDbModel(
           processDefinitionId,
           processDefinitionKey,
           processDefinitionVersion,
-          versionTag,
+          processDefinitionVersionTag,
           tenantId,
           partitionId,
           status,
@@ -477,6 +518,9 @@ public record AgentInstanceDbModel(
           maxToolCalls,
           inputTokens,
           outputTokens,
+          reasoningTokenCount,
+          cacheCreationTokenCount,
+          cacheReadTokenCount,
           modelCalls,
           toolCalls,
           tools,

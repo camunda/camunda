@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.Subscription;
@@ -127,7 +129,7 @@ public final class BrokerClientImpl implements BrokerClient {
               if (error != null) {
                 throwableConsumer.accept(error);
               } else if (response.isResponse()) {
-                responseConsumer.accept(response.getKey(), response.getResponse());
+                responseConsumer.accept(response.getKey(), response.getResponseOrThrow());
               } else {
                 throwableConsumer.accept(response.toException());
               }
@@ -150,7 +152,7 @@ public final class BrokerClientImpl implements BrokerClient {
                     topic,
                     msg -> {
                       handler.accept((String) msg);
-                      return CompletableFuture.completedFuture(null);
+                      return CompletableFuture.completedFuture(unit());
                     })
                 .join());
   }

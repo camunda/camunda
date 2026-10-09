@@ -116,7 +116,7 @@ public record CurrentClusterConfiguration(
    * mid-migration between the two modes rather than unzoned.
    *
    * <p>Both are global state, so this reads the same fields {@link
-   * ClusterConfiguration#isUnzoned()} does — the projection through {@link #toLegacyDefault()} that
+   * ClusterConfiguration#isUnzoned()} does — the projection through {@link #toLegacy(String)} that
    * method needs is not.
    */
   public boolean isUnzoned() {
@@ -134,7 +134,7 @@ public record CurrentClusterConfiguration(
    *
    * <p>Both are global state, so this reads the same fields {@link
    * ClusterConfiguration#isFullyZoneAware()} does — the projection through {@link
-   * #toLegacyDefault()} that method needs is not.
+   * #toLegacy(String)})} that method needs is not.
    */
   public boolean isFullyZoneAware() {
     return globalConfiguration.members().keySet().stream().allMatch(member -> member.zone() != null)
@@ -150,7 +150,7 @@ public record CurrentClusterConfiguration(
    *
    * <p>Both are global state, so this reads the same fields {@link
    * ClusterConfiguration#isPartiallyZoneAware()} does — the projection through {@link
-   * #toLegacyDefault()} that method needs is not.
+   * #toLegacy(String)})} that method needs is not.
    */
   public boolean isPartiallyZoneAware() {
     final var members = globalConfiguration.members().keySet();
@@ -234,15 +234,10 @@ public record CurrentClusterConfiguration(
    *
    * <p>This is a pure, side-effect-free conversion: the returned pending plan (if any) is built at
    * phase 0 but is <em>not</em> activated into the default group — the default group's own {@code
-   * pendingChanges} stays empty. Activating phase 0 (via {@link #applyPhase}) is deliberately left
-   * to the caller, because this factory is invoked both for genuine one-time migrations (e.g.
-   * {@code PersistedCurrentClusterConfiguration} upgrading an on-disk v1 file, exactly once per
-   * broker) and for repeated, read-only re-derivations of a legacy view (e.g. {@code
-   * BrokerTopologyManagerImpl#onClusterConfigurationUpdated(ClusterConfiguration)}, invoked on
-   * every gossip update). Auto-activating here would re-run {@code startConfigurationChange} on a
-   * freshly-built (and therefore never-"pending") default group on every such repeated call,
-   * endlessly restarting an already in-progress plan from scratch. Callers that are performing a
-   * genuine one-time migration should call {@link #activatePendingPhase()} explicitly afterwards.
+   * pendingChanges} stays empty. Activation (via {@link #activatePendingPhase()}) is deliberately
+   * left to the caller so converting a legacy configuration does not itself start the pending
+   * change. {@code PersistedCurrentClusterConfiguration} explicitly activates the plan after
+   * converting an on-disk v1 file.
    *
    * @throws IllegalStateException if the legacy {@code lastChange} has {@code IN_PROGRESS} status
    */
@@ -305,9 +300,7 @@ public record CurrentClusterConfiguration(
   /**
    * Projects this multi-group configuration back to a legacy single-group {@link
    * ClusterConfiguration} representing the named partition group. This is the inverse of {@link
-   * #fromLegacy(ClusterConfiguration)} and backs the {@code getClusterConfiguration()} compat
-   * accessor used by read consumers (e.g. the REST topology API) that have not yet migrated to the
-   * multi-group model.
+   * #fromLegacy(ClusterConfiguration)}.
    *
    * <p>Each member combines its cluster-wide lifecycle state (from {@link #globalConfiguration})
    * with its partition assignment in {@code groupId} (from {@code partitionGroups[groupId]}); a
@@ -468,6 +461,16 @@ public record CurrentClusterConfiguration(
       return this;
     }
     return new CurrentClusterConfiguration(version, updated, partitionGroups, phasedChangeState);
+  }
+
+  public CurrentClusterConfiguration initPartitionGroup(final String groupId) {
+    if (hasPartitionGroup(groupId)) {
+      throw new IllegalStateException("Partition group %s already exists".formatted(groupId));
+    }
+    final var updatedPartitionGroups = new HashMap<>(partitionGroups);
+    updatedPartitionGroups.put(groupId, PartitionGroupConfiguration.empty(0));
+    return new CurrentClusterConfiguration(
+        version, globalConfiguration, updatedPartitionGroups, phasedChangeState);
   }
 
   /**
@@ -754,12 +757,18 @@ public record CurrentClusterConfiguration(
   }
 
   /**
-   * Returns true if this configuration was produced by migrating a legacy {@link
-   * ClusterConfiguration} that was itself {@link ClusterConfiguration#isAfterRestore()}: the
-   * pending plan's id is {@link PhasedChangePlan#RESTORED_PLAN_ID} (see {@link
-   * PhasedChangePlan#hasRestorePlanId()}) and it contains exactly one phase with exactly one
+   * Returns true if this configuration was produced by a restore: the pending plan's id is {@link
+   * PhasedChangePlan#RESTORED_PLAN_ID} (see {@link PhasedChangePlan#hasRestorePlanId()}) and it
+   * contains exactly one {@link PartitionGroupPhase} whose every named group runs exactly one
    * operation, an {@link UpdateRoutingState}. Mirrors {@link
    * ClusterConfiguration#isAfterRestore()}.
+   *
+   * <p>The phase may name any number of groups, one per restored physical tenant: {@code
+   * RestoreManager} writes one {@link UpdateRoutingState} per group into a single phase, and {@link
+   * #applyPhase} activates every one of them. Constraining this to a single group would silently
+   * report {@code false} for a multi-tenant restore, switching off the post-restore handling in
+   * {@link io.camunda.zeebe.dynamic.config.PartitionGroupExporterStateInitializer} exactly when it
+   * is needed most — with no error and no log.
    */
   public boolean isAfterRestore() {
     return phasedChangeState.pending().values().stream().anyMatch(this::isRestorePlan);
@@ -769,7 +778,7 @@ public record CurrentClusterConfiguration(
     return plan.hasRestorePlanId()
         && plan.phases().size() == 1
         && plan.phases().get(0) instanceof final PartitionGroupPhase groupPhase
-        && groupPhase.groupGraphs().size() == 1
+        && !groupPhase.groupGraphs().isEmpty()
         && groupPhase.groupOperations().values().stream()
             .allMatch(
                 operations ->

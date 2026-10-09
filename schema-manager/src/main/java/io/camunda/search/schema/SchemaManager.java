@@ -16,6 +16,7 @@ import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
@@ -40,6 +41,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.LangUtil;
@@ -49,6 +51,7 @@ import org.slf4j.LoggerFactory;
 public class SchemaManager implements CloseableSilently {
 
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
+  @VisibleForTesting static final int CLOSE_GRACE_PERIOD_SECONDS = 5;
   private static final String INDICES_MISSING_ALIAS = "Indices missing their expected alias: ";
   private static final String ALIAS_INTEGRITY_ERR = "Alias '%s' points to more than 1 index: [%s]";
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
@@ -195,6 +198,7 @@ public class SchemaManager implements CloseableSilently {
       schemaMetadataStore.storeSchemaVersion(currentVersion);
     }
     updateSchemaSettings();
+    checkShardConfiguration();
     createLifecyclePolicies();
     LOG.info("Schema management completed.");
   }
@@ -278,30 +282,136 @@ public class SchemaManager implements CloseableSilently {
     CompletableFuture.runAsync(schemaCleanup::performCleanup, virtualThreadExecutor);
   }
 
+  /**
+   * Reports per-index shard configuration that will not do what the operator expects.
+   *
+   * <p>Runs once per startup rather than from {@link #getIndexSettingsFromConfig}: that resolver is
+   * called again for every descriptor during template creation, index creation and the settings
+   * update, so warning from there would repeat each message up to three times.
+   */
+  private void checkShardConfiguration() {
+    final var explicitShards = config.index().getShardsByIndexName();
+    if (explicitShards.isEmpty()) {
+      return;
+    }
+
+    // Smaller than explicitShards when a configured name matches no descriptor here — a typo, or a
+    // component running with a subset of the schema. Those names are simply not ours to check.
+    final var configuredShardsByIndexName = new HashMap<String, Integer>();
+    allIndexDescriptors.forEach(
+        descriptor ->
+            ofNullable(explicitShards.get(descriptor.getIndexName()))
+                .ifPresent(
+                    shards -> {
+                      warnIfOverridingPinnedShardCount(descriptor, shards);
+                      configuredShardsByIndexName.put(descriptor.getFullQualifiedName(), shards);
+                    }));
+
+    warnOnUnappliedShardCounts(configuredShardsByIndexName);
+  }
+
+  /**
+   * Reports configured shard counts that an existing index does not actually have.
+   *
+   * <p>{@link #updateIndexSettings} only pushes {@code number_of_replicas}, because shards are
+   * immutable once an index exists. Changing {@code number-of-shards-per-index} on a running
+   * installation is therefore a silent no-op: the operator sees the setting they asked for in their
+   * configuration and a differently sharded index in the engine, with nothing connecting the two.
+   *
+   * <p>Only indices that already exist are compared — a missing one was either just created with
+   * the configured count or is not in use.
+   */
+  private void warnOnUnappliedShardCounts(final Map<String, Integer> configuredShardsByIndexName) {
+    final Map<String, Integer> actualShardsByIndexName;
+    try {
+      actualShardsByIndexName =
+          searchEngineClient.getNumberOfShards(configuredShardsByIndexName.keySet());
+    } catch (final Exception e) {
+      // A diagnostic must never be the thing that fails a startup that would otherwise succeed.
+      LOG.debug("Could not read shard counts to check them against the configuration", e);
+      return;
+    }
+
+    actualShardsByIndexName.forEach(
+        (indexName, actual) -> {
+          final var configured = configuredShardsByIndexName.get(indexName);
+          if (configured != null && !configured.equals(actual)) {
+            LOG.warn(
+                "Index '{}' is configured with '{}' primary shards but was created with '{}'. "
+                    + "Shards cannot be changed after creation, so the configured value has no "
+                    + "effect on this index; it applies only to newly created indices.",
+                indexName,
+                configured,
+                actual);
+          }
+        });
+  }
+
   private void updateSchemaSettings() {
+    // fetched once, not once per descriptor, and submitted to the executor so a stalled request
+    // is bounded by joinOnFutures()'s timeout instead of blocking startupOnce() forever
+    final var currentReplicaCountsFuture =
+        CompletableFuture.supplyAsync(this::fetchCurrentReplicaCounts, virtualThreadExecutor);
+
     final var futures =
         allIndexDescriptors.stream()
             .map(
                 descriptor ->
                     // run creation of indices async as virtual thread
-                    CompletableFuture.runAsync(
-                        () -> updateIndexSettings(descriptor), virtualThreadExecutor))
+                    currentReplicaCountsFuture.thenAcceptAsync(
+                        currentReplicaCounts ->
+                            updateIndexSettings(descriptor, currentReplicaCounts),
+                        virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
 
     joinOnFutures(futures);
   }
 
-  private void updateIndexSettings(final IndexDescriptor indexDescriptor) {
+  private Map<String, Integer> fetchCurrentReplicaCounts() {
+    final var prefix = AbstractIndexDescriptor.formatIndexPrefix(config.connect().getIndexPrefix());
+    final var componentPatterns =
+        allIndexDescriptors.stream()
+            .map(IndexDescriptor::getComponentName)
+            .distinct()
+            .sorted()
+            .map(component -> "%s%s-*".formatted(prefix, component))
+            .toList();
+    return searchEngineClient.getNumberOfReplicas(componentPatterns);
+  }
+
+  /**
+   * Writes replica settings only where they have actually drifted from configuration. A settings
+   * PUT is a cluster-state operation that the search engine's master serializes, so writing every
+   * descriptor unconditionally on every attempt turns a large tenant fleet's schema-init retries
+   * into thousands of redundant master tasks, most of them re-applying a value that is already in
+   * effect.
+   */
+  private void updateIndexSettings(
+      final IndexDescriptor indexDescriptor, final Map<String, Integer> currentReplicaCounts) {
     final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor);
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
+      // already no-ops internally when unchanged, so it stays unconditional
       searchEngineClient.updateIndexTemplateSettings(
           indexTemplateDescriptor, indexSettingsFromConfig);
     }
-    searchEngineClient.putSettings(
-        List.of(indexDescriptor),
-        Map.of(
-            "index.number_of_replicas",
-            String.valueOf(indexSettingsFromConfig.getNumberOfReplicas())));
+
+    final var targetReplicas = indexSettingsFromConfig.getNumberOfReplicas();
+    if (replicaCountDrifted(indexDescriptor, targetReplicas, currentReplicaCounts)) {
+      searchEngineClient.putSettings(
+          indexDescriptor, Map.of("index.number_of_replicas", String.valueOf(targetReplicas)));
+    }
+  }
+
+  private boolean replicaCountDrifted(
+      final IndexDescriptor descriptor,
+      final int target,
+      final Map<String, Integer> currentReplicaCounts) {
+    final var namePattern = Pattern.quote(descriptor.getFullQualifiedName()) + ".*";
+    // values are never null here: getNumberOfReplicas() drops an index rather than reporting a
+    // null replica count for it, so this unboxing comparison is safe
+    return currentReplicaCounts.entrySet().stream()
+        .filter(entry -> entry.getKey().matches(namePattern))
+        .anyMatch(entry -> entry.getValue() != target);
   }
 
   @VisibleForTesting
@@ -486,6 +596,28 @@ public class SchemaManager implements CloseableSilently {
     return descriptor.getDefaultShardCount().orElse(config.index().getNumberOfShards());
   }
 
+  /**
+   * Explicit configuration wins over the descriptor default by design, so this only warns.
+   *
+   * <p>Descriptors that pin a count do so for a reason the operator cannot see from their own
+   * configuration file, so overriding one deserves a line in the log. The linked issue carries why
+   * it matters — post-importer-queue skipped entries once it was spread over several shards — which
+   * keeps that detail out of a message most readers only need to act on.
+   */
+  private void warnIfOverridingPinnedShardCount(
+      final IndexDescriptor descriptor, final int configured) {
+    final var pinned = descriptor.getDefaultShardCount();
+    if (pinned.isEmpty() || pinned.getAsInt() == configured) {
+      return;
+    }
+    LOG.warn(
+        "Index '{}' is pinned to '{}' primary shards by design but is configured with '{}'; "
+            + "the configuration wins. See https://github.com/camunda/camunda/issues/56117.",
+        descriptor.getIndexName(),
+        pinned.getAsInt(),
+        configured);
+  }
+
   private int getNumberOfReplicasFromConfig(final String indexName) {
     return config
         .index()
@@ -512,7 +644,11 @@ public class SchemaManager implements CloseableSilently {
         "Validate '{}' existing indices based on '{}' descriptors",
         currentIndices.size(),
         allIndexDescriptors.size());
-    return schemaValidator.validateIndexMappings(currentIndices, allIndexDescriptors);
+    final var currentTemplates =
+        searchEngineClient.getMappings(
+            config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE);
+    return schemaValidator.validateIndexMappings(
+        currentIndices, allIndexDescriptors, currentTemplates);
   }
 
   private Set<String> existingIndexNames(final Collection<IndexDescriptor> indexDescriptors) {
@@ -538,31 +674,60 @@ public class SchemaManager implements CloseableSilently {
       return true;
     }
 
-    return getMissingIndices(allIndexDescriptors).isEmpty()
+    return getMissingIndices(requiredIndexDescriptors()).isEmpty()
         && getMissingIndexTemplates(indexTemplateDescriptors).isEmpty()
         && validateIndices().isEmpty()
         && isAliasIntegrityValid(false);
   }
 
   public boolean isAllIndicesExist() {
-    return getMissingIndices(allIndexDescriptors).isEmpty();
+    return getMissingIndices(requiredIndexDescriptors()).isEmpty();
   }
 
+  /**
+   * Shuts the executor down within a bounded amount of time, whatever its tasks are doing.
+   *
+   * <p>{@code ExecutorService.close()} shuts down and then loops {@code awaitTermination(1, DAYS)}
+   * until every task finishes on its own. A schema mutation that the search engine accepted but has
+   * not acknowledged keeps its task running long after {@link #joinOnFutures} gave up on it, and
+   * cancelling that future does not stop it — the JDK never interrupts a task to cancel a {@link
+   * CompletableFuture}. So a caller that times out and retries, building a fresh {@link
+   * SchemaManager} per attempt and closing the previous one first, ends up parked here for as long
+   * as the abandoned request runs. That is the hang this bounds.
+   *
+   * <p>Shutdown stays graceful first, so {@link #startSchemaCleanup()}'s fire-and-forget cleanup —
+   * the one task legitimately still running at close on a successful startup — is left to finish.
+   * Only once that short grace is exhausted does this escalate to {@code shutdownNow()}. Either way
+   * the method returns; a task that somehow survives the interrupt keeps running in the background
+   * without holding up the caller.
+   */
   @Override
   public void close() {
-    virtualThreadExecutor.close();
+    virtualThreadExecutor.shutdown();
+    try {
+      if (!virtualThreadExecutor.awaitTermination(CLOSE_GRACE_PERIOD_SECONDS, TimeUnit.SECONDS)) {
+        LOG.warn(
+            "Schema manager tasks did not finish within {}s of shutdown; interrupting them and giving up the wait.",
+            CLOSE_GRACE_PERIOD_SECONDS);
+        virtualThreadExecutor.shutdownNow();
+      }
+    } catch (final InterruptedException e) {
+      virtualThreadExecutor.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
   }
 
   public boolean isAliasIntegrityValid(final boolean throwException) {
+    final var descriptorsWithAliasValidation = descriptorsWithAliasValidation();
     final List<String> indexNames =
-        allIndexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+        descriptorsWithAliasValidation.stream().map(IndexDescriptor::getFullQualifiedName).toList();
 
     final Map<String, Set<String>> aliasByIndex = searchEngineClient.getAliases(indexNames);
 
     final Set<String> indexesWithMissingAliases = new LinkedHashSet<>();
     final Map<String, Set<String>> aliasToIndices = new HashMap<>();
 
-    for (final IndexDescriptor indexDescriptor : allIndexDescriptors) {
+    for (final IndexDescriptor indexDescriptor : descriptorsWithAliasValidation) {
       final Set<String> aliases =
           aliasByIndex.getOrDefault(indexDescriptor.getFullQualifiedName(), Set.of());
 
@@ -608,5 +773,19 @@ public class SchemaManager implements CloseableSilently {
 
     LOG.warn(errorMessage);
     return false;
+  }
+
+  private List<IndexDescriptor> requiredIndexDescriptors() {
+    return allIndexDescriptors.stream().filter(descriptor -> !descriptor.allowMissing()).toList();
+  }
+
+  private List<IndexDescriptor> descriptorsWithAliasValidation() {
+    final var existingIndexNames = existingIndexNames(allIndexDescriptors);
+    return allIndexDescriptors.stream()
+        .filter(
+            descriptor ->
+                !descriptor.allowMissing()
+                    || existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        .toList();
   }
 }

@@ -120,15 +120,17 @@ jobs:
         run: |
           set -euo pipefail
           case "$BASE_REF" in
-            main|stable/8.7|stable/8.8|stable/8.9) ;;
+            main|stable/8.7|stable/8.8|stable/8.9|stable/8.10) ;;
             *) echo "::error::unsupported base_ref '$BASE_REF'"; exit 1 ;;
           esac
           case "$SURFACE" in
             sm-smoke-e2e|saas-smoke-e2e|saas-ci|helm-install) ;;
             *) echo "::error::unsupported surface '$SURFACE'"; exit 1 ;;
           esac
-          # main carries the next unreleased minor; stable/X.Y carries X.Y. Bump this
-          # when main moves to 8.11.
+          # The version is the suite and chart the branch's pipeline exercises, not the
+          # branch's pom version: main became 8.11.0-SNAPSHOT when stable/8.10 was cut,
+          # while docker-build-helm-integration still deploys camunda-platform-8.10 and
+          # the e2e repo tops out at tests/SM-8.10. Bump when an 8.11 chart and suite exist.
           if [ "$BASE_REF" = "main" ]; then version=8.10; else version="${BASE_REF#stable/}"; fi
           # The e2e suite directory. SM specs live under an SM- prefix, SaaS specs under
           # the bare version, and pages/ mirrors tests/ exactly.
@@ -193,7 +195,7 @@ jobs:
 
       - name: Generate GitHub App Token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
@@ -320,6 +322,7 @@ jobs:
           EVIDENCE_RUN_URL: ${{ steps.ctx.outputs.evidence_run_url }}
           EVIDENCE_REPO: ${{ steps.ctx.outputs.evidence_repo }}
           FAILING_RUN_URL: ${{ inputs.failing_run_url }}
+          VERSION: ${{ steps.target.outputs.version }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/alwaysgreen-artifacts
@@ -329,10 +332,25 @@ jobs:
               && echo "  got $3 from $1#$2" \
               || echo "  (absent) $3 from $1#$2"
           }
+          # Version-scoped artifact name, falling back to the unscoped glob; see
+          # .github/scripts/alwaysgreen/README.md.
+          dl_versioned() { # repo, run_id, pattern-prefix
+            local dest_found=""
+            if [ -n "${VERSION}" ]; then
+              dl "$1" "$2" "$3-${VERSION}-*"
+              dest_found="/tmp/alwaysgreen-artifacts/$3-${VERSION}-*"
+            fi
+            if [ -z "${dest_found}" ] || [ -z "$(find "${dest_found}" -type f 2>/dev/null)" ]; then
+              dl "$1" "$2" "$3*"
+            fi
+          }
           if [ -n "${EVIDENCE_RUN_URL}" ] && [ -n "${EVIDENCE_REPO}" ]; then
             eid="${EVIDENCE_RUN_URL##*/}"
-            dl "${EVIDENCE_REPO}" "$eid" 'playwright-results-json*'
+            dl_versioned "${EVIDENCE_REPO}" "$eid" 'playwright-results-json'
             dl "${EVIDENCE_REPO}" "$eid" 'playwright-traces*'
+            # preview-env-smoke-test.yml ships traces and screenshots inside its
+            # per-version html report instead of a separate traces artifact.
+            dl_versioned "${EVIDENCE_REPO}" "$eid" 'playwright-report'
             dl "${EVIDENCE_REPO}" "$eid" 'json-report*'
             dl "${EVIDENCE_REPO}" "$eid" 'Playwright Report*'
           fi
@@ -382,12 +400,10 @@ jobs:
           A sibling version directory that is passing must not be touched.
           Failing AlwaysGreen run: ${FAILING_RUN_URL}
           Triage run: ${TRIAGE_RUN_URL}
-          Breaking change: PR #${BLAME_PR} by ${BLAME_AUTHOR}
-          Read what that PR changed before choosing a repo. If it also updated the
-          product's own tests to the new value, the change is intended and the
-          cross-component test is behind; if those tests still assert the old value,
-          the product contradicts itself and it is a regression. The manual's
-          "Regression, or an intended change" section is the full rule.
+          Triggering commit: PR #${BLAME_PR} by ${BLAME_AUTHOR} -- the PR classify.py
+          associated with this run's head commit, not a confirmed cause. Read the manual's
+          "Regression, or an intended change" section FIRST: its zeroth check may rule this PR
+          out entirely before the intended-vs-regression question even applies.
 
           /tmp/test_specs.json  — the failing specs, with retry history per attempt.
           /tmp/fingerprints.json — the fingerprints your PR body MUST claim in its
@@ -435,6 +451,53 @@ jobs:
           cd "${ws_dir}"
           claude -p "$prompt" --dangerously-skip-permissions
 
+      # team-test-automation is internal and this repo is public, so GitHub refuses to
+      # resolve `uses: camunda/team-test-automation/...` -- an internal repo shares its
+      # actions only with private and internal repos. Check the action out and run it
+      # from a local path instead.
+      #
+      # A token of its own, not the one minted at the top of the job: that one is an
+      # installation token good for an hour, and this job may run 90 minutes.
+      - name: Generate medic-resolver read token
+        id: medic-token
+        if: always()
+        continue-on-error: true
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: team-test-automation
+
+      # `path` is relative to $GITHUB_WORKSPACE, so this lands INSIDE the tooling
+      # checkout. Harmless only because the agent edits and commits in $ws_dir, never here.
+      - name: Check out the medic resolver
+        id: medic-src
+        if: ${{ always() && steps.medic-token.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: camunda/team-test-automation
+          ref: 4ba23b2dfa0029dc5a640fc8e24e78844ca0aa06 # camunda/team-test-automation#186
+          token: ${{ steps.medic-token.outputs.token }}
+          path: .medic-resolver
+          fetch-depth: 1
+          persist-credentials: false
+
+      # Resolved from the same rotation schedule @test-automation-team-medic is rendered
+      # from, so the reviewer tagged below is whoever that handle points at today.
+      - name: Resolve the test-automation medic
+        id: medic
+        if: ${{ always() && steps.medic-src.outcome == 'success' }}
+        continue-on-error: true
+        uses: ./.medic-resolver/.github/actions/resolve-medic
+
       - name: Request review and label PRs
         if: always()
         env:
@@ -443,6 +506,9 @@ jobs:
           DEFAULT_REPO: ${{ github.repository }}
           BASE_REF: ${{ inputs.base_ref }}
           KEY_LABEL: alwaysgreen-key:${{ inputs.base_ref }}:${{ inputs.surface }}
+          # Keyed on `found`, not on the login, so no sentinel value reaches `gh` as a handle.
+          MEDIC_LOGIN: ${{ steps.medic.outputs.found == 'true' && steps.medic.outputs.login || '' }}
+          MEDIC_NAME: ${{ steps.medic.outputs.full_name }}
         run: |
           set -euo pipefail
           [ -f /tmp/fix-meta.json ] || { echo "no fix-meta.json"; exit 0; }
@@ -479,13 +545,43 @@ jobs:
 
             # Requesting review can legitimately fail: the blamed author may not be a
             # collaborator on the repo the fix landed in. The manual requires the author
-            # to be named in the PR body regardless, so the signal is not lost.
-            if [ -n "${BLAME_REVIEWER}" ]; then
+            # to be named in the PR body too when relevant, so the signal is not lost.
+            #
+            # Gated on the agent's own zeroth-check verdict (FIX-AGENT.md), not just
+            # BLAME_REVIEWER being non-empty: a formal review request notifies the
+            # blamed author exactly like a body mention does, so requesting one for a
+            # PR the agent already ruled unrelated reintroduces the same false-cause
+            # ping the body-mention gating exists to prevent. Defaults to "false" (skip
+            # the request) if the agent didn't record a verdict at all.
+            blame_relevant=$(jq -r '.blame_relevant // false' /tmp/fix-meta.json 2>/dev/null || echo false)
+            if [ -n "${BLAME_REVIEWER}" ] && [ "${blame_relevant}" = "true" ]; then
               if gh pr edit "$num" --repo "$repo" --add-reviewer "${BLAME_REVIEWER}" 2>/dev/null; then
                 echo "review requested from ${BLAME_REVIEWER} on ${repo}#${num}"
               else
                 echo "::warning::could not request review from ${BLAME_REVIEWER} on ${repo}#${num}"
               fi
+            elif [ -n "${BLAME_REVIEWER}" ]; then
+              echo "blame_relevant is not true in fix-meta.json -- skipping review request for ${BLAME_REVIEWER} on ${repo}#${num} (zeroth check ruled them out, or no verdict was recorded)"
+            fi
+
+            # Unscoped, and warn-only: the medic routes the fix wherever it landed, and a
+            # reviewer request is not worth failing an otherwise good run over.
+            if [ -n "${MEDIC_LOGIN}" ]; then
+              if gh pr edit "$num" --repo "$repo" --add-reviewer "${MEDIC_LOGIN}"; then
+                # Exit 0 is not proof: GitHub drops a request naming the PR's own author
+                # without erroring, so the result is read back rather than assumed.
+                if gh pr view "$num" --repo "$repo" --json reviewRequests \
+                     --jq '.reviewRequests[] | .login // empty' 2>/dev/null \
+                     | grep -qxF "${MEDIC_LOGIN}"; then
+                  echo "review requested from the medic ${MEDIC_NAME} (${MEDIC_LOGIN}) on ${repo}#${num}"
+                else
+                  echo "::warning::the request for the medic ${MEDIC_LOGIN} on ${repo}#${num} was accepted but is not recorded on the PR"
+                fi
+              else
+                echo "::warning::could not request review from the medic ${MEDIC_LOGIN} on ${repo}#${num}"
+              fi
+            else
+              echo "::warning::no medic resolved for today -- ${repo}#${num} gets no medic reviewer; check the rotation schedule in team-test-automation"
             fi
           done
 
@@ -512,6 +608,23 @@ jobs:
                 jq -r '.prs[] | "### :white_check_mark: [PR #\(.number)](\(.url // ""))", "", "**Branch:** `\(.branch // "?")`", ""' \
                   /tmp/fix-meta.json
                 jq -r '.prs[] | select(.root_cause) | "**Root cause:** \(.root_cause)", ""' /tmp/fix-meta.json
+              fi
+            fi
+            # Product bugs filed this run. A product-bug verdict can come with or
+            # without a skip PR, so this is outside the prs branch above.
+            if [ -f /tmp/fix-meta.json ]; then
+              pb_count=$(jq '[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
+              if [ "$pb_count" -gt 0 ]; then
+                echo ""
+                echo "### :bug: Product bugs filed: ${pb_count}"
+                echo ""
+                jq -r '[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)][] |
+                  "- [\(.issue_url // "issue link missing")](\(.issue_url // "")) in `\(.repo // "?")`"
+                  + " — **\(.severity // "severity?")** / `\(.component // "component?")`"
+                  + (if ((.affects // []) | length) > 0 then " (affects \((.affects | join(", "))))" else "" end)
+                  + (if ((.undetermined_fields // []) | length) > 0 then " :warning: needs triage: \((.undetermined_fields | join(", ")))" else "" end)
+                  + (if (.root_cause // "") != "" then "\n  - \(.root_cause)" else "" end)' \
+                  /tmp/fix-meta.json || true
               fi
             fi
             [ -n "${TRIAGE_RUN_URL}" ] && { echo ""; echo "**Triage run:** [↗](${TRIAGE_RUN_URL})"; }
@@ -543,6 +656,7 @@ jobs:
           SURFACE: ${{ inputs.surface }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           JOB_STATUS: ${{ job.status }}
+          MEDIC_USERGROUP: ${{ steps.medic.outputs.slack_usergroup }}
         run: |
           set -euo pipefail
           # ctx unpacks the bundle, but it may never have run.
@@ -557,12 +671,53 @@ jobs:
           # -1 when absent or unparseable, so a broken manifest reports the no-verdict
           # branch instead of erroring on an empty numeric comparison.
           pr_count=-1
+          pb_lines=""
+          pb_unskipped=0
           if [ -f /tmp/fix-meta.json ]; then
             pr_count=$(jq '.prs | length' /tmp/fix-meta.json 2>/dev/null || echo -1)
+            # Severity and component are what route a filed bug to a team; without
+            # them in the thread the issue exists but nobody knows it is theirs.
+            pb_lines=$(jq -r '[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)][] |
+              "• product bug → " + (if (.issue_url // "") != "" then "<\(.issue_url)|issue>" else "(issue link missing)" end)
+              + " in `\(.repo // "?")` [\(.severity // "severity?")/\(.component // "component?")]"
+              + (if ((.affects // []) | length) > 0 then " affects \((.affects | join(", ")))" else "" end)
+              + (if (.root_cause // "") != "" then " — \(.root_cause)" else "" end)
+              + (if ((.undetermined_fields // []) | length) > 0 then " :warning: needs triage: \((.undetermined_fields | join(", ")))" else "" end)
+              + (if ((.skipped_tests // []) | length) == 0 then " :rotating_light: NO skip — test still failing" else "" end)' \
+              /tmp/fix-meta.json 2>/dev/null || true)
+            # Whether the run is unblocked is a per-bug fact, not a per-run one: a
+            # dispatch can carry a normal fix PR for one failure and a product bug
+            # with no skip for another. Only each bug's own skipped_tests proves its
+            # test is out of the run, so branch on that rather than on prs.
+            pb_unskipped=$(jq '[[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)][]
+              | select(((.skipped_tests // []) | length) == 0)] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
           fi
-          if [ "${pr_count}" -gt 0 ]; then
+          if [ -n "${pb_lines}" ]; then
+            links=""
+            if [ "${pr_count}" -gt 0 ]; then
+              links=$(jq -r '[.prs[] | "<\(.url // "")|PR #\(.number)>"] | join("  ")' /tmp/fix-meta.json)
+            fi
+            if [ "${pb_unskipped}" -eq 0 ]; then
+              text=":bug: *${SURFACE}* — product bug(s), test(s) skipped pending fix:"$'\n'"${pb_lines}"
+            else
+              text=":warning: *${SURFACE}* — ${pb_unskipped} product bug(s) with NO skip, test(s) still failing:"$'\n'"${pb_lines}"
+              # FIX-AGENT.md requires `reason` whenever prs is empty; this branch
+              # must not swallow it just because a bug was also filed.
+              if [ "${pr_count}" -le 0 ] && [ -f /tmp/fix-meta.json ]; then
+                reason=$(jq -r '.reason // .why_no_pr // .root_cause // ""' \
+                           /tmp/fix-meta.json 2>/dev/null | head -c 700 || true)
+                [ -n "${reason}" ] && text="${text}"$'\n'"${reason}"
+              fi
+            fi
+            [ -n "${links}" ] && text="${text}"$'\n'"• PR(s): ${links}"
+            [ -z "${MEDIC_USERGROUP}" ] \
+              || text="${text}"$'\n'"cc <!subteam^${MEDIC_USERGROUP}> — on shift for this"
+          elif [ "${pr_count}" -gt 0 ]; then
             links=$(jq -r '[.prs[] | "<\(.url // "")|PR #\(.number)>"] | join("  ")' /tmp/fix-meta.json)
             text=":white_check_mark: *${SURFACE}* — ${links}"
+            # Slack only notifies on <!subteam^ID>; a literal @handle in text pings nobody.
+            [ -z "${MEDIC_USERGROUP}" ] \
+              || text="${text}"$'\n'"cc <!subteam^${MEDIC_USERGROUP}> — on shift for this"
           elif [ "${JOB_STATUS}" = "failure" ] && [ "${pr_count}" -lt 0 ]; then
             text=":x: *${SURFACE}* — agent failed before producing a verdict, no fix applied"
           else

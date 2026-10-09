@@ -222,7 +222,7 @@ public class MappingRuleServicesTest {
     final MappingRuleQuery query = queryCaptor.getValue();
     assertThat(query.filter().claimName()).isNull();
     assertThat(query.filter().claimValue()).isNull();
-    assertThat(query.filter().name()).isNull();
+    assertThat(query.filter().nameOperations()).isNull();
     assertThat(query.filter().claims()).isNull();
   }
 }

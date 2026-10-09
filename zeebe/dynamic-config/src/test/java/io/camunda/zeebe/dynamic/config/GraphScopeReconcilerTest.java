@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.OperationId;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -25,6 +26,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,6 +52,13 @@ final class GraphScopeReconcilerTest {
 
   private static final MemberId MEMBER_0 = MemberId.from("0");
 
+  /**
+   * Small enough to keep the test instant, but far enough below the max retry delay that several
+   * escalations fit before the backoff clamps — a min equal to the max, as most tests here use,
+   * makes escalation unobservable.
+   */
+  private static final Duration MIN_RETRY_DELAY = Duration.ofMillis(10);
+
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
   private final TopologyManagerMetrics topologyMetrics =
       new TopologyManagerMetrics(new SimpleMeterRegistry());
@@ -69,6 +78,18 @@ final class GraphScopeReconcilerTest {
       final Function<CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
           updateLocally,
       final TestConcurrencyControl concurrency) {
+    return reconciler(
+        scope, config, updateLocally, concurrency, Duration.ofMillis(1), Duration.ofMillis(1));
+  }
+
+  private GraphScopeReconciler reconciler(
+      final GraphScopeReconciler.Scope scope,
+      final CurrentClusterConfiguration config,
+      final Function<CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
+          updateLocally,
+      final TestConcurrencyControl concurrency,
+      final Duration minRetryDelay,
+      final Duration maxRetryDelay) {
     return new GraphScopeReconciler(
         scope,
         MEMBER_0,
@@ -76,8 +97,8 @@ final class GraphScopeReconcilerTest {
         updateLocally,
         concurrency,
         topologyMetrics,
-        Duration.ofMillis(1),
-        Duration.ofMillis(1));
+        minRetryDelay,
+        maxRetryDelay);
   }
 
   @Test
@@ -124,6 +145,49 @@ final class GraphScopeReconcilerTest {
   }
 
   @Test
+  void shouldEscalateRetryDelayWhileThePersistOfAnAppliedOperationKeepsFailing() {
+    // given — a scope whose single operation always applies successfully but whose post-apply
+    // persist always fails, i.e. a broker that cannot write its configuration file at all. The
+    // executor schedules asynchronously so each retry is driven explicitly below, and records the
+    // delay it was asked to wait, which is the only place the backoff is observable from.
+    final var recordingExecutor = new DelayRecordingConcurrencyControl();
+    final var config = CurrentClusterConfiguration.init();
+    final var persistAttempts = new AtomicInteger();
+    final var scope =
+        scope(
+            planWith(1),
+            () -> operation(ignored -> CompletableActorFuture.completed(UnaryOperator.identity())));
+    // Every pass calls updateLocally twice: staging first, then the post-apply persist. Failing the
+    // even calls fails only the latter, leaving the apply itself successful.
+    final var updateLocally =
+        (Function<CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>)
+            c ->
+                persistAttempts.incrementAndGet() % 2 == 0
+                    ? Either.left(new IOException("disk full"))
+                    : Either.right(c);
+    final var reconciler =
+        reconciler(
+            scope,
+            config,
+            updateLocally,
+            recordingExecutor,
+            MIN_RETRY_DELAY,
+            Duration.ofSeconds(1));
+
+    // when — the first pass and three driven retries each apply the operation and fail to record it
+    reconciler.reconcile();
+    for (int retry = 0; retry < 3; retry++) {
+      assertThat(recordingExecutor.runAll()).isEqualTo(1);
+    }
+
+    // then — the operation's delay grew with each failed persist rather than staying at the
+    // minimum. Asserting "well clear of the minimum" rather than exact values is what the backoff's
+    // jitter allows; a delay that never escalates cannot leave that band at all.
+    assertThat(recordingExecutor.delays()).hasSize(4);
+    assertThat(recordingExecutor.delays().getLast()).isGreaterThan(MIN_RETRY_DELAY.multipliedBy(2));
+  }
+
+  @Test
   void shouldRetryApplyFailureMultipleTimesBeforeSucceeding() {
     // given — a fake operation whose apply() fails twice (e.g. the applier's own "not ready yet"
     // retryable check) before succeeding on the third attempt
@@ -138,6 +202,59 @@ final class GraphScopeReconcilerTest {
     // then — two failed attempts, then a third that succeeded; the failure was not swallowed and
     // retries did not stop after the first one
     assertThat(applyAttempts).hasValue(3);
+  }
+
+  @Test
+  void shouldRetryWhenStagingAnOperationFails() {
+    // given — staging the operation (the first updateLocally call, before apply() is ever reached)
+    // fails once, e.g. a transient IOException writing the configuration file. No other trigger
+    // follows: when the local member's operation is the one a change waits on, nothing else in the
+    // cluster changes the configuration, so the reconciler's own retry is all that is left.
+    final var applyAttempts = new AtomicInteger();
+    final var updateCalls = new AtomicInteger();
+    final var scope = failingUntilSuccess(applyAttempts, 0);
+    final Function<CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
+        updateLocally =
+            c ->
+                updateCalls.incrementAndGet() == 1
+                    ? Either.left(new IOException("disk full"))
+                    : Either.right(c);
+
+    // when — with the default (synchronous) TestConcurrencyControl, a scheduled retry runs inline
+    reconciler(scope, CurrentClusterConfiguration.init(), updateLocally, executor).reconcile();
+
+    // then — the operation was staged again and applied, instead of being left pending
+    assertThat(applyAttempts).hasValue(1);
+  }
+
+  @Test
+  void shouldKeepASingleRetryPendingWhileAnOperationKeepsFailing() {
+    // given — an async-scheduling executor, so retries queue up instead of running inline, and an
+    // operation whose staging never succeeds (e.g. an init() validation that keeps rejecting it)
+    final var asyncExecutor = new TestConcurrencyControl(true);
+    final var scope =
+        scope(
+            planWith(1),
+            () -> operation(ignored -> CompletableActorFuture.completed(UnaryOperator.identity())));
+    final var reconciler =
+        reconciler(
+            scope,
+            CurrentClusterConfiguration.init(),
+            c -> Either.left(new IOException("disk full")),
+            asyncExecutor);
+
+    // when — several external triggers (local updates, gossip merges) each hit the failing
+    // operation
+    reconciler.reconcile();
+    reconciler.reconcile();
+    reconciler.reconcile();
+
+    // then — they share one pending retry instead of each starting a retry chain of its own
+    assertThat(asyncExecutor.scheduledTasks()).isOne();
+
+    // and — when that retry fires and fails again, it is replaced, not multiplied
+    assertThat(asyncExecutor.runAll()).isOne();
+    assertThat(asyncExecutor.scheduledTasks()).isOne();
   }
 
   @Test
@@ -318,5 +435,30 @@ final class GraphScopeReconcilerTest {
                 }));
       }
     };
+  }
+
+  /**
+   * An asynchronously-scheduling {@link TestConcurrencyControl} that also records the delay of
+   * every task scheduled through it. The base class exposes only how many tasks are queued, and the
+   * reconciler's backoff is otherwise entirely internal, so this is what makes an escalating — or a
+   * flat — retry delay assertable.
+   */
+  private static final class DelayRecordingConcurrencyControl extends TestConcurrencyControl {
+
+    private final List<Duration> delays = new ArrayList<>();
+
+    private DelayRecordingConcurrencyControl() {
+      super(true);
+    }
+
+    @Override
+    public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
+      delays.add(Duration.ofMillis(delayMs));
+      return super.schedule(delayMs, runnable);
+    }
+
+    private List<Duration> delays() {
+      return delays;
+    }
   }
 }

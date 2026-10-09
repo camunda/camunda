@@ -56,6 +56,8 @@ import jakarta.json.JsonValue;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -67,6 +69,7 @@ import org.springframework.stereotype.Component;
 public class ReportWriterES implements ReportWriter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportWriterES.class);
+
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final TaskRepositoryES taskRepositoryES;
@@ -299,6 +302,38 @@ public class ReportWriterES implements ReportWriter {
         updateItem,
         updateDefinitionXmlScript,
         Query.of(q -> q.term(t -> t.field(PROCESS_DEFINITION_PROPERTY).value(definitionKey))),
+        SINGLE_PROCESS_REPORT_INDEX_NAME);
+  }
+
+  @Override
+  public void clearReportDefinitionXmlForReportIds(
+      final List<String> reportIds, final String processDefinitionKey, final String tenantId) {
+    if (reportIds.isEmpty()) {
+      return;
+    }
+    final String updateItem =
+        String.format("%d report(s) with cleared definition XML", reportIds.size());
+    LOG.debug("Clearing definition XML for {} in Elasticsearch", updateItem);
+
+    final Map<String, JsonData> scriptParams = new HashMap<>();
+    scriptParams.put("key", JsonData.of(processDefinitionKey));
+    scriptParams.put("tenantId", JsonData.of(tenantId));
+    final Script clearDefinitionXmlScript =
+        Script.of(
+            s ->
+                s.lang(ScriptLanguage.Painless)
+                    // this script is deliberately not updating the modified date as this is
+                    // not a user operation
+                    .source(ReportWriter.CLEAR_DEFINITION_XML_IF_STILL_MATCHING_SCRIPT)
+                    .params(scriptParams));
+
+    // Abort on version conflicts so a report edited concurrently with this write can be retried by
+    // the caller instead of keeping stale XML.
+    taskRepositoryES.tryUpdateByQueryRequest(
+        updateItem,
+        clearDefinitionXmlScript,
+        Query.of(q -> q.ids(i -> i.values(reportIds))),
+        true,
         SINGLE_PROCESS_REPORT_INDEX_NAME);
   }
 

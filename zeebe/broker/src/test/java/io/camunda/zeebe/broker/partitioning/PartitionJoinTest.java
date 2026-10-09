@@ -95,13 +95,24 @@ final class PartitionJoinTest {
       final var partitionManager =
           (PartitionManagerImpl) joining.getBrokerContext().getPartitionManager();
 
-      // then
+      // then — the member joins as a learner...
       Assertions.assertThat(
               partitionManager.join(
                   1,
                   Map.of(MemberId.from("0"), 2, MemberId.from("1"), 1),
-                  DynamicPartitionConfig.init()))
+                  DynamicPartitionConfig.init(),
+                  true))
           .succeedsWithin(Duration.ofSeconds(10));
+
+      // ... and can be promoted to a voting member once the leader's catch-up gate accepts. The
+      // promotion fails fast while the leader has not observed the member's log position yet, so
+      // it is retried like the configuration change appliers retry it.
+      Awaitility.await("Member is promoted to a voting member")
+          .pollInterval(Duration.ofMillis(500))
+          .untilAsserted(
+              () ->
+                  Assertions.assertThat(partitionManager.promote(1))
+                      .succeedsWithin(Duration.ofSeconds(10)));
     }
   }
 

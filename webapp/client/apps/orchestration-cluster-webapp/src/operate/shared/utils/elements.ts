@@ -27,6 +27,18 @@ function isProcessOrSubProcessEndEvent(businessObject: BusinessObject) {
 	);
 }
 
+function isMultiInstance(businessObject?: BusinessObject) {
+	return businessObject?.loopCharacteristics?.$type === 'bpmn:MultiInstanceLoopCharacteristics';
+}
+
+function getFlowElementIds(businessObject?: BusinessObject): string[] {
+	return (businessObject?.flowElements ?? []).flatMap((flowElement) =>
+		hasType({businessObject: flowElement, types: ['bpmn:SequenceFlow']})
+			? []
+			: [flowElement.id, ...getFlowElementIds(flowElement)],
+	);
+}
+
 function getFlowNodes(elementsById?: DiagramModel['elementsById']) {
 	if (elementsById === undefined) {
 		return [];
@@ -40,6 +52,14 @@ function getBusinessObjects(elementsById?: DiagramModel['elementsById']): Busine
 		flowNodes[businessObject.id] = businessObject;
 		return flowNodes;
 	}, {});
+}
+
+function hasCalledProcessInstances(businessObjects?: BusinessObjects) {
+	if (businessObjects === undefined) {
+		return false;
+	}
+
+	return Object.values(businessObjects).some((businessObject) => businessObject.$type === 'bpmn:CallActivity');
 }
 
 function getSubprocessOverlayFromIncidentElements(
@@ -71,7 +91,10 @@ export {
 	hasType,
 	isFlowNode,
 	isProcessOrSubProcessEndEvent,
+	isMultiInstance,
+	getFlowElementIds,
 	getFlowNodes,
 	getBusinessObjects,
+	hasCalledProcessInstances,
 	getSubprocessOverlayFromIncidentElements,
 };

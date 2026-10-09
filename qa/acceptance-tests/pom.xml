@@ -23,6 +23,9 @@
   <properties>
     <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
     <identity-packages>io/camunda/it/auth/*,io/camunda/it/identity/*,io/camunda/it/csrf/*,io/camunda/it/logout/*,io/camunda/it/oidc/*</identity-packages>
+    <!-- Timeout for forked processes in seconds. Sized for the default CI job budget (20 minutes);
+     long-running callers must raise this via -D failsafe.timeout=<seconds> to match their own job timeout. -->
+    <failsafe.timeout>960</failsafe.timeout>
   </properties>
 
   <dependencies>
@@ -64,11 +67,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-impl</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -173,7 +171,7 @@
     <dependency>
       <groupId>com.ibm.icu</groupId>
       <artifactId>icu4j</artifactId>
-      <version>78.3</version>
+      <version>${version.icu4j}</version>
       <scope>test</scope>
     </dependency>
 
@@ -583,6 +581,16 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
       <scope>test</scope>
@@ -752,6 +760,7 @@
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
           <excludedGroups>rdbms, rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, dl-nightly, async-repl</excludedGroups>
+          <forkedProcessTimeoutInSeconds>${failsafe.timeout}</forkedProcessTimeoutInSeconds>
         </configuration>
         <dependencies>
           <dependency>
@@ -780,7 +789,11 @@
           <ignoredUsedUndeclaredDependencies>
             <dep>org.apache.tomcat.embed:tomcat-embed-core</dep>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
+            <dep>org.apache.logging.log4j:log4j-api</dep>
           </ignoredUsedUndeclaredDependencies>
+          <ignoredNonTestScopedDependencies combine.children="append">
+            <dep>org.apache.logging.log4j:log4j-api</dep>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
     </plugins>
@@ -797,9 +810,12 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
+            <!-- combine.self="override" replaces the whole base <configuration>, including
+                 forkedProcessTimeoutInSeconds; repeat it here so nightly forks stay bounded too. -->
             <configuration combine.self="override">
               <groups>dl-nightly</groups>
               <excludedGroups/>
+              <forkedProcessTimeoutInSeconds>${failsafe.timeout}</forkedProcessTimeoutInSeconds>
             </configuration>
           </plugin>
         </plugins>
@@ -831,7 +847,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>async-repl</groups>
-              <excludedGroups>rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, history</excludedGroups>
+              <excludedGroups>rdbms-aurora, rdbms-aurora-mysql, rdbms-oracle, multi-db-test, compatibility-test, history</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -886,6 +902,27 @@
     For example against:
     Elasticsearch, OpenSearch, AWS OpenSearch, PostGreSQL, etc.
     -->
+    <!--
+    This profile runs the Oracle Data Guard async replication IT against the managed RDS for Oracle
+    environment provisioned by the Oracle CI workflow. Requires TEST_ORACLE_* environment
+    variables to be set.
+    -->
+    <profile>
+      <id>rdbms-oracle</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <groups>rdbms-oracle</groups>
+              <excludedGroups>multi-db-test, compatibility-test, history</excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>multi-db-test</id>
       <build>
@@ -984,6 +1021,59 @@
               <groups>history</groups>
               <excludedGroups>rdbms</excludedGroups>
               <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    This profile will run all tests annotated with @Tag("multiDbTest") in archiver-less mode.
+    -->
+    <profile>
+      <id>archiverless</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <!-- TODO remove archiverless-wip once archiverless support is fully implemented https://github.com/camunda/camunda/issues/64376 -->
+              <excludedGroups>rdbms, history, archiverless-wip</excludedGroups>
+              <excludes>
+                <exclude>${identity-packages}</exclude>
+                <exclude>**/*$*.java</exclude>
+              </excludes>
+              <systemPropertyVariables>
+                <test.integration.camunda.archiverless.enabled>true</test.integration.camunda.archiverless.enabled>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>archiverless-identity</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms, history</excludedGroups>
+              <includes>
+                <include>${identity-packages}</include>
+              </includes>
+              <systemPropertyVariables>
+                <test.integration.camunda.archiverless.enabled>true</test.integration.camunda.archiverless.enabled>
                 <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
               </systemPropertyVariables>
             </configuration>

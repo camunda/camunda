@@ -38,7 +38,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new StringValue("activatedElementInstanceKeys");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
@@ -66,8 +66,8 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new ArrayProperty<>(ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY, LongValue::new);
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
-  private final IntegerProperty storageOrdinalKeyProperty =
-      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+  private final IntegerProperty storageOrdinalProperty =
+      new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   public ProcessInstanceModificationRecord() {
     super(10);
@@ -78,7 +78,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
         .declareProperty(activatedElementInstanceKeys)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProperty)
-        .declareProperty(storageOrdinalKeyProperty)
+        .declareProperty(storageOrdinalProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(bpmnProcessIdProperty);
   }
@@ -260,12 +260,12 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProperty.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
   }
 
-  public ProcessInstanceModificationRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+  public ProcessInstanceModificationRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
     return this;
   }
 }

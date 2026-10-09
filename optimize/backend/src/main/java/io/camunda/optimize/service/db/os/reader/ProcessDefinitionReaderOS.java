@@ -49,15 +49,30 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
   }
 
   @Override
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(
+      final String definitionId, final boolean includeXml) {
     final BoolQuery query =
         new BoolQuery.Builder()
             .must(QueryDSL.matchAll())
             .must(QueryDSL.term(PROCESS_DEFINITION_ID, definitionId))
             .build();
-    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, true).stream()
+    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, includeXml).stream()
         .findFirst()
         .map(ProcessDefinitionOptimizeDto.class::cast);
+  }
+
+  @Override
+  public boolean processDefinitionExists(final String definitionId) {
+    final Query query =
+        new BoolQuery.Builder()
+            .must(QueryDSL.term(PROCESS_DEFINITION_ID, definitionId))
+            .build()
+            .toQuery();
+
+    final String errorMessage =
+        String.format(
+            "Was not able to check existence of process definition with id [%s].", definitionId);
+    return osClient.count(new String[] {PROCESS_DEFINITION_INDEX_NAME}, query, errorMessage) > 0;
   }
 
   @Override

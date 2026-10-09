@@ -66,9 +66,13 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
+import io.camunda.optimize.dto.optimize.query.job.JobStatus;
+import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
+import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -87,6 +91,8 @@ import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
@@ -1097,5 +1103,85 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
       final String processDefinitionKey, final int nestedDocLimit) {
     databaseIntegrationTestExtension.updateProcessInstanceNestedDocLimit(
         processDefinitionKey, nestedDocLimit, embeddedOptimizeExtension.getConfigurationService());
+  }
+
+  @Test
+  public void shouldImportProcessInstance_whenNoDeletionJobEntryExists() {
+    // given
+    final ProcessInstanceEvent deployedInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("noDeletionJobProcess"));
+
+    // when
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, deployedInstance.getProcessInstanceKey());
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getProcessInstanceId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey())));
+  }
+
+  @ParameterizedTest
+  @EnumSource(JobStatus.class)
+  public void shouldSuppressImport_whenDeletionJobEntryExistsForDefinition(
+      final JobStatus jobStatus) {
+    // given a deletion job entry for this exact process definition version, in any status --
+    // including QUEUED, simulating a batch racing a delete that hasn't been picked up yet
+    final ProcessInstanceEvent deployedInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("suppressedProcess"));
+    final JobRegistryWriter jobRegistryWriter =
+        embeddedOptimizeExtension.getBean(JobRegistryWriter.class);
+    final var jobEntry =
+        jobRegistryWriter.createJobEntry(
+            JobType.DELETE,
+            EntityType.PROCESS_DEFINITION,
+            String.valueOf(deployedInstance.getProcessDefinitionKey()));
+    if (jobStatus != JobStatus.QUEUED) {
+      jobRegistryWriter.updateJobStatus(jobEntry.getId(), jobStatus, null);
+    }
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, deployedInstance.getProcessInstanceKey());
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances()).isEmpty();
+  }
+
+  @Test
+  public void shouldOnlySuppressMatchingDefinition_inMixedBatch() {
+    // given two distinct process definitions in flight, only one has a deletion job entry
+    final ProcessInstanceEvent suppressedInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("mixedBatchSuppressedProcess"));
+    final ProcessInstanceEvent keptInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("mixedBatchKeptProcess"));
+    final JobRegistryWriter jobRegistryWriter =
+        embeddedOptimizeExtension.getBean(JobRegistryWriter.class);
+    jobRegistryWriter.createJobEntry(
+        JobType.DELETE,
+        EntityType.PROCESS_DEFINITION,
+        String.valueOf(suppressedInstance.getProcessDefinitionKey()));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, suppressedInstance.getProcessInstanceKey());
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, keptInstance.getProcessInstanceKey());
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getProcessInstanceId())
+                    .isEqualTo(String.valueOf(keptInstance.getProcessInstanceKey())));
   }
 }

@@ -9,6 +9,9 @@ package io.camunda.zeebe.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 final class SemanticVersionTest {
@@ -81,5 +84,72 @@ final class SemanticVersionTest {
   void shouldCompareVersionsWithBuildMetadata() {
     assertThat(new SemanticVersion(1, 0, 0, "alpha", "build.1"))
         .isEqualByComparingTo(new SemanticVersion(1, 0, 0, "alpha", "build.2"));
+  }
+
+  @Test
+  void shouldSortAlphaAndReleaseCandidateVersions() {
+    final var versions =
+        Stream.of(
+                "1.0.0",
+                "2.0.0",
+                "2.0.0-rc3",
+                "2.0.0-SNAPSHOT",
+                "2.1.0-alpha3",
+                "2.1.0",
+                "1.0.0-alpha1",
+                "1.0.0-alpha1-rc1",
+                "1.0.0-alpha1-rc10",
+                "1.0.0-alpha1-rc2",
+                "1.0.0-alpha2-rc1",
+                "1.0.1-alpha2-rc1")
+            .map(SemanticVersion::parse)
+            .map(Optional::orElseThrow)
+            .toList();
+
+    final var sorted =
+        versions.stream()
+            .sorted(SemanticVersion.ALPHA_AND_RELEASE_CANDIDATE_COMPARATOR)
+            .map(SemanticVersion::toString)
+            .toList();
+
+    assertThat(sorted)
+        .isEqualTo(
+            List.of(
+                "1.0.0-alpha1-rc1",
+                "1.0.0-alpha1-rc2",
+                "1.0.0-alpha1-rc10",
+                "1.0.0-alpha1",
+                "1.0.0-alpha2-rc1",
+                "1.0.0",
+                "1.0.1-alpha2-rc1",
+                "2.0.0-SNAPSHOT",
+                "2.0.0-rc3",
+                "2.0.0",
+                "2.1.0-alpha3",
+                "2.1.0"));
+  }
+
+  @Test
+  void shouldFormatOnlyMajorAndMinorAsAMinorVersionString() {
+    assertThat(new SemanticVersion(8, 10, 3, null, null).toMinorVersionString()).isEqualTo("8.10");
+    assertThat(new SemanticVersion(8, 10, 0, "SNAPSHOT", null).toMinorVersionString())
+        .isEqualTo("8.10");
+  }
+
+  @Test
+  void shouldStripThePreReleaseAndBuildMetadataSuffix() {
+    assertThat(new SemanticVersion(8, 10, 0, "SNAPSHOT", "build.1").withoutPreRelease())
+        .isEqualTo(new SemanticVersion(8, 10, 0, null, null));
+    assertThat(new SemanticVersion(8, 10, 0, null, null).withoutPreRelease())
+        .isEqualTo(new SemanticVersion(8, 10, 0, null, null));
+  }
+
+  @Test
+  void shouldStripThePreReleaseSuffixFromAVersionString() {
+    assertThat(SemanticVersion.withoutPreReleaseSuffix("8.10.0-SNAPSHOT")).isEqualTo("8.10.0");
+    assertThat(SemanticVersion.withoutPreReleaseSuffix("8.10.0")).isEqualTo("8.10.0");
+    assertThat(SemanticVersion.withoutPreReleaseSuffix("not-a-version"))
+        .describedAs("falls back to the raw input when it can't be parsed")
+        .isEqualTo("not-a-version");
   }
 }

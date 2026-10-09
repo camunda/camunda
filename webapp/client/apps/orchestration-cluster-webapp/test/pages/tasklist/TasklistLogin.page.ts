@@ -1,0 +1,44 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {LoginPage} from '#/pages/Login.page';
+
+class TasklistLoginPage extends LoginPage {
+	override async goto(redirect?: string) {
+		const search = redirect === undefined ? '' : `?${new URLSearchParams({redirect})}`;
+		return this.page.goto(`/tasklist/login${search}`);
+	}
+
+	async gotoTasklist(search = '') {
+		return this.page.goto(`/tasklist${search}`);
+	}
+
+	override get passwordInput() {
+		// Scoped to the textbox role: the design system's password field now ships
+		// a show/hide toggle button whose aria-label also matches /password/i.
+		return this.page.getByRole('textbox', {name: /password/i});
+	}
+
+	get genericErrorHeading() {
+		return this.page.getByRole('heading', {name: 'Something went wrong'});
+	}
+
+	get title() {
+		return this.page.getByRole('heading', {name: 'Tasklist'});
+	}
+
+	get usernameError() {
+		return this.page.getByRole('alert').filter({hasText: /username is required/i});
+	}
+
+	get passwordError() {
+		return this.page.getByRole('alert').filter({hasText: /password is required/i});
+	}
+}
+
+export {TasklistLoginPage};

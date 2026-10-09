@@ -134,7 +134,7 @@ public class EmailService {
       final Authenticator auth =
           new Authenticator() {
             @Override
-            public PasswordAuthentication getPasswordAuthentication() {
+            protected PasswordAuthentication getPasswordAuthentication() {
               return new PasswordAuthentication(
                   emailAuthenticationConfiguration.getUsername(),
                   emailAuthenticationConfiguration.getPassword());

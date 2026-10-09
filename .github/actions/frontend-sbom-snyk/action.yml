@@ -19,7 +19,7 @@ inputs:
   node-version:
     description: Node.js version to use
     required: false
-    default: "24"
+    default: "26"
   project-name:
     description: Human readable project name for logging
     required: true

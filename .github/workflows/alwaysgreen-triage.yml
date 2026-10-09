@@ -125,7 +125,7 @@ jobs:
         run: |
           set -euo pipefail
           missing=""
-          for p in .github/actions/alwaysgreen-flag .github/scripts/alwaysgreen/discover.py; do
+          for p in .github/actions/alwaysgreen-flag .github/scripts/alwaysgreen/discover.py .github/scripts/alwaysgreen/notify.py; do
             [ -e "$p" ] || missing="${missing} ${p}"
           done
           if [ -n "${missing}" ]; then
@@ -192,7 +192,7 @@ jobs:
       - name: Generate GitHub App Token
         if: ${{ steps.mode.outputs.active == 'true' }}
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
@@ -296,32 +296,35 @@ jobs:
           PARENT_CHANNEL: ${{ inputs.parent_slack_channel }}
           PLAN_OUTCOME: ${{ steps.plan.outcome }}
           DISPATCHED: ${{ steps.mode.outputs.dispatch }}
+          # The run being classified, not this one. A discovery failure writes an empty
+          # fallback plan with no run_url, which is exactly when the reader most needs
+          # the link — and on a manual replay the two runs are different.
+          TARGET_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ steps.target.outputs.run_id }}
         run: |
           set -euo pipefail
           base_ref='${{ steps.target.outputs.base_ref }}'
           [ -f /tmp/alwaysgreen-plan.json ] || echo '{"dispatches":[],"suppressed":[],"noise":[],"blame":{}}' > /tmp/alwaysgreen-plan.json
-          count=$(jq '.dispatches | length' /tmp/alwaysgreen-plan.json)
-          failing_url=$(jq -r '.run_url // ""' /tmp/alwaysgreen-plan.json)
-          surfaces=$(jq -r '[.dispatches[].surface] | join(", ")' /tmp/alwaysgreen-plan.json)
 
+          # What happened to the plan, which the plan itself cannot say: discovery may
+          # have failed, and a planned dispatch is withheld when the Vault flag is not
+          # `enabled`. Announcing an agent that never ran reads as "someone is on it".
           if [ "${PLAN_OUTCOME}" != "success" ]; then
-            text=":warning: *AlwaysGreen triage failed* on \`${base_ref}\` — no agent dispatched"$'\n'"<${RUN_URL}|Triage run ↗>"
-          elif [ "${count}" != "0" ] && [ "${DISPATCHED}" = "true" ]; then
-            text=":robot_face: *AlwaysGreen fix agent dispatched* on \`${base_ref}\`"$'\n'"${count} agent(s): ${surfaces}"$'\n'"<${failing_url}|Failing run ↗> · <${RUN_URL}|Triage run ↗>"
-          elif [ "${count}" != "0" ]; then
-            # Candidates found but the gate is closed. Say so plainly: an announced
-            # dispatch that never happened is worse than no message at all.
-            text=":mag: *AlwaysGreen: would dispatch — withheld* on \`${base_ref}\`"$'\n'"${count} agent(s) held back: ${surfaces}"$'\n'"Fix-agent dispatch is off for this run."$'\n'"<${failing_url}|Failing run ↗> · <${RUN_URL}|Triage run ↗>"
+            state=triage-failed
+          elif [ "${DISPATCHED}" = "true" ]; then
+            state=dispatched
           else
-            # Nothing actionable. Name the reasons so the thread explains itself without
-            # anyone opening the run.
-            reasons=$(jq -r '
-              ([.suppressed[]? | .reason] + [.noise[]? | .verdict])
-              | if length == 0 then "no failing job mapped to a known surface"
-                else (group_by(.) | map("\(.[0]) x\(length)") | join(", ")) end' \
-              /tmp/alwaysgreen-plan.json 2>/dev/null || echo "unknown")
-            text=":information_source: *AlwaysGreen triage: nothing to dispatch* on \`${base_ref}\`"$'\n'"${reasons}"$'\n'"<${RUN_URL}|Triage run ↗>"
+            state=dry-run
           fi
+
+          # The wording lives in notify.py, where it is unit-tested: this message is the
+          # only thing most people ever read about a triage decision, and building it in
+          # bash is how it ended up reporting raw reason codes with no PR links.
+          text=$(python .github/scripts/alwaysgreen/notify.py \
+            --report /tmp/alwaysgreen-plan.json \
+            --base-ref "${base_ref}" \
+            --failing-run-url "${TARGET_RUN_URL}" \
+            --triage-run-url "${RUN_URL}" \
+            --state "${state}")
 
           # Kept so the post-dispatch step can append agent links via chat.update
           # without rebuilding the message and drifting from this wording.
@@ -360,6 +363,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Dispatch fix agents
+        id: dispatch
         # outcome, not just count: a failed discovery leaves count empty, and '' != '0'
         # would otherwise dispatch with no plan file.
         if: ${{ steps.mode.outputs.dispatch == 'true' && steps.plan.outcome == 'success' && steps.plan.outputs.count != '0' }}
@@ -373,10 +377,6 @@ jobs:
           set -euo pipefail
           # workflow_dispatch caps at 10 inputs, so blame/slack/evidence travel as
           # single JSON objects. The fix workflow unpacks them in its first step.
-          blame_json=$(jq -c '{reviewer: (.blame.reviewer // ""),
-                               author:   (.blame.author // ""),
-                               pr:       (.blame.pr_number // "" | tostring)}' \
-                        /tmp/alwaysgreen-plan.json)
           slack_json=$(jq -nc --arg ts "${SLACK_TS:-}" --arg channel "${SLACK_CHANNEL:-}" \
                         '{ts: $ts, channel: $channel}')
           failing_run_url=$(jq -r '.run_url' /tmp/alwaysgreen-plan.json)
@@ -385,10 +385,23 @@ jobs:
           # run-name and would otherwise be matched by mistake on a repeat replay.
           started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           : > /tmp/agent-runs.tsv
+          # Which dispatches actually started, as opposed to which ones we managed to
+          # resolve a run URL for. The two differ: `gh workflow run` can succeed and the
+          # URL poll below still come up empty, and the step aborts on the first failed
+          # dispatch, leaving the rest unstarted. Only this file can tell the Slack
+          # message whether some, all or none of the planned agents are running.
+          : > /tmp/agent-dispatched.txt
 
           jq -c '.dispatches[]' /tmp/alwaysgreen-plan.json | while read -r d; do
             key=$(jq -r '.dispatch_key' <<<"$d")
             echo "Dispatching ${key}"
+            # Each dispatch's own blame, not the run's: preview-env-smoke-test.yml
+            # dispatches against four different branches from one run, so the
+            # run's own blame only matches whichever dispatch shares its ref.
+            blame_json=$(jq -c '{reviewer: (.blame.reviewer // ""),
+                                 author:   (.blame.author // ""),
+                                 pr:       (.blame.pr_number // "" | tostring)}' \
+                          <<<"$d")
             gh workflow run "${FIX_WORKFLOW}" \
               --repo "${GITHUB_REPOSITORY}" \
               --ref "${FIX_AGENT_REF}" \
@@ -401,6 +414,7 @@ jobs:
               -f triage_run_url="${TRIAGE_RUN_URL}" \
               -f blame="${blame_json}" \
               -f slack="${slack_json}"
+            printf '%s\n' "${key}" >> /tmp/agent-dispatched.txt
 
             # `gh workflow run` returns no run id, so resolve it from the run-name,
             # which carries the dispatch key verbatim. Poll: the run takes a moment
@@ -434,13 +448,57 @@ jobs:
           SLACK_TOKEN: ${{ steps.slack-secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           SLACK_TS: ${{ steps.slack.outputs.self_ts }}
           SLACK_CHANNEL: ${{ steps.slack.outputs.channel }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BASE_REF: ${{ steps.target.outputs.base_ref }}
+          DISPATCH_OUTCOME: ${{ steps.dispatch.outcome }}
         run: |
           set -euo pipefail
-          [ -s /tmp/agent-runs.tsv ] || { echo "No agent runs to link."; exit 0; }
           [ -s /tmp/slack-text.txt ] || { echo "No posted message to update."; exit 0; }
 
-          links=$(awk -F'\t' '{printf "%s<%s|%s ↗>", sep, $2, $1; sep=" · "}' /tmp/agent-runs.tsv)
-          text="$(cat /tmp/slack-text.txt)"$'\n'"Agents: ${links}"
+          planned=$(jq '.dispatches | length' /tmp/alwaysgreen-plan.json 2>/dev/null || echo 0)
+          # grep -c, not `wc -l <`: under `pipefail` a missing file fails the pipeline
+          # and takes the step with it, and the file is absent whenever dispatch was
+          # withheld — the normal case in dry-run.
+          started=$(grep -c . /tmp/agent-dispatched.txt 2>/dev/null || true)
+          started=${started:-0}
+          links=""
+          if [ -s /tmp/agent-runs.tsv ]; then
+            links=$(awk -F'\t' '{printf "%s<%s|%s ↗>", sep, $2, $1; sep=" · "}' /tmp/agent-runs.tsv)
+          fi
+
+          # The message was posted before dispatch, because the agent needs its ts to
+          # reply in-thread. Left alone it claims every planned agent is running, which
+          # is the one reading that stops anyone else from picking the failure up — so
+          # the headline is re-rendered from what actually started. Counted from the
+          # dispatch log rather than from the step outcome or the link file: the step can
+          # fail after starting some agents, and a started agent whose URL did not
+          # resolve is still running.
+          if [ "${DISPATCH_OUTCOME}" = "skipped" ] || [ "${planned}" = "0" ]; then
+            state=""
+          elif [ "${started}" = "0" ]; then
+            state=failed
+          elif [ "${started}" -lt "${planned}" ]; then
+            state=partial
+          else
+            state=""
+          fi
+
+          if [ -n "${state}" ]; then
+            text=$(python .github/scripts/alwaysgreen/notify.py \
+              --report /tmp/alwaysgreen-plan.json \
+              --base-ref "${BASE_REF}" \
+              --triage-run-url "${RUN_URL}" \
+              --state "${state}" \
+              --started "${started}")
+            if [ -n "${links}" ]; then
+              text="${text}"$'\n'"Agents that did start: ${links}"
+            fi
+          elif [ -n "${links}" ]; then
+            text="$(cat /tmp/slack-text.txt)"$'\n'"Agents: ${links}"
+          else
+            echo "Nothing to update: no agents started and none were planned."
+            exit 0
+          fi
 
           # A threaded reply is updated by its own ts; chat.update needs no thread_ts.
           payload=$(jq -nc --arg channel "${SLACK_CHANNEL}" --arg ts "${SLACK_TS}" --arg text "$text" \

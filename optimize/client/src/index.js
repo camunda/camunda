@@ -8,16 +8,21 @@
 
 import {createRoot} from 'react-dom/client';
 
+import '@camunda/design-system/styles.css';
 import './style.scss';
 import 'polyfills';
 
 import {restorePostLoginRedirect} from 'postLoginRedirect';
+
 import App from './App';
 
 // re-apply any route stashed before the logout/session-expiry -> login cycle, before the hash
 // router mounts (ADR-0038:
 // https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md)
 restorePostLoginRedirect();
+
+// On the body rather than the root, because modals render through a portal into the body.
+document.body.classList.add('optimize-nav-v2');
 
 const root = createRoot(document.getElementById('root'));
 root.render(<App />);

@@ -90,13 +90,20 @@ public abstract class SearchDBExtension implements BeforeAllCallback, AfterAllCa
     if (openSearchAwsInstanceUrl.isEmpty()) {
       return new ContainerizedSearchDBExtension();
     } else {
-      final Duration dataAvailabilityTimeout =
-          Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
-              .map(val -> Duration.ofSeconds(Long.parseLong(val)))
-              .orElse(Duration.ofSeconds(60));
-
-      return new AWSSearchDBExtension(openSearchAwsInstanceUrl, dataAvailabilityTimeout);
+      return new AWSSearchDBExtension(
+          openSearchAwsInstanceUrl, awsDataAvailabilityTimeout(Duration.ofSeconds(60)));
     }
+  }
+
+  /**
+   * Timeout for data to become available in the AWS OpenSearch instance, read from the {@value
+   * #TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT} system property with the given fallback when unset.
+   * Single parse point for the property — callers pick their own fallback.
+   */
+  public static Duration awsDataAvailabilityTimeout(final Duration fallback) {
+    return Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
+        .map(val -> Duration.ofSeconds(Long.parseLong(val)))
+        .orElse(fallback);
   }
 
   /**

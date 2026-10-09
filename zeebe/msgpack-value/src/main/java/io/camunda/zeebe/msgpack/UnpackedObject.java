@@ -14,11 +14,12 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public class UnpackedObject extends ObjectValue implements Recyclable, BufferReader, BufferWriter {
 
-  private MsgPackReader reader;
-  private MsgPackWriter writer;
+  private @Nullable MsgPackReader reader;
+  private @Nullable MsgPackWriter writer;
 
   /**
    * Creates a new UnpackedObject

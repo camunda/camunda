@@ -7,8 +7,8 @@
  */
 
 import type {TFunction} from 'i18next';
-import type {AuditLog, AuditLogOperationType} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
-import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AuditLog, AuditLogOperationType} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.11';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 
 const INVALID_PROCESS_INSTANCE_KEY = '-1';
@@ -54,9 +54,11 @@ type EntityKeyData = {
 };
 
 /**
- * Maps an audit log entry to its entity-key link. `link` is a plain `href` for
- * PROCESS_INSTANCE, DECISION and BATCH entity types because their detail pages are not
- * migrated to the unified webapp yet (tracked separately from this page's migration).
+ * Maps an audit log entry to entity-key display data. `link` is a plain `href` kept for the
+ * Carbon `CellEntityKey` consumer and the Carbon `OperationsLogDetailsModal` (which reads it
+ * when rendering batch and decision entity links); neither is yet migrated to TanStack Router
+ * links. The shadcn `OperationsLogDetailsModal` uses typed router links instead and ignores
+ * this field, but it must stay populated until both Carbon consumers are removed.
  */
 function mapToCellEntityKeyData(
 	t: TFunction,
@@ -74,7 +76,6 @@ function mapToCellEntityKeyData(
 		case 'PROCESS_INSTANCE':
 			return {
 				name: processDefinitionName,
-				link: `/operate/processes/${item.entityKey}`,
 				linkLabel: t('operate.operationsLog.entityLinks.viewProcessInstance', {key: item.entityKey}),
 				label: item.entityKey,
 			};

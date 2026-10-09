@@ -11,19 +11,21 @@ import type {KnipConfig} from 'knip';
 const config: KnipConfig = {
 	entry: ['src/vitest-modules/vitest-carbon.setup.ts', 'src/vitest-modules/vitest-shadcn.setup.ts'],
 	ignore: [
-		'src/operate/shared/DecisionViewer/dmn-js.d.ts',
+		'public/mockServiceWorker.js',
 		'src/shared/feature-flags.ts',
 		'shared-test-modules/mock-handlers.ts',
 		'src/shared/browser-storage/session-storage.ts',
-		'shared-test-modules/api-mocks/process-definition-statistics.ts',
 		'shared-test-modules/api-mocks/incident-statistics.ts',
 		// TODO(#55735): remove when consumer migration is complete
 		'src/operate/shared/utils/**',
 		'src/operate/shared/FiltersPanel/**',
-		'src/operate/shared/DeleteDefinition/**',
 		'src/operate/shared/StructuredList/**',
-		// TODO(#55642): remove when BatchOperation detail page is migrated
-		'src/operate/shared/PaginatedSortableTable/**',
+		// TODO(#63423, #63424): remove when InstancesByProcess/IncidentsByError consume ExpandableListRow
+		'src/operate/pages/Dashboard/shadcn.components/ExpandableList.tsx',
+		// TODO(#64456): remove when InstancesList/ProcessInstanceHeader/DecisionInstance
+		// consumers migrate to the shadcn Frame/InstanceHeader siblings
+		'src/operate/shared/Frame/shadcn.components/Frame.tsx',
+		'src/operate/shared/InstanceHeader/shadcn.components/InstanceHeader.tsx',
 	],
 	ignoreDependencies: ['@vitest/browser'],
 	typescript: {

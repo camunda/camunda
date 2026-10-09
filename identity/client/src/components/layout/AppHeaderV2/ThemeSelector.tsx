@@ -14,10 +14,18 @@ import {
   Text,
 } from "@camunda/design-system";
 
-import { isThemeOption, themeStore } from "src/common/theme/theme";
+import {
+  isThemeOption,
+  themeStore,
+  type ThemeOption,
+} from "src/common/theme/theme";
 import useTranslate from "src/utility/localization";
 
-export const ThemeSelector = observer(() => {
+type Props = {
+  onThemeChange?: (theme: ThemeOption) => void;
+};
+
+export const ThemeSelector = observer(({ onThemeChange }: Props) => {
   const { t } = useTranslate("navigation");
   const themeOptions = [
     { value: "light", label: t("themeLight") },
@@ -40,6 +48,7 @@ export const ThemeSelector = observer(() => {
         onValueChange={(value) => {
           if (isThemeOption(value)) {
             themeStore.changeTheme(value);
+            onThemeChange?.(value);
           }
         }}
         className="mt-2 gap-2"

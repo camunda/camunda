@@ -65,11 +65,11 @@ const FormField: FC<FormFieldProps> = ({
       })}
       {error || showHelperText ? (
         <Text
-          as="p"
+          as="span"
           variant="helper"
           id={error ? errorId : helperId}
           role={error ? "alert" : undefined}
-          className={error ? "text-danger-action-default" : undefined}
+          className={error ? "text-danger-foreground-subtle" : undefined}
         >
           {error || helperText}
         </Text>

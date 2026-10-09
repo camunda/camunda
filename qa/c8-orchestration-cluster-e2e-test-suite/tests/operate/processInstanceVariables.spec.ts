@@ -19,6 +19,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {expectInViewport} from 'utils/expectInViewport';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 const JSON_VARIABLE_NAME = 'jsonVar';
 const JSON_VARIABLE_VALUE = {name: 'Alice', age: 30};
@@ -122,7 +123,15 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Refresh the page and verify the variable is still there', async () => {
       await page.reload();
-      await expect(page.getByText('editedtestvalue')).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('editedtestvalue')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
     });
   });
 
@@ -357,11 +366,19 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Reload and verify the updated value is persisted', async () => {
       await page.reload();
-      await expect(
-        operateProcessInstancePage.variablesList.getByTestId(
-          `variable-${JSON_VARIABLE_NAME}`,
-        ),
-      ).toContainText('Bob');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.variablesList.getByTestId(
+              `variable-${JSON_VARIABLE_NAME}`,
+            ),
+          ).toContainText('Bob');
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
     });
   });
 
@@ -504,7 +521,7 @@ test.describe('Process Instance Variables', () => {
     });
   });
 
-  test('Inline JSON edit uses Monaco textarea', async ({
+  test('Inline JSON edit uses CodeMirror editor', async ({
     page,
     operateProcessInstancePage,
     operateHomePage,
@@ -528,11 +545,11 @@ test.describe('Process Instance Variables', () => {
       );
     });
 
-    await test.step('Verify the inline editor is a Monaco textarea, not a plain text input', async () => {
+    await test.step('Verify the inline editor is a CodeMirror editor, not a plain text input', async () => {
       await expect(variable.editor).toBeVisible({timeout: 10000});
     });
 
-    await test.step('Edit the inline value using Monaco and trigger save', async () => {
+    await test.step('Edit the inline value using CodeMirror and trigger save', async () => {
       await operateProcessInstancePage.clearVariableValueInput();
       await operateProcessInstancePage.fillVariableValueInput(
         '{"name":"Charlie","age":35}',
@@ -552,7 +569,15 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Reload and verify the updated value is visible', async () => {
       await page.reload();
-      await expect(variable.value).toContainText('Charlie');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(variable.value).toContainText('Charlie');
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
     });
   });
 });

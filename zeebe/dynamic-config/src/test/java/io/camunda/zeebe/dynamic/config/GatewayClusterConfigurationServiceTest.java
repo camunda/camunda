@@ -28,8 +28,6 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -81,12 +79,11 @@ final class GatewayClusterConfigurationServiceTest {
   }
 
   @Test
-  void shouldReceiveNewModelConfigurationWhenUseNewConfigIsEnabled() {
-    // given — a broker gossiping the new-model configuration, and a gateway wired for the new
-    // model
-    broker1 = new TestBroker(createClusterNode(clusterNodes.get(0), clusterNodes), true);
+  void shouldReceiveNewModelConfiguration() {
+    // given — a broker gossiping the configuration
+    broker1 = new TestBroker(createClusterNode(clusterNodes.get(0), clusterNodes));
     broker1.start();
-    startGateway(clusterNodes.get(1), true);
+    startGateway(clusterNodes.get(1));
 
     final var brokerConfiguration =
         CurrentClusterConfiguration.fromLegacy(
@@ -98,15 +95,6 @@ final class GatewayClusterConfigurationServiceTest {
         new ClusterConfigurationUpdateListener() {
           @Override
           public void onClusterConfigurationUpdated(
-              final ClusterConfiguration clusterConfiguration) {
-            // should not be reached: the new-model handler is wired, so field 2 is always
-            // preferred
-            throw new IllegalStateException(
-                "Legacy listener should not be called when new-model field is populated");
-          }
-
-          @Override
-          public void onClusterConfigurationUpdated(
               final CurrentClusterConfiguration clusterConfiguration) {
             received.set(clusterConfiguration);
           }
@@ -115,21 +103,20 @@ final class GatewayClusterConfigurationServiceTest {
     // when
     broker1.setCurrentClusterConfiguration(brokerConfiguration);
 
-    // then — the gateway receives and merges the full new-model configuration, not a legacy
-    // single-group projection
-    Awaitility.await("The gateway has received the new-model configuration via gossip")
+    // then — the gateway receives and merges the full configuration
+    Awaitility.await("The gateway has received the configuration via gossip")
         .untilAsserted(() -> assertThat(received.get()).isEqualTo(brokerConfiguration));
   }
 
   @Test
   void shouldRelayNewModelConfigurationToOtherBrokers() {
-    // given — a broker gossips a new-model configuration with a non-default physical tenant
-    // group; the gateway is wired for the new model and sits between the two brokers
-    broker1 = new TestBroker(createClusterNode(clusterNodes.get(0), clusterNodes), true);
-    broker3 = new TestBroker(createClusterNode(clusterNodes.get(2), clusterNodes), true);
+    // given — a broker gossips a configuration with a non-default physical tenant
+    // group; the gateway sits between the two brokers
+    broker1 = new TestBroker(createClusterNode(clusterNodes.get(0), clusterNodes));
+    broker3 = new TestBroker(createClusterNode(clusterNodes.get(2), clusterNodes));
     broker1.start();
     broker3.start();
-    startGateway(clusterNodes.get(1), true);
+    startGateway(clusterNodes.get(1));
 
     final var tenantGroup =
         new PartitionGroupConfiguration(
@@ -158,72 +145,7 @@ final class GatewayClusterConfigurationServiceTest {
     assertThat(broker3.currentClusterConfiguration.hasPartitionGroup("tenanta")).isTrue();
   }
 
-  @Test
-  void shouldRelayLegacyOnlyBrokerConfigurationWithoutCorruptingConvergence() {
-    // given — broker1 is not yet upgraded (legacy handler only, e.g. mid rolling-upgrade); the
-    // gateway and broker3 are both wired for the new model
-    broker1 = new TestBroker(createClusterNode(clusterNodes.get(0), clusterNodes), false);
-    broker3 = new TestBroker(createClusterNode(clusterNodes.get(2), clusterNodes), true);
-    broker1.start();
-    broker3.start();
-    startGateway(clusterNodes.get(1), true);
-
-    final var brokerTopology =
-        ClusterConfiguration.init()
-            .addMember(broker1.id(), MemberState.initializeAsActive(Map.of()));
-    final var reconstructed = CurrentClusterConfiguration.fromLegacy(brokerTopology);
-
-    // when — the not-yet-upgraded broker gossips only the legacy field; the gateway falls back to
-    // fromLegacy (same as any new-model peer would) and relays the result onward
-    broker1.setTopology(brokerTopology);
-
-    // then — broker3 converges on the reconstructed configuration via the gateway, with no merge
-    // exception and no runaway version growth from repeated re-derivation (the gateway now
-    // dual-writes and only re-gossips when the merged value actually changes, same as a real
-    // broker; see ClusterConfigurationGossiper#updateCurrentClusterConfiguration)
-    Awaitility.await("Broker 3 has received the reconstructed configuration via the gateway")
-        .untilAsserted(
-            () -> assertThat(broker3.currentClusterConfiguration).isEqualTo(reconstructed));
-
-    // and — the reconstruction is stable: waiting longer doesn't change the converged value (no
-    // endless re-derivation loop through the gateway)
-    Awaitility.await()
-        .during(Duration.ofSeconds(1))
-        .untilAsserted(
-            () -> assertThat(broker3.currentClusterConfiguration).isEqualTo(reconstructed));
-  }
-
-  @Test
-  void shouldStillReceiveLegacyConfigurationWhenUseNewConfigIsDisabled() {
-    // given — a broker gossiping only the legacy configuration, and a gateway wired for the
-    // legacy model only (useNewConfig=false), matching pre-fix behavior
-    broker1 = new TestBroker(createClusterNode(clusterNodes.get(0), clusterNodes), false);
-    broker1.start();
-    startGateway(clusterNodes.get(1), false);
-
-    final var brokerTopology =
-        ClusterConfiguration.init()
-            .addMember(broker1.id(), MemberState.initializeAsActive(Map.of()));
-
-    final var received = new AtomicReference<ClusterConfiguration>();
-    gateway.addUpdateListener(
-        new ClusterConfigurationUpdateListener() {
-          @Override
-          public void onClusterConfigurationUpdated(
-              final ClusterConfiguration clusterConfiguration) {
-            received.set(clusterConfiguration);
-          }
-        });
-
-    // when
-    broker1.setTopology(brokerTopology);
-
-    // then
-    Awaitility.await("The gateway has received the legacy configuration via gossip")
-        .untilAsserted(() -> assertThat(received.get()).isEqualTo(brokerTopology));
-  }
-
-  private void startGateway(final Node node, final boolean useNewConfig) {
+  private void startGateway(final Node node) {
     gatewayCluster = createClusterNode(node, clusterNodes);
     gatewayCluster.start().join();
     gateway =
@@ -231,8 +153,7 @@ final class GatewayClusterConfigurationServiceTest {
             gatewayCluster.getCommunicationService(),
             gatewayCluster.getMembershipService(),
             config,
-            meterRegistry,
-            useNewConfig);
+            meterRegistry);
     gateway.start(actorScheduler).join();
   }
 
@@ -253,10 +174,9 @@ final class GatewayClusterConfigurationServiceTest {
   private final class TestBroker extends Actor {
     private final ClusterConfigurationGossiper gossiper;
     private final AtomixCluster atomixCluster;
-    private ClusterConfiguration clusterConfiguration;
     private CurrentClusterConfiguration currentClusterConfiguration;
 
-    private TestBroker(final AtomixCluster atomixCluster, final boolean useNewModelHandler) {
+    private TestBroker(final AtomixCluster atomixCluster) {
       super("Node-" + atomixCluster.getMembershipService().getLocalMember().id());
       gossiper =
           new ClusterConfigurationGossiper(
@@ -265,8 +185,7 @@ final class GatewayClusterConfigurationServiceTest {
               atomixCluster.getMembershipService(),
               new ProtoBufSerializer(),
               config,
-              useNewModelHandler ? null : this::mergeTopology,
-              useNewModelHandler ? this::mergeCurrentClusterConfiguration : null,
+              this::mergeCurrentClusterConfiguration,
               new TopologyMetrics(meterRegistry));
       this.atomixCluster = atomixCluster;
     }
@@ -280,16 +199,6 @@ final class GatewayClusterConfigurationServiceTest {
       atomixCluster.start().join();
       actorScheduler.submitActor(this).join();
       gossiper.start();
-    }
-
-    void setTopology(final ClusterConfiguration clusterConfiguration) {
-      this.clusterConfiguration = clusterConfiguration;
-      gossiper.updateClusterConfiguration(clusterConfiguration);
-    }
-
-    private ActorFuture<ClusterConfiguration> mergeTopology(final ClusterConfiguration t) {
-      clusterConfiguration = clusterConfiguration == null ? t : t.merge(clusterConfiguration);
-      return TestActorFuture.completedFuture(clusterConfiguration);
     }
 
     void setCurrentClusterConfiguration(

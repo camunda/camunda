@@ -7,20 +7,16 @@
  */
 
 import {
-  C3LicenseTag,
-  preview_C3ToolsArea as C3ToolsArea,
-  preview_useCamundaTools as useCamundaTools,
-  type UseCamundaToolsOptions,
-} from "@camunda/camunda-composite-components";
-import {
   AppHeader,
   AppSidebar,
   CamundaLogo,
   Text,
+  useIsMobile,
   type GlobalActionButton,
   type UserMenuItem,
 } from "@camunda/design-system";
-import type { License as LicenseDto } from "@camunda/camunda-api-zod-schemas/8.10";
+import { SaasNotifications } from "@camunda/oc-saas-notifications";
+import { useC3Profile } from "@camunda/camunda-composite-components";
 import { useCallback, useMemo, type MouseEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -34,6 +30,7 @@ import { authenticationQueries } from "src/utility/api/authentication/queries.ts
 
 import { ForwardRefLink } from "./ForwardRefLink";
 import { InfoMenu } from "./InfoMenu";
+import { LicenseBadges } from "./LicenseBadges";
 import { LogoutAwareUserMenu } from "./LogoutAwareUserMenu";
 import { ThemeSelector } from "./ThemeSelector";
 import { useBreadcrumbs } from "./useBreadcrumbs";
@@ -79,13 +76,20 @@ const VersionFooter = () => {
   );
 };
 
+const SaasThemeSelector = () => {
+  const { onThemeChange } = useC3Profile();
+
+  return <ThemeSelector onThemeChange={onThemeChange} />;
+};
+
 const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
   const { data: license } = useQuery(licenseQueries.current());
   const { data: camundaUser } = useQuery(authenticationQueries.me());
   const { enqueueNotification } = useNotifications();
   const { t } = useTranslate("authentication");
-  const { t: tNav } = useTranslate("navigation");
+  const { t: tNav, i18n } = useTranslate("navigation");
   const { pathname, search } = useLocation();
+  const isMobile = useIsMobile();
 
   const logoutWithNotification = useCallback(() => {
     enqueueNotification({
@@ -119,45 +123,34 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
     [],
   );
 
-  const toolsOptions = useMemo<UseCamundaToolsOptions>(
-    () => ({
-      notifications: isSaaS
-        ? {
-            title: tNav("notifications"),
-            ariaLabel: tNav("notifications"),
-            labels: {
-              dismissAll: tNav("notificationsDismissAll"),
-              emptyTitle: tNav("notificationsEmptyTitle"),
-              emptyDescription: tNav("notificationsEmptyDescription"),
-            },
-          }
-        : undefined,
-    }),
-    [tNav],
-  );
-  const { tools, ToolsProvider } = useCamundaTools(toolsOptions);
   const globalActions = useMemo<GlobalActionButton[]>(() => {
-    return isSaaS
-      ? [
+    let actions = !isSaaS
+      ? []
+      : [
           {
             key: "notifications",
             label: tNav("notifications"),
-            element: <C3ToolsArea tools={tools} />,
-          },
-          {
-            key: "info",
-            label: tNav("info"),
-            element: <InfoMenu />,
-          },
-        ]
-      : [
-          {
-            key: "info",
-            label: tNav("info"),
-            element: <InfoMenu />,
+            element: (
+              <SaasNotifications
+                locale={i18n.resolvedLanguage}
+                labels={{
+                  title: tNav("notifications"),
+                  empty: tNav("notificationsEmpty"),
+                  loading: tNav("notificationsLoading"),
+                }}
+              />
+            ),
           },
         ];
-  }, [tNav, tools]);
+
+    actions.push({
+      key: "info",
+      label: tNav("info"),
+      element: <InfoMenu />,
+    });
+
+    return actions;
+  }, [tNav, i18n.resolvedLanguage]);
 
   const breadcrumb = useBreadcrumbs();
   const sidebarChildren = useSidebarChildren(hideNavLinks);
@@ -172,10 +165,8 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
     [tNav],
   );
 
-  const licenseTag = getLicenseTag(license);
-
   return (
-    <ToolsProvider>
+    <>
       <AppHeader
         onClick={handleSkipToContentClick}
         skipToContentTargetId={SKIP_TO_CONTENT_TARGET_ID}
@@ -190,17 +181,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
           </ForwardRefLink>
         }
         breadcrumb={breadcrumb}
-        trailing={
-          licenseTag.show ? (
-            <div className="flex items-center">
-              <C3LicenseTag
-                isProductionLicense={licenseTag.isProductionLicense}
-                isCommercial={licenseTag.isCommercial}
-                expiresAt={licenseTag.expiresAt}
-              />
-            </div>
-          ) : undefined
-        }
+        trailing={isMobile ? undefined : <LicenseBadges license={license} />}
         globalActions={globalActions}
         actions={
           camundaUser === undefined ? undefined : (
@@ -212,7 +193,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
               items={userMenuItems}
               customSection={
                 <>
-                  <ThemeSelector />
+                  {isSaaS ? <SaasThemeSelector /> : <ThemeSelector />}
                   <VersionFooter />
                 </>
               }
@@ -228,26 +209,8 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
           linkComponent={ForwardRefLink}
         />
       )}
-    </ToolsProvider>
+    </>
   );
 };
-
-function getLicenseTag(license: LicenseDto | null | undefined) {
-  if (license === undefined || license === null) {
-    return {
-      show: true,
-      isProductionLicense: false,
-      isCommercial: false,
-      expiresAt: undefined,
-    };
-  }
-
-  return {
-    show: license.licenseType === undefined || license.licenseType != "saas",
-    isProductionLicense: license.validLicense,
-    isCommercial: license.isCommercial,
-    expiresAt: license.expiresAt ?? undefined,
-  };
-}
 
 export default AppHeaderV2;

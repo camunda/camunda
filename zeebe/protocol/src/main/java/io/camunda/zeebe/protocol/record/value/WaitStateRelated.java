@@ -16,7 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 /** Marks a record value that carries the identifying fields of a waiting-state element. */
-public interface WaitStateRelated extends StorageOrdinalKeyRelated {
+public interface WaitStateRelated extends StorageOrdinalRelated {
 
   /**
    * @return the key of the root process instance, or {@code -1L} if not set.

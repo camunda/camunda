@@ -8,13 +8,20 @@
 
 import {describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessDefinitionStatisticsEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
+	mockQueryProcessInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {createProcessDefinition} from '#/shared-test-modules/api-mocks/process-definitions';
+import {
+	createProcessDefinition,
+	createQueryProcessDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/process-definitions';
+import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {
 	createProcessDefinitionStatistic,
 	createGetProcessDefinitionStatisticsResponse,
@@ -63,6 +70,10 @@ const BPMN_XML_WITH_SUBPROCESS = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>`;
 
 const DEFINITION = createProcessDefinition({processDefinitionKey: '2251799813685279'});
+const PROCESS_OPERATIONS_HANDLERS = [
+	mockQueryProcessDefinitionsEndpoint({successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse())}),
+	mockQueryProcessInstancesEndpoint({successResponse: HttpResponse.json(createQueryProcessInstancesResponse())}),
+];
 
 describe('<DiagramPanel />', () => {
 	it('shows an empty message when no process is selected', async () => {
@@ -73,6 +84,7 @@ describe('<DiagramPanel />', () => {
 			incidents: true,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 
 		await expect.element(screen.getByText('There is no Process selected')).toBeVisible();
@@ -89,6 +101,7 @@ describe('<DiagramPanel />', () => {
 			incidents: true,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 
 		await expect
@@ -96,8 +109,26 @@ describe('<DiagramPanel />', () => {
 			.toBeVisible();
 	});
 
+	it('should not show a diagram when multiple tenants share the selected definition', async () => {
+		const screen = await renderDiagramPanel({
+			processDefinitionSelection: {
+				kind: 'multiple-tenants',
+				definition: {name: 'Order Process', processDefinitionId: 'order-process'},
+			},
+			onElementSelection: vi.fn(),
+			active: true,
+			incidents: true,
+			completed: false,
+			canceled: false,
+			suspended: false,
+		});
+
+		await expect.element(screen.getByText('Process "Order Process" exists in more than one Tenant')).toBeVisible();
+	});
+
 	it('renders the diagram and a statistics overlay for a single selected version', async ({worker}) => {
 		worker.use(
+			...PROCESS_OPERATIONS_HANDLERS,
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
 			mockGetProcessDefinitionStatisticsEndpoint({
 				successResponse: HttpResponse.json(
@@ -115,13 +146,82 @@ describe('<DiagramPanel />', () => {
 			incidents: true,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 
 		await expect.element(screen.getByTestId('state-overlay-startEvent_1-active')).toHaveTextContent('3');
 	});
 
+	it('should count the instances the list filters select, including variables and business ID', async ({worker}) => {
+		worker.use(
+			...PROCESS_OPERATIONS_HANDLERS,
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				schema: z.object({
+					filter: z
+						.object({
+							$or: z.tuple([
+								z.object({state: z.object({$eq: z.literal('ACTIVE')}), hasIncident: z.literal(false)}).strict(),
+								z.object({hasIncident: z.literal(true)}).strict(),
+							]),
+							tenantId: z.object({$eq: z.literal('tenant-A')}).strict(),
+							businessId: z.object({$eq: z.literal('order-1')}).strict(),
+							startDate: z.object({$gt: z.literal('2021-02-21T20:00:00.000Z')}).strict(),
+							variables: z.tuple([
+								z.object({name: z.literal('status'), value: z.object({$eq: z.literal('"open"')}).strict()}).strict(),
+							]),
+						})
+						.strict(),
+				}),
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionStatisticsResponse([
+						createProcessDefinitionStatistic({elementId: 'startEvent_1', active: 3}),
+					]),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+		const screen = await renderDiagramPanel({
+			processDefinitionSelection: {kind: 'single-version', definition: DEFINITION},
+			onElementSelection: vi.fn(),
+			active: true,
+			incidents: true,
+			completed: false,
+			canceled: false,
+			suspended: false,
+			variable: [{name: 'status', operator: 'equals', value: '"open"'}],
+			otherFilters: {tenantId: 'tenant-A', businessId: 'eq_order-1', startDateFrom: '2021-02-21T20:00:00Z'},
+		});
+
+		await expect.element(screen.getByTestId('state-overlay-startEvent_1-active')).toHaveTextContent('3');
+	});
+
+	it('should show an empty state when the selected definition has no XML', async ({worker}) => {
+		worker.use(
+			...PROCESS_OPERATIONS_HANDLERS,
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		const screen = await renderDiagramPanel({
+			processDefinitionSelection: {kind: 'single-version', definition: DEFINITION},
+			onElementSelection: vi.fn(),
+			active: true,
+			incidents: true,
+			completed: false,
+			canceled: false,
+			suspended: false,
+		});
+
+		await expect.element(screen.getByText('No diagram available for this process')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
+	});
+
 	it('shows an incidents badge on a subprocess containing an element with an incident', async ({worker}) => {
 		worker.use(
+			...PROCESS_OPERATIONS_HANDLERS,
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML_WITH_SUBPROCESS)}),
 			mockGetProcessDefinitionStatisticsEndpoint({
 				successResponse: HttpResponse.json(
@@ -139,6 +239,7 @@ describe('<DiagramPanel />', () => {
 			incidents: true,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 
 		// bpmn-js positions overlays via zero-size anchor divs in this test environment, so the

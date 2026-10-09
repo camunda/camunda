@@ -21,9 +21,11 @@ import {
 } from './common';
 import {
 	processDefinitionSchema,
+	processDefinitionStateSchema,
 	processDefinitionStatisticSchema,
 	processInstanceStateSchema,
 	type ProcessDefinition,
+	type ProcessDefinitionState,
 	type StatisticName,
 	type ProcessDefinitionStatistic,
 } from './processes';
@@ -104,6 +106,7 @@ const processDefinitionStatisticsFilterFieldsSchema = z.object({
 	elementId: advancedStringFilterSchema,
 	hasElementInstanceIncident: z.boolean(),
 	incidentErrorHashCode: advancedIntegerFilterSchema,
+	businessId: advancedStringFilterSchema,
 });
 
 const getProcessDefinitionStatisticsRequestBodySchema = z
@@ -243,6 +246,7 @@ export {
 	getProcessDefinitionStatistics,
 	queryProcessDefinitions,
 	processDefinitionSchema,
+	processDefinitionStateSchema,
 	processDefinitionResponseSchema,
 	processDefinitionStatisticSchema,
 	getProcessDefinitionStatisticsRequestBodySchema,
@@ -260,6 +264,7 @@ export {
 };
 export type {
 	ProcessDefinition,
+	ProcessDefinitionState,
 	GetProcessDefinitionResponseBody,
 	GetProcessDefinitionXmlResponseBody,
 	GetProcessStartFormResponseBody,

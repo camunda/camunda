@@ -18,6 +18,7 @@ import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,6 +48,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
+import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -198,6 +200,28 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
+  void shouldReadShardCountsOfExistingIndicesOnly(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    config.index().setShardsByIndexName(Map.of(index.getIndexName(), 3));
+    final var searchEngineClient = searchEngineClientFromConfig(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(index, metadataIndex), Set.of(), config, objectMapper);
+    initialiseResources(schemaManager);
+
+    // when
+    final var shardCounts =
+        searchEngineClient.getNumberOfShards(
+            Set.of(index.getFullQualifiedName(), CUSTOM_PREFIX + "-absent-index"));
+
+    // then — an index that does not exist is absent from the result rather than an error, which is
+    // what lets the startup check run before every index has necessarily been created
+    assertThat(shardCounts).containsExactly(entry(index.getFullQualifiedName(), 3));
+  }
+
+  @TestTemplate
   void shouldOverwriteIndexTemplateIfMappingsFileChanged(
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws Exception {
@@ -286,6 +310,43 @@ public class SchemaManagerIT {
 
     assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
         .isTrue();
+    assertThat(
+            mappingsMatch(
+                retrievedIndexTemplate.at("/index_template/template/mappings"),
+                "/mappings-added-property.json"))
+        .isTrue();
+  }
+
+  @RegressionTestTemplate("https://github.com/camunda/camunda/issues/57256")
+  void shouldUpdateTemplateMappingsWhenNoBackingIndexExists(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    config.schemaManager().setCreateSchema(true);
+    final var searchEngineClient = getSearchEngineClient(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            Set.of(index, metadataIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    startupWithRetry(schemaManager, config);
+
+    // when - the runtime index backing the template is dropped, e.g. by an operator, leaving only
+    // the template behind, and the descriptor's mapping is then upgraded
+    searchEngineClient.deleteIndex(indexTemplate.getFullQualifiedName());
+    searchClientAdapter.refresh();
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+
+    startupWithRetry(schemaManager, config);
+
+    // then - the template itself must reflect the new mapping, otherwise future indices created
+    // off it (e.g. after a rollover) would mismatch the freshly re-created runtime index
+    final var retrievedIndexTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
     assertThat(
             mappingsMatch(
                 retrievedIndexTemplate.at("/index_template/template/mappings"),
@@ -597,6 +658,61 @@ public class SchemaManagerIT {
 
     assertThat(updatedIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
     assertThat(updatedIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+  }
+
+  /**
+   * Regression test for #63543/#63672: schema-init runs on every broker/webapp restart, so a
+   * fleet-wide rollout re-runs it once per physical tenant even when nothing has changed. This
+   * asserts that end-to-end path — driven through the real {@code startupOnce()} entry point
+   * against a real search engine, not a mocked unit test — issues no redundant {@code putSettings}
+   * call on a second, unchanged run following one that actually wrote a change.
+   */
+  @TestTemplate
+  void shouldNotReissuePutSettingsWhenNothingChangedAcrossTwoRuns(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given - the index is created with the descriptor's default replica count
+    final SearchEngineClient searchEngineClient = spy(getSearchEngineClient(config));
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(index, metadataIndex), Set.of(), config, objectMapper);
+
+    startupWithRetry(schemaManager, config);
+
+    final var replicaSettingPath = "/settings/index/number_of_replicas";
+    assertThat(
+            searchClientAdapter
+                .getIndexAsNode(index.getFullQualifiedName())
+                .at(replicaSettingPath)
+                .asInt())
+        .isEqualTo(1);
+
+    // when - the configured replica count changes, so this run must write it
+    reset(searchEngineClient);
+    config.index().setNumberOfReplicas(3);
+    startupWithRetry(schemaManager, config);
+
+    // then - the write actually happened
+    assertThat(
+            searchClientAdapter
+                .getIndexAsNode(index.getFullQualifiedName())
+                .at(replicaSettingPath)
+                .asInt())
+        .isEqualTo(3);
+    verify(searchEngineClient, times(1)).putSettings(eq(index), any());
+
+    // when - schema-init runs again with nothing changed, the way it would on every restart
+    reset(searchEngineClient);
+    startupWithRetry(schemaManager, config);
+
+    // then - the setting is still correct, but no write was issued to reach it this time
+    assertThat(
+            searchClientAdapter
+                .getIndexAsNode(index.getFullQualifiedName())
+                .at(replicaSettingPath)
+                .asInt())
+        .isEqualTo(3);
+    verify(searchEngineClient, never()).putSettings(any(), any());
   }
 
   @TestTemplate
@@ -1499,6 +1615,53 @@ public class SchemaManagerIT {
         .isThrownBy(
             () ->
                 searchClientAdapter.getIndexTemplateAsNode(secondIndexTemplate.getTemplateName()));
+  }
+
+  @TestTemplate
+  void shouldNotFailStartupWhenOptionalTemplateIndexIsMissing(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    final var webSessionTemplate =
+        new PersistentWebSessionTemplate(
+            config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
+    final var searchEngineClient = getSearchEngineClient(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            Set.of(metadataIndex),
+            Set.of(webSessionTemplate),
+            config,
+            objectMapper);
+    startupWithRetry(schemaManager, config);
+    searchEngineClient.deleteIndex(webSessionTemplate.getFullQualifiedName());
+    searchClientAdapter.refresh();
+
+    // when
+    final var restartedSchemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            Set.of(metadataIndex),
+            Set.of(webSessionTemplate),
+            config,
+            objectMapper);
+
+    // then
+    assertThatNoException().isThrownBy(() -> startupWithRetry(restartedSchemaManager, config));
+    searchEngineClient.deleteIndex(webSessionTemplate.getFullQualifiedName());
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              assertThat(searchEngineClient.indexExists(webSessionTemplate.getFullQualifiedName()))
+                  .isFalse();
+              assertThat(restartedSchemaManager.isSchemaReadyForUse()).isTrue();
+            });
+
+    searchClientAdapter.deleteIndexTemplate(webSessionTemplate.getTemplateName());
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(() -> assertThat(restartedSchemaManager.isSchemaReadyForUse()).isFalse());
   }
 
   @TestTemplate

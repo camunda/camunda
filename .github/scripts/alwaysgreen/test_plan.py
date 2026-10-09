@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pathlib
+import re
 from datetime import datetime, timedelta, timezone
 
 import classify
@@ -197,10 +199,50 @@ def test_unsupported_base_ref_is_not_dispatched():
     assert result.suppressed[0].detail == "ci/alwaysgreen-helm-live-check"
 
 
+def test_preview_env_8_11_leg_does_not_collide_with_the_real_main_candidate():
+    # The 8.11 preview-env leg maps to classify.PREVIEW_ENV_MAIN_REF, not to plain
+    # "main". If it aliased to "main" it would share dispatch_key("main",
+    # sm-smoke-e2e) with a real main-branch sm-smoke-e2e candidate, and
+    # merge_by_key would fold the two into one, dropping whichever leg lost the
+    # merge.
+    main_leg = _cand(base_ref="main", specs=[_spec("main broke")])
+    preview_8_11_leg = _cand(
+        base_ref=classify.PREVIEW_ENV_MAIN_REF, specs=[_spec("8.11 broke")]
+    )
+
+    result = _plan([main_leg, preview_8_11_leg])
+
+    assert len(result.dispatches) == 1
+    assert result.dispatches[0].base_ref == "main"
+    assert [s.test_name for s in result.dispatches[0].specs] == ["main broke"]
+    assert len(result.suppressed) == 1
+    assert result.suppressed[0].reason == plan.SUPPRESSED_UNSUPPORTED_REF
+    assert result.suppressed[0].candidate.base_ref == classify.PREVIEW_ENV_MAIN_REF
+
+
 def test_every_supported_base_ref_is_dispatchable():
     for ref in plan.SUPPORTED_BASE_REFS:
         result = _plan([_cand(base_ref=ref)])
         assert len(result.dispatches) == 1, ref
+
+
+def test_supported_base_refs_match_the_fix_workflow_whitelist():
+    # These two lists drifted the moment stable/8.10 was cut: the branch got the whole
+    # pipeline and started running AlwaysGreen, while both whitelists still ended at
+    # stable/8.9, so every 8.10 failure was withheld. Assert them equal rather than
+    # trusting a comment to keep them in step.
+    workflow = (
+        pathlib.Path(__file__).resolve().parents[2]
+        / "workflows"
+        / "alwaysgreen-fix.yml"
+    ).read_text()
+    # Tolerant of formatting so this fails on drift and not on a reflow: `[^)]` spans
+    # newlines for a wrapped list, whitespace is allowed around each `|`, and every
+    # token is stripped before comparing.
+    match = re.search(r"^\s*(main\s*\|[^)]*)\)\s*;;", workflow, re.M)
+    assert match, "no base_ref case statement found in alwaysgreen-fix.yml"
+    refs = {token.strip() for token in match.group(1).split("|")} - {""}
+    assert refs == set(plan.SUPPORTED_BASE_REFS)
 
 
 def test_unsupported_ref_is_reported_before_any_other_reason():
@@ -425,6 +467,13 @@ def test_parse_returns_empty_when_absent():
     assert plan.parse_coverage_block(None) == set()
 
 
+def test_parse_returns_empty_for_a_block_that_claims_nothing():
+    # The marker alone is not a statement of remit: discover reads an empty result as
+    # "claims no specs" and keeps the coarse surface lock, same as a missing block.
+    assert plan.parse_coverage_block("Body\n\n<!-- alwaysgreen-fixed\n-->\n") == set()
+    assert plan.parse_coverage_block("Body\n\n<!-- alwaysgreen-fixed\nfp=\n-->\n") == set()
+
+
 def test_merge_appends_block_when_missing():
     merged = plan.merge_coverage_block("Body text", {"aaaaaaaa"})
     assert "fp=aaaaaaaa" in merged
@@ -477,6 +526,68 @@ def test_open_fix_pr_blocks_even_when_the_body_claims_nothing():
     assert result.dispatches == []
 
 
+def test_open_fix_pr_with_a_coverage_block_does_not_block_an_unclaimed_spec():
+    # Run 33605992250: c8-cross-component-e2e-tests#3267 claimed the cluster-creation
+    # setup specs on `main:saas-smoke-e2e`, and an unrelated smoke-test failure on the
+    # same surface was suppressed instead of dispatched.
+    claimed = _spec(name="Create AWS Cluster", file="tests/8.10/test-setup.spec.ts")
+    fresh = _spec(
+        name="Most Common Flow User Flow With All Apps",
+        file="tests/8.10/smoke-tests.spec.ts",
+    )
+    cand = _cand(surface=classify.SURFACE_SAAS_E2E, specs=[claimed, fresh])
+    claimed_fp = classify.spec_fingerprint(
+        "main", classify.SURFACE_SAAS_E2E, claimed.file, claimed.test_name
+    )
+
+    result = _plan(
+        [cand],
+        covered_fingerprints={claimed_fp},
+        open_pr_keys={"main:saas-smoke-e2e"},
+        open_pr_keys_with_coverage={"main:saas-smoke-e2e"},
+    )
+    assert len(result.dispatches) == 1
+    assert [s.test_name for s in result.dispatches[0].specs] == [fresh.test_name]
+
+
+def test_open_fix_pr_with_a_coverage_block_still_suppresses_the_specs_it_claims():
+    cand = _cand(surface=classify.SURFACE_SAAS_E2E)
+    result = _plan(
+        [cand],
+        covered_fingerprints=set(cand.spec_fingerprints),
+        open_pr_keys={"main:saas-smoke-e2e"},
+        open_pr_keys_with_coverage={"main:saas-smoke-e2e"},
+    )
+    assert result.dispatches == []
+    assert [s.reason for s in result.suppressed] == [plan.SUPPRESSED_PR_COVERED]
+
+
+def test_a_second_holder_without_a_coverage_block_keeps_the_surface_locked():
+    # `keys_with_coverage` is the intersection over holders, so one PR that published
+    # nothing still locks the surface even beside one that published a block.
+    cand = _cand(surface=classify.SURFACE_SM_E2E)
+    result = _plan(
+        [cand],
+        open_pr_keys={"main:sm-smoke-e2e"},
+        open_pr_keys_with_coverage=set(),
+    )
+    assert result.dispatches == []
+    assert [s.reason for s in result.suppressed] == [plan.SUPPRESSED_PR_OPEN]
+
+
+def test_in_flight_agent_still_blocks_a_coverage_declaring_surface():
+    # Narrowing the PR lock must not touch the concurrency rule: one agent per key.
+    cand = _cand(surface=classify.SURFACE_SM_E2E)
+    result = _plan(
+        [cand],
+        inflight_keys={"main:sm-smoke-e2e"},
+        open_pr_keys={"main:sm-smoke-e2e"},
+        open_pr_keys_with_coverage={"main:sm-smoke-e2e"},
+    )
+    assert result.dispatches == []
+    assert [s.reason for s in result.suppressed] == [plan.SUPPRESSED_IN_FLIGHT]
+
+
 # ---------------------------------------------------------------------------
 # PR lock expiry
 # ---------------------------------------------------------------------------
@@ -489,7 +600,7 @@ def _ago(**kw):
 
 
 def test_fresh_fix_pr_keeps_holding_its_key():
-    assert plan.pr_lock_expired(_ago(hours=6), NOW, 2) is False
+    assert plan.pr_lock_expired(_ago(minutes=30), NOW, 2) is False
 
 
 def test_fix_pr_past_the_ttl_releases_its_key():
@@ -498,9 +609,15 @@ def test_fix_pr_past_the_ttl_releases_its_key():
     assert plan.pr_lock_expired("2026-08-20T14:56:44Z", NOW, 2) is True
 
 
+def test_ttl_is_read_in_hours_not_days():
+    # The knob changed unit; a PR from this morning must not still hold its key.
+    assert plan.pr_lock_expired(_ago(hours=6), NOW, 2) is True
+    assert plan.pr_lock_expired(_ago(hours=6), NOW, plan.PR_LOCK_TTL_HOURS) is True
+
+
 def test_ttl_boundary_is_inclusive_of_the_lock():
-    assert plan.pr_lock_expired(_ago(days=2), NOW, 2) is False
-    assert plan.pr_lock_expired(_ago(days=2, minutes=1), NOW, 2) is True
+    assert plan.pr_lock_expired(_ago(hours=2), NOW, 2) is False
+    assert plan.pr_lock_expired(_ago(hours=2, minutes=1), NOW, 2) is True
 
 
 def test_unreadable_timestamp_keeps_the_lock():
@@ -515,7 +632,34 @@ def test_naive_created_at_is_read_as_utc():
 def test_naive_now_does_not_raise_against_an_offset_aware_created_at():
     naive_now = NOW.replace(tzinfo=None)
     assert plan.pr_lock_expired("2026-08-20T14:56:44Z", naive_now, 2) is True
-    assert plan.pr_lock_expired(_ago(hours=6), naive_now, 2) is False
+    assert plan.pr_lock_expired(_ago(minutes=30), naive_now, 2) is False
+
+
+# ---------------------------------------------------------------------------
+# Stale (CONFLICTING) fix PRs
+# ---------------------------------------------------------------------------
+
+
+def test_conflicting_pr_is_stale():
+    assert plan.pr_is_stale("CONFLICTING") is True
+
+
+def test_mergeable_pr_is_not_stale():
+    assert plan.pr_is_stale("MERGEABLE") is False
+
+
+def test_unknown_mergeable_state_is_not_stale():
+    # GitHub has not finished computing the merge base yet; treat as fine, not broken.
+    assert plan.pr_is_stale("UNKNOWN") is False
+
+
+def test_missing_mergeable_field_is_not_stale():
+    assert plan.pr_is_stale(None) is False
+    assert plan.pr_is_stale("") is False
+
+
+def test_mergeable_check_is_case_insensitive():
+    assert plan.pr_is_stale("conflicting") is True
 
 
 def test_zero_ttl_restores_the_never_expiring_lock():

@@ -66,6 +66,7 @@ export default defineConfig({
 		{
 			name: 'visual-light',
 			testMatch: 'visual/**/*.test.ts',
+			grepInvert: /@tablet\b/,
 			use: {
 				...devices['Desktop Chrome'],
 				colorScheme: 'light',
@@ -75,6 +76,7 @@ export default defineConfig({
 		{
 			name: 'visual-dark',
 			testMatch: 'visual/**/*.test.ts',
+			grepInvert: /@tablet\b/,
 			use: {
 				...devices['Desktop Chrome'],
 				colorScheme: 'dark',
@@ -84,6 +86,7 @@ export default defineConfig({
 		{
 			name: 'visual-light-tablet',
 			testMatch: 'visual/**/*.test.ts',
+			grepInvert: /@desktop\b/,
 			use: {
 				...devices['Desktop Chrome'],
 				colorScheme: 'light',
@@ -93,6 +96,7 @@ export default defineConfig({
 		{
 			name: 'visual-dark-tablet',
 			testMatch: 'visual/**/*.test.ts',
+			grepInvert: /@desktop\b/,
 			use: {
 				...devices['Desktop Chrome'],
 				colorScheme: 'dark',
@@ -120,6 +124,15 @@ export default defineConfig({
 		{
 			name: 'integration',
 			testMatch: 'integration/**/*.test.ts',
+			use: {
+				...devices['Desktop Chrome'],
+				colorScheme: 'light',
+				viewport: FULL_HD_VIEWPORT,
+			},
+		},
+		{
+			name: 'docs-screenshots',
+			testMatch: 'docs-screenshots/**/*.test.ts',
 			use: {
 				...devices['Desktop Chrome'],
 				colorScheme: 'light',

@@ -24,7 +24,8 @@ public interface ActivateAdHocSubProcessActivitiesCommandStep1 {
 
   /**
    * Create an {@link io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction}
-   * for the given element id.
+   * for the given element id. This starts a new variable accumulation; variables added afterward
+   * apply to this element rather than any previously activated element.
    *
    * @param elementId the id of the element to activate
    * @return the builder for this command
@@ -33,7 +34,8 @@ public interface ActivateAdHocSubProcessActivitiesCommandStep1 {
 
   /**
    * Create an {@link io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction}
-   * for the given element id with variables.
+   * for the given element id with variables. This starts a new variable accumulation initialized
+   * with the provided variables.
    *
    * @param elementId the id of the element to activate
    * @param variables variables to be set when activating the element
@@ -89,5 +91,25 @@ public interface ActivateAdHocSubProcessActivitiesCommandStep1 {
   interface ActivateAdHocSubProcessActivitiesCommandStep2
       extends ActivateAdHocSubProcessActivitiesCommandStep1,
           CommandWithVariables<ActivateAdHocSubProcessActivitiesCommandStep2>,
-          FinalCommandStep<ActivateAdHocSubProcessActivitiesResponse> {}
+          FinalCommandStep<ActivateAdHocSubProcessActivitiesResponse> {
+
+    /**
+     * Adds a single variable to the most recently activated element instance.
+     *
+     * @param key the key of the variable as string
+     * @param value the value of the variable as object
+     * @return the builder for this command
+     */
+    @Override
+    ActivateAdHocSubProcessActivitiesCommandStep2 addVariable(String key, Object value);
+
+    /**
+     * Adds multiple variables to the most recently activated element instance.
+     *
+     * @param variables the variables to add as map
+     * @return the builder for this command
+     */
+    @Override
+    ActivateAdHocSubProcessActivitiesCommandStep2 addVariables(Map<String, Object> variables);
+  }
 }

@@ -17,6 +17,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
@@ -24,7 +26,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState.PersistedProcessVisi
 import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -33,25 +35,27 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.function.LongConsumer;
+import org.agrona.io.DirectBufferInputStream;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
+@ExtendWith(ProcessingStateExtension.class)
 public final class ProcessStateTest {
 
   private static final Long FIRST_PROCESS_KEY =
       Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
   private static final String TENANT_ID = "defaultTenant";
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
-
   private MutableProcessState processState;
   private MutableProcessingState processingState;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    processingState = stateRule.getProcessingState();
     processState = processingState.getProcessState();
   }
 
@@ -701,6 +705,82 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldReturnCachedExecutableProcess() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    final var executableProcess = transform(processRecord);
+
+    // when
+    processState.cacheProcess(processRecord.getKey(), TENANT_ID, executableProcess);
+
+    // then
+    final var processByKey =
+        processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID);
+    assertThat(processByKey.getProcess()).isSameAs(executableProcess);
+    assertThat(processByKey.getKey()).isEqualTo(processRecord.getKey());
+    assertThat(processByKey.getVersion()).isEqualTo(processRecord.getVersion());
+    assertThat(processByKey.getResource()).isEqualTo(processRecord.getResourceBuffer());
+    assertThat(
+            processState
+                .getProcessByProcessIdAndVersion(
+                    processRecord.getBpmnProcessIdBuffer(), processRecord.getVersion(), TENANT_ID)
+                .getProcess())
+        .isSameAs(executableProcess);
+  }
+
+  @Test
+  public void shouldRebuildCachedExecutableProcessAfterCacheIsCleared() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    final var executableProcess = transform(processRecord);
+    processState.cacheProcess(processRecord.getKey(), TENANT_ID, executableProcess);
+
+    // when
+    processState.clearCache();
+
+    // then
+    final var process =
+        processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID).getProcess();
+    assertThat(process).isNotSameAs(executableProcess);
+    assertThat(process.getElementById(wrapString("test"))).isNotNull();
+  }
+
+  @Test
+  public void shouldRejectCachingProcessThatIsNotPersisted() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    final var executableProcess = transform(processRecord);
+
+    // when - then
+    assertThatThrownBy(
+            () -> processState.cacheProcess(processRecord.getKey(), TENANT_ID, executableProcess))
+        .isInstanceOf(IllegalStateException.class);
+    assertThat(processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID)).isNull();
+  }
+
+  @Test
+  public void shouldRejectCachingProcessWithDifferentBpmnProcessId() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    final var otherExecutableProcess = transform(creatingProcessRecord(processingState, "other"));
+
+    // when - then
+    assertThatThrownBy(
+            () ->
+                processState.cacheProcess(
+                    processRecord.getKey(), TENANT_ID, otherExecutableProcess))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("bpmnProcessId 'processId'")
+        .hasMessageContaining("has bpmnProcessId 'other'");
+    assertThat(
+            processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID).getProcess())
+        .isNotSameAs(otherExecutableProcess);
+  }
+
+  @Test
   public void shouldGetProcessByProcessIdAndDeploymentKey() {
     // given
     final var process1Version1 =
@@ -841,6 +921,120 @@ public final class ProcessStateTest {
         processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
     assertThat(drainingProcess).isNotNull();
     assertThat(drainingProcess.getState()).isEqualTo(PersistedProcessState.DRAINING);
+  }
+
+  @Test
+  public void shouldGetLatestActiveProcessSkippingDrainingLatest() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markDraining(v2);
+
+    // when
+    final var latest =
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latest.getKey()).isEqualTo(v2.getKey());
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
+  }
+
+  @Test
+  public void shouldSkipDrainingButTreatPendingDeletionAsActiveWhenLookingUpLatestActiveProcess() {
+    // given - v3 is draining, v2 is stuck in pending deletion, v1 is ACTIVE
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    final var v3 = creatingProcessRecord(processingState, "processId", 3);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.putProcess(v3.getKey(), v3);
+    processState.updateProcessState(v2, PersistedProcessState.PENDING_DELETION);
+    processState.markDraining(v3);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then - draining v3 is skipped, but PENDING_DELETION v2 counts as active and resolves as
+    // latest
+    assertThat(latestActive.getKey()).isEqualTo(v2.getKey());
+  }
+
+  @Test
+  public void shouldResolvePendingDeletionLatestAsLatestActiveProcess() {
+    // given - the latest version is stuck in PENDING_DELETION
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.updateProcessState(v2, PersistedProcessState.PENDING_DELETION);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then - the stuck latest resolves rather than falling back to the superseded v1
+    assertThat(latestActive.getKey()).isEqualTo(v2.getKey());
+  }
+
+  @Test
+  public void shouldReturnNullLatestActiveProcessWhenNoActiveVersionRemains() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.markDraining(processRecord);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive).isNull();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = PersistedProcessState.class,
+      names = {"DRAINING", "PENDING_DELETION"})
+  public void shouldKeepUpdatedStateWhenReloadingByVersionAfterCacheMiss(
+      final PersistedProcessState state) {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.updateProcessState(processRecord, state);
+
+    // when - the cached definition is gone, e.g. reclaimed by the GC
+    processState.clearCache();
+    final var byVersion =
+        processState.getProcessByProcessIdAndVersion(
+            wrapString("processId"), processRecord.getVersion(), TENANT_ID);
+
+    // then - the version lookup also refills the key cache, which must not regress either
+    final var byKey = processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID);
+    assertThat(byVersion.getState()).isEqualTo(state);
+    assertThat(byKey.getState()).isEqualTo(state);
+  }
+
+  @Test
+  public void shouldNotResolveDrainingLatestAsLatestActiveAfterCacheMiss() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markDraining(v2);
+
+    // when - the cached definitions are gone, e.g. reclaimed by the GC
+    processState.clearCache();
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
   }
 
   @Test
@@ -1348,6 +1542,14 @@ public final class ProcessStateTest {
         .setTenantId(TENANT_ID);
 
     return deploymentRecord;
+  }
+
+  private static ExecutableProcess transform(final ProcessRecord processRecord) {
+    final var modelInstance =
+        Bpmn.readModelFromStream(new DirectBufferInputStream(processRecord.getResourceBuffer()));
+    return BpmnFactory.createTransformer(InstantSource.system(), ExpressionLanguageMetrics.noop())
+        .transformDefinitions(modelInstance)
+        .getFirst();
   }
 
   public static ProcessRecord creatingProcessRecord(final MutableProcessingState processingState) {

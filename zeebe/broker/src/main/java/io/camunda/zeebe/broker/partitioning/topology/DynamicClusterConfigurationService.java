@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
-import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.LegacyExportingStateReader;
@@ -23,7 +21,6 @@ import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -269,51 +266,18 @@ public class DynamicClusterConfigurationService
    */
   private InconsistentConfigurationListener inconsistentConfigurationListener(
       final BrokerStartupContext brokerStartupContext) {
-    final var memberId =
-        brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
     final var springBrokerBridge = brokerStartupContext.getSpringBrokerBridge();
 
-    return new InconsistentConfigurationListener() {
-      @Override
-      public void onInconsistentConfiguration(
-          final ClusterConfiguration newTopology, final ClusterConfiguration oldTopology) {
-        shutdownOnInconsistentTopology(memberId, springBrokerBridge, newTopology, oldTopology);
-      }
-
-      @Override
-      public void onInconsistentConfiguration(
-          final CurrentClusterConfiguration newConfiguration,
-          final CurrentClusterConfiguration oldConfiguration) {
-        LOGGER.warn(
-            "Received a newer cluster configuration which differs for this broker across partition groups. Shutting down broker. oldVersion={}, newVersion={}",
-            oldConfiguration.version(),
-            newConfiguration.version());
-        springBrokerBridge.initiateShutdown(
-            ERROR_CODE_ON_INCONSISTENT_TOPOLOGY,
-            "Inconsistent cluster topology detected - topology was changed while broker was"
-                + " unreachable or broker encountered data loss");
-      }
+    return (newConfiguration, oldConfiguration) -> {
+      LOGGER.warn(
+          "Received a newer cluster configuration which differs for this broker across partition groups. Shutting down broker. oldVersion={}, newVersion={}",
+          oldConfiguration.version(),
+          newConfiguration.version());
+      springBrokerBridge.initiateShutdown(
+          ERROR_CODE_ON_INCONSISTENT_TOPOLOGY,
+          "Inconsistent cluster topology detected - topology was changed while broker was"
+              + " unreachable or broker encountered data loss");
     };
-  }
-
-  private void shutdownOnInconsistentTopology(
-      final MemberId memberId,
-      final SpringBrokerBridge springBrokerBridge,
-      final ClusterConfiguration newTopology,
-      final ClusterConfiguration oldTopology) {
-    LOGGER.warn(
-        """
-          Received a newer topology which has a different state for this broker.
-          State of this broker in new topology :'{}'
-          State of this broker in old topology: '{}'
-          This usually happens when the topology was changed forcefully when this broker was unreachable or this broker encountered a data loss. Shutting down the broker. Please restart the broker to use the new topology.
-        """,
-        newTopology.getMember(memberId),
-        oldTopology.getMember(memberId));
-    springBrokerBridge.initiateShutdown(
-        ERROR_CODE_ON_INCONSISTENT_TOPOLOGY,
-        "Inconsistent cluster topology detected - topology was changed while broker was"
-            + " unreachable or broker encountered data loss");
   }
 
   private static ActorFuture<Void> startClusterTopologyManager(
@@ -354,11 +318,6 @@ public class DynamicClusterConfigurationService
         brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
         clusterChangeExecutor,
         brokerStartupContext.getMeterRegistry());
-  }
-
-  @Override
-  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
-    // NOOP
   }
 
   @Override

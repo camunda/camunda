@@ -179,25 +179,32 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
     await test.step('Search Mapping Rules After Deletion', async () => {
       const p = {groupId: state['groupId3'] as string};
 
-      const res = await request.post(
-        buildUrl('/groups/{groupId}/mapping-rules/search', p),
-        {
-          headers: jsonHeaders(),
-          data: {},
-        },
-      );
-      await assertStatusCode(res, 200);
-      await validateResponse(
-        {
-          path: '/groups/{groupId}/mapping-rules/search',
-          method: 'POST',
-          status: '200',
-        },
-        res,
-      );
-      const json = await res.json();
-      expect(json.page.totalItems).toBe(0);
-      expect(json.items).toHaveLength(0);
+      // The unassign above returns 204 as soon as the engine accepts the
+      // command, but the group's mapping-rule view in secondary storage is
+      // updated asynchronously. Searching immediately can still observe the
+      // just-removed rule (totalItems: 1), so poll until the deletion has
+      // propagated -- mirroring the toPass retry the sibling search tests use.
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/groups/{groupId}/mapping-rules/search', p),
+          {
+            headers: jsonHeaders(),
+            data: {},
+          },
+        );
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/groups/{groupId}/mapping-rules/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
+        const json = await res.json();
+        expect(json.page.totalItems).toBe(0);
+        expect(json.items).toHaveLength(0);
+      }).toPass(defaultAssertionOptions);
     });
   });
 

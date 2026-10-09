@@ -18,6 +18,7 @@ import io.camunda.optimize.service.db.es.schema.index.DecisionDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.InstantPreviewDashboardMetadataIndexES;
+import io.camunda.optimize.service.db.es.schema.index.JobRegistryIndexES;
 import io.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
@@ -44,6 +45,7 @@ import io.camunda.optimize.service.db.os.schema.index.DecisionDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.InstantPreviewDashboardMetadataIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.JobRegistryIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.MetadataIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
@@ -126,6 +128,7 @@ public class IndexLookupUtil {
         DashboardShareIndexES.class.getSimpleName(), index -> new DashboardShareIndexOS());
     lookupMap.put(
         DecisionDefinitionIndexES.class.getSimpleName(), index -> new DecisionDefinitionIndexOS());
+    lookupMap.put(JobRegistryIndexES.class.getSimpleName(), index -> new JobRegistryIndexOS());
     lookupMap.put(MetadataIndexES.class.getSimpleName(), index -> new MetadataIndexOS());
     lookupMap.put(
         ProcessDefinitionIndexES.class.getSimpleName(), index -> new ProcessDefinitionIndexOS());
@@ -182,6 +185,7 @@ public class IndexLookupUtil {
         DashboardShareIndexOS.class.getSimpleName(), index -> new DashboardShareIndexES());
     lookupMap.put(
         DecisionDefinitionIndexOS.class.getSimpleName(), index -> new DecisionDefinitionIndexES());
+    lookupMap.put(JobRegistryIndexOS.class.getSimpleName(), index -> new JobRegistryIndexES());
     lookupMap.put(MetadataIndexOS.class.getSimpleName(), index -> new MetadataIndexES());
     lookupMap.put(
         ProcessDefinitionIndexOS.class.getSimpleName(), index -> new ProcessDefinitionIndexES());

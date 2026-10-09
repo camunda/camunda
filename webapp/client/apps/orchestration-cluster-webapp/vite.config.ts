@@ -62,9 +62,10 @@ const config = defineConfig(({mode}) => ({
 		open: true,
 		proxy: {
 			'/v2': 'http://localhost:8080',
+			'/admin/config.js': 'http://localhost:8080',
 			'/login': {
 				target: 'http://localhost:8080',
-				bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+				bypass: (req) => (req.headers['sec-fetch-mode'] === 'navigate' ? '/' : undefined),
 			},
 			'/logout': {
 				target: 'http://localhost:8080',
@@ -99,12 +100,18 @@ const config = defineConfig(({mode}) => ({
 	},
 	test: {
 		include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-		reporters: process.env['CI'] ? ['default', 'github-actions', 'html', 'junit'] : ['default'],
+		reporters: process.env['CI']
+			? ['default', 'github-actions', ['html', {outputDir: 'test-artifacts/html'}], 'junit']
+			: ['default'],
 		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
+		attachmentsDir: 'test-artifacts/html/attachments',
+		retry: process.env['CI'] ? 3 : 0,
+		provide: {
+			failOnUnhandledRequests: !process.env['CI'],
+		},
 		browser: {
 			enabled: true,
 			screenshotFailures: Boolean(process.env['CI']),
-			screenshotDirectory: 'test-artifacts/screenshots',
 			headless: true,
 			viewport: {
 				width: 1280,
@@ -116,16 +123,12 @@ const config = defineConfig(({mode}) => ({
 					browser: 'chromium',
 					name: 'carbon',
 					include: [
-						'src/admin/**/*.test.ts',
-						'src/admin/**/*.test.tsx',
 						'src/operate/**/*.test.ts',
 						'src/operate/**/*.test.tsx',
 						'src/routes/_carbon/**/*.test.ts',
 						'src/routes/_carbon/**/*.test.tsx',
 						'src/shared/**/*.test.ts',
 						'src/shared/**/*.test.tsx',
-						'src/tasklist/**/*.test.ts',
-						'src/tasklist/**/*.test.tsx',
 						'src/vitest-modules/**/*.test.ts',
 						'src/vitest-modules/**/*.test.tsx',
 					],
@@ -138,8 +141,12 @@ const config = defineConfig(({mode}) => ({
 					include: [
 						'src/**/shadcn.components/**/*.test.ts',
 						'src/**/shadcn.components/**/*.test.tsx',
-						'src/routes/shadcn/**/*.test.ts',
-						'src/routes/shadcn/**/*.test.tsx',
+						'src/admin/**/*.test.ts',
+						'src/admin/**/*.test.tsx',
+						'src/routes/_shadcn/**/*.test.ts',
+						'src/routes/_shadcn/**/*.test.tsx',
+						'src/tasklist/**/*.test.ts',
+						'src/tasklist/**/*.test.tsx',
 					],
 					setupFiles: ['./src/vitest-modules/vitest-shadcn.setup.ts'],
 				},

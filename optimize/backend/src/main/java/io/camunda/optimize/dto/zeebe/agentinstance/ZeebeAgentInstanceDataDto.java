@@ -32,7 +32,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   private int processDefinitionVersion;
   private String tenantId;
   private long jobKey = -1L;
-  private String jobLease;
+  private String jobLeaseToken;
   private AgentInstanceStatus status;
   private AgentDefinitionValueDto definition = new AgentDefinitionValueDto();
   private AgentMetricsValueDto metrics = new AgentMetricsValueDto();
@@ -104,7 +104,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   @Override
-  public int getStorageOrdinalKey() {
+  public int getStorageOrdinal() {
     return -1; // not used in Optimize
   }
 
@@ -140,7 +140,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   @Override
-  public String getVersionTag() {
+  public String getProcessDefinitionVersionTag() {
     return null;
   }
 
@@ -154,17 +154,20 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   @Override
-  public String getJobLease() {
-    return jobLease;
+  public String getJobLeaseToken() {
+    return jobLeaseToken;
   }
 
-  public void setJobLease(final String jobLease) {
-    this.jobLease = jobLease;
+  public void setJobLeaseToken(final String jobLeaseToken) {
+    this.jobLeaseToken = jobLeaseToken;
   }
 
   // Not tracked — Optimize's import doesn't need the embedded history batch, only the
-  // instance-level fields above.
+  // instance-level fields above. Ignored by Jackson: with no backing field, a List-typed
+  // getter is otherwise treated as a setterless collection property and deserialization
+  // fails trying to populate the null this returns (#62414).
   @Override
+  @JsonIgnore
   public List<AgentHistoryRecordValue> getHistory() {
     return null;
   }
@@ -196,7 +199,10 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     this.definition = definition;
   }
 
+  // Not tracked — Optimize's import doesn't need the configured limits. Ignored by Jackson so
+  // a real exporter record carrying this field doesn't fail as an unrecognized property (#62414).
   @Override
+  @JsonIgnore
   public AgentInstanceLimitsValue getLimits() {
     return null;
   }
@@ -242,7 +248,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         processDefinitionVersion,
         tenantId,
         jobKey,
-        jobLease,
+        jobLeaseToken,
         status,
         definition,
         metrics,
@@ -267,7 +273,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         && Objects.equals(elementId, that.elementId)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(jobLease, that.jobLease)
+        && Objects.equals(jobLeaseToken, that.jobLeaseToken)
         && Objects.equals(status, that.status)
         && Objects.equals(definition, that.definition)
         && Objects.equals(metrics, that.metrics)
@@ -295,8 +301,8 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         + tenantId
         + ", jobKey="
         + jobKey
-        + ", jobLease="
-        + jobLease
+        + ", jobLeaseToken="
+        + jobLeaseToken
         + ", status="
         + status
         + ", definition="
@@ -323,7 +329,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     public static final String processDefinitionVersion = "processDefinitionVersion";
     public static final String tenantId = "tenantId";
     public static final String jobKey = "jobKey";
-    public static final String jobLease = "jobLease";
+    public static final String jobLeaseToken = "jobLeaseToken";
     public static final String status = "status";
     public static final String definition = "definition";
     public static final String metrics = "metrics";

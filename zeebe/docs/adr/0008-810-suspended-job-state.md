@@ -58,12 +58,18 @@ documented as a caller obligation.
 `ProcessInstanceSuspensionJobBehavior`; suspend's tree walk follows the same `ArrayDeque` pattern as
 migration. Cost is paid once per suspend, and once per resume cycle, not on every poll.
 
-- **Suspend:** append `Job.SUSPENDED` for every `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job,
-  then append `ProcessInstance.SUSPENDED`. Suspending every job finishes before the instance marker
-  is set, in one record batch: `Job.SUSPENDED` carries the job's own record, including its variables,
-  so it is not fixed-size, but it is the only record suspend writes per job — no activation record
-  alongside it. The batch's size scales with the aggregate serialized size of every job the walk
-  suspends, since suspend does not chunk (see Consequences).
+- **Suspend:** `ProcessInstanceSuspendProcessor` validates the command, appends
+  `ProcessInstance.SUSPENDING`, closes subscriptions, appends `Job.SUSPENDED` for every
+  `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job except jobs of a terminating element (see
+  D3 notes), then appends
+  `ProcessInstance.SUSPENDED` and responds `SUSPENDED`. All work runs inline in the same record
+  batch; this change does not introduce a processor handoff or a second batch. A follow-up change
+  can add that handoff. Commands targeting the `SUSPENDING` marker are treated as if the instance
+  were `SUSPENDED`, so they cannot change state that suspend is still walking.
+  `Job.SUSPENDED` carries the job's own record, including its variables, so it is not fixed-size,
+  but it is the only record suspend writes per job — no activation record alongside it. The
+  batch's size scales with the aggregate serialized size of every job the walk suspends, since
+  suspend does not chunk (see Consequences).
 - **Resume:** a `RESUME_JOBS` command searches `JOBS_BY_PROCESS_INSTANCE` (see D5) from the resume
   cursor, finds the first `SUSPENDED` entry it reaches, appends `Job.RESUMED` for it, and calls
   `BpmnJobActivationBehavior.publishWork` so stream and poll workers see the job again, before
@@ -76,8 +82,9 @@ migration. Cost is paid once per suspend, and once per resume cycle, not on ever
   instance root, so the suspend-time walk never reaches those jobs; the resume-time search excludes
   them structurally, since the index is keyed by each job's own `processInstanceKey` (see D5).
 - **Other job states at suspend time:** `ACTIVATED`, `FAILED`, and `ERROR_THROWN` stay as they are
-  (already off the activatable index). An `ACTIVATED` job that times out while the instance is still
-  `SUSPENDED` is re-suspended by `JobTimeOutProcessor` (see D3) so it does not loop on rejected timeouts.
+  (already off the activatable index). An `ACTIVATED` job that times out while the instance is
+  `SUSPENDING` or `SUSPENDED` is re-suspended by `JobTimeOutProcessor` (see D3) so it does not loop on rejected timeouts,
+  unless its element instance is terminating (see D3).
 - **Secret-waiting:** overridden to `SUSPENDED` so a later secret resolution cannot put the job back
   into the hand-out index while the instance is suspended.
 
@@ -86,24 +93,32 @@ re-suspends an already-activated job.**
 
 Command surface table:
 
-|                           Command                            |                                                                 Behavior while a job is `SUSPENDED` / instance is suspended                                                                  |
-|--------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ActivateJobs` (poll or stream)                              | job is absent from the index; not handed out                                                                                                                                                 |
-| `CompleteJob`, `FailJob`, `ThrowError`, `UpdateJob`, `Yield` | not reached — the suspension gate on the process instance rejects or buffers the command before it dispatches to a job processor                                                             |
-| `JobFail` (immediate retry)                                  | rejected by the gate                                                                                                                                                                         |
-| `JobRecurAfterBackoff`                                       | buffered by the gate; `JobRecurAfterBackoffProcessor`'s exhaustive switch gains a `SUSPENDED` branch naming the suspension, unreachable while the marker is present                          |
-| `JobTimeOut`                                                 | processed while the instance marker is present (`SuspensionBehavior.PROCESS`); after `TIMED_OUT`, if `getSuspensionState == SUSPENDED`, append `Job.SUSPENDED` instead of notifying hand-out |
-| `CancelJob`                                                  | deletes the job, same as any other state                                                                                                                                                     |
-| process instance termination                                 | deletes the job, same as any other state                                                                                                                                                     |
+|                           Command                            |                                                                                                   Behavior while a job is `SUSPENDED` / instance is suspended                                                                                                    |
+|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ActivateJobs` (poll or stream)                              | job is absent from the index; not handed out                                                                                                                                                                                                                     |
+| `CompleteJob`, `FailJob`, `ThrowError`, `UpdateJob`, `Yield` | not reached — the suspension gate on the process instance rejects or buffers the command before it dispatches to a job processor                                                                                                                                 |
+| `JobFail` (immediate retry)                                  | rejected by the gate                                                                                                                                                                                                                                             |
+| `JobRecurAfterBackoff`                                       | buffered by the gate; `JobRecurAfterBackoffProcessor`'s exhaustive switch gains a `SUSPENDED` branch naming the suspension, unreachable while the marker is present                                                                                              |
+| `JobTimeOut`                                                 | processed while the instance marker is present (`SuspensionBehavior.PROCESS`); after `TIMED_OUT`, if `getSuspensionState` is `SUSPENDING` or `SUSPENDED` and the job's element instance is not terminating, append `Job.SUSPENDED` instead of notifying hand-out |
+| `CancelJob`                                                  | deletes the job, same as any other state                                                                                                                                                                                                                         |
+| process instance termination                                 | deletes the job, same as any other state                                                                                                                                                                                                                         |
 
 Notes:
 
-- `JobTimeOut` checks `getSuspensionState == SUSPENDED`, not `isSuspended`, so a job is not re-suspended
-  during `RESUMING`. `Job.SUSPENDED` is a follow-up event (same batch, bypasses the gate). Exporters
+- `JobTimeOut` checks `getSuspensionState` for `SUSPENDING` or `SUSPENDED`, not `isSuspended`, so a
+  job is not re-suspended during `RESUMING`. `Job.SUSPENDED` is a follow-up event (same batch, bypasses the gate). Exporters
   still see `TIMED_OUT` only; that matches D4.
 - `CANCELABLE_STATES` includes `SUSPENDED` so termination deletes suspended jobs.
 - The `JobRecurAfterBackoff` `SUSPENDED` switch branch is a safety net only; the gate already blocks
   that processor while suspended.
+- Jobs of a terminating element bypass the gate. When a suspended instance is canceled, the
+  termination waits for its canceling task listener and cancel execution listener jobs, and the
+  instance is never resumed. So `SuspensionBehavior` processes `JOB`, `USER_TASK`, and `INCIDENT`
+  commands and `ProcessInstance.COMPLETE_EXECUTION_LISTENER` of a terminating element without asking
+  the processor, and neither suspend nor `JobTimeOut` parks such a job. Otherwise the termination
+  never finishes (#64505). A job of an element that is already terminating at suspend time, e.g.
+  the canceling listener of an interrupted user task, stays available too; the flow after the
+  interruption still waits for the resume.
 
 **D4. `Job.SUSPENDED` and `Job.RESUMED` are exported but not consumed.** Both exporters filter by an
 allow-list (`JobHandler.JOB_EVENTS`, `JobExportHandler.EXPORTABLE_INTENTS`) that does not include
@@ -186,10 +201,10 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
 
 ## Consequences
 
-- One `Job.SUSPENDED` event per affected job in the same batch as the instance marker. A very large
-  instance can still hit the max record batch size on suspend (same limit as migration); suspend does
-  not chunk. Resume does not share this limit: one job per `RESUME_JOBS` cycle keeps each cycle's
-  batch bounded to that job's own activation cost.
+- One `Job.SUSPENDED` event per affected job in the same batch as the `SUSPENDING` and `SUSPENDED`
+  instance markers. A very large instance can still hit the max record batch size on suspend (same
+  limit as migration); suspend does not chunk. Resume does not share this limit: one job per
+  `RESUME_JOBS` cycle keeps each cycle's batch bounded to that job's own activation cost.
 - Resume no longer re-walks the tree per cycle: `JOBS_BY_PROCESS_INSTANCE` (D5) lets each
   `RESUME_JOBS` cycle search from the resume cursor, so a large instance's total resume cost across
   its whole chain is O(n) — one search continuing where the last cycle left off — rather than
@@ -198,7 +213,8 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
 - Suspend's tree walk visits every active element of the instance, not only job-backed ones, and
   blocks the partition while it runs. Accepted because suspend is rare; the same cost on activation
   would not be. We run on the same path as process instance migration which is fine so far.
-- No downgrade once a job is suspended: older brokers fail on the unknown `SUSPENDED` enum name.
+- No downgrade after suspension: older brokers fail on the new `ProcessInstance.SUSPENDING` intent
+  or the unknown `SUSPENDED` job state enum name.
 - Every new exhaustive `JobState.State` switch must handle `SUSPENDED`.
 - Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking for
   suspend.

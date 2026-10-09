@@ -17,13 +17,15 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/camunda/camunda/c8run/internal/cliname"
+	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	"github.com/camunda/camunda/c8run/internal/startupurl"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 )
 
 const (
-	inboundConnectorsPort = 8086
+	DefaultConnectorsPort = 8086
 	zeebeAPIURL           = "http://localhost:26500"
 	camundaMetricsURL     = "http://localhost:9600/actuator/prometheus"
 	quickstartURL         = "https://docs.camunda.io/docs/next/guides/getting-started-example/"
@@ -53,31 +55,65 @@ type StartupSummary struct {
 }
 
 var (
-	isRunningFunc   = isRunning
-	printStatusFunc = PrintStatus
-	markSeenStartup = startupurl.MarkSeen
+	isRunningFunc    = isRunning
+	printStatusFunc  = PrintStatus
+	markSeenStartup  = startupurl.MarkSeen
+	probeTenantsFunc = physicaltenants.Probe
 )
 
 func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8RunSettings, retries int) error {
 	healthEndpoint := fmt.Sprintf("%s://localhost:9600/actuator/health", settings.GetProtocol())
 	if isRunningFunc(ctx, name, healthEndpoint, retries, 14*time.Second) {
-		if err := c8.OpenBrowser(ctx, settings.StartupUrl); err != nil {
-			log.Err(err).Msg("Failed to open browser")
+		if !settings.NoBrowser {
+			if err := c8.OpenBrowser(ctx, settings.StartupUrl); err != nil {
+				log.Err(err).Msg("Failed to open browser")
+			}
 		}
 		if err := printStatusFunc(settings); err != nil {
 			log.Err(err).Msg("Failed to print status")
 			return err
 		}
-		if err := markSeenStartup(settings.StartupMarkerPath); err != nil {
-			log.Warn().Err(err).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
+		if len(settings.PhysicalTenants) > 0 {
+			results := probeTenantsFunc(ctx, settings, 12, 5*time.Second)
+			physicaltenants.PrintSummary(cliname.Writer(os.Stdout), settings, results, settings.ConnectorsPort)
+			var notReady []string
+			for _, r := range results {
+				if !r.Ready {
+					notReady = append(notReady, r.ID)
+				}
+			}
+			if len(notReady) > 0 {
+				markStartupSeen(settings)
+				return &TenantsNotReadyError{IDs: notReady}
+			}
 		}
+		markStartupSeen(settings)
 		return nil
 	}
 	return fmt.Errorf("queryCamunda: %s did not start", name)
 }
 
-func QueryConnectors(ctx context.Context, name string, retries int) error {
-	healthEndpoint := fmt.Sprintf("http://localhost:%d/actuator/health", inboundConnectorsPort)
+// TenantsNotReadyError means Camunda is healthy but some physical tenants are not ready.
+type TenantsNotReadyError struct {
+	IDs []string
+}
+
+func (e *TenantsNotReadyError) Error() string {
+	return "physical tenant(s) not ready: " + strings.Join(e.IDs, ", ")
+}
+
+func markStartupSeen(settings types.C8RunSettings) {
+	if settings.NoBrowser {
+		return
+	}
+	if err := markSeenStartup(settings.StartupMarkerPath); err != nil {
+		log.Warn().Err(err).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
+	}
+}
+
+// QueryConnectorsOnPort waits for a connectors runtime listening on the given port.
+func QueryConnectorsOnPort(ctx context.Context, name string, port int, retries int) error {
+	healthEndpoint := fmt.Sprintf("http://localhost:%d/actuator/health", port)
 	if isRunningFunc(ctx, name, healthEndpoint, retries, 14*time.Second) {
 		return nil
 	}
@@ -170,5 +206,5 @@ func inboundConnectorsEndpoint(settings types.C8RunSettings) string {
 	if settings.DisableConnectors {
 		return "disabled (--disable-connectors)"
 	}
-	return fmt.Sprintf("http://localhost:%d/", inboundConnectorsPort)
+	return fmt.Sprintf("http://localhost:%d/", settings.ConnectorsPort)
 }

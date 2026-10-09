@@ -18,6 +18,7 @@ import {
   createComponentAuthorization,
   cleanupAuthorizations,
   findUserTask,
+  expectUserTaskAssigned,
 } from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 import {
@@ -112,11 +113,7 @@ test.describe.serial('Task visible to assignee with READ permission', () => {
 
     await taskPanelPage.filterBy('Assigned to me');
 
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks.getByText(TASK_NAME),
-      ).toBeVisible();
-    }).toPass({timeout: 30000});
+    await taskPanelPage.assertTaskCardVisible(TASK_NAME, {timeout: 30000});
 
     await taskPanelPage.openTask(TASK_NAME);
 
@@ -501,7 +498,13 @@ test.describe
     );
     expect(assignRes.status()).toBe(204);
 
-    await sleep(3000);
+    // Gate on the read model actually reflecting Bob's assignment before the UI
+    // flow runs. The assignment command is accepted synchronously (204) but the
+    // task-details toggle reads the assignee from GET /user-tasks/{key}, which
+    // lags and briefly flips between null and Bob while the change propagates. A
+    // fixed sleep raced that window, so Alice opened the task while it still
+    // read as unassigned and the "Unassign" button never appeared.
+    await expectUserTaskAssigned(request, bobUserTaskKey, bobUser.username);
   });
 
   test.afterAll(async ({request}) => {
@@ -524,10 +527,20 @@ test.describe
     await loginPage.login(aliceUser.username, aliceUser.password);
     await expect(page).toHaveURL('/tasklist');
 
-    await taskPanelPage.goToTaskDetails(bobUserTaskKey);
+    // Bob's assignment reaches the read model but the endpoint the details
+    // toggle reads oscillates between Bob and null for a while after the
+    // command, and the panel renders whichever it last saw. Re-open the task
+    // until it renders Bob's assignment (the "Unassign" button) rather than
+    // acting on a stale "Assign to me" state caught mid-oscillation.
+    await expect(async () => {
+      await taskPanelPage.goToTaskDetails(bobUserTaskKey);
+      await expect(taskDetailsPage.unassignButton).toBeVisible({
+        timeout: 15_000,
+      });
+    }).toPass({timeout: 90_000, intervals: [1_000, 2_000, 5_000]});
 
     await taskDetailsPage.clickUnassignButton();
-
+    await page.reload();
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.assignee).toContainText('Assigned to me');
   });

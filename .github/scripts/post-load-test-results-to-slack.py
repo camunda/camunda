@@ -10,18 +10,21 @@ source of truth shared with `loadTestMetrics.sh`), so adding a metric there auto
 row here. Metrics tied to secondary storage (e.g. importer/exporter lag) naturally render as n/a
 for a no-secondary-storage variant.
 
-The table has one column per entry in VARIANTS_JSON — adding a daily variant (a new matrix entry
-in camunda-daily-load-tests.yml) needs no change here.
+The table has one column per entry in the variants manifest (VARIANTS_JSON_FILE, or VARIANTS_JSON
+as a fallback) — adding a daily variant (a new matrix entry in camunda-daily-load-tests.yml) needs
+no change here.
 
 Required environment variables:
-  VARIANTS_JSON       JSON array of {key, label, namespace, soakEndEpoch, results} objects, one
-                      per variant, in display order. `results` is {metric_name: value}.
   BENCHMARK           Benchmark name, e.g. medic-daily-YYYY-MM-DD-<sha>-test.
   SLACK_WEBHOOK_URL   Incoming-webhook URL to post to.
   REPO                GitHub repo slug, e.g. camunda/camunda.
   RUN_ID              GitHub Actions run id (used to link the workflow run).
 
 Optional:
+  VARIANTS_JSON_FILE  Path to the variants manifest JSON file (see aggregate-metrics in
+                      camunda-daily-load-tests.yml). Falls back to the VARIANTS_JSON env var
+                      (a literal JSON string) if unset, for manual/local invocation. Empty or
+                      missing data exits cleanly without posting to Slack.
   QUERIES_YAML        Path to queries.yaml. Default:
                       load-tests/docs/scripts/queries.yaml
   FLAMEGRAPH_LINKS    Pre-rendered Slack mrkdwn links to this run's flamegraph
@@ -34,13 +37,24 @@ Optional:
 import json
 import os
 import socket
+import sys
 import time
 import urllib.error
 import urllib.request
 
 import yaml
 
-variants = json.loads(os.environ.get('VARIANTS_JSON') or '[]')
+variants_json_file = os.environ.get('VARIANTS_JSON_FILE')
+if variants_json_file and os.path.exists(variants_json_file):
+    with open(variants_json_file) as f:
+        variants_raw = f.read().strip() or '[]'
+else:
+    variants_raw = (os.environ.get('VARIANTS_JSON') or '').strip() or '[]'
+variants = json.loads(variants_raw)
+
+if not variants:
+    print('No variant metrics available — skipping Slack post.')
+    sys.exit(0)
 bench    = os.environ['BENCHMARK']
 repo     = os.environ['REPO']
 run_id   = os.environ['RUN_ID']
@@ -116,8 +130,8 @@ blocks = [
 ]
 
 # Slack rejects a section block with empty text — dash_links is empty only when variants is
-# empty, which the calling workflow already gates on, but keep this defensive at the script
-# level too (e.g. against direct/manual invocation with an empty VARIANTS_JSON).
+# empty, and the early exit above already handles that case (see the empty/missing-data check
+# near the top of this file). Kept as a defensive check in case that invariant ever changes.
 if dash_links:
     blocks.append({
         'type': 'section',

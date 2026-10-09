@@ -115,7 +115,7 @@ final class JobBatchCollector {
             return true;
           }
 
-          if (!value.isWithLease() && !jobRecord.getLeaseToken().isEmpty()) {
+          if (!value.isWithLease() && !jobRecord.getJobLeaseToken().isEmpty()) {
             // Skip leased jobs so an unleased activation cannot break the lease's exclusivity
             jobMetrics.countJobEvent(
                 JobAction.SKIPPED_LEASED, jobRecord.getJobKind(), value.getType());
@@ -145,7 +145,7 @@ final class JobBatchCollector {
           // adding it to the batch
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
           if (value.isWithLease()) {
-            jobRecord.setLeaseToken(LeaseTokens.generate());
+            jobRecord.setJobLeaseToken(LeaseTokens.generate());
           }
           jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
 

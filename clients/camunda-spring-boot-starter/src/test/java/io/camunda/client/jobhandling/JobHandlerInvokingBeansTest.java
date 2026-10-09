@@ -84,7 +84,7 @@ public class JobHandlerInvokingBeansTest {
     when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     when(completeJobCommandStep1.variables(any(JobResponse.class)))
         .thenReturn(completeJobCommandStep1);
-    when(completeJobCommandStep1.withLeaseToken(any())).thenReturn(completeJobCommandStep1);
+    when(completeJobCommandStep1.withJobLeaseToken(any())).thenReturn(completeJobCommandStep1);
     when(completeJobCommandStep1.send()).thenReturn(future);
     when(jobClient.newCompleteCommand(anyLong())).thenReturn(completeJobCommandStep1);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -168,7 +168,7 @@ public class JobHandlerInvokingBeansTest {
   @EnumSource(
       value = Response.class,
       names = {"VOID", "RESPONSE"})
-  void shouldCarryLeaseTokenOnComplete(final Response response) throws Exception {
+  void shouldCarryJobLeaseTokenOnComplete(final Response response) throws Exception {
     final TestDimension testDimension = new TestDimension(AutoComplete.YES, response, List.of());
     final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
     final JobHandler jobHandler =
@@ -185,14 +185,14 @@ public class JobHandlerInvokingBeansTest {
     when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     when(completeJobCommandStep1.variables(any(JobResponse.class)))
         .thenReturn(completeJobCommandStep1);
-    when(completeJobCommandStep1.withLeaseToken(any())).thenReturn(completeJobCommandStep1);
+    when(completeJobCommandStep1.withJobLeaseToken(any())).thenReturn(completeJobCommandStep1);
     when(completeJobCommandStep1.send()).thenReturn(future);
     when(jobClient.newCompleteCommand(anyLong())).thenReturn(completeJobCommandStep1);
     final ActivatedJob job = mock(ActivatedJob.class);
     when(job.getType()).thenReturn("test");
-    when(job.getLeaseToken()).thenReturn("some-lease-token");
+    when(job.getJobLeaseToken()).thenReturn("some-lease-token");
     jobHandler.handle(jobClient, job);
-    verify(completeJobCommandStep1).withLeaseToken("some-lease-token");
+    verify(completeJobCommandStep1).withJobLeaseToken("some-lease-token");
     verify(completeJobCommandStep1, times(1)).send();
   }
 

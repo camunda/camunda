@@ -27,7 +27,6 @@
     <version.spring-boot>3.5.16</version.spring-boot>
     <!-- Spring Framework 6.x is required for Spring Boot 3.x -->
     <version.spring>6.2.19</version.spring>
-    <version.roaster>2.31.1.Final</version.roaster>
     <version.aspectjweaver>1.9.25.1</version.aspectjweaver>
     <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
     <camunda-spring-boot-starter.sourcedir>${project.basedir}/../camunda-spring-boot-starter/src</camunda-spring-boot-starter.sourcedir>
@@ -208,14 +207,12 @@
                     <!-- Exclude classes that we override with Spring Boot 3 versions -->
                     <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicator.class</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaActuatorConfiguration.class</exclude>
-                    <exclude>io/camunda/client/spring/configuration/CamundaAutoConfiguration.class</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaClientAllAutoConfiguration.class</exclude>
                     <exclude>io/camunda/client/spring/properties/CamundaClientPropertiesPostProcessor.class</exclude>
                     <!-- The same overrides in the shaded sources jar (createSourcesJar). Filters
                          match by literal path, so the .class excludes above don't cover .java. -->
                     <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicator.java</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaActuatorConfiguration.java</exclude>
-                    <exclude>io/camunda/client/spring/configuration/CamundaAutoConfiguration.java</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaClientAllAutoConfiguration.java</exclude>
                     <exclude>io/camunda/client/spring/properties/CamundaClientPropertiesPostProcessor.java</exclude>
                     <!-- Exclude META-INF services that we override -->

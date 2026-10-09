@@ -194,18 +194,16 @@ const ProcessInstanceOperations: React.FC<Props> = ({
     return (
       <>
         <CollapsibleOperationsToolbar isCollapsed={isCollapsed}>
-          {processInstance.parentProcessInstanceKey === null && (
-            <CollapsibleOperationTrigger
-              isCollapsed={isCollapsed}
-              status={resumeStatus}
-              label="Resume"
-              pendingLabel="Resuming..."
-              icon={Play}
-              title={`Resume Instance ${processInstanceKey}`}
-              onClick={() => resumeProcessInstance()}
-              onReset={resetResume}
-            />
-          )}
+          <CollapsibleOperationTrigger
+            isCollapsed={isCollapsed}
+            status={resumeStatus}
+            label="Resume"
+            pendingLabel="Resuming..."
+            icon={Play}
+            title={`Resume Instance ${processInstanceKey}`}
+            onClick={() => resumeProcessInstance()}
+            onReset={resetResume}
+          />
           <CollapsibleOperationTrigger
             isCollapsed={isCollapsed}
             status={cancelStatus}
@@ -272,18 +270,16 @@ const ProcessInstanceOperations: React.FC<Props> = ({
             onReset={resetResolve}
           />
         )}
-        {processInstance.parentProcessInstanceKey === null && (
-          <CollapsibleOperationTrigger
-            isCollapsed={isCollapsed}
-            status={suspendStatus}
-            label="Suspend"
-            pendingLabel="Suspending..."
-            icon={Pause}
-            title={`Suspend Instance ${processInstanceKey}`}
-            onClick={() => suspendProcessInstance()}
-            onReset={resetSuspend}
-          />
-        )}
+        <CollapsibleOperationTrigger
+          isCollapsed={isCollapsed}
+          status={suspendStatus}
+          label="Suspend"
+          pendingLabel="Suspending..."
+          icon={Pause}
+          title={`Suspend Instance ${processInstanceKey}`}
+          onClick={() => suspendProcessInstance()}
+          onReset={resetSuspend}
+        />
         <CollapsibleOperationTrigger
           isCollapsed={isCollapsed}
           status={cancelStatus}

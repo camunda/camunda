@@ -186,6 +186,23 @@ class SessionServiceTest {
   }
 
   @Test
+  void shouldResolveTheClientIdForAnM2mBearerRequestThroughCsl() {
+    // given — CSL classifies a client-credentials bearer token as a client, not a user, so
+    // authenticatedUsername is null; the request must still resolve to an id, the client's own,
+    // rather than fail as if CSL had authenticated nothing at all
+    sessionService =
+        sessionServiceWith(camundaAuthenticationProviderOfClient("optimize-api-client"));
+    SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(buildJwt()));
+
+    // when
+    final String user =
+        sessionService.getRequestUserOrFailNotAuthorized(mock(HttpServletRequest.class));
+
+    // then
+    assertThat(user).isEqualTo("optimize-api-client");
+  }
+
+  @Test
   void shouldStillUseTheBearerSubjectWhenCslIsAbsent() {
     // given — legacy setup: no CamundaAuthenticationProvider bean, so the pre-CSL behaviour of
     // taking the subject from the bearer token must be preserved
@@ -205,6 +222,14 @@ class SessionServiceTest {
     lenient()
         .when(camundaAuthenticationProvider.getCamundaAuthentication())
         .thenReturn(authentication);
+    return singletonProvider(camundaAuthenticationProvider);
+  }
+
+  private ObjectProvider<CamundaAuthenticationProvider> camundaAuthenticationProviderOfClient(
+      final String clientId) {
+    lenient()
+        .when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.clientId(clientId)));
     return singletonProvider(camundaAuthenticationProvider);
   }
 

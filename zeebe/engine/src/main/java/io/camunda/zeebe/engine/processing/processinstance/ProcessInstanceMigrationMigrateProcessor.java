@@ -25,7 +25,6 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -218,6 +217,7 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     value.setTenantId(processInstanceRecord.getTenantId());
     value.setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    value.setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
     value.setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey());
     value.setBpmnProcessId(processInstanceRecord.getBpmnProcessId());
     stateWriter.appendFollowUpEvent(
@@ -262,6 +262,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   private void enrichRejectionCommand(final TypedRecord<ProcessInstanceMigrationRecord> command) {
@@ -445,6 +446,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
                         .setRootProcessInstanceKey(
                             elementInstance.getValue().getRootProcessInstanceKey())
+                        .setStorageOrdinal(elementInstance.getValue().getStorageOrdinal())
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
@@ -714,6 +716,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                           .setName(variable.name())
                           .setValue(targetAhsp.getAdHocActivitiesMetadata())
                           .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                          .setStorageOrdinal(elementInstance.getValue().getStorageOrdinal())
                           .setProcessDefinitionKey(targetProcessDefinition.getKey())
                           .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                           .setTenantId(elementInstance.getValue().getTenantId())));
@@ -721,10 +724,14 @@ public class ProcessInstanceMigrationMigrateProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<ProcessInstanceMigrationRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceMigrationRecord> record) {
     // migration restructures a running instance, which is unsafe while suspended; reject.
-    return SuspensionBehavior.REJECT;
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceMigrationRecord> record) {
+    return SuspensionAction.REJECT;
   }
 
   /**

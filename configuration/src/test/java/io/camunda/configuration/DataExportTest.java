@@ -87,6 +87,24 @@ public class DataExportTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.export.migration-status-scan-max-records=5",
+      })
+  class WithMigrationStatusScanMaxRecordsSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithMigrationStatusScanMaxRecordsSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetMigrationStatusScanMaxRecords() {
+      assertThat(brokerCfg.getExporting().migrationStatusScanMaxRecords()).isEqualTo(5);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         "camunda.data.export.skip-records.1=10,20",
         "camunda.data.export.skip-records.2=30",
       })

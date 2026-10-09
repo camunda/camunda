@@ -55,7 +55,7 @@ test.describe.serial('tenants CRUD', () => {
         'Please enter a valid Tenant ID',
       );
       await expect(identityTenantsPage.tenantFieldId).toHaveAttribute(
-        'data-invalid',
+        'aria-invalid',
         'true',
       );
     });

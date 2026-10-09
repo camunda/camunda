@@ -168,9 +168,9 @@ class CurrentClusterConfigurationTest {
       // given — a legacy view carrying a graph change, which is what projecting a partition group
       // in-process produces: one operation waits for the first, the third for nothing
       final var builder = OperationGraph.builder();
-      final var first = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      final var first = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1, true));
       builder.add(new PartitionLeaveOperation(MEMBER_0, 2, 1), Set.of(first));
-      builder.add(new PartitionJoinOperation(MEMBER_1, 1, 1));
+      builder.add(new PartitionJoinOperation(MEMBER_1, 1, 1, true));
       final var graph = builder.build();
       final var legacy =
           ClusterConfiguration.builder()
@@ -223,7 +223,7 @@ class CurrentClusterConfigurationTest {
       // configuration holds only cluster-wide operations and a group only its own.
       final var builder = OperationGraph.builder();
       builder.add(new MemberJoinOperation(MEMBER_0));
-      builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1, true));
       final var legacy =
           ClusterConfiguration.builder()
               .version(2)
@@ -242,7 +242,7 @@ class CurrentClusterConfigurationTest {
     void shouldMigrateOnlyWhatIsLeftOfAGraphChange() {
       // given — a graph change whose first operation has already completed
       final var builder = OperationGraph.builder();
-      final var first = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      final var first = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1, true));
       final var second = builder.add(new PartitionLeaveOperation(MEMBER_0, 2, 1), Set.of(first));
       final var plan =
           new DependencyChangePlan(
@@ -285,10 +285,12 @@ class CurrentClusterConfigurationTest {
       final var builder = OperationGraph.builder();
       final var first =
           builder.add(
-              new PartitionJoinOperation(MEMBER_0, 1, 1), Set.of(), Optional.of("tenant-a"));
+              new PartitionJoinOperation(MEMBER_0, 1, 1, true), Set.of(), Optional.of("tenant-a"));
       final var second =
           builder.add(
-              new PartitionJoinOperation(MEMBER_0, 2, 1), Set.of(first), Optional.of("tenant-b"));
+              new PartitionJoinOperation(MEMBER_0, 2, 1, true),
+              Set.of(first),
+              Optional.of("tenant-b"));
       final var plan =
           new DependencyChangePlan(
               4,
@@ -324,7 +326,7 @@ class CurrentClusterConfigurationTest {
     void shouldMigrateNoPlanWhenAGraphChangeHasFullyDrained() {
       // given — a graph change with every operation completed but the plan not yet cleared
       final var builder = OperationGraph.builder();
-      final var only = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
+      final var only = builder.add(new PartitionJoinOperation(MEMBER_0, 1, 1, true));
       final var plan =
           new DependencyChangePlan(
               4,
@@ -373,7 +375,7 @@ class CurrentClusterConfigurationTest {
     void shouldConvertMixedPendingOperationsIntoOrderedPhases() {
       // given — a legacy pending plan mixing global and partition ops in one flat list
       final var memberJoin = new MemberJoinOperation(MEMBER_0);
-      final var partitionJoin = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var partitionJoin = new PartitionJoinOperation(MEMBER_0, 1, 1, true);
       final var partitionLeave = new PartitionLeaveOperation(MEMBER_0, 1, 1);
       final var memberLeave = new MemberLeaveOperation(MEMBER_0);
       final var pending =
@@ -416,7 +418,7 @@ class CurrentClusterConfigurationTest {
     @Test
     void shouldActivateFirstPhaseOnDefaultGroupWhenItIsAPartitionPhase() {
       // given — a legacy pending plan whose first (and only) run of operations is partition-scoped
-      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1, true);
       final var leave = new PartitionLeaveOperation(MEMBER_0, 1, 1);
       final var legacy =
           ClusterConfiguration.builder()
@@ -441,7 +443,7 @@ class CurrentClusterConfigurationTest {
     void shouldAllowActivatingNextPhaseAfterMigration() {
       // given — a migrated multi-phase plan whose phase 0 is already activated
       final var memberJoin = new MemberJoinOperation(MEMBER_0);
-      final var partitionJoin = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var partitionJoin = new PartitionJoinOperation(MEMBER_0, 1, 1, true);
       final var legacy =
           ClusterConfiguration.builder()
               .version(5)
@@ -487,7 +489,7 @@ class CurrentClusterConfigurationTest {
     @Test
     void shouldNotActivateThePendingPlanOnItsOwn() {
       // given — a legacy pending plan whose first run of operations is partition-scoped
-      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1, true);
       final var legacy =
           ClusterConfiguration.builder()
               .version(5)
@@ -499,13 +501,9 @@ class CurrentClusterConfigurationTest {
       final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — the plan is recorded (phase 0 exists) but not activated into the default group.
-      // fromLegacy() must stay a pure, repeatable conversion: it is also called on every gossip
-      // update by BrokerTopologyManagerImpl#onClusterConfigurationUpdated(ClusterConfiguration)
-      // purely for read-only topology reporting. If it activated the phase itself, every such call
-      // would call startConfigurationChange again on a freshly-built (never-"pending") default
-      // group, endlessly restarting an already in-progress plan from scratch — this was a real
-      // regression caught by ExporterEnableTest once a broker/gateway kept re-deriving its topology
-      // from repeated legacy gossip.
+      // fromLegacy() must stay a pure, repeatable conversion so migrating the same persisted
+      // configuration does not start its pending change as a side effect. Migration explicitly
+      // activates the phase after conversion.
       assertThat(migrated.phasedChangeState().pending()).isNotEmpty();
       assertThat(
               migrated
@@ -712,7 +710,7 @@ class CurrentClusterConfigurationTest {
     @Test
     void shouldGroupConsecutivePartitionOpsIntoSinglePhase() {
       // given — a pending plan with only partition operations
-      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1, true);
       final var leave = new PartitionLeaveOperation(MEMBER_0, 1, 1);
       final var legacy =
           ClusterConfiguration.builder()
@@ -805,6 +803,115 @@ class CurrentClusterConfigurationTest {
 
       // then — no pending phased plan is produced
       assertThat(migrated.phasedChangeState().pending()).isEmpty();
+    }
+  }
+
+  @Nested
+  class IsAfterRestore {
+
+    @Test
+    void shouldDetectRestoreOfASinglePhysicalTenant() {
+      // given
+      final var configuration = restoreConfiguration("default");
+
+      // when / then
+      assertThat(configuration.isAfterRestore()).isTrue();
+    }
+
+    @Test
+    void shouldDetectRestoreOfSeveralPhysicalTenants() {
+      // given — what RestoreManager writes for a multi-tenant cluster: one phase naming every
+      // restored group, each running its own UpdateRoutingState
+      final var configuration = restoreConfiguration("default", "tenant-a", "tenant-b");
+
+      // when / then — the post-restore handling must not switch itself off as tenants are added
+      assertThat(configuration.isAfterRestore()).isTrue();
+    }
+
+    @Test
+    void shouldNotDetectRestoreForAPhaseNamingNoGroup() {
+      // given — a restore plan whose phase targets nothing; there is no group to reconcile on
+      // anyone's behalf, so this must not pass as a restore just because every (absent) group
+      // satisfies the per-group shape check vacuously
+      final var plan =
+          PhasedChangePlan.initForRestore(
+              List.of(new PartitionGroupPhase(Map.of())), Instant.EPOCH);
+      final var configuration =
+          config(
+              global(1, Map.of()),
+              Map.of("default", group(1, Map.of())),
+              new PhasedChangeState(
+                  PhasedChangePlan.INITIAL_PLAN_ID, Map.of(plan.id(), plan), List.of()));
+
+      // when / then
+      assertThat(configuration.isAfterRestore()).isFalse();
+    }
+
+    @Test
+    void shouldNotDetectRestoreWhenAGroupRunsMoreThanUpdateRoutingState() {
+      // given — one group carries an extra operation, so this is not the shape a restore produces
+      final var plan =
+          PhasedChangePlan.initForRestore(
+              List.of(
+                  PartitionGroupPhase.sequential(
+                      Map.of(
+                          "default",
+                          List.of(updateRoutingState()),
+                          "tenant-a",
+                          List.of(updateRoutingState(), new DeleteHistoryOperation(MEMBER_0))))),
+              Instant.EPOCH);
+      final var configuration =
+          config(
+              global(1, Map.of()),
+              Map.of("default", group(1, Map.of()), "tenant-a", group(1, Map.of())),
+              new PhasedChangeState(
+                  PhasedChangePlan.INITIAL_PLAN_ID, Map.of(plan.id(), plan), List.of()));
+
+      // when / then
+      assertThat(configuration.isAfterRestore()).isFalse();
+    }
+
+    @Test
+    void shouldNotDetectRestoreForAnOrdinaryMultiGroupUpdateRoutingState() {
+      // given — the same per-group shape as a restore, but issued by the plan counter rather than
+      // carrying the restore sentinel id: an admin-triggered updateRoutingState across tenants
+      final var phase =
+          PartitionGroupPhase.sequential(
+              Map.of(
+                  "default", List.of(updateRoutingState()),
+                  "tenant-a", List.of(updateRoutingState())));
+      final var plan =
+          PhasedChangePlan.init(PhasedChangePlan.INITIAL_PLAN_ID, List.of(phase), Instant.EPOCH);
+      final var configuration =
+          config(
+              global(1, Map.of()),
+              Map.of("default", group(1, Map.of()), "tenant-a", group(1, Map.of())),
+              new PhasedChangeState(
+                  PhasedChangePlan.INITIAL_PLAN_ID + 1, Map.of(plan.id(), plan), List.of()));
+
+      // when / then
+      assertThat(configuration.isAfterRestore()).isFalse();
+    }
+
+    private static CurrentClusterConfiguration restoreConfiguration(final String... groupIds) {
+      final Map<String, List<PartitionGroupOperation>> operations = new TreeMap<>();
+      final Map<String, PartitionGroupConfiguration> groups = new TreeMap<>();
+      for (final var groupId : groupIds) {
+        operations.put(groupId, List.of(updateRoutingState()));
+        groups.put(groupId, group(1, Map.of()));
+      }
+      final var plan =
+          PhasedChangePlan.initForRestore(
+              List.of(PartitionGroupPhase.sequential(operations)), Instant.EPOCH);
+      return config(
+          global(1, Map.of()),
+          groups,
+          new PhasedChangeState(
+              PhasedChangePlan.INITIAL_PLAN_ID, Map.of(plan.id(), plan), List.of()));
+    }
+
+    private static PartitionGroupOperation updateRoutingState() {
+      return new PartitionGroupOperation.UpdateRoutingState(MEMBER_0, Optional.empty());
     }
   }
 
@@ -1544,8 +1651,8 @@ class CurrentClusterConfigurationTest {
       // given — the default group is running a change whose two operations have no edge between
       // them, so they may run at the same time
       final var graph = OperationGraph.builder();
-      graph.add(new PartitionJoinOperation(MEMBER_0, 1, 1));
-      graph.add(new PartitionJoinOperation(MEMBER_1, 1, 1));
+      graph.add(new PartitionJoinOperation(MEMBER_0, 1, 1, true));
+      graph.add(new PartitionJoinOperation(MEMBER_1, 1, 1, true));
       final var groupId = CurrentClusterConfiguration.DEFAULT_GROUP;
       final var config =
           config(

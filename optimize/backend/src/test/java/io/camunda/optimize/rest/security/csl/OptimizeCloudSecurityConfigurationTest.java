@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
@@ -80,29 +79,29 @@ class OptimizeCloudSecurityConfigurationTest {
   }
 
   @Test
-  void shouldAcceptLoginTokenForConfiguredOrgWithoutClusterId() {
+  void shouldAcceptTokenForConfiguredOrgWithoutClusterId() {
     final OAuth2TokenValidator<Jwt> validator = sharedValidator();
 
-    final Jwt idToken =
+    final Jwt token =
         jwt(
             Map.of(
                 OptimizeCloudOrganizationValidator.ORGANIZATIONS_CLAIM,
                 List.of(Map.of("id", "org-1", "roles", List.of("analyst")))));
 
-    assertThat(validator.validate(idToken).hasErrors()).isFalse();
+    assertThat(validator.validate(token).hasErrors()).isFalse();
   }
 
   @Test
-  void shouldRejectLoginTokenForAnotherOrg() {
+  void shouldRejectTokenForAnotherOrg() {
     final OAuth2TokenValidator<Jwt> validator = sharedValidator();
 
-    final Jwt idToken =
+    final Jwt token =
         jwt(
             Map.of(
                 OptimizeCloudOrganizationValidator.ORGANIZATIONS_CLAIM,
                 List.of(Map.of("id", "org-2", "roles", List.of("admin")))));
 
-    assertThat(validator.validate(idToken).hasErrors()).isTrue();
+    assertThat(validator.validate(token).hasErrors()).isTrue();
   }
 
   @Test
@@ -111,21 +110,6 @@ class OptimizeCloudSecurityConfigurationTest {
     final OAuth2TokenValidator<Jwt> validator = sharedValidator();
 
     assertThat(validator.validate(jwt(Map.of())).hasErrors()).isFalse();
-  }
-
-  @Test
-  void shouldBuildOidcIdTokenDecoderFactoryForLogin() {
-    when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
-    when(authConfiguration.getCloudAuthConfiguration()).thenReturn(cloudAuthConfiguration);
-    when(cloudAuthConfiguration.getOrganizationId()).thenReturn("org-1");
-    when(cloudAuthConfiguration.getClusterId()).thenReturn("cluster-1");
-    when(oidcProviderConfigurationPort.getOidcAuthenticationConfigurations()).thenReturn(Map.of());
-
-    final TokenValidatorFactory factory =
-        config.tokenValidatorFactory(
-            oidcProviderConfigurationPort, configurationService, cslProperties);
-
-    assertThat(config.idTokenDecoderFactory(factory)).isInstanceOf(OidcIdTokenDecoderFactory.class);
   }
 
   @Test

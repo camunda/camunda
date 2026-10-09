@@ -42,8 +42,8 @@ public final class AnalyticsAttributes {
     // Event name values
 
     public static final String PROCESS_INSTANCE_ACTIVATED = "camunda.process.instance.activated";
-    public static final String HEARTBEAT = "heartbeat";
-    public static final String USER_TASK_CREATED = "user_task_created";
+    public static final String HEARTBEAT = "camunda.telemetry.heartbeat";
+    public static final String USER_TASK_CREATED = "camunda.user_task.created";
     public static final String TENANT_CREATED = "camunda.tenant.created";
     public static final String TENANT_DELETED = "camunda.tenant.deleted";
     public static final String PROCESS_INCIDENT_CREATED = "camunda.process.incident.created";
@@ -112,10 +112,6 @@ public final class AnalyticsAttributes {
   public static final class UserTask {
     public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.user_task.key");
 
-    /** SHA-256 hex of the assignee. The raw assignee is PII and must never be emitted. */
-    public static final AttributeKey<String> ASSIGNEE_HASH =
-        AttributeKey.stringKey("camunda.user_task.assignee_hash");
-
     private UserTask() {}
   }
 
@@ -164,9 +160,9 @@ public final class AnalyticsAttributes {
 
   public static final class Heartbeat {
     public static final AttributeKey<String> BROKER_VERSION =
-        AttributeKey.stringKey("camunda.heartbeat.broker_version");
+        AttributeKey.stringKey("camunda.telemetry.heartbeat.broker_version");
     public static final AttributeKey<String> EXPORTER_VERSION =
-        AttributeKey.stringKey("camunda.heartbeat.exporter_version");
+        AttributeKey.stringKey("camunda.telemetry.heartbeat.exporter_version");
 
     private Heartbeat() {}
   }

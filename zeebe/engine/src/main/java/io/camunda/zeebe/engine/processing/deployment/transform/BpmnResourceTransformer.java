@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.validation.StraightTh
 import io.camunda.zeebe.engine.processing.deployment.model.validation.UnsupportedMultiTenantFeaturesValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -62,8 +61,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
   /**
    * Executable processes parsed for each resource in {@link #createMetadata}, kept around for
-   * {@link #writeRecords} to scan for agent-marked elements once the process' final key/version are
-   * known.
+   * {@link #writeRecords} to seed the process cache and scan for agent-marked elements once the
+   * process' final key/version are known.
    */
   private final Map<DeploymentResource, List<ExecutableProcess>> executableProcessesByResource =
       new IdentityHashMap<>();
@@ -213,10 +212,10 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                       .wrap(metadata, resource.getResource())
                       .setTransformerVersions(bpmnTransformer.currentVersionsById());
               stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
-              agentDefinitionTransformer.writeRecords(
-                  deployment,
-                  findExecutableProcess(resource, metadata.getBpmnProcessId()),
-                  metadata);
+              final var executableProcess =
+                  findExecutableProcess(resource, metadata.getBpmnProcessId());
+              processState.cacheProcess(key, deployment.getTenantId(), executableProcess);
+              agentDefinitionTransformer.writeRecords(deployment, executableProcess, metadata);
               processDefinitionMetrics.processDefinitionDeployed(
                   key, processRecord.getBpmnProcessId(), resource.getResource().length);
             });
@@ -325,10 +324,9 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final DirectBuffer lastVersionDigest) {
     return lastVersionDigest != null
         && lastProcess != null
-        // A DRAINING/PENDING_DELETION latest version is on its way out: reusing its key would make
-        // the redeploy vanish once the drain completes. Only an ACTIVE version can be a duplicate;
-        // otherwise mint a fresh version.
-        && lastProcess.getState() == PersistedProcessState.ACTIVE
+        // A DRAINING latest would vanish once its drain completes, so it can never be a duplicate;
+        // mint a fresh version. A resting PENDING_DELETION counts as active and stays eligible.
+        && lastProcess.isActive()
         && lastVersionDigest.equals(resourceDigest)
         && lastProcess.getResourceName().equals(deploymentResource.getResourceNameBuffer());
   }

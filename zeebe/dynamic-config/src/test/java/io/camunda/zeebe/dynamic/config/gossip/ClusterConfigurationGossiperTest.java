@@ -26,8 +26,6 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -66,45 +64,8 @@ final class ClusterConfigurationGossiperTest {
   }
 
   @Test
-  void shouldPropagateTopologyUpdate() {
+  void shouldConvergeCurrentClusterConfigurationBetweenBrokers() {
     // given
-    final var config =
-        new ClusterConfigurationGossiperConfig(
-            Duration.ofMillis(100),
-            Duration.ofSeconds(1),
-            0,
-            Duration.ofSeconds(1),
-            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
-    node1 =
-        new TestGossiper(
-            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics, false);
-    node2 =
-        new TestGossiper(
-            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics, false);
-    node3 =
-        new TestGossiper(
-            createClusterNode(clusterNodes.get(2), clusterNodes), config, topologyMetrics, false);
-
-    node1.start();
-    node2.start();
-    node3.start();
-
-    final var node1Topology =
-        ClusterConfiguration.init().addMember(node1.id(), MemberState.initializeAsActive(Map.of()));
-
-    // when
-    node1.setTopology(node1Topology);
-
-    // then
-    Awaitility.await("Node 2 has received topology via gossip")
-        .untilAsserted(() -> assertThat(node2.clusterConfiguration).isEqualTo(node1Topology));
-    Awaitility.await("Node 3 has received topology via gossip")
-        .untilAsserted(() -> assertThat(node3.clusterConfiguration).isEqualTo(node1Topology));
-  }
-
-  @Test
-  void shouldConvergeCurrentClusterConfigurationBetweenUpgradedBrokers() {
-    // given — three upgraded brokers, all with the new-model handler wired
     final var config =
         new ClusterConfigurationGossiperConfig(
             Duration.ofMillis(100),
@@ -114,13 +75,13 @@ final class ClusterConfigurationGossiperTest {
             Duration.ofSeconds(1));
     node1 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics, true);
+            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
     node2 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics, true);
+            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics);
     node3 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(2), clusterNodes), config, topologyMetrics, true);
+            createClusterNode(clusterNodes.get(2), clusterNodes), config, topologyMetrics);
 
     node1.start();
     node2.start();
@@ -130,92 +91,22 @@ final class ClusterConfigurationGossiperTest {
         ClusterConfiguration.init().addMember(node1.id(), MemberState.initializeAsActive(Map.of()));
     final var node1Configuration = CurrentClusterConfiguration.fromLegacy(legacySeed);
 
-    // when — node 1 gossips the new-model configuration, with no persisted-file sharing between
+    // when — node 1 gossips the configuration, with no persisted-file sharing between
     // nodes (each TestGossiper only exchanges state over the real network)
     node1.setCurrentClusterConfiguration(node1Configuration);
 
     // then — nodes 2 and 3 converge on the same multi-group configuration via gossip alone
-    Awaitility.await("Node 2 has received the new-model configuration via gossip")
+    Awaitility.await("Node 2 has received the configuration via gossip")
         .untilAsserted(
             () -> assertThat(node2.currentClusterConfiguration).isEqualTo(node1Configuration));
-    Awaitility.await("Node 3 has received the new-model configuration via gossip")
+    Awaitility.await("Node 3 has received the configuration via gossip")
         .untilAsserted(
             () -> assertThat(node3.currentClusterConfiguration).isEqualTo(node1Configuration));
   }
 
   @Test
-  void shouldMigrateLegacyGossipFromAnOldBroker() {
-    // given — node 1 is not yet upgraded (legacy handler only); node 2 is upgraded
-    final var config =
-        new ClusterConfigurationGossiperConfig(
-            Duration.ofMillis(100),
-            Duration.ofSeconds(1),
-            0,
-            Duration.ofSeconds(1),
-            Duration.ofSeconds(1));
-    node1 =
-        new TestGossiper(
-            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics, false);
-    node2 =
-        new TestGossiper(
-            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics, true);
-
-    node1.start();
-    node2.start();
-
-    final var node1Topology =
-        ClusterConfiguration.init().addMember(node1.id(), MemberState.initializeAsActive(Map.of()));
-
-    // when — the old broker gossips only the legacy field
-    node1.setTopology(node1Topology);
-
-    // then — the upgraded broker migrates the received legacy view via fromLegacy
-    Awaitility.await("Node 2 has migrated the legacy gossip from the old broker")
-        .untilAsserted(
-            () ->
-                assertThat(node2.currentClusterConfiguration)
-                    .isEqualTo(CurrentClusterConfiguration.fromLegacy(node1Topology)));
-  }
-
-  @Test
-  void shouldStillGossipLegacyFieldToAnOldBrokerFromAnUpgradedBroker() {
-    // given — node 1 is upgraded (dual-write); node 2 is not yet upgraded (legacy handler only)
-    final var config =
-        new ClusterConfigurationGossiperConfig(
-            Duration.ofMillis(100),
-            Duration.ofSeconds(1),
-            0,
-            Duration.ofSeconds(1),
-            Duration.ofSeconds(1));
-    node1 =
-        new TestGossiper(
-            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics, true);
-    node2 =
-        new TestGossiper(
-            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics, false);
-
-    node1.start();
-    node2.start();
-
-    final var node1Configuration =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(node1.id(), MemberState.initializeAsActive(Map.of())));
-
-    // when — the upgraded broker gossips the new-model configuration (dual-writing both fields)
-    node1.setCurrentClusterConfiguration(node1Configuration);
-
-    // then — the not-yet-upgraded broker still receives and merges the legacy field
-    Awaitility.await("Node 2 (not upgraded) has received the legacy field via gossip")
-        .untilAsserted(
-            () ->
-                assertThat(node2.clusterConfiguration)
-                    .isEqualTo(node1Configuration.toLegacyDefault()));
-  }
-
-  @Test
-  void shouldBackfillNewListenerWithNewModelConfigurationNotLegacyProjection() {
-    // given — two upgraded brokers; node1 gossips a new-model configuration with a non-default
+  void shouldBackfillNewListenerWithNewModelConfiguration() {
+    // given — two brokers; node1 gossips a configuration with a non-default
     // physical tenant group ("tenanta"), which node2 receives and converges on
     final var config =
         new ClusterConfigurationGossiperConfig(
@@ -226,10 +117,10 @@ final class ClusterConfigurationGossiperTest {
             Duration.ofSeconds(1));
     node1 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics, true);
+            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
     node2 =
         new TestGossiper(
-            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics, true);
+            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics);
     node1.start();
     node2.start();
 
@@ -260,22 +151,13 @@ final class ClusterConfigurationGossiperTest {
         new ClusterConfigurationUpdateListener() {
           @Override
           public void onClusterConfigurationUpdated(
-              final ClusterConfiguration clusterConfiguration) {
-            // should not be reached: the new-model field is populated, so it must be preferred
-            throw new IllegalStateException(
-                "Legacy listener should not be called when new-model field is populated");
-          }
-
-          @Override
-          public void onClusterConfigurationUpdated(
               final CurrentClusterConfiguration clusterConfiguration) {
             backfilled.set(clusterConfiguration);
           }
         });
 
-    // then — the backfill call carries the full new-model configuration, including "tenanta",
-    // not the legacy single-group projection (which would have silently dropped it)
-    Awaitility.await("The new listener was backfilled with the new-model configuration")
+    // then — the backfill call carries the full configuration, including "tenanta"
+    Awaitility.await("The new listener was backfilled with the configuration")
         .untilAsserted(() -> assertThat(backfilled.get()).isEqualTo(node1Configuration));
     assertThat(backfilled.get().hasPartitionGroup("tenanta")).isTrue();
   }
@@ -296,14 +178,12 @@ final class ClusterConfigurationGossiperTest {
   private final class TestGossiper extends Actor {
     private final ClusterConfigurationGossiper gossiper;
     private final AtomixCluster atomixCluster;
-    private ClusterConfiguration clusterConfiguration;
     private CurrentClusterConfiguration currentClusterConfiguration;
 
     private TestGossiper(
         final AtomixCluster atomixCluster,
         final ClusterConfigurationGossiperConfig config,
-        final TopologyMetrics topologyMetrics,
-        final boolean useNewModelHandler) {
+        final TopologyMetrics topologyMetrics) {
       super("Node-" + atomixCluster.getMembershipService().getLocalMember().id());
       gossiper =
           new ClusterConfigurationGossiper(
@@ -312,8 +192,7 @@ final class ClusterConfigurationGossiperTest {
               atomixCluster.getMembershipService(),
               new ProtoBufSerializer(),
               config,
-              useNewModelHandler ? null : this::mergeTopology,
-              useNewModelHandler ? this::mergeCurrentClusterConfiguration : null,
+              this::mergeCurrentClusterConfiguration,
               topologyMetrics);
       this.atomixCluster = atomixCluster;
     }
@@ -327,16 +206,6 @@ final class ClusterConfigurationGossiperTest {
       atomixCluster.start().join();
       actorScheduler.submitActor(this).join();
       gossiper.start();
-    }
-
-    void setTopology(final ClusterConfiguration clusterConfiguration) {
-      this.clusterConfiguration = clusterConfiguration;
-      gossiper.updateClusterConfiguration(clusterConfiguration);
-    }
-
-    private ActorFuture<ClusterConfiguration> mergeTopology(final ClusterConfiguration t) {
-      clusterConfiguration = clusterConfiguration == null ? t : t.merge(clusterConfiguration);
-      return TestActorFuture.completedFuture(clusterConfiguration);
     }
 
     void setCurrentClusterConfiguration(

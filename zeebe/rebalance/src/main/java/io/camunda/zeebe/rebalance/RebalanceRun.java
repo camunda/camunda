@@ -11,7 +11,9 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.jspecify.annotations.Nullable;
 
@@ -29,9 +31,13 @@ public final class RebalanceRun {
   private final Instant startedAt;
   private final List<PartitionRebalance> partitions = new ArrayList<>();
 
+  private final Set<String> disabledPhysicalTenants = new HashSet<>();
+  private final Set<String> recoveringPhysicalTenants = new HashSet<>();
+
   private long partitionStartedAtNanos = System.nanoTime();
   private boolean cancelRequested;
   private boolean abandoned;
+  private boolean confirmingLateTransfer;
   private @Nullable Instant finishedAt;
 
   public RebalanceRun(
@@ -94,6 +100,21 @@ public final class RebalanceRun {
     return Duration.ofNanos(System.nanoTime() - partitionStartedAtNanos);
   }
 
+  /** Marks that this run is confirming a late transfer for the partition currently in flight. */
+  public void startConfirmingLateTransfer() {
+    confirmingLateTransfer = true;
+  }
+
+  /** Clears the late-transfer confirmation marker for the partition currently in flight. */
+  public void stopConfirmingLateTransfer() {
+    confirmingLateTransfer = false;
+  }
+
+  /** Whether this run is confirming a late transfer for the partition currently in flight. */
+  public boolean isConfirmingLateTransfer() {
+    return confirmingLateTransfer;
+  }
+
   /**
    * The partitions this rebalance covers, in the order it works through them, each with where the
    * rebalance has got to with it. Empty until the runner has planned the rebalance.
@@ -106,6 +127,42 @@ public final class RebalanceRun {
   public void plan(final List<PartitionRebalance> planned) {
     partitions.clear();
     partitions.addAll(planned);
+  }
+
+  /**
+   * Notes which of the planned physical tenants {@code current} no longer runs, or is currently
+   * recovering, so that the runner can complete their partitions rather than wait out {@code
+   * leaderWaitTimeout} for a leader that will never appear.
+   */
+  public void observeConfiguration(final CurrentClusterConfiguration current) {
+    final var active = current.activePartitionGroups();
+    disabledPhysicalTenants.clear();
+    recoveringPhysicalTenants.clear();
+    partitions.stream()
+        .map(PartitionRebalance::physicalTenantId)
+        .distinct()
+        .forEach(
+            physicalTenantId -> {
+              final var group = active.get(physicalTenantId);
+              if (group == null) {
+                disabledPhysicalTenants.add(physicalTenantId);
+              } else if (group.isRecovering()) {
+                recoveringPhysicalTenants.add(physicalTenantId);
+              }
+            });
+  }
+
+  /** Whether this physical tenant has stopped running since the rebalance was planned. */
+  public boolean isPhysicalTenantDisabled(final String physicalTenantId) {
+    return disabledPhysicalTenants.contains(physicalTenantId);
+  }
+
+  /**
+   * Whether this physical tenant is currently recovering. Level-triggered: a later configuration
+   * that shows the tenant processing again clears it.
+   */
+  public boolean isPhysicalTenantRecovering(final String physicalTenantId) {
+    return recoveringPhysicalTenants.contains(physicalTenantId);
   }
 
   public PartitionRebalance partition(final int index) {

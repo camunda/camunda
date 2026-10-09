@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -57,11 +58,11 @@ public final class MessageSubscriptionRejectProcessor
   public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
+
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.REJECTED, subscriptionRecord);
 
-    final var foundSubscription = findSubscriptionToCorrelate(subscriptionRecord);
-    if (!foundSubscription) {
+    if (!findSubscriptionToCorrelate(subscriptionRecord)) {
       writeNotCorrelatedResponse(record);
     }
   }
@@ -88,7 +89,8 @@ public final class MessageSubscriptionRejectProcessor
               correlatingSubscription
                       .getBpmnProcessIdBuffer()
                       .equals(subscriptionRecord.getBpmnProcessIdBuffer())
-                  && !subscription.isCorrelating();
+                  && !subscription.isCorrelating()
+                  && !hasAlreadyBeenCorrelated(subscriptionRecord, subscription);
 
           if (canBeCorrelated) {
             correlatingSubscription
@@ -108,6 +110,16 @@ public final class MessageSubscriptionRejectProcessor
     return foundSubscription.get();
   }
 
+  private boolean hasAlreadyBeenCorrelated(
+      final MessageSubscriptionRecord subscriptionRecord, final MessageSubscription subscription) {
+    // Exact match only, not key ordering: a candidate may belong to a generation that skipped this
+    // message while it was locked and correlated a later one instead, so a numerically-ahead
+    // last-correlated key doesn't mean it was ever claimed.
+    final var messageKey = subscriptionRecord.getMessageKey();
+    final var lastCorrelatedMessageKey = subscription.getRecord().getMessageKey();
+    return messageKey == lastCorrelatedMessageKey;
+  }
+
   private void sendCorrelateCommand(final MessageSubscriptionRecord subscription) {
     commandSender.correlateProcessMessageSubscription(
         subscription.getProcessInstanceKey(),
@@ -118,7 +130,8 @@ public final class MessageSubscriptionRejectProcessor
         subscription.getMessageKey(),
         subscription.getVariablesBuffer(),
         subscription.getCorrelationKeyBuffer(),
-        subscription.getTenantId());
+        subscription.getTenantId(),
+        subscription.getSubscriptionKey());
   }
 
   private void writeNotCorrelatedResponse(final TypedRecord<MessageSubscriptionRecord> record) {

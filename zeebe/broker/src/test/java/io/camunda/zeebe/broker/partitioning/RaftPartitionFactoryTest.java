@@ -72,6 +72,50 @@ public final class RaftPartitionFactoryTest {
   }
 
   @Test
+  void shouldUseDefaultElectionTimeoutAsRequestTimeoutWhenNeitherIsConfigured() {
+    // given — neither requestTimeout nor electionTimeout is customized
+    final var brokerCfg = new BrokerCfg();
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then — request timeout falls back to the default election timeout (2500 ms)
+    assertThat(partition.getPartitionConfig().getRequestTimeout())
+        .isEqualTo(Duration.ofMillis(2500));
+  }
+
+  @Test
+  void shouldUseElectionTimeoutAsRequestTimeoutWhenNotConfigured() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setElectionTimeout(Duration.ofMillis(500));
+    // requestTimeout is intentionally left unconfigured (null)
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then
+    assertThat(partition.getPartitionConfig().getRequestTimeout())
+        .isEqualTo(Duration.ofMillis(500));
+  }
+
+  @Test
+  void shouldUseConfiguredRequestTimeoutOverElectionTimeout() {
+    // given
+    final Duration electionTimeout = Duration.ofMillis(500);
+    final Duration requestTimeout = Duration.ofSeconds(3);
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setElectionTimeout(electionTimeout);
+    brokerCfg.getExperimental().getRaft().setRequestTimeout(requestTimeout);
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then
+    assertThat(partition.getPartitionConfig().getRequestTimeout()).isEqualTo(requestTimeout);
+  }
+
+  @Test
   void shouldSetRaftSnapshotRequestTimeout() {
     // given
     final Duration expected = Duration.ofSeconds(15);
@@ -229,6 +273,7 @@ public final class RaftPartitionFactoryTest {
   }
 
   private RaftPartition buildRaftPartition(final BrokerCfg brokerCfg) {
+    brokerCfg.getExperimental().init(brokerCfg, "");
     return new RaftPartitionFactory(brokerCfg)
         .createRaftPartition(
             new PartitionMetadata(

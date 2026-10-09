@@ -90,6 +90,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
                 fieldError={fieldError}
                 autoFocus={!isModificationModeEnabled || meta.active}
                 readOnly={meta.submitting}
+                isModified={meta.modified}
                 onBlur={() => {
                   variableEditor.createModification({
                     scopeId: variableEditor.variableScopeKey,

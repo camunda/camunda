@@ -22,6 +22,10 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
     </dependency>
     <dependency>
@@ -107,6 +111,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapps-backup</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapp-server</artifactId>
     </dependency>
 
     <dependency>

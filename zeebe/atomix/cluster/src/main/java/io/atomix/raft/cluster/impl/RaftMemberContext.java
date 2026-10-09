@@ -54,6 +54,9 @@ public final class RaftMemberContext {
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
   private IndexedRaftLogEntry currentEntry;
+  // the index of the next entry to send, also when there is no current entry because the log
+  // starts after the previous entry
+  private long nextIndex;
 
   // Number of bytes remaining to replicate for this member for any pending/in-flight snapshot
   // install
@@ -169,6 +172,10 @@ public final class RaftMemberContext {
     reader.seekToLast();
     if (reader.hasNext()) {
       currentEntry = reader.next();
+      nextIndex = currentEntry.index() + 1;
+    } else {
+      currentEntry = null;
+      nextIndex = 0;
     }
   }
 
@@ -223,7 +230,15 @@ public final class RaftMemberContext {
 
   /** Completes an append request to the member. */
   public void completeAppend() {
-    inFlightAppendCount--;
+    // Floor at zero: resetState() zeroes the in-flight count - necessarily so, because it must
+    // recover slots stranded by a previous leader's closed appender, whose response callbacks
+    // never run - but responses to appends started before a reset within the same leadership
+    // still arrive here. For example, a member's type change (such as a promotion) resets its
+    // state while heartbeats to it are in flight. Without the floor, such a response makes the
+    // count negative, and canAppend()/canHeartbeat() - both testing for == 0 - may never hold
+    // again, permanently silencing the leader towards this member. With the floor, the worst
+    // case is a transiently over-permissive count, i.e. one extra concurrent append.
+    inFlightAppendCount = Math.max(0, inFlightAppendCount - 1);
   }
 
   /**
@@ -596,6 +611,7 @@ public final class RaftMemberContext {
 
   public IndexedRaftLogEntry nextEntry() {
     currentEntry = reader.next();
+    nextIndex = currentEntry.index() + 1;
     return currentEntry;
   }
 
@@ -607,9 +623,15 @@ public final class RaftMemberContext {
     return currentEntry != null ? currentEntry.index() : 0;
   }
 
+  public long getNextIndex() {
+    return nextIndex;
+  }
+
   public void reset(final long index) {
-    final var nextIndex = reader.seek(index - 1);
-    if (nextIndex == index - 1) {
+    // set nextIndex explicitly so that it is visible even if currentEntry is null (e.g. if the log
+    // starts after the previous entry)
+    nextIndex = index;
+    if (reader.seek(index - 1) == index - 1) {
       currentEntry = reader.next();
     } else {
       currentEntry = null;

@@ -97,7 +97,8 @@ final class MessageSubscriptionExportHandlerTest {
     underTest.export(record);
 
     // then
-    verify(writer).create(any());
+    // CREATED uses an idempotent insert: the suspend/resume flow re-emits CREATED for the same key.
+    verify(writer).createIfNotExists(any());
   }
 
   @ParameterizedTest
@@ -211,7 +212,7 @@ final class MessageSubscriptionExportHandlerTest {
             ProcessMessageSubscriptionIntent.CREATED,
             MessageSubscriptionState.CREATED,
             (BiConsumer<MessageSubscriptionWriter, ArgumentCaptor<MessageSubscriptionDbModel>>)
-                (writer, captor) -> verify(writer).create(captor.capture())),
+                (writer, captor) -> verify(writer).createIfNotExists(captor.capture())),
         Arguments.of(
             ProcessMessageSubscriptionIntent.CORRELATED,
             MessageSubscriptionState.CORRELATED,
@@ -246,7 +247,7 @@ final class MessageSubscriptionExportHandlerTest {
 
     // then — no exception, enrichment fields fall back to null / empty map
     final var captor = ArgumentCaptor.forClass(MessageSubscriptionDbModel.class);
-    verify(writer).create(captor.capture());
+    verify(writer).createIfNotExists(captor.capture());
     final MessageSubscriptionDbModel model = captor.getValue();
     assertThat(model.processDefinitionName()).isNull();
     assertThat(model.processDefinitionVersion()).isNull();
@@ -283,7 +284,8 @@ final class MessageSubscriptionExportHandlerTest {
 
     // then
     final var captor = ArgumentCaptor.forClass(MessageSubscriptionDbModel.class);
-    verify(writer).create(captor.capture());
+    // CREATED uses an idempotent insert: the suspend/resume flow re-emits CREATED for the same key.
+    verify(writer).createIfNotExists(captor.capture());
     assertThat(captor.getValue().businessId()).isNull();
   }
 }

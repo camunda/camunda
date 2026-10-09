@@ -528,6 +528,8 @@ paths:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1restore'
   /cluster/v2/status:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1status'
+  /cluster/v2/status/upgrade:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1status~1upgrade'
   /cluster/v2/topology:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1topology'
 

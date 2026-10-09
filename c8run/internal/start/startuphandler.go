@@ -9,14 +9,17 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 
+	"github.com/camunda/camunda/c8run/internal/cliname"
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/jre"
 	"github.com/camunda/camunda/c8run/internal/overrides"
+	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 )
@@ -374,7 +377,12 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 
 	if err := ensurePortAvailable(settings.Port); err != nil {
 		log.Error().Err(err).Int("port", settings.Port).Msg("Camunda Run port is unavailable")
-		fmt.Printf("Port %d is already in use. Stop the other service or run `c8run start --port <free-port>`.\n", settings.Port)
+		fmt.Print(cliname.Rewrite(fmt.Sprintf("Port %d is already in use. Stop the other service or run `c8run start --port <free-port>`.\n", settings.Port)))
+		os.Exit(1)
+	}
+
+	if err := physicaltenants.ApplyGeneratedConfig(parentDir, settings.PhysicalTenantsConfig); err != nil {
+		fmt.Printf("Failed to write physical tenant configuration: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -412,12 +420,9 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
 	if strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
-		event := log.Info().
-			Str("secondaryStorage.type", settings.SecondaryStorageType)
-		if settings.ResolvedConfigPath != "" {
-			event = event.Str("config", settings.ResolvedConfigPath)
-		}
-		event.Msg("C8Run will use the configured external Elasticsearch instance; no local Elasticsearch process is bundled or managed")
+		log.Info().
+			Str("secondaryStorage.type", settings.SecondaryStorageType).
+			Msg("C8Run will use the configured external Elasticsearch instance; no local Elasticsearch process is bundled or managed")
 	}
 
 	printSystemInformation(javaVersion, javaHome, javaOpts, !settings.DisableConnectors)
@@ -433,6 +438,12 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 
 	// Always load the default config directory
 	extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, "configuration") + slash
+
+	// Generated physical tenant config sits between the defaults and the user override,
+	// so anything the user declares still wins.
+	if settings.PhysicalTenantsConfigPath != "" {
+		extraArgs = extraArgs + ",file:" + settings.PhysicalTenantsConfigPath
+	}
 
 	// Optional user override (file or dir) — appended LAST => higher precedence
 	if settings.Config != "" {
@@ -451,6 +462,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Camunda.PidPath, "Camunda", func() {
 		camundaCmd := c8.CamundaCmd(ctx, processInfo.Camunda.Version, parentDir, extraArgs, javaOpts)
+		camundaCmd.Env = withTenantEnv(camundaCmd.Env, settings.PhysicalTenantsEnv)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		err := s.startApplication(camundaCmd, processInfo.Camunda.PidPath, camundaLogPath, stop)
 		if err != nil {
@@ -459,7 +471,15 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 			return
 		}
 	}, func() error {
-		return health.QueryCamunda(ctx, c8, "Camunda", settings, startupHealthCheckRetries)
+		err := health.QueryCamunda(ctx, c8, "Camunda", settings, startupHealthCheckRetries)
+		var notReady *health.TenantsNotReadyError
+		if errors.As(err, &notReady) {
+			// Camunda and the other tenants are usable; keep them running and report the
+			// failed tenants once startup finishes instead of tearing everything down.
+			state.NotReadyTenants = notReady.IDs
+			return nil
+		}
+		return err
 	}, stop)
 
 	if ctx.Err() != nil {
@@ -475,17 +495,128 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 		return
 	}
 
+	if err := overrides.SetConnectorsAuthEnvVars(state.Settings); err != nil {
+		log.Warn().Err(err).Msg("Failed to set Connectors authentication env vars; Connectors may fail to authenticate")
+	}
+
+	// Connectors is an optional component. A failure to start or become healthy must
+	// not tear down the rest of the cluster, so its failure handler only logs guidance
+	// instead of cancelling the shared context (which would stop Camunda too).
+	connectorsFailed := func() {
+		log.Warn().Msg(
+			"Connectors did not start; Camunda keeps running. If authorizations are enabled, " +
+				"Connectors needs the seeded user's credentials: pass --username/--password matching " +
+				"the seeded user, or start with --disable-connectors to skip the bundled Connectors runtime.")
+	}
+
 	processInfo := state.ProcessInfo
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
 		connectorsCmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
+		connectorsCmd.Env = defaultConnectorsEnv(connectorsCmd.Env, state.Settings.ConnectorsPort)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
 		if err != nil {
 			log.Err(err).Msg("Failed to start Connectors process")
-			stop()
 			return
 		}
 	}, func() error {
-		return health.QueryConnectors(ctx, "Connectors", startupHealthCheckRetries)
-	}, stop)
+		return health.QueryConnectorsOnPort(ctx, "Connectors", state.Settings.ConnectorsPort, startupHealthCheckRetries)
+	}, connectorsFailed)
+
+	// Tenant runtimes start and are health-checked concurrently, so one slow or broken
+	// runtime never delays the others and the total wait does not grow with tenant count.
+	var wg sync.WaitGroup
+	for _, tenant := range state.Settings.PhysicalTenants {
+		if ctx.Err() != nil {
+			break
+		}
+		if !tenant.Connectors {
+			continue
+		}
+		wg.Add(1)
+		go func(tenant types.PhysicalTenant) {
+			defer wg.Done()
+			s.startTenantConnectors(ctx, stop, state, parentDir, javaBinary, tenant)
+		}(tenant)
+	}
+	wg.Wait()
+}
+
+// withTenantEnv adds the per-tenant properties to the Camunda process environment only.
+func withTenantEnv(env []string, tenantEnv map[string]string) []string {
+	if len(tenantEnv) == 0 {
+		return env
+	}
+	if env == nil {
+		env = os.Environ()
+	}
+	keys := make([]string, 0, len(tenantEnv))
+	for key := range tenantEnv {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		env = append(env, key+"="+tenantEnv[key])
+	}
+	return env
+}
+
+// connectorsEnv returns a connectors runtime environment without any per-tenant properties.
+func connectorsEnv(env []string) []string {
+	if env == nil {
+		env = os.Environ()
+	}
+	return physicaltenants.ScrubTenantEnv(env)
+}
+
+func defaultConnectorsEnv(env []string, port int) []string {
+	env = connectorsEnv(env)
+	if port != health.DefaultConnectorsPort {
+		env = append(env, "SERVER_PORT="+strconv.Itoa(port))
+	}
+	return env
+}
+
+// TenantConnectorsPidPath is the PID file of a physical tenant's connectors runtime.
+func TenantConnectorsPidPath(parentDir, tenantID string) string {
+	return filepath.Join(parentDir, "connectors-"+tenantID+".process")
+}
+
+// startTenantConnectors runs a dedicated connectors runtime bound to one physical tenant:
+// the Camunda client sends the tenant id (REST path prefix + gRPC header) and the runtime
+// listens on its own port.
+func (s *StartupHandler) startTenantConnectors(ctx context.Context, stop context.CancelFunc, state *types.State, parentDir string, javaBinary string, tenant types.PhysicalTenant) {
+	name := "Connectors (" + tenant.ID + ")"
+	pidPath := TenantConnectorsPidPath(parentDir, tenant.ID)
+	failed := func() {
+		log.Warn().Str("tenant", tenant.ID).Msg(cliname.Rewrite(
+			"Connectors for this physical tenant did not start; Camunda keeps running. " +
+				"See log/connectors-" + tenant.ID + ".log, or disable them with `c8run tenants remove " + tenant.ID +
+				"` followed by `c8run tenants add " + tenant.ID + " --no-connectors`."))
+	}
+	s.ProcessHandler.AttemptToStartProcess(pidPath, name, func() {
+		cmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, state.ProcessInfo.Connectors.Version, state.Settings.Port)
+		cmd.Env = append(connectorsEnv(cmd.Env), TenantConnectorsEnv(tenant, state.Settings)...)
+		logPath := filepath.Join(parentDir, "log", "connectors-"+tenant.ID+".log")
+		if err := s.startApplication(cmd, pidPath, logPath, stop); err != nil {
+			log.Err(err).Str("tenant", tenant.ID).Msg("Failed to start tenant Connectors process")
+		}
+	}, func() error {
+		return health.QueryConnectorsOnPort(ctx, name, tenant.ConnectorsPort, startupHealthCheckRetries)
+	}, failed)
+}
+
+// TenantConnectorsEnv is the environment that binds a connectors runtime to one tenant.
+// Later entries win over inherited ones in os/exec, so these override the default runtime's.
+func TenantConnectorsEnv(tenant types.PhysicalTenant, settings types.C8RunSettings) []string {
+	env := []string{
+		"SERVER_PORT=" + strconv.Itoa(tenant.ConnectorsPort),
+		"CAMUNDA_CLIENT_PHYSICALTENANTID=" + tenant.ID,
+	}
+	if overrides.ConnectorsAuthRequired(settings.ConfigPaths) {
+		env = append(env,
+			"CAMUNDA_CLIENT_AUTH_USERNAME="+tenant.Username,
+			"CAMUNDA_CLIENT_AUTH_PASSWORD="+tenant.Password)
+	}
+	return env
 }

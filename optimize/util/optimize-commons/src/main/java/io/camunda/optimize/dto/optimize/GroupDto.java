@@ -47,7 +47,7 @@ public class GroupDto extends IdentityWithMetadataResponseDto {
 
   @Override
   @JsonIgnore
-  public List<Supplier<String>> getSearchableDtoFields() {
+  protected List<Supplier<String>> getSearchableDtoFields() {
     return List.of(this::getId, this::getName);
   }
 

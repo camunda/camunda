@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
-import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetrics;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetricsRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceLimits;
 import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
@@ -35,7 +35,7 @@ class AgentInstanceMapperTest {
   private static final String AGENT_INSTANCE_KEY = "9007199254741017";
   private static final String ELEMENT_INSTANCE_KEY = "2251799813685248";
   private static final String JOB_KEY = "2251799813685249";
-  private static final String JOB_LEASE = "lease-token-1";
+  private static final String JOB_LEASE_TOKEN = "lease-token-1";
 
   private final AgentInstanceMapper mapper =
       new AgentInstanceMapper(new AgentInstanceRequestValidator());
@@ -73,7 +73,7 @@ class AgentInstanceMapperTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setStatus(AgentInstanceUpdateStatusEnum.THINKING);
 
@@ -99,7 +99,7 @@ class AgentInstanceMapperTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(
           List.of(
@@ -129,7 +129,7 @@ class AgentInstanceMapperTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       final var toolCall =
           AgentInstanceToolCall.Builder.create()
@@ -148,9 +148,12 @@ class AgentInstanceMapperTest {
               .build();
       item.setToolCalls(List.of(toolCall));
       item.setMetrics(
-          AgentInstanceHistoryItemMetrics.Builder.create()
+          AgentInstanceHistoryItemMetricsRequest.Builder.create()
               .inputTokens(512L)
               .outputTokens(128L)
+              .reasoningTokenCount(64L)
+              .cacheCreationTokenCount(32L)
+              .cacheReadTokenCount(16L)
               .durationMs(1500L)
               .build());
       request.setHistory(List.of(item));
@@ -167,19 +170,22 @@ class AgentInstanceMapperTest {
       assertThat(mappedItem.getToolCalls().get(0).getToolName()).isEqualTo("extract_data");
       assertThat(mappedItem.getMetrics().getInputTokens()).isEqualTo(512L);
       assertThat(mappedItem.getMetrics().getOutputTokens()).isEqualTo(128L);
+      assertThat(mappedItem.getMetrics().getReasoningTokenCount()).isEqualTo(64L);
+      assertThat(mappedItem.getMetrics().getCacheCreationTokenCount()).isEqualTo(32L);
+      assertThat(mappedItem.getMetrics().getCacheReadTokenCount()).isEqualTo(16L);
       assertThat(mappedItem.getMetrics().getDurationMs()).isEqualTo(1500L);
       assertThat(mappedItem.getProducedAt())
           .isEqualTo(OffsetDateTime.parse("2025-06-01T12:00:00Z").toInstant().toEpochMilli());
     }
 
     @Test
-    void shouldMapRequestLevelJobKeyAndJobLeaseOntoRecord() {
+    void shouldMapRequestLevelJobKeyAndJobLeaseTokenOntoRecord() {
       // given
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease("lease-abc")
+              .jobLeaseToken("lease-abc")
               .build();
       request.setHistory(List.of(historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hi")));
 
@@ -191,7 +197,7 @@ class AgentInstanceMapperTest {
       assertThat(result.isRight()).isTrue();
       final var record = result.get();
       assertThat(record.getJobKey()).isEqualTo(2251799813685249L);
-      assertThat(record.getJobLease()).isEqualTo("lease-abc");
+      assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
     }
 
     @Test
@@ -201,7 +207,7 @@ class AgentInstanceMapperTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       final var item =
           AgentInstanceHistoryItem.Builder.create()
@@ -263,7 +269,7 @@ class AgentInstanceMapperTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setHistory(List.of(historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hi")));
 
@@ -291,7 +297,7 @@ class AgentInstanceMapperTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       final var item = historyItem("item-1", AgentInstanceHistoryRoleEnum.CONFIGURATION, "hi");
       item.tools(List.of());
@@ -315,7 +321,7 @@ class AgentInstanceMapperTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       final var itemIterationTwo =
           historyItem("item-1", 2, AgentInstanceHistoryRoleEnum.USER, "hi");
@@ -339,13 +345,13 @@ class AgentInstanceMapperTest {
   class CreateRequestMappingTest {
 
     @Test
-    void shouldMapJobKeyJobLeaseAndHistoryOntoRecordPreservingOrder() {
+    void shouldMapJobKeyJobLeaseTokenAndHistoryOntoRecordPreservingOrder() {
       // given
       final var request =
           AgentInstanceCreationRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease("lease-abc")
+              .jobLeaseToken("lease-abc")
               .history(
                   List.of(
                       AgentInstanceHistoryItem.Builder.create()
@@ -370,7 +376,7 @@ class AgentInstanceMapperTest {
       assertThat(result.isRight()).isTrue();
       final var record = result.get();
       assertThat(record.getJobKey()).isEqualTo(2251799813685249L);
-      assertThat(record.getJobLease()).isEqualTo("lease-abc");
+      assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
       assertThat(record.getHistory()).hasSize(3);
       assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-0");
       assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-1");
@@ -384,7 +390,7 @@ class AgentInstanceMapperTest {
           AgentInstanceCreationRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .history(
                   List.of(
                       AgentInstanceHistoryItem.Builder.create()
@@ -491,7 +497,7 @@ class AgentInstanceMapperTest {
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .build();
       request.setStatus(AgentInstanceUpdateStatusEnum.IDLE);
       request.setHistory(

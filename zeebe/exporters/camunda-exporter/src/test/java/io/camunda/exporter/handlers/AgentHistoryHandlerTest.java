@@ -111,11 +111,14 @@ final class AgentHistoryHandlerTest {
     final long processDefinitionKey = 400L;
     final String tenantId = "<default>";
     final long jobKey = 500L;
-    final String jobLease = "lease-token-abc";
+    final String jobLeaseToken = "lease-token-abc";
     final int loopIteration = 3;
     final long producedAtMs = System.currentTimeMillis();
     final long inputTokens = 50L;
     final long outputTokens = 30L;
+    final long reasoningTokenCount = 15L;
+    final long cacheCreationTokenCount = 9L;
+    final long cacheReadTokenCount = 5L;
     final long durationMs = 1200L;
 
     final var textContent =
@@ -143,7 +146,7 @@ final class AgentHistoryHandlerTest {
             .withProcessDefinitionKey(processDefinitionKey)
             .withTenantId(tenantId)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .withLoopIteration(loopIteration)
             .withRole(io.camunda.zeebe.protocol.record.value.AgentHistoryRole.ASSISTANT)
             .withProducedAt(producedAtMs)
@@ -151,6 +154,9 @@ final class AgentHistoryHandlerTest {
                 ImmutableAgentHistoryMetricsValue.builder()
                     .withInputTokens(inputTokens)
                     .withOutputTokens(outputTokens)
+                    .withReasoningTokenCount(reasoningTokenCount)
+                    .withCacheCreationTokenCount(cacheCreationTokenCount)
+                    .withCacheReadTokenCount(cacheReadTokenCount)
                     .withDurationMs(durationMs)
                     .build())
             .withContent(List.of(textContent))
@@ -182,7 +188,7 @@ final class AgentHistoryHandlerTest {
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getJobKey()).isEqualTo(jobKey);
-    assertThat(entity.getJobLease()).isEqualTo(jobLease);
+    assertThat(entity.getJobLeaseToken()).isEqualTo(jobLeaseToken);
     assertThat(entity.getLoopIteration()).isEqualTo(loopIteration);
     assertThat(entity.getRole()).isEqualTo(AgentHistoryRole.ASSISTANT);
     assertThat(entity.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.PENDING);
@@ -190,6 +196,9 @@ final class AgentHistoryHandlerTest {
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(producedAtMs)));
     assertThat(entity.getInputTokens()).isEqualTo(inputTokens);
     assertThat(entity.getOutputTokens()).isEqualTo(outputTokens);
+    assertThat(entity.getReasoningTokenCount()).isEqualTo(reasoningTokenCount);
+    assertThat(entity.getCacheCreationTokenCount()).isEqualTo(cacheCreationTokenCount);
+    assertThat(entity.getCacheReadTokenCount()).isEqualTo(cacheReadTokenCount);
     assertThat(entity.getDurationMs()).isEqualTo(durationMs);
     assertThat(entity.getContent())
         .containsExactly(
@@ -303,6 +312,9 @@ final class AgentHistoryHandlerTest {
                 ImmutableAgentHistoryMetricsValue.builder()
                     .withInputTokens(50L)
                     .withOutputTokens(30L)
+                    .withReasoningTokenCount(15L)
+                    .withCacheCreationTokenCount(9L)
+                    .withCacheReadTokenCount(5L)
                     .withDurationMs(1200L)
                     .build())
             .withContent(
@@ -378,6 +390,9 @@ final class AgentHistoryHandlerTest {
                                 ImmutableAgentHistoryMetricsValue.builder()
                                     .withInputTokens(0L)
                                     .withOutputTokens(0L)
+                                    .withReasoningTokenCount(0L)
+                                    .withCacheCreationTokenCount(0L)
+                                    .withCacheReadTokenCount(0L)
                                     .withDurationMs(0L)
                                     .build())
                             .withContent(List.of())
@@ -428,6 +443,18 @@ final class AgentHistoryHandlerTest {
               .assertThat(entity.getOutputTokens())
               .as("outputTokens must still hold the original CREATED value")
               .isEqualTo(30L);
+          softly
+              .assertThat(entity.getReasoningTokenCount())
+              .as("reasoningTokenCount must still hold the original CREATED value")
+              .isEqualTo(15L);
+          softly
+              .assertThat(entity.getCacheCreationTokenCount())
+              .as("cacheCreationTokenCount must still hold the original CREATED value")
+              .isEqualTo(9L);
+          softly
+              .assertThat(entity.getCacheReadTokenCount())
+              .as("cacheReadTokenCount must still hold the original CREATED value")
+              .isEqualTo(5L);
           softly
               .assertThat(entity.getDurationMs())
               .as("durationMs must still hold the original CREATED value")
@@ -553,7 +580,7 @@ final class AgentHistoryHandlerTest {
   @ParameterizedTest(name = "[{index}] Intent ''{0}'' should map to the expected commitStatus")
   @EnumSource(
       value = AgentHistoryIntent.class,
-      names = {"CREATE", "COMMIT", "DISCARD"},
+      names = {"COMMIT", "DISCARD"},
       mode = Mode.EXCLUDE)
   void shouldMapIntentToExpectedCommitStatus(final AgentHistoryIntent intent) {
     // given
@@ -879,7 +906,7 @@ final class AgentHistoryHandlerTest {
 
   @Test
   void shouldMapUnsetMetricsToNull() {
-    // given — -1L is the protocol sentinel for "not provided"
+    // given — -1L is the protocol sentinel for "not provided", for all six metrics fields
     final var recordValue =
         ImmutableAgentHistoryRecordValue.builder()
             .from(buildMinimalRecordValue(1L, 1))
@@ -887,6 +914,9 @@ final class AgentHistoryHandlerTest {
                 ImmutableAgentHistoryMetricsValue.builder()
                     .withInputTokens(-1L)
                     .withOutputTokens(-1L)
+                    .withReasoningTokenCount(-1L)
+                    .withCacheCreationTokenCount(-1L)
+                    .withCacheReadTokenCount(-1L)
                     .withDurationMs(-1L)
                     .build())
             .build();
@@ -902,6 +932,9 @@ final class AgentHistoryHandlerTest {
     // then
     assertThat(entity.getInputTokens()).isNull();
     assertThat(entity.getOutputTokens()).isNull();
+    assertThat(entity.getReasoningTokenCount()).isNull();
+    assertThat(entity.getCacheCreationTokenCount()).isNull();
+    assertThat(entity.getCacheReadTokenCount()).isNull();
     assertThat(entity.getDurationMs()).isNull();
   }
 
@@ -922,7 +955,7 @@ final class AgentHistoryHandlerTest {
         .withProcessDefinitionKey(20L)
         .withTenantId("<default>")
         .withJobKey(30L)
-        .withJobLease("lease")
+        .withJobLeaseToken("lease")
         .withLoopIteration(loopIteration)
         .withRole(io.camunda.zeebe.protocol.record.value.AgentHistoryRole.ASSISTANT)
         .withProducedAt(System.currentTimeMillis())

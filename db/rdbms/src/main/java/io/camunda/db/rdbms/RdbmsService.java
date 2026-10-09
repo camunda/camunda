@@ -8,9 +8,7 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
-import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLagProviderFactory;
-import io.camunda.db.rdbms.read.replication.ReplicationLsnProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLsnProviderFactory;
 import io.camunda.db.rdbms.read.service.AgentDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.AgentHistoryDbReader;
@@ -42,6 +40,7 @@ import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionMessageSubscriptionStatisticsDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
@@ -212,6 +211,10 @@ public class RdbmsService {
     return tenantReaders.correlatedMessageSubscriptionReader();
   }
 
+  public ProcessDefinitionStatisticsDbReader getProcessDefinitionStatisticsReader() {
+    return tenantReaders.processDefinitionStatisticsReader();
+  }
+
   public ProcessDefinitionInstanceStatisticsDbReader
       getProcessDefinitionInstanceStatisticsReader() {
     return tenantReaders.processDefinitionInstanceStatisticsReader();
@@ -256,12 +259,12 @@ public class RdbmsService {
     return tenantReaders.deployedResourceReader();
   }
 
-  public ReplicationLsnProvider getReplicationLsnProvider() {
-    return replicationLsnProviderFactory.create();
+  public ReplicationLsnProviderFactory getReplicationLsnProviderFactory() {
+    return replicationLsnProviderFactory;
   }
 
-  public ReplicationLagProvider getReplicationLagProvider() {
-    return replicationLagProviderFactory.create();
+  public ReplicationLagProviderFactory getReplicationLagProviderFactory() {
+    return replicationLagProviderFactory;
   }
 
   public RdbmsWriters createWriter(final long partitionId) {

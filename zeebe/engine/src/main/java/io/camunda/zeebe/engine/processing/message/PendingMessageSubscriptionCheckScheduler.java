@@ -57,7 +57,9 @@ public final class PendingMessageSubscriptionCheckScheduler
         record.getMessageKey(),
         record.getVariablesBuffer(),
         record.getCorrelationKeyBuffer(),
-        record.getTenantId());
+        record.getTenantId(),
+        record.getSubscriptionKey(),
+        record.getStorageOrdinal());
 
     // Update the sent time for the subscription to avoid it being considered for resending too soon
     final var sentTime = clock.millis();

@@ -11,25 +11,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
-import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(ProcessingStateExtension.class)
 public final class TimerInstanceStateTest {
 
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
-
+  private MutableProcessingState processingState;
   private MutableTimerInstanceState state;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    final MutableProcessingState processingState = stateRule.getProcessingState();
     state = processingState.getTimerState();
   }
 
@@ -43,12 +41,30 @@ public final class TimerInstanceStateTest {
     state.processTimersWithDueDateBefore(1000L, timers::add);
 
     // then
-    Assertions.assertThat(timers).hasSize(1);
+    assertThat(timers).hasSize(1);
 
     final TimerInstance readTimer = timers.get(0);
-    Assertions.assertThat(readTimer.getElementInstanceKey()).isEqualTo(1L);
-    Assertions.assertThat(readTimer.getKey()).isEqualTo(2L);
-    Assertions.assertThat(readTimer.getDueDate()).isEqualTo(1000L);
+    assertThat(readTimer.getElementInstanceKey()).isEqualTo(1L);
+    assertThat(readTimer.getKey()).isEqualTo(2L);
+    assertThat(readTimer.getDueDate()).isEqualTo(1000L);
+  }
+
+  @Test
+  public void shouldPersistStorageOrdinal() {
+    // given
+    createElementInstance(1);
+    final TimerInstance timer = new TimerInstance();
+    timer.setElementInstanceKey(1);
+    timer.setKey(2);
+    timer.setDueDate(1000L);
+    timer.setStorageOrdinal(1234);
+    state.store(timer);
+
+    // when
+    final TimerInstance readTimer = state.get(1, 2);
+
+    // then
+    assertThat(readTimer.getStorageOrdinal()).isEqualTo(1234);
   }
 
   @Test
@@ -67,8 +83,8 @@ public final class TimerInstanceStateTest {
     final List<TimerInstance> timers = new ArrayList<>();
     state.processTimersWithDueDateBefore(2000L, timers::add);
 
-    Assertions.assertThat(timers).hasSize(1);
-    Assertions.assertThat(timers.get(0).getElementInstanceKey()).isEqualTo(2L);
+    assertThat(timers).hasSize(1);
+    assertThat(timers.get(0).getElementInstanceKey()).isEqualTo(2L);
   }
 
   @Test
@@ -86,14 +102,14 @@ public final class TimerInstanceStateTest {
     final TimerInstance readTimer = state.get(1L, 2L);
 
     // then
-    Assertions.assertThat(readTimer).isNotNull();
-    Assertions.assertThat(readTimer.getElementInstanceKey()).isEqualTo(1L);
-    Assertions.assertThat(readTimer.getKey()).isEqualTo(2L);
-    Assertions.assertThat(readTimer.getProcessInstanceKey()).isEqualTo(1L);
-    Assertions.assertThat(readTimer.getDueDate()).isEqualTo(1000L);
+    assertThat(readTimer).isNotNull();
+    assertThat(readTimer.getElementInstanceKey()).isEqualTo(1L);
+    assertThat(readTimer.getKey()).isEqualTo(2L);
+    assertThat(readTimer.getProcessInstanceKey()).isEqualTo(1L);
+    assertThat(readTimer.getDueDate()).isEqualTo(1000L);
 
     // and
-    Assertions.assertThat(state.get(2L, 1L)).isNull();
+    assertThat(state.get(2L, 1L)).isNull();
   }
 
   @Test
@@ -171,6 +187,35 @@ public final class TimerInstanceStateTest {
   }
 
   @Test
+  public void shouldRemoveDueDateWithoutRemovingTimer() {
+    // given
+    createTimerInstance(1, 2, 1000L);
+
+    // when
+    state.suspend(1L, 2L, 1000L);
+
+    // then
+    assertThat(state.get(1L, 2L)).isNotNull();
+    assertThat(state.processTimersWithDueDateBefore(1000L, t -> true)).isEqualTo(-1L);
+    final List<TimerInstance> timers = new ArrayList<>();
+    state.processTimersWithDueDateBefore(1000L, timers::add);
+    assertThat(timers).isEmpty();
+  }
+
+  @Test
+  public void shouldRemoveTimerWhenDueDateAlreadyGone() {
+    // given
+    final TimerInstance timer = createTimerInstance(1, 2, 1000L);
+    state.suspend(1L, 2L, 1000L);
+
+    // when
+    state.remove(timer);
+
+    // then
+    assertThat(state.get(1L, 2L)).isNull();
+  }
+
+  @Test
   public void shouldListAllTimersByElementInstanceKey() {
     // given
     createElementInstance(1);
@@ -213,8 +258,7 @@ public final class TimerInstanceStateTest {
   }
 
   private void createElementInstance(final long key) {
-    stateRule
-        .getProcessingState()
+    processingState
         .getElementInstanceState()
         .createInstance(
             new ElementInstance(

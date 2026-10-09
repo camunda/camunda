@@ -26,8 +26,7 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
       new LongProperty("processDefinitionKey", -1);
   private final StringProperty tenantIdProperty = new StringProperty("tenantId", "");
   private final StringProperty elementIdProperty = new StringProperty("elementId", "");
-  private final IntegerProperty storageOrdinalKeyProperty =
-      new IntegerProperty("storageOrdinalKey", 0);
+  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
 
   public RuntimeInstructionRecord() {
     super(5);
@@ -35,7 +34,7 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(elementIdProperty)
-        .declareProperty(storageOrdinalKeyProperty);
+        .declareProperty(storageOrdinalProperty);
   }
 
   @Override
@@ -84,12 +83,12 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProperty.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
   }
 
-  public RuntimeInstructionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+  public RuntimeInstructionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
     return this;
   }
 }

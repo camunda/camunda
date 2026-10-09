@@ -233,6 +233,23 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
   }
 
   @Test
+  public void shouldQueryByValueNotIn() {
+    // given a filter on the variable's own value (not its metadata)
+    final var filter =
+        new ClusterVariableFilter.Builder().valueOperations(notIn("secret-1", "secret-2")).build();
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    final var boolQuery = (SearchBoolQuery) searchQuery.queryOption();
+    final var termsQuery = (SearchTermsQuery) boolQuery.mustNot().getFirst().queryOption();
+    assertThat(termsQuery.field()).isEqualTo(ClusterVariableIndex.VALUE);
+    assertThat(termsQuery.values().stream().map(TypedValue::stringValue).toList())
+        .containsExactlyInAnyOrder("secret-1", "secret-2");
+  }
+
+  @Test
   public void shouldAndMultipleMetadataFilters() {
     // given
     final var kindFilter =

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -25,7 +27,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
@@ -73,11 +74,11 @@ public final class ZeebeRocksDbFactory<
       final AccessMetricsConfiguration metricsConfiguration,
       final Supplier<MeterRegistry> meterRegistryFactory,
       final RocksDbResources rocksDbResources) {
-    this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
-    this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
+    this.rocksDbConfiguration = requireNonNull(rocksDbConfiguration);
+    this.consistencyChecksSettings = requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;
-    this.meterRegistryFactory = Objects.requireNonNull(meterRegistryFactory);
-    this.rocksDbResources = Objects.requireNonNull(rocksDbResources);
+    this.meterRegistryFactory = requireNonNull(meterRegistryFactory);
+    this.rocksDbResources = requireNonNull(rocksDbResources);
   }
 
   @Override
@@ -133,7 +134,13 @@ public final class ZeebeRocksDbFactory<
     managedResources.add(columnFamilyOptions);
     final var dbOptions = createDefaultDbOptions(managedResources, avoidFlush);
     managedResources.add(dbOptions);
-    return new RocksDbOptions(dbOptions, columnFamilyOptions);
+    // hands back a fresh Java wrapper around a new shared_ptr copy, so it has to be closed
+    // independently of the statistics instance held by dbOptions. Null when statistics are off.
+    final var statistics = dbOptions.statistics();
+    if (statistics != null) {
+      managedResources.add(statistics);
+    }
+    return new RocksDbOptions(dbOptions, columnFamilyOptions, statistics);
   }
 
   private DBOptions createDefaultDbOptions(
@@ -181,7 +188,10 @@ public final class ZeebeRocksDbFactory<
     if (rocksDbConfiguration.isStatisticsEnabled()) {
       final var statistics = new Statistics();
       closeables.add(statistics);
-      statistics.setStatsLevel(StatsLevel.ALL);
+      // the tickers and histograms we export are all recorded at this level. ALL additionally
+      // instruments mutex wait and compression timing, which is measurable overhead on the write
+      // path - and this flag is meant to be usable during a performance run, not just a debug one.
+      statistics.setStatsLevel(StatsLevel.EXCEPT_DETAILED_TIMERS);
       dbOptions
           .setStatistics(statistics)
           // speeds up opening the DB

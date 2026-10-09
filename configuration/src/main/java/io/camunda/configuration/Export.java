@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import static io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.DEFAULT_DISTRIBUTION_INTERVAL;
+import static io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
@@ -40,6 +41,17 @@ public class Export {
    */
   private Map<Integer, Set<Long>> skipRecords = Map.of();
 
+  /**
+   * The maximum number of not-yet-exported records to scan, starting from the oldest one still
+   * pending, when checking whether every pending record on a partition is on the current
+   * application version. This backs the {@code exporterMigrated} upgrade-readiness condition: if
+   * the backlog of not-yet-exported records is larger than this limit, the condition reports that
+   * it cannot verify all of them rather than risking an incorrect positive result. Scanning is
+   * bounded because its cost scales with the size of the backlog, which is exactly unbounded in the
+   * scenario this check exists to catch (e.g. a long soft-paused exporter).
+   */
+  private int migrationStatusScanMaxRecords = DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS;
+
   public Duration getDistributionInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".distribution-interval",
@@ -59,5 +71,18 @@ public class Export {
 
   public void setSkipRecords(final Map<Integer, Set<Long>> skipRecords) {
     this.skipRecords = skipRecords;
+  }
+
+  public int getMigrationStatusScanMaxRecords() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".migration-status-scan-max-records",
+        migrationStatusScanMaxRecords,
+        Integer.class,
+        BackwardsCompatibilityMode.NOT_SUPPORTED,
+        Set.of());
+  }
+
+  public void setMigrationStatusScanMaxRecords(final int migrationStatusScanMaxRecords) {
+    this.migrationStatusScanMaxRecords = migrationStatusScanMaxRecords;
   }
 }

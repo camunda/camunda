@@ -8,16 +8,14 @@
 
 import {useState} from 'react';
 import {t} from 'i18next';
-import {Dropdown, TextInput} from '@carbon/react';
+import {Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@camunda/design-system';
 import {Field, type FieldInputProps} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
-import {cn} from '#/shared/cn';
 import {
 	encodeFilterOperation,
 	splitEncodedFilterOperation,
 	type AdvancedStringFilterOperator,
 } from '#/tasklist/modules/available-tasks/advancedStringFilter';
-import styles from './AdvancedStringFilter.module.scss';
 
 const OPERATOR_CONFIG: Record<AdvancedStringFilterOperator, {label: string; placeholder?: string}> = {
 	$eq: {label: t('tasklist.customFiltersModalOperatorEquals')},
@@ -59,9 +57,7 @@ type FieldProps = {
 
 const AdvancedStringFilterField: React.FC<FieldProps> = ({input, label, selectableOperators}) => {
 	const {t} = useTranslation();
-
 	const filter = splitEncodedFilterOperation(input.value ?? '');
-
 	const [fallbackOperator, setFallbackOperator] = useState<AdvancedStringFilterOperator>('$eq');
 	const selectedOperator = filter?.operator ?? fallbackOperator;
 
@@ -69,6 +65,7 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({input, label, selectab
 		if (newOperator === null) {
 			return;
 		}
+
 		setFallbackOperator(newOperator);
 		if (filter?.value) {
 			input.onChange(encodeFilterOperation(newOperator, filter.value));
@@ -81,32 +78,38 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({input, label, selectab
 			input.onChange(undefined);
 			return;
 		}
+
 		input.onChange(encodeFilterOperation(selectedOperator, newValue));
 	};
 
 	return (
-		<div className={styles.container}>
-			<label htmlFor={input.name} className={cn('cds--label', styles.label)}>
+		<div className="grid grid-cols-[10rem_1fr] gap-2">
+			<Label htmlFor={input.name} className="col-span-2">
 				{label}
-			</label>
-			<Dropdown<AdvancedStringFilterOperator>
-				id={`${input.name}.operator`}
-				size="md"
-				direction="top"
-				titleText={t('tasklist.customFiltersModalOperatorTypeAriaLabel', {label})}
-				hideLabel
-				label={t('tasklist.customFiltersModalOperatorTypeAriaLabel', {label})}
-				items={selectableOperators}
-				itemToString={(item) => (item ? OPERATOR_CONFIG[item].label : '')}
-				selectedItem={selectedOperator}
-				onChange={({selectedItem}) => handleOperatorChange(selectedItem)}
-			/>
-			<TextInput
+			</Label>
+			<Select
+				value={selectedOperator}
+				onValueChange={(value) => handleOperatorChange(value as AdvancedStringFilterOperator)}
+			>
+				<SelectTrigger
+					id={`${input.name}.operator`}
+					className="w-full"
+					aria-label={t('tasklist.customFiltersModalOperatorTypeAriaLabel', {label})}
+				>
+					<SelectValue />
+				</SelectTrigger>
+				<SelectContent>
+					{selectableOperators.map((operator) => (
+						<SelectItem key={operator} value={operator}>
+							{OPERATOR_CONFIG[operator].label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+			<Input
 				name={input.name}
 				id={input.name}
-				size="md"
-				labelText=""
-				hideLabel
+				aria-label={label}
 				placeholder={OPERATOR_CONFIG[selectedOperator].placeholder}
 				value={filter?.value ?? ''}
 				onChange={(event) => handleValueChange(event.target.value)}

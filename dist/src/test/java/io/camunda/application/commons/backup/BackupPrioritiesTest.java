@@ -9,7 +9,6 @@ package io.camunda.application.commons.backup;
 
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.implement;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -21,9 +20,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.Environment;
+import org.springframework.mock.env.MockEnvironment;
 
 class BackupPrioritiesTest {
 
@@ -41,7 +41,12 @@ class BackupPrioritiesTest {
 
   @BeforeAll
   public static void setUp() {
-    new UnifiedConfigurationHelper(mock(Environment.class));
+    new UnifiedConfigurationHelper(new MockEnvironment());
+  }
+
+  @AfterAll
+  public static void tearDown() {
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
   }
 
   @Test
@@ -180,7 +185,6 @@ class BackupPrioritiesTest {
             "camunda-authorization-8.8.0_",
             "camunda-group-8.8.0_",
             "camunda-mapping-rule-8.8.0_",
-            "camunda-web-session-8.8.0_",
             "camunda-role-8.8.0_",
             "camunda-tenant-8.8.0_",
             "camunda-user-8.8.0_",

@@ -549,7 +549,7 @@ public final class ProtocolFactory {
         .excludeField(excludedRecordFields)
         // force the default ordinal so random records will always target the main index and
         // not ordinal indexes (unless we need to verify that in tests)
-        .randomize(field -> field.getName().equals("storageOrdinalKey"), () -> 0);
+        .randomize(field -> field.getName().equals("storageOrdinal"), () -> 0);
   }
 
   private <T extends RecordValue> Record<T> generateImmutableRecord(

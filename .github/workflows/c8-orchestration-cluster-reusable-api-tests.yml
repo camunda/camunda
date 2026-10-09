@@ -99,8 +99,48 @@ jobs:
         shell: bash
         run: |
           echo "Checking if services are up..."
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            app_containers=(operate tasklist)
+          else
+            app_containers=(camunda)
+          fi
           ready=false
+          declare -A non_running
           for i in {1..90}; do
+            # Fail fast if an app container crashed, instead of waiting out the
+            # full ~15 min timeout. Resolve the container through compose rather
+            # than by bare name: stable/8.7 sets container_name to
+            # operate-${DATABASE}, so `docker inspect operate` matches nothing
+            # there. --all is required or compose omits an already-exited
+            # container. Test Running rather than a status allowlist so a crash
+            # loop is caught too (8.7 sets restart: always, which surfaces as
+            # `restarting`, never `exited`) along with a container that was never
+            # created at all. Two consecutive observations keep a single
+            # legitimate restart from failing the job.
+            for c in "${app_containers[@]}"; do
+              cid="$(DATABASE=elasticsearch docker compose ps --all --quiet "$c" 2>/dev/null || true)"
+              running=""
+              if [[ -n "$cid" ]]; then
+                running="$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/null || true)"
+              fi
+              if [[ "$running" == "true" ]]; then
+                non_running["$c"]=0
+                continue
+              fi
+              non_running["$c"]=$(( ${non_running["$c"]:-0} + 1 ))
+              if (( ${non_running["$c"]} >= 2 )); then
+                if [[ -z "$cid" ]]; then
+                  echo "No container for service '$c' on two consecutive checks; it was never created or has been removed."
+                else
+                  echo "Container for service '$c' is not running on two consecutive checks; it will never become ready."
+                  docker inspect "$cid" --format 'Container {{.Name}}: status={{.State.Status}} exitCode={{.State.ExitCode}} oomKilled={{.State.OOMKilled}} restartCount={{.RestartCount}}' || true
+                fi
+                DATABASE=elasticsearch docker compose logs --tail 200 "$c" || true
+                echo "Services failed to start: service '$c' is not running."
+                exit 1
+              fi
+            done
+
             if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
@@ -142,19 +182,23 @@ jobs:
       - name: Print Docker logs before failing
         shell: bash
         if: failure()
+        # DATABASE must be set: docker-compose.yml interpolates it into the
+        # camunda service's depends_on / env_file, so an unset value makes the
+        # compose project invalid ("depends on undefined service") and this
+        # diagnostic step errors out instead of printing the container logs.
         run: |
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
-            docker compose logs tasklist
-            docker compose logs operate
+            DATABASE=elasticsearch docker compose logs tasklist
+            DATABASE=elasticsearch docker compose logs operate
           else
-            docker compose logs camunda
+            DATABASE=elasticsearch docker compose logs camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
@@ -175,20 +219,12 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
       - name: Install Playwright Browsers
         shell: bash
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Python setup
-        if: always()
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.x"
 
       - name: Run API tests
         shell: bash
@@ -243,27 +279,6 @@ jobs:
             > container-logs/camunda-exporter-metrics.txt 2>&1 || true
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
-      - name: Publish test results to TestRail
-        if: always()
-        shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
-          BRANCH_NAME: ${{ inputs.branch }}
-        run: |
-          pip install trcli==1.14.1
-          trcli -y -h "$TESTRAIL_HOST" \
-            --project 'C8' \
-            --username "$TESTRAIL_USERNAME" \
-            --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
-            parse_junit --suite-id 17050 \
-            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME (Mode ${{ inputs.camunda_mode }}) - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
-            --close-run \
-            -f "$JUNIT_RESULTS_FILE"
-
       - name: Sanitize branch name for artifact names
         id: sanitize
         if: always()
@@ -273,34 +288,46 @@ jobs:
           safe_branch="${branch//\//-}"
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
+      # actions/upload-artifact's FinalizeArtifact call can be rejected with a
+      # non-retryable 403 from GitHub's own artifact-storage intermediary
+      # (INC-7913); that leaves an otherwise-green nightly run marked failed.
+      # upload-artifact-with-retry absorbs that blip instead of failing the job.
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: json-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
-          retention-days: 60
+          retention-days: "60"
 
       # test-results/ holds the per-test Playwright trace.zip (retain-on-failure).
       # The trace captures the request/response body, which json-report omits;
       # nightly triage needs it to tell a request-shape/test bug from a product bug.
+      - name: Upload HTML report to GitHub Actions Artifacts
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: html-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report/**
+          retention-days: "60"
+
       - name: Upload Playwright traces to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: test-results-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/test-results/**
           if-no-files-found: ignore
-          retention-days: 5
+          retention-days: "5"
 
       - name: Upload container logs to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: container-logs-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/config/container-logs/**
           if-no-files-found: warn
-          retention-days: 5
+          retention-days: "5"
 
       - name: Observe build status
         if: always()

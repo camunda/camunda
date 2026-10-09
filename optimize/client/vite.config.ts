@@ -14,6 +14,20 @@ import sbom from 'rollup-plugin-sbom';
 
 const outDir = 'dist';
 
+const backend = 'http://localhost:8090';
+// The CSRF cookie is left out on purpose: it is reissued on a 401, which would unmark the session.
+const sessionCookies = ['X-Optimize-Authorization_0', 'X-Optimize-Refresh-Token'];
+// Per client, so a 401 in one browser (e.g. an expired session) does not affect the others.
+const rejectedSessions = new Set<string>();
+
+function getSessionKey(cookieHeader?: string): string | undefined {
+  const cookies = (cookieHeader ?? '').split(';').map((cookie) => cookie.trim());
+  const session = cookies.filter((cookie) =>
+    sessionCookies.some((name) => cookie.startsWith(`${name}=`))
+  );
+  return session.length > 0 ? session.join(';') : undefined;
+}
+
 const plugins: PluginOption[] = [
   {
     name: 'treat-js-files-as-jsx',
@@ -77,20 +91,31 @@ export default defineConfig(({mode}) => ({
     open: true,
     proxy: {
       '^/(api|external/api|external/static)': {
-        target: 'http://localhost:8090',
+        target: backend,
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req) => {
+            const session = getSessionKey(req.headers.cookie);
+            if (!session) {
+              return;
+            }
+            if (proxyRes.statusCode === 401) {
+              rejectedSessions.add(session);
+            } else {
+              rejectedSessions.delete(session);
+            }
+          });
+        },
       },
       '^/': {
-        target: 'http://localhost:8090',
+        target: backend,
         bypass: (req) => {
           const path = req.url;
-          if (path?.includes('/sso-callback')) {
+          if (path?.includes('/sso-callback') || path?.includes('/logout')) {
             return;
           }
 
-          if (
-            req.headers.cookie?.includes('X-Optimize-Authorization_0') ||
-            req.headers.cookie?.includes('X-Optimize-Refresh-Token')
-          ) {
+          const session = getSessionKey(req.headers.cookie);
+          if (session && !rejectedSessions.has(session)) {
             return path;
           }
 

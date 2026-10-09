@@ -35,6 +35,7 @@ public final class DeploymentTransformer {
   private final List<DeploymentResourceTransformer> resourceTransformers;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   private final BpmnResourceTransformer bpmnResourceTransformer;
+  private final ValidationConfig config;
 
   public DeploymentTransformer(
       final StateWriter stateWriter,
@@ -47,6 +48,7 @@ public final class DeploymentTransformer {
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     validator = new DeploymentValidator(config);
+    this.config = config;
 
     final var bpmnTransformer =
         BpmnFactory.createTransformer(
@@ -144,7 +146,7 @@ public final class DeploymentTransformer {
   private Either<Failure, List<DeploymentResourceContext>> buildMetadata(
       final DeploymentRecord deploymentEvent,
       final List<ResourceWithTransformer> resourcesWithTransformers) {
-    final var errors = new DeploymentErrorCollector();
+    final var errors = new DeploymentErrorCollector(config.validatorResultsOutputMaxSize());
     final List<DeploymentResourceContext> contexts = new ArrayList<>();
 
     for (final ResourceWithTransformer resourceWithTransformer : resourcesWithTransformers) {
@@ -180,7 +182,7 @@ public final class DeploymentTransformer {
       return Either.right(null);
     }
 
-    final var errors = new DeploymentErrorCollector();
+    final var errors = new DeploymentErrorCollector(config.validatorResultsOutputMaxSize());
 
     for (final ResourceWithTransformer resourceWithTransformer : resourcesWithTransformers) {
       final var deploymentResource = resourceWithTransformer.resource;

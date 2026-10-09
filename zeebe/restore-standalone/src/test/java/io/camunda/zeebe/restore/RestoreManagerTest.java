@@ -15,77 +15,13 @@ import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.IOException;
-import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class RestoreManagerTest {
-
-  @Test
-  void shouldFailWhenDirectoryIsNotEmpty(@TempDir final Path dir) throws IOException {
-    // given
-    final var configuration = new BrokerCfg();
-    configuration.getData().setDirectory(dir.toString());
-    try (final var restoreManager =
-        new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry())) {
-
-      // when
-      Files.createDirectory(dir.resolve("other-data"));
-
-      // then
-      assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of()))
-          .isInstanceOf(DirectoryNotEmptyException.class);
-    }
-  }
-
-  @Test
-  void shouldIgnoreConfigurableFilesInTarget(@TempDir final Path dir) throws IOException {
-    // given
-    final var configuration = new BrokerCfg();
-    configuration.getData().setDirectory(dir.toString());
-    try (final var restoreManager =
-        new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry())) {
-
-      // when - create ignored files
-      Files.createDirectory(dir.resolve("lost+found"));
-      Files.createFile(dir.resolve(".DS_Store"));
-      Files.createFile(dir.resolve("Thumbs.db"));
-
-      // then - should not fail because all files are ignored
-      assertThatThrownBy(
-              () ->
-                  restoreManager.restore(
-                      1L, false, List.of("lost+found", ".DS_Store", "Thumbs.db")))
-          .hasRootCauseInstanceOf(NoSuchElementException.class);
-    }
-  }
-
-  @Test
-  void shouldFailWhenNonIgnoredFileExists(@TempDir final Path dir) throws IOException {
-    // given
-    final var configuration = new BrokerCfg();
-    configuration.getData().setDirectory(dir.toString());
-    try (final var restoreManager =
-        new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry())) {
-
-      // when - create ignored and non-ignored files
-      Files.createDirectory(dir.resolve("lost+found"));
-      Files.createFile(dir.resolve("some-data-file"));
-
-      // then - should fail because some-data-file is not ignored
-      assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of("lost+found")))
-          .isInstanceOf(DirectoryNotEmptyException.class);
-    }
-  }
 
   @Test
   void shouldFailWhenNoCommonCheckpointExistsUsingTimeRange(@TempDir final Path dir) {
@@ -133,7 +69,7 @@ final class RestoreManagerTest {
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
 
       // when/then - should fail because partitions have no common checkpoints
-      assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
+      assertThatThrownBy(() -> restoreManager.restore(from, to, false))
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("Could not find common checkpoint");
     }

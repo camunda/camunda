@@ -34,7 +34,7 @@ public interface AgentInstanceHistory {
 
   long getJobKey();
 
-  String getJobLease();
+  String getJobLeaseToken();
 
   int getLoopIteration();
 

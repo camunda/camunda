@@ -24,6 +24,9 @@ public class ConditionalOnWebappUiEnabledTest {
   private static final String LEGACY_PROPERTY = "camunda." + TEST_WEBAPP_NAME + ".webapp-enabled";
   private static final String UNIFIED_PROPERTY = "camunda.webapps." + TEST_WEBAPP_NAME + ".enabled";
   private static final String UI_PROPERTY = "camunda.webapps." + TEST_WEBAPP_NAME + ".ui-enabled";
+  private static final String TASKLIST_LEGACY_PROPERTY = "camunda.tasklist.webapp-enabled";
+  private static final String TASKLIST_UNIFIED_PROPERTY = "camunda.webapps.tasklist.enabled";
+  private static final String TASKLIST_UI_PROPERTY = "camunda.webapps.tasklist.ui-enabled";
 
   private OnWebappUiEnabledCondition condition;
   private ConditionContext context;
@@ -90,6 +93,22 @@ public class ConditionalOnWebappUiEnabledTest {
     when(environment.getProperty(LEGACY_PROPERTY, Boolean.class, true)).thenReturn(true);
     when(environment.getProperty(UNIFIED_PROPERTY, Boolean.class, true)).thenReturn(true);
     when(environment.getProperty(UI_PROPERTY, Boolean.class, true)).thenReturn(false);
+
+    // when
+    final boolean result = condition.matches(context, metadata);
+
+    // then
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void shouldNotMatchWhenTasklistLegacyPropertyIsFalse() {
+    // given
+    when(metadata.getAnnotationAttributes(condition.getConditionalClassName()))
+        .thenReturn(Map.of("value", new String[] {"tasklist"}));
+    when(environment.getProperty(TASKLIST_LEGACY_PROPERTY, Boolean.class, true)).thenReturn(false);
+    when(environment.getProperty(TASKLIST_UNIFIED_PROPERTY, Boolean.class, true)).thenReturn(true);
+    when(environment.getProperty(TASKLIST_UI_PROPERTY, Boolean.class, true)).thenReturn(true);
 
     // when
     final boolean result = condition.matches(context, metadata);

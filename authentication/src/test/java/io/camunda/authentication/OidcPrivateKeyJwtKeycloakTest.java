@@ -46,6 +46,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -154,14 +155,19 @@ class OidcPrivateKeyJwtKeycloakTest {
   }
 
   @BeforeAll
-  static void stubWellKnownForStartup() throws JOSEException {
+  static void generateIdpSigningKey() throws JOSEException {
     idpRsaJwk =
         new RSAKeyGenerator(2048)
             .keyID("idp-test-kid")
             .keyUse(com.nimbusds.jose.jwk.KeyUse.SIGNATURE)
             .algorithm(JWSAlgorithm.RS256)
             .generate();
+  }
 
+  @BeforeEach
+  void stubWellKnown() {
+    // the WireMock extension resets stubs before every test and issuer discovery happens on first
+    // use rather than at startup, so the discovery document has to be served per test
     stubFor(
         get(urlEqualTo(ENDPOINT_WELL_KNOWN_OIDC))
             .willReturn(

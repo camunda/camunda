@@ -29,7 +29,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -39,6 +41,8 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -88,6 +92,25 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
+  }
+
+  @Override
+  public CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition) {
+    final var query = createPendingIncidentsBatchQuery(fromPosition);
+
+    final CountRequest request =
+        new CountRequest.Builder()
+            .index(pendingUpdateAlias)
+            .query(query)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    try {
+      return client.count(request).thenApplyAsync(r -> Math.toIntExact(r.count()), executor);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
   }
 
   @Override
@@ -212,37 +235,15 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
 
   @Override
   public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate bulk) {
-    final var updates = bulk.stream().map(this::createUpdateOperation).toList();
-    if (updates.isEmpty()) {
-      return CompletableFuture.completedFuture(List.of());
-    }
+    final var docUpdatesStream = bulk.stream();
+    return bulkUpdate(
+        docUpdatesStream, Refresh.WaitFor, this::extractUpdatedIdsDetectingPartialUpdate);
+  }
 
-    final var request =
-        new BulkRequest.Builder()
-            .operations(updates)
-            .source(s -> s.fetch(false))
-            .refresh(Refresh.WaitFor)
-            .build();
-
-    try {
-      return client
-          .bulk(request)
-          .thenComposeAsync(
-              r -> {
-                if (r.errors()) {
-                  return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
-                }
-
-                return CompletableFuture.completedFuture(
-                    r.items().stream()
-                        .filter(f -> f.result() != null && f.result().equalsIgnoreCase("updated"))
-                        .map(BulkResponseItem::id)
-                        .toList());
-              },
-              executor);
-    } catch (final IOException e) {
-      return CompletableFuture.failedFuture(e);
-    }
+  @Override
+  public CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate bulk) {
+    final var docUpdatesStream = bulk.stream();
+    return bulkUpdate(docUpdatesStream, Refresh.False, this::extractUpdatedIds);
   }
 
   @Override
@@ -289,6 +290,60 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
 
     return fetchUnboundedDocumentCollection(
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
+  }
+
+  private CompletableFuture<List<String>> bulkUpdate(
+      final Stream<? extends IncidentTaskUpdate> docUpdatesStream,
+      final Refresh refresh,
+      final Function<BulkResponse, CompletableFuture<List<String>>> responseHandler) {
+    final var updates = docUpdatesStream.map(this::createUpdateOperation).toList();
+    if (updates.isEmpty()) {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
+    final var request =
+        new BulkRequest.Builder()
+            .operations(updates)
+            .source(s -> s.fetch(false))
+            .refresh(refresh)
+            .build();
+
+    try {
+      return client.bulk(request).thenComposeAsync(responseHandler, executor);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+  }
+
+  private CompletableFuture<List<String>> extractUpdatedIds(final BulkResponse response) {
+    if (response.errors()) {
+      return CompletableFuture.failedFuture(collectBulkErrors(response.items()));
+    }
+
+    return CompletableFuture.completedFuture(collectUpdatedIds(response));
+  }
+
+  private CompletableFuture<List<String>> extractUpdatedIdsDetectingPartialUpdate(
+      final BulkResponse response) {
+    final var updatedIds = collectUpdatedIds(response);
+    if (response.errors()) {
+      if (!updatedIds.isEmpty()) {
+        return CompletableFuture.failedFuture(
+            new IncidentPartialBulkUpdateException(
+                collectBulkErrorsIntoMessage(response.items()), updatedIds));
+      } else {
+        return CompletableFuture.failedFuture(collectBulkErrors(response.items()));
+      }
+    }
+
+    return CompletableFuture.completedFuture(updatedIds);
+  }
+
+  private List<String> collectUpdatedIds(final BulkResponse response) {
+    return response.items().stream()
+        .filter(f -> f.result() != null && f.result().equalsIgnoreCase("updated"))
+        .map(BulkResponseItem::id)
+        .toList();
   }
 
   private CompletableFuture<SearchResponse<PendingIncidentUpdate>> searchPendingIncidents(
@@ -356,7 +411,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     return QueryBuilders.bool().must(piKeyQ, typeQ, stateQ).build().toQuery();
   }
 
-  private BulkOperation createUpdateOperation(final DocumentUpdate update) {
+  private BulkOperation createUpdateOperation(final IncidentTaskUpdate update) {
     return new UpdateOperation.Builder<>()
         .index(update.index())
         .id(update.id())

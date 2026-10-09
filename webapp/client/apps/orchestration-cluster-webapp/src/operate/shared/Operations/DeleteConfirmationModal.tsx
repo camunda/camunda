@@ -8,7 +8,7 @@
 
 import {useTranslation} from 'react-i18next';
 import {Modal} from '@carbon/react';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 
 type Props = {
 	processInstanceKey: ProcessInstance['processInstanceKey'];

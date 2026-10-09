@@ -41,7 +41,9 @@ SUPPRESSED_CAP = "per-run-cap-reached"
 #: statement in alwaysgreen-fix.yml: dispatching anything else spends a runner only to
 #: fail on the agent's first step, which is what happened to run 31115770750 on
 #: `ci/alwaysgreen-helm-live-check`.
-SUPPORTED_BASE_REFS = frozenset({"main", "stable/8.7", "stable/8.8", "stable/8.9"})
+SUPPORTED_BASE_REFS = frozenset(
+    {"main", "stable/8.7", "stable/8.8", "stable/8.9", "stable/8.10"}
+)
 
 
 #: How long an open fix PR's key label keeps holding its dispatch key. The lock is
@@ -53,22 +55,32 @@ SUPPORTED_BASE_REFS = frozenset({"main", "stable/8.7", "stable/8.8", "stable/8.9
 #: nothing. Past the TTL this coarse per-surface lock lifts and the per-spec coverage
 #: block takes over: a repeat of the same failure is still suppressed as
 #: `open-pr-covers-all-specs`, while a genuinely new one gets an agent.
-PR_LOCK_TTL_DAYS = 2
+#:
+#: Two things bound how long one PR can hold a surface, and both matter. The lock is
+#: skipped outright for a PR that claims at least one fingerprint (see
+#: `open_pr_keys_with_coverage`), so a claim-nothing PR is the only case the TTL still
+#: governs — and for that case the window is what decides how long an unrelated
+#: failure waits. A surface carries many independent causes, so a two-day window meant
+#: one silent PR parked every other failure on its surface until a human merged it.
+#: Two hours is roughly three failing runs at the 20-40 minute pipeline cadence: long
+#: enough that the same cause is not re-dispatched while an agent's PR is still being
+#: read, short enough that a different cause waits hours rather than days.
+PR_LOCK_TTL_HOURS = 2
 
 
 def pr_lock_expired(
-    created_at: str | None, now: datetime, ttl_days: int = PR_LOCK_TTL_DAYS
+    created_at: str | None, now: datetime, ttl_hours: int = PR_LOCK_TTL_HOURS
 ) -> bool:
     """Whether an open fix PR is too old to keep holding its dispatch key.
 
-    A missing or unparseable timestamp keeps the lock, and `ttl_days <= 0` disables
+    A missing or unparseable timestamp keeps the lock, and `ttl_hours <= 0` disables
     expiry altogether: the bias matches the `ok` flags in discover's key lookups,
     where an unproven state suppresses rather than risks a duplicate PR.
 
     Either timestamp is read as UTC when it carries no offset, so a naive `now` does
     not raise against GitHub's offset-aware `createdAt`.
     """
-    if ttl_days <= 0:
+    if ttl_hours <= 0:
         return False
     text = (created_at or "").strip()
     if not text:
@@ -81,7 +93,40 @@ def pr_lock_expired(
         created = created.replace(tzinfo=timezone.utc)
     if now.tzinfo is None:
         now = now.replace(tzinfo=timezone.utc)
-    return now - created > timedelta(days=ttl_days)
+    return now - created > timedelta(hours=ttl_hours)
+
+
+#: `mergeable` states GitHub computes for a PR. Only `"CONFLICTING"` counts as stale:
+#: `"UNKNOWN"` just means GitHub has not finished computing the merge base yet and
+#: must not be read as broken, and `"MERGEABLE"` is fine by definition.
+STALE_MERGEABLE_STATES = frozenset({"CONFLICTING"})
+
+
+def pr_is_stale(mergeable: str | None) -> bool:
+    """Whether a fix PR is broken badly enough that its coverage claim should lapse.
+
+    c8-cross-component-e2e-tests#3154 claimed three SM-8.10 Modeler-navigation
+    fingerprints on 2026-08-26 and has sat CONFLICTING ever since. Every nightly that
+    hit those same three specs over the following two weeks was suppressed as
+    `open-pr-covers-all-specs`, even though the PR could never land and fix them.
+    `PR_LOCK_TTL_HOURS` does not help here: that only bounds the coarse per-surface
+    lock a claim-nothing PR holds, and a PR that claims fingerprints is deliberately
+    authoritative for them for as long as it is open (see `dedupe_inputs`'s docstring
+    in discover.py) — the TTL is skipped outright for it. A stale PR needs its claims
+    invalidated instead, so a fresh agent gets a chance while the broken PR still sits
+    open for a human to close or rebase.
+
+    `mergeable` is a value GitHub computes fresh on every read, not something a PR
+    body can lie about or a bad clock can misjudge, so unlike the TTL there is no
+    reason to time-bound this: it reflects the PR's current state, checked on every
+    triage run, not the state it started in.
+
+    Only mergeability is checked, not CI status: `statusCheckRollup` carries dozens
+    of matrix legs per PR in these repos, and treating any single red leg as "stale"
+    would drop a PR's coverage while its own fix-verification job is still running or
+    hit an unrelated flake — the opposite of what this is for.
+    """
+    return (mergeable or "").strip().upper() in STALE_MERGEABLE_STATES
 
 
 def spec_suite(spec_file: str) -> str | None:
@@ -238,6 +283,7 @@ def plan_dispatches(
     inflight_keys: set[str],
     open_pr_keys: set[str],
     product_bug_fingerprints: set[str],
+    open_pr_keys_with_coverage: set[str] | None = None,
     recent_no_fix_fingerprints: set[str] | None = None,
     fixed_upstream_fingerprints: set[str] | None = None,
     supported_base_refs: frozenset[str] = SUPPORTED_BASE_REFS,
@@ -256,10 +302,17 @@ def plan_dispatches(
 
     `fixed_upstream_fingerprints` are those whose test code changed in the e2e repo
     after the failing run started, so the run executed source that is already superseded.
+
+    `open_pr_keys_with_coverage` are the keys of `open_pr_keys` whose every holding PR
+    claims at least one fingerprint in its coverage block. Those PRs state which specs
+    they claim, so the coarse per-surface lock is skipped for them and the per-spec
+    accounting below decides. A PR whose block claims nothing — absent, or present but
+    empty — is not one of them and keeps its surface locked.
     """
     plan = Plan()
     no_fix = recent_no_fix_fingerprints or set()
     fixed_upstream = fixed_upstream_fingerprints or set()
+    pr_keys_with_coverage = open_pr_keys_with_coverage or set()
 
     for cand in merge_by_key(candidates):
         # Before anything reads .specs or derives fingerprints from them.
@@ -281,10 +334,22 @@ def plan_dispatches(
             plan.suppressed.append(Suppression(cand, SUPPRESSED_IN_FLIGHT, cand.key))
             continue
 
-        # An open fix PR for this surface stops a second agent regardless of what the
-        # PR body claims. The coverage block is written by the agent, so a PR that
-        # omitted it would otherwise be invisible here and the failure re-dispatched.
-        if cand.key in open_pr_keys:
+        # An open fix PR that claims no specs stops a second agent on its surface: the
+        # coverage block is written by the agent, so one that is missing or empty
+        # states nothing about its remit and the whole surface has to be assumed.
+        # A PR that claims at least one spec is authoritative per spec through
+        # `covered_fingerprints`, so locking its surface only hides its neighbours: on
+        # 2026-09-02 c8-cross-component-e2e-tests#3267 claimed three cluster-creation
+        # setup specs on `main:saas-smoke-e2e`, and run 33605992250's unrelated
+        # `smoke-tests.spec.ts` failure was suppressed as `open-fix-pr-for-surface`
+        # rather than dispatched.
+        #
+        # Two residuals it does not cover. A partially written block reads as
+        # authoritative, since the gate only asks "claims anything?"; validating it
+        # against `/tmp/fingerprints.json` in alwaysgreen-fix.yml is the fix. And a
+        # claim-nothing PR holds its surface only until PR_LOCK_TTL_HOURS, past which
+        # `inflight_keys` and the dispatch caps are the only bound.
+        if cand.key in open_pr_keys and cand.key not in pr_keys_with_coverage:
             plan.suppressed.append(Suppression(cand, SUPPRESSED_PR_OPEN, cand.key))
             continue
 

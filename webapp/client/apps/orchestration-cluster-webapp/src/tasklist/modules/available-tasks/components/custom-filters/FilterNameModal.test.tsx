@@ -37,7 +37,7 @@ describe('<FilterNameModal />', () => {
 		const mockOnCancel = vi.fn();
 		const screen = await render(<FilterNameModal isOpen onApply={() => {}} onCancel={mockOnCancel} />);
 
-		await userEvent.click(screen.getByRole('button', {name: /cancel/i}));
+		await userEvent.click(screen.getByRole('button', {name: /cancel/i}).last());
 
 		expect(mockOnCancel).toHaveBeenCalledOnce();
 	});

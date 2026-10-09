@@ -300,7 +300,7 @@ describe('TopPanel', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Please contact your organization owner or admin to give you the necessary permissions to read this definition',
+        'Contact your organization owner or admin to give you the necessary permissions to read this definition',
       ),
     ).toBeInTheDocument();
   });

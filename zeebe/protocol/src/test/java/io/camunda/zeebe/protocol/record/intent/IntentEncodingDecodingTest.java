@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.intent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.ArrayList;
@@ -52,9 +53,25 @@ final class IntentEncodingDecodingTest {
     assertThat(actualIntentClasses).containsAll(new ArrayList<>(Intent.INTENT_CLASSES));
   }
 
+  @Test
+  void shouldIdentifySuspensionBatchCommandsAndEvents() {
+    // when
+    final Intent unknown = Intent.fromProtocolValue(ValueType.SUSPENSION_BATCH, (short) -1);
+    final Intent acknowledgement =
+        Intent.fromProtocolValue(ValueType.SUSPENSION_BATCH, "ELEMENT_INSTANCE_SUSPENDED");
+
+    // then
+    assertThat(SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE.isEvent()).isFalse();
+    assertThat(SuspensionBatchIntent.COMPLETE_SUSPENDING_ELEMENT_INSTANCE.isEvent()).isFalse();
+    assertThat(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED.isEvent()).isTrue();
+    assertThat(unknown).isSameAs(Intent.UNKNOWN);
+    assertThat(acknowledgement).isSameAs(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED);
+  }
+
   private static Stream<ParameterSet> parameters() {
     final List<ParameterSet> result = new ArrayList<>();
     result.addAll(buildParameterSets(AgentDefinitionIntent.class, AgentDefinitionIntent::from));
+    result.addAll(buildParameterSets(AgentHistoryBatchIntent.class, AgentHistoryBatchIntent::from));
     result.addAll(buildParameterSets(AgentHistoryIntent.class, AgentHistoryIntent::from));
     result.addAll(buildParameterSets(AgentInstanceIntent.class, AgentInstanceIntent::from));
     result.addAll(
@@ -157,6 +174,7 @@ final class IntentEncodingDecodingTest {
     result.addAll(
         buildParameterSets(SignalSubscriptionIntent.class, SignalSubscriptionIntent::from));
     result.addAll(buildParameterSets(TenantIntent.class, TenantIntent::from));
+    result.addAll(buildParameterSets(SuspensionBatchIntent.class, SuspensionBatchIntent::from));
     result.addAll(buildParameterSets(TimerIntent.class, TimerIntent::from));
     result.addAll(buildParameterSets(UsageMetricIntent.class, UsageMetricIntent::from));
     result.addAll(buildParameterSets(UserIntent.class, UserIntent::from));

@@ -96,7 +96,7 @@ public class ProcessGroupByUserTaskInterpreterOS extends AbstractGroupByUserTask
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
@@ -159,7 +159,7 @@ public class ProcessGroupByUserTaskInterpreterOS extends AbstractGroupByUserTask
   }
 
   @Override
-  public ProcessGroupByUserTaskInterpreterHelper getHelper() {
+  protected ProcessGroupByUserTaskInterpreterHelper getHelper() {
     return helper;
   }
 }

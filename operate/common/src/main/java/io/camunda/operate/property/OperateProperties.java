@@ -39,7 +39,7 @@ public class OperateProperties {
 
   private boolean enterprise = false;
 
-  private boolean navV2Enabled = true;
+  private Boolean navV2Enabled;
 
   private String tasklistUrl = null;
 
@@ -151,12 +151,16 @@ public class OperateProperties {
     this.enterprise = enterprise;
   }
 
-  public boolean isNavV2Enabled() {
+  public Boolean getNavV2Enabled() {
     return navV2Enabled;
   }
 
-  public void setNavV2Enabled(final boolean navV2Enabled) {
+  public void setNavV2Enabled(final Boolean navV2Enabled) {
     this.navV2Enabled = navV2Enabled;
+  }
+
+  public boolean resolveNavV2Enabled() {
+    return navV2Enabled == null || navV2Enabled;
   }
 
   public IdentityProperties getIdentity() {

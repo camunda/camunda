@@ -22,7 +22,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransforme
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Objects;
 
@@ -54,7 +54,7 @@ public class AuditLogHandler<R extends RecordValue>
     super(indexName, transformer, configuration);
 
     // vary the logic we use for picking indexes based on what kind of record we are processing.
-    if (StorageOrdinalKeyRelated.class.isAssignableFrom(transformer.getRecordValueType())) {
+    if (StorageOrdinalRelated.class.isAssignableFrom(transformer.getRecordValueType())) {
       auditLogIndexLocator = this::locateOrdinalIndex;
     } else {
       auditLogIndexLocator = this::locateMainIndex;
@@ -130,7 +130,7 @@ public class AuditLogHandler<R extends RecordValue>
 
   TargetIndex locateOrdinalIndex(final TargetIndexLocator indexLocator, final Record<R> record) {
     return indexLocator.locateOrdinalIndex(
-        getIndexName(), (StorageOrdinalKeyRelated) record.getValue());
+        getIndexName(), (StorageOrdinalRelated) record.getValue());
   }
 
   @Override

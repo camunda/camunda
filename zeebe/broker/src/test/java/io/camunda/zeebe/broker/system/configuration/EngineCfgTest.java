@@ -73,6 +73,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
     assertThat(configuration.isCandidateGroupNameResolution())
         .isEqualTo(EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION);
+    assertThat(configuration.isProcessCacheSoftValues())
+        .isEqualTo(EngineConfiguration.DEFAULT_PROCESS_CACHE_SOFT_VALUES);
     assertThat(configuration.getSecretResolutionInterval())
         .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
     assertThat(configuration.getSecretResolutionRetryMaxAttempts())
@@ -87,8 +89,12 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT);
     assertThat(configuration.isArchiverlessEnabled())
         .isEqualTo(EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS);
-    assertThat(configuration.getFixedStorageOrdinalKey())
-        .isEqualTo(EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY);
+    assertThat(configuration.getFixedStorageOrdinal())
+        .isEqualTo(EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL);
+    assertThat(configuration.getInputMappingMode())
+        .isEqualTo(EngineConfiguration.InputMappingMode.COMBINED);
+    assertThat(configuration.getOutputMappingMode())
+        .isEqualTo(EngineConfiguration.OutputMappingMode.COMBINED);
   }
 
   @Test
@@ -131,7 +137,7 @@ final class EngineCfgTest {
     assertThat(configuration.getGroupNameCacheCapacity()).isEqualTo(2000);
     assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
     assertThat(configuration.isArchiverlessEnabled()).isTrue();
-    assertThat(configuration.getFixedStorageOrdinalKey()).isEqualTo(1001);
+    assertThat(configuration.getFixedStorageOrdinal()).isEqualTo(1001);
   }
 
   void assertListenerCfg(

@@ -40,6 +40,9 @@ class AgentInstanceEntityTransformerTest {
                 AgentHistoryContentType.TEXT, "You are helpful.", null, null)));
     source.setInputTokens(50L);
     source.setOutputTokens(30L);
+    source.setReasoningTokenCount(18L);
+    source.setCacheCreationTokenCount(12L);
+    source.setCacheReadTokenCount(6L);
     source.setModelCalls(2);
     source.setToolCalls(3);
     source.setMaxTokens(1000L);
@@ -55,7 +58,7 @@ class AgentInstanceEntityTransformerTest {
     source.setProcessDefinitionKey(400L);
     source.setBpmnProcessId("myProcess");
     source.setProcessDefinitionVersion(2);
-    source.setVersionTag("v2");
+    source.setProcessDefinitionVersionTag("v2");
     source.setTenantId("<default>");
     source.setCreationDate(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
     source.setLastUpdatedDate(OffsetDateTime.parse("2024-01-02T00:00:00Z"));
@@ -77,6 +80,9 @@ class AgentInstanceEntityTransformerTest {
         .containsExactly(new ContentItem(ContentType.TEXT, "You are helpful.", null, null));
     assertThat(result.metrics().inputTokens()).isEqualTo(50L);
     assertThat(result.metrics().outputTokens()).isEqualTo(30L);
+    assertThat(result.metrics().reasoningTokenCount()).isEqualTo(18L);
+    assertThat(result.metrics().cacheCreationTokenCount()).isEqualTo(12L);
+    assertThat(result.metrics().cacheReadTokenCount()).isEqualTo(6L);
     assertThat(result.metrics().modelCalls()).isEqualTo(2);
     assertThat(result.metrics().toolCalls()).isEqualTo(3);
     assertThat(result.limits().maxTokens()).isEqualTo(1000L);
@@ -95,7 +101,7 @@ class AgentInstanceEntityTransformerTest {
     assertThat(result.processDefinitionKey()).isEqualTo(400L);
     assertThat(result.processDefinitionId()).isEqualTo("myProcess");
     assertThat(result.processDefinitionVersion()).isEqualTo(2);
-    assertThat(result.versionTag()).isEqualTo("v2");
+    assertThat(result.processDefinitionVersionTag()).isEqualTo("v2");
     assertThat(result.tenantId()).isEqualTo("<default>");
     assertThat(result.creationDate()).isEqualTo(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
     assertThat(result.lastUpdatedDate()).isEqualTo(OffsetDateTime.parse("2024-01-02T00:00:00Z"));

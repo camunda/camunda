@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -52,6 +53,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
   private ExporterMetadata exporterMetadata;
   private IncidentNotifier incidentNotifier;
+  private ErrorInjectingIncidentUpdateRepository errorInjectingRepository;
 
   @Override
   @BeforeEach
@@ -59,6 +61,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
     super.setup();
     incidentNotifier = mock(IncidentNotifier.class);
     exporterMetadata = new ExporterMetadata(TestObjectMapper.objectMapper());
+    errorInjectingRepository = new ErrorInjectingIncidentUpdateRepository();
   }
 
   @Override
@@ -76,10 +79,11 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
   protected IncidentUpdateTask createBackgroundTask(
       final ExporterConfiguration config, final ExporterResourceProvider resourceProvider) {
     final var repository = createIncidentUpdateRepository(config, resourceProvider);
+    errorInjectingRepository.setRealUpdateRepository(repository);
 
     return new IncidentUpdateTask(
         exporterMetadata,
-        repository,
+        errorInjectingRepository,
         false,
         BATCH_SIZE,
         executor,
@@ -99,13 +103,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
-                  .setIntent("CREATED")
-                  .setKey(9999L)
-                  .setPosition(1L);
+              newPostImporterQueue().setIntent("CREATED").setKey(9999L).setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
           client.refresh(postImporterTemplate.getFullQualifiedName());
@@ -135,15 +133,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(9999L)
-                  .setFlowNodeInstanceKey(9999L);
+              newIncident().setProcessInstanceKey(9999L).setFlowNodeInstanceKey(9999L);
 
           store(incidentTemplate, client, incidentEntity);
           client.refresh(incidentTemplate.getFullQualifiedName());
@@ -152,12 +143,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
-                  .setKey(incidentKey)
+                  .setKey(incidentEntity.getKey())
                   .setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
@@ -182,27 +170,15 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1");
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
           store(listViewTemplate, client, processInstance);
           client.refresh(listViewTemplate.getFullQualifiedName());
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(9999L);
 
           store(incidentTemplate, client, incidentEntity);
@@ -212,12 +188,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
-                  .setKey(incidentKey)
+                  .setKey(incidentEntity.getKey())
                   .setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
@@ -249,25 +222,13 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final var treePath = String.format("PI_%d/FN_callActivity1", processInstanceKey);
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(treePath);
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(
+              String.format("PI_%d/FN_callActivity1", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
@@ -277,10 +238,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
@@ -290,15 +248,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
-                  .setFlowNodeInstanceKey(flowNodeInstanceKey);
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
           store(incidentTemplate, client, incidentEntity);
           client.refresh(incidentTemplate.getFullQualifiedName());
@@ -307,12 +260,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
-                  .setKey(incidentKey)
+                  .setKey(incidentEntity.getKey())
                   .setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
@@ -341,7 +291,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
           assertThat(updatedIncident.getTreePath())
-              .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+              .isEqualTo(
+                  String.format(
+                      "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
           assertThat(updatedIncident.getState()).isEqualTo(IncidentState.ACTIVE);
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
@@ -361,23 +313,11 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1");
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
           store(listViewTemplate, client, processInstance);
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
@@ -387,10 +327,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
@@ -400,15 +337,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
-                  .setFlowNodeInstanceKey(flowNodeInstanceKey);
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
           store(incidentTemplate, client, incidentEntity);
           client.refresh(incidentTemplate.getFullQualifiedName());
@@ -417,12 +349,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
-                  .setKey(incidentKey)
+                  .setKey(incidentEntity.getKey())
                   .setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
@@ -450,7 +379,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           assertThat(updatedFlowNodeInstance.isIncident()).isTrue();
 
           final String sparseTreePath =
-              String.format("PI_%d/FNI_%d", processInstanceKey, flowNodeInstanceKey);
+              String.format("PI_%d/FNI_%d", processInstance.getKey(), flowNodeInstance.getKey());
           final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
           assertThat(updatedIncident.getTreePath()).isEqualTo(sparseTreePath);
           assertThat(updatedIncident.getState()).isEqualTo(IncidentState.ACTIVE);
@@ -472,31 +401,18 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final var treePath = String.format("PI_%d", processInstanceKey);
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(treePath);
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(String.format("PI_%d", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
 
           client.refresh(listViewTemplate.getFullQualifiedName());
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
-                  .setFlowNodeInstanceKey(processInstanceKey);
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(processInstance.getKey());
 
           store(incidentTemplate, client, incidentEntity);
           client.refresh(incidentTemplate.getFullQualifiedName());
@@ -505,12 +421,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
-                  .setKey(incidentKey)
+                  .setKey(incidentEntity.getKey())
                   .setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
@@ -531,7 +444,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
           assertThat(updatedIncident.getState()).isEqualTo(IncidentState.ACTIVE);
           assertThat(updatedIncident.getTreePath())
-              .isEqualTo(String.format("%s/FNI_%d", treePath, processInstanceKey));
+              .isEqualTo(
+                  String.format(
+                      "%s/FNI_%d", processInstance.getTreePath(), processInstance.getKey()));
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyIncidentNotificationsSent(updatedIncident);
@@ -550,26 +465,14 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final var treePath = String.format("PI_%d/FN_callActivity1", processInstanceKey);
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(treePath)
-                  .setIncident(true);
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance
+              .setTreePath(String.format("PI_%d/FN_callActivity1", processInstance.getKey()))
+              .setIncident(true);
           store(listViewTemplate, client, processInstance);
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey())
                   .setIncident(true);
@@ -580,10 +483,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey())
                   .setIncident(true);
@@ -594,17 +494,15 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
+              newIncident()
                   .setState(IncidentState.ACTIVE)
                   .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
-                  .setFlowNodeInstanceKey(flowNodeInstanceKey)
-                  .setTreePath(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance.getKey())
+                  .setTreePath(
+                      String.format(
+                          "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
 
           store(incidentTemplate, client, incidentEntity);
           client.refresh(incidentTemplate.getFullQualifiedName());
@@ -613,12 +511,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("RESOLVED")
-                  .setKey(incidentKey)
+                  .setKey(incidentEntity.getKey())
                   .setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
@@ -665,26 +560,14 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final var treePath = String.format("PI_%d/FN_callActivity1", processInstanceKey);
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(treePath)
-                  .setIncident(true);
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance
+              .setTreePath(String.format("PI_%d/FN_callActivity1", processInstance.getKey()))
+              .setIncident(true);
           store(listViewTemplate, client, processInstance);
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey())
                   .setIncident(true);
@@ -695,10 +578,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey())
                   .setIncident(true);
@@ -709,31 +589,27 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var activeIncidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity activeIncidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(activeIncidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(activeIncidentKey)
+              newIncident()
                   .setState(IncidentState.ACTIVE)
                   .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
-                  .setFlowNodeInstanceKey(flowNodeInstanceKey)
-                  .setTreePath(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance.getKey())
+                  .setTreePath(
+                      String.format(
+                          "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
 
           store(incidentTemplate, client, activeIncidentEntity);
 
-          final var resolvedIncidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity resolvedIncidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(resolvedIncidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(resolvedIncidentKey)
+              newIncident()
                   .setState(IncidentState.ACTIVE)
                   .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
-                  .setFlowNodeInstanceKey(flowNodeInstanceKey)
-                  .setTreePath(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance.getKey())
+                  .setTreePath(
+                      String.format(
+                          "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
 
           store(incidentTemplate, client, resolvedIncidentEntity);
           client.refresh(incidentTemplate.getFullQualifiedName());
@@ -742,12 +618,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("RESOLVED")
-                  .setKey(resolvedIncidentKey)
+                  .setKey(resolvedIncidentEntity.getKey())
                   .setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
@@ -783,10 +656,73 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           final var updatedActiveIncident =
               getFromIndex(incidentTemplate, client, activeIncidentEntity);
           assertThat(updatedActiveIncident.getState()).isEqualTo(IncidentState.ACTIVE);
+          assertThat(updatedActiveIncident.getTreePath()).isNotNull();
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyNoInteractions(incidentNotifier);
 
+          verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
+          verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(1);
+          verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
+        });
+  }
+
+  @TestTemplate
+  void shouldResolveIncidentButNotChangeTreePath(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resources) -> {
+          final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(String.format("PI_%d", processInstance.getKey()));
+          store(listViewTemplate, client, processInstance);
+
+          client.refresh(listViewTemplate.getFullQualifiedName());
+
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+
+          final IncidentEntity incidentEntity =
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(processInstance.getKey())
+                  .setTreePath(processInstance.getTreePath());
+
+          store(incidentTemplate, client, incidentEntity);
+          client.refresh(incidentTemplate.getFullQualifiedName());
+
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          final PostImporterQueueEntity queueEntity =
+              newPostImporterQueue()
+                  .setIntent("RESOLVED")
+                  .setKey(incidentEntity.getKey())
+                  .setPosition(1L);
+
+          store(postImporterTemplate, client, queueEntity);
+          client.refresh(postImporterTemplate.getFullQualifiedName());
+
+          // when
+          final var updated = job.execute();
+
+          // then
+          assertThat(updated).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
+
+          client.refresh(testPrefix);
+
+          final var updatedProcessInstance =
+              getFromIndex(listViewTemplate, client, processInstance);
+          assertThat(updatedProcessInstance.isIncident()).isFalse();
+
+          final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
+          assertThat(updatedIncident.getState()).isEqualTo(IncidentState.RESOLVED);
+          assertThat(updatedIncident.getTreePath())
+              .isEqualTo(
+                  processInstance.getTreePath()); // tree path is not changed by RESOLVED update
+
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
           verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(1);
           verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
@@ -809,10 +745,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           // RESOLVED is present in the same batch, so it never transitions to ACTIVE
           final var key = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(key))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(key)
+              newIncident(key)
                   .setState(IncidentState.PENDING)
                   .setErrorMessage("An error happened")
                   .setProcessInstanceKey(key)
@@ -824,14 +757,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           // the process instance is already displaying an incident (incident=true) in the list
           // view
           final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(key))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(key)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath("PI_" + key)
-                  .setIncident(true);
+              newProcessInstance(key).setTreePath("PI_" + key).setIncident(true);
           store(listViewTemplate, client, processInstance);
           client.refresh(listViewTemplate.getFullQualifiedName());
 
@@ -839,10 +765,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           store(
               postImporterTemplate,
               client,
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue("queue-1")
                   .setIntent("CREATED")
                   .setKey(key)
                   .setProcessInstanceKey(key)
@@ -850,10 +773,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           store(
               postImporterTemplate,
               client,
-              new PostImporterQueueEntity()
-                  .setId("queue-2")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue("queue-2")
                   .setIntent("RESOLVED")
                   .setKey(key)
                   .setProcessInstanceKey(key)
@@ -895,27 +815,14 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final var treePath = String.format("PI_%d", processInstanceKey);
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(treePath);
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(String.format("PI_%d", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
 
           client.refresh(listViewTemplate.getFullQualifiedName());
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
@@ -925,10 +832,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
@@ -938,35 +842,20 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey1 = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity1 =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey1))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey1)
-                  .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
-                  .setFlowNodeInstanceKey(flowNodeInstanceKey);
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
-          final var incidentKey2 = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity2 =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey2))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey2)
-                  .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
-                  .setFlowNodeInstanceKey(flowNodeInstanceKey);
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
-          final var incidentKey3 = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity3 =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey3))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey3)
-                  .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
-                  .setFlowNodeInstanceKey(flowNodeInstanceKey);
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
           // duplicate incident in main + multiple dated indexes
           store(incidentTemplate, client, incidentEntity1);
@@ -983,10 +872,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
             store(
                 postImporterTemplate,
                 client,
-                new PostImporterQueueEntity()
-                    .setId("queue-" + position)
-                    .setPartitionId(PARTITION_ID)
-                    .setActionType(PostImporterActionType.INCIDENT)
+                newPostImporterQueue("queue-" + position)
                     .setIntent("CREATED")
                     .setKey(incident.getKey())
                     .setPosition(position));
@@ -1018,29 +904,39 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           final var updatedIncident1 = getFromIndex(incidentTemplate, client, incidentEntity1);
           assertThat(updatedIncident1.getState()).isEqualTo(IncidentState.ACTIVE);
           assertThat(updatedIncident1.getTreePath())
-              .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+              .isEqualTo(
+                  String.format(
+                      "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
 
           final var updatedIncident1Dup1 =
               getFromIndex(incidentTemplate, client, incidentEntity1, "2026-07-12");
           assertThat(updatedIncident1Dup1.getState()).isEqualTo(IncidentState.ACTIVE);
           assertThat(updatedIncident1Dup1.getTreePath())
-              .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+              .isEqualTo(
+                  String.format(
+                      "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
 
           final var updatedIncident1Dup2 =
               getFromIndex(incidentTemplate, client, incidentEntity1, "2026-07-13");
           assertThat(updatedIncident1Dup2.getState()).isEqualTo(IncidentState.ACTIVE);
           assertThat(updatedIncident1Dup2.getTreePath())
-              .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+              .isEqualTo(
+                  String.format(
+                      "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
 
           final var updatedIncident2 = getFromIndex(incidentTemplate, client, incidentEntity2);
           assertThat(updatedIncident2.getState()).isEqualTo(IncidentState.ACTIVE);
           assertThat(updatedIncident2.getTreePath())
-              .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+              .isEqualTo(
+                  String.format(
+                      "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
 
           final var updatedIncident3 = getFromIndex(incidentTemplate, client, incidentEntity3);
           assertThat(updatedIncident3.getState()).isEqualTo(IncidentState.ACTIVE);
           assertThat(updatedIncident3.getTreePath())
-              .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+              .isEqualTo(
+                  String.format(
+                      "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(3L);
 
@@ -1064,28 +960,15 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final var treePath = String.format("PI_%d", processInstanceKey);
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(treePath);
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(String.format("PI_%d", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
           storeDuplicates(listViewTemplate, client, processInstance, "2026-07-12", "2026-07-13");
 
           client.refresh(listViewTemplate.getFullQualifiedName() + "*");
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
@@ -1102,10 +985,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey())
                   .setRootProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
@@ -1117,15 +997,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(processInstanceKey)
-                  .setFlowNodeInstanceKey(flowNodeInstanceKey);
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
           store(incidentTemplate, client, incidentEntity);
           client.refresh(incidentTemplate.getFullQualifiedName());
@@ -1136,10 +1011,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           store(
               postImporterTemplate,
               client,
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
                   .setKey(incidentEntity.getKey())
                   .setPosition(1L));
@@ -1172,7 +1044,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
           assertThat(updatedIncident.getState()).isEqualTo(IncidentState.ACTIVE);
           assertThat(updatedIncident.getTreePath())
-              .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+              .isEqualTo(
+                  String.format(
+                      "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyIncidentNotificationsSent(incidentEntity);
@@ -1182,6 +1056,266 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           verify(exporterMetrics).recordIncidentUpdatesDuplicateProcessInstances(2);
           verify(exporterMetrics).recordIncidentUpdatesDuplicateFlowNodeInstances(4);
           verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
+        });
+  }
+
+  @TestTemplate
+  void shouldSendNotificationsWhenRetryingAfterPartialNonIncidentBulkUpdateFailure(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resources) -> {
+          final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(
+              String.format("PI_%d/FN_callActivity1", processInstance.getKey()));
+          store(listViewTemplate, client, processInstance);
+
+          final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
+              newFlowNodeInstanceForListViewEntity()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setRootProcessInstanceKey(processInstance.getKey());
+          listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
+          store(listViewTemplate, client, processInstance, listViewFlowNodeInstance);
+
+          final var flowNodeInstanceTemplate =
+              resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
+
+          final FlowNodeInstanceEntity flowNodeInstance =
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setRootProcessInstanceKey(processInstance.getKey());
+          store(flowNodeInstanceTemplate, client, flowNodeInstance);
+
+          client.refresh(listViewTemplate.getFullQualifiedName());
+          client.refresh(flowNodeInstanceTemplate.getFullQualifiedName());
+
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+
+          final IncidentEntity incidentEntity =
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance.getKey());
+
+          store(incidentTemplate, client, incidentEntity);
+          client.refresh(incidentTemplate.getFullQualifiedName());
+
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          final PostImporterQueueEntity queueEntity =
+              newPostImporterQueue()
+                  .setIntent("CREATED")
+                  .setKey(incidentEntity.getKey())
+                  .setPosition(1L);
+
+          store(postImporterTemplate, client, queueEntity);
+          client.refresh(postImporterTemplate.getFullQualifiedName());
+
+          errorInjectingRepository.setFailFlowNodeBulkUpdates(true);
+
+          // when
+          final var updatedFirst = job.execute();
+
+          // then
+          assertThat(updatedFirst)
+              .failsWithin(EXECUTE_TIMEOUT)
+              .withThrowableThat()
+              .withRootCauseInstanceOf(ExporterException.class)
+              .withMessageContaining("Simulated failure for flow node bulk updates");
+
+          {
+            client.refresh(testPrefix);
+
+            verifyNoInteractions(incidentNotifier);
+
+            // confirm some docs updated, but not all of them
+            final var updatedProcessInstance =
+                getFromIndex(listViewTemplate, client, processInstance);
+            assertThat(updatedProcessInstance.isIncident()).isTrue();
+
+            final var updatedListViewFlowNodeInstance =
+                getChildFromIndex(
+                    listViewTemplate, client, processInstance, listViewFlowNodeInstance);
+            assertThat(updatedListViewFlowNodeInstance.isIncident()).isTrue();
+
+            final var updatedFlowNodeInstance =
+                getFromIndex(flowNodeInstanceTemplate, client, flowNodeInstance);
+            assertThat(updatedFlowNodeInstance.isIncident()).isFalse();
+
+            final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
+            assertThat(updatedIncident.getState()).isNull();
+          }
+
+          // given
+          errorInjectingRepository.setFailFlowNodeBulkUpdates(false);
+
+          // when
+          final var updatedSecond = job.execute();
+
+          // then
+          assertThat(updatedSecond).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(2);
+
+          client.refresh(testPrefix);
+
+          final var updatedProcessInstance =
+              getFromIndex(listViewTemplate, client, processInstance);
+          assertThat(updatedProcessInstance.isIncident()).isTrue();
+
+          final var updatedListViewFlowNodeInstance =
+              getChildFromIndex(
+                  listViewTemplate, client, processInstance, listViewFlowNodeInstance);
+          assertThat(updatedListViewFlowNodeInstance.isIncident()).isTrue();
+
+          final var updatedFlowNodeInstance =
+              getFromIndex(flowNodeInstanceTemplate, client, flowNodeInstance);
+          assertThat(updatedFlowNodeInstance.isIncident()).isTrue();
+
+          final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
+          assertThat(updatedIncident.getTreePath())
+              .isEqualTo(
+                  String.format(
+                      "%s/FNI_%d", processInstance.getTreePath(), flowNodeInstance.getKey()));
+          assertThat(updatedIncident.getState()).isEqualTo(IncidentState.ACTIVE);
+
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
+          verifyIncidentNotificationsSent(incidentEntity);
+        });
+  }
+
+  @TestTemplate
+  void shouldSendNotificationsWhenRetryingAfterPartialIncidentBulkUpdateFailure(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resources) -> {
+          // given
+          final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final ProcessInstanceForListViewEntity processInstance1 = newProcessInstance();
+          processInstance1.setTreePath(
+              String.format("PI_%d/FN_callActivity1", processInstance1.getKey()));
+          store(listViewTemplate, client, processInstance1);
+
+          final ProcessInstanceForListViewEntity processInstance2 = newProcessInstance();
+          processInstance2.setTreePath(
+              String.format("PI_%d/FN_callActivity1", processInstance2.getKey()));
+          store(listViewTemplate, client, processInstance2);
+
+          final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance1 =
+              newFlowNodeInstanceForListViewEntity()
+                  .setProcessInstanceKey(processInstance1.getKey())
+                  .setRootProcessInstanceKey(processInstance1.getKey());
+          listViewFlowNodeInstance1.getJoinRelation().setParent(processInstance1.getKey());
+
+          final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance2 =
+              newFlowNodeInstanceForListViewEntity()
+                  .setProcessInstanceKey(processInstance2.getKey())
+                  .setRootProcessInstanceKey(processInstance2.getKey());
+          listViewFlowNodeInstance2.getJoinRelation().setParent(processInstance2.getKey());
+
+          store(listViewTemplate, client, processInstance1, listViewFlowNodeInstance1);
+          store(listViewTemplate, client, processInstance2, listViewFlowNodeInstance2);
+
+          final var flowNodeInstanceTemplate =
+              resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
+
+          final FlowNodeInstanceEntity flowNodeInstance1 =
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance1.getKey())
+                  .setProcessInstanceKey(processInstance1.getKey())
+                  .setRootProcessInstanceKey(processInstance1.getKey());
+
+          final FlowNodeInstanceEntity flowNodeInstance2 =
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance2.getKey())
+                  .setProcessInstanceKey(processInstance2.getKey())
+                  .setRootProcessInstanceKey(processInstance2.getKey());
+
+          store(flowNodeInstanceTemplate, client, flowNodeInstance1);
+          store(flowNodeInstanceTemplate, client, flowNodeInstance2);
+
+          client.refresh(listViewTemplate.getFullQualifiedName());
+          client.refresh(flowNodeInstanceTemplate.getFullQualifiedName());
+
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+
+          final IncidentEntity incidentEntity1 =
+              newIncident()
+                  .setProcessInstanceKey(processInstance1.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance1.getKey());
+
+          final IncidentEntity incidentEntity2 =
+              newIncident()
+                  .setProcessInstanceKey(processInstance2.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance2.getKey());
+
+          store(incidentTemplate, client, incidentEntity1);
+          store(incidentTemplate, client, incidentEntity2);
+          client.refresh(incidentTemplate.getFullQualifiedName());
+
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          final PostImporterQueueEntity queueEntity1 =
+              newPostImporterQueue("queue-1")
+                  .setIntent("CREATED")
+                  .setKey(incidentEntity1.getKey())
+                  .setPosition(1L);
+
+          final PostImporterQueueEntity queueEntity2 =
+              newPostImporterQueue("queue-2")
+                  .setIntent("CREATED")
+                  .setKey(incidentEntity2.getKey())
+                  .setPosition(2L);
+
+          store(postImporterTemplate, client, queueEntity1);
+          store(postImporterTemplate, client, queueEntity2);
+          client.refresh(postImporterTemplate.getFullQualifiedName());
+
+          errorInjectingRepository.addIncidentIdToFail(String.valueOf(incidentEntity1.getKey()));
+
+          // when
+          final var updatedFirst = job.execute();
+
+          // then
+          assertThat(updatedFirst)
+              .failsWithin(EXECUTE_TIMEOUT)
+              .withThrowableThat()
+              .withCauseInstanceOf(ExporterException.class)
+              .withRootCauseInstanceOf(IncidentPartialBulkUpdateException.class)
+              .withMessageContaining("Not all incidents were updated during bulk update");
+
+          {
+            client.refresh(testPrefix);
+
+            verifyLatestIncidentNotificationsSent(1, incidentEntity2);
+
+            // confirm one incident updated, but not both
+            final var updatedIncident1 = getFromIndex(incidentTemplate, client, incidentEntity1);
+            assertThat(updatedIncident1.getState()).isNull();
+
+            final var updatedIncident2 = getFromIndex(incidentTemplate, client, incidentEntity2);
+            assertThat(updatedIncident2.getState()).isEqualTo(IncidentState.ACTIVE);
+          }
+
+          // given
+          errorInjectingRepository.removeIncidentIdToFail(String.valueOf(incidentEntity1.getKey()));
+
+          // when
+          final var updatedSecond = job.execute();
+
+          // then
+          assertThat(updatedSecond).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
+
+          client.refresh(testPrefix);
+
+          final var updatedIncident1 = getFromIndex(incidentTemplate, client, incidentEntity1);
+          assertThat(updatedIncident1.getState()).isEqualTo(IncidentState.ACTIVE);
+
+          final var updatedIncident2 = getFromIndex(incidentTemplate, client, incidentEntity2);
+          assertThat(updatedIncident2.getState()).isEqualTo(IncidentState.ACTIVE);
+
+          verifyLatestIncidentNotificationsSent(2, incidentEntity1);
         });
   }
 
@@ -1253,15 +1387,75 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
   }
 
   private void verifyIncidentNotificationsSent(final IncidentEntity... incidents) {
+    verifyLatestIncidentNotificationsSent(1, incidents);
+  }
+
+  private void verifyLatestIncidentNotificationsSent(
+      final int expectedCount, final IncidentEntity... incidents) {
     final ArgumentCaptor<List<IncidentEntity>> captor = ArgumentCaptor.forClass(List.class);
-    verify(incidentNotifier).notifyAsync(captor.capture());
+    verify(incidentNotifier, times(expectedCount)).notifyAsync(captor.capture());
 
     // just checking the IDs as the other fields may have been updated in the meantime
     final List<String> expectedIds =
         Arrays.stream(incidents).map(IncidentEntity::getId).sorted().toList();
     final List<String> actualIds =
-        captor.getValue().stream().map(IncidentEntity::getId).sorted().toList();
+        captor.getAllValues().get(expectedCount - 1).stream()
+            .map(IncidentEntity::getId)
+            .sorted()
+            .toList();
     assertThat(actualIds).isEqualTo(expectedIds);
+  }
+
+  private static ProcessInstanceForListViewEntity newProcessInstance() {
+    return newProcessInstance(ID_GENERATOR.getAndIncrement());
+  }
+
+  private static ProcessInstanceForListViewEntity newProcessInstance(
+      final long processInstanceKey) {
+    return new ProcessInstanceForListViewEntity()
+        .setId(String.valueOf(processInstanceKey))
+        .setPartitionId(PARTITION_ID)
+        .setKey(processInstanceKey)
+        .setProcessDefinitionKey(9999L)
+        .setBpmnProcessId("process-1");
+  }
+
+  private static FlowNodeInstanceForListViewEntity newFlowNodeInstanceForListViewEntity() {
+    final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
+    return new FlowNodeInstanceForListViewEntity()
+        .setId(String.valueOf(flowNodeInstanceKey))
+        .setPartitionId(PARTITION_ID)
+        .setKey(flowNodeInstanceKey);
+  }
+
+  private static FlowNodeInstanceEntity newFlowNodeInstanceEntity(final long flowNodeInstanceKey) {
+    return new FlowNodeInstanceEntity()
+        .setId(String.valueOf(flowNodeInstanceKey))
+        .setPartitionId(PARTITION_ID)
+        .setKey(flowNodeInstanceKey);
+  }
+
+  private static IncidentEntity newIncident() {
+    return newIncident(ID_GENERATOR.getAndIncrement());
+  }
+
+  private static IncidentEntity newIncident(final long incidentKey) {
+    return new IncidentEntity()
+        .setId(String.valueOf(incidentKey))
+        .setPartitionId(PARTITION_ID)
+        .setKey(incidentKey)
+        .setErrorMessage("An error happened");
+  }
+
+  private static PostImporterQueueEntity newPostImporterQueue() {
+    return newPostImporterQueue("queue-1");
+  }
+
+  private static PostImporterQueueEntity newPostImporterQueue(final String id) {
+    return new PostImporterQueueEntity()
+        .setId(id)
+        .setPartitionId(PARTITION_ID)
+        .setActionType(PostImporterActionType.INCIDENT);
   }
 
   private IncidentUpdateRepository createIncidentUpdateRepository(

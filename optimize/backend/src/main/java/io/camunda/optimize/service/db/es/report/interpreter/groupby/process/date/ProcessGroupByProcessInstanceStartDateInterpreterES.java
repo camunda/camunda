@@ -55,22 +55,22 @@ public class ProcessGroupByProcessInstanceStartDateInterpreterES
   }
 
   @Override
-  public ConfigurationService getConfigurationService() {
+  protected ConfigurationService getConfigurationService() {
     return configurationService;
   }
 
   @Override
-  public DateAggregationServiceES getDateAggregationService() {
+  protected DateAggregationServiceES getDateAggregationService() {
     return dateAggregationService;
   }
 
   @Override
-  public MinMaxStatsServiceES getMinMaxStatsService() {
+  protected MinMaxStatsServiceES getMinMaxStatsService() {
     return minMaxStatsService;
   }
 
   @Override
-  public ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
+  protected ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
     return queryFilterEnhancer;
   }
 

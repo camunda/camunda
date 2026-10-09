@@ -28,21 +28,6 @@ import java.util.stream.Collectors;
 public final class AgentInstanceRecord extends UnifiedRecordValue
     implements AgentInstanceRecordValue {
 
-  public static final String ATTR_STATUS = "status";
-  public static final String ATTR_METRICS = "metrics";
-  public static final String ATTR_TOOLS = "tools";
-
-  // Derived from the CONFIGURATION history entry kind on the output side, once the engine
-  // processing that merges them in lands (see #58791) — never from a request-level
-  // changedAttributes entry. Not part of ALLOWED_ATTRIBUTES in AgentInstanceUpdateProcessor, only
-  // of the output-side merge order.
-  public static final String ATTR_SYSTEM_PROMPT = "systemPrompt";
-  public static final String ATTR_MODEL = "model";
-  public static final String ATTR_PROVIDER = "provider";
-  public static final String ATTR_MAX_TOKENS = "maxTokens";
-  public static final String ATTR_MAX_MODEL_CALLS = "maxModelCalls";
-  public static final String ATTR_MAX_TOOL_CALLS = "maxToolCalls";
-
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty agentDefinitionKeyProp = new LongProperty("agentDefinitionKey", -1L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
@@ -52,13 +37,14 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty("rootProcessInstanceKey", -1L);
-  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty("storageOrdinalKey", 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1L);
   private final IntegerProperty processDefinitionVersionProp =
       new IntegerProperty("processDefinitionVersion", -1);
-  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  private final StringProperty processDefinitionVersionTagProp =
+      new StringProperty("processDefinitionVersionTag", "");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final EnumProperty<AgentInstanceStatus> statusProp =
@@ -74,7 +60,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
-  private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
+  private final StringProperty jobLeaseTokenProp = new StringProperty("jobLeaseToken", "");
   private final ArrayProperty<AgentHistoryRecord> historyProp =
       new ArrayProperty<>("history", AgentHistoryRecord::new);
 
@@ -87,11 +73,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(elementIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processDefinitionVersionProp)
-        .declareProperty(versionTagProp)
+        .declareProperty(processDefinitionVersionTagProp)
         .declareProperty(tenantIdProp)
         .declareProperty(statusProp)
         .declareProperty(definitionProp)
@@ -100,7 +86,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(toolsProp)
         .declareProperty(changedAttributesProp)
         .declareProperty(jobKeyProp)
-        .declareProperty(jobLeaseProp)
+        .declareProperty(jobLeaseTokenProp)
         .declareProperty(historyProp);
   }
 
@@ -203,12 +189,13 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getVersionTag() {
-    return BufferUtil.bufferAsString(versionTagProp.getValue());
+  public String getProcessDefinitionVersionTag() {
+    return BufferUtil.bufferAsString(processDefinitionVersionTagProp.getValue());
   }
 
-  public AgentInstanceRecord setVersionTag(final String versionTag) {
-    versionTagProp.setValue(versionTag);
+  public AgentInstanceRecord setProcessDefinitionVersionTag(
+      final String processDefinitionVersionTag) {
+    processDefinitionVersionTagProp.setValue(processDefinitionVersionTag);
     return this;
   }
 
@@ -295,12 +282,12 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getJobLease() {
-    return BufferUtil.bufferAsString(jobLeaseProp.getValue());
+  public String getJobLeaseToken() {
+    return BufferUtil.bufferAsString(jobLeaseTokenProp.getValue());
   }
 
-  public AgentInstanceRecord setJobLease(final String jobLease) {
-    jobLeaseProp.setValue(jobLease);
+  public AgentInstanceRecord setJobLeaseToken(final String jobLeaseToken) {
+    jobLeaseTokenProp.setValue(jobLeaseToken);
     return this;
   }
 
@@ -330,12 +317,12 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public AgentInstanceRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public AgentInstanceRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 

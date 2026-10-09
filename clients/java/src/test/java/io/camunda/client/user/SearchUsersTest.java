@@ -20,10 +20,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.filter.UserFilterBase;
 import io.camunda.client.api.search.sort.UserSort;
+import io.camunda.client.protocol.rest.UserFilter;
 import io.camunda.client.protocol.rest.UserResult;
+import io.camunda.client.protocol.rest.UserSearchQueryRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -75,5 +83,54 @@ public class SearchUsersTest extends ClientRestTest {
     assertThatThrownBy(() -> client.newUserGetRequest("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("username must not be empty");
+  }
+
+  @Test
+  void shouldSearchUsersWithOrFilters() {
+    // when
+    client
+        .newUsersSearchRequest()
+        .filter(
+            fn ->
+                fn.orFilters(
+                    Arrays.asList(f1 -> f1.username("user-1"), f2 -> f2.username("user-2"))))
+        .send()
+        .join();
+
+    // then
+    final UserSearchQueryRequest request =
+        gatewayService.getLastRequest(UserSearchQueryRequest.class);
+    final UserFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getUsername().get$Eq()).isEqualTo("user-1");
+    assertThat(filter.get$Or().get(1).getUsername().get$Eq()).isEqualTo("user-2");
+  }
+
+  @Test
+  void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
+    final Set<String> baseMethods = publicMethodSignatures(UserFilterBase.class);
+    final Set<String> fullMethods =
+        publicMethodSignatures(io.camunda.client.api.search.filter.UserFilter.class);
+
+    assertThat(fullMethods)
+        .withFailMessage("Full interface is missing methods from base interface")
+        .containsAll(baseMethods);
+
+    final Set<String> expectedExtras = new HashSet<>();
+    expectedExtras.add("orFilters[interface java.util.List]");
+    final Set<String> actualExtras = new HashSet<>(fullMethods);
+    actualExtras.removeAll(baseMethods);
+
+    assertThat(actualExtras)
+        .withFailMessage("Unexpected methods in full interface: %s", actualExtras)
+        .isEqualTo(expectedExtras);
+  }
+
+  private static Set<String> publicMethodSignatures(final Class<?> clazz) {
+    return Arrays.stream(clazz.getMethods())
+        .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())
+        .map(m -> m.getName() + Arrays.toString(m.getParameterTypes()))
+        .collect(Collectors.toSet());
   }
 }

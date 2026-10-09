@@ -241,6 +241,68 @@ class StartupProcessTest {
           .isInstanceOf(StartupProcessException.class);
     }
 
+    /**
+     * A step is meant to report failure through the future it returns, but the process must not
+     * depend on it doing so. A step that throws before returning a future used to let the throw
+     * escape to the driving actor, leaving the startup future uncompleted forever: everything
+     * awaiting it waited forever, the steps that had started were never torn down, and the
+     * half-started object could no longer be shut down at all. Asserted for any step rather than
+     * for the ones that were found doing it.
+     */
+    @Test
+    void shouldAbortStartupIfOneStepThrowsInsteadOfReturningAFailedFuture() {
+      // given
+      when(mockStep1.startup(STARTUP_CONTEXT)).thenThrow(new RuntimeException("TEST_EXCEPTION"));
+      when(mockStep2.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
+
+      final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
+
+      // when
+      final var actualResult = sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT);
+
+      // then
+      verify(mockStep2, never()).startup(STARTUP_CONTEXT);
+
+      assertThat(actualResult.isCompletedExceptionally()).isTrue();
+
+      assertThatThrownBy(actualResult::join)
+          .isInstanceOf(ExecutionException.class)
+          .cause()
+          .isInstanceOf(StartupProcessException.class);
+    }
+
+    /**
+     * The shutdown counterpart: a step that throws instead of returning a failed future must not
+     * stop the steps below it from being torn down, and must not strand the shutdown future.
+     */
+    @Test
+    void shouldContinueShutdownIfOneStepThrowsInsteadOfReturningAFailedFuture() {
+      // given
+      when(mockStep1.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
+      when(mockStep2.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
+
+      when(mockStep1.shutdown(SHUTDOWN_CONTEXT)).thenReturn(completedFuture(SHUTDOWN_CONTEXT));
+      when(mockStep2.shutdown(SHUTDOWN_CONTEXT)).thenThrow(new RuntimeException("TEST_EXCEPTION"));
+
+      final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
+
+      sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT).join();
+
+      // when
+      final var actualResult = sut.shutdown(TEST_CONCURRENCY_CONTROL, SHUTDOWN_CONTEXT);
+
+      // then - the step below the throwing one is still torn down
+      verify(mockStep2).shutdown(SHUTDOWN_CONTEXT);
+      verify(mockStep1).shutdown(SHUTDOWN_CONTEXT);
+
+      assertThat(actualResult.isCompletedExceptionally()).isTrue();
+
+      assertThatThrownBy(actualResult::join)
+          .isInstanceOf(ExecutionException.class)
+          .cause()
+          .isInstanceOf(StartupProcessException.class);
+    }
+
     @Test
     void shouldAbortOngoingStartupWhenShutdownIsCalled() {
       // given

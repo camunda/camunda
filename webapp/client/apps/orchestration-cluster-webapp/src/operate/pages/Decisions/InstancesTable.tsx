@@ -7,6 +7,7 @@
  */
 
 import {useEffect, useMemo} from 'react';
+import {createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
@@ -21,11 +22,13 @@ import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatEvaluationDate} from '#/operate/shared/utils/formatEvaluationDate';
 import {Toolbar} from './Toolbar';
 import {Container, DecisionName, InstanceLink} from './styled';
-import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 
 type Props = {
 	search: DecisionsSearch;
 };
+
+const ProcessInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(InstanceLink);
 
 const InstancesTable: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
@@ -122,12 +125,14 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			label: t('operate.decisions.instancesTable.processInstanceKey'),
 			render: (row: DecisionInstance) =>
 				row.processInstanceKey ? (
-					<InstanceLink
-						href={`/operate/processes/${row.processInstanceKey}`}
+					<ProcessInstanceLink
+						to="/operate/processes/$processInstanceId"
+						params={{processInstanceId: row.processInstanceKey}}
 						title={t('operate.decisions.instancesTable.viewProcessInstance', {key: row.processInstanceKey})}
+						aria-label={t('operate.decisions.instancesTable.viewProcessInstance', {key: row.processInstanceKey})}
 					>
 						{row.processInstanceKey}
-					</InstanceLink>
+					</ProcessInstanceLink>
 				) : (
 					t('operate.decisions.instancesTable.none')
 				),
@@ -151,14 +156,16 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
 			/>
-			<Toolbar
-				selectedCount={selection.selectedCount}
-				includedIds={selection.includedIds}
-				excludedIds={selection.excludedIds}
-				filter={filter ?? {}}
-				onDeleted={selection.reset}
-				onDiscard={selection.reset}
-			/>
+			{filter !== undefined && (
+				<Toolbar
+					selectedCount={selection.selectedCount}
+					includedIds={selection.includedIds}
+					excludedIds={selection.excludedIds}
+					filter={filter}
+					onDeleted={selection.reset}
+					onDiscard={selection.reset}
+				/>
+			)}
 			<PaginatedSortableTable<DecisionInstance>
 				columns={columns}
 				rows={decisionInstances}

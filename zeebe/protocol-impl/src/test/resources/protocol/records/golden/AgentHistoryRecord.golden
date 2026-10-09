@@ -35,14 +35,14 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty("rootProcessInstanceKey", -1L);
-  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty("storageOrdinalKey", 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
-  private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
+  private final StringProperty jobLeaseTokenProp = new StringProperty("jobLeaseToken", "");
   private final IntegerProperty loopIterationProp = new IntegerProperty("loopIteration", 0);
   private final EnumProperty<AgentHistoryRole> roleProp =
       new EnumProperty<>("role", AgentHistoryRole.class, AgentHistoryRole.UNSPECIFIED);
@@ -73,12 +73,12 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(jobKeyProp)
-        .declareProperty(jobLeaseProp)
+        .declareProperty(jobLeaseTokenProp)
         .declareProperty(loopIterationProp)
         .declareProperty(roleProp)
         .declareProperty(producedAtProp)
@@ -181,12 +181,12 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getJobLease() {
-    return BufferUtil.bufferAsString(jobLeaseProp.getValue());
+  public String getJobLeaseToken() {
+    return BufferUtil.bufferAsString(jobLeaseTokenProp.getValue());
   }
 
-  public AgentHistoryRecord setJobLease(final String jobLease) {
-    jobLeaseProp.setValue(jobLease);
+  public AgentHistoryRecord setJobLeaseToken(final String jobLeaseToken) {
+    jobLeaseTokenProp.setValue(jobLeaseToken);
     return this;
   }
 
@@ -380,12 +380,12 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public AgentHistoryRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public AgentHistoryRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 
@@ -405,7 +405,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   public AgentHistoryRecord ignoreLease() {
-    return setJobLease(JobRecord.EMPTY_LEASE);
+    return setJobLeaseToken(JobRecord.EMPTY_JOB_LEASE_TOKEN);
   }
 
   public AgentHistoryRecord addChangedAttribute(final String attribute) {

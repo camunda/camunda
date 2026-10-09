@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -40,7 +39,7 @@ public class AgentHistoryItemIdPersistenceTest {
 
   private static final String PROCESS_ID = "process";
   private static final String SERVICE_TASK_ID = "agent-task";
-  private static final String JOB_TYPE = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+  private static final String JOB_TYPE = "agentic-task";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -67,19 +66,26 @@ public class AgentHistoryItemIdPersistenceTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
-    ENGINE.jobs().withType(JOB_TYPE).activate();
+    final var jobBatch = ENGINE.jobs().withType(JOB_TYPE).withLease().activate();
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(JOB_TYPE)
             .getFirst()
+            .getKey();
+    final var jobLeaseToken =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
             .getKey();
 
     final var committedUpdate =
@@ -88,7 +94,7 @@ public class AgentHistoryItemIdPersistenceTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease("lease-committed")
+            .withJobLeaseToken("lease-committed")
             .withHistory(List.of(historyItem("history-item-committed")))
             .update();
     final long committedItemKey =
@@ -100,14 +106,14 @@ public class AgentHistoryItemIdPersistenceTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease("lease-discarded")
+            .withJobLeaseToken("lease-discarded")
             .withHistory(List.of(historyItem("history-item-discarded")))
             .update();
     final long discardedItemKey =
         discardedUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
 
     // when
-    ENGINE.agentHistories().withJobKey(jobKey).withJobLease("lease-committed").commit();
+    ENGINE.agentHistories().withJobKey(jobKey).withJobLeaseToken("lease-committed").commit();
 
     // then
     assertThat(

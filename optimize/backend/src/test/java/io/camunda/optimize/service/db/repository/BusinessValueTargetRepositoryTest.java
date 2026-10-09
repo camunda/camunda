@@ -7,13 +7,210 @@
  */
 package io.camunda.optimize.service.db.repository;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_VALUE_TARGET_INDEX_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.util.ObjectBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
+import io.camunda.optimize.service.db.DatabaseConstants;
+import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.db.repository.es.BusinessValueTargetRepositoryES;
+import io.camunda.optimize.service.db.repository.os.BusinessValueTargetRepositoryOS;
+import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class BusinessValueTargetRepositoryTest {
+
+  /**
+   * An empty authorized-tenant list means the caller may see nothing, and it must not be allowed to
+   * fall through to the unfiltered read that {@code null} selects. Verified by asserting the client
+   * is never touched rather than that the result is empty — a query that ran and happened to match
+   * nothing would satisfy the weaker assertion while still having read every tenant's targets.
+   */
+  @Test
+  void shouldReadNothingWithoutQueryingWhenTheCallerSeesNoTenants() {
+    // given
+    final OptimizeElasticsearchClient esClient = mock(OptimizeElasticsearchClient.class);
+    final BusinessValueTargetRepositoryES repository =
+        new BusinessValueTargetRepositoryES(esClient, new ObjectMapper());
+
+    // when
+    final List<BusinessValueTargetDto> targets = repository.readByTenants(List.of());
+
+    // then
+    assertThat(targets).isEmpty();
+    verifyNoInteractions(esClient);
+  }
+
+  /**
+   * The cap must fail loudly rather than truncate. readByTenants backs the overview read, and a
+   * silently short result would drop a tenant's targets from the response with no signal — the
+   * caller would see fewer targeted processes than they have and have no way to tell.
+   *
+   * <p>Covered per engine because the two implementations build and bound the query separately, so
+   * one could regress while the other stayed correct.
+   */
+  @Test
+  void shouldFailRatherThanTruncateWhenElasticsearchReturnsTheFetchLimit() throws Exception {
+    // given a backend returning exactly the fetch cap
+    final OptimizeElasticsearchClient esClient = mock(OptimizeElasticsearchClient.class);
+    // The request builder resolves the index alias through the client's own indexNameService field
+    // rather than a method, so a bare mock leaves it null and the builder trips before the cap
+    // check is ever reached.
+    final OptimizeIndexNameService nameService = mock(OptimizeIndexNameService.class);
+    when(nameService.getOptimizeIndexAliasForIndex(anyString())).thenReturn("optimize-target");
+    ReflectionTestUtils.setField(esClient, "indexNameService", nameService);
+    final SearchResponse<BusinessValueTargetDto> response = mock(SearchResponse.class);
+    final HitsMetadata<BusinessValueTargetDto> hits = mock(HitsMetadata.class);
+    when(hits.hits()).thenReturn(cappedHits());
+    when(response.hits()).thenReturn(hits);
+    when(esClient.search(any(SearchRequest.class), eq(BusinessValueTargetDto.class)))
+        .thenReturn(response);
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                new BusinessValueTargetRepositoryES(esClient, new ObjectMapper())
+                    .readByTenants(List.of("tenant-a")))
+        .isInstanceOf(OptimizeRuntimeException.class)
+        .hasMessageContaining("LIST_FETCH_LIMIT");
+  }
+
+  @Test
+  void shouldFailRatherThanTruncateWhenOpenSearchReturnsTheFetchLimit() {
+    // given a backend returning exactly the fetch cap
+    final OptimizeOpenSearchClient osClient = mock(OptimizeOpenSearchClient.class);
+    when(osClient.searchValues(any(), eq(BusinessValueTargetDto.class)))
+        .thenReturn(
+            IntStream.range(0, DatabaseConstants.LIST_FETCH_LIMIT)
+                .mapToObj(i -> targetFor("process-" + i))
+                .toList());
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                new BusinessValueTargetRepositoryOS(osClient, mock(OptimizeIndexNameService.class))
+                    .readByTenants(List.of("tenant-a")))
+        .isInstanceOf(OptimizeRuntimeException.class)
+        .hasMessageContaining("LIST_FETCH_LIMIT");
+  }
+
+  /**
+   * An empty id list reaches the repository whenever a clean-up pass finds no orphans, which is the
+   * steady state. Asserting the client is untouched rather than that nothing was deleted keeps an
+   * empty bulk request — accepted by both engines, and a wasted round trip on every sweep — from
+   * passing as correct.
+   */
+  @Test
+  void shouldNotIssueABulkRequestWhenThereAreNoIdsToDelete() {
+    // given
+    final OptimizeElasticsearchClient esClient = mock(OptimizeElasticsearchClient.class);
+    final OptimizeOpenSearchClient osClient = mock(OptimizeOpenSearchClient.class);
+    final OptimizeIndexNameService indexNameService = mock(OptimizeIndexNameService.class);
+
+    // when -- null means "nothing to delete" rather than throwing, matching bulkUpsert
+    final List<String> noIds = null;
+    new BusinessValueTargetRepositoryES(esClient, new ObjectMapper()).deleteByIds(noIds);
+    new BusinessValueTargetRepositoryOS(osClient, indexNameService).deleteByIds(noIds);
+    new BusinessValueTargetRepositoryES(esClient, new ObjectMapper()).deleteByIds(List.of());
+    new BusinessValueTargetRepositoryOS(osClient, indexNameService).deleteByIds(List.of());
+
+    // then
+    verifyNoInteractions(esClient);
+    verifyNoInteractions(osClient);
+  }
+
+  /**
+   * Covered per engine because the two implementations address the index differently — a prefixed
+   * concrete index on Elasticsearch, a prefixed alias on OpenSearch — so one could target the wrong
+   * index while the other stayed correct, and a delete aimed at a non-existent index fails silently
+   * rather than throwing.
+   */
+  @Test
+  void shouldDeleteEveryGivenIdFromTheTargetIndexOnElasticsearch() {
+    // given
+    final OptimizeElasticsearchClient esClient = mock(OptimizeElasticsearchClient.class);
+    when(esClient.addPrefixesToIndices(BUSINESS_VALUE_TARGET_INDEX_NAME))
+        .thenReturn(List.of("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME));
+
+    // when
+    new BusinessValueTargetRepositoryES(esClient, new ObjectMapper())
+        .deleteByIds(List.of("tenant-a::process-1", "tenant-b::process-2"));
+
+    // then
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(esClient)
+        .doBulkRequest(captor.capture(), eq(BUSINESS_VALUE_TARGET_INDEX_NAME), eq(false));
+    assertThat(captor.getValue().operations())
+        .extracting(operation -> operation.delete().index(), operation -> operation.delete().id())
+        .containsExactly(
+            tuple("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME, "tenant-a::process-1"),
+            tuple("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME, "tenant-b::process-2"));
+  }
+
+  @Test
+  void shouldDeleteEveryGivenIdFromTheTargetIndexOnOpenSearch() {
+    // given
+    final OptimizeOpenSearchClient osClient = mock(OptimizeOpenSearchClient.class);
+    when(osClient.convertToPrefixedAliasName(BUSINESS_VALUE_TARGET_INDEX_NAME))
+        .thenReturn("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME);
+
+    // when
+    new BusinessValueTargetRepositoryOS(osClient, mock(OptimizeIndexNameService.class))
+        .deleteByIds(List.of("tenant-a::process-1", "tenant-b::process-2"));
+
+    // then
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<List<org.opensearch.client.opensearch.core.bulk.BulkOperation>> captor =
+        ArgumentCaptor.forClass(List.class);
+    verify(osClient)
+        .doBulkRequest(any(), captor.capture(), eq(BUSINESS_VALUE_TARGET_INDEX_NAME), eq(false));
+    assertThat(captor.getValue())
+        .extracting(operation -> operation.delete().index(), operation -> operation.delete().id())
+        .containsExactly(
+            tuple("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME, "tenant-a::process-1"),
+            tuple("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME, "tenant-b::process-2"));
+  }
+
+  private static List<Hit<BusinessValueTargetDto>> cappedHits() {
+    return IntStream.range(0, DatabaseConstants.LIST_FETCH_LIMIT)
+        .mapToObj(
+            i ->
+                Hit.of(
+                    (Function<
+                            Hit.Builder<BusinessValueTargetDto>,
+                            ObjectBuilder<Hit<BusinessValueTargetDto>>>)
+                        b -> b.index("i").id(String.valueOf(i)).source(targetFor("process-" + i))))
+        .toList();
+  }
+
+  private static BusinessValueTargetDto targetFor(final String processDefinitionKey) {
+    return new BusinessValueTargetDto(
+        processDefinitionKey, "tenant-a", 1_000L, null, null, null, "someone");
+  }
 
   @Test
   void shouldCombineTenantAndProcessKeyIntoDocumentId() {

@@ -31,10 +31,7 @@ public interface ProcessDefinitionWriter {
 
   void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs);
 
-  void markDefinitionAsDeleted(final String definitionId);
-
-  boolean markRedeployedDefinitionsAsDeleted(
-      final List<ProcessDefinitionOptimizeDto> importedDefinitions);
+  void softDeleteDefinition(final String definitionId);
 
   void markDefinitionKeysAsOnboarded(final Set<String> definitionKeys);
 }

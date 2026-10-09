@@ -35,6 +35,7 @@ public record ProcessDefinitionStatisticsFilter(
     Boolean hasFlowNodeInstanceIncident,
     List<Operation<String>> flowNodeInstanceStateOperations,
     List<Operation<Integer>> incidentErrorHashCodeOperations,
+    List<Operation<String>> businessIdOperations,
     List<ProcessDefinitionStatisticsFilter> orFilters)
     implements FilterBase {
 
@@ -56,6 +57,7 @@ public record ProcessDefinitionStatisticsFilter(
         .hasFlowNodeInstanceIncident(hasFlowNodeInstanceIncident)
         .flowNodeInstanceStateOperations(flowNodeInstanceStateOperations)
         .incidentErrorHashCodeOperations(incidentErrorHashCodeOperations)
+        .businessIdOperations(businessIdOperations)
         .orFilters(orFilters);
   }
 
@@ -78,6 +80,7 @@ public record ProcessDefinitionStatisticsFilter(
     private Boolean hasFlowNodeInstanceIncident;
     private List<Operation<String>> flowNodeInstanceStateOperations;
     private List<Operation<Integer>> incidentErrorHashCodeOperations;
+    private List<Operation<String>> businessIdOperations;
     private List<ProcessDefinitionStatisticsFilter> orFilters;
 
     public Builder(final long processDefinitionKey) {
@@ -285,6 +288,21 @@ public record ProcessDefinitionStatisticsFilter(
       return incidentErrorHashCodeOperations(collectValues(operation, operations));
     }
 
+    public Builder businessIdOperations(final List<Operation<String>> operations) {
+      businessIdOperations = addValuesToList(businessIdOperations, operations);
+      return this;
+    }
+
+    public Builder businessIds(final String value, final String... values) {
+      return businessIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder businessIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return businessIdOperations(collectValues(operation, operations));
+    }
+
     public Builder addOrOperation(final ProcessDefinitionStatisticsFilter orOperation) {
       if (orFilters == null) {
         orFilters = new ArrayList<>();
@@ -318,6 +336,7 @@ public record ProcessDefinitionStatisticsFilter(
           hasFlowNodeInstanceIncident,
           Objects.requireNonNullElse(flowNodeInstanceStateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(incidentErrorHashCodeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(businessIdOperations, Collections.emptyList()),
           orFilters);
     }
   }

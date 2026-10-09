@@ -99,7 +99,8 @@ class UserTaskToolsTest extends OperationalToolsTest {
           2,
           Map.of("header1", "value1"),
           50,
-          Set.of("tag1", "tag2"));
+          Set.of("tag1", "tag2"),
+          false);
 
   static final SearchQueryResult<UserTaskEntity> USER_TASK_SEARCH_QUERY_RESULT =
       new Builder<UserTaskEntity>()

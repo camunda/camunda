@@ -21,13 +21,14 @@ import java.util.function.Function;
 
 public record GroupFilter(
     List<Operation<String>> groupIdOperations,
-    String name,
+    List<Operation<String>> nameOperations,
     String description,
     Set<String> memberIds,
     String tenantId,
     EntityType childMemberType,
     String roleId,
-    Map<EntityType, Set<String>> memberIdsByType)
+    Map<EntityType, Set<String>> memberIdsByType,
+    List<GroupFilter> orFilters)
     implements FilterBase {
 
   public static GroupFilter of(
@@ -38,24 +39,26 @@ public record GroupFilter(
   public Builder toBuilder() {
     return new Builder()
         .groupIdOperations(groupIdOperations)
-        .name(name)
+        .nameOperations(nameOperations)
         .description(description)
         .memberIds(memberIds)
         .tenantId(tenantId)
         .childMemberType(childMemberType)
         .roleId(roleId)
-        .memberIdsByType(memberIdsByType);
+        .memberIdsByType(memberIdsByType)
+        .orFilters(orFilters);
   }
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
     private List<Operation<String>> groupIdOperations;
-    private String name;
+    private List<Operation<String>> nameOperations;
     private String description;
     private Set<String> memberIds;
     private String tenantId;
     private EntityType childMemberType;
     private String roleId;
     private Map<EntityType, Set<String>> memberIdsByType;
+    private List<GroupFilter> orFilters;
 
     public Builder groupIdOperations(final List<Operation<String>> operations) {
       if (operations != null) {
@@ -86,9 +89,33 @@ public record GroupFilter(
       return groupIdOperations(collectValues(operation, operations));
     }
 
-    public Builder name(final String value) {
-      name = value;
+    public Builder nameOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        nameOperations = addValuesToList(nameOperations, operations);
+      }
       return this;
+    }
+
+    public Builder names(final Set<String> value) {
+      final var vals = FilterUtil.mapDefaultToOperation(new ArrayList<>(value));
+      if (vals != null) {
+        return nameOperations(vals);
+      }
+      return this;
+    }
+
+    public Builder name(final String value, final String... values) {
+      final var vals = FilterUtil.mapDefaultToOperation(value, values);
+      if (vals != null) {
+        return nameOperations(vals);
+      }
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder nameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return nameOperations(collectValues(operation, operations));
     }
 
     public Builder description(final String value) {
@@ -125,17 +152,31 @@ public record GroupFilter(
       return this;
     }
 
+    public Builder addOrOperation(final GroupFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<GroupFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @Override
     public GroupFilter build() {
       return new GroupFilter(
           groupIdOperations,
-          name,
+          nameOperations,
           description,
           memberIds,
           tenantId,
           childMemberType,
           roleId,
-          memberIdsByType);
+          memberIdsByType,
+          orFilters);
     }
   }
 }

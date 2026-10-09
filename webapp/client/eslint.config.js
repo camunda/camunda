@@ -16,6 +16,7 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 import tanstackPlugin from '@tanstack/eslint-plugin-query';
 import vitestPlugin from '@vitest/eslint-plugin';
+import camundaDsPlugin from '@camunda/design-system/eslint-plugin';
 
 const files = {
 	browser: ['packages/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}', 'apps/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'],
@@ -82,9 +83,9 @@ export default defineConfig([
 		},
 	},
 
-	// the session-heartbeat package ships a React hook, so it needs the React Hooks rules too
+	// these packages ship React hooks, so they need the React Hooks rules too
 	{
-		files: ['packages/session-heartbeat/lib/**/*.{ts,tsx}'],
+		files: ['packages/{oc-saas-notifications,session-heartbeat}/lib/**/*.{ts,tsx}'],
 		plugins: {'react-hooks': reactHooksPlugin},
 		rules: {...reactHooksPlugin.configs.recommended.rules},
 	},
@@ -192,5 +193,34 @@ export default defineConfig([
 		files: ocFiles.browser,
 		plugins: {'@tanstack/query': tanstackPlugin},
 		rules: {...tanstackPlugin.configs.recommended.rules},
+	},
+
+	{
+		files: ocFiles.browser,
+		ignores: ocFiles.test,
+		...camundaDsPlugin.configs.recommended,
+	},
+
+	{
+		files: [
+			`${ocPath}/src/{admin,tasklist}/**/*.{js,jsx,ts,tsx}`,
+			`${ocPath}/src/**/shadcn.components/**/*.{js,jsx,ts,tsx}`,
+		],
+		ignores: ocFiles.test,
+		...camundaDsPlugin.configs.tailwind,
+	},
+
+	{
+		files: [`${ocPath}/src/routes/**/*.{test,spec}.{js,jsx,ts,tsx}`],
+		rules: {
+			'no-restricted-syntax': [
+				'error',
+				{
+					selector: 'Program',
+					message:
+						'Tests must not live in src/routes/. Route files should be thin wrappers without much logic: move any logic into the pod folder (src/{operate,tasklist,admin,shared}/...) and unit test it there. Routes themselves must be covered by the Playwright integration tests in test/integration/.',
+				},
+			],
+		},
 	},
 ]);

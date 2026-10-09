@@ -361,8 +361,9 @@ public class ClusteringRule extends ExternalResource {
     brokerCfg.getNetwork().getInternalApi().setPort(internalApiAddresses.get(nodeId).getPort());
     brokerCfg.getCluster().setInitialContactPoints(contactPoints);
 
-    final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
     final var meterRegistry = new SimpleMeterRegistry();
+    final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
+    brokerSpringConfig.brokerIdMeterRegistryCustomizer().customize(meterRegistry);
     brokerCfg.init(brokerBase.getAbsolutePath());
 
     final var atomixCluster =
@@ -752,8 +753,8 @@ public class ClusteringRule extends ExternalResource {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              assertThat(serverOfExpectedLeader.promote())
-                  .describedAs("Promote request is successful")
+              assertThat(serverOfExpectedLeader.anoint())
+                  .describedAs("Anoint request is successful")
                   .succeedsWithin(Duration.ofSeconds(15));
               final int currentLeaderId = getLeaderForPartition(partitionId).getNodeId();
               assertThat(currentLeaderId)

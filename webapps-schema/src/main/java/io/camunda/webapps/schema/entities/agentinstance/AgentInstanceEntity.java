@@ -52,7 +52,7 @@ public final class AgentInstanceEntity
   private int processDefinitionVersion;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private String versionTag;
+  private String processDefinitionVersionTag;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String tenantId;
@@ -89,6 +89,15 @@ public final class AgentInstanceEntity
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private long outputTokens;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private long reasoningTokenCount;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private long cacheCreationTokenCount;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private long cacheReadTokenCount;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private int modelCalls;
@@ -195,12 +204,13 @@ public final class AgentInstanceEntity
     return this;
   }
 
-  public String getVersionTag() {
-    return versionTag;
+  public String getProcessDefinitionVersionTag() {
+    return processDefinitionVersionTag;
   }
 
-  public AgentInstanceEntity setVersionTag(final String versionTag) {
-    this.versionTag = versionTag;
+  public AgentInstanceEntity setProcessDefinitionVersionTag(
+      final String processDefinitionVersionTag) {
+    this.processDefinitionVersionTag = processDefinitionVersionTag;
     return this;
   }
 
@@ -306,6 +316,33 @@ public final class AgentInstanceEntity
     return this;
   }
 
+  public long getReasoningTokenCount() {
+    return reasoningTokenCount;
+  }
+
+  public AgentInstanceEntity setReasoningTokenCount(final long reasoningTokenCount) {
+    this.reasoningTokenCount = reasoningTokenCount;
+    return this;
+  }
+
+  public long getCacheCreationTokenCount() {
+    return cacheCreationTokenCount;
+  }
+
+  public AgentInstanceEntity setCacheCreationTokenCount(final long cacheCreationTokenCount) {
+    this.cacheCreationTokenCount = cacheCreationTokenCount;
+    return this;
+  }
+
+  public long getCacheReadTokenCount() {
+    return cacheReadTokenCount;
+  }
+
+  public AgentInstanceEntity setCacheReadTokenCount(final long cacheReadTokenCount) {
+    this.cacheReadTokenCount = cacheReadTokenCount;
+    return this;
+  }
+
   public int getModelCalls() {
     return modelCalls;
   }
@@ -389,7 +426,7 @@ public final class AgentInstanceEntity
         bpmnProcessId,
         processDefinitionKey,
         processDefinitionVersion,
-        versionTag,
+        processDefinitionVersionTag,
         tenantId,
         partitionId,
         status,
@@ -401,6 +438,9 @@ public final class AgentInstanceEntity
         maxToolCalls,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         modelCalls,
         toolCalls,
         tools,
@@ -428,7 +468,7 @@ public final class AgentInstanceEntity
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && processDefinitionKey == that.processDefinitionKey
         && processDefinitionVersion == that.processDefinitionVersion
-        && Objects.equals(versionTag, that.versionTag)
+        && Objects.equals(processDefinitionVersionTag, that.processDefinitionVersionTag)
         && Objects.equals(tenantId, that.tenantId)
         && partitionId == that.partitionId
         && Objects.equals(status, that.status)
@@ -440,6 +480,9 @@ public final class AgentInstanceEntity
         && maxToolCalls == that.maxToolCalls
         && inputTokens == that.inputTokens
         && outputTokens == that.outputTokens
+        && reasoningTokenCount == that.reasoningTokenCount
+        && cacheCreationTokenCount == that.cacheCreationTokenCount
+        && cacheReadTokenCount == that.cacheReadTokenCount
         && modelCalls == that.modelCalls
         && toolCalls == that.toolCalls
         && Objects.equals(tools, that.tools)
@@ -474,8 +517,8 @@ public final class AgentInstanceEntity
         + processDefinitionKey
         + ", processDefinitionVersion="
         + processDefinitionVersion
-        + ", versionTag='"
-        + versionTag
+        + ", processDefinitionVersionTag='"
+        + processDefinitionVersionTag
         + '\''
         + ", tenantId='"
         + tenantId
@@ -503,6 +546,12 @@ public final class AgentInstanceEntity
         + inputTokens
         + ", outputTokens="
         + outputTokens
+        + ", reasoningTokenCount="
+        + reasoningTokenCount
+        + ", cacheCreationTokenCount="
+        + cacheCreationTokenCount
+        + ", cacheReadTokenCount="
+        + cacheReadTokenCount
         + ", modelCalls="
         + modelCalls
         + ", toolCalls="

@@ -20,19 +20,18 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     implements BatchOperationExecutionRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
-  public static final String PROP_STORAGE_ORDINAL_KEY = "storageOrdinalKey";
+  public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
   public static final String PROP_ITEM_KEY_LIST = "itemKeys";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final IntegerProperty storageOrdinalKeyProp =
-      new IntegerProperty(PROP_STORAGE_ORDINAL_KEY, 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
   private final ArrayProperty<LongValue> itemKeysProp =
       new ArrayProperty<>(PROP_ITEM_KEY_LIST, LongValue::new);
 
   public BatchOperationExecutionRecord() {
     super(3);
     declareProperty(batchOperationKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(itemKeysProp);
   }
 
@@ -48,12 +47,12 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public BatchOperationExecutionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public BatchOperationExecutionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 
@@ -70,7 +69,7 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
 
   public BatchOperationExecutionRecord wrap(final BatchOperationExecutionRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
-    setStorageOrdinalKey(record.getStorageOrdinalKey());
+    setStorageOrdinal(record.getStorageOrdinal());
     setItemKeys(record.getItemKeys());
     return this;
   }

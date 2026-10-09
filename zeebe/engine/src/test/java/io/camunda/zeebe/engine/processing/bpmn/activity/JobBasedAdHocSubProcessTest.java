@@ -1180,7 +1180,8 @@ public class JobBasedAdHocSubProcessTest {
 
   @Test
   public void shouldCompleteAgenticJobWithFollowupMetadata() {
-    // given
+    // given — the legacy agentic job type prefix, with no agent definition anywhere; this
+    // exercises the 8.9 compatibility fallback in JobCompleteProcessor#hasAgenticPrefix()
     final var jobType = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
     final BpmnModelInstance process =
         process(jobType, adHocSubProcess -> adHocSubProcess.task("A1").task("A2"));
@@ -1199,6 +1200,45 @@ public class JobBasedAdHocSubProcessTest {
                     r ->
                         r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
                             && r.getKey() == processInstanceKey))
+        .describedAs(
+            "the legacy agentic job type prefix alone, without any agent definition, must still "
+                + "carry the agent element id on follow-up records")
+        .isNotEmpty()
+        .allMatch(r -> AHSP_ELEMENT_ID.equals(r.getAgent().getElementId()));
+  }
+
+  @Test
+  public void shouldCompleteJobWithFollowupMetadataWhenAdHocSubProcessHasAgentDefinition() {
+    // given — a job type that does not carry the legacy agentic prefix; only the ad-hoc
+    // sub-process's own agent definition marks it as agentic
+    final var jobType = "ahsp-agent-task";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                AHSP_ELEMENT_ID, adHocSubProcess -> adHocSubProcess.task("A1").task("A2"))
+            .zeebeJobType(jobType)
+            .zeebeAiAgentSubProcessDefinition()
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var jobCompleted = completeJob(jobType, true, Map.of("bar", "foo"));
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .withSourceRecordPosition(jobCompleted.getSourceRecordPosition())
+                .between(
+                    l -> l.getIntent().equals(JobIntent.COMPLETED),
+                    r ->
+                        r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                            && r.getKey() == processInstanceKey))
+        .describedAs(
+            "a job type not matching the legacy agentic prefix must still carry the agent "
+                + "element id when the ad-hoc sub-process has a resolved agent definition")
         .isNotEmpty()
         .allMatch(r -> AHSP_ELEMENT_ID.equals(r.getAgent().getElementId()));
   }

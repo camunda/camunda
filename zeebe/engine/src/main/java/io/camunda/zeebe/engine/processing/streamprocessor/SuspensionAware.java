@@ -11,32 +11,81 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Implemented by {@link TypedRecordProcessor}s whose commands are related to a process instance, in
- * order to classify how the primary suspension gate (see {@code Engine#process}) should treat the
- * command while the target process instance carries a suspension marker ({@code SUSPENDED} or
- * {@code RESUMING}).
+ * Opt-in hook for {@link TypedRecordProcessor}s whose commands target a process instance.
+ *
+ * <p>When the target instance is {@code SUSPENDING}, {@code SUSPENDED}, or {@code RESUMING}, the
+ * primary gate (see {@code Engine#process}) calls {@link #onSuspending}, {@link #onSuspended}, or
+ * {@link #onResuming} instead of {@link TypedRecordProcessor#processRecord}. Each hook can write
+ * follow-up events that belong to that state, then returns a {@link SuspensionAction} telling the
+ * gate whether to process, reject, or buffer the command.
  *
  * @param <T> the record value type processed by the implementing {@link TypedRecordProcessor}
  */
 public interface SuspensionAware<T extends UnifiedRecordValue> {
 
-  /**
-   * Classifies how the suspension gate should treat the given command while its target is
-   * suspended.
-   *
-   * @param record the command record being classified
-   * @return the {@link SuspensionBehavior} to apply; never {@code null}
-   */
-  SuspensionBehavior suspensionBehavior(final TypedRecord<T> record);
+  String ERROR_MESSAGE_SUSPENDED_PI =
+      "Expected to process command for process instance with key '%d', but the process instance is suspended.";
 
-  enum SuspensionBehavior {
+  /**
+   * Handles the command while the target instance is {@code SUSPENDING}. By default, uses the same
+   * behavior as {@link #onSuspended}.
+   *
+   * @param record the command being handled
+   * @return the {@link SuspensionAction} the gate should apply; never {@code null}
+   */
+  default SuspensionAction onSuspending(final TypedRecord<T> record) {
+    return onSuspended(record);
+  }
+
+  /**
+   * Handles the command while the target instance is {@code SUSPENDED}, instead of processing it.
+   * Write any events that must accompany this outcome (for example {@code Timer.SUSPENDED} when
+   * dropping a due-date index), then return how the gate should treat the command.
+   *
+   * @param record the command being handled
+   * @return the {@link SuspensionAction} the gate should apply; never {@code null}
+   */
+  SuspensionAction onSuspended(final TypedRecord<T> record);
+
+  /**
+   * Handles the command when the target instance is {@code RESUMING}, instead of processing it.
+   * Write any events that must accompany this outcome (for example {@code Timer.RESUMED} before a
+   * drained trigger runs), then return how the gate should treat the command.
+   *
+   * <p>The returned action be compatible {@link #onSuspended} for command execution. {@link
+   * SuspensionAction#BUFFER} is not allowed: buffered commands must drain.
+   *
+   * @param record the command being handled
+   * @return {@link SuspensionAction#PROCESS} or {@link SuspensionAction#REJECT}; never {@code null}
+   *     or {@link SuspensionAction#BUFFER}
+   */
+  SuspensionAction onResuming(final TypedRecord<T> record);
+
+  /**
+   * {@code INVALID_STATE} reason used when this processor returns {@link SuspensionAction#REJECT}.
+   * Override to name a more specific restriction; the default is the generic
+   * suspended-process-instance message.
+   */
+  default String rejectionReason(final TypedRecord<T> record, final long processInstanceKey) {
+    return ERROR_MESSAGE_SUSPENDED_PI.formatted(processInstanceKey);
+  }
+
+  static SuspensionAction bufferInternalOnly(final TypedRecord<?> record) {
+    return record.isInternalCommand() ? SuspensionAction.BUFFER : SuspensionAction.REJECT;
+  }
+
+  static SuspensionAction processInternalOnly(final TypedRecord<?> record) {
+    return record.isInternalCommand() ? SuspensionAction.PROCESS : SuspensionAction.REJECT;
+  }
+
+  enum SuspensionAction {
     /** Process the command immediately, regardless of the suspension marker. */
     PROCESS,
-    /** Reject the command while any suspension marker (SUSPENDED or RESUMING) is present. */
+    /** Reject the command when a suspension hook disallows it. */
     REJECT,
     /**
-     * Buffer the command while {@code SUSPENDED}; pass it through while {@code RESUMING} so that
-     * commands drained during resume can actually execute.
+     * Buffer the command while {@code SUSPENDING} or {@code SUSPENDED}. Must not be returned by
+     * {@link #onResuming}.
      */
     BUFFER
   }

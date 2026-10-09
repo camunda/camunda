@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {waitForItemInList} from 'utils/waitForItemInList';
+import {sleep} from 'utils/sleep';
 
 export class IdentityRolesDetailsPage {
   private page: Page;
@@ -34,20 +35,31 @@ export class IdentityRolesDetailsPage {
     this.assignUserButton = page.getByRole('button', {
       name: 'assign user',
     });
+    // The row's "Remove" action is a design-system EntityList row action
+    // (Members.tsx's menuItems), rendered inline (only one action, below the
+    // 3-action overflow-menu threshold) as a button with visible text
+    // "Remove" -- not an icon-only button with an explicit aria-label like
+    // the old Carbon row action, which is why getByLabel no longer matches.
     this.unassignUserButton = (rowName) =>
       this.assignedUsersList
         .getByRole('row', {name: rowName})
-        .getByLabel('Remove');
+        .getByRole('button', {name: 'Remove'});
     this.assignUserModal = page.getByRole('dialog', {
       name: 'Assign user',
     });
     this.closeAssignUserModal = this.assignUserModal.getByRole('button', {
       name: 'Close',
     });
-    this.assignUserModalSearchField =
-      this.assignUserModal.getByRole('searchbox');
-    this.assignUserModalSearchResult =
-      this.assignUserModal.getByRole('listbox');
+    // On the new design system the assign-user modal's search field is a cmdk
+    // combobox ("Search by name, email, or username") rather than Carbon's searchbox.
+    this.assignUserModalSearchField = this.assignUserModal.getByRole(
+      'combobox',
+      {name: 'Search by name, email, or username'},
+    );
+    // The results render in a Radix popover that portals as a *sibling* of the
+    // dialog (DS #496), so the listbox is not a descendant of the modal —
+    // scope it to the page, not to `assignUserModal`.
+    this.assignUserModalSearchResult = page.getByRole('listbox');
     this.assignUserModalCancelButton = this.assignUserModal.getByRole(
       'button',
       {
@@ -89,20 +101,64 @@ export class IdentityRolesDetailsPage {
     email: string;
     password: string;
   }) {
-    await this.assignUserButton.click();
-    await expect(this.assignUserModal).toBeVisible();
-    await this.assignUserModalSearchField.fill(user.username);
-    await this.assignUserModalSearchResult.getByText(user.name).click();
-    await this.assignUserModalAssignButton.click();
-    await expect(this.assignUserModal).toBeHidden();
-
-    const item = this.assignedUsersList.getByRole('cell', {
+    const assignedCell = this.assignedUsersList.getByRole('cell', {
       name: user.email,
     });
 
-    await waitForItemInList(this.page, item, {
+    // The assign-user modal's cmdk search is debounced + server-driven, and the
+    // option for a just-created user is eventually consistent: a single query
+    // can return empty and get cached by react-query, so waiting longer on one
+    // search does not recover. Mirror the authorizations owner search (#51442)
+    // remedy and reload between attempts to reset the query cache.
+    //
+    // Only the modal interaction is retried, and only while the user is still
+    // unassigned: `AssignMembersModal` passes the assigned users as `excluded`,
+    // so once a submit has landed the option is gone from the results for good
+    // and re-running the search could only ever fail.
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.selectUserInAssignModal(user.username, user.email);
+        break;
+      } catch (error) {
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        await sleep(10000);
+        await this.page.reload();
+        if (await assignedCell.isVisible()) {
+          break;
+        }
+      }
+    }
+
+    await waitForItemInList(this.page, assignedCell, {
+      timeout: 60000,
       emptyStateLocator: this.emptyState,
     });
+  }
+
+  private async selectUserInAssignModal(
+    username: string,
+    email: string,
+  ): Promise<void> {
+    await this.assignUserButton.click();
+    await expect(this.assignUserModal).toBeVisible();
+    // The search field is a design-system MultiSelect: its closed trigger is a
+    // `combobox`-role div (not an input), so open it first, then type into the
+    // cmdk search box that mounts in the popover.
+    await this.assignUserModalSearchField.click();
+    await this.page.locator('[data-slot="command-input"]').fill(username);
+    // The option label is "<name> — <email>" and does not echo the username,
+    // so match on the email instead -- it is the unique half of the label.
+    const option = this.assignUserModalSearchResult
+      .getByRole('option')
+      .filter({hasText: email})
+      .first();
+    await expect(option).toBeVisible({timeout: 30000});
+    await option.click({timeout: 20000});
+    await this.assignUserModalAssignButton.click();
+    await expect(this.assignUserModal).toBeHidden();
   }
 
   async unassignUserFromRole(userName: string): Promise<void> {

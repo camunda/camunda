@@ -67,6 +67,14 @@ const LimitMeter = styled.div<{$percent: number}>`
 
 const TokenBreakdownContainer = styled.div`
   display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  row-gap: var(--cds-spacing-02);
+  column-gap: var(--cds-spacing-08);
+`;
+
+const TokenBreakdownColumn = styled.div`
+  display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-02);
 `;
@@ -99,5 +107,6 @@ export {
   LimitMeterContainer,
   LimitMeter,
   TokenBreakdownContainer,
+  TokenBreakdownColumn,
   TokenBreakdown,
 };

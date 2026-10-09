@@ -288,7 +288,7 @@ describe('DiagramPanel', () => {
     });
 
     const notificationText =
-      'Please select where you want to move the selected instances on the diagram.';
+      'Select where you want to move the selected instances on the diagram.';
 
     expect(screen.queryByText(notificationText)).not.toBeInTheDocument();
 

@@ -33,6 +33,18 @@ lookupTeamMedic["@camunda/zeebe-distributed-platform"]=$distributedSystemsMedic
 cptMedic="<!subteam^S0BGRACEPPS|cpt-medic>"
 lookupTeamMedic["@camunda/c8-testing"]=$cptMedic
 
+# @pod-operate-admin-medic
+operateAdminMedic="<!subteam^S0BNSQUL9RV|pod-operate-admin-medic>"
+lookupTeamMedic["@camunda/operate-admin-pod"]=$operateAdminMedic
+
+# @pod-employee-engagement-tasklist-medic
+tasklistMedic="<!subteam^S0BPB1RF1NZ|pod-employee-engagement-tasklist-medic>"
+lookupTeamMedic["@camunda/employee-engagement-tasklist"]=$tasklistMedic
+
+# @bi-pod-medic
+optimizeFrontendMedic="<!subteam^S0BPBPG5H2S|bi-pod-medic>"
+lookupTeamMedic["@camunda/optimize-frontend"]=$optimizeFrontendMedic
+
 # @clients-sdks-ai-first-tooling-medic
 clientsSdksAiFirstToolingMedic="<!subteam^S0BFV0L5R2S|clients-sdks-ai-first-tooling-medic>"
 lookupTeamMedic["@camunda/clients-sdks-ai-first-tooling"]=$clientsSdksAiFirstToolingMedic
@@ -40,6 +52,7 @@ lookupTeamMedic["@camunda/clients-sdks-ai-first-tooling"]=$clientsSdksAiFirstToo
 # @distro-medic
 distroMedic="<!subteam^S053K7C7QKU|distro-medic>"
 lookupTeamMedic["@camunda/distribution"]=$distroMedic
+lookupTeamMedic["@camunda/smx"]=$distroMedic
 
 # @reliability-testing-team
 reliabilityTestingTeam="<!subteam^S0A1Q2TJ6MB|reliability-testing-team>"
@@ -48,6 +61,10 @@ lookupTeamMedic["@camunda/reliability-testing"]=$reliabilityTestingTeam
 # @qa-medic
 qaMedic="<!subteam^S09UBFWENKF|qa-medic>"
 lookupTeamMedic["@camunda/qa-engineering"]=$qaMedic
+
+# @test-automation-medic
+testAutomationMedic="<!subteam^S09UF0EV0HG|test-automation-medic>"
+lookupTeamMedic["@camunda/test-automation-team"]=$testAutomationMedic
 
 # @monorepo-ci-medic
 monorepoCIMedic="<!subteam^S07D6C6B18T|monorepo-ci-medic>"
@@ -61,11 +78,28 @@ lookupTeamMedic["General"]="General Test, requires investigation"
 
 
 resolve_test_source_file() {
-    # Resolves a Java test class FQCN to the exact repo-relative test source file path.
+    # Resolves a JUnit test class name to the exact repo-relative test source file path.
     #
-    # Input: fully qualified test class name, e.g. io.camunda.foo.BarTest
+    # Input: Java FQCN (e.g. io.camunda.foo.BarTest), webapp spec path
+    #        (e.g. src/operate/foo/Bar.test.tsx, a11y/foo.test.ts) or Orchestration
+    #        Cluster E2E spec path (e.g. tests/operate/processes.spec.ts)
     # Output: prints a single repo-relative path or empty string.
     local fqcn="$1"
+
+    if [[ "${fqcn}" == *.ts || "${fqcn}" == *.tsx ]]; then
+        local webapp_dir="webapp/client/apps/orchestration-cluster-webapp"
+        local e2e_suite_dir="qa/c8-orchestration-cluster-e2e-test-suite"
+        local candidate
+        for candidate in "${webapp_dir}/${fqcn}" "${webapp_dir}/test/${fqcn}" "${e2e_suite_dir}/${fqcn}"; do
+            if [[ -f "${candidate}" ]]; then
+                echo "${candidate}"
+                return 0
+            fi
+        done
+        echo ""
+        return 0
+    fi
+
     # Strip nested class suffix (e.g. OuterClass$InnerClass -> OuterClass)
     local outer_fqcn="${fqcn%%\$*}"
     local rel_test_path="${outer_fqcn//./\/}.java"

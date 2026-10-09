@@ -19,11 +19,10 @@ public final class BatchOperationLifecycleManagementRecord extends UnifiedRecord
     implements BatchOperationLifecycleManagementRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
-  public static final String PROP_STORAGE_ORDINAL_KEY = "storageOrdinalKey";
+  public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final IntegerProperty storageOrdinalKeyProp =
-      new IntegerProperty(PROP_STORAGE_ORDINAL_KEY, 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
 
   private final ArrayProperty<BatchOperationError> errorsProp =
       new ArrayProperty<>("errors", BatchOperationError::new);
@@ -31,7 +30,7 @@ public final class BatchOperationLifecycleManagementRecord extends UnifiedRecord
   public BatchOperationLifecycleManagementRecord() {
     super(3);
     declareProperty(batchOperationKeyProp);
-    declareProperty(storageOrdinalKeyProp);
+    declareProperty(storageOrdinalProp);
     declareProperty(errorsProp);
   }
 
@@ -48,19 +47,19 @@ public final class BatchOperationLifecycleManagementRecord extends UnifiedRecord
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public BatchOperationLifecycleManagementRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public BatchOperationLifecycleManagementRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 
   public BatchOperationLifecycleManagementRecord wrap(
       final BatchOperationLifecycleManagementRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
-    setStorageOrdinalKey(record.getStorageOrdinalKey());
+    setStorageOrdinal(record.getStorageOrdinal());
     setErrors(record.getErrors().stream().map(BatchOperationError.class::cast).toList());
     return this;
   }

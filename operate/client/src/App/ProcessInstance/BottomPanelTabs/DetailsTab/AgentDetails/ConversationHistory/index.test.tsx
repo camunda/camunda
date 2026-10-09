@@ -319,7 +319,7 @@ describe('<ConversationHistory />', () => {
       screen.queryByTestId('conversation-history-skeleton'),
     );
 
-    const sortButton = screen.getByRole('button', {name: 'Most recent first'});
+    const sortButton = screen.getByRole('button', {name: 'Latest first'});
     expect(sortButton).toBeVisible();
     expect(query).toEqual(
       expect.objectContaining({
@@ -530,7 +530,14 @@ describe('<ConversationHistory />', () => {
           historyItemKey: '1',
           role: 'ASSISTANT',
           content: [{contentType: 'TEXT', text: 'Here is my answer.'}],
-          metrics: {inputTokens: 100, outputTokens: 50, durationMs: 1234},
+          metrics: {
+            inputTokens: 100,
+            outputTokens: 50,
+            cacheCreationTokenCount: 80,
+            cacheReadTokenCount: 60,
+            reasoningTokenCount: 20,
+            durationMs: 1234,
+          },
         }),
         mockAgentInstanceHistoryItem({
           historyItemKey: '2',
@@ -541,7 +548,7 @@ describe('<ConversationHistory />', () => {
       ]),
     );
 
-    render(
+    const {user} = render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
@@ -564,7 +571,12 @@ describe('<ConversationHistory />', () => {
     expect(message.getByTestId('message-duration-metric')).toHaveTextContent(
       '1.23s',
     );
-    expect(message.getByText('Input: 100 · Output: 50')).toBeInTheDocument();
+
+    await user.hover(message.getByTestId('message-token-metric'));
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent('Input: 100 (60 cached)');
+    expect(tooltip).toHaveTextContent('Output: 50 (20 reasoning)');
+    expect(tooltip).toHaveTextContent('Cache write: 80');
 
     const messageNoMetrics = within(
       screen.getByTestId('conversation-message-2'),
@@ -783,7 +795,7 @@ describe('<ConversationHistory />', () => {
         }),
       ]),
     );
-    // Mock data for initial "most recent" sorting
+    // Mock data for initial "latest first" sorting
     mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
 
     const {user} = render(
@@ -802,7 +814,7 @@ describe('<ConversationHistory />', () => {
       screen.queryByTestId('conversation-history-skeleton'),
     );
 
-    await user.click(screen.getByRole('button', {name: 'Most recent first'}));
+    await user.click(screen.getByRole('button', {name: 'Latest first'}));
     expect(screen.getByRole('button', {name: 'Oldest first'})).toBeVisible();
 
     const firstMarker = await screen.findByText('1. iteration');

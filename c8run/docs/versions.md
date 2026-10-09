@@ -82,6 +82,7 @@ variant is published separately.
 - `--docker` flag removed.
 - RDBMS support and H2 defaults retained from 8.9.
 - Go minimum is 1.25.
+- `--no-browser` flag added to skip opening a browser window after startup.
 
 ---
 

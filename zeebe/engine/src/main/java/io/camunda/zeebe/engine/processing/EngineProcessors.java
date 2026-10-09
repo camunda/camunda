@@ -33,8 +33,10 @@ import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetrics;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.metrics.TenantMetrics;
 import io.camunda.zeebe.engine.processing.agenthistory.AgentHistoryProcessors;
+import io.camunda.zeebe.engine.processing.agenthistorybatch.AgentHistoryBatchProcessors;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentInstanceProcessors;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -83,7 +85,9 @@ import io.camunda.zeebe.engine.processing.resource.ResourceReexportStartProcesso
 import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretReferenceProcessors;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
@@ -151,6 +155,8 @@ public final class EngineProcessors {
     final var config = typedRecordProcessorContext.getConfig();
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
 
+    final StorageOrdinalProvider storageOrdinalProvider = getStorageOrdinalProvider(config);
+
     final DueDateTimerCheckScheduler timerChecker =
         new DueDateTimerCheckScheduler(
             scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
@@ -173,8 +179,14 @@ public final class EngineProcessors {
     final var tenantMetrics = new TenantMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var messageCorrelationMetrics =
         new MessageCorrelationMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var suspensionMetrics = typedRecordProcessorContext.getSuspensionMetrics();
     final var secretResolutionMetrics =
         new SecretResolutionMetrics(typedRecordProcessorContext.getMeterRegistry());
+    // built here rather than with the other secret reference processors because the job activation
+    // paths wake it, so it has to exist before the behaviors and job processors that call it
+    final var secretResolutionScheduler =
+        new SecretResolutionScheduler(
+            scheduledTaskStateFactory, secretStoreRegistry, config, secretResolutionMetrics);
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -280,14 +292,15 @@ public final class EngineProcessors {
             transientProcessMessageSubscriptionState,
             expressionLanguageMetrics,
             config,
+            storageOrdinalProvider,
             incidentMetrics,
             messageCorrelationMetrics,
             processDefinitionMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
-            featureFlags.evaluateDuplicateOutputMappingTargetsInOrder(),
             cslCheck,
             tenantCheck,
-            secretStoreRegistry);
+            secretStoreRegistry,
+            secretResolutionScheduler);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -352,13 +365,21 @@ public final class EngineProcessors {
             routingInfo,
             clock,
             config,
+            storageOrdinalProvider,
             asyncRequestBehavior,
             cslCheck,
             transientProcessMessageSubscriptionState,
-            processEngineMetrics);
+            processEngineMetrics,
+            suspensionMetrics);
+    typedRecordProcessors.withListener(suspensionMetrics);
 
     addDecisionProcessors(
-        typedRecordProcessors, decisionBehavior, writers, processingState, cslCheck);
+        typedRecordProcessors,
+        decisionBehavior,
+        writers,
+        processingState,
+        storageOrdinalProvider,
+        cslCheck);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -372,7 +393,9 @@ public final class EngineProcessors {
         cslCheck,
         tenantCheck,
         incidentMetrics,
-        secretStoreRegistry);
+        secretStoreRegistry,
+        secretResolutionScheduler,
+        suspensionMetrics);
 
     final var userTaskProcessor =
         createUserTaskProcessor(
@@ -533,7 +556,10 @@ public final class EngineProcessors {
         keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
 
     AgentHistoryProcessors.addAgentHistoryProcessors(
-        keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
+        typedRecordProcessors, writers, processingState);
+
+    AgentHistoryBatchProcessors.addAgentHistoryBatchProcessors(
+        typedRecordProcessors, writers, processingState);
 
     SecretReferenceProcessors.addSecretReferenceProcessors(
         typedRecordProcessors,
@@ -541,13 +567,20 @@ public final class EngineProcessors {
         keyGenerator,
         processingState,
         incidentMetrics,
-        scheduledTaskStateFactory,
-        secretStoreRegistry,
-        config,
-        secretResolutionMetrics,
-        bpmnBehaviors.jobActivationBehavior());
+        secretResolutionScheduler,
+        bpmnBehaviors.jobActivationBehavior(),
+        secretStoreRegistry.isConfigured(SecretStoreRegistry.DEFAULT_STORE_ID));
 
     return typedRecordProcessors;
+  }
+
+  private static StorageOrdinalProvider getStorageOrdinalProvider(
+      final EngineConfiguration config) {
+    if (config.isArchiverlessEnabled()) {
+      return StorageOrdinalProvider.getFixedProvider(config);
+    } else {
+      return StorageOrdinalProvider.getDisabledProvider();
+    }
   }
 
   /**
@@ -635,14 +668,15 @@ public final class EngineProcessors {
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final EngineConfiguration config,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final IncidentMetrics incidentMetrics,
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final SecretResolutionScheduler secretResolutionScheduler) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -656,14 +690,15 @@ public final class EngineProcessors {
         transientProcessMessageSubscriptionState,
         expressionLanguageMetrics,
         config,
+        storageOrdinalProvider,
         incidentMetrics,
         messageCorrelationMetrics,
         processDefinitionMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
-        evaluateDuplicateOutputMappingTargetsInOrder,
         cslCheck,
         tenantCheck,
-        secretStoreRegistry);
+        secretStoreRegistry,
+        secretResolutionScheduler);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -679,10 +714,12 @@ public final class EngineProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final SuspensionMetrics suspensionMetrics) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -696,10 +733,12 @@ public final class EngineProcessors {
         routingInfo,
         clock,
         config,
+        storageOrdinalProvider,
         asyncRequestBehavior,
         cslCheck,
         transientProcessMessageSubscriptionState,
-        processEngineMetrics);
+        processEngineMetrics,
+        suspensionMetrics);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
@@ -824,11 +863,16 @@ public final class EngineProcessors {
       final DecisionBehavior decisionBehavior,
       final Writers writers,
       final MutableProcessingState processingState,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final CslAuthorizationCheck cslCheck) {
 
     final DecisionEvaluationEvaluateProcessor decisionEvaluationEvaluateProcessor =
         new DecisionEvaluationEvaluateProcessor(
-            decisionBehavior, processingState.getKeyGenerator(), writers, cslCheck);
+            decisionBehavior,
+            processingState.getKeyGenerator(),
+            storageOrdinalProvider,
+            writers,
+            cslCheck);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,
@@ -910,7 +954,8 @@ public final class EngineProcessors {
             commandDistributionBehavior,
             cslCheck,
             tenantCheck,
-            bpmnBehaviors.variableBehavior());
+            bpmnBehaviors.variableBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
   }
@@ -931,7 +976,8 @@ public final class EngineProcessors {
             bpmnBehaviors.eventTriggerBehavior(),
             cslCheck,
             tenantCheck,
-            bpmnBehaviors.expressionProcessor());
+            bpmnBehaviors.expressionProcessor(),
+            bpmnBehaviors.storageOrdinalProvider());
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_EVALUATION,
         ConditionalEvaluationIntent.EVALUATE,

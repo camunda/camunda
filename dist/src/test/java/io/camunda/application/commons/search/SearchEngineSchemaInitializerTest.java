@@ -31,6 +31,7 @@ import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -38,6 +39,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -205,6 +207,23 @@ class SearchEngineSchemaInitializerTest {
   }
 
   @Test
+  void shouldNotTouchTheSchemaOfARecoveringTenant() {
+    // given - a node restarted into a tenant that is being restored from a backup. The tenant is
+    // also misconfigured in a way that is terminal on the first attempt, which is what makes "no
+    // attempt was made" observable without a search engine.
+    initializer = terminallyMisconfiguredInitializer(true, tenantId -> true);
+
+    // when / then - startup neither aborts nor holds: the attempt that would have classified the
+    // tenant terminal never ran, and the gate opens so an operator can still reach this node to
+    // drive the restore it is waiting on
+    assertThatCode(() -> initializer.afterPropertiesSet()).doesNotThrowAnyException();
+
+    // then - and the tenant stays unserviceable meanwhile, so its requests keep being rejected
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
+    assertThat(initializer.isInitialized()).isFalse();
+  }
+
+  @Test
   void shouldClassifyFailuresThatRetryingCannotRepair() {
     // given / when / then
     assertThat(
@@ -221,12 +240,25 @@ class SearchEngineSchemaInitializerTest {
                     "missing 'monitor' privilege", new RuntimeException())))
         .as("a missing cluster:monitor privilege will not be granted by retrying")
         .isTrue();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new IndexSchemaValidationException(
+                    "Unsupported index changes have been introduced. Data migration is required.")))
+        .as("a field whose type changed needs a data migration, not another attempt")
+        .isTrue();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new IndexSchemaValidationException(
+                    "Ambiguous schema update. Multiple indices for mapping 'foo' have different"
+                        + " fields.")))
+        .as("indices behind one alias that disagree are refused the same way on every attempt")
+        .isTrue();
   }
 
   @Test
   void shouldClassifyStorageFailuresAsRetryable() {
-    // given / when / then - an unreachable cluster, a rejected request and a mapping the attempt
-    // could not validate are all repairable without restarting the node
+    // given / when / then - an unreachable cluster and a rejected request are both repairable
+    // without restarting the node
     assertThat(SearchEngineSchemaInitializer.isTerminal(new IOException("connection refused")))
         .isFalse();
     assertThat(
@@ -266,7 +298,11 @@ class SearchEngineSchemaInitializerTest {
   private SearchEngineSchemaInitializer initializerFor(
       final PhysicalTenantResolver resolver, final boolean holdsStartup) {
     return new SearchEngineSchemaInitializer(
-        configsFor(resolver), descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup);
+        configsFor(resolver),
+        descriptorsFor(resolver),
+        new SimpleMeterRegistry(),
+        holdsStartup,
+        tenantId -> false);
   }
 
   /**
@@ -276,11 +312,16 @@ class SearchEngineSchemaInitializerTest {
    */
   private SearchEngineSchemaInitializer terminallyMisconfiguredInitializer(
       final boolean holdsStartup) {
+    return terminallyMisconfiguredInitializer(holdsStartup, tenantId -> false);
+  }
+
+  private SearchEngineSchemaInitializer terminallyMisconfiguredInitializer(
+      final boolean holdsStartup, final Predicate<String> recovering) {
     final PhysicalTenantResolver resolver = tenants(camunda -> {}, Map.of());
     final Map<String, SearchEngineConfiguration> configs = configsFor(resolver);
     configs.get(DEFAULT_TENANT).connect().setType(DatabaseType.RDBMS.toString());
     return new SearchEngineSchemaInitializer(
-        configs, descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup);
+        configs, descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup, recovering);
   }
 
   /**

@@ -7,19 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.secretreference;
 
-import io.camunda.secretstore.SecretStoreRegistry;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
-import io.camunda.zeebe.engine.metrics.SecretResolutionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.function.Supplier;
 
 public final class SecretReferenceProcessors {
 
@@ -31,11 +26,9 @@ public final class SecretReferenceProcessors {
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final IncidentMetrics incidentMetrics,
-      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
-      final SecretStoreRegistry secretStoreRegistry,
-      final EngineConfiguration config,
-      final SecretResolutionMetrics secretResolutionMetrics,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final SecretResolutionScheduler secretResolutionScheduler,
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final boolean defaultSecretStoreConfigured) {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_COMPLETE,
@@ -55,11 +48,8 @@ public final class SecretReferenceProcessors {
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_CREATE_INCIDENTS,
         new SecretReferenceBatchCreateIncidentsProcessor(
-            writers, keyGenerator, processingState, incidentMetrics));
+            writers, keyGenerator, processingState, incidentMetrics, defaultSecretStoreConfigured));
 
-    final var scheduler =
-        new SecretResolutionScheduler(
-            scheduledTaskStateFactory, secretStoreRegistry, config, secretResolutionMetrics);
-    typedRecordProcessors.withListener(scheduler);
+    typedRecordProcessors.withListener(secretResolutionScheduler);
   }
 }

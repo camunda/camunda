@@ -18,7 +18,10 @@ import {
   encode,
   assertForbiddenRequest,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {
   createMammalProcessInstanceAndDeployMammalDecision,
   createUser,
@@ -137,7 +140,11 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
         expect(json.batchOperationType).toBe('DELETE_DECISION_INSTANCE');
         expect(json.operationsTotalCount).toBeGreaterThanOrEqual(2);
         expect(json.operationsCompletedCount).toBe(2);
-      }).toPass(defaultAssertionOptions);
+        // The completion counters reach the read API through the
+        // secondary-storage indexer, which lags behind the engine on a loaded
+        // shared cluster: the nightly saw 0 then 1 of 2 completed inside the
+        // 30s default budget.
+      }).toPass(extendedAssertionOptions);
     });
 
     await test.step('Verify Decision Instance is Deleted', async () => {

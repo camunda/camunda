@@ -80,6 +80,38 @@ Dealing with reported issues that are identified as urgent/**high severity**:
 
 > A: Disable the flaky test(s) and comment on existing ticket or create a new one that the flaky test needs to be re-enabled _after_ fixing it. No single test can be more important that the stability of the remaining CI system impacting dozens of developers.
 
+## Release-notes PR-gate
+
+The `Release-notes PR-gate` check verifies that a pull request can be attributed in the release notes: it must link a tracked **issue** (or explicitly opt out), and its title must be a conventional commit. Release notes are generated from those links, so an unlinked PR silently disappears from them.
+
+The check is currently **advisory** — it reports red on failure but is not a required status check, so it never blocks a merge. On failure it posts a single sticky comment naming the reason, and adds the `no-issue` label when the issue link is what failed.
+
+### Causes and fixes
+
+| Reported reason | Cause | Fix |
+|---|---|---|
+| No linked issue and no opt-out | The `## Related issues` section has no reference, or the section is missing/renamed — the reference and the checkbox must both be **inside** that section | Add `closes #1234` to the `## Related issues` section, or tick the opt-out checkbox in that same section |
+| The section links a pull request | A closing keyword points at a PR instead of an issue | Reference the tracked **issue**; a PR is never a valid attribution target |
+| The referenced issue does not exist | The number is wrong, or the issue was deleted | Correct the number |
+| Only a cross-repo reference | `owner/repo#N` refers to another repository, which this check cannot validate | Link an issue in this repository, or tick the opt-out |
+| `Backport of #N` cannot be followed | The marker points at an issue, at nothing, or at another repository | Fix the marker so it names the original **pull request** in this repository |
+| `Backport of #N`, but that PR is not linked either | The original PR was merged without an issue link | Add the issue link to the **original** PR; the backport inherits it |
+| `Backport of #N`, but that PR's section links a pull request | The original PR itself has the "links a pull request instead of an issue" problem | Fix the **original** PR's link; the backport inherits it |
+| Title is not `type: subject` | The title does not follow [Conventional Commits](https://www.conventionalcommits.org/) | Rewrite as `fix: correct retry backoff` |
+| Unknown or upper-case type | The type is not in the allowed enum | Use one of `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`, `revert`, `style`, `test`, lower-case |
+| Scopes are not used in this repo | The title carries a `(scope)` | Drop the scope: `fix: …`, not `fix(engine): …` |
+| Title too long | The header exceeds 120 characters | Shorten it |
+
+### When you do not need a linked issue
+
+Tick `- [ ] This PR does not need a linked issue` in the PR template. Use it for hotfixes, dependency bumps, and pure CI or refactoring work. `renovate[bot]` is exempt automatically and does not need the checkbox.
+
+If a PR is one of several for the same issue (an epic, or work split across releases), use `relates to #1234` or a bare `#1234` instead of `closes` — that satisfies the check without closing the issue on merge.
+
+### Fork pull requests
+
+On a pull request from a fork, GitHub issues a read-only token and withholds secrets, so the check cannot post its comment or apply the label. It still evaluates the PR fully and reports the verdict in the **job summary** of the failed run — open the check's log to see the reason. This is a GitHub limitation: writing to the PR would require a privileged token, which must not be exposed to code from a fork.
+
 ## GitHub Merge Queue
 
 [GitHub Merge Queue](https://github.blog/2023-07-12-github-merge-queue-is-generally-available/) helps automate the Pull Request (PR) merging process by creating a temporary branch for each batch of PRs, running checks against the latest target branch, and merging changes only if the checks pass, ensuring a more streamlined and error-free workflow.
@@ -204,6 +236,18 @@ Related resources:
 * entrypoint and main file for pipeline code of unified CI: [ci.yml](https://github.com/camunda/camunda/blob/main/.github/workflows/ci.yml)
 * see for example how [#19423 (actionlint)](https://github.com/camunda/camunda/pull/19423) and [#19436 (Java unit tests)](https://github.com/camunda/camunda/pull/19436) got added to unified CI
 
+### GitHub API job names vs. workflow job keys
+
+The GitHub API output of `/repos/<repo>/actions/runs/<run_id>/jobs` only contains the _display_ job
+names. It does not contain the `jobs.<job_key>` keys from the workflow YAML files. Do not write
+logic that maps one to the other, especially across called (reusable) workflows. Such a mapping is
+brittle (e.g. a parser that only reads `ci.yml` misses jobs of called workflows) and hard to
+maintain. If a job is only identifiable by its YAML key, find another way to get the information,
+e.g. pass it explicitly via job `outputs` or `needs`, or decide against the feature.
+
+See also [Third-Party Service Outage](./ci-runbooks.md#third-party-service-outage) for how far to
+take workarounds.
+
 ## CI Test Files
 
 ### Ownership
@@ -234,9 +278,9 @@ See [Metrics Collection](#metrics-collection) for the concrete `env:` snippet, i
 
 `TEST_OWNER` is a static, job-level label, so a job that runs tests belonging to several teams attributes all of its failures to a single owner. To route auto-created incidents to the team that actually owns the failing code, the `observe-build-status` action resolves the owner of the failing test classes from `.codeowners` when a job **fails**:
 
-1. It collects the distinct test classes that failed (from the `TEST-*.xml` reports), excluding skipped, passing and flaky-but-passed retries.
+1. It collects the distinct test classes that failed (from the `TEST-*.xml` reports, and from the Playwright JUnit report of the Orchestration Cluster E2E suite, whose test classes are spec paths), excluding skipped, passing and flaky-but-passed retries.
 2. Each failing class is mapped to its source file and then to its owning team via `codeowners-cli` (reusing the resolvers in `.ci/scripts/ci/setup-medic-lookup.sh`).
-3. A **strict** rule decides the submitted owner: the resolved code owner is used as `user_description` only when there is at least one failing test class **and** every failing class resolves to the **same** non-empty owner. If any failing class cannot be attributed (e.g. a compile/setup failure with no test class, or a test whose source file cannot be located) or the failing tests span **multiple** owners, it falls back to the job's `TEST_OWNER`.
+3. A **strict** rule decides the submitted owner: the resolved code owner is used as `user_description` only when there is at least one failing test class **and** every failing class resolves to the **same** non-empty owner. If any failing class cannot be attributed (e.g. a compile/setup failure with no test class, or a test whose source file cannot be located) or the failing tests span **multiple** owners, it falls back to the job's `TEST_OWNER` and lists the candidate owners in the job log.
 
 This keeps the job owner as a safe default — an ambiguous or unattributable failure is never confidently misrouted to the wrong team — while single-team failures are attributed to their real code owner. An explicitly provided `user_description` input still takes precedence over both. Resolution runs only on failed jobs, so the green path is unaffected.
 
@@ -264,10 +308,10 @@ CI / <componentName> / [<testType>] <testName> / <ownerName> / ...
 
 `testType` can be things like: `UT` for Unit Tests, `IT` for Integration Tests, `Smoke` for smoke tests, etc.
 
-For example, Core Features Unit Tests for Tasklist would be appear as
+For example, Core Features Unit Tests for the orchestration-cluster webapp appear as
 
 ```
-CI / Tasklist / [UT] Core Features / Run Unit Tests
+CI / Webapp / [UT] Core Features / Run Unit Tests
 ```
 
 Importer Integration Tests for Operate would appear as
@@ -485,6 +529,22 @@ Implementation:
 3. Use [setup-yarn-cache](https://github.com/camunda/infra-global-github-actions/tree/main/setup-yarn-cache) action, see [usage example in #21607](https://github.com/camunda/camunda/pull/21607).
 4. No implementation since Golang usage is low.
 
+### Bounding a degraded cache backend
+
+`actions/cache` aborts a stalled segment download with a *warning* rather than a failure, then
+lets the build continue against a cold repository. A slow backend therefore surfaces as a job
+timeout somewhere later in the build instead of as a cache problem (INC-7899).
+
+`SEGMENT_DOWNLOAD_TIMEOUT_MINS` governs that abort and defaults to 10 minutes, which alone
+exceeds some jobs' whole budget. [setup-maven-cache](https://github.com/camunda/camunda/tree/main/.github/actions/setup-maven-cache)
+caps it at 3 minutes, overridable via its `cache-download-timeout-mins` input;
+[setup-build](https://github.com/camunda/camunda/tree/main/.github/actions/setup-build) forwards
+that as `maven-cache-download-timeout-mins`, which is the input jobs using the standard setup
+should reach for.
+
+Note that `timeout-minutes` cannot serve this purpose: GitHub ignores it on steps inside a
+composite action, so the bound has to come from the wrapped action's own configuration.
+
 ### Disable cache restoration for a Pull Request
 
 You can temporarily turn off cache restore functionality in a PR by using the `/ci-disable-cache` command as described under [ChatOps](#chatops). This could be useful to test GHA workflows without the caching mechanism. To restore standard functionality, you need to issue the `/ci-enable-cache` command or drop the empty commit.
@@ -537,6 +597,7 @@ If you need to use a 3rd party action not on the list, ask the Engineering Opera
 EnricoMi/publish-unit-test-result-action@*,
 YunaBraska/java-info-action@*,
 asdf-vm/actions/install@*,
+astral-sh/setup-uv@*,
 atomicjar/testcontainers-cloud-setup-action@*,
 aws-actions/configure-aws-credentials@*,
 blombard/move-to-next-iteration@*,
@@ -567,6 +628,7 @@ hashicorp/setup-terraform@*,
 hashicorp/vault-action@*,
 hoverkraft-tech/compose-action@*,
 jamesives/github-pages-deploy-action@*,
+jdx/mise-action@*,
 joelanford/go-apidiff@*,
 jwalton/gh-docker-logs@*,
 korthout/backport-action@*,
@@ -599,7 +661,6 @@ teleport-actions/setup@*,
 test-summary/action@*,
 tibdex/github-app-token@*,
 wagoid/commitlint-github-action@*,
-Wandalen/wretry.action@*,
 </details>
 
 ## Preview Environments
@@ -880,4 +941,3 @@ Is your CI check part of the [Unified CI's](#unified-ci) `ci.yml`?
    ```
 
    This loop will take a while (1 hour or more depending on the CI check) so let it run in the background. After it finished, visit https://github.com/camunda/camunda/actions/workflows/ci.yml?query=branch%3AYOURBRANCHNAME and see if there are any failures (indicates lack of robustness).
-

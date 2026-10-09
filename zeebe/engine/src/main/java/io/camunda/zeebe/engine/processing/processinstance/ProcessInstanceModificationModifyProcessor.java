@@ -29,7 +29,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -349,6 +348,7 @@ public final class ProcessInstanceModificationModifyProcessor
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
         .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey())
+        .setStorageOrdinal(processInstanceRecord.getStorageOrdinal())
         .setTenantId(processInstanceRecord.getTenantId())
         .setBpmnProcessId(processInstanceRecord.getBpmnProcessId());
 
@@ -1377,6 +1377,7 @@ public final class ProcessInstanceModificationModifyProcessor
                     process.getKey(),
                     processInstance.getKey(),
                     processInstance.getValue().getRootProcessInstanceKey(),
+                    processInstance.getValue().getStorageOrdinal(),
                     process.getBpmnProcessId(),
                     process.getTenantId(),
                     variableDocument);
@@ -1509,6 +1510,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   private void enrichRejectionCommand(
@@ -1525,9 +1527,13 @@ public final class ProcessInstanceModificationModifyProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<ProcessInstanceModificationRecord> record) {
-    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceModificationRecord> record) {
+    return SuspensionAware.bufferInternalOnly(record);
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceModificationRecord> record) {
+    return SuspensionAware.processInternalOnly(record);
   }
 
   /**

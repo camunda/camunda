@@ -8,15 +8,12 @@
 
 import {shallow} from 'enzyme';
 import {ComponentProps} from 'react';
-import {
-  DataTable,
-  TableBatchActions,
-  TableContainer,
-  TableHeader,
-  TableToolbarContent,
-} from '@carbon/react';
+import {DataTable} from '@camunda/design-system';
 
 import EntityList from './EntityList';
+
+type Row = ComponentProps<typeof EntityList>['rows'][number];
+type SortState = {id: string; desc: boolean}[];
 
 const props: ComponentProps<typeof EntityList> = {
   title: 'EntityList Name',
@@ -25,7 +22,7 @@ const props: ComponentProps<typeof EntityList> = {
       id: 'aCollectionId',
       name: 'aCollectionName',
       link: 'link/to/somewhere',
-      meta: ['Some info', 'Some additional info', 'Some other info'],
+      meta: ['Some info', 'Some additional info'],
       icon: 'iconType',
       type: 'Collection',
       actions: [{icon: 'edit', text: 'Edit', action: jest.fn()}],
@@ -34,33 +31,43 @@ const props: ComponentProps<typeof EntityList> = {
       id: 'aDashboardId',
       name: 'aDashboard',
       link: 'link/to/somewhere',
-      meta: ['Some info', 'Some additional info', 'Some other info'],
+      meta: ['Some info', 'Some additional info'],
       icon: 'iconType',
       type: 'Dashboard',
       actions: [],
     },
-    {
-      id: 'aReportId',
-      name: 'aReport',
-      link: 'link/to/somewhere',
-      meta: ['Some info', 'Some additional info', 'Some other info', 'special info'],
-      icon: 'iconType',
-      type: 'Report',
-      actions: [],
-    },
   ],
-  headers: [],
-  action: <div>Test Action</div>,
+  headers: ['Name', 'Meta 1', 'Meta 2'],
+  action: <div className="action" />,
   onChange: jest.fn(),
 };
 
-it('should show a loading indicator', () => {
-  const node = shallow(
-    <EntityList {...props} headers={['Name', 'Meta 1', 'Meta 2', 'Meta 3', 'Meta 4']} isLoading />
-  );
+function getTable(node: ReturnType<typeof shallow>) {
+  return node.find(DataTable);
+}
 
-  expect(node.find('DataTableSkeleton')).toExist();
-});
+// The table's props are unions -- sorting and selection can each be `false` -- so the assertions
+// below narrow them to the shape this component always passes.
+function getSorting(node: ReturnType<typeof shallow>) {
+  return getTable(node).prop('sorting') as {
+    sortState: SortState;
+    onSortingChange: (state: SortState) => void;
+  };
+}
+
+function getSelection(node: ReturnType<typeof shallow>) {
+  return getTable(node).prop('rowSelection') as {
+    selectedRowIds: Record<string, boolean>;
+    onSelectedRowsChange: (selection: Record<string, boolean>) => void;
+  };
+}
+
+function getRowActions(node: ReturnType<typeof shallow>) {
+  return getTable(node).prop('rowActions') as {
+    visible: (row: Row) => boolean;
+    onClick: (row: Row) => void;
+  }[];
+}
 
 it('should show nothing if headers are empty', () => {
   const node = shallow(<EntityList {...props} headers={[]} />);
@@ -68,154 +75,186 @@ it('should show nothing if headers are empty', () => {
   expect(node).toBeEmptyRender();
 });
 
-it('should show an empty table if rows are empty', () => {
-  const node = shallow(<EntityList {...props} headers={['Name', 'Meta 1']} rows={[]} />);
-
-  expect(node.find('DataTable')).toExist();
-});
-
-it('should show provided empty state if rows are empty', () => {
+it('should show the provided empty state if there are no rows', () => {
   const node = shallow(
-    <EntityList
-      {...props}
-      headers={['Name', 'Meta 1']}
-      rows={[]}
-      emptyStateComponent={<div className="emptyState" />}
-    />
+    <EntityList {...props} rows={[]} emptyStateComponent={<div className="emptyState" />} />
   );
 
   expect(node.find('.emptyState')).toExist();
 });
 
-it('should disable sorting if no sorting is applied', () => {
-  const node = shallow(
-    <EntityList {...props} headers={[{name: 'Name', key: 'name', defaultOrder: 'asc'}, 'Meta 1']} />
-  );
-
-  expect(node.find('DataTable').prop('isSortable')).toBe(false);
-});
-
-it('should disable sorting if there are no sortable object headers', () => {
+it('should show a loading indicator instead of the empty state while loading', () => {
   const node = shallow(
     <EntityList
       {...props}
-      headers={[{name: 'Name', key: '', defaultOrder: 'asc'}, 'Meta 1']}
-      sorting={{key: 'name', order: 'asc'}}
+      rows={[]}
+      isLoading
+      emptyStateComponent={<div className="emptyState" />}
     />
   );
 
-  expect(node.find(DataTable).prop('isSortable')).toBe(false);
+  expect(node.find('Loading')).toExist();
+  expect(node.find('.emptyState')).not.toExist();
 });
 
-it('should indicate which column is sorted', () => {
+it('should build a column per header', () => {
+  const node = shallow(<EntityList {...props} />);
+
+  expect(getTable(node).prop('columns')).toHaveLength(3);
+});
+
+it('should only allow sorting on object headers once sorting is in use', () => {
+  const headers = [{name: 'Name', key: 'name'}, 'Meta 1'];
+  const node = shallow(<EntityList {...props} headers={headers} />);
+
+  expect(getTable(node).prop('columns')[0]!.enableSorting).toBe(false);
+
+  node.setProps({sorting: {key: 'name', order: 'asc'}});
+
+  expect(getTable(node).prop('columns')[0]!.enableSorting).toBe(true);
+  expect(getTable(node).prop('columns')[1]!.enableSorting).toBe(false);
+});
+
+it('should map defaultOrder to the sort-descending-first column option', () => {
   const node = shallow(
     <EntityList
       {...props}
       headers={[
-        'Name',
-        {name: 'sortable', key: 'sortKey', defaultOrder: 'asc'},
-        {name: 'Another Column', key: 'sortKey2', defaultOrder: 'desc'},
+        {name: 'Name', key: 'name', defaultOrder: 'desc'},
+        {name: 'Meta 1', key: 'meta1'},
       ]}
-      sorting={{key: 'sortKey2', order: 'asc'}}
+      sorting={{key: 'name', order: 'asc'}}
     />
   );
 
-  const dataTable = node.find(DataTable).dive();
-  const secondColumnProps = dataTable.find(TableHeader).at(2).props();
-  expect(secondColumnProps.isSortHeader).toBe(true);
-  expect(secondColumnProps.sortDirection).toBe('ASC');
+  expect(getTable(node).prop('columns')[0]!.sortDescFirst).toBe(true);
+  expect(getTable(node).prop('columns')[1]!.sortDescFirst).toBeUndefined();
 });
 
-it('should call onChange when sorting by one of columns', () => {
-  const spy = jest.fn();
+it('should pass the current sorting to the table', () => {
   const node = shallow(
     <EntityList
       {...props}
-      headers={[{name: 'sortable', key: 'sortKey', defaultOrder: 'asc'}]}
-      onChange={spy}
+      headers={[{name: 'Name', key: 'name'}]}
+      sorting={{key: 'name', order: 'desc'}}
     />
   );
 
-  let dataTable = node.find(DataTable).dive();
-  dataTable.find(TableHeader).at(0).simulate('click');
+  expect(getSorting(node).sortState).toEqual([{id: 'name', desc: true}]);
+});
 
-  expect(spy).toHaveBeenCalledWith('sortKey', 'asc');
+it('should call onChange when the table reports a new sorting', () => {
+  const spy = jest.fn();
+  const node = shallow(<EntityList {...props} onChange={spy} />);
 
-  node.setProps({sorting: {key: 'sortKey', order: 'asc'}});
-  dataTable = node.find(DataTable).dive();
-  dataTable.find(TableHeader).at(0).simulate('click');
+  getSorting(node).onSortingChange([{id: 'name', desc: true}]);
 
-  expect(spy).toHaveBeenCalledWith('sortKey', 'desc');
+  expect(spy).toHaveBeenCalledWith('name', 'desc');
+});
 
-  node.setProps({sorting: {key: 'sortKey', order: 'desc'}});
-  dataTable = node.find(DataTable).dive();
-  dataTable.find(TableHeader).at(0).simulate('click');
+it('should call onChange without a sorting once the column is cleared', () => {
+  const spy = jest.fn();
+  const node = shallow(<EntityList {...props} onChange={spy} />);
+
+  getSorting(node).onSortingChange([]);
 
   expect(spy).toHaveBeenCalledWith(undefined, undefined);
 });
 
-it('should reverse sorting when default order is desc', () => {
-  const spy = jest.fn();
+it('should filter rows by name, type and string meta', () => {
+  const node = shallow(<EntityList {...props} />);
+  const search = () => node.find('.entitySearch');
+
+  search().simulate('change', {target: {value: 'aDashboard'}});
+  expect(getTable(node).prop('data')).toHaveLength(1);
+
+  search().simulate('change', {target: {value: 'Collection'}});
+  expect(getTable(node).prop('data')).toHaveLength(1);
+
+  search().simulate('change', {target: {value: 'Some info'}});
+  expect(getTable(node).prop('data')).toHaveLength(2);
+
+  search().simulate('change', {target: {value: 'no such entity'}});
+  expect(getTable(node).prop('data')).toHaveLength(0);
+});
+
+it('should declare a row action slot for the row with the most actions', () => {
+  const node = shallow(<EntityList {...props} />);
+  const rowActions = getRowActions(node);
+
+  expect(rowActions).toHaveLength(1);
+  expect(rowActions[0]!.visible(props.rows[0]!)).toBe(true);
+  expect(rowActions[0]!.visible(props.rows[1]!)).toBe(false);
+});
+
+it('should invoke the action belonging to the row it was triggered on', () => {
+  const node = shallow(<EntityList {...props} />);
+
+  getRowActions(node)[0]!.onClick(props.rows[0]!);
+
+  expect(props.rows[0]!.actions[0]!.action).toHaveBeenCalled();
+});
+
+it('should only enable row selection when bulk actions are provided', () => {
+  const node = shallow(<EntityList {...props} />);
+
+  expect(getTable(node).prop('rowSelection')).toBe(false);
+
+  node.setProps({bulkActions: <div className="bulkAction" />});
+
+  expect(getTable(node).prop('rowSelection')).toMatchObject({selectedRowIds: {}});
+});
+
+it('should replace the action with the bulk actions once rows are selected', () => {
+  const node = shallow(<EntityList {...props} bulkActions={<div className="bulkAction" />} />);
+
+  expect(node.find('.action')).toExist();
+  expect(node.find('.bulkAction')).not.toExist();
+
+  getSelection(node).onSelectedRowsChange({aCollectionId: true});
+
+  expect(node.find('.bulkAction')).toExist();
+  expect(node.find('.action')).not.toExist();
+});
+
+it('should pass the selected rows to the bulk actions', () => {
+  const node = shallow(<EntityList {...props} bulkActions={<div className="bulkAction" />} />);
+
+  getSelection(node).onSelectedRowsChange({aCollectionId: true});
+
+  expect(node.find('.bulkAction').prop('selectedEntries')).toEqual([props.rows[0]]);
+});
+
+it('should exclude rows without actions from selection and bulk actions', () => {
+  const node = shallow(<EntityList {...props} bulkActions={<div className="bulkAction" />} />);
+
+  // aDashboardId has no actions, so a select-all must not expose the protected row.
+  getSelection(node).onSelectedRowsChange({aCollectionId: true, aDashboardId: true});
+
+  expect(getSelection(node).selectedRowIds).toEqual({aCollectionId: true});
+  expect(node.find('.bulkAction').prop('selectedEntries')).toEqual([props.rows[0]]);
+});
+
+it('should clear the selection when select-all is re-triggered with a protected row present', () => {
+  const node = shallow(<EntityList {...props} bulkActions={<div className="bulkAction" />} />);
+
+  // Select-all checks only the editable row; the protected aDashboardId stays unselected.
+  getSelection(node).onSelectedRowsChange({aCollectionId: true, aDashboardId: true});
+  expect(getSelection(node).selectedRowIds).toEqual({aCollectionId: true});
+
+  // A second select-all re-adds the protected row -- the header's only way to ask for a clear.
+  getSelection(node).onSelectedRowsChange({aCollectionId: true, aDashboardId: true});
+  expect(getSelection(node).selectedRowIds).toEqual({});
+});
+
+it('should render the description with the query and the filtered row count', () => {
   const node = shallow(
-    <EntityList
-      {...props}
-      headers={[{name: 'sortable', key: 'sortKey', defaultOrder: 'desc'}]}
-      onChange={spy}
-    />
+    <EntityList {...props} description={(query, count) => `${query} ${count}`} />
   );
 
-  let dataTable = node.find(DataTable).dive();
-  dataTable.find(TableHeader).at(0).simulate('click');
+  expect(getTable(node).prop('description')).toBe('undefined 2');
 
-  expect(spy).toHaveBeenCalledWith('sortKey', 'desc');
+  node.find('.entitySearch').simulate('change', {target: {value: 'aDashboard'}});
 
-  node.setProps({sorting: {key: 'sortKey', order: 'desc'}});
-  dataTable = node.find(DataTable).dive();
-  dataTable.find(TableHeader).at(0).simulate('click');
-
-  expect(spy).toHaveBeenCalledWith('sortKey', 'asc');
-
-  node.setProps({sorting: {key: 'sortKey', order: 'asc'}});
-  dataTable = node.find(DataTable).dive();
-  dataTable.find(TableHeader).at(0).simulate('click');
-
-  expect(spy).toHaveBeenCalledWith(undefined, undefined);
-});
-
-it('should show bulk operation options if bulkAction is specified', () => {
-  const node = shallow(
-    <EntityList {...props} headers={['header1']} bulkActions={<div className="option" />} />
-  );
-
-  const dataTable = node.find(DataTable).dive();
-  expect(dataTable.find(TableBatchActions).find('.option')).toExist();
-});
-
-it('disable rows without actions', () => {
-  const node = shallow(<EntityList {...props} headers={['Name']} />);
-
-  const rows = node.find(DataTable).prop('rows');
-  expect(rows[0].disabled).toBe(false);
-  expect(rows[1].disabled).toBe(true);
-});
-
-it('should render description', () => {
-  const node = shallow(
-    <EntityList {...props} headers={['Name']} description={(query, count) => `${query} ${count}`} />
-  );
-
-  expect(node.find(DataTable).dive().find(TableContainer).prop('description')).toBe('undefined 3');
-
-  node.setProps({description: 'description'});
-  expect(node.find(DataTable).dive().find(TableContainer).prop('description')).toBe('description');
-});
-
-it('should render action and pass disabled and tabIndex props', () => {
-  const node = shallow(<EntityList {...props} headers={['Name']} />);
-  const dataTable = node.find(DataTable).dive();
-
-  expect(dataTable.find(TableToolbarContent).childAt(1).props()).toMatchObject({
-    disabled: false,
-    tabIndex: 0,
-  });
+  expect(getTable(node).prop('description')).toBe('aDashboard 1');
 });

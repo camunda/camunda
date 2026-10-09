@@ -28,6 +28,7 @@ import {MessageDetailsModal} from './MessageDetailsModal';
 import {MessageMetrics} from './MessageMetrics';
 import {DocumentContent} from './MessageAttachments/DocumentContent';
 import {ToolCalls} from './MessageAttachments/ToolCalls';
+import {ReasoningNote} from './ReasoningNote';
 
 type Actor =
   Exclude<AgentInstanceHistoryRole, 'TOOL_RESULT' | 'CONFIGURATION'> | 'SYSTEM';
@@ -83,6 +84,14 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
             return null;
           }
           case 'OBJECT': {
+            if (actor === 'ASSISTANT' && isReasoning(entry.object)) {
+              const reasoningText = getReasoningText(entry.object);
+
+              return reasoningText === null ? null : (
+                <ReasoningNote key={index} reasoning={reasoningText} />
+              );
+            }
+
             const value = JSON.stringify(entry.object, null, 2);
             return (
               <MessageContent
@@ -129,6 +138,30 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
     </Container>
   );
 };
+
+function isReasoning(value: unknown): value is Record<string, unknown> {
+  return (
+    isPlainObject(value) &&
+    value['camunda.agenticai.content.type'] === 'reasoning'
+  );
+}
+
+function getReasoningText(value: Record<string, unknown>): string | null {
+  if (typeof value['text'] !== 'string') {
+    return null;
+  }
+
+  return value['text'].trim() === '' ? null : value['text'];
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
 
 type MessageContentProps = {
   value: string;

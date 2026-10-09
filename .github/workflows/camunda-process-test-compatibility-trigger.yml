@@ -29,6 +29,9 @@ jobs:
           - branch: stable/8.9
             camunda_image_version: 8.10-SNAPSHOT
             connectors_image_version: 8.10-SNAPSHOT
+          - branch: stable/8.10
+            camunda_image_version: 8.11-SNAPSHOT
+            connectors_image_version: 8.11-SNAPSHOT
     steps:
       - name: Trigger CPT compatibility tests
         env:

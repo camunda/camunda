@@ -38,17 +38,17 @@ public class UsageMetricArchiverJob extends ArchiverJob<BasicArchiveBatch> {
   }
 
   @Override
-  public String getJobName() {
+  String getJobName() {
     return UsageMetricTemplate.INDEX_NAME;
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch.BasicArchiveBatch> getNextBatch() {
+  CompletableFuture<ArchiveBatch.BasicArchiveBatch> getNextBatch() {
     return getArchiverRepository().getUsageMetricNextBatch();
   }
 
   @Override
-  public UsageMetricTemplate getTemplateDescriptor() {
+  UsageMetricTemplate getTemplateDescriptor() {
     return usageMetricTemplate;
   }
 

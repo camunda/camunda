@@ -142,7 +142,7 @@ test('should show a generic error message', async ({network, loginPage}) => {
 	await loginPage.fillCredentials('demo', 'demo');
 	await loginPage.submitButton.click();
 
-	await expect(loginPage.errorMessage).toContainText(/credentials could not be verified/i);
+	await expect(loginPage.errorMessage).toContainText(/couldn't verify credentials/i);
 });
 
 test('should show a loading state while the login form is submitting', async ({network, loginPage}) => {

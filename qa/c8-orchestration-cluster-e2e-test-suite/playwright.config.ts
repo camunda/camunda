@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const testRailOptions = {
+const junitOptions = {
   embedAnnotationsAsProperties: true,
   outputFile: './test-results/junit-report.xml',
 };
@@ -31,7 +31,7 @@ function getTestTypeLabel(): string {
 // Reporters
 const useReportersWithoutSlack: any[] = [
   ['list'],
-  ['junit', testRailOptions],
+  ['junit', junitOptions],
   ['html', {outputFolder: 'html-report'}],
   ['json', {outputFile: `json-report/results.json`}],
 ];

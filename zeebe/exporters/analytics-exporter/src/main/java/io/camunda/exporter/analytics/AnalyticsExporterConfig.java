@@ -23,11 +23,14 @@ public class AnalyticsExporterConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(AnalyticsExporterConfig.class);
 
-  private String endpoint = "https://analytics.cloud.camunda.io";
+  private String endpoint = "https://telemetry.camunda.io";
   private int maxQueueSize = 2048;
   private int maxBatchSize = 512;
   private String pushInterval = "PT5M";
   private String heartbeatInterval = "PT10M";
+  private String httpConnectTimeout = "PT3S";
+  private String httpRequestTimeout = "PT3S";
+  private int httpMaxRetryAttempts = 3;
   private boolean signing = true;
   private boolean allowInsecure = false;
   private double samplingRate = HashSampler.MAX_SAMPLE_RATE;
@@ -81,6 +84,33 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
+  public Duration getHttpConnectTimeout() {
+    return Duration.parse(httpConnectTimeout);
+  }
+
+  public AnalyticsExporterConfig setHttpConnectTimeout(final String httpConnectTimeout) {
+    this.httpConnectTimeout = httpConnectTimeout;
+    return this;
+  }
+
+  public Duration getHttpRequestTimeout() {
+    return Duration.parse(httpRequestTimeout);
+  }
+
+  public AnalyticsExporterConfig setHttpRequestTimeout(final String httpRequestTimeout) {
+    this.httpRequestTimeout = httpRequestTimeout;
+    return this;
+  }
+
+  public int getHttpMaxRetryAttempts() {
+    return httpMaxRetryAttempts;
+  }
+
+  public AnalyticsExporterConfig setHttpMaxRetryAttempts(final int httpMaxRetryAttempts) {
+    this.httpMaxRetryAttempts = httpMaxRetryAttempts;
+    return this;
+  }
+
   public boolean isSigning() {
     return signing;
   }
@@ -131,6 +161,9 @@ public class AnalyticsExporterConfig {
   public AnalyticsExporterConfig validate() {
     validateEndpoint();
     validatePushInterval();
+    validateHttpConnectTimeout();
+    validateHttpRequestTimeout();
+    validateHttpMaxAttempts();
     final Duration parsedHeartbeat;
     try {
       parsedHeartbeat = Duration.parse(heartbeatInterval);
@@ -200,6 +233,39 @@ public class AnalyticsExporterConfig {
     }
   }
 
+  private void validateHttpConnectTimeout() {
+    final Duration parsed;
+    try {
+      parsed = Duration.parse(httpConnectTimeout);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Invalid httpConnectTimeout: " + httpConnectTimeout, e);
+    }
+    if (parsed.isZero() || parsed.isNegative()) {
+      throw new IllegalArgumentException(
+          "httpConnectTimeout must be positive, got: " + httpConnectTimeout);
+    }
+  }
+
+  private void validateHttpRequestTimeout() {
+    final Duration parsed;
+    try {
+      parsed = Duration.parse(httpRequestTimeout);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Invalid httpRequestTimeout: " + httpRequestTimeout, e);
+    }
+    if (parsed.isZero() || parsed.isNegative()) {
+      throw new IllegalArgumentException(
+          "httpRequestTimeout must be positive, got: " + httpRequestTimeout);
+    }
+  }
+
+  private void validateHttpMaxAttempts() {
+    if (httpMaxRetryAttempts <= 0) {
+      throw new IllegalArgumentException(
+          "httpMaxRetryAttempts must be positive, got: " + httpMaxRetryAttempts);
+    }
+  }
+
   private void validateEndpoint() {
     if (endpoint == null || endpoint.isBlank()) {
       throw new IllegalArgumentException("Analytics exporter endpoint is not configured");
@@ -242,7 +308,8 @@ public class AnalyticsExporterConfig {
    *
    * <p><b>Excluded</b> (transport-only — affect delivery, not event semantics): {@code endpoint},
    * {@code maxQueueSize}, {@code maxBatchSize}, {@code pushInterval}, {@code heartbeatInterval},
-   * {@code signing}, {@code allowInsecure}.
+   * {@code httpConnectTimeout}, {@code httpRequestTimeout}, {@code httpMaxRetryAttempts}, {@code
+   * signing}, {@code allowInsecure}.
    *
    * <p>When adding a new field to this class, decide explicitly: if it changes event selection or
    * content, add it here; if it only affects delivery mechanics, leave it out and update the

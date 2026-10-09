@@ -12,6 +12,7 @@ import {
   DataTable,
   type DataTableColumn,
   type DataTableRowAction,
+  FilterBar,
   type PaginationConfig,
   type RowSelectionConfig,
   type SortingConfig,
@@ -19,10 +20,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@camunda/design-system";
-import { Add, CarbonIconType } from "@carbon/react/icons";
+import { type LucideIcon, Plus } from "@camunda/design-system/icons";
 import { DocumentationLink } from "src/components/documentationV2";
 import useTranslate from "src/utility/localization";
 import { PageResult, SortConfig } from "src/utility/api";
+import { SearchFilterValue } from "src/utility/api/hooks/usePagination";
 import SearchBar from "./SearchBar";
 
 export type EntityData = {
@@ -55,7 +57,7 @@ type TextMenuItem<D> = {
 };
 
 type MenuItem<D> = TextMenuItem<D> & {
-  icon?: CarbonIconType;
+  icon?: LucideIcon;
 };
 
 type EntityListProps<D extends EntityData> = {
@@ -63,6 +65,8 @@ type EntityListProps<D extends EntityData> = {
   documentationPath?: string;
   searchPlaceholder?: string;
   searchKey?: string;
+  /** "eq" (default) matches the typed value exactly; "like" matches it as a substring. */
+  searchOperator?: "eq" | "like";
   data: D[] | null | undefined;
   headers: DataTableHeader<D>[];
   addEntityLabel?: string | null;
@@ -90,7 +94,7 @@ type EntityListProps<D extends EntityData> = {
     | ({ pageNumber: number; pageSize: number } & Partial<PageResult>)
     | undefined;
   setSort?: (sort: SortConfig[] | undefined) => void;
-  setSearch?: (search: Record<string, string> | undefined) => void;
+  setSearch?: (search: Record<string, SearchFilterValue> | undefined) => void;
   renderExpandedRow?: (entity: D) => ReactNode;
 };
 
@@ -123,6 +127,7 @@ const EntityList = <D extends EntityData>({
   batchSelection,
   searchPlaceholder,
   searchKey,
+  searchOperator,
   maxDisplayCellLength = 50,
   setPageNumber = () => {},
   setPageSize = () => {},
@@ -276,23 +281,28 @@ const EntityList = <D extends EntityData>({
     );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {(searchKey || addEntityLabel) && (
-        <div className="flex items-center gap-3">
-          {searchKey && (
-            <SearchBar
-              searchKey={searchKey}
-              searchPlaceholder={searchPlaceholder}
-              onSearch={setSearch}
-            />
-          )}
-          {addEntityLabel && (
-            <Button onClick={onAddEntity} disabled={addEntityDisabled}>
-              <Add data-icon="inline-start" aria-hidden="true" />
-              {addEntityLabel}
-            </Button>
-          )}
-        </div>
+        <FilterBar
+          search={
+            searchKey && (
+              <SearchBar
+                searchKey={searchKey}
+                searchPlaceholder={searchPlaceholder}
+                searchOperator={searchOperator}
+                onSearch={setSearch}
+              />
+            )
+          }
+          actions={
+            addEntityLabel && (
+              <Button onClick={onAddEntity} disabled={addEntityDisabled}>
+                <Plus data-icon="inline-start" aria-hidden="true" />
+                {addEntityLabel}
+              </Button>
+            )
+          }
+        />
       )}
       <DataTable<D>
         columns={columns}

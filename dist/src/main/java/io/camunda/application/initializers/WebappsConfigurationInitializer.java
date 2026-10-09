@@ -90,15 +90,6 @@ public class WebappsConfigurationInitializer
           defaultWebapp = TASKLIST.getId();
         }
       }
-
-      if (activeProfiles.contains(STANDALONE.getId())) {
-        propertyMap.putAll(
-            Map.of(
-                AUTHORIZATIONS_ENABLED_PROPERTY,
-                "${camunda.tasklist.identity.resourcePermissionsEnabled:false}",
-                MULTITENANCY_CHECKSENABLED_PROPERTY,
-                "${camunda.tasklist.multiTenancy.enabled:false}"));
-      }
     }
 
     // Identity/Admin Properties

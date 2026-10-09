@@ -13,6 +13,7 @@ webapp/client/
     ├── camunda-api-zod-schemas/
     ├── c8-mocks/
     ├── lint-config/
+    ├── oc-saas-notifications/
     └── session-heartbeat/
 ```
 
@@ -21,7 +22,7 @@ webapp/client/
 ### `@camunda/camunda-api-zod-schemas`
 
 Published to npm. Provides Zod schemas and TypeScript types for
-the Camunda 8 REST API, versioned per release line (8.8 / 8.9 / 8.10).
+the Camunda 8 REST API, versioned per release line (8.8 / 8.9 / 8.10 / 8.11).
 Consumed by
 `@camunda/orchestration-cluster-webapp` and legacy frontend components for type-safe API calls and
 runtime validation.
@@ -40,9 +41,18 @@ use in webapp tests.
 
 ESLint and Prettier configuration shared across
 the Camunda frontends — also consumed outside this workspace by
-`operate/client`, `tasklist/client`, and `identity/client`. Consumers
+`operate/client` and `identity/client`. Consumers
 compose only the eslint variants they need (`base`, `typescript`,
 `react`, `testing`, `license`, `tanstack-query`).
+
+### `@camunda/oc-saas-notifications`
+
+Published to npm as raw TypeScript and TSX source. Connects the SaaS notification runtime from
+Camunda composite components to the Camunda design system notification bell and panel. Consumers
+provide localization and the surrounding C3 user configuration.
+
+See the [package README](https://github.com/camunda/camunda/blob/main/webapp/client/packages/oc-saas-notifications/README.md) for usage
+and the source-distribution requirements.
 
 ### `@camunda/session-heartbeat`
 
@@ -60,7 +70,7 @@ contract, adoption steps, and publishing.
 
 ### `@camunda/orchestration-cluster-webapp`
 
-The unified React webapp that will replace the legacy Operate, Tasklist,
-and Admin frontends. See
+The unified React webapp that contains Tasklist and is replacing the legacy Operate and Admin
+frontends. See
 [Orchestration cluster webapp](./orchestration-cluster-webapp.md) for
 the full introduction.

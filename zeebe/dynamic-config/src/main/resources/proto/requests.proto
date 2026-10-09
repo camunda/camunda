@@ -102,9 +102,10 @@ message ForceRemoveBrokersRequest {
   bool dryRun = 2;
 }
 
-message ForceRemoveZoneRequest {
+message RemoveZoneRequest {
   string zoneId = 1;
   bool dryRun = 2;
+  bool force = 3;
 }
 
 message AddZoneRequest {

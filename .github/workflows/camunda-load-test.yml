@@ -2,8 +2,7 @@
 #              routes through this workflow. Builds Docker images (or reuses existing ones),
 #              then deploys via newLoadTest.sh + `make install` to a GKE cluster.
 # called-by: camunda-daily-load-tests.yml, camunda-weekly-load-tests.yml,
-#            camunda-pr-load-test.yaml, camunda-release-load-test.yaml,
-#            zeebe-update-long-running-migrating-benchmark.yaml
+#            camunda-pr-load-test.yaml, camunda-release-load-test.yaml
 # also: triggerable manually via workflow_dispatch for ad-hoc load tests
 # monitoring: https://dashboard.benchmark.camunda.cloud/
 # type: CI
@@ -86,11 +85,11 @@ on:
         type: boolean
         required: false
         default: false
-      physical-tenants:
-        description: 'Deploy a second physical tenant (testfoo) with its own load tester. Requires an rdbms secondary-storage-type.'
-        type: boolean
+      physical-tenant-count:
+        description: 'Number of extra physical tenants (pt1..ptN) to deploy alongside the default tenant, each with its own load tester.'
+        type: number
         required: false
-        default: false
+        default: 0
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -105,7 +104,7 @@ on:
         description: 'Run continuous read benchmarks on secondary storage (may affect exporter performance)'
         type: boolean
         required: false
-        default: false
+        default: true
       ttl:
         description: '── Lifecycle & advanced ──────────── Days before the namespace is auto-deleted'
         type: number
@@ -185,7 +184,7 @@ on:
         description: 'Perform continuous read benchmarks on secondary storage. This may influence the exporter performance as it puts more load on the secondary database. The metrics are available in the Data-Layer dashboard.'
         type: boolean
         required: false
-        default: false
+        default: true
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
@@ -201,11 +200,11 @@ on:
         type: boolean
         required: false
         default: false
-      physical-tenants:
-        description: 'Deploy a second physical tenant (testfoo) with its own load tester. Requires an rdbms secondary-storage-type.'
-        type: boolean
+      physical-tenant-count:
+        description: 'Number of extra physical tenants (pt1..ptN) to deploy alongside the default tenant, each with its own load tester.'
+        type: number
         required: false
-        default: false
+        default: 0
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -271,7 +270,7 @@ env:
   OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
   ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
   PERFORM_READ_BENCHMARKS: ${{ inputs.perform-read-benchmarks }}
-  PHYSICAL_TENANTS: ${{ inputs.physical-tenants }}
+  PHYSICAL_TENANT_COUNT: ${{ inputs.physical-tenant-count }}
   PLATFORM_HELM_VALUES: ${{ inputs.platform-helm-values }}
   REF: ${{ inputs.ref }}
   REUSE_TAG: ${{ inputs.reuse-tag}}
@@ -317,7 +316,7 @@ jobs:
           | Enable Optimize | \`${ENABLE_OPTIMIZE}\` |
           | Enable Optimize report metrics | \`${ENABLE_OPTIMIZE_METRICS}\` |
           | Enable chaos | \`${ENABLE_CHAOS}\` |
-          | Physical tenants | \`${PHYSICAL_TENANTS}\` |
+          | Physical tenant count | \`${PHYSICAL_TENANT_COUNT}\` |
           | Build frontend | \`${BUILD_FRONTEND}\` |
           | Perform read benchmarks | \`${PERFORM_READ_BENCHMARKS}\` |
           | Optimize tag | \`${OPTIMIZE_TAG:-—}\` |
@@ -329,7 +328,7 @@ jobs:
     name: Calculate Image Tag
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     outputs:
       image-tag: ${{ inputs.orchestration-tag != '' && inputs.orchestration-tag || (inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag) }}
     steps:
@@ -369,9 +368,7 @@ jobs:
     if: ${{ inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    permissions: {}
     env:
       CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
     steps:
@@ -455,9 +452,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: calculate-image-tag
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    permissions: {}
     env:
       IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
     steps:
@@ -473,10 +468,30 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
+      # registry.camunda.cloud intermittently stops answering the manifest PUT at the end of the
+      # push. jib's own retries all fall inside a ~5 minute window, so they re-hit the same bad
+      # spell and the job fails. Each attempt here is capped well above the ~15s a healthy push
+      # takes, so a hung one is abandoned quickly and the registry is sampled again a minute later.
+      #
+      # This is mitigation, not a fix — it makes a hanging registry survivable, it does not stop it
+      # hanging. Drop both wrappers once these images are published to GAR instead
+      # (camunda/team-infrastructure#992), which removes the dependency on this registry altogether.
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}"
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          shell: bash
+          command: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}"
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}"
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          shell: bash
+          command: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -493,9 +508,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: calculate-image-tag
-    permissions:
-      contents: read
-      id-token: write
+    permissions: {}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -509,7 +522,7 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Build and push image
         working-directory: ./load-tests/metrics-exporter
         run: make docker "IMAGE=registry.camunda.cloud/team-reliability-testing/metrics-exporter:${IMAGE_TAG}" DOCKER_PUSH=true
@@ -544,8 +557,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      id-token: write # Teleport cluster auth
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -553,7 +565,11 @@ jobs:
           persist-credentials: false
 
       - name: Set up Helm
-        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          minimum_release_age: 15d
+          install_args: helm
+          cache_save: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/') }}
 
       # Authenticate with Teleport
       - name: Set up Teleport
@@ -605,7 +621,7 @@ jobs:
             "${ENABLE_OPTIMIZE_METRICS}" \
             "${METRICS_EXPORTER_BUILT}" \
             "${ENABLE_CHAOS}" \
-            "${PHYSICAL_TENANTS}" \
+            "${PHYSICAL_TENANT_COUNT}" \
             --optimize-tag "${OPTIMIZE_TAG}" \
             --orchestration-tag "${ORCHESTRATION_TAG}" \
             --identity-tag "${IDENTITY_TAG}" \

@@ -116,12 +116,13 @@ final class IncrementalChecksums {
             "Expected chunk to match totalSize %s but got %s".formatted(totalSize, totalFileSize));
       }
 
-      final byte[] content = chunk.getContent();
-      final long newSize = currentSize + content.length;
+      final var content = chunk.getContentBuffer();
+      final var contentLength = content.remaining();
+      final long newSize = currentSize + contentLength;
       if (newSize > totalSize) {
         throw new IllegalArgumentException(
             "Chunk size %s + current size %s exceeds total size %s"
-                .formatted(content.length, currentSize, totalSize));
+                .formatted(contentLength, currentSize, totalSize));
       }
 
       checksum.update(content);

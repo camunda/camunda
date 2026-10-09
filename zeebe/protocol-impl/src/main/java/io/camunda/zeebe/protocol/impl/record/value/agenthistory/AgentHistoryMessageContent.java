@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
@@ -75,25 +74,19 @@ public final class AgentHistoryMessageContent extends ObjectValue
     return MsgPackConverter.convertToObject(objectProp.getValue(), Object.class);
   }
 
-  public AgentHistoryMessageContent setObject(final DirectBuffer object) {
-    objectProp.setValue(object);
+  public AgentHistoryMessageContent setObject(final Object object) {
+    final var data =
+        object == null
+            ? NIL_OBJECT
+            : BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(object));
+    objectProp.setValue(data);
     return this;
-  }
-
-  @JsonIgnore
-  public DirectBuffer getObjectBuffer() {
-    return objectProp.getValue();
   }
 
   public void copy(final AgentHistoryMessageContentValue other) {
     setContentType(other.getContentType());
     setText(other.getText());
     getDocumentReference().copy(other.getDocumentReference());
-    final var obj = other.getObject();
-    if (obj != null) {
-      setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(obj)));
-    } else {
-      setObject(NIL_OBJECT);
-    }
+    setObject(other.getObject());
   }
 }

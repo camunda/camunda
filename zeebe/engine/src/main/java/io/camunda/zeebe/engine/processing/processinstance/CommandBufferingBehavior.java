@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
@@ -19,7 +20,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 /**
  * Invoked by the primary suspension gate (see {@code Engine#process}) in place of a command's usual
  * {@link TypedRecordProcessor}, whenever the command is classified {@code BUFFER} (see {@code
- * SuspensionAware}) and its target process instance is currently {@code SUSPENDED}.
+ * SuspensionAware}) and its target process instance is currently {@code SUSPENDING} or {@code
+ * SUSPENDED}.
  *
  * <p>Buffers the command, in FIFO order, as a {@link BufferedCommandRecord}; it is written back to
  * the log verbatim once the process instance is drained during resume. No client response is
@@ -31,10 +33,15 @@ public final class CommandBufferingBehavior {
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
+  private final SuspensionMetrics suspensionMetrics;
 
-  public CommandBufferingBehavior(final KeyGenerator keyGenerator, final Writers writers) {
+  public CommandBufferingBehavior(
+      final KeyGenerator keyGenerator,
+      final Writers writers,
+      final SuspensionMetrics suspensionMetrics) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   /**
@@ -69,5 +76,6 @@ public final class CommandBufferingBehavior {
         .state()
         .appendFollowUpEvent(
             bufferedCommandKey, BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
+    suspensionMetrics.commandBuffered();
   }
 }

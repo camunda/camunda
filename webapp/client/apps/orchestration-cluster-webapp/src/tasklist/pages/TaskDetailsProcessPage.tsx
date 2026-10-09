@@ -6,9 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ProcessDiagramView} from '#/tasklist/modules/task-details/components/process-diagram/ProcessDiagramView';
-import styles from './TaskDetailsProcessPage.module.scss';
 
 type Props = {
 	task: UserTask;
@@ -17,7 +16,7 @@ type Props = {
 
 const TaskDetailsProcessPage: React.FC<Props> = ({task, processXml}) => {
 	return (
-		<div className={styles.container} data-testid="process-tab-content">
+		<div className="flex h-full min-h-0 w-full" data-testid="process-tab-content">
 			<ProcessDiagramView
 				xml={processXml}
 				elementId={task.elementId}

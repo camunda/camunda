@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
@@ -79,6 +80,7 @@ import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
@@ -90,6 +92,7 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
@@ -146,6 +149,7 @@ import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
@@ -302,6 +306,9 @@ public final class ValueTypeMapping {
         ValueType.PROCESS_INSTANCE_BATCH,
         new Mapping<>(ProcessInstanceBatchRecordValue.class, ProcessInstanceBatchIntent.class));
     mapping.put(
+        ValueType.SUSPENSION_BATCH,
+        new Mapping<>(SuspensionBatchRecordValue.class, SuspensionBatchIntent.class));
+    mapping.put(
         ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
         new Mapping<>(
             AdHocSubProcessInstructionRecordValue.class, AdHocSubProcessInstructionIntent.class));
@@ -401,6 +408,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.AGENT_DEFINITION,
         new Mapping<>(AgentDefinitionRecordValue.class, AgentDefinitionIntent.class));
+    mapping.put(
+        ValueType.AGENT_HISTORY_BATCH,
+        new Mapping<>(AgentHistoryBatchRecordValue.class, AgentHistoryBatchIntent.class));
     mapping.put(
         ValueType.SECRET_REFERENCE,
         new Mapping<>(SecretReferenceRecordValue.class, SecretReferenceIntent.class));

@@ -438,8 +438,8 @@ public final class FailJobTest {
         ENGINE.jobs().withType(jobType).withLease().activate(username);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = job.getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     // when
     final Record<JobRecordValue> failRecord =
@@ -447,7 +447,7 @@ public final class FailJobTest {
             .job()
             .withKey(jobKey)
             .ofInstance(job.getProcessInstanceKey())
-            .withLeaseToken(leaseToken)
+            .withJobLeaseToken(jobLeaseToken)
             .withRetries(3)
             .fail();
 
@@ -466,8 +466,8 @@ public final class FailJobTest {
         ENGINE.jobs().withType(jobType).withLease().activate(username);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = job.getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     // when
     final Record<JobRecordValue> jobRecord =
@@ -485,7 +485,7 @@ public final class FailJobTest {
         .hasRejectionType(RejectionType.INVALID_STATE);
     assertThat(jobRecord.getRejectionReason())
         .contains("must be provided")
-        .doesNotContain(leaseToken);
+        .doesNotContain(jobLeaseToken);
   }
 
   @Test
@@ -496,8 +496,8 @@ public final class FailJobTest {
         ENGINE.jobs().withType(jobType).withLease().activate(username);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = job.getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     // when
     final Record<JobRecordValue> jobRecord =
@@ -505,7 +505,7 @@ public final class FailJobTest {
             .job()
             .withKey(jobKey)
             .ofInstance(job.getProcessInstanceKey())
-            .withLeaseToken("stale-lease-token")
+            .withJobLeaseToken("stale-lease-token")
             .withRetries(3)
             .expectRejection()
             .fail();
@@ -516,7 +516,7 @@ public final class FailJobTest {
         .hasRejectionType(RejectionType.INVALID_STATE);
     assertThat(jobRecord.getRejectionReason())
         .contains("does not match")
-        .doesNotContain(leaseToken);
+        .doesNotContain(jobLeaseToken);
   }
 
   @Test
@@ -547,8 +547,8 @@ public final class FailJobTest {
         ENGINE.jobs().withType(jobType).withLease().activate(username);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = job.getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     final Duration backOff = Duration.ofDays(1);
     final Record<JobRecordValue> failRecord =
@@ -556,7 +556,7 @@ public final class FailJobTest {
             .job()
             .withKey(jobKey)
             .ofInstance(job.getProcessInstanceKey())
-            .withLeaseToken(leaseToken)
+            .withJobLeaseToken(jobLeaseToken)
             .withRetries(3)
             .withBackOff(backOff)
             .fail();

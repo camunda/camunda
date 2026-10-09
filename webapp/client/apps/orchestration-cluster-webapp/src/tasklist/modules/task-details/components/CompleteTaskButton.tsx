@@ -10,7 +10,7 @@ import {t as _t} from 'i18next';
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {CompletionStatus} from '#/tasklist/modules/task-details/useTaskCompletion';
-import {AsyncActionButton} from './AsyncActionButton/AsyncActionButton';
+import {AsyncActionButton} from './AsyncActionButton';
 
 const getCompletionButtonDescription = (status: CompletionStatus): string | undefined => {
 	if (status === 'active') {
@@ -37,18 +37,17 @@ type Props = {
 
 const CompleteTaskButton: React.FC<Props> = ({status, isDisabled, isHidden, onClick}) => {
 	const {t} = useTranslation();
-	const inlineLoadingProps = useMemo(
+	const loadingProps = useMemo(
 		() =>
 			({
 				description: getCompletionButtonDescription(status),
-				'aria-live': status === 'active' ? 'assertive' : 'polite',
+				ariaLive: status === 'active' ? 'assertive' : 'polite',
 			}) as const,
 		[status],
 	);
 	const buttonProps = useMemo(
 		() =>
 			({
-				size: 'md',
 				type: 'submit',
 				disabled: status === 'active' || isDisabled,
 				onClick,
@@ -58,12 +57,7 @@ const CompleteTaskButton: React.FC<Props> = ({status, isDisabled, isHidden, onCl
 	);
 
 	return (
-		<AsyncActionButton
-			inlineLoadingProps={inlineLoadingProps}
-			buttonProps={buttonProps}
-			status={status}
-			isHidden={isHidden}
-		>
+		<AsyncActionButton {...loadingProps} buttonProps={buttonProps} status={status} isHidden={isHidden}>
 			{t('tasklist.taskDetailsCompleteTaskButtonLabel')}
 		</AsyncActionButton>
 	);

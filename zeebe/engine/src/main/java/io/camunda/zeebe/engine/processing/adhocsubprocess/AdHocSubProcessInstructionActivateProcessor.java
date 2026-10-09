@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdH
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -42,8 +41,6 @@ public class AdHocSubProcessInstructionActivateProcessor
 
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND =
       "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'.";
-  private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NO_ACTIVE =
-      "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE =
       "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
 
@@ -89,7 +86,7 @@ public class AdHocSubProcessInstructionActivateProcessor
           command,
           RejectionType.INVALID_STATE,
           String.format(
-              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NO_ACTIVE,
+              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE,
               command.getValue().getAdHocSubProcessInstanceKey()));
 
       return;
@@ -108,16 +105,8 @@ public class AdHocSubProcessInstructionActivateProcessor
       return;
     }
 
-    if (!adHocSubProcessElementInstance.isActive()) {
-      writeRejectionError(
-          command,
-          RejectionType.INVALID_STATE,
-          String.format(
-              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE,
-              command.getValue().getAdHocSubProcessInstanceKey()));
-
-      return;
-    }
+    final int storageOrdinal = adHocSubProcessElementInstance.getValue().getStorageOrdinal();
+    command.getValue().setStorageOrdinal(storageOrdinal);
 
     final var activateElements =
         command.getValue().activateElements().stream()
@@ -183,11 +172,15 @@ public class AdHocSubProcessInstructionActivateProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<AdHocSubProcessInstructionRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
     // external commands are rejected, not buffered: buffering intercepts before authorize() runs,
     // so a queued external command would replay as internal on drain and skip authorization
-    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
+    return SuspensionAware.bufferInternalOnly(record);
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
+    return SuspensionAware.processInternalOnly(record);
   }
 
   private void writeRejectionError(

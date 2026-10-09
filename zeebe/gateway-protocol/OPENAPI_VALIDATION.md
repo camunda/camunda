@@ -19,6 +19,7 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
   - Required property existence validation (entries in required array must exist in properties)
   - Operation versioning annotation validation (every operation must declare `x-added-in-version`)
+  - Operation scope annotation validation (every operation must declare `x-scope` as `cluster-wide` or `physical-tenant`)
   - Property versioning annotation shape validation (`x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only)
   - Semantic graph annotation shape + cross-reference validation (`x-semantic-establishes`, `x-semantic-requires`, `semantic-kinds.json` registry)
 
@@ -186,6 +187,76 @@ ProcessInstanceModificationInstruction:
 Semantic correctness of these annotations (does the property actually exist? was it really introduced in that version?) is still validated in CI by the verifier under [`.github/scripts/x-added-in-version-check/`](../../.github/scripts/x-added-in-version-check/README.md) — the Spectral rule only checks shape.
 
 When a reviewer deliberately wants to publish a version other than the one the verifier computes, use `x-added-in-version-override` / `addedInVersionOverride` instead of just changing the annotation — see ["Overriding the computed version"](../../.github/scripts/x-added-in-version-check/README.md#overriding-the-computed-version) in the verifier's README.
+
+### Missing or invalid `x-scope`
+
+Every operation must declare `x-scope` as either `cluster-wide` or `physical-tenant`, marking whether it operates on the whole cluster or on a single physical tenant. The `require-scope` rule fails the build if this annotation is missing or has an unrecognised value.
+
+**Wrong:**
+
+```yaml
+paths:
+  /my-resources:
+    post:
+      operationId: createMyResource
+      summary: Create a my-resource
+      tags: [My resource]
+      # ❌ Missing x-scope
+```
+
+**Correct:**
+
+```yaml
+paths:
+  /my-resources:
+    post:
+      operationId: createMyResource
+      summary: Create a my-resource
+      x-scope: physical-tenant  # ✓ Scoped to a single physical tenant
+      tags: [My resource]
+```
+
+See §2.20 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the full convention, including how this maps to the `@ClusterScoped` controller annotation.
+
+### Conditional-presence annotations (`x-present-when`)
+
+A response property may be present only for certain request shapes. OpenAPI 3.x
+cannot express that a response field's presence depends on a request field, so
+generated SDKs default to typing such fields as always-nullable — which lets
+users write code that fails at runtime but compiles cleanly. `x-present-when`
+encodes that dependency as ground truth on the response property so SDK
+generators can derive request→response dependent typing.
+
+The `present-when-shape` rule validates the marker's structure: it must be an
+object with a `request` field (a top-level request-body property name) and a
+scalar `equals` literal (`boolean`, `string`, or `number`).
+
+```yaml
+ActivatedJobResult:
+  properties:
+    jobLeaseToken:
+      description: The lease token; `null` when activated without a lease.
+      nullable: true
+      x-present-when:
+        request: withLease   # top-level field on the operation's request body
+        equals: true         # property is present (required, non-null) iff withLease === true
+      allOf:
+        - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+```
+
+Semantics: SDK generators derive from the marker: when the request field is the
+compile-time literal `equals` value (`V`), the property is **present** (required,
+non-null); when it is any other compile-time literal — `false`/`null`/omitted, or
+a non-matching string/number such as `mode: "compact"` when `equals: "full"` —
+the property is **absent** (omitted for nominal languages; typed `?: never` for
+JS/TS; for Python, which has no `?: never` equivalent, modelled via an overload
+whose return type omits the property, e.g. a `TypedDict` without the key); when
+the request field is not a compile-time literal, the base nullable shape is
+preserved. The marker is inert
+on the wire — the property keeps its declared `nullable` shape and stays in
+`required`, so any consumer that does not derive from it is unaffected. See §2.21
+of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md)
+for the full derivation contract each SDK implements.
 
 ### Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`)
 

@@ -39,6 +39,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /messages/correlation:
     post:
@@ -86,6 +87,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /message-subscriptions/search:
     post:
@@ -136,6 +138,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /correlated-message-subscriptions/search:
     post:
@@ -173,6 +176,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -659,7 +663,8 @@ components:
           format: date-time
         elementId:
           description: The element ID that received the message.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
         elementInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'

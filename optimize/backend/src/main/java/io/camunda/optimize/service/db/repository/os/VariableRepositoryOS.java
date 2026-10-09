@@ -165,6 +165,7 @@ public class VariableRepositoryOS implements VariableRepository {
                                   ProcessInstanceScriptFactory.createVariableClearScript(),
                                   Map.of()))
                           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                          .requireAlias(true)
                           .build();
                   return new BulkOperation.Builder().update(updateOperation).build();
                 })

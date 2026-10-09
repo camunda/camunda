@@ -69,7 +69,8 @@ public class ProcessInstanceWriter implements RdbmsWriter {
 
   public void finish(
       final long key, final ProcessInstanceState state, final OffsetDateTime endDate) {
-    final boolean wasMerged = mergeToQueue(key, b -> b.state(state).endDate(endDate));
+    final boolean wasMerged =
+        mergeToQueue(key, b -> b.state(state).endDate(endDate).suspendedDate(null));
 
     if (!wasMerged) {
       final var dto = new EndProcessInstanceDto(key, state, endDate);
@@ -79,7 +80,8 @@ public class ProcessInstanceWriter implements RdbmsWriter {
               WriteStatementType.UPDATE,
               key,
               "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate",
-              dto));
+              dto,
+              Integer.MAX_VALUE));
     }
   }
 

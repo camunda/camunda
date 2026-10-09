@@ -11,13 +11,59 @@ import type {
 	GetProcessDefinitionInstanceStatisticsRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
 	GetProcessDefinitionInstanceVersionStatisticsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+	ProcessDefinition,
+	QueryProcessDefinitionsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
 const PAGE_SIZE = 50;
 const MAX_PAGES = 5;
+const DRAINING_REFETCH_INTERVAL = 5000;
+const DRAINING_PAGE_LIMIT = 1000;
+
+type DrainingLookup = {
+	byId: Set<string>;
+	byKey: Set<string>;
+};
+
+const drainingByIdKey = (tenantId: string, processDefinitionId: string) => `${tenantId}:${processDefinitionId}`;
+
+async function fetchAllDrainingProcessDefinitions(): Promise<ProcessDefinition[]> {
+	const items: ProcessDefinition[] = [];
+	let after: string | undefined;
+
+	do {
+		const {response, error} = await request(
+			endpoints.queryProcessDefinitions({
+				filter: {state: 'DRAINING'},
+				page: {limit: DRAINING_PAGE_LIMIT, after},
+			}),
+		);
+		if (error !== null) {
+			throw mapQueryError(error);
+		}
+		const page: QueryProcessDefinitionsResponseBody = await response.json();
+		items.push(...page.items);
+		const nextCursor = page.page.hasMoreTotalItems ? page.page.endCursor : null;
+		after = nextCursor !== null && nextCursor !== after ? nextCursor : undefined;
+	} while (after !== undefined);
+
+	return items;
+}
+
+const drainingProcessDefinitionsQuery = () =>
+	queryOptions({
+		queryKey: ['drainingProcessDefinitions'] as const,
+		staleTime: DRAINING_REFETCH_INTERVAL,
+		refetchInterval: DRAINING_REFETCH_INTERVAL,
+		queryFn: fetchAllDrainingProcessDefinitions,
+		select: (items): DrainingLookup => ({
+			byId: new Set(items.map((item) => drainingByIdKey(item.tenantId, item.processDefinitionId))),
+			byKey: new Set(items.map((item) => item.processDefinitionKey)),
+		}),
+	});
 
 const DEFAULT_SORT: Pick<GetProcessDefinitionInstanceStatisticsRequestBody, 'sort'> = {
 	sort: [
@@ -26,6 +72,17 @@ const DEFAULT_SORT: Pick<GetProcessDefinitionInstanceStatisticsRequestBody, 'sor
 	],
 };
 
+type PageRange = {from: number; limit: number};
+
+// The API only offers offset pagination (no cursors) for this endpoint, so the start
+// offset of a page once it's evicted by maxPages can only be recovered if we recorded
+// it ourselves. Keyed by each page's end offset (= next page's start offset), which is
+// always unique and already computed when fetching forward. Without this, paging
+// backward past an evicted short page (fewer than PAGE_SIZE items, e.g. because
+// totalItems shrank between fetches) would subtract a fixed PAGE_SIZE and either skip
+// or duplicate rows.
+const pageStartOffsetByEndOffset = new Map<number, PageRange>();
+
 const instancesByProcessInfiniteQuery = () =>
 	infiniteQueryOptions({
 		queryKey: ['instancesByProcess'] as const,
@@ -33,7 +90,7 @@ const instancesByProcessInfiniteQuery = () =>
 			const {response, error} = await request(
 				endpoints.getProcessDefinitionInstanceStatistics({
 					...DEFAULT_SORT,
-					page: {from: pageParam, limit: PAGE_SIZE},
+					page: pageParam,
 				}),
 			);
 			if (error !== null) {
@@ -41,14 +98,27 @@ const instancesByProcessInfiniteQuery = () =>
 			}
 			return response.json();
 		},
-		initialPageParam: 0,
-		getNextPageParam: (lastPage, _, lastPageParam) => {
-			const next = lastPageParam + PAGE_SIZE;
-			return next >= lastPage.page.totalItems ? undefined : next;
+		initialPageParam: {from: 0, limit: PAGE_SIZE} as PageRange,
+		getNextPageParam: (lastPage, _allPages, lastPageParam): PageRange | undefined => {
+			const nextOffset = lastPageParam.from + lastPage.items.length;
+			if (nextOffset <= lastPageParam.from) {
+				return undefined;
+			}
+			pageStartOffsetByEndOffset.set(nextOffset, {from: lastPageParam.from, limit: lastPage.items.length});
+			return nextOffset < lastPage.page.totalItems || lastPage.page.hasMoreTotalItems
+				? {from: nextOffset, limit: PAGE_SIZE}
+				: undefined;
 		},
-		getPreviousPageParam: (_, __, firstPageParam) => {
-			const prev = firstPageParam - PAGE_SIZE;
-			return prev < 0 ? undefined : prev;
+		getPreviousPageParam: (_firstPage, _allPages, firstPageParam): PageRange | undefined => {
+			if (firstPageParam.from <= 0) {
+				return undefined;
+			}
+			const recoveredRange = pageStartOffsetByEndOffset.get(firstPageParam.from);
+			if (recoveredRange) {
+				return recoveredRange;
+			}
+			const from = Math.max(0, firstPageParam.from - PAGE_SIZE);
+			return {from, limit: firstPageParam.from - from};
 		},
 		maxPages: MAX_PAGES,
 	});
@@ -70,4 +140,11 @@ const instancesByProcessVersionsQuery = (processDefinitionId: string, tenantId: 
 		},
 	});
 
-export {instancesByProcessInfiniteQuery, instancesByProcessVersionsQuery, PAGE_SIZE};
+export {
+	instancesByProcessInfiniteQuery,
+	instancesByProcessVersionsQuery,
+	drainingProcessDefinitionsQuery,
+	drainingByIdKey,
+	PAGE_SIZE,
+	type DrainingLookup,
+};

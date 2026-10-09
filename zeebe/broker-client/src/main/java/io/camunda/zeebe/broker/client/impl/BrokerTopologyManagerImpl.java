@@ -13,16 +13,13 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.camunda.cluster.PartitionId;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PartitionRoleValues;
 import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientTopologyImpl.ConfiguredClusterState;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -35,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +66,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public @NonNull BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
+  public BrokerClusterState getTopology(final String physicalTenantId) {
     return topologyPerGroup.getOrDefault(
         physicalTenantId, BrokerClientTopologyImpl.uninitialized());
   }
@@ -241,14 +237,6 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterTopology) {
-    if (clusterTopology.isUninitialized()) {
-      return;
-    }
-    onClusterConfigurationUpdated(CurrentClusterConfiguration.fromLegacy(clusterTopology));
-  }
-
-  @Override
   public void onClusterConfigurationUpdated(
       final CurrentClusterConfiguration clusterConfiguration) {
     if (clusterConfiguration.isUninitialized()) {
@@ -301,9 +289,7 @@ public final class BrokerTopologyManagerImpl extends Actor
       final BrokerClientTopologyImpl oldTopology) {
     final var newClusterSize = clusterTopology.clusterSize();
     final PartitionGroupConfiguration partitionGroupConfiguration =
-        ClusterConfigurationManagerService.USE_NEW_CONFIG
-            ? clusterTopology.partitionGroup(groupId)
-            : clusterTopology.partitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+        clusterTopology.partitionGroup(groupId);
     if (partitionGroupConfiguration == null) {
       LOG.warn("No partition group configuration found for group {}, skipping update", groupId);
       return oldTopology;

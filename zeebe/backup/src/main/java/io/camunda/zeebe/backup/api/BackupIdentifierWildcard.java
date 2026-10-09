@@ -130,15 +130,12 @@ public interface BackupIdentifierWildcard {
 
     record Prefix(String prefix) implements CheckpointPattern {
       public Prefix {
-        if (prefix.isEmpty()) {
+        // Digits only: the prefix is embedded verbatim in asRegex(), so a sign or any other
+        // character Long.valueOf would otherwise accept could produce an invalid or unintended
+        // regex where a store matches the pattern against a manifest path.
+        if (!prefix.matches("\\d+")) {
           throw new IllegalArgumentException(
-              "Expected prefix to be non-empty, but got empty string");
-        }
-        try {
-          Long.valueOf(prefix);
-        } catch (final NumberFormatException e) {
-          throw new IllegalArgumentException(
-              "Expected prefix to be a valid number, but got '%s'".formatted(prefix), e);
+              "Expected prefix to be one or more digits, but got '%s'".formatted(prefix));
         }
       }
 

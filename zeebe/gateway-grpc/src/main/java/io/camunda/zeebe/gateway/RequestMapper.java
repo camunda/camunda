@@ -154,8 +154,8 @@ public final class RequestMapper extends RequestUtil {
       final UpdateJobRetriesRequest grpcRequest) {
     final var brokerRequest =
         new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries());
-    if (grpcRequest.hasLeaseToken()) {
-      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
     }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
@@ -167,8 +167,8 @@ public final class RequestMapper extends RequestUtil {
       final UpdateJobTimeoutRequest grpcRequest) {
     final var brokerRequest =
         new BrokerUpdateJobTimeoutRequest(grpcRequest.getJobKey(), grpcRequest.getTimeout());
-    if (grpcRequest.hasLeaseToken()) {
-      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
     }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
@@ -184,8 +184,8 @@ public final class RequestMapper extends RequestUtil {
     }
     final var brokerRequest =
         new BrokerUpdateJobRequest(grpcRequest.getJobKey(), null, null, grpcRequest.getPriority());
-    if (grpcRequest.hasLeaseToken()) {
-      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
     }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
@@ -199,8 +199,8 @@ public final class RequestMapper extends RequestUtil {
                 grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff())
             .setErrorMessage(grpcRequest.getErrorMessage())
             .setVariables(ensureJsonSet(grpcRequest.getVariables()));
-    if (grpcRequest.hasLeaseToken()) {
-      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
     }
     return brokerRequest;
   }
@@ -210,8 +210,8 @@ public final class RequestMapper extends RequestUtil {
         new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
             .setErrorMessage(grpcRequest.getErrorMessage())
             .setVariables(ensureJsonSet(grpcRequest.getVariables()));
-    if (grpcRequest.hasLeaseToken()) {
-      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
     }
     return brokerRequest;
   }
@@ -225,8 +225,8 @@ public final class RequestMapper extends RequestUtil {
             ensureJsonSet(grpcRequest.getVariables()),
             getJobResultOrDefault(grpcRequest),
             maxVariableNameLength);
-    if (grpcRequest.hasLeaseToken()) {
-      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
     }
     if (grpcRequest.hasBusinessId()) {
       brokerRequest.setBusinessId(ensureRequiredBusinessIdValid(grpcRequest.getBusinessId()));

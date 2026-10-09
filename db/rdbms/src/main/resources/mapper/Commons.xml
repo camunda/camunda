@@ -122,6 +122,9 @@
       <when test="operation.operator.name().equals('EXISTS')">
         ${column} IS NOT NULL
       </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        ${column} IS NULL
+      </when>
       <when test="operation.operator.name().equals('IN')">
         <foreach collection="operation.values" item="value" open="(" separator=" OR " close=")">
           LOWER(${column}) LIKE LOWER(#{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
@@ -170,6 +173,9 @@
       </when>
       <when test="operation.operator.name().equals('EXISTS')">
         ${column} IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        ${column} IS NULL
       </when>
       <when test="operation.operator.name().equals('IN')">
         <foreach collection="operation.values" item="value" open="(" separator=" OR " close=")">
@@ -272,10 +278,17 @@
     </if>
   </sql>
 
+  <!--
+    A `before` page seeks backwards from its cursor, so the statement is ordered against the display
+    direction: only then does the page-size LIMIT keep the rows adjacent to the cursor instead of the
+    first rows of the whole filtered range. The reader reverses the returned rows back into display
+    order (see AbstractEntityReader#restoreDisplayOrder).
+  -->
   <sql id="orderBy">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        ${item.column} ${item.order}
+        <bind name="seekOrder" value="page != null and page.searchBefore ? item.reversedOrder : item.order"/>
+        ${item.column} ${seekOrder}
       </foreach>
     </if>
   </sql>
@@ -288,18 +301,20 @@
   <sql id="orderBy" databaseId="oracle">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        ${item.column} ${item.order}
-        <if test="item.order.name().equals('ASC')">NULLS FIRST</if>
-        <if test="item.order.name().equals('DESC')">NULLS LAST</if>
+        <bind name="seekOrder" value="page != null and page.searchBefore ? item.reversedOrder : item.order"/>
+        ${item.column} ${seekOrder}
+        <if test="seekOrder.name().equals('ASC')">NULLS FIRST</if>
+        <if test="seekOrder.name().equals('DESC')">NULLS LAST</if>
       </foreach>
     </if>
   </sql>
   <sql id="orderBy" databaseId="postgresql">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        ${item.column} ${item.order}
-        <if test="item.order.name().equals('ASC')">NULLS FIRST</if>
-        <if test="item.order.name().equals('DESC')">NULLS LAST</if>
+        <bind name="seekOrder" value="page != null and page.searchBefore ? item.reversedOrder : item.order"/>
+        ${item.column} ${seekOrder}
+        <if test="seekOrder.name().equals('ASC')">NULLS FIRST</if>
+        <if test="seekOrder.name().equals('DESC')">NULLS LAST</if>
       </foreach>
     </if>
   </sql>
@@ -403,6 +418,39 @@
           <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
             #{value}
           </foreach>
+        </if>
+      </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        <if test="operation.type.toString == 'NULL'">
+          VAR_VALUE != 'null'
+        </if>
+        <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
+          VAR_VALUE NOT IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+        </if>
+        <if test="operation.type.toString == 'LONG'">
+          (
+            (LONG_VALUE IS NULL OR LONG_VALUE NOT IN
+            <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+              #{value}
+            </foreach>
+            )
+            AND
+            (DOUBLE_VALUE IS NULL OR DOUBLE_VALUE NOT IN
+            <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+              #{value}
+            </foreach>
+            )
+          )
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          (DOUBLE_VALUE IS NULL OR DOUBLE_VALUE NOT IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+          )
         </if>
       </when>
       <when test="operation.operator.name().equals('LIKE')">

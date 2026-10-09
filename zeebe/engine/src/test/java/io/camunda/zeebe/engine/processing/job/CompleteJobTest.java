@@ -529,12 +529,12 @@ public final class CompleteJobTest {
     final Record<JobBatchRecordValue> batchRecord =
         ENGINE.jobs().withType(jobType).withLease().activate(username);
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = batchRecord.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = batchRecord.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     // when
     final Record<JobRecordValue> completedRecord =
-        ENGINE.job().withKey(jobKey).withLeaseToken(leaseToken).complete();
+        ENGINE.job().withKey(jobKey).withJobLeaseToken(jobLeaseToken).complete();
 
     // then
     Assertions.assertThat(completedRecord)
@@ -549,8 +549,8 @@ public final class CompleteJobTest {
     final Record<JobBatchRecordValue> batchRecord =
         ENGINE.jobs().withType(jobType).withLease().activate(username);
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = batchRecord.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = batchRecord.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     // when
     final Record<JobRecordValue> rejection =
@@ -563,7 +563,7 @@ public final class CompleteJobTest {
     assertThat(rejection.getRejectionReason())
         .describedAs("missing-lease rejection tells the worker a matching lease must be provided")
         .contains("must be provided")
-        .doesNotContain(leaseToken);
+        .doesNotContain(jobLeaseToken);
   }
 
   @Test
@@ -573,15 +573,15 @@ public final class CompleteJobTest {
     final Record<JobBatchRecordValue> batchRecord =
         ENGINE.jobs().withType(jobType).withLease().activate(username);
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = batchRecord.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = batchRecord.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     // when
     final Record<JobRecordValue> rejection =
         ENGINE
             .job()
             .withKey(jobKey)
-            .withLeaseToken("stale-lease-token")
+            .withJobLeaseToken("stale-lease-token")
             .expectRejection()
             .complete();
 
@@ -592,7 +592,7 @@ public final class CompleteJobTest {
     assertThat(rejection.getRejectionReason())
         .describedAs("mismatched-lease rejection tells the worker the lease does not match")
         .contains("does not match")
-        .doesNotContain(leaseToken);
+        .doesNotContain(jobLeaseToken);
   }
 
   @Test
@@ -622,7 +622,7 @@ public final class CompleteJobTest {
 
     // when
     final Record<JobRecordValue> completedRecord =
-        ENGINE.job().withKey(jobKey).withLeaseToken("some-token").complete();
+        ENGINE.job().withKey(jobKey).withJobLeaseToken("some-token").complete();
 
     // then
     Assertions.assertThat(completedRecord)

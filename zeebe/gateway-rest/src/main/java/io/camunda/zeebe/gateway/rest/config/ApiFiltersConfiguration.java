@@ -22,7 +22,6 @@ import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantSwaggerFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Arrays;
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -147,7 +146,7 @@ public class ApiFiltersConfiguration {
     return registration;
   }
 
-  @ConditionalOnExpression("'${camunda.security.multiTenancy.apiEnabled:}' == 'false'")
+  @Conditional(TenantsApiDisabledCondition.class)
   @Bean
   public FilterRegistrationBean<EndpointAccessErrorFilter> disableMultiTenancyApiFilter(
       final ObjectMapper objectMapper) {
@@ -161,6 +160,27 @@ public class ApiFiltersConfiguration {
     registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
+  }
+
+  /**
+   * Matches when the tenants API is explicitly disabled. {@code API_ENABLED_PROPERTY} is camelCase
+   * ({@code multiTenancy.apiEnabled}); querying the {@link ConditionContext#getEnvironment()} with
+   * that exact string only matches a camelCase-configured property, so a kebab-case ({@code
+   * multi-tenancy.api-enabled}) key would leave this filter unregistered and the tenants API
+   * reachable, while everything that reads the bound value treats the API as disabled.
+   * Canonicalizing it first makes the lookup match either spelling, relying on Spring Boot's
+   * relaxed property binding.
+   */
+  static final class TenantsApiDisabledCondition implements Condition {
+
+    private static final String CANONICAL_API_ENABLED_PROPERTY =
+        ConfigurationPropertyName.adapt(API_ENABLED_PROPERTY, '.').toString();
+
+    @Override
+    public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
+      return "false"
+          .equalsIgnoreCase(context.getEnvironment().getProperty(CANONICAL_API_ENABLED_PROPERTY));
+    }
   }
 
   /**

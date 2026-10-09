@@ -24,6 +24,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -350,6 +351,34 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   @Test
+  public void shouldReceiveSnapshotWhenChunkContentIsBackedByDirectBuffer() throws IOException {
+    // given
+    final var persistedSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
+
+    // when the content is only available as a direct, read-only buffer, as it is when it aliases
+    // the bytes of the received message
+    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
+      snapshotChunkReader.setMaximumChunkSize(2);
+
+      while (snapshotChunkReader.hasNext()) {
+        receivedSnapshot.apply(withDirectContentBuffer(snapshotChunkReader.next())).join();
+      }
+    }
+    receivedSnapshot.persist().join();
+
+    // then
+    try (final var files = Files.list(receivedSnapshot.getPath())) {
+      for (final var filePath : files.toList()) {
+        final var fileName = filePath.getFileName().toString();
+        assertThat(filePath)
+            .hasBinaryContent(Files.readAllBytes(persistedSnapshot.getPath().resolve(fileName)));
+      }
+    }
+  }
+
+  @Test
   public void shouldCalculateSizeWhenReceivedMetadataDoesNotContainSize() throws IOException {
     // given
     final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
@@ -423,6 +452,57 @@ public class FileBasedReceivedSnapshotTest {
     }
 
     return receivedSnapshot;
+  }
+
+  private static SnapshotChunk withDirectContentBuffer(final SnapshotChunk chunk) {
+    final var content = chunk.getContent();
+
+    return new SnapshotChunk() {
+      @Override
+      public String getSnapshotId() {
+        return chunk.getSnapshotId();
+      }
+
+      @Override
+      public int getTotalCount() {
+        return chunk.getTotalCount();
+      }
+
+      @Override
+      public String getChunkName() {
+        return chunk.getChunkName();
+      }
+
+      @Override
+      public long getChecksum() {
+        return chunk.getChecksum();
+      }
+
+      @Override
+      public byte[] getContent() {
+        return content;
+      }
+
+      @Override
+      public ByteBuffer getContentBuffer() {
+        return ByteBuffer.allocateDirect(content.length).put(content).flip().asReadOnlyBuffer();
+      }
+
+      @Override
+      public long getFileBlockPosition() {
+        return chunk.getFileBlockPosition();
+      }
+
+      @Override
+      public long getTotalFileSize() {
+        return chunk.getTotalFileSize();
+      }
+
+      @Override
+      public long getContentLength() {
+        return chunk.getContentLength();
+      }
+    };
   }
 
   private long expectedTotalDataSize() {

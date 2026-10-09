@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, within} from 'modules/testing-library';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {Toolbar} from '../index';
 import {MemoryRouter} from 'react-router-dom';
 import {batchModificationStore} from 'modules/stores/batchModification';
@@ -207,7 +207,7 @@ describe('<ProcessOperations />', () => {
       screen.getByRole('button', {
         name: 'Retry',
         description:
-          'No process instances with an incident selected. Please select at least one process instance with an incident to retry.',
+          'No process instances with an incident selected. Select at least one process instance with an incident to retry.',
       }),
     ).toBeDisabled();
   });
@@ -252,6 +252,157 @@ describe('<ProcessOperations />', () => {
         /instances without an incident in your selection will be ignored/i,
       ),
     ).not.toBeInTheDocument();
+  });
+
+  describe('suspended instances', () => {
+    const WrapperWithoutFilters = ({children}: Props) => (
+      <Wrapper initialEntries={['/processes']}>{children}</Wrapper>
+    );
+
+    const selectSuspendedAndIncidentInstances = () => {
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 3,
+        visibleIds: ['1', '2', '3'],
+        visibleRunningIds: ['1'],
+        visibleSuspendedIds: ['2'],
+        visibleFinishedIds: [],
+        visibleIncidentIds: ['1'],
+      });
+      // INCLUDE mode with a partial selection (selecting all would flip to ALL mode)
+      processInstancesSelectionStore.resetState();
+      processInstancesSelectionStore.select('1');
+      processInstancesSelectionStore.select('2');
+    };
+
+    const selectOnlySuspendedInstances = () => {
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 3,
+        visibleIds: ['1', '2', '3'],
+        visibleRunningIds: [],
+        visibleSuspendedIds: ['1', '2'],
+        visibleFinishedIds: [],
+        visibleIncidentIds: [],
+      });
+      processInstancesSelectionStore.resetState();
+      processInstancesSelectionStore.select('1');
+      processInstancesSelectionStore.select('2');
+    };
+
+    it('should enable cancel and disable retry when only suspended instances are selected', () => {
+      selectOnlySuspendedInstances();
+
+      render(<Toolbar selectedInstancesCount={2} />, {
+        wrapper: WrapperWithoutFilters,
+      });
+
+      expect(screen.getByTestId('cancel-batch-operation')).toBeEnabled();
+      expect(
+        screen.getByRole('button', {
+          name: 'Retry',
+          description:
+            'No process instances with an incident selected. Select at least one process instance with an incident to retry.',
+        }),
+      ).toBeDisabled();
+    });
+
+    it('should enable cancel and disable retry when all instances are selected with only the suspended filter', async () => {
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 2,
+        visibleIds: ['1', '2'],
+        visibleRunningIds: [],
+        visibleSuspendedIds: ['1', '2'],
+        visibleFinishedIds: [],
+        visibleIncidentIds: [],
+      });
+      processInstancesSelectionStore.resetState();
+      processInstancesSelectionStore.selectAll();
+
+      const {user} = render(<Toolbar selectedInstancesCount={2} />, {
+        wrapper: ({children}) => (
+          <Wrapper initialEntries={['/processes?suspended=true']}>
+            {children}
+          </Wrapper>
+        ),
+      });
+
+      expect(processInstancesSelectionStore.state.selectionMode).not.toBe(
+        'INCLUDE',
+      );
+      expect(screen.getByTestId('cancel-batch-operation')).toBeEnabled();
+      expect(screen.getByTestId('retry-batch-operation')).toBeDisabled();
+
+      await user.click(screen.getByTestId('cancel-batch-operation'));
+
+      expect(
+        screen.queryByText(
+          /finished instances in your selection will be ignored/i,
+        ),
+      ).not.toBeInTheDocument();
+    });
+
+    it('should send selected suspended instances in the cancel request', async () => {
+      selectSuspendedAndIncidentInstances();
+      const requestBodyResolverFn = vi.fn();
+      mockCancelProcessInstancesBatchOperation().withSuccess(
+        {
+          batchOperationKey: 'cancel-operation-123',
+          batchOperationType: 'CANCEL_PROCESS_INSTANCE',
+        },
+        {requestBodyResolverFn},
+      );
+
+      const {user} = render(<Toolbar selectedInstancesCount={2} />, {
+        wrapper: WrapperWithoutFilters,
+      });
+
+      await user.click(screen.getByTestId('cancel-batch-operation'));
+
+      expect(
+        screen.queryByText(
+          /finished instances in your selection will be ignored/i,
+        ),
+      ).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: /apply/i}));
+
+      await waitFor(() =>
+        expect(requestBodyResolverFn).toHaveBeenCalledWith({
+          filter: {processInstanceKey: {$in: ['1', '2']}},
+        }),
+      );
+    });
+
+    it('should not send selected suspended instances in the retry request', async () => {
+      selectSuspendedAndIncidentInstances();
+      const requestBodyResolverFn = vi.fn();
+      mockResolveProcessInstancesIncidentsBatchOperation().withSuccess(
+        {
+          batchOperationKey: 'resolve-operation-456',
+          batchOperationType: 'RESOLVE_INCIDENT',
+        },
+        {requestBodyResolverFn},
+      );
+
+      const {user} = render(<Toolbar selectedInstancesCount={2} />, {
+        wrapper: WrapperWithoutFilters,
+      });
+
+      await user.click(screen.getByTestId('retry-batch-operation'));
+
+      expect(
+        screen.getByText(
+          /instances without an incident in your selection will be ignored/i,
+        ),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: /apply/i}));
+
+      await waitFor(() =>
+        expect(requestBodyResolverFn).toHaveBeenCalledWith({
+          filter: {processInstanceKey: {$in: ['1']}},
+        }),
+      );
+    });
   });
 
   it('should perform cancel batch operation successfully', async () => {

@@ -30,6 +30,7 @@ import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.authz.EntityType;
@@ -114,6 +115,7 @@ class MeAuthorizationsIT {
   void shouldReturnAuthorizationsGrantedDirectlyViaGroupAndViaRole(
       @Authenticated(ME) final CamundaClient meClient) throws Exception {
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final SearchResponse<Authorization> response =
@@ -159,6 +161,7 @@ class MeAuthorizationsIT {
   void shouldFilterOwnAuthorizationsByResourceType(@Authenticated(ME) final CamundaClient meClient)
       throws Exception {
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final SearchResponse<Authorization> response =

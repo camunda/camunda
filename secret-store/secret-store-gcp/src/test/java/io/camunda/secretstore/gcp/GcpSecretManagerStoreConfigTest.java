@@ -10,6 +10,7 @@ package io.camunda.secretstore.gcp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 class GcpSecretManagerStoreConfigTest {
@@ -77,5 +78,46 @@ class GcpSecretManagerStoreConfigTest {
     // then
     assertThat(config.withoutAuthentication()).isTrue();
     assertThat(config.endpoint()).isEqualTo("localhost:9090");
+  }
+
+  @Test
+  void shouldDefaultCallTimeout() {
+    // when
+    final var config = GcpSecretManagerStoreConfig.of("my-project", "camunda-");
+
+    // then
+    assertThat(config.callTimeout()).isEqualTo(GcpSecretManagerStoreConfig.DEFAULT_CALL_TIMEOUT);
+  }
+
+  @Test
+  void shouldDefaultCallTimeoutInBackwardsCompatibleConstructors() {
+    // when
+    final var fourArg = new GcpSecretManagerStoreConfig("my-project", null, null, null);
+    final var fiveArg =
+        new GcpSecretManagerStoreConfig("my-project", null, "localhost:9090", null, true);
+
+    // then
+    assertThat(fourArg.callTimeout()).isEqualTo(GcpSecretManagerStoreConfig.DEFAULT_CALL_TIMEOUT);
+    assertThat(fiveArg.callTimeout()).isEqualTo(GcpSecretManagerStoreConfig.DEFAULT_CALL_TIMEOUT);
+  }
+
+  @Test
+  void shouldRejectNonPositiveCallTimeout() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                new GcpSecretManagerStoreConfig(
+                    "my-project", null, null, null, false, Duration.ZERO))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("callTimeout");
+  }
+
+  @Test
+  void shouldRejectNullCallTimeout() {
+    // when / then
+    assertThatThrownBy(
+            () -> new GcpSecretManagerStoreConfig("my-project", null, null, null, false, null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("callTimeout");
   }
 }

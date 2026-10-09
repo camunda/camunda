@@ -7,19 +7,28 @@
  */
 package io.camunda.application.commons.search;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
+import io.camunda.application.commons.pt.SchemaInitializationStatus;
+import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -31,8 +40,9 @@ import org.springframework.beans.factory.InitializingBean;
  * the storage-specific parts: what one attempt does, which failures retrying cannot repair, and
  * whether this node holds startup at the gate.
  */
+@NullMarked
 public class SearchEngineSchemaInitializer
-    implements InitializingBean, DisposableBean, SchemaManagerContainer {
+    implements InitializingBean, DisposableBean, SchemaManagerContainer, SchemaInitializer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
   private final Map<String, SearchEngineConfiguration> configs;
@@ -48,18 +58,58 @@ public class SearchEngineSchemaInitializer
    */
   private final Map<String, ClientAdapter> clientsByTenant = new ConcurrentHashMap<>();
 
+  private final Map<String, ReentrantLock> attemptLocks = new ConcurrentHashMap<>();
+
   /**
    * @param holdsStartup whether this node keeps its listening socket closed until a physical tenant
    *     is serviceable. Only a node with an HTTP gateway does; every other node has no consumer
    *     that benefits from waiting. It also decides whether the node can abort: the abort belongs
    *     to the gate, so a node that does not wait at one stays up with every tenant degraded, as it
    *     does today.
+   * @param recovering whether a physical tenant is being recovered. Creating the indices of a
+   *     tenant mid-recovery is not merely redundant work: an Elasticsearch/OpenSearch snapshot
+   *     cannot be restored into indices that already exist, so a node restarted during a restore
+   *     would break the very restore it came back up into. The tenant is left alone until it
+   *     returns to processing mode, and its schema is applied then.
    */
   public SearchEngineSchemaInitializer(
       final Map<String, SearchEngineConfiguration> configsByTenant,
       final Map<String, IndexDescriptors> descriptorsByTenant,
       final MeterRegistry meterRegistry,
-      final boolean holdsStartup) {
+      final boolean holdsStartup,
+      final Predicate<String> recovering) {
+    this(
+        configsByTenant,
+        descriptorsByTenant,
+        meterRegistry,
+        holdsStartup,
+        DeferralCheck.of(
+            tenantId ->
+                recovering.test(tenantId)
+                    ? PerTenantSchemaInitialization.Deferral.DEFERRED
+                    : PerTenantSchemaInitialization.Deferral.NONE));
+  }
+
+  public SearchEngineSchemaInitializer(
+      final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
+      final MeterRegistry meterRegistry,
+      final boolean holdsStartup,
+      final SchemaInitializationRecoveryCheck recoveryCheck) {
+    this(
+        configsByTenant,
+        descriptorsByTenant,
+        meterRegistry,
+        holdsStartup,
+        DeferralCheck.of(recoveryCheck::shouldDefer));
+  }
+
+  private SearchEngineSchemaInitializer(
+      final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
+      final MeterRegistry meterRegistry,
+      final boolean holdsStartup,
+      final DeferralCheck deferral) {
     configs = configsByTenant;
     descriptors = descriptorsByTenant;
     this.meterRegistry = meterRegistry;
@@ -69,7 +119,8 @@ public class SearchEngineSchemaInitializer
             configs.keySet(),
             this::initializeTenant,
             SearchEngineSchemaInitializer::isTerminal,
-            tenantId -> configs.get(tenantId).schemaManager().getRetry());
+            tenantId -> requireNonNull(configs.get(tenantId)).schemaManager().getRetry(),
+            deferral);
   }
 
   @Override
@@ -113,6 +164,17 @@ public class SearchEngineSchemaInitializer
     return initialization.isInitialized(physicalTenantId);
   }
 
+  /** Applies one tenant schema attempt without using the startup retry loop. */
+  @Override
+  public void initializeNow(final String physicalTenantId) {
+    initialization.initializeNow(physicalTenantId);
+  }
+
+  /** Where each physical tenant's schema initialization stands, in configuration order. */
+  public Map<String, SchemaInitializationStatus> statuses() {
+    return initialization.statuses();
+  }
+
   /**
    * Returns true if the schema initialization completed successfully for <em>all</em> physical
    * tenants. This can be used by dependent components to check if they should proceed with their
@@ -136,7 +198,17 @@ public class SearchEngineSchemaInitializer
    */
   @VisibleForTesting
   void initializeTenant(final String physicalTenantId) {
-    final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
+    final var lock = attemptLocks.computeIfAbsent(physicalTenantId, ignored -> new ReentrantLock());
+    lock.lock();
+    try {
+      initializeTenantExclusively(physicalTenantId);
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  private void initializeTenantExclusively(final String physicalTenantId) {
+    final SearchEngineConfiguration configuration = requireNonNull(configs.get(physicalTenantId));
     final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
     if (indexDescriptors == null) {
       // A wiring defect rather than a storage failure: no amount of retrying produces descriptors,
@@ -213,15 +285,17 @@ public class SearchEngineSchemaInitializer
   /**
    * A schema that the running version cannot migrate stays incompatible however often it is
    * retried, so this is terminal too. A missing 'monitor' cluster privilege is also terminal: no
-   * amount of retrying grants the permission. Everything else — an unreachable cluster, a rejected
-   * request, a mapping the current attempt could not validate, a cluster that has not yet turned
-   * yellow/green — is retried, because it may be repaired without restarting the node.
+   * amount of retrying grants the permission. So is a schema the descriptors cannot validate
+   * against the cluster: that diff is deterministic. Everything else — an unreachable cluster, a
+   * rejected request, a cluster that has not yet turned yellow/green — is retried, because it may
+   * be repaired without restarting the node.
    */
   @VisibleForTesting
   static boolean isTerminal(final Throwable failure) {
     return failure instanceof IncompatibleVersionException
         || failure instanceof TerminalSchemaInitializationException
-        || failure instanceof SearchEngineHealthCheckPermissionException;
+        || failure instanceof SearchEngineHealthCheckPermissionException
+        || failure instanceof IndexSchemaValidationException;
   }
 
   /**

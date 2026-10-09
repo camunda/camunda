@@ -9,7 +9,13 @@
 import type {APIRequestContext, APIResponse} from 'playwright-core';
 import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {defaultAssertionOptions} from '../constants';
+import {
+  DEFAULT_PAGE_LIMIT,
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../constants';
+import {activateSingleJob, completeJob} from './job-requestHelpers';
+import {expectNoIncidents} from './incident-requestHelpers';
 import {cancelProcessInstance} from '../zeebeClient';
 import {validateResponse} from 'json-body-assertions';
 import {expectBatchState} from './batch-operation-requestHelpers';
@@ -113,6 +119,12 @@ export async function createCancellationBatch(
     }
   }
 
+  // Wait for *every* instance to be searchable, not just the first one. The
+  // cancellation batch below resolves its items from secondary storage when it
+  // is created, so creating it while the rest are still propagating produces a
+  // batch of only the handful that happened to be indexed. Such a batch reaches
+  // a terminal state almost immediately, which makes the suspend/resume tests
+  // fail with a permanent 404 no matter how many instances they asked for.
   await expect(async () => {
     const searchRes = await request.post(
       buildUrl('/process-instances/search'),
@@ -129,10 +141,12 @@ export async function createCancellationBatch(
     );
     await assertStatusCode(searchRes, 200);
     const json = await searchRes.json();
-    expect((json.page?.totalItems ?? 0) > 0).toBe(true);
+    expect(json.page?.totalItems ?? 0).toBe(processInstanceKeys.length);
   }).toPass({
     ...defaultAssertionOptions,
-    timeout: 60_000,
+    // Propagation scales with the number of instances -- 60s is plenty for the
+    // 3-instance default but not for the 500-instance suspension batches.
+    timeout: Math.max(60_000, processInstanceKeys.length * 300),
   });
 
   const result: Record<string, string> = {};
@@ -340,6 +354,97 @@ async function runBatchAndWaitForCompletion(
   await expectBatchState(request, batchKey, 'COMPLETED');
 }
 
+export type SuspendableProcessInstance = ProcessInstanceItem & {
+  suspendedDate?: string | null;
+};
+
+export async function suspendProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  data?: Record<string, unknown>,
+) {
+  return request.post(
+    buildUrl('/process-instances/{processInstanceKey}/suspension', {
+      processInstanceKey,
+    }),
+    {headers: jsonHeaders(), ...(data !== undefined && {data})},
+  );
+}
+
+export async function resumeProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  data?: Record<string, unknown>,
+) {
+  return request.post(
+    buildUrl('/process-instances/{processInstanceKey}/resumption', {
+      processInstanceKey,
+    }),
+    {headers: jsonHeaders(), ...(data !== undefined && {data})},
+  );
+}
+
+export async function getProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+): Promise<SuspendableProcessInstance> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter: {processInstanceKey}},
+  });
+  await assertStatusCode(res, 200);
+  const items = (await res.json()).items ?? [];
+  expect(items).toHaveLength(1);
+  return items[0] as SuspendableProcessInstance;
+}
+
+export async function expectSuspendedDate(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  present: boolean,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    const {suspendedDate} = await getProcessInstance(
+      request,
+      processInstanceKey,
+    );
+    if (present) {
+      expect(suspendedDate).toBeTruthy();
+    } else {
+      expect(suspendedDate ?? null).toBeNull();
+    }
+  }).toPass(assertionOptions);
+}
+
+/**
+ * The 204 and the exported state are separate guarantees, and only the second is
+ * what an operator or Operate sees — so callers wait for both before asserting
+ * anything that depends on the instance being suspended.
+ */
+export async function suspendAndExpectSuspended(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await assertStatusCode(
+    await suspendProcessInstance(request, processInstanceKey),
+    204,
+  );
+  await expectProcessState(
+    request,
+    processInstanceKey,
+    'SUSPENDED',
+    assertionOptions,
+  );
+  await expectSuspendedDate(
+    request,
+    processInstanceKey,
+    true,
+    assertionOptions,
+  );
+}
+
 export async function expectProcessState(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -383,4 +488,79 @@ export async function clearAllProcessInstances(
       );
     }
   }
+}
+
+export type ProcessInstanceItem = {
+  processInstanceKey: string;
+  processDefinitionKey: string;
+  processDefinitionId: string;
+  state: string;
+};
+
+export async function searchProcessInstances(
+  request: APIRequestContext,
+  filter: Record<string, unknown>,
+): Promise<ProcessInstanceItem[]> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter, page: {limit: DEFAULT_PAGE_LIMIT}},
+  });
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {path: '/process-instances/search', method: 'POST', status: '200'},
+    res,
+  );
+  return ((await res.json()).items ?? []) as ProcessInstanceItem[];
+}
+
+export async function expectProcessInstanceCount(
+  request: APIRequestContext,
+  filter: Record<string, unknown>,
+  expectedCount: number,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    expect(await searchProcessInstances(request, filter)).toHaveLength(
+      expectedCount,
+    );
+  }).toPass(assertionOptions);
+}
+
+/**
+ * Runs the instance's service task and waits for it to finish with no open
+ * incident.
+ *
+ * Every suspend/resume case ends this way: a refusal proves a request was
+ * turned down, not that the instance came through the suspension able to work.
+ */
+export async function completeServiceTaskInstance(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+): Promise<void> {
+  const jobKey = await activateSingleJob(request, jobType, processInstanceKey);
+  await completeJob(request, jobKey);
+  await expectProcessState(
+    request,
+    processInstanceKey,
+    'COMPLETED',
+    extendedAssertionOptions,
+  );
+  await expectNoIncidents(request, processInstanceKey);
+}
+
+/**
+ * Resumes the instance and then runs it to a finish.
+ *
+ * The resume response is not asserted: a caller that already resumed through
+ * the UI answers 409 here. The completion is the assertion — a job cannot be
+ * activated while the instance is still suspended.
+ */
+export async function resumeAndCompleteServiceTask(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+): Promise<void> {
+  await resumeProcessInstance(request, processInstanceKey);
+  await completeServiceTaskInstance(request, jobType, processInstanceKey);
 }

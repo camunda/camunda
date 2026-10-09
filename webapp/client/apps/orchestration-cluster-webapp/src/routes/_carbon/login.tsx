@@ -6,11 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {LoginPage} from '#/shared/pages/LoginPage';
 import {createFileRoute, isRedirect, redirect} from '@tanstack/react-router';
 import {z} from 'zod';
 import {queries} from '#/shared/http/queries';
+import {LegacyLoginPage} from '#/shared/pages/shadcn.components/LegacyLoginPage';
+import {ThemeProvider} from '#/shared/theme/shadcn.components/ThemeProvider';
+import tailwindCss from '#/shared/theme/tailwind.css?url';
 
+// TODO(#64077): temporary DS reskin of the Carbon-hosted /login route, following the
+// same "swap the visual now, cut the route over later" approach already used for the
+// header's C3Navigation. Operate is this route's only remaining consumer (Admin and
+// Tasklist already moved their logins under /_shadcn, and render the packaged
+// `LoginScreen` component via LoginPage.tsx). Operate keeps the hand-composed
+// LegacyLoginPage.tsx markup because it isn't migrated onto the design system yet,
+// so it can't adopt packaged DS components. Once Operate's own route-level shadcn
+// migration lands, delete this bridge and move the route under
+// /_shadcn/_auth/operate/login, rendering LoginPage.tsx like Admin and Tasklist.
 export const Route = createFileRoute('/_carbon/login')({
 	validateSearch: z.object({
 		redirect: z
@@ -29,5 +40,12 @@ export const Route = createFileRoute('/_carbon/login')({
 			// Not authenticated — show login form
 		}
 	},
-	component: LoginPage,
+	head: () => ({
+		links: [{rel: 'stylesheet', href: tailwindCss}],
+	}),
+	component: () => (
+		<ThemeProvider>
+			<LegacyLoginPage title="Operate" />
+		</ThemeProvider>
+	),
 });

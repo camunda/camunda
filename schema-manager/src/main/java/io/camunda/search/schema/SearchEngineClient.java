@@ -12,7 +12,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,7 +47,25 @@ public interface SearchEngineClient extends CloseableSilently {
   Map<String, Set<String>> getAliases(Collection<String> indexNames);
 
   void putSettings(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings);
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings);
+
+  /**
+   * Reads the primary shard count of already-created indices. Shards are immutable after creation,
+   * so this is the only way to tell whether the configured count is actually in effect.
+   *
+   * @param indexNames the exact index names to look up
+   * @return index name to primary shard count; names that do not exist are absent from the result
+   */
+  Map<String, Integer> getNumberOfShards(Collection<String> indexNames);
+
+  /**
+   * Reads the replica count of already-created indices, so a caller can tell whether the configured
+   * value is already in effect before writing it.
+   *
+   * @param indexNames the index names, aliases, or wildcard expressions to look up
+   * @return index name to replica count; names that do not exist are absent from the result
+   */
+  Map<String, Integer> getNumberOfReplicas(Collection<String> indexNames);
 
   void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge);
 

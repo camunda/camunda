@@ -21,11 +21,11 @@ import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -41,6 +41,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class AgentInstanceTenancyIT {
 
   private static final String AGENT_ELEMENT_ID = "agentTenancyElement";
+  private static final String AGENT_JOB_TYPE = "agent-task";
   private static final String PROCESS_ID = "agentTenancyProcess";
   private static final String ADMIN = "admin";
   private static final String USER1 = "user1";
@@ -85,7 +86,7 @@ public class AgentInstanceTenancyIT {
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent()
             .done();
@@ -105,7 +106,7 @@ public class AgentInstanceTenancyIT {
         .newUpdateAgentInstanceCommand(agentInstanceKeyA)
         .elementInstanceKey(elementInstanceKeyA)
         .jobKey(jobKeyA)
-        .jobLease("test-job-lease")
+        .jobLeaseToken(resultA.jobLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -116,7 +117,7 @@ public class AgentInstanceTenancyIT {
                     .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
         .execute();
     // Complete job A so JobCompleteProcessor emits AGENT_HISTORY:COMMIT for its items.
-    adminClient.newCompleteCommand(jobKeyA).execute();
+    adminClient.newCompleteCommand(jobKeyA).withJobLeaseToken(resultA.jobLeaseToken()).execute();
 
     final var resultB = createAgentInstanceWithResult(adminClient, TENANT_B);
     agentInstanceKeyB = resultB.agentInstanceKey();
@@ -128,7 +129,7 @@ public class AgentInstanceTenancyIT {
         .newUpdateAgentInstanceCommand(agentInstanceKeyB)
         .elementInstanceKey(elementInstanceKeyB)
         .jobKey(jobKeyB)
-        .jobLease("test-job-lease")
+        .jobLeaseToken(resultB.jobLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -139,7 +140,7 @@ public class AgentInstanceTenancyIT {
                     .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
         .execute();
     // Complete job B so its history items also transition to COMMITTED.
-    adminClient.newCompleteCommand(jobKeyB).execute();
+    adminClient.newCompleteCommand(jobKeyB).withJobLeaseToken(resultB.jobLeaseToken()).execute();
 
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyA);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyB);
@@ -231,7 +232,7 @@ public class AgentInstanceTenancyIT {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKeyB)
                         .jobKey(1L)
-                        .jobLease("test-job-lease")
+                        .jobLeaseToken("test-job-lease")
                         .history(
                             List.of(
                                 configurationHistoryItem(
@@ -260,7 +261,7 @@ public class AgentInstanceTenancyIT {
                         .newUpdateAgentInstanceCommand(agentInstanceKeyB)
                         .elementInstanceKey(elementInstanceKeyB)
                         .jobKey(1L)
-                        .jobLease("test-job-lease")
+                        .jobLeaseToken("test-job-lease")
                         .execute())
             .actual();
 
@@ -324,7 +325,7 @@ public class AgentInstanceTenancyIT {
                         .newUpdateAgentInstanceCommand(agentInstanceKeyB)
                         .elementInstanceKey(elementInstanceKeyB)
                         .jobKey(jobKeyB)
-                        .jobLease("test-job-lease")
+                        .jobLeaseToken("test-job-lease")
                         .history(
                             List.of(
                                 new AgentInstanceHistoryItem()
@@ -348,7 +349,7 @@ public class AgentInstanceTenancyIT {
   private static void waitForHistoryItemsToBeIndexed(
       final CamundaClient client, final long agentInstanceKey, final int expectedCount) {
     Awaitility.await("agent history indexed for key " + agentInstanceKey)
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -400,10 +401,11 @@ public class AgentInstanceTenancyIT {
     final var activatedJobs =
         client
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .tenantIds(tenantId)
             .timeout(Duration.ofMinutes(5))
+            .withLease(true)
             .send()
             .join()
             .getJobs();
@@ -411,20 +413,22 @@ public class AgentInstanceTenancyIT {
         .as("expected to activate one agent job for process instance %d", processInstanceKey)
         .isNotEmpty();
     final long jobKey = activatedJobs.get(0).getKey();
+    final String jobLeaseToken = activatedJobs.get(0).getJobLeaseToken();
 
     final var agentInstanceKey =
         client
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
-            .jobLease("test-job-lease")
+            .jobLeaseToken(jobLeaseToken)
             .history(
                 List.of(
                     configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))
             .execute()
             .getAgentInstanceKey();
 
-    return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
+    return new AgentInstanceCreationResult(
+        agentInstanceKey, elementInstanceKey, jobKey, jobLeaseToken);
   }
 
   private static AgentInstanceHistoryItem configurationHistoryItem(
@@ -441,5 +445,5 @@ public class AgentInstanceTenancyIT {
   }
 
   private record AgentInstanceCreationResult(
-      long agentInstanceKey, long elementInstanceKey, long jobKey) {}
+      long agentInstanceKey, long elementInstanceKey, long jobKey, String jobLeaseToken) {}
 }

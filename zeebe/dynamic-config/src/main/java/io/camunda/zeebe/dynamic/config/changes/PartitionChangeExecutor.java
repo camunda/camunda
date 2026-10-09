@@ -29,12 +29,16 @@ public interface PartitionChangeExecutor {
    *
    * @param partitionId id of the partition
    * @param membersWithPriority priority of each replicas used of leader election
+   * @param asLearner whether to join as a non-voting learner, to be made a voting member by a
+   *     subsequent {@link #promote(int)}, or directly as a voting member. The latter only serves
+   *     operations that were created before two-phase joins existed.
    * @return a future that completes when the partition is started and joined the replication group
    */
   ActorFuture<Void> join(
       int partitionId,
       Map<MemberId, Integer> membersWithPriority,
-      DynamicPartitionConfig partitionConfig);
+      DynamicPartitionConfig partitionConfig,
+      boolean asLearner);
 
   /**
    * The implementation of this method must remove the member from the replication group of the
@@ -46,6 +50,35 @@ public interface PartitionChangeExecutor {
    * @return a future that completes when the partition is stopped and removed from the replication.
    */
   ActorFuture<Void> leave(int partitionId);
+
+  /**
+   * The implementation of this method must promote this member to a full voting member of the
+   * partition's replication group - the second phase of a two-phase join for a member that joined
+   * as a learner. The partition must already be running on this member. The implementation must be
+   * idempotent: promoting an already promoted member completes successfully, and if the node
+   * restarts after this method was called, but before marking the operation as completed, it will
+   * be retried after the restart. The future fails when the member is not yet caught up on the
+   * partition's log; the caller is expected to retry until the promotion is accepted.
+   *
+   * @param partitionId id of the partition
+   * @return a future that completes when this member is a voting member of the committed
+   *     replication group configuration
+   */
+  ActorFuture<Void> promote(int partitionId);
+
+  /**
+   * The implementation of this method must demote this member to a non-voting member of the
+   * partition's replication group - the first phase of a two-phase leave, so that the subsequent
+   * {@link #leave(int)} commits without the departing member's participation. The implementation
+   * must be idempotent: demoting an already demoted member completes successfully, and if the node
+   * restarts after this method was called, but before marking the operation as completed, it will
+   * be retried after the restart.
+   *
+   * @param partitionId id of the partition
+   * @return a future that completes when this member is a non-voting member of the committed
+   *     replication group configuration
+   */
+  ActorFuture<Void> demote(int partitionId);
 
   /**
    * The implementation of this method must bootstrap the partition with a single replica. The

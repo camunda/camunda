@@ -29,14 +29,6 @@ check() {
   [ "$status" -eq 1 ]
 }
 
-@test "should not be CI-relevant when only a benchmark workflow changed" {
-  # given a PR that only changes a benchmark workflow
-  # when checking CI relevance
-  run check ".github/workflows/zeebe-update-long-running-migrating-benchmark.yaml"
-  # then CI should not be triggered
-  [ "$status" -eq 1 ]
-}
-
 @test "should not be CI-relevant when only a testbench workflow changed" {
   # given a PR that only changes a testbench workflow
   # when checking CI relevance

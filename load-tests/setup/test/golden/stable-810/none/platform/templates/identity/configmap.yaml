@@ -30,8 +30,8 @@ data:
         multi-tenancy: "false"
 
       authProvider:
-        issuer-url: ""
-        backend-url: "http://c8-golden-stable-810-none.keycloak-operator.svc:18080/auth/realms/camunda-platform"
+        issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
+        backend-url: "http://keycloak:18080/auth/realms/camunda-platform"
       component-presets:
         identity:
           apis:
@@ -83,21 +83,27 @@ data:
                   definition: write:*
         webmodeler:
           applications:
-            - name: "Web Modeler"
+            - name: "Hub"
               id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
               type: public
               root-url: "http://localhost:8070"
               redirect-uris:
                 - "/login-callback"
           apis:
-            - name: Web Modeler Internal API
+            - name: Hub Internal API
               audience: "web-modeler-api"
               permissions:
                 - definition: write:*
                   description: "Write permission"
                 - definition: admin:*
                   description: "Admin permission"
-            - name: Web Modeler API
+                - definition: admin:clusters
+                  description: "Cluster management permission"
+                - definition: admin:catalog
+                  description: "Catalog management permission"
+                - definition: admin:bi
+                  description: "Business intelligence management permission"
+            - name: Hub API
               audience: "web-modeler-public-api"
               permissions:
                 - definition: create:*
@@ -119,14 +125,59 @@ data:
             - name: "Web Modeler Admin"
               description: "Grants elevated access to Web Modeler"
               permissions:
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+                - audience: "web-modeler-api"
+                  definition: admin:*
+            - name: "Hub"
+              description: "Grants full access to Hub"
+              permissions:
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+            - name: "Hub Admin"
+              description: "Grants elevated access to Hub"
+              permissions:
                 - audience: "camunda-identity-resource-server"
                   definition: read:users
                 - audience: "web-modeler-api"
                   definition: write:*
                 - audience: "web-modeler-api"
                   definition: admin:*
+            - name: "Analyst"
+              description: "Grants full access to Optimize and to Hub. Additionally, grants management access to Hub's catalog and business intelligence features"
+              permissions:
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+                - audience: "web-modeler-api"
+                  definition: admin:catalog
+                - audience: "web-modeler-api"
+                  definition: admin:bi
+            - name: "Console"
+              description: "Grants access to Hub's cluster management"
+              permissions:
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+                - audience: "web-modeler-api"
+                  definition: admin:clusters
+            - name: "DevOps"
+              description: "Grants access to Hub's cluster management"
+              permissions:
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+                - audience: "web-modeler-api"
+                  definition: admin:clusters
     keycloak:
-      url: "http://c8-golden-stable-810-none.keycloak-operator.svc:18080/auth/"
+      url: "http://keycloak:18080/auth/"
       setup:
         user: "admin"
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
@@ -136,6 +187,15 @@ data:
         webmodeler:
           root-url: "http://localhost:8070"
       clients:
+        - id: leader-balancer
+          name: Leader Balancer
+          secret: ${VALUES_LEADER-BALANCER_CLIENT_SECRET:}
+          redirectUris: 
+          rootUrl: 
+          type: m2m
+          permissions:
+            - definition: read:*
+              resourceServerId: orchestration-api
       users:
         - username: "demo"
           password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}

@@ -7,7 +7,7 @@
  */
 
 import {useInfiniteQuery} from '@tanstack/react-query';
-import type {QueryDecisionInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {QueryDecisionInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
@@ -46,7 +46,7 @@ function useDecisionInstancesSearch(search: DecisionsSearch) {
 			const previousPage = firstPageParam - PAGE_LIMIT;
 			return previousPage < 0 ? undefined : previousPage;
 		},
-		placeholderData: (previousData) => previousData,
+		placeholderData: filter === undefined ? undefined : (previousData) => previousData,
 		maxPages: 2,
 	});
 

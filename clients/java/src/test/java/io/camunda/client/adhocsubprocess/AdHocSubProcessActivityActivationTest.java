@@ -34,10 +34,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -115,6 +117,31 @@ public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
             tuple("G", Collections.singletonMap("G", "gValue")));
   }
 
+  @Test
+  void shouldScopeAddedVariablesToLatestActivatedElement() {
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A")
+        .addVariable("A", "aValue")
+        .activateElement("B")
+        .addVariable("B", "bValue")
+        .activateElement("C", mapOf(entry("C", "cValue")))
+        .addVariable("C2", "cValue2")
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getElements())
+        .extracting(
+            AdHocSubProcessActivateActivityReference::getElementId,
+            AdHocSubProcessActivateActivityReference::getVariables)
+        .containsExactly(
+            tuple("A", Collections.singletonMap("A", "aValue")),
+            tuple("B", Collections.singletonMap("B", "bValue")),
+            tuple("C", mapOf(Arrays.asList(entry("C", "cValue"), entry("C2", "cValue2")))));
+  }
+
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void shouldSetCancelRemainingInstances(final boolean cancelRemainingInstances) {
@@ -141,6 +168,23 @@ public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
     final AdHocSubProcessActivateActivitiesInstruction request =
         gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
     assertThat(request.getCancelRemainingInstances()).isFalse();
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("variableSetters")
+  void shouldRejectSettingVariablesBeforeActivatingElement(
+      final String description,
+      final Consumer<ActivateAdHocSubProcessActivitiesCommandStep2> setVariables) {
+    // given
+    final ActivateAdHocSubProcessActivitiesCommandStep2 command =
+        client
+            .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+            .cancelRemainingInstances(true);
+
+    // when / then
+    assertThatThrownBy(() -> setVariables.accept(command))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("An element must be activated before setting variables");
   }
 
   @ParameterizedTest
@@ -173,6 +217,40 @@ public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
         command -> command.activateElement("A").activateElement("B").activateElement("C"),
         command -> command.activateElements("A", "B", "C"),
         command -> command.activateElements(Arrays.asList("A", "B", "C")));
+  }
+
+  static Stream<Arguments> variableSetters() {
+    return Stream.of(
+        Arguments.of(
+            "variables JSON",
+            (Consumer<ActivateAdHocSubProcessActivitiesCommandStep2>)
+                command -> command.variables("{}")),
+        Arguments.of(
+            "variables stream",
+            (Consumer<ActivateAdHocSubProcessActivitiesCommandStep2>)
+                command ->
+                    command.variables(
+                        new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)))),
+        Arguments.of(
+            "variables map",
+            (Consumer<ActivateAdHocSubProcessActivitiesCommandStep2>)
+                command -> command.variables(Collections.emptyMap())),
+        Arguments.of(
+            "variables object",
+            (Consumer<ActivateAdHocSubProcessActivitiesCommandStep2>)
+                command -> command.variables((Object) Collections.emptyMap())),
+        Arguments.of(
+            "variable",
+            (Consumer<ActivateAdHocSubProcessActivitiesCommandStep2>)
+                command -> command.variable("key", "value")),
+        Arguments.of(
+            "addVariable",
+            (Consumer<ActivateAdHocSubProcessActivitiesCommandStep2>)
+                command -> command.addVariable("key", "value")),
+        Arguments.of(
+            "addVariables",
+            (Consumer<ActivateAdHocSubProcessActivitiesCommandStep2>)
+                command -> command.addVariables(Collections.singletonMap("key", "value"))));
   }
 
   private static Map<String, Object> mapOf(final Entry<String, Object> entry) {

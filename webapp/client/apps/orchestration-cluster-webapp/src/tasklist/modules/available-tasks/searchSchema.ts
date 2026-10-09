@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {userTaskSchema} from '@camunda/camunda-api-zod-schemas/8.10';
+import {userTaskSchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {SearchMiddleware} from '@tanstack/react-router';
 import {z} from 'zod';
 
@@ -98,7 +98,6 @@ export {
 	tasklistIndexSearchDefaults,
 	enforceSortInvariant,
 	stripCustomFilterParams,
-	FILTER_VALUES,
 	isBuiltInFilter,
 	type TasklistIndexSearch,
 	type CustomFilterSearchParams,

@@ -66,18 +66,21 @@ public class GenericProcessExecutionPlanInterpreterES
     this.configurationService = configurationService;
   }
 
-  public ProcessDefinitionReader getProcessDefinitionReader() {
+  @Override
+  protected ProcessDefinitionReader getProcessDefinitionReader() {
     return this.processDefinitionReader;
   }
 
-  public OptimizeElasticsearchClient getEsClient() {
+  @Override
+  protected OptimizeElasticsearchClient getEsClient() {
     return this.esClient;
   }
 
-  public ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
+  protected ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
     return this.queryFilterEnhancer;
   }
 
+  @Override
   public ProcessGroupByInterpreterFacadeES getGroupByInterpreter() {
     return this.groupByInterpreter;
   }

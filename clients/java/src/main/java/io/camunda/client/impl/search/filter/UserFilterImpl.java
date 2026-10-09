@@ -16,9 +16,13 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.UserFilter;
+import io.camunda.client.api.search.filter.UserFilterBase;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.UserFilterMapper;
+import io.camunda.client.protocol.rest.UserFilterFields;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class UserFilterImpl
@@ -67,6 +71,18 @@ public class UserFilterImpl
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setEmail(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public UserFilterBase orFilters(final List<Consumer<UserFilterBase>> fns) {
+    for (final Consumer<UserFilterBase> fn : fns) {
+      final UserFilterImpl orFilter = new UserFilterImpl();
+      fn.accept(orFilter);
+      final UserFilterFields protocolFilterFields =
+          UserFilterMapper.from(orFilter.getSearchRequestProperty());
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 

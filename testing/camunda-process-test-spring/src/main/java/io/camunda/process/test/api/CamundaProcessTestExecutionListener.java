@@ -187,7 +187,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
-    dataSource = new CamundaDataSource(client, testCaseStartTime);
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
+    final int queryPageLimit = runtimeConfiguration.getQueryPageLimit();
+    dataSource = new CamundaDataSource(client, testCaseStartTime, queryPageLimit);
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector

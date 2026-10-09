@@ -120,7 +120,7 @@ func TestCamundaCmdPassword(t *testing.T) {
 	assert.Contains(t, javaOptsEnvVar, "-Dcamunda.security.initialization.users[0].password=changeme")
 }
 
-func TestApplySecondaryStorageDefaultsDetectsRdbms(t *testing.T) {
+func TestApplyConfigSettingsDetectsRdbms(t *testing.T) {
 	t.Helper()
 
 	tempDir := t.TempDir()
@@ -136,13 +136,12 @@ camunda:
 	require.NoError(t, os.WriteFile(filepath.Join(configDir, "application.yaml"), []byte(config), 0o644))
 
 	settings := types.C8RunSettings{}
-	applySecondaryStorageDefaults(tempDir, &settings)
+	applyConfigSettings(tempDir, &settings)
 
 	assert.Equal(t, "rdbms", settings.SecondaryStorageType)
-	assert.Equal(t, filepath.Join(configDir, "application.yaml"), settings.ResolvedConfigPath)
 }
 
-func TestApplySecondaryStorageDefaultsDetectsElasticsearch(t *testing.T) {
+func TestApplyConfigSettingsDetectsElasticsearch(t *testing.T) {
 	tempDir := t.TempDir()
 	configDir := filepath.Join(tempDir, "configuration")
 	require.NoError(t, os.MkdirAll(configDir, 0o755))
@@ -156,10 +155,9 @@ camunda:
 	require.NoError(t, os.WriteFile(filepath.Join(configDir, "application.yaml"), []byte(config), 0o644))
 
 	settings := types.C8RunSettings{}
-	applySecondaryStorageDefaults(tempDir, &settings)
+	applyConfigSettings(tempDir, &settings)
 
 	assert.Equal(t, "elasticsearch", settings.SecondaryStorageType)
-	assert.Equal(t, filepath.Join(configDir, "application.yaml"), settings.ResolvedConfigPath)
 }
 
 func TestValidatePort(t *testing.T) {
@@ -224,4 +222,61 @@ func TestShouldParseDisableConnectorsFlagOnStart(t *testing.T) {
 	// then
 	require.NoError(t, err)
 	assert.True(t, settings.DisableConnectors)
+}
+
+func TestShouldParseConnectorsPortFlagOnStart(t *testing.T) {
+	oldArgs := os.Args
+	t.Cleanup(func() {
+		os.Args = oldArgs
+	})
+
+	os.Args = []string{"c8run", "start"}
+	settings, _, err := getBaseCommandSettings("start")
+	require.NoError(t, err)
+	assert.Equal(t, 8086, settings.ConnectorsPort)
+
+	os.Args = []string{"c8run", "start", "--connectors-port", "9086"}
+	settings, _, err = getBaseCommandSettings("start")
+	require.NoError(t, err)
+	assert.Equal(t, 9086, settings.ConnectorsPort)
+
+	os.Args = []string{"c8run", "start", "--connectors-port", "70000"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.ErrorContains(t, err, "--connectors-port must be between 1 and 65535")
+
+	os.Args = []string{"c8run", "start", "--connectors-port", "9600"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.ErrorContains(t, err, "--connectors-port 9600 is already used by Camunda")
+
+	os.Args = []string{"c8run", "start", "--port", "8086"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.ErrorContains(t, err, "--connectors-port 8086 is already used by Camunda")
+
+	os.Args = []string{"c8run", "start", "--port", "8086", "--disable-connectors"}
+	_, _, err = getBaseCommandSettings("start")
+	assert.NoError(t, err)
+}
+
+func TestShouldParseNoBrowserFlagOnStart(t *testing.T) {
+	// given
+	oldArgs := os.Args
+	os.Args = []string{"c8run", "start", "--no-browser"}
+	t.Cleanup(func() {
+		os.Args = oldArgs
+	})
+
+	// when
+	settings, _, err := getBaseCommandSettings("start")
+
+	// then
+	require.NoError(t, err)
+	assert.True(t, settings.NoBrowser)
+}
+
+func TestDefaultConfigurationUsesSecretEnvironmentOverrides(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("..", "..", "configuration", "application.yaml"))
+	require.NoError(t, err)
+
+	assert.NotContains(t, string(content), "stores:")
+	assert.Contains(t, string(content), "ttl: ${C8RUN_SECRETS_CACHE_TTL:20m}")
 }

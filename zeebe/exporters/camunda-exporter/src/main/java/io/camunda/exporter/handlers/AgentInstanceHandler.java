@@ -9,6 +9,8 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.AGENT_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_CREATION_TOKEN_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_READ_TOKEN_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_INSTANCE_KEYS;
@@ -22,12 +24,13 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROVIDER;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.REASONING_TOKEN_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.SYSTEM_PROMPT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
-import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.VERSION_TAG;
 
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
@@ -112,22 +115,38 @@ public class AgentInstanceHandler
         .setBpmnProcessId(value.getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessDefinitionVersion(value.getProcessDefinitionVersion())
-        .setVersionTag(ExporterUtil.emptyToNull(value.getVersionTag()))
+        .setProcessDefinitionVersionTag(
+            ExporterUtil.emptyToNull(value.getProcessDefinitionVersionTag()))
         .setTenantId(value.getTenantId())
         .setStatus(mapStatus(value.getStatus()))
         .setModel(value.getDefinition().getModel())
         .setProvider(value.getDefinition().getProvider())
-        .setSystemPrompt(AgentContentMapper.mapContent(value.getDefinition().getSystemPrompt()))
         .setMaxTokens(value.getLimits().getMaxTokens())
         .setMaxModelCalls(value.getLimits().getMaxModelCalls())
         .setMaxToolCalls(value.getLimits().getMaxToolCalls())
         .setInputTokens(value.getMetrics().getInputTokens())
         .setOutputTokens(value.getMetrics().getOutputTokens())
+        .setReasoningTokenCount(value.getMetrics().getReasoningTokenCount())
+        .setCacheCreationTokenCount(value.getMetrics().getCacheCreationTokenCount())
+        .setCacheReadTokenCount(value.getMetrics().getCacheReadTokenCount())
         .setModelCalls(value.getMetrics().getModelCalls())
         .setToolCalls(value.getMetrics().getToolCalls())
-        .setTools(mapTools(value.getTools()))
         .setElementInstanceKeys(value.getElementInstanceKeys())
         .setLastUpdatedDate(timestamp);
+
+    // `systemPrompt`/`tools` can carry large payloads; on UPDATED, the engine only includes them
+    // in the event when they actually changed (see AgentHistoryBatchBehavior). Only overwrite the
+    // cached entity's value when this record actually carries it, so an unrelated UPDATED (e.g.
+    // metrics-only) doesn't null out a value set by an earlier record in the same batch cycle.
+    if (intent != AgentInstanceIntent.UPDATED
+        || value.getChangedAttributes().contains(AgentInstanceRecordValue.ATTR_SYSTEM_PROMPT)) {
+      entity.setSystemPrompt(
+          AgentContentMapper.mapContent(value.getDefinition().getSystemPrompt()));
+    }
+    if (intent != AgentInstanceIntent.UPDATED
+        || value.getChangedAttributes().contains(AgentInstanceRecordValue.ATTR_TOOLS)) {
+      entity.setTools(mapTools(value.getTools()));
+    }
 
     if (intent == AgentInstanceIntent.CREATED) {
       entity.setCreationDate(timestamp);
@@ -151,26 +170,41 @@ public class AgentInstanceHandler
     updateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(AGENT_DEFINITION_KEY, entity.getAgentDefinitionKey());
     updateFields.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
-    updateFields.put(VERSION_TAG, entity.getVersionTag());
+    updateFields.put(PROCESS_DEFINITION_VERSION_TAG, entity.getProcessDefinitionVersionTag());
     updateFields.put(ELEMENT_ID, entity.getElementId());
 
     // Runtime fields
     updateFields.put(STATUS, entity.getStatus());
     updateFields.put(MODEL, entity.getModel());
     updateFields.put(PROVIDER, entity.getProvider());
-    updateFields.put(SYSTEM_PROMPT, entity.getSystemPrompt());
+    putIfPresent(updateFields, SYSTEM_PROMPT, entity.getSystemPrompt());
     updateFields.put(MAX_TOKENS, entity.getMaxTokens());
     updateFields.put(MAX_MODEL_CALLS, entity.getMaxModelCalls());
     updateFields.put(MAX_TOOL_CALLS, entity.getMaxToolCalls());
     updateFields.put(INPUT_TOKENS, entity.getInputTokens());
     updateFields.put(OUTPUT_TOKENS, entity.getOutputTokens());
+    updateFields.put(REASONING_TOKEN_COUNT, entity.getReasoningTokenCount());
+    updateFields.put(CACHE_CREATION_TOKEN_COUNT, entity.getCacheCreationTokenCount());
+    updateFields.put(CACHE_READ_TOKEN_COUNT, entity.getCacheReadTokenCount());
     updateFields.put(MODEL_CALLS, entity.getModelCalls());
     updateFields.put(TOOL_CALLS, entity.getToolCalls());
-    updateFields.put(TOOLS, entity.getTools());
+    putIfPresent(updateFields, TOOLS, entity.getTools());
     updateFields.put(ELEMENT_INSTANCE_KEYS, entity.getElementInstanceKeys());
     updateFields.put(LAST_UPDATED_DATE, entity.getLastUpdatedDate());
     updateFields.put(COMPLETION_DATE, entity.getCompletionDate());
     batchRequest.upsert(index, entity.getId(), entity, updateFields);
+  }
+
+  /**
+   * A null value here means the field wasn't touched by any record in this batch cycle (see {@link
+   * #updateEntity}) — omitted rather than written, to avoid overwriting the existing index value
+   * with null.
+   */
+  private static void putIfPresent(
+      final Map<String, Object> updateFields, final String field, final Object value) {
+    if (value != null) {
+      updateFields.put(field, value);
+    }
   }
 
   @Override

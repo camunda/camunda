@@ -8,8 +8,11 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
@@ -231,6 +234,39 @@ public final class JobSuspensionHandoutTest {
         .isTrue();
     final Record<JobBatchRecordValue> reactivated = ENGINE.jobs().withType(jobType).activate();
     assertThat(reactivated.getValue().getJobKeys()).isEmpty();
+    assertThat(
+            ENGINE
+                .getMeterRegistry()
+                .get("zeebe.job.suspension.events.total")
+                .tag("action", "suspended")
+                .counter()
+                .count())
+        .describedAs("job suspended count for the timeout-while-suspended path")
+        .isGreaterThanOrEqualTo(1);
+  }
+
+  @Test
+  public void shouldParkActivatedJobWhenItTimesOutWhileSuspending() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = createInstanceWithJob(jobType);
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withTimeout(10L).activate();
+    assertThat(batch.getValue().getJobKeys()).hasSize(1);
+    final long activatedJobKey = batch.getValue().getJobKeys().getFirst();
+    seedSuspending(processInstanceKey);
+
+    // when
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
+
+    // then - parked in the same batch as the timeout, so it is not handed out again
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.SUSPENDED)
+                .withRecordKey(activatedJobKey)
+                .exists())
+        .isTrue();
+    final Record<JobBatchRecordValue> reactivated = ENGINE.jobs().withType(jobType).activate();
+    assertThat(reactivated.getValue().getJobKeys()).isEmpty();
   }
 
   @Test
@@ -266,5 +302,12 @@ public final class JobSuspensionHandoutTest {
         .withProcessInstanceKey(processInstanceKey)
         .await();
     return processInstanceKey;
+  }
+
+  private static void seedSuspending(final long processInstanceKey) {
+    await().until(ENGINE::hasReachedEnd);
+    ((MutableProcessingState) ENGINE.getProcessingState())
+        .getSuspensionState()
+        .setSuspensionState(processInstanceKey, State.SUSPENDING);
   }
 }

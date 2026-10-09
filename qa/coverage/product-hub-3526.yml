@@ -1,0 +1,359 @@
+# Coverage plan — Suspend and resume process instances
+#
+# Hand-written pilot for camunda/team-test-automation#83 phase 1, and the first
+# plan to span the whole pyramid: service unit tests, acceptance ITs, Operate
+# component tests, and the REST/UI coverage that is still to be written.
+#
+# The prose version of this plan is camunda/camunda#63902. What that issue
+# could not do is let anything check its central judgement — that the engine
+# mechanics are already covered and must not be duplicated at the E2E layer.
+# Here that judgement is structured, so `verifyExclusions()` can confirm the
+# tests it points at still exist.
+
+epic: camunda/product-hub#3526
+qa_issue: camunda/product-hub#3746
+target_repo: camunda/camunda
+target_versions: ["8.10"]
+
+# Suite routing. Everything this epic touches lives in camunda/camunda:
+#   qa/acceptance-tests/                        Java acceptance ITs
+#   qa/c8-orchestration-cluster-e2e-test-suite/ orchestration-cluster E2E *and* API
+#   service/, webapp/client/                    unit and component
+# Nothing routes to camunda/c8-cross-component-e2e-tests, deliberately: suspend
+# and resume spans the engine, the v2 API and Operate, all inside the
+# orchestration cluster. An epic whose flow crossed Console, Modeler and
+# Operate together would add a spec group there with a `repo:` override.
+
+preconditions:
+  environment: self-managed
+  notes: >
+    Basic auth demo:demo, authorizations on, both secondary-storage backends.
+    Smoke gate before each Playwright spec: GET /v2/topology healthy and
+    POST /v2/process-instances/search returning 200. The Java levels need no
+    environment — @MultiDbTest provisions its own broker, and the service and
+    component tests run with no backend at all.
+
+# ---------------------------------------------------------------------------
+# Unit — already covered
+# ---------------------------------------------------------------------------
+
+specs:
+  - path: service/src/test/java/io/camunda/service/ProcessInstanceServiceTest.java
+    framework: junit
+    covers: >
+      Service-layer suspend and resume: that the command is built and
+      dispatched correctly. Knows nothing about the engine or the HTTP layer.
+    cases:
+      - id: SR-U-01
+        traces_to: Suspending an instance dispatches the correct service command
+        surface: unit
+        count: 2
+        status: automated
+
+  - path: webapp/client/apps/orchestration-cluster-webapp/src/operate/pages/Processes/InstancesTable.test.tsx
+    framework: vitest
+    covers: >
+      Operate's instances table against a mocked API: the Suspended filter, the
+      suspended indicator, and that a suspended-only view keeps polling because
+      a resume elsewhere can change it.
+    cases:
+      - id: SR-C-01
+        traces_to: >
+          The Suspended filter and suspended indicator behave correctly in the
+          instances table
+        surface: component
+        count: 8
+        status: automated
+        notes: >
+          Found while writing this plan, not named in #63902. It materially
+          changes what the Operate E2E spec should assert — see SR-UI-04.
+
+# ---------------------------------------------------------------------------
+# Integration — already covered, and the basis for the E2E exclusions
+# ---------------------------------------------------------------------------
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/client/ProcessInstanceSuspendResumeIT.java
+    framework: junit
+    covers: Engine mechanics of the single-instance lifecycle.
+    cases:
+      - id: SR-I-01
+        traces_to: >
+          A suspended instance advances no element, hands out no job, and
+          rejects the requests that would move it
+        surface: integration
+        count: 8
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/client/ProcessInstanceSuspendedSearchIT.java
+    framework: junit
+    cases:
+      - id: SR-I-02
+        traces_to: state and suspendedDate are searchable, filterable and sortable
+        surface: integration
+        count: 4
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/client/ProcessInstanceSuspendResumeTimerIT.java
+    framework: junit
+    covers: >
+      The ADR catch-up contract — a repeating timer due during a suspension
+      fires once for the gap and the cadence re-arms.
+    cases:
+      - id: SR-I-03
+        traces_to: Timers buffered across a suspension fire once on resume
+        surface: integration
+        count: 3
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/client/BatchOperationSuspendResumeProcessInstanceIT.java
+    framework: junit
+    cases:
+      - id: SR-I-04
+        traces_to: Batch suspension and resumption target the right instances
+        surface: integration
+        count: 2
+        status: automated
+
+# ---------------------------------------------------------------------------
+# API — to be written (camunda/camunda#63902, PR #63975 not yet merged)
+# ---------------------------------------------------------------------------
+
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/process-instance/process-instance-suspend-resume-api.spec.ts
+    framework: playwright
+    covers: >
+      The HTTP contract, which the ITs cannot see: status codes, problem
+      details, and the exporter path into secondary storage.
+    cases:
+      - id: SR-API-01
+        traces_to: >
+          Single-instance lifecycle over REST, and the rejection sweep over
+          jobs, user tasks, modification, migration and incident resolution
+          returning 409 naming the suspension
+        surface: api
+        count: 14
+        status: automated
+      - id: SR-API-02
+        traces_to: >
+          Message correlation answers 404 rather than 409, because the
+          suspension closed the subscription
+        surface: api
+        status: automated
+        notes: The documented asymmetry; assert it as designed, not as a bug.
+      - id: SR-API-03
+        traces_to: Variables remain writable as the documented exception
+        surface: api
+        status: automated
+      - id: SR-API-04
+        traces_to: state and suspendedDate filter, range and sort over the v2 API
+        surface: api
+        count: 5
+        status: automated
+        notes: >
+          Deliberately not excluded against SR-I-02. That IT asserts the search
+          behaviour through the Java client; what is untested here is the HTTP
+          filter and sort contract, which is a different surface.
+
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/process-instance/process-instance-suspend-resume-batch-api.spec.ts
+    framework: playwright
+    cases:
+      - id: SR-API-05
+        traces_to: >
+          POST /v2/process-instances/suspension and /resumption — targeting,
+          counters, empty filter, 400s, and cancelling a suspended instance
+        surface: api
+        count: 5
+        status: automated
+
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/process-instance/process-instance-suspend-resume-timer-api.spec.ts
+    framework: playwright
+    cases:
+      - id: SR-API-06
+        traces_to: >
+          Timer due during a suspension, the repeating-timer catch-up contract,
+          and a conditional boundary raised mid-suspension
+        surface: api
+        count: 4
+        status: automated
+
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/process-instance/process-instance-suspend-resume-continuation-api.spec.ts
+    framework: playwright
+    covers: >
+      The complex models — event-based gateway racing a timer against a signal,
+      MI bodies with per-element subscriptions, interrupting and
+      non-interrupting message boundaries, a long suspension spanning a
+      parallel join.
+    cases:
+      - id: SR-API-07
+        traces_to: Suspension and resume across the continuation models
+        surface: api
+        count: 10
+        status: automated
+        notes: Blocked on the model port — see prerequisites below.
+
+# ---------------------------------------------------------------------------
+# UI — to be written
+# ---------------------------------------------------------------------------
+
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/processInstanceSuspendResume.spec.ts
+    framework: playwright
+    cases:
+      - id: SR-UI-01
+        traces_to: >
+          As an operator, I can suspend and resume from the detail view and
+          from the instances table
+        surface: ui
+        count: 2
+        status: automated
+
+      - id: SR-UI-02
+        traces_to: >
+          Suspend and Resume are offered on a call-activity child instance's
+          detail view
+        surface: ui
+        status: automated
+        notes: Regression guard for camunda/camunda#60657, where a guard hid them.
+
+      - id: SR-UI-03
+        traces_to: >
+          While suspended, Actions is reduced to Resume and Cancel, and Retry
+          Incident is disabled
+        surface: ui
+        count: 2
+        status: automated
+
+      - id: SR-UI-04
+        traces_to: The suspended indicator and the Suspended filter render correctly
+        surface: ui
+        status: excluded
+        already_covered_by:
+          surface: component
+          repo: camunda/camunda
+          test: webapp/client/apps/orchestration-cluster-webapp/src/operate/pages/Processes/InstancesTable.test.tsx
+          why: >
+            Eight component tests already cover the Suspended filter, the
+            indicator, and polling a suspended-only view, against a mocked API.
+            What they cannot see is whether the backend actually reports the
+            state — and SR-API-04 covers that. An E2E case here would re-assert
+            a render that is already asserted, through a browser.
+        notes: >
+          REVIEWER: this exclusion is mine, not #63902's — that issue listed the
+          indicator and filter as E2E cases. I think the component tests plus
+          SR-API-04 cover it between them, but the counter-argument is that
+          neither proves the two halves agree in a real browser against a real
+          backend. If you want one thin case asserting exactly that join, say so
+          and this becomes planned with a count of 1.
+
+      - id: SR-UI-05
+        traces_to: >
+          Editing an existing variable while suspended applies the edit after
+          the resume
+        surface: ui
+        status: automated
+        notes: >
+          The per-scope split from camunda/camunda#62745 is not observable in
+          the UI, so that half is asserted over the API.
+
+      - id: SR-UI-06
+        traces_to: The operations log records the suspend and the resume
+        surface: ui
+        status: automated
+
+      - id: SR-UI-07
+        traces_to: Engine mechanics of suspension — no element advances, no job is handed out
+        surface: ui
+        status: excluded
+        already_covered_by:
+          surface: integration
+          repo: camunda/camunda
+          test: io.camunda.it.client.ProcessInstanceSuspendResumeIT
+          why: >
+            Engine mechanics, asserted directly against the broker. What it
+            cannot see is the HTTP contract, the exporter path into secondary
+            storage, and Operate — which SR-API-01 and the UI cases above
+            cover. This is the exclusion that removes roughly fifteen E2E
+            tests from this epic.
+
+      - id: SR-UI-08
+        traces_to: Timer catch-up behaviour across a suspension
+        surface: ui
+        status: excluded
+        already_covered_by:
+          surface: integration
+          repo: camunda/camunda
+          test: io.camunda.it.client.ProcessInstanceSuspendResumeTimerIT
+          why: >
+            The ADR catch-up contract is asserted there against the engine
+            clock. Reproducing it through the UI would be slow and would assert
+            nothing the IT does not.
+
+      - id: SR-UI-09
+        traces_to: Batch suspension targeting and counters
+        surface: ui
+        status: excluded
+        already_covered_by:
+          surface: integration
+          repo: camunda/camunda
+          test: io.camunda.it.client.BatchOperationSuspendResumeProcessInstanceIT
+          why: >
+            Batch targeting is engine behaviour. The UI's own batch-operation
+            affordances are a batch-operations concern, not a suspension one —
+            see out_of_scope.
+
+# ---------------------------------------------------------------------------
+
+out_of_scope:
+  - what: Batch-operation filter semantics, and suspending a batch operation
+    why: >
+      Batch-operations contracts rather than suspension ones. Tracked as
+      camunda/camunda#60684 and camunda/camunda#60874.
+  - what: Suspension during definition deletion
+    why: Already asserted from the draining side in camunda/camunda#62408.
+  - what: Resume-drain at volume
+    why: A benchmark concern — camunda/camunda#61602.
+  - what: The OIDC/M2M scenario
+    why: Authentication coverage, orthogonal to suspension.
+  - what: Tasklist filtering, migration while suspended, cascading to children
+    why: Descoped from 8.10. If they ship, they come back as new cases here.
+
+prerequisites:
+  - what: >
+      Port seven BPMN models into the e2e suite's resources/ — repeating
+      boundary timer, event-based gateway racing timer against signal, order
+      process with message events, multi-instance sub-process, parallel-join
+      long suspension, signal/message parallel wait, signal catch with job.
+    why: >
+      No existing model has a timeCycle, an event-based gateway racing a timer
+      against a signal, or per-element subscriptions on a multi-instance body.
+    blocks: [SR-API-06, SR-API-07]
+    status: done
+    notes: >
+      All seven are in qa/c8-orchestration-cluster-e2e-test-suite/resources/ —
+      repeating_boundary_timer_process, event_based_gateway_timer_signal_process,
+      order_process_with_message_events, multi_instance_sub_process,
+      suspend_resume_parallel_join_process, signal_and_message_parallel_wait_process
+      and signal_catch_with_job_process.
+
+lifecycle:
+  isolation: >
+    Deploy every model through deployWithSubstitutions (utils/zeebeClient.ts),
+    which rewrites process ids, job types, message names and signal names per
+    test and throws on a missing placeholder. Batch filters key on the per-test
+    processDefinitionId, never on businessId, which is unique per instance and
+    cannot group a set. Nothing needs to run serially.
+  completion_rule: >
+    Every case that suspends a real instance ends by resuming it and driving it
+    to a terminal state with zero incidents — a rejection proves a request was
+    refused, not that the instance is still healthy. Assert the transition, not
+    only the end state: a test that waits for a resumed instance to complete
+    passes whether or not it was ever suspended.
+
+    Exceptions, all models that cannot reach a terminal state: contract cases
+    with no instance (404/400/401), cancel-while-suspended where TERMINATED is
+    the assertion, the signal/message asymmetry model whose signal branch never
+    completes once the broadcast is dropped, and the repeating-boundary-timer
+    model, which parks a branch on an event-based gateway whose timer is years
+    out. Those drain the branch the resume revived and assert element states.
+  postconditions: >
+    Every instance cancelled or deleted, suspended ones included. A leak breaks
+    later state and suspendedDate filter assertions, and a leaked order_process
+    instance keeps PT1S timers ticking.

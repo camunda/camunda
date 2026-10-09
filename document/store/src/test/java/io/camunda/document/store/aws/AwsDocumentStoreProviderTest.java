@@ -160,14 +160,14 @@ public class AwsDocumentStoreProviderTest {
           new DocumentStoreConfigurationRecord(
               "aws", AwsDocumentStoreProvider.class, new HashMap<>());
       configuration.properties().put("BUCKET", "bucket");
-      configuration.properties().put("ENDPOINT", "http://minio.local:9000");
+      configuration.properties().put("ENDPOINT", "http://s3.local:9000");
 
       // when
       new AwsDocumentStoreProvider()
           .createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
       // then
-      assertThat(endpointCaptor.getValue()).isEqualTo(URI.create("http://minio.local:9000"));
+      assertThat(endpointCaptor.getValue()).isEqualTo(URI.create("http://s3.local:9000"));
       assertThat(pathStyleCaptor.getValue()).isNull();
     }
   }
@@ -189,7 +189,7 @@ public class AwsDocumentStoreProviderTest {
           new DocumentStoreConfigurationRecord(
               "aws", AwsDocumentStoreProvider.class, new HashMap<>());
       configuration.properties().put("BUCKET", "bucket");
-      configuration.properties().put("ENDPOINT", "http://minio.local:9000");
+      configuration.properties().put("ENDPOINT", "http://s3.local:9000");
       configuration.properties().put("FORCE_PATH_STYLE", "false");
 
       // when

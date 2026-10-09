@@ -79,17 +79,17 @@ class CompleteJobRestTest extends ClientRestTest {
   }
 
   @Test
-  void shouldCompleteJobWithLeaseToken() {
+  void shouldCompleteJobWithJobLeaseToken() {
     // given
     final long jobKey = 12;
-    final String leaseToken = "lease-token";
+    final String jobLeaseToken = "lease-token";
 
     // when
-    client.newCompleteCommand(jobKey).withLeaseToken(leaseToken).send().join();
+    client.newCompleteCommand(jobKey).withJobLeaseToken(jobLeaseToken).send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
-    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+    assertThat(request.getJobLeaseToken()).isEqualTo(jobLeaseToken);
   }
 
   @Test
@@ -131,38 +131,38 @@ class CompleteJobRestTest extends ClientRestTest {
   }
 
   @Test
-  void shouldCarryLeaseTokenFromActivatedJob() {
+  void shouldCarryJobLeaseTokenFromActivatedJob() {
     // given
-    final String leaseToken = "lease-token";
+    final String jobLeaseToken = "lease-token";
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);
     Mockito.when(job.getKey()).thenReturn(12L);
-    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+    Mockito.when(job.getJobLeaseToken()).thenReturn(jobLeaseToken);
 
     // when
     client.newCompleteCommand(job).send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
-    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+    assertThat(request.getJobLeaseToken()).isEqualTo(jobLeaseToken);
   }
 
   @Test
-  void shouldNotCarryLeaseTokenFromActivatedJobWithoutOne() {
+  void shouldNotCarryJobLeaseTokenFromActivatedJobWithoutOne() {
     // given
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);
     Mockito.when(job.getKey()).thenReturn(12L);
-    Mockito.when(job.getLeaseToken()).thenReturn(null);
+    Mockito.when(job.getJobLeaseToken()).thenReturn(null);
 
     // when
     client.newCompleteCommand(job).send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
-    assertThat(request.getLeaseToken()).isNull();
+    assertThat(request.getJobLeaseToken()).isNull();
   }
 
   @Test
-  void shouldNotCarryLeaseTokenByJobKey() {
+  void shouldNotCarryJobLeaseTokenByJobKey() {
     // given
     final long jobKey = 12;
 
@@ -171,7 +171,7 @@ class CompleteJobRestTest extends ClientRestTest {
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
-    assertThat(request.getLeaseToken()).isNull();
+    assertThat(request.getJobLeaseToken()).isNull();
   }
 
   @Test

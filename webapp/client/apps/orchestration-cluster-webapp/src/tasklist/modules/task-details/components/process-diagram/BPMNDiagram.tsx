@@ -9,7 +9,6 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {BpmnJS} from './BpmnJS';
 import {DiagramControls} from './DiagramControls';
-import styles from './BPMNDiagram.module.scss';
 
 type Props = {
 	xml: string;
@@ -55,8 +54,11 @@ const BPMNDiagram: React.FC<Props> = ({xml, highlightActivity}) => {
 	}, [viewer]);
 
 	return (
-		<div className={styles.container} data-testid="diagram">
-			<div className={styles.canvas} ref={diagramCanvasRef} />
+		<div className="bpmn-io-shadcn-theme relative min-h-0 w-full flex-1" data-testid="diagram">
+			<div
+				className="absolute inset-0 [&_.bjs-powered-by]:hidden [&_.djs-container>svg:focus]:outline-none [&_.djs-element.tasklist-highlighted-activity>.djs-outline]:visible [&_.djs-element.tasklist-highlighted-activity>.djs-outline]:[stroke:var(--info-action-default)] [&_.djs-element.tasklist-highlighted-activity>.djs-outline]:[stroke-width:2px]"
+				ref={diagramCanvasRef}
+			/>
 			{isDiagramRendered ? (
 				<DiagramControls onZoomReset={viewer.zoomReset} onZoomIn={viewer.zoomIn} onZoomOut={viewer.zoomOut} />
 			) : null}

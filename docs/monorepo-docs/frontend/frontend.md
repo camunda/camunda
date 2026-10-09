@@ -13,6 +13,7 @@ Anyone working on the orchestration cluster frontend components.
 - **[Project outline](./project-outline.md)** — packages and apps inside `webapp/client` and what each owns.
 - **[Orchestration cluster webapp](./orchestration-cluster-webapp.md)** — deeper intro to the unified app: tech stack, layout, scripts, dev-server proxy, testing.
 - **[Camunda API Zod schemas](./camunda-api-zod-schemas.md)** — installation, usage, and publishing for the `@camunda/camunda-api-zod-schemas` package.
+- **[OC SaaS notifications](https://github.com/camunda/camunda/blob/main/webapp/client/packages/oc-saas-notifications/README.md)** — shared C3-backed notification UI for orchestration cluster webapps.
 - **[Session heartbeat](./session-heartbeat.md)** — activity-driven session keep-alive for the `@camunda/session-heartbeat` package.
 - **[Data loading](./data-loading.md)** — TanStack Query + Zod schema patterns.
 - **[Forms](./forms.md)** — form library choice and shared form-agnostic patterns.
@@ -26,9 +27,9 @@ Anyone working on the orchestration cluster frontend components.
 
 ## Status
 
-No component lives in `webapp/client` yet — we're currently laying the foundations.
-The legacy components still ship from `identity/client`, `tasklist/client`,
-`operate/client`, and `optimize/client`.
+Tasklist lives in the orchestration-cluster webapp at
+`webapp/client/apps/orchestration-cluster-webapp/src/tasklist/`. The remaining legacy frontends
+ship from `identity/client`, `operate/client`, and `optimize/client`.
 
 For the latest status, check the unification epic
 ([camunda/camunda#51305](https://github.com/camunda/camunda/issues/51305)) or the
@@ -45,5 +46,4 @@ Slack channel `#prj-pdp-3456-frontend-application-unification`.
 - [docs.camunda.io](https://docs.camunda.io) — product documentation.
 - Per-app READMEs that still apply until folded in:
   - [`operate/client/README.md`](https://github.com/camunda/camunda/blob/main/operate/client/README.md)
-  - [`tasklist/client/README.md`](https://github.com/camunda/camunda/blob/main/tasklist/client/README.md)
   - [`identity/client/README.md`](https://github.com/camunda/camunda/blob/main/identity/client/README.md)

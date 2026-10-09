@@ -12,6 +12,8 @@ import io.camunda.configuration.Azure;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
+import io.camunda.configuration.EngineMappings.InputMode;
+import io.camunda.configuration.EngineMappings.OutputMode;
 import io.camunda.configuration.EngineStorageOrdinals;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Exporter;
@@ -68,6 +70,8 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
@@ -215,6 +219,7 @@ public class BrokerBasedPropertiesOverride {
     // processing
     override.getProcessing().setMaxCommandsInBatch(processing.getMaxCommandsInBatch());
     override.getProcessing().setMaxRecoverableRetries(processing.getMaxRecoverableRetries());
+    override.getProcessing().setMaxPendingSideEffects(processing.getMaxPendingSideEffects());
     override
         .getProcessing()
         .setScheduledTaskCheckInterval(processing.getScheduledTasksCheckInterval());
@@ -275,14 +280,53 @@ public class BrokerBasedPropertiesOverride {
 
     override
         .getExperimental()
-        .getFeatures()
-        .setEvaluateDuplicateOutputMappingTargetsInOrder(
-            camunda.getProcessing().getEngine().isEvaluateDuplicateOutputMappingTargetsInOrder());
+        .getEngine()
+        .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
 
     override
         .getExperimental()
         .getEngine()
-        .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
+        .getStartup()
+        .setRpaReexportMigrationEnabled(
+            camunda.getProcessing().getEngine().getStartup().isRpaReexportMigrationEnabled());
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setInputMappingMode(
+            toEngineMode(camunda.getProcessing().getEngine().getMappings().getInputMode()));
+
+    final var inputComparisonMode =
+        camunda.getProcessing().getEngine().getMappings().getInputComparisonMode();
+    override
+        .getExperimental()
+        .getEngine()
+        .setInputComparisonMode(
+            inputComparisonMode != null ? toEngineMode(inputComparisonMode) : null);
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setOutputMappingMode(
+            toEngineOutputMode(camunda.getProcessing().getEngine().getMappings().getOutputMode()));
+
+    final var outputComparisonMode =
+        camunda.getProcessing().getEngine().getMappings().getOutputComparisonMode();
+    override
+        .getExperimental()
+        .getEngine()
+        .setOutputComparisonMode(
+            outputComparisonMode != null ? toEngineOutputMode(outputComparisonMode) : null);
+  }
+
+  private static InputMappingMode toEngineMode(final InputMode mode) {
+    return mode == InputMode.COMBINED ? InputMappingMode.COMBINED : InputMappingMode.ORDERED;
+  }
+
+  private static OutputMappingMode toEngineOutputMode(final OutputMode outputMode) {
+    return outputMode == OutputMode.COMBINED
+        ? OutputMappingMode.COMBINED
+        : OutputMappingMode.ORDERED;
   }
 
   private static void populateFromDistribution(
@@ -303,6 +347,7 @@ public class BrokerBasedPropertiesOverride {
     cachesCfg.setDrgCacheCapacity(caches.getDrgCacheCapacity());
     cachesCfg.setFormCacheCapacity(caches.getFormCacheCapacity());
     cachesCfg.setProcessCacheCapacity(caches.getProcessCacheCapacity());
+    cachesCfg.setProcessCacheSoftValues(caches.isProcessCacheSoftValues());
     cachesCfg.setResourceCacheCapacity(caches.getResourceCacheCapacity());
     cachesCfg.setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity());
     cachesCfg.setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl());
@@ -443,6 +488,8 @@ public class BrokerBasedPropertiesOverride {
       final BrokerBasedProperties override, final Camunda camunda) {
     final var grpc = camunda.getApi().getGrpc().withBrokerNetworkProperties();
 
+    override.getGateway().setEnable(camunda.getApi().isEnabled());
+
     final NetworkCfg networkCfg = override.getGateway().getNetwork();
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
@@ -456,6 +503,8 @@ public class BrokerBasedPropertiesOverride {
     final io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg threadsCfg =
         override.getGateway().getThreads();
     threadsCfg.setManagementThreads(grpc.getManagementThreads());
+    threadsCfg.setGrpcMinThreads(grpc.getGrpcMinThreads());
+    threadsCfg.setGrpcMaxThreads(grpc.getGrpcMaxThreads());
   }
 
   private static void populateFromSsl(final BrokerBasedProperties override, final Camunda camunda) {
@@ -571,6 +620,7 @@ public class BrokerBasedPropertiesOverride {
     longPollingCfg.setTimeout(longPolling.getTimeout());
     longPollingCfg.setProbeTimeout(longPolling.getProbeTimeout());
     longPollingCfg.setMinEmptyResponses(longPolling.getMinEmptyResponses());
+    longPollingCfg.setNotificationBatchWindow(longPolling.getNotificationBatchWindow());
   }
 
   private static void populateFromMembership(
@@ -613,6 +663,8 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getRaft()
         .setConfigurationChangeTimeout(raft.getConfigurationChangeTimeout());
+    override.getExperimental().getRaft().setJoinCatchUpTimeout(raft.getJoinCatchUpTimeout());
+    override.getExperimental().getRaft().setPromotionLagThreshold(raft.getPromotionLagThreshold());
     override
         .getExperimental()
         .getRaft()
@@ -695,8 +747,10 @@ public class BrokerBasedPropertiesOverride {
     socketBindingCfg.setHost(internalApi.getHost());
     socketBindingCfg.setPort(internalApi.getPort());
     socketBindingCfg.setAdvertisedHost(internalApi.getAdvertisedHost());
-    Optional.ofNullable(internalApi.getAdvertisedPort())
-        .ifPresent(socketBindingCfg::setAdvertisedPort);
+    final Integer advertisedPort = internalApi.getAdvertisedPort();
+    if (advertisedPort != null) {
+      socketBindingCfg.setAdvertisedPort(advertisedPort);
+    }
   }
 
   private static void populateFromCommandApi(
@@ -705,9 +759,15 @@ public class BrokerBasedPropertiesOverride {
     final CommandApiCfg commandApiCfg = override.getNetwork().getCommandApi();
 
     commandApiCfg.setHost(commandApi.getHost());
-    Optional.ofNullable(commandApi.getPort()).ifPresent(commandApiCfg::setPort);
+    final Integer port = commandApi.getPort();
+    if (port != null) {
+      commandApiCfg.setPort(port);
+    }
     commandApiCfg.setAdvertisedHost(commandApi.getAdvertisedHost());
-    Optional.ofNullable(commandApi.getAdvertisedPort()).ifPresent(commandApiCfg::setAdvertisedPort);
+    final Integer advertisedPort = commandApi.getAdvertisedPort();
+    if (advertisedPort != null) {
+      commandApiCfg.setAdvertisedPort(advertisedPort);
+    }
   }
 
   private static void populateFromRestFilters(
@@ -740,6 +800,8 @@ public class BrokerBasedPropertiesOverride {
 
     final var enableVersionCheck = system.getUpgrade().getEnableVersionCheck();
     override.getExperimental().setVersionCheckRestrictionEnabled(enableVersionCheck);
+
+    override.getExperimental().getQueryApi().setEnabled(system.getLegacyQueryApi().isEnabled());
   }
 
   private static void populateFromData(
@@ -755,7 +817,10 @@ public class BrokerBasedPropertiesOverride {
       final BrokerBasedProperties override, final Camunda camunda) {
     final Export export = camunda.getData().getExport();
     final var exportingCfg =
-        new ExportingCfg(export.getSkipRecords(), export.getDistributionInterval());
+        new ExportingCfg(
+            export.getSkipRecords(),
+            export.getDistributionInterval(),
+            export.getMigrationStatusScanMaxRecords());
     override.setExporting(exportingCfg);
   }
 
@@ -831,6 +896,7 @@ public class BrokerBasedPropertiesOverride {
     brokerRocksDb.setMemoryLimit(unifiedRocksDb.getMemoryLimit());
     brokerRocksDb.setMemoryAllocationStrategy(unifiedRocksDb.getMemoryAllocationStrategy());
     brokerRocksDb.setMemoryFraction(unifiedRocksDb.getMemoryFraction());
+    brokerRocksDb.setMaxMemoryFraction(unifiedRocksDb.getMaxMemoryFraction());
     brokerRocksDb.setMaxOpenFiles(unifiedRocksDb.getMaxOpenFiles());
     brokerRocksDb.setMaxWriteBufferNumber(unifiedRocksDb.getMaxWriteBufferNumber());
     brokerRocksDb.setMinWriteBufferNumberToMerge(unifiedRocksDb.getMinWriteBufferNumberToMerge());
@@ -1258,6 +1324,8 @@ public class BrokerBasedPropertiesOverride {
           }
           override.getExporters().put(name, newCfg);
         });
+
+    ExporterIsolationValidation.validate(override.getExporters(), camunda);
   }
 
   private static void warnReservedRdbmsExporter(final String genericProperty) {
@@ -1360,6 +1428,7 @@ public class BrokerBasedPropertiesOverride {
     secretResolutionCfg.setRetryMaxDelay(engineSecrets.getRetryMaxDelay());
     secretResolutionCfg.setRetryBackoffFactor(engineSecrets.getRetryBackoffFactor());
     secretResolutionCfg.setBatchResolutionLimit(engineSecrets.getBatchResolutionLimit());
+    secretResolutionCfg.setWakeDelay(engineSecrets.getWakeDelay());
   }
 
   private static void populateFromStorageOrdinals(
@@ -1369,7 +1438,6 @@ public class BrokerBasedPropertiesOverride {
     final StorageOrdinalsCfg overrideStorageOrdinals =
         override.getExperimental().getEngine().getStorageOrdinals();
     overrideStorageOrdinals.setEnableArchiverless(camundaStorageOrdinals.isEnableArchiverless());
-    overrideStorageOrdinals.setFixedStorageOrdinalKey(
-        camundaStorageOrdinals.getFixedStorageOrdinalKey());
+    overrideStorageOrdinals.setFixedStorageOrdinal(camundaStorageOrdinals.getFixedStorageOrdinal());
   }
 }

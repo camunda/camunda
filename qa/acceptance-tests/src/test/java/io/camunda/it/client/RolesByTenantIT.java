@@ -19,7 +19,6 @@ import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.net.http.HttpClient;
-import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
@@ -293,7 +292,7 @@ public class RolesByTenantIT {
 
   private void waitForTenantsToBeCreated(final String tenantId) {
     Awaitility.await("should create tenants and import in ES")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

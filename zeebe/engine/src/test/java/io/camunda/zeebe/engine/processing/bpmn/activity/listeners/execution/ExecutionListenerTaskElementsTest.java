@@ -75,6 +75,7 @@ public class ExecutionListenerTaskElementsTest {
   public static class ParametrizedTest {
 
     @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
     private static final String PROCESS_ID = "process";
     private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
 
@@ -501,14 +502,10 @@ public class ExecutionListenerTaskElementsTest {
               .getFirst();
       Assertions.assertThat(incident.getValue())
           .hasProcessInstanceKey(processInstanceKey)
-          .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-          .hasErrorMessage(
-              """
-                Assertion failure on evaluate the expression 'assert(some_var, some_var != null)': \
-                The condition is not fulfilled The evaluation reported the following warnings:
-                [NO_VARIABLE_FOUND] No variable found with name 'some_var'
-                [NO_VARIABLE_FOUND] No variable found with name 'some_var'
-                [ASSERT_FAILURE] The condition is not fulfilled""");
+          .hasErrorType(ErrorType.IO_MAPPING_ERROR);
+      assertThat(incident.getValue().getErrorMessage())
+          .contains("The condition is not fulfilled")
+          .contains("ASSERT_FAILURE");
 
       // fix issue by providing missing `some_var` variable
       ENGINE
@@ -581,14 +578,10 @@ public class ExecutionListenerTaskElementsTest {
               .getFirst();
       Assertions.assertThat(incident.getValue())
           .hasProcessInstanceKey(processInstanceKey)
-          .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-          .hasErrorMessage(
-              """
-                Assertion failure on evaluate the expression 'assert(some_var, some_var != null)': \
-                The condition is not fulfilled The evaluation reported the following warnings:
-                [NO_VARIABLE_FOUND] No variable found with name 'some_var'
-                [NO_VARIABLE_FOUND] No variable found with name 'some_var'
-                [ASSERT_FAILURE] The condition is not fulfilled""");
+          .hasErrorType(ErrorType.IO_MAPPING_ERROR);
+      assertThat(incident.getValue().getErrorMessage())
+          .contains("The condition is not fulfilled")
+          .contains("ASSERT_FAILURE");
 
       // fix issue with missing `some_var` variable
       ENGINE

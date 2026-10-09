@@ -8,7 +8,6 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -78,11 +77,6 @@ public interface ClusterConfigurationCoordinatorSupplier {
   static ClusterConfigurationCoordinatorSupplier from(
       final Supplier<CurrentClusterConfiguration> clusterTopologySupplier) {
     return ofMembers(() -> getActiveMembers(clusterTopologySupplier.get()));
-  }
-
-  static ClusterConfigurationCoordinatorSupplier of(
-      final Supplier<ClusterConfiguration> clusterTopologySupplier) {
-    return ofMembers(() -> clusterTopologySupplier.get().members().keySet());
   }
 
   private static Set<MemberId> getActiveMembers(

@@ -35,6 +35,12 @@ from typing import Any, Iterable, Iterator
 PLATFORM_ERROR_MARKER = "internal error when running your job"
 CANCELLED_MARKER = "The operation was canceled"
 
+#: Conclusions GitHub reports for a job it stopped rather than let fail. A job it
+#: could not place on a runner ends this way, so a scan for failing jobs cannot
+#: see it, yet when nothing else failed it is the only reason the run went red.
+#: These are judged by `noise_verdict` on the same evidence as a failing job.
+STALLED_CONCLUSIONS = ("cancelled", "timed_out")
+
 #: Verdicts that must never reach the fix agent.
 NOISE_PLATFORM = "platform-flake"
 NOISE_CANCELLED = "cancelled"
@@ -52,8 +58,13 @@ def noise_verdict(
     `failure_annotations` are the messages of the job's failure-level check-run
     annotations. A job with no steps *and* no failure annotation carries no
     evidence at all — observed on `Create cluster generation on INT`.
+
+    A stalled conclusion is judged on the same evidence rather than waved
+    through: a job cancelled part-way through a step says so in its annotation
+    and is noise, while one GitHub could not place on a runner says *that*, which
+    is a diagnosis and not noise.
     """
-    if conclusion != "failure":
+    if conclusion != "failure" and conclusion not in STALLED_CONCLUSIONS:
         return None
 
     messages = [m for m in failure_annotations if m]
@@ -99,7 +110,6 @@ def normalise_base_ref(ref: str) -> str:
 
 SURFACE_SM_E2E = "sm-smoke-e2e"
 SURFACE_SAAS_E2E = "saas-smoke-e2e"
-SURFACE_SAAS_PROVISIONING = "saas-provisioning"
 SURFACE_SAAS_CI = "saas-ci"
 SURFACE_SAAS_INFRA = "saas-infra"
 SURFACE_HELM_INSTALL = "helm-install"
@@ -126,6 +136,8 @@ IGNORED_JOB_PREFIXES = ("Observe Helm chart Integration Tests status",)
 #: name (camunda-platform-helm#6841) — a plain prefix can't skip over that.
 _SURFACE_PREFIXES: tuple[tuple[str | re.Pattern[str], str], ...] = (
     (re.compile(r"^Playwright e2e .*after install\b"), SURFACE_SM_E2E),
+    # preview-env-smoke-test.yml's rendered `Run <version> Smoke Tests`; see README.md.
+    (re.compile(r"^Run \d+\.\d+ Smoke Tests$"), SURFACE_SM_E2E),
     ("Trigger SaaS E2E tests", SURFACE_SAAS_E2E),
     ("install for install on", SURFACE_HELM_INSTALL),
     ("Cleanup - install on", SURFACE_HELM_CLEANUP),
@@ -170,6 +182,39 @@ def surface_for_job(job_name: str) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# preview-env-smoke-test.yml: one run, four branches
+# ---------------------------------------------------------------------------
+
+_PREVIEW_ENV_JOB_RE = re.compile(r"^Run (?P<version>\d+\.\d+) Smoke Tests$")
+
+#: Sentinel base ref for the 8.11 preview-env leg, kept out of
+#: plan.SUPPORTED_BASE_REFS to avoid colliding with the main pipeline's own
+#: dispatch key; see README.md.
+PREVIEW_ENV_MAIN_REF = "main:preview-8.11"
+
+PREVIEW_ENV_BASE_REFS = {
+    "8.8": "stable/8.8",
+    "8.9": "stable/8.9",
+    "8.10": "stable/8.10",
+    "8.11": PREVIEW_ENV_MAIN_REF,
+}
+
+
+def preview_env_version(job_name: str) -> str | None:
+    """Return the minor version a preview-env smoke-test job ran, if it is one."""
+    match = _PREVIEW_ENV_JOB_RE.match(job_leaf_name(job_name))
+    return match.group("version") if match else None
+
+
+def base_ref_for_job(job_name: str, default: str) -> str:
+    """Base ref a failing job belongs to, which is not always the run's own ref; see README.md."""
+    version = preview_env_version(job_name)
+    if version is None:
+        return default
+    return PREVIEW_ENV_BASE_REFS.get(version, PREVIEW_ENV_MAIN_REF)
+
+
+# ---------------------------------------------------------------------------
 # Playwright report parsing
 # ---------------------------------------------------------------------------
 
@@ -204,6 +249,7 @@ class SpecCounts:
     total: int = 0
     failed: int = 0
     flaky: int = 0
+    #: Reported in the triage log only. Not a gate: see saas_surface_from_counts.
     setup_failed: int = 0
 
 
@@ -239,13 +285,29 @@ def saas_surface_from_counts(counts: SpecCounts, *, has_artifacts: bool) -> str:
     stays `saas-infra`: there the downstream died before Playwright produced any
     evidence, and the failing job is as likely to be the provisioning API as
     anything in the repository.
+
+    A run whose failures all sit in `test-setup.spec.ts` used to classify as
+    `saas-provisioning` and was never dispatched. That rule read the file name as
+    proof of an environment problem, and the file does not carry that meaning: it
+    mixes cluster/org creation with ordinary Playwright UI flows ("Create Project
+    Folder for User N" drives `ModelerHomePage.createCrossComponentProjectFolder`).
+    It silently dropped real test failures — on downstream run 33483343722 the
+    trace shows a healthy app with the button on screen, failing on a retry where
+    the project already existed.
+
+    Nothing in the report separates those two. The same locator error was an
+    outage on run 33463316996 (a Modeler `/api/internal/login` 500 left the page on
+    its loading spinner) and a test bug on 33483343722, and the failure ratio does
+    not split them either: 20% of specs failed in the outage against 3.6% in the
+    test bug, with the genuine cluster-health runs spanning both. The fix agent
+    reads the trace and does tell them apart, in 7-14 minutes, so the judgement is
+    left to it rather than guessed at here. `setup_failed` is still counted, for
+    the triage log only.
     """
     if not has_artifacts or counts.total == 0:
         return SURFACE_SAAS_INFRA
     if counts.failed == 0:
         return SURFACE_SAAS_CI
-    if counts.setup_failed == counts.failed:
-        return SURFACE_SAAS_PROVISIONING
     return SURFACE_SAAS_E2E
 
 
@@ -381,7 +443,11 @@ class FailingSpec:
 
 
 def ci_job_spec(
-    job_name: str, *, workflow_path: str, failing_steps: Iterable[str]
+    job_name: str,
+    *,
+    workflow_path: str,
+    failing_steps: Iterable[str],
+    conclusion: str = "failure",
 ) -> FailingSpec:
     """Represent a failing CI job as a spec, for a run that had no failing test.
 
@@ -389,16 +455,21 @@ def ci_job_spec(
     one: `file` is the workflow that owns the job, which is the file the fix has
     to change. `statuses` is a single failed attempt, so `deterministic` is True
     and a CI bug is never mistaken for flakiness and "fixed" with a longer wait.
+
+    `conclusion` names how the job ended, so a stalled job says so instead of
+    claiming a failure it never reported.
     """
     steps = [s for s in failing_steps if s]
+    if steps:
+        error = f"CI job failed at step: {', '.join(steps)}"
+    elif conclusion in STALLED_CONCLUSIONS:
+        error = f"CI job ended as {conclusion} without recording a failing step"
+    else:
+        error = "CI job failed with no failing step recorded"
     return FailingSpec(
         file=workflow_path,
         test_name=job_leaf_name(job_name),
-        error=(
-            f"CI job failed at step: {', '.join(steps)}"
-            if steps
-            else "CI job failed with no failing step recorded"
-        ),
+        error=error,
         attempts=1,
         statuses=["failed"],
     )
@@ -483,6 +554,28 @@ def backported_pr_number(title: str | None) -> int | None:
 
 @dataclass(frozen=True)
 class Blame:
+    """Attribution for the run's head commit -- a lead, not a verdict.
+
+    Three cases, each carrying less certainty than the last, and none of
+    them a confirmed cause:
+
+    * The common case (`via="pr-author"`): the PR whose `merge_commit_sha`
+      equals the run's head commit -- a trigger, not a suspect. The real
+      cause can predate it by days and simply surface on whichever run
+      comes next.
+    * A bot-authored merge (`via="backport-original"`): `author`/`pr_number`
+      instead name the ORIGINAL PR a backport title cites -- a different PR
+      than the one that actually produced the head commit being tested.
+    * No PR's `merge_commit_sha` matched at all: `originating_pr` falls back
+      to the first candidate in the list, which may be an open or ancestor
+      PR with no established relationship to the head commit whatsoever.
+
+    Consumers (the fix-agent's FIX-AGENT.md "Zeroth check") are responsible
+    for verifying relevance before treating any of these as a cause or
+    naming it publicly -- skipping that check is exactly what pinged an
+    uninvolved author once already.
+    """
+
     #: Login to request review from; None when only a bot could be identified.
     reviewer: str | None
     #: Login to name in the PR body, even when it is a bot.

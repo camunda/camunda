@@ -17,9 +17,9 @@ import io.camunda.configuration.ZoneAware;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ClusterZoneMigrationRequest;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PartitionState;
+import io.camunda.zeebe.management.cluster.PartitioningConfig;
+import io.camunda.zeebe.management.cluster.PartitioningConfig.SchemeEnum;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -99,8 +99,7 @@ final class NonZoneAwareClusterEndpointIT extends ClusterEndpointIT {
               () -> {
                 final var topology = actuator.getTopology();
                 assertThat(topology.getPendingChange()).isNull();
-                assertThat(topology.getPartitionDistribution())
-                    .isEqualTo(scenario.expectedDistribution());
+                assertThat(topology.getPartitioning()).isEqualTo(scenario.expectedDistribution());
               });
 
       // start brokers in the first migration stage
@@ -129,8 +128,7 @@ final class NonZoneAwareClusterEndpointIT extends ClusterEndpointIT {
               () -> {
                 final var topology = actuator.getTopology();
                 assertThat(topology.getPendingChange()).isNull();
-                assertThat(topology.getPartitionDistribution())
-                    .isEqualTo(scenario.expectedDistribution());
+                assertThat(topology.getPartitioning()).isEqualTo(scenario.expectedDistribution());
                 assertThat(topology.getBrokers())
                     .extracting(BrokerState::getId)
                     .allMatch(BrokerId.String.class::isInstance)
@@ -160,8 +158,8 @@ final class NonZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                 3,
                 List.of(new Zone(ZONE_A, 3, 3, 100)),
                 List.of(ZONE_A),
-                new PartitionDistributionConfig()
-                    .type(TypeEnum.ZONE_AWARE)
+                new PartitioningConfig()
+                    .scheme(SchemeEnum.ZONE_AWARE)
                     .zones(List.of(new ZoneSpec().name(ZONE_A).numberOfReplicas(3).priority(100))),
                 singleRegionBrokerIds,
                 singleRegionBrokerIds,
@@ -175,8 +173,8 @@ final class NonZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                 4,
                 List.of(new Zone(ZONE_A, 2, 2, 100), new Zone(ZONE_B, 2, 2, 100)),
                 List.of(ZONE_B, ZONE_A),
-                new PartitionDistributionConfig()
-                    .type(TypeEnum.ZONE_AWARE)
+                new PartitioningConfig()
+                    .scheme(SchemeEnum.ZONE_AWARE)
                     .zones(
                         List.of(
                             new ZoneSpec().name(ZONE_A).numberOfReplicas(2).priority(100),
@@ -272,7 +270,7 @@ final class NonZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       int replicationFactor,
       List<Zone> targetZones,
       List<String> migrationZones,
-      PartitionDistributionConfig expectedDistribution,
+      PartitioningConfig expectedDistribution,
       List<MemberId> expectedBrokerIds,
       List<MemberId> initialReplacementBrokerIds,
       List<MemberId> delayedReplacementBrokerIds,

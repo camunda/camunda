@@ -44,9 +44,10 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
         )}
         parse={(value) => value}
       >
-        {({input}) => (
+        {({input, meta}) => (
           <InlineJsonEditor
             {...input}
+            isModified={meta.modified}
             label="Value"
             data-testid="new-variable-value"
             id={valueFieldName}

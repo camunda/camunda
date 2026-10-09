@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
@@ -44,11 +46,15 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   private final AgentInstanceBehavior agentInstanceBehavior;
   private final BpmnProcessDeletionBehavior processDeletionBehavior;
   private final AsyncRequestState asyncRequestState;
+  private final SuspensionState suspensionState;
+  private final SuspensionMetrics suspensionMetrics;
 
   public ProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
-      final AsyncRequestState asyncRequestState) {
+      final AsyncRequestState asyncRequestState,
+      final SuspensionState suspensionState,
+      final SuspensionMetrics suspensionMetrics) {
     stateBehavior = bpmnBehaviors.stateBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
@@ -60,6 +66,8 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     agentInstanceBehavior = bpmnBehaviors.agentInstanceBehavior();
     processDeletionBehavior = bpmnBehaviors.processDeletionBehavior();
     this.asyncRequestState = asyncRequestState;
+    this.suspensionState = suspensionState;
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -94,10 +102,18 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);
 
-    return transitionTo(
-        element,
-        context,
-        completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
+    final var result =
+        transitionTo(
+            element,
+            context,
+            completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
+
+    // a completing instance may have been RESUMING (a buffered command drained straight to
+    // completion, superseding the RESUME_JOBS/COMPLETE_RESUMING chain — see those processors'
+    // lifecycle-ending rejection) without ever reaching the normal resume finish line; discard the
+    // sample so it doesn't stay in the map forever
+    suspensionMetrics.cancelResumeDuration(context.getElementInstanceKey());
+    return result;
   }
 
   @Override
@@ -118,6 +134,12 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   @Override
   public void finalizeTermination(
       final ExecutableProcess element, final BpmnElementContext terminationContext) {
+    final long piKey = terminationContext.getElementInstanceKey();
+
+    // capture suspension state before finalization — the applier clears it
+    final boolean wasSuspended = suspensionState.getSuspensionState(piKey) != null;
+    final int droppedCommands = wasSuspended ? suspensionState.countBufferedCommands(piKey) : 0;
+
     agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, terminationContext);
     transitionTo(
         element,
@@ -126,6 +148,12 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
             Either.right(
                 stateTransitionBehavior.transitionToTerminated(
                     context, element.getEventType(), getAsyncRequest(context))));
+
+    // metrics after all writes
+    if (droppedCommands > 0) {
+      suspensionMetrics.commandsDropped(droppedCommands);
+    }
+    suspensionMetrics.cancelResumeDuration(piKey);
   }
 
   private AsyncRequest getAsyncRequest(final BpmnElementContext context) {

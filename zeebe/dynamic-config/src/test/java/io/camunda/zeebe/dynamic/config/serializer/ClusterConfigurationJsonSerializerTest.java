@@ -191,7 +191,7 @@ final class ClusterConfigurationJsonSerializerTest {
                     TIMESTAMP,
                     OperationGraph.sequential(
                         List.of(
-                            new PartitionJoinOperation(MEMBER_1, 2, 1),
+                            new PartitionJoinOperation(MEMBER_1, 2, 1, true),
                             new PartitionLeaveOperation(MEMBER_0, 1, 1))),
                     new TreeMap<>())),
             Optional.empty(),

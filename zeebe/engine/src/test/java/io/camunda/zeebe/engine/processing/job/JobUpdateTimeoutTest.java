@@ -308,7 +308,7 @@ public class JobUpdateTimeoutTest {
             .activate(username);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = job.getLeaseToken();
+    final String jobLeaseToken = job.getJobLeaseToken();
     final long timeout = Duration.ofMinutes(10).toMillis();
 
     // when
@@ -317,7 +317,7 @@ public class JobUpdateTimeoutTest {
             .job()
             .withKey(jobKey)
             .withTimeout(timeout)
-            .withLeaseToken(leaseToken)
+            .withJobLeaseToken(jobLeaseToken)
             .updateTimeout();
 
     // then
@@ -337,7 +337,7 @@ public class JobUpdateTimeoutTest {
             .activate(username);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = job.getLeaseToken();
+    final String jobLeaseToken = job.getJobLeaseToken();
     final long timeout = Duration.ofMinutes(10).toMillis();
 
     // when
@@ -346,7 +346,7 @@ public class JobUpdateTimeoutTest {
             .job()
             .withKey(jobKey)
             .withTimeout(timeout)
-            .withLeaseToken("stale-lease-token")
+            .withJobLeaseToken("stale-lease-token")
             .expectRejection()
             .updateTimeout();
 
@@ -355,7 +355,7 @@ public class JobUpdateTimeoutTest {
     assertThat(rejection.getRejectionReason())
         .describedAs("rejection reason should explain the mismatch without echoing the token")
         .contains("does not match")
-        .doesNotContain(leaseToken);
+        .doesNotContain(jobLeaseToken);
   }
 
   @Test
@@ -378,7 +378,7 @@ public class JobUpdateTimeoutTest {
             .job()
             .withKey(jobKey)
             .withTimeout(timeout)
-            .withLeaseToken("some-token")
+            .withJobLeaseToken("some-token")
             .updateTimeout();
 
     // then

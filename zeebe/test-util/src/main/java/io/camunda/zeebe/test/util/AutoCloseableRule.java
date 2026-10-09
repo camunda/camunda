@@ -27,7 +27,11 @@ public final class AutoCloseableRule extends ExternalResource {
   }
 
   @Override
-  public void after() {
+  protected void after() {
     dynAutoCloseable.close();
+  }
+
+  public void close() {
+    after();
   }
 }

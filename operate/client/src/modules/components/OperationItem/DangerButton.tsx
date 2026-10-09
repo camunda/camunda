@@ -7,19 +7,24 @@
  */
 
 import {Button, type ButtonSize} from '@carbon/react';
+import {TrashCan, type CarbonIconType} from '@carbon/react/icons';
 
 type ItemProps = {
   type: 'DELETE';
   onClick: () => void;
   title: string;
   disabled?: boolean;
+  isIconOnly?: boolean;
   size?: ButtonSize;
 };
 
 const TYPE_DETAILS: Readonly<
-  Record<ItemProps['type'], {testId: string; label?: string}>
+  Record<
+    ItemProps['type'],
+    {icon: CarbonIconType; label: string; testId: string}
+  >
 > = {
-  DELETE: {testId: 'delete-operation', label: 'Delete'},
+  DELETE: {icon: TrashCan, label: 'Delete', testId: 'delete-operation'},
 };
 
 const DangerButton: React.FC<ItemProps> = ({
@@ -27,23 +32,34 @@ const DangerButton: React.FC<ItemProps> = ({
   onClick,
   type,
   disabled,
+  isIconOnly = false,
   size,
 }) => {
-  const {testId, label} = TYPE_DETAILS[type];
+  const {icon, label, testId} = TYPE_DETAILS[type];
+  const buttonProps = {
+    kind: 'danger--ghost',
+    iconDescription: title,
+    onClick,
+    disabled,
+    'data-testid': testId,
+    'aria-label': title,
+    size,
+  } satisfies React.ComponentProps<typeof Button>;
+
   return (
     <li>
-      <Button
-        kind="danger--ghost"
-        iconDescription={title}
-        onClick={onClick}
-        disabled={disabled}
-        data-testid={testId}
-        title={title}
-        aria-label={title}
-        size={size}
-      >
-        {label}
-      </Button>
+      {isIconOnly ? (
+        <Button
+          {...buttonProps}
+          renderIcon={icon}
+          tooltipPosition="left"
+          hasIconOnly
+        />
+      ) : (
+        <Button {...buttonProps} title={title}>
+          {label}
+        </Button>
+      )}
     </li>
   );
 };

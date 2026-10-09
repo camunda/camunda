@@ -17,11 +17,11 @@ package io.camunda.client.spring.test.util;
 
 import static java.util.function.Predicate.not;
 
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.annotation.Variable;
 import io.camunda.client.annotation.VariablesAsType;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.exception.CamundaError;
 import java.io.BufferedWriter;
 import java.io.File;

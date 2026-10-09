@@ -162,6 +162,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
                 onValueChange={(value) =>
                   field.onChange(syncAllEventType(value, field.value))
                 }
+                aria-invalid={!!fieldState.error}
               />
             )}
           </FormField>

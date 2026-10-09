@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
@@ -112,10 +113,8 @@ class SchemaUpdateIT {
       config.schemaManager().getRetry().setMaxRetries(numberOfThreads);
       config.schemaManager().getRetry().setMaxRetryDelay(Duration.ofSeconds(1));
     }
-    config
-        .schemaManager()
-        .setVersionCheckRestrictionEnabled(
-            false); // skip version check for the test to allow 8.7.0-SNAPSHOT to 8.8.0-SNAPSHOT
+    // skip version check for the test to allow 8.7.0-SNAPSHOT to 8.8.0-SNAPSHOT
+    config.schemaManager().setVersionCheckRestrictionEnabled(false);
     final var indexDescriptors =
         new IndexDescriptors(
             config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
@@ -151,9 +150,10 @@ class SchemaUpdateIT {
                                 }
                               }))
               .toList();
-      for (final var thread : threads) {
-        thread.join(Duration.ofSeconds(10));
-      }
+
+      Awaitility.await("schema update threads to finish")
+          .timeout(Duration.ofSeconds(60))
+          .until(() -> threads.stream().noneMatch(Thread::isAlive));
 
       // then
       assertThat(exceptions).isEmpty();
@@ -207,19 +207,23 @@ class SchemaUpdateIT {
       final List<IndexTemplateDescriptor> indexTemplateDescriptors) {
     final int archivePeriodInDays = 15;
     final LocalDate today = LocalDate.now();
-    for (final var indexTemplate : indexTemplateDescriptors) {
-      IntStream.range(0, archivePeriodInDays)
-          .mapToObj(i -> today.minusDays(i).format(DateTimeFormatter.ISO_DATE))
-          .map(date -> indexTemplate.getIndexPattern().replace("*", date))
-          .forEach(
-              indexName -> {
-                try {
-                  searchClientAdapter.createIndex(indexName, config.index().getNumberOfReplicas());
-                } catch (final IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
-    }
-    return archivePeriodInDays * indexTemplateDescriptors.size();
+    final var templatesWithDatedIndices =
+        indexTemplateDescriptors.stream().filter(descriptor -> !descriptor.allowMissing()).toList();
+    templatesWithDatedIndices.forEach(
+        indexTemplate -> {
+          IntStream.range(0, archivePeriodInDays)
+              .mapToObj(i -> today.minusDays(i).format(DateTimeFormatter.ISO_DATE))
+              .map(date -> indexTemplate.getIndexPattern().replace("*", date))
+              .forEach(
+                  indexName -> {
+                    try {
+                      searchClientAdapter.createIndex(
+                          indexName, config.index().getNumberOfReplicas());
+                    } catch (final IOException e) {
+                      throw new RuntimeException(e);
+                    }
+                  });
+        });
+    return archivePeriodInDays * templatesWithDatedIndices.size();
   }
 }

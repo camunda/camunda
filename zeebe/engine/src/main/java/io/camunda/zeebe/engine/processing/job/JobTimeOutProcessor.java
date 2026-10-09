@@ -9,10 +9,11 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspensionJobBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -34,10 +35,12 @@ public final class JobTimeOutProcessor
       "Expected to time out activated job with key '%d', but %s";
   private final JobState jobState;
   private final SuspensionState suspensionState;
+  private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final SuspensionMetrics suspensionMetrics;
   private final InstantSource clock;
 
   public JobTimeOutProcessor(
@@ -45,13 +48,18 @@ public final class JobTimeOutProcessor
       final Writers writers,
       final JobProcessingMetrics jobMetrics,
       final BpmnJobActivationBehavior jobActivationBehavior,
+      final SuspensionMetrics suspensionMetrics,
       final InstantSource clock) {
     jobState = state.getJobState();
     suspensionState = state.getSuspensionState();
+    suspensionJobBehavior =
+        new ProcessInstanceSuspensionJobBehavior(
+            state.getElementInstanceState(), state.getJobState(), writers.state());
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
+    this.suspensionMetrics = suspensionMetrics;
     this.clock = clock;
   }
 
@@ -63,17 +71,17 @@ public final class JobTimeOutProcessor
 
     if (state == State.ACTIVATED && hasTimedOut(job)) {
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
-      jobMetrics.countJobEvent(JobAction.TIMED_OUT, job.getJobKind(), job.getType());
 
-      // TIMED_OUT made the job ACTIVATABLE. If the instance is still SUSPENDED, park it in the same
-      // batch so it is not handed out. Use getSuspensionState == SUSPENDED (not isSuspended): while
-      // RESUMING the instance is draining and the job must become available again.
-      if (suspensionState.getSuspensionState(job.getProcessInstanceKey())
-          == SuspensionState.State.SUSPENDED) {
+      // park while suspending or suspended; RESUMING must release it
+      final var marker = suspensionState.getSuspensionState(job.getProcessInstanceKey());
+      if ((marker == SuspensionState.State.SUSPENDING || marker == SuspensionState.State.SUSPENDED)
+          && !suspensionJobBehavior.isExemptFromSuspension(job)) {
         stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
+        suspensionMetrics.jobSuspended();
       } else {
         jobActivationBehavior.notifyJobAvailableAsSideEffect(job);
       }
+      jobMetrics.countJobEvent(JobAction.TIMED_OUT, job.getJobKind(), job.getType());
     } else {
       final var reason =
           switch (state) {
@@ -97,9 +105,14 @@ public final class JobTimeOutProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
     // Process while suspended: an activated job must leave ACTIVATED on time-out so it can be
     // parked (Job.SUSPENDED) instead of looping on rejected TIME_OUT commands forever.
-    return SuspensionBehavior.PROCESS;
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

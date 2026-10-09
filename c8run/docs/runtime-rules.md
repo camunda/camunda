@@ -32,11 +32,11 @@ Do not change this version gate without verifying both launcher paths still work
 
 The `--port` flag changes the main web/REST port. If the user did not set `CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS`, Connectors defaults to the selected Camunda port.
 
-**Connectors health port is always `8086`** — it is hardcoded and not affected by `--port`.
+**The Connectors port defaults to `8086`.** Set it with `--connectors-port`; `--port` does not change it. This one port serves both the inbound Connectors API and the Connectors health endpoint. Unless `--disable-connectors` is set, `c8run start` rejects a Connectors port that Camunda binds (`--port`, `9600`, `26500`-`26502`).
 
 ## Health Check Timeout
 
-Startup health checks use 24 retries with a 14-second delay between attempts (~5.6 minutes total). If Camunda does not become healthy within this window, C8Run reports failure. Connectors health checks are not yet implemented — the check currently returns success immediately without querying port 8086.
+Startup health checks use 24 retries with a 14-second delay between attempts (~5.6 minutes total). If Camunda does not become healthy within this window, C8Run reports failure. Each Connectors runtime is checked the same way on its own port. If one does not become healthy, C8Run logs a warning and Camunda keeps running.
 
 ## Startup URL and Quickstart Marker
 
@@ -49,9 +49,19 @@ The marker path is resolved in this order:
 
 To force the quickstart URL to appear again, delete the marker file from whichever location was resolved.
 
+Pass `--no-browser` to skip opening a browser window entirely (for example, in a headless dev environment or an autostart script). Status output is still printed as usual, but the quickstart marker is left untouched — a headless first start never shows the quickstart, so the next normal start still shows it instead of jumping straight to Operate.
+
 ## Connectors Startup
 
 C8Run starts Connectors from the connector bundle plus `custom_connectors/*`. Connectors runs alongside the main Camunda process and shares the same shutdown lifecycle.
+
+### Authenticated API access
+
+Connectors talks to the local Camunda API as a client. When the effective configuration requires authentication — `camunda.security.authorizations.enabled: true` or `camunda.security.authentication.unprotected-api: false` — C8Run passes the seeded user's basic-auth credentials to the Connectors process via `CAMUNDA_CLIENT_AUTH_USERNAME` / `CAMUNDA_CLIENT_AUTH_PASSWORD`. The effective value of each key is resolved across both the bundled default config and any `--config` override, with the override taking precedence, matching how Spring layers them at startup. The credentials come from `--username` / `--password` (default `demo` / `demo`); if you change the seeded user, pass matching flags. Pre-existing values for those environment variables are never overwritten. When the API is unprotected (the default), no credentials are set.
+
+### Connectors failure is non-fatal
+
+Connectors is an optional component. If it fails to start or its health check does not turn green, C8Run logs a warning and keeps Camunda running instead of tearing down the whole cluster. To skip the bundled Connectors runtime entirely, start with `--disable-connectors`.
 
 ## Logs and PIDs
 
@@ -86,6 +96,7 @@ Common start flags:
 ./c8run start --log-level debug
 ./c8run start --username demo --password demo
 ./c8run start --startup-url http://localhost:8080/operate
+./c8run start --no-browser
 ```
 
 Use `./c8run help` to print all supported commands and flags. When running in the foreground, `Ctrl+C` initiates graceful shutdown.

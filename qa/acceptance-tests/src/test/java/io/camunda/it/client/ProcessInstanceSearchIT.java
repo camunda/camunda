@@ -33,6 +33,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -718,6 +719,7 @@ public class ProcessInstanceSearchIT {
   @Test
   void shouldQueryProcessInstancesByStateCompleted() {
     await("process is completed")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
 

@@ -38,7 +38,7 @@ class AgentInstanceEntityMapperTest {
               key.processDefinitionId("myProcess");
               key.processDefinitionKey(400L);
               key.processDefinitionVersion(2);
-              key.versionTag("v1");
+              key.processDefinitionVersionTag("v1");
               key.tenantId("<default>");
               key.partitionId(1);
               key.status(AgentInstanceStatus.THINKING);
@@ -51,6 +51,9 @@ class AgentInstanceEntityMapperTest {
               key.maxToolCalls(50);
               key.inputTokens(500L);
               key.outputTokens(300L);
+              key.reasoningTokenCount(60L);
+              key.cacheCreationTokenCount(40L);
+              key.cacheReadTokenCount(20L);
               key.modelCalls(5);
               key.toolCalls(3);
               key.creationDate(creationDate);
@@ -70,7 +73,7 @@ class AgentInstanceEntityMapperTest {
     assertThat(entity.processDefinitionId()).isEqualTo("myProcess");
     assertThat(entity.processDefinitionKey()).isEqualTo(400L);
     assertThat(entity.processDefinitionVersion()).isEqualTo(2);
-    assertThat(entity.versionTag()).isEqualTo("v1");
+    assertThat(entity.processDefinitionVersionTag()).isEqualTo("v1");
     assertThat(entity.tenantId()).isEqualTo("<default>");
     assertThat(entity.status()).isEqualTo(AgentInstanceStatus.THINKING);
     assertThat(entity.definition().model()).isEqualTo("gpt-4");
@@ -82,6 +85,9 @@ class AgentInstanceEntityMapperTest {
     assertThat(entity.limits().maxToolCalls()).isEqualTo(50);
     assertThat(entity.metrics().inputTokens()).isEqualTo(500L);
     assertThat(entity.metrics().outputTokens()).isEqualTo(300L);
+    assertThat(entity.metrics().reasoningTokenCount()).isEqualTo(60L);
+    assertThat(entity.metrics().cacheCreationTokenCount()).isEqualTo(40L);
+    assertThat(entity.metrics().cacheReadTokenCount()).isEqualTo(20L);
     assertThat(entity.metrics().modelCalls()).isEqualTo(5);
     assertThat(entity.metrics().toolCalls()).isEqualTo(3);
     assertThat(entity.creationDate()).isEqualTo(creationDate);

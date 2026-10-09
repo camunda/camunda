@@ -18,7 +18,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockProcessXML} from 'modules/testUtils';
 
 const notificationText1 =
-  'Please select where you want to move the selected instances on the diagram.';
+  'Select where you want to move the selected instances on the diagram.';
 
 const notificationText2 =
   'Modification scheduled: Move 4 instances from “userTask” to “endEvent”. Press “Review Modification” button to confirm.';

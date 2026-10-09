@@ -33,4 +33,10 @@ public interface PartitionAdminAccess {
    * snapshot capturing that migrated state has been taken, for the upgrade-readiness endpoint.
    */
   ActorFuture<PartitionMigrationStatus> getMigrationStatus();
+
+  /**
+   * Whether every exporter on this replica has finished exporting and acknowledging every record
+   * written under a previous application version, for the upgrade-readiness endpoint.
+   */
+  ActorFuture<PartitionMigrationStatus> getExportingMigrationStatus();
 }

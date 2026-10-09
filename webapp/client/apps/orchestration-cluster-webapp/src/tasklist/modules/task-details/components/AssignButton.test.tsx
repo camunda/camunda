@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {assignTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
+import {Toaster, toast} from '@camunda/design-system';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {assignTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
-import {render} from 'vitest-browser-react';
+import {cleanup, render} from 'vitest-browser-react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
@@ -21,8 +22,6 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
-import {Notifications} from '#/shared/notifications/components/Notifications';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {AssignButton} from './AssignButton';
 
 const CURRENT_USER = 'demo';
@@ -44,7 +43,7 @@ function getWrapper() {
 	const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
 		<QueryClientProvider client={queryClient}>
 			{children}
-			<Notifications />
+			<Toaster />
 		</QueryClientProvider>
 	);
 
@@ -52,9 +51,10 @@ function getWrapper() {
 }
 
 describe('<AssignButton />', () => {
-	afterEach(() => {
+	afterEach(async () => {
+		await cleanup();
 		vi.useRealTimers();
-		notificationsStore.reset();
+		toast.dismiss();
 	});
 
 	it('should render assign action for an unassigned task', async () => {
@@ -104,10 +104,8 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
 
-		await vi.advanceTimersByTimeAsync(500);
-		await expect.element(screen.getByText('Assigning...')).toBeVisible();
-		await vi.advanceTimersByTimeAsync(500);
-		await expect.element(screen.getByText('Assignment successful')).toBeVisible();
+		await vi.advanceTimersByTimeAsync(1000);
+		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
 	});
 
 	it('should unassign the task', async ({worker}) => {
@@ -135,10 +133,94 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Unassign'}));
 
-		await vi.advanceTimersByTimeAsync(500);
+		await vi.advanceTimersByTimeAsync(1000);
+		await expect.element(screen.getByRole('button', {name: 'Unassign'})).toBeVisible();
+	});
+
+	it('should assign the task when clicked right after an unassignment settles', async ({worker}) => {
+		vi.useFakeTimers();
+
+		worker.use(
+			mockUnassignTaskEndpoint({
+				successResponse: new HttpResponse(null, {status: 200}),
+				delay: 500,
+			}),
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({assignee: null, state: 'CREATED'})),
+			}),
+			mockAssignTaskEndpoint({
+				schema: assignmentRequestSchema,
+				failureResponse: HttpResponse.json({error: 'bad request'}, {status: 400}),
+				successResponse: new HttpResponse(null, {status: 200}),
+				delay: 500,
+			}),
+		);
+
+		const screen = await render(
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				assignee={CURRENT_USER}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
+			{wrapper: getWrapper()},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Unassign'}));
 		await expect.element(screen.getByText('Unassigning...')).toBeVisible();
+
 		await vi.advanceTimersByTimeAsync(500);
-		await expect.element(screen.getByText('Unassignment successful')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Unassign'})).toBeEnabled();
+
+		screen.rerender(
+			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
+
+		await expect.element(screen.getByText('Assigning...')).toBeVisible();
+	});
+
+	it('should unassign the task when clicked right after an assignment settles', async ({worker}) => {
+		vi.useFakeTimers();
+
+		worker.use(
+			mockAssignTaskEndpoint({
+				schema: assignmentRequestSchema,
+				failureResponse: HttpResponse.json({error: 'bad request'}, {status: 400}),
+				successResponse: new HttpResponse(null, {status: 200}),
+				delay: 500,
+			}),
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({assignee: CURRENT_USER, state: 'CREATED'})),
+			}),
+			mockUnassignTaskEndpoint({
+				successResponse: new HttpResponse(null, {status: 200}),
+				delay: 500,
+			}),
+		);
+
+		const screen = await render(
+			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+			{wrapper: getWrapper()},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
+		await expect.element(screen.getByText('Assigning...')).toBeVisible();
+
+		await vi.advanceTimersByTimeAsync(500);
+		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeEnabled();
+
+		screen.rerender(
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				assignee={CURRENT_USER}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Unassign'}));
+
+		await expect.element(screen.getByText('Unassigning...')).toBeVisible();
 	});
 
 	it('should show an assignment permission error notification', async ({worker}) => {
@@ -162,8 +244,38 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
 
-		await expect.element(screen.getByText('Task could not be assigned')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't assign the task")).toBeVisible();
 		await expect.element(screen.getByText(PERMISSION_ERROR)).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
+	});
+
+	it('should show an error and not call the backend when the current user has an empty username', async () => {
+		const screen = await render(
+			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser="" />,
+			{wrapper: getWrapper()},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
+
+		await expect.element(screen.getByText("Couldn't assign the task")).toBeVisible();
+		await expect
+			.element(screen.getByText("You don't have a username. Contact your Tasklist administrator."))
+			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
+	});
+
+	it('should show an error and not call the backend when the current user has a null username', async () => {
+		const screen = await render(
+			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={null} />,
+			{wrapper: getWrapper()},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
+
+		await expect.element(screen.getByText("Couldn't assign the task")).toBeVisible();
+		await expect
+			.element(screen.getByText("You don't have a username. Contact your Tasklist administrator."))
+			.toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
 	});
 
@@ -194,7 +306,7 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Unassign'}));
 
-		await expect.element(screen.getByText('Task could not be unassigned')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't unassign the task")).toBeVisible();
 		await expect.element(screen.getByText(PERMISSION_ERROR)).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Unassign'})).toBeVisible();
 	});
@@ -220,7 +332,7 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
 
-		await expect.element(screen.getByText('Task could not be assigned')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't assign the task")).toBeVisible();
 		await expect.element(screen.getByText('User not in candidate list')).toBeVisible();
 	});
 
@@ -266,7 +378,7 @@ describe('<AssignButton />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByText('Assignment successful')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Unassign'})).toBeVisible();
 	});
 
 	it('should show delayed notification and finish unassignment after timeout', async ({worker}) => {
@@ -321,7 +433,7 @@ describe('<AssignButton />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByText('Unassignment successful')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Unassign'})).toBeVisible();
 	});
 
 	it('should show assigning state when mounted with an assigning unassigned task', async ({worker}) => {

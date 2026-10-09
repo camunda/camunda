@@ -24,7 +24,7 @@ env:
 jobs:
   # Manages its own throwaway broker/collector stack via
   # utils/dockerComposeControl.ts — never touches a shared Elasticsearch
-  # container, so it needs none of the setup (ES/Vault/TestRail) the main
+  # container, so it needs none of the setup (ES/Vault) the main
   # api-tests job carries. Only called for main — not backporting, the
   # exporter's config differs too much on stable/8.7/8.8/8.9.
   analytics-exporter-tests:
@@ -40,7 +40,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 

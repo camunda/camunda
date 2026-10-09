@@ -71,7 +71,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.20.0</version>
+      <version>3.21.0</version>
       <scope>provided</scope>
     </dependency>
 
@@ -134,7 +134,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.23.0</version>
+      <version>5.24.0</version>
       <scope>test</scope>
     </dependency>
 
@@ -171,7 +171,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.193</version>
+      <version>4.8.196</version>
       <scope>provided</scope>
     </dependency>
 
@@ -183,7 +183,7 @@
     <dependency>
       <groupId>com.vdurmont</groupId>
       <artifactId>semver4j</artifactId>
-      <version>3.1.0</version>
+      <version>${version.semver4j}</version>
       <scope>provided</scope>
     </dependency>
 

@@ -14,6 +14,9 @@ import {
 } from '@camunda8/orchestration-cluster-api';
 import {test as base, expect, type Cookie} from '@playwright/test';
 
+const BASE_URL = 'http://localhost:8080';
+const LOGIN_URL = `${BASE_URL}/login`;
+
 interface TestFixture {
   camunda: CamundaClient;
   /**
@@ -29,7 +32,7 @@ interface WorkerFixture {
 }
 
 const test = base.extend<TestFixture, WorkerFixture>({
-  baseURL: 'http://localhost:8080',
+  baseURL: BASE_URL,
   loginUser: [{username: 'demo', password: 'demo'}, {scope: 'worker'}],
   camunda: createCamundaClient({
     config: {
@@ -53,11 +56,25 @@ const test = base.extend<TestFixture, WorkerFixture>({
   loginState: [
     async ({browser, loginUser}, use) => {
       const context = await browser.newContext();
-      const response = await context.request.post(
-        'http://localhost:8080/login',
-        {form: loginUser},
-      );
-      const csrfToken = response.headers()['x-csrf-token'] ?? '';
+      // The login endpoint always enforces CSRF, and a GET of the login page is the only place
+      // where the server sends a token to an anonymous caller. The POST must send that token back.
+      const loginPage = await context.request.get(LOGIN_URL, {
+        headers: {Accept: 'text/html'},
+      });
+      const csrfTokenOfLoginPage = loginPage.headers()['x-csrf-token'] ?? '';
+
+      const response = await context.request.post(LOGIN_URL, {
+        form: loginUser,
+        headers: csrfTokenOfLoginPage
+          ? {'X-CSRF-TOKEN': csrfTokenOfLoginPage}
+          : {},
+      });
+      // A login that fails here leaves every test of this worker unauthenticated, which shows up
+      // later as a confusing assertion on a login screen.
+      expect(response.status()).toBe(204);
+
+      const csrfToken =
+        response.headers()['x-csrf-token'] ?? csrfTokenOfLoginPage;
       const cookies = await context.cookies();
 
       await context.close();

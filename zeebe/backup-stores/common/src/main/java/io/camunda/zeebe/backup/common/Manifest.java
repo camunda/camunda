@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import java.time.Instant;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 @JsonSerialize(as = ManifestImpl.class)
 @JsonDeserialize(as = ManifestImpl.class)
@@ -32,7 +33,7 @@ public sealed interface Manifest {
         creationTime);
   }
 
-  static FailedManifest createFailed(final BackupIdentifier id) {
+  static FailedManifest createFailed(final BackupIdentifier id, final String failureReason) {
     final var creationTime = Instant.now();
     return new ManifestImpl(
         BackupIdentifierImpl.from(id),
@@ -41,12 +42,13 @@ public sealed interface Manifest {
         null,
         null,
         creationTime,
-        creationTime);
+        creationTime,
+        failureReason);
   }
 
   BackupIdentifierImpl id();
 
-  BackupDescriptorImpl descriptor();
+  @Nullable BackupDescriptorImpl descriptor();
 
   StatusCode statusCode();
 

@@ -46,7 +46,12 @@ final class PartitionRebalanceOutcomeAlignmentTest {
 
     // then
     assertThat(additionalOutcomeNames)
-        .containsExactlyInAnyOrder("NO_LEADER", "NO_RESPONSE", "CANCELLED");
+        .containsExactlyInAnyOrder(
+            "NO_LEADER",
+            "NO_RESPONSE",
+            "CANCELLED",
+            "PHYSICAL_TENANT_DISABLED",
+            "PHYSICAL_TENANT_RECOVERING");
   }
 
   private static Set<String> namesOf(final Class<? extends Enum<?>> enumType) {

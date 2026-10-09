@@ -27,6 +27,14 @@ const getWrapper = () => {
 };
 
 const PROCESS_INSTANCE_KEY = 'instance_1';
+const OPERATIONS_WITH_CONFIGURED_LABELS = [
+  {type: 'RESOLVE_INCIDENT', label: 'Retry selected instance'},
+  {type: 'CANCEL_PROCESS_INSTANCE', label: 'Cancel selected instance'},
+  {type: 'DELETE_PROCESS_INSTANCE', label: 'Delete selected instance'},
+  {type: 'SUSPEND_PROCESS_INSTANCE', label: 'Suspend selected instance'},
+  {type: 'RESUME_PROCESS_INSTANCE', label: 'Resume selected instance'},
+  {type: 'ENTER_MODIFICATION_MODE', label: 'Modify selected instance'},
+] as const;
 
 describe('OperationsPresentational', () => {
   beforeEach(() => {
@@ -48,18 +56,35 @@ describe('OperationsPresentational', () => {
     );
 
     expect(
-      screen.getByTitle(`Retry Instance ${PROCESS_INSTANCE_KEY}`),
+      screen.getByRole('button', {name: 'Retry Instance'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByTitle(`Cancel Instance ${PROCESS_INSTANCE_KEY}`),
+      screen.getByRole('button', {name: 'Cancel Instance'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByTitle(`Modify Instance ${PROCESS_INSTANCE_KEY}`),
+      screen.getByRole('button', {
+        name: `Modify Instance ${PROCESS_INSTANCE_KEY}`,
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByTitle(`Delete Instance ${PROCESS_INSTANCE_KEY}`),
+      screen.getByRole('button', {name: 'Delete Instance'}),
     ).toBeInTheDocument();
   });
+
+  it.for(OPERATIONS_WITH_CONFIGURED_LABELS)(
+    'should render the configured label "$label"',
+    ({type, label}) => {
+      render(
+        <Operations
+          operations={[{type, label, onExecute: vi.fn()}]}
+          processInstanceKey={PROCESS_INSTANCE_KEY}
+        />,
+        {wrapper: getWrapper()},
+      );
+
+      expect(screen.getByRole('button', {name: label})).toBeInTheDocument();
+    },
+  );
 
   it('should render no buttons when operations array is empty', () => {
     render(
@@ -68,16 +93,18 @@ describe('OperationsPresentational', () => {
     );
 
     expect(
-      screen.queryByTitle(`Retry Instance ${PROCESS_INSTANCE_KEY}`),
+      screen.queryByRole('button', {name: 'Retry Instance'}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle(`Cancel Instance ${PROCESS_INSTANCE_KEY}`),
+      screen.queryByRole('button', {name: 'Cancel Instance'}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle(`Modify Instance ${PROCESS_INSTANCE_KEY}`),
+      screen.queryByRole('button', {
+        name: `Modify Instance ${PROCESS_INSTANCE_KEY}`,
+      }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle(`Delete Instance ${PROCESS_INSTANCE_KEY}`),
+      screen.queryByRole('button', {name: 'Delete Instance'}),
     ).not.toBeInTheDocument();
   });
 

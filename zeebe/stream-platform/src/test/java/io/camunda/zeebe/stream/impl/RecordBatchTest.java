@@ -159,7 +159,7 @@ class RecordBatchTest {
     assertThat(either.isLeft()).isTrue();
     assertThat(either.getLeft())
         .hasMessageContaining("Can't append entry")
-        .hasMessageContaining("[ currentBatchEntryCount: 1, currentBatchSize: 506]");
+        .hasMessageContaining("[ currentBatchEntryCount: 1, currentBatchSize: 503]");
   }
 
   @Test

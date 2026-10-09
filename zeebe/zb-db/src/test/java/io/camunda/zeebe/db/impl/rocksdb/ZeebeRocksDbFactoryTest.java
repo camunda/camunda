@@ -25,6 +25,11 @@ import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc.Statistic;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbIoStallMetricsDoc;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbMetricsDoc;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbTickerMetricsDoc;
 import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -169,6 +174,77 @@ final class ZeebeRocksDbFactoryTest {
         .isEqualTo(DataBlockIndexType.kDataBlockBinaryAndHash);
     assertThat(tableConfig.dataBlockHashTableUtilRatio()).isEqualTo(0.75);
     assertThat(tableConfig.wholeKeyFiltering()).isTrue();
+  }
+
+  @Test
+  void shouldNotRegisterStatisticsMetricsByDefault(final @TempDir File pathName) {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var factory =
+        new ZeebeRocksDbFactory<DefaultColumnFamily>(
+            new RocksDbConfiguration(),
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE),
+            () -> registry);
+
+    // when
+    try (final var db = factory.createDb(pathName)) {
+      db.exportMetrics();
+
+      // then
+      assertStatisticsMetricsRegistered(registry, false);
+      assertThat(RocksDbMetricsDoc.values())
+          .allSatisfy(
+              doc ->
+                  assertThat(registry.find(doc.getName()).gauge())
+                      .as("gauge '%s' is registered", doc.getName())
+                      .isNotNull());
+      assertThat(RocksDbIoStallMetricsDoc.values())
+          .allSatisfy(
+              doc ->
+                  assertThat(registry.find(doc.getName()).gauge())
+                      .as("gauge '%s' is registered", doc.getName())
+                      .isNotNull());
+    }
+  }
+
+  @Test
+  void shouldRegisterStatisticsMetricsWhenEnabled(final @TempDir File pathName) {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var factory =
+        new ZeebeRocksDbFactory<DefaultColumnFamily>(
+            new RocksDbConfiguration().setStatisticsEnabled(true),
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE),
+            () -> registry);
+
+    // when
+    try (final var db = factory.createDb(pathName)) {
+      db.exportMetrics();
+
+      // then
+      assertStatisticsMetricsRegistered(registry, true);
+    }
+  }
+
+  private static void assertStatisticsMetricsRegistered(
+      final SimpleMeterRegistry registry, final boolean expected) {
+    assertThat(RocksDbTickerMetricsDoc.values())
+        .allSatisfy(
+            doc ->
+                assertThat(registry.find(doc.getName()).gauge() != null)
+                    .as("gauge '%s' registration state", doc.getName())
+                    .isEqualTo(expected));
+    assertThat(RocksDbHistogramMetricsDoc.values())
+        .allSatisfy(
+            doc -> {
+              for (final var statistic : Statistic.values()) {
+                assertThat(registry.find(doc.nameFor(statistic)).gauge() != null)
+                    .as("gauge '%s' registration state", doc.nameFor(statistic))
+                    .isEqualTo(expected);
+              }
+            });
   }
 
   @Test

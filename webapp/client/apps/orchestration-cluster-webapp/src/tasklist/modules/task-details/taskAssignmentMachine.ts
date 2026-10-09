@@ -9,11 +9,11 @@
 import {setup, assign, fromPromise} from 'xstate';
 import {t} from 'i18next';
 import type {QueryClient} from '@tanstack/react-query';
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
+import {toast} from '@camunda/design-system';
 import {queries} from '#/shared/http/queries';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {isTaskTimeoutError} from './taskErrorHandling';
 import {parseDenialReason} from './parseDenialReason';
 
@@ -22,7 +22,7 @@ type AssignmentFailure = {reason: 'timeout'} | {reason: 'failed'; subtitle?: str
 type MachineInput = {
 	queryClient: QueryClient;
 	userTaskKey: string;
-	currentUser: string;
+	currentUser: string | null;
 	initialTaskState: UserTask['state'];
 	initialAssignee: string | null;
 };
@@ -30,7 +30,7 @@ type MachineInput = {
 type MachineContext = {
 	queryClient: QueryClient;
 	userTaskKey: string;
-	currentUser: string;
+	currentUser: string | null;
 	initialTaskState: UserTask['state'] | null;
 	initialAssignee: string | null;
 	pollRetryCount: number;
@@ -112,6 +112,12 @@ const fetchUserTaskLogic = fromPromise<UserTask, {queryClient: QueryClient; user
 	input.queryClient.fetchQuery(queries.getUserTask(input.userTaskKey)),
 );
 
+const toggleTransitions = [
+	{guard: 'isTaskAssigned', target: 'Unassigning'},
+	{guard: 'hasCurrentUser', target: 'Assigning'},
+	{actions: 'notifyMissingCurrentUser'},
+] as const;
+
 const taskAssignmentMachine = setup({
 	types: {
 		context: {} as MachineContext,
@@ -139,8 +145,8 @@ const taskAssignmentMachine = setup({
 		},
 		isInitiallyAssigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee === null,
 		isInitiallyUnassigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee !== null,
-		isTaskAssigned: (_, params: {taskState: UserTask['state']; assignee: string | null}) =>
-			typeof params.assignee === 'string' && params.taskState !== 'ASSIGNING',
+		isTaskAssigned: ({event}) => typeof event.assignee === 'string' && event.taskState !== 'ASSIGNING',
+		hasCurrentUser: ({context}) => Boolean(context.currentUser && context.currentUser.trim().length > 0),
 	},
 	actions: {
 		setOptimisticAssigning: ({context}) => {
@@ -156,11 +162,8 @@ const taskAssignmentMachine = setup({
 			}
 		},
 		notifyAssignmentDelayed: () => {
-			notificationsStore.displayNotification({
-				kind: 'info',
-				title: t('tasklist.taskDetailsAssignmentDelayInfoTitle'),
-				subtitle: t('tasklist.taskDetailsAssignmentDelayInfoSubtitle'),
-				isDismissable: true,
+			toast.info(t('tasklist.taskDetailsAssignmentDelayInfoTitle'), {
+				description: t('tasklist.taskDetailsAssignmentDelayInfoSubtitle'),
 			});
 		},
 		setOptimisticUnassigning: ({context}) => {
@@ -175,11 +178,8 @@ const taskAssignmentMachine = setup({
 			}
 		},
 		notifyUnassignmentDelayed: () => {
-			notificationsStore.displayNotification({
-				kind: 'info',
-				title: t('tasklist.taskDetailsUnassignmentDelayInfoTitle'),
-				subtitle: t('tasklist.taskDetailsUnassignmentDelayInfoSubtitle'),
-				isDismissable: true,
+			toast.info(t('tasklist.taskDetailsUnassignmentDelayInfoTitle'), {
+				description: t('tasklist.taskDetailsUnassignmentDelayInfoSubtitle'),
 			});
 		},
 		commitTask: ({context}, params: {task: UserTask | undefined}) => {
@@ -192,19 +192,18 @@ const taskAssignmentMachine = setup({
 			queryClient.invalidateQueries({queryKey: ['userTasks']});
 		},
 		notifyAssignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title: t('tasklist.taskDetailsTaskAssignmentError'),
-				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
-				isDismissable: true,
+			toast.error(t('tasklist.taskDetailsTaskAssignmentError'), {
+				description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
+			});
+		},
+		notifyMissingCurrentUser: () => {
+			toast.error(t('tasklist.taskDetailsTaskAssignmentError'), {
+				description: t('tasklist.taskDetailsMissingCurrentUserSubtitle'),
 			});
 		},
 		notifyUnassignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title: t('tasklist.taskDetailsTaskUnassignmentError'),
-				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
-				isDismissable: true,
+			toast.error(t('tasklist.taskDetailsTaskUnassignmentError'), {
+				description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
 			});
 		},
 		resetRetryCount: assign({pollRetryCount: 0}),
@@ -232,16 +231,7 @@ const taskAssignmentMachine = setup({
 				{guard: 'isInitiallyUnassigning', target: 'AwaitingUnassignment', actions: 'clearInitialTaskState'},
 			],
 			on: {
-				'task.toggle': [
-					{
-						guard: {
-							type: 'isTaskAssigned',
-							params: ({event}) => ({taskState: event.taskState, assignee: event.assignee}),
-						},
-						target: 'Unassigning',
-					},
-					{target: 'Assigning'},
-				],
+				'task.toggle': toggleTransitions,
 			},
 		},
 
@@ -323,9 +313,10 @@ const taskAssignmentMachine = setup({
 			tags: 'status:assigning',
 			invoke: {
 				src: 'assignTask',
+				// Only reachable via the `hasCurrentUser` guard, which already proved this non-null.
 				input: ({context}) => ({
 					userTaskKey: context.userTaskKey,
-					assignee: context.currentUser,
+					assignee: context.currentUser!,
 				}),
 				onDone: {target: 'PollingAssignment'},
 				onError: [
@@ -425,6 +416,9 @@ const taskAssignmentMachine = setup({
 			tags: 'status:assignment_successful',
 			after: {
 				SUCCESS_RESET_DELAY: {target: 'Idle'},
+			},
+			on: {
+				'task.toggle': toggleTransitions,
 			},
 		},
 
@@ -533,6 +527,9 @@ const taskAssignmentMachine = setup({
 			tags: 'status:unassignment_successful',
 			after: {
 				SUCCESS_RESET_DELAY: {target: 'Idle'},
+			},
+			on: {
+				'task.toggle': toggleTransitions,
 			},
 		},
 	},

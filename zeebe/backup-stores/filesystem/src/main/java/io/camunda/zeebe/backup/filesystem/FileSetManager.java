@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.filesystem;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.FileSet;
@@ -71,7 +73,11 @@ final class FileSetManager {
     try {
       FileUtil.deleteFolder(fileSetPath);
       final var dirLimit = contentsPath.resolve(String.valueOf(id.partitionId()));
-      FilesystemBackupStore.backtrackDeleteEmptyParents(fileSetPath.getParent(), dirLimit);
+      final var parent =
+          requireNonNull(
+              fileSetPath.getParent(),
+              () -> String.format("Parent directory of %s is null.", fileSetPath));
+      FilesystemBackupStore.backtrackDeleteEmptyParents(parent, dirLimit);
     } catch (final NoSuchFileException e) {
       LOGGER.warn("Try to remove unknown fileset {} in backup {}", fileSetName, id);
     } catch (final IOException e) {

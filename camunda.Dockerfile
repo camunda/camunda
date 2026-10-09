@@ -4,7 +4,7 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
-ARG BASE_DIGEST="sha256:feafa1cdd5fd39be1fbd53a71cb9e601b793bc075be4d52bff9e63418f2dcd89"
+ARG BASE_DIGEST="sha256:fb962d5ea0de9f2044d01607d1f29235670031fef2f2fe973d1e902f70c49203"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
@@ -13,7 +13,7 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
 ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.4_7-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:b4c93a50fc67612798db73d68ca3b0ee4ebdd51736e59cca370e689b9797037e"
+ARG BASE_DIGEST_PUBLIC="sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
@@ -197,61 +197,5 @@ COPY --from=dist /camunda/rocksdb-lib/ /usr/java/packages/lib/
 RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
 
 USER 1001:1001
-
-### AOT cache ###
-# Train an AOT cache (JEP 483/514) on a real boot, so that at runtime the JVM can
-# skip loading, parsing, verifying and linking the classes a startup touches.
-#
-# There is no secondary storage to talk to during a build, but it does not need to
-# be reachable -- only reached for. create-schema=false makes SchemaManager.startup()
-# return before it touches the client, which is the one thing that would otherwise
-# block context refresh indefinitely; the exporter's connection attempts fail and
-# retry in the background without holding refresh up. Leaving secondary storage
-# *configured* is what matters: it keeps Operate, Tasklist and the search clients in
-# the context, all of which disabling it would drop from the cache.
-#
-# spring.context.exit makes the run stop at the end of context refresh rather than
-# serve traffic. Only one storage mode can be trained -- a training run emits a
-# binary configuration that cannot be merged across runs -- but the choice barely
-# matters: the archived bulk is Spring, Tomcat, Netty, Jackson and the engine. An
-# Elasticsearch-trained cache still cuts an RDBMS startup by 29%, against 37% for
-# Elasticsearch itself.
-#
-# A cache the JVM cannot validate is ignored and startup falls back to the uncached
-# path. That happens when the classpath changes (a JDBC driver mounted into
-# /driver-lib), when compressed oops are off (a heap above ~32G, or ZGC), or when
-# UseCompactObjectHeaders is overridden.
-#
-# The training run boots a broker, so it leaves a data directory and a log file
-# behind, and both have to be put back exactly as the setup step left them. The
-# cleanup uses `find -delete` rather than a glob because the topology metadata is
-# a dotfile a glob would miss, and the mode is reset explicitly because writing
-# into data/ and logs/ leaves them at the default 0755. Either one alone is
-# enough to break an OpenShift-style deployment, which runs as an arbitrary uid
-# in group 0 and so needs these group-writable and empty.
-#
-# On by default, so an image built straight from this file is the image we ship, but
-# only ever for amd64. Training boots Camunda, and a multi-arch build would boot the
-# foreign platform under QEMU: on the Docker Checks job that took the image build from
-# ~1m15s to 8m05s, nearly all of it emulating the arm64 boot. The arch has to be tested
-# here rather than in CI because a build arg applies to every platform of one buildx
-# invocation, so excluding arm64 from the caller would cost amd64 its cache too. The
-# price of excluding it at all is that arm64 images get no startup win.
-#
-# The test is for arm64 rather than against amd64 so that an unset TARGETARCH -- a
-# builder that does not populate it -- still trains, instead of silently producing
-# an image with no cache.
-ARG AOT_CACHE="true"
-ARG TARGETARCH
-RUN if [ "${AOT_CACHE}" = "true" ] && [ "${TARGETARCH}" != "arm64" ]; then \
-      CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CREATESCHEMA=false \
-      JAVA_OPTS="-XX:AOTCacheOutput=${CAMUNDA_HOME}/camunda.aot -Dspring.context.exit=onRefresh" \
-        "${CAMUNDA_HOME}/bin/camunda" && \
-      find "${CAMUNDA_HOME}/data" "${CAMUNDA_HOME}/logs" -mindepth 1 -delete && \
-      chmod 0775 "${CAMUNDA_HOME}/data" "${CAMUNDA_HOME}/logs" && \
-      printf -- '-XX:AOTCache=%s/camunda.aot\n' "${CAMUNDA_HOME}" \
-        >> "${CAMUNDA_HOME}/config/jvm.options" && \
-      du -h "${CAMUNDA_HOME}/camunda.aot"; \
-    fi
 
 ENTRYPOINT ["/usr/local/camunda/bin/camunda"]

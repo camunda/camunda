@@ -32,7 +32,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     implements BatchOperationCreationRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
-  public static final String PROP_STORAGE_ORDINAL_KEY = "storageOrdinalKey";
+  public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
   public static final String PROP_BATCH_OPERATION_TYPE = "batchOperationType";
   public static final String PROP_ENTITY_FILTER = "entityFilter";
   public static final String PROP_MIGRATION_PLAN = "migrationPlan";
@@ -44,8 +44,8 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public static final String PROP_FOLLOWUP_COMMAND = "followUpCommand";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
-  private final IntegerProperty storageOrdinalKeyProp =
-      new IntegerProperty(PROP_STORAGE_ORDINAL_KEY, 0);
+  private final IntegerProperty storageOrdinalProp =
+      new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
       new EnumProperty<>(PROP_BATCH_OPERATION_TYPE, BatchOperationType.class);
   private final BinaryProperty entityFilterProp =
@@ -70,7 +70,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public BatchOperationCreationRecord() {
     super(11);
     declareProperty(batchOperationKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
@@ -94,12 +94,12 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public BatchOperationCreationRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public BatchOperationCreationRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 
@@ -208,7 +208,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
 
   public BatchOperationCreationRecord wrap(final BatchOperationCreationRecord record) {
     batchOperationKeyProp.setValue(record.getBatchOperationKey());
-    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
     batchOperationTypeProp.setValue(record.getBatchOperationType());
     entityFilterProp.setValue(record.getEntityFilterBuffer());
     migrationPlanProp.getValue().wrap(record.getMigrationPlan());

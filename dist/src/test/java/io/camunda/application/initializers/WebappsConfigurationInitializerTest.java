@@ -86,4 +86,19 @@ class WebappsConfigurationInitializerTest {
         .doesNotContain(WEBAPP_LOCATION);
     assertThat(context.getEnvironment().getProperty(DEFAULT_APP)).isNull();
   }
+
+  @Test
+  void shouldNotFallBackToLegacyTasklistSecurityPropertiesInStandaloneMode() {
+    final GenericApplicationContext context = new GenericApplicationContext();
+    context
+        .getEnvironment()
+        .setActiveProfiles(Profile.TASKLIST.getId(), Profile.STANDALONE.getId());
+
+    new WebappsConfigurationInitializer().initialize(context);
+
+    assertThat(context.getEnvironment().getProperty("camunda.security.authorizations.enabled"))
+        .isNull();
+    assertThat(context.getEnvironment().getProperty("camunda.security.multiTenancy.checksEnabled"))
+        .isNull();
+  }
 }

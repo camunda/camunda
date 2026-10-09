@@ -6,20 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {useQueries, useQuery, type UseQueryResult} from '@tanstack/react-query';
+import {Button, DataTableSkeleton, InlineNotification, Stack} from '@carbon/react';
 import {
 	auditLogSortFieldEnum,
 	type AuditLog,
+	type GetProcessDefinitionResponseBody,
 	type QueryAuditLogsRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {logger} from '#/operate/shared/utils/logger';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
+import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
 import {
 	OperationsLogDetailsModal,
 	type DetailsModalState,
@@ -39,37 +42,35 @@ import type {OperationsLogSearch} from './operationsLog.schema';
 
 const DEFAULT_SORT = 'timestamp+desc';
 
+const combineDefinitionResults = (results: UseQueryResult<GetProcessDefinitionResponseBody>[]) => ({
+	names: Object.fromEntries(
+		results.flatMap(({data: definition}) =>
+			definition ? [[definition.processDefinitionKey, definition.name ?? definition.processDefinitionId]] : [],
+		),
+	),
+	error: results.find(({error}) => error)?.error,
+});
+
 type Props = {
 	search: OperationsLogSearch;
+	selectedTenantId?: string;
+	selectedDefinitionKey?: string;
 };
 
-const InstancesTable: React.FC<Props> = ({search}) => {
+const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefinitionKey}) => {
 	const {t} = useTranslation();
 	const [detailsModal, setDetailsModal] = useState<DetailsModalState>({isOpen: false});
 
-	const selectedTenantId = search.tenantId === 'all' ? undefined : search.tenantId;
-
-	const {data: processDefinitions} = useSuspenseQuery(queries.queryProcessDefinitions({page: {limit: 1000}}));
-	const {data: decisionDefinitions} = useSuspenseQuery(queries.queryDecisionDefinitions({page: {limit: 1000}}));
-
-	const processDefinitionNameMap = useMemo(
-		() => Object.fromEntries(processDefinitions.items.map((def) => [def.processDefinitionKey, def.name])),
-		[processDefinitions],
-	);
+	const {
+		data: decisionDefinitions,
+		isError: isDecisionDefinitionError,
+		isFetching: isFetchingDecisionDefinitions,
+		refetch: refetchDecisionDefinitions,
+	} = useQuery({...queries.queryDecisionDefinitions({page: {limit: 1000}}), retry: false});
 	const decisionDefinitionNameMap = useMemo(
-		() => Object.fromEntries(decisionDefinitions.items.map((def) => [def.decisionDefinitionKey, def.name])),
+		() => Object.fromEntries(decisionDefinitions?.items.map((def) => [def.decisionDefinitionKey, def.name]) ?? []),
 		[decisionDefinitions],
 	);
-
-	const selectedProcessDefinition =
-		search.process && search.version !== undefined
-			? processDefinitions.items.find(
-					(def) =>
-						def.processDefinitionId === search.process &&
-						def.version === search.version &&
-						(selectedTenantId === undefined || def.tenantId === selectedTenantId),
-				)
-			: undefined;
 
 	const [rawSortField, rawSortOrder] = (search.sort ?? DEFAULT_SORT).split('+');
 	const parsedSortField = auditLogSortFieldEnum.safeParse(rawSortField);
@@ -78,7 +79,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 
 	const requestFilter: NonNullable<QueryAuditLogsRequestBody['filter']> = {
 		category: {$neq: 'ADMIN'},
-		processDefinitionKey: selectedProcessDefinition?.processDefinitionKey,
+		processDefinitionKey: selectedDefinitionKey,
 		processDefinitionId: search.process && search.version === undefined ? search.process : undefined,
 		processInstanceKey: search.processInstanceKey,
 		tenantId: selectedTenantId,
@@ -94,7 +95,12 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 
 	const {
 		data,
+		dataUpdatedAt,
 		error,
+		status,
+		isFetching,
+		isPlaceholderData,
+		refetch,
 		isFetchingPreviousPage,
 		hasPreviousPage,
 		fetchPreviousPage,
@@ -103,19 +109,46 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		fetchNextPage,
 	} = useAuditLogs(requestFilter, [{field: sortField, order: sortOrder}]);
 
+	const isFetchErrorReported = useRef(false);
 	useEffect(() => {
-		if (error) {
-			notificationsStore.displayNotification({
-				isDismissable: true,
-				kind: 'error',
-				title: t('operate.operationsLog.notifications.fetchFailed'),
-			});
-			logger.error(error);
+		isFetchErrorReported.current = false;
+	}, [dataUpdatedAt]);
+	useEffect(() => {
+		if (!error) {
+			return;
 		}
+		logger.error(error);
+		if (isFetchErrorReported.current) {
+			return;
+		}
+		isFetchErrorReported.current = true;
+		notificationsStore.displayNotification({
+			isDismissable: true,
+			kind: 'error',
+			title: t('operate.operationsLog.notifications.fetchFailed'),
+		});
 	}, [error, t]);
 
 	const auditLogs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+	const processDefinitionKeys = useMemo(
+		() => [...new Set(auditLogs.map((log) => log.processDefinitionKey).filter((key): key is string => Boolean(key)))],
+		[auditLogs],
+	);
+	const {names: processDefinitionNameMap, error: definitionError} = useQueries({
+		queries: processDefinitionKeys.map((key) => ({...queries.getProcessDefinition(key), retry: false})),
+		combine: combineDefinitionResults,
+	});
+	useEffect(() => {
+		if (definitionError) {
+			logger.error(definitionError);
+		}
+	}, [definitionError]);
+	const processName = (row: AuditLog) =>
+		row.processDefinitionKey
+			? (processDefinitionNameMap[row.processDefinitionKey] ?? row.processDefinitionId ?? row.processDefinitionKey)
+			: undefined;
 	const totalCount = data?.pages.at(0)?.page.totalItems ?? 0;
+	const hasMoreTotalItems = data?.pages.at(0)?.page.hasMoreTotalItems ?? false;
 
 	const hasAnyFilter =
 		search.tenantId !== undefined ||
@@ -129,17 +162,25 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		search.timestampAfter !== undefined ||
 		search.timestampBefore !== undefined;
 
-	const emptyState = hasAnyFilter ? (
-		<EmptyMessage
-			message={t('operate.operationsLog.emptyState.noResultsTitle')}
-			additionalInfo={t('operate.operationsLog.emptyState.noResultsDescription')}
-		/>
-	) : (
-		<EmptyMessage
-			message={t('operate.operationsLog.emptyState.noItemsTitle')}
-			additionalInfo={t('operate.operationsLog.emptyState.noItemsDescription')}
-		/>
-	);
+	const emptyState =
+		status === 'error' ? (
+			<Stack gap={4} role="alert">
+				<ErrorMessage message={t('operate.operationsLog.notifications.fetchFailed')} additionalInfo="" />
+				<Button kind="ghost" size="sm" disabled={isFetching} onClick={() => void refetch()}>
+					{t('errorGenericErrorPageButtonLabel')}
+				</Button>
+			</Stack>
+		) : hasAnyFilter ? (
+			<EmptyMessage
+				message={t('operate.operationsLog.emptyState.noResultsTitle')}
+				additionalInfo={t('operate.operationsLog.emptyState.noResultsDescription')}
+			/>
+		) : (
+			<EmptyMessage
+				message={t('operate.operationsLog.emptyState.noItemsTitle')}
+				additionalInfo={t('operate.operationsLog.emptyState.noItemsDescription')}
+			/>
+		);
 
 	const columns = [
 		{key: 'result', label: '', render: (row: AuditLog) => <CellResult item={row} />},
@@ -162,9 +203,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			render: (row: AuditLog) => (
 				<CellEntityKey
 					item={row}
-					processDefinitionName={
-						row.processDefinitionKey ? processDefinitionNameMap[row.processDefinitionKey] : undefined
-					}
+					processDefinitionName={processName(row)}
 					decisionDefinitionName={
 						row.decisionDefinitionKey ? decisionDefinitionNameMap[row.decisionDefinitionKey] : undefined
 					}
@@ -174,14 +213,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		{
 			key: 'parentEntity',
 			label: t('operate.operationsLog.table.parentEntity'),
-			render: (row: AuditLog) => (
-				<CellParentEntity
-					item={row}
-					processDefinitionName={
-						row.processDefinitionKey ? processDefinitionNameMap[row.processDefinitionKey] : undefined
-					}
-				/>
-			),
+			render: (row: AuditLog) => <CellParentEntity item={row} processDefinitionName={processName(row)} />,
 		},
 		{
 			key: 'details',
@@ -211,23 +243,51 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 
 	return (
 		<TableContainer>
-			<PanelHeader title={t('operate.operationsLog.title')} count={totalCount} />
-			<PaginatedSortableTable
-				columns={columns}
-				rows={auditLogs}
-				rowKey={(row) => row.auditLogKey}
-				emptyState={emptyState}
-				hideHeaderWhenEmpty
-				pagination={{
-					hasPreviousPage,
-					hasNextPage,
-					isFetchingPreviousPage,
-					isFetchingNextPage,
-					fetchPreviousPage,
-					fetchNextPage,
-				}}
-				data-testid="operations-log-table"
+			<PanelHeader
+				title={t('operate.operationsLog.title')}
+				count={status === 'success' && !isPlaceholderData ? totalCount : undefined}
+				hasMoreTotalItems={status === 'success' && !isPlaceholderData && hasMoreTotalItems}
 			/>
+			{isDecisionDefinitionError && status === 'success' && !isPlaceholderData && (
+				<Stack gap={2}>
+					<InlineNotification
+						kind="error"
+						title={t('operate.operationsLog.decisionDefinitionsLookupFailed')}
+						hideCloseButton
+						lowContrast
+						role="alert"
+					/>
+					<Button
+						kind="ghost"
+						size="sm"
+						disabled={isFetchingDecisionDefinitions}
+						onClick={() => void refetchDecisionDefinitions()}
+					>
+						{t('operate.operationsLog.decisionDefinitionsRetry')}
+					</Button>
+				</Stack>
+			)}
+			{status === 'pending' || (isPlaceholderData && isFetching && auditLogs.length === 0) ? (
+				<DataTableSkeleton columnCount={columns.length} rowCount={5} showHeader={false} showToolbar={false} />
+			) : (
+				<PaginatedSortableTable
+					columns={columns}
+					rows={status === 'error' ? [] : auditLogs}
+					rowKey={(row) => row.auditLogKey}
+					isFetching={status === 'success' && isFetching && isPlaceholderData}
+					emptyState={emptyState}
+					hideHeaderWhenEmpty
+					pagination={{
+						hasPreviousPage: status === 'success' && !isPlaceholderData && hasPreviousPage,
+						hasNextPage: status === 'success' && !isPlaceholderData && hasNextPage,
+						isFetchingPreviousPage,
+						isFetchingNextPage,
+						fetchPreviousPage,
+						fetchNextPage,
+					}}
+					data-testid="operations-log-table"
+				/>
+			)}
 			{detailsModal.auditLog && (
 				<OperationsLogDetailsModal
 					isOpen={detailsModal.isOpen}

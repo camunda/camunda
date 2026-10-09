@@ -11,6 +11,9 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ibm.icu.text.Collator;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
@@ -28,6 +31,7 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.AgentDefinitionFilter;
 import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
@@ -61,6 +65,13 @@ import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -111,6 +122,47 @@ public final class TestHelper {
 
   public static final String VAR_TEST_SCOPE_ID = "testScopeId";
   public static final String DEFAULT_TENANT_ID = "<default>";
+
+  private static final ObjectMapper RAW_REQUEST_OBJECT_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  private static final HttpClient RAW_REQUEST_HTTP_CLIENT = HttpClient.newHttpClient();
+
+  /**
+   * Sends a raw JSON POST request to a search endpoint, bypassing the fluent {@link CamundaClient}
+   * filter builders. Useful for exercising request shapes the fluent client doesn't support yet
+   * (e.g. an operator missing from a specific filter property), while still going through the real
+   * REST API and backend rather than mocking anything out.
+   *
+   * @param camundaClient used only to resolve the REST server address
+   * @param path the endpoint path relative to the REST address, e.g. {@code "v2/variables/search"}
+   * @param requestBody the request body, serialized to JSON (e.g. a {@link Map})
+   * @return the parsed JSON response body
+   */
+  public static JsonNode sendRawSearchRequest(
+      final CamundaClient camundaClient, final String path, final Object requestBody) {
+    try {
+      final var body = RAW_REQUEST_OBJECT_MAPPER.writeValueAsString(requestBody);
+      final var base = camundaClient.getConfiguration().getRestAddress().toString();
+      final var separator = base.endsWith("/") ? "" : "/";
+      final var request =
+          HttpRequest.newBuilder()
+              .uri(new URI(base + separator + path))
+              .header("Content-Type", "application/json")
+              .POST(BodyPublishers.ofString(body))
+              .build();
+      final var response = RAW_REQUEST_HTTP_CLIENT.send(request, BodyHandlers.ofString());
+      assertThat(response.statusCode())
+          .describedAs(
+              "Expected raw request to %s to succeed, but got body: %s", path, response.body())
+          .isEqualTo(200);
+      return RAW_REQUEST_OBJECT_MAPPER.readTree(response.body());
+    } catch (final URISyntaxException | IOException e) {
+      throw new RuntimeException(e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+  }
 
   public static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
@@ -618,6 +670,7 @@ public final class TestHelper {
             () -> {
               migratedTask[0] =
                   client.newUserTaskSearchRequest().filter(filter).send().join().singleItem();
+              assertThat(migratedTask[0]).isNotNull();
             });
     return migratedTask[0];
   }
@@ -714,7 +767,7 @@ public final class TestHelper {
   public static void waitForProcessInstanceToBeTerminated(
       final CamundaClient camundaClient, final Long processInstanceKey) {
     Awaitility.await("should wait until process is terminated")
-        .atMost(Duration.ofSeconds(60))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -1487,7 +1540,7 @@ public final class TestHelper {
       final long processInstanceKey,
       final int expectedDecisionInstances) {
     Awaitility.await("should deploy decision definitions and wait for import")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -2132,6 +2185,25 @@ public final class TestHelper {
   }
 
   /**
+   * Waits for agent definitions matching the given filter to be indexed in secondary storage after
+   * deployment.
+   *
+   * @param camundaClient CamundaClient
+   * @param filter the agent definition filter to match
+   * @param expectedAgentDefinitions the expected number of matching agent definitions
+   */
+  public static void waitForAgentDefinitionsToBeIndexed(
+      final CamundaClient camundaClient,
+      final Consumer<AgentDefinitionFilter> filter,
+      final int expectedAgentDefinitions) {
+    waitForItemsPaginated(
+        "should index agent definitions after deployment",
+        expectedAgentDefinitions,
+        page ->
+            camundaClient.newAgentDefinitionSearchRequest().filter(filter).page(page).execute());
+  }
+
+  /**
    * Waits for an agent instance to be indexed in secondary storage after creation.
    *
    * @param camundaClient CamundaClient
@@ -2202,6 +2274,7 @@ public final class TestHelper {
   public static void waitForUser(final CamundaClient client, final String username) {
     Awaitility.await("user '%s' visible in secondary storage".formatted(username))
         .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var result =

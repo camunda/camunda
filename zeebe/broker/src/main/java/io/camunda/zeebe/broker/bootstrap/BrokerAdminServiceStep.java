@@ -76,6 +76,32 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
         });
   }
 
+  @Override
+  void shutdownInternal(
+      final BrokerStartupContext brokerShutdownContext,
+      final ConcurrencyControl concurrencyControl,
+      final ActorFuture<BrokerStartupContext> shutdownFuture) {
+
+    final var tenantIds = brokerShutdownContext.getPhysicalTenantIds().known();
+
+    final var futures =
+        tenantIds.stream()
+            .map(
+                tenantId ->
+                    shutdownTenantService(brokerShutdownContext, tenantId, concurrencyControl))
+            .collect(new ActorFutureCollector<>(concurrencyControl));
+
+    concurrencyControl.runOnCompletion(
+        futures,
+        (ok, error) -> {
+          if (error != null) {
+            shutdownFuture.completeExceptionally(error);
+          } else {
+            shutdownFuture.complete(brokerShutdownContext);
+          }
+        });
+  }
+
   private ActorFuture<BrokerAdminServiceImpl> startTenantService(
       final BrokerStartupContext brokerStartupContext,
       final String physicalTenantId,
@@ -83,7 +109,7 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
 
     final var adminService =
         new BrokerAdminServiceImpl(
-            brokerStartupContext.getPartitionManagers().get(physicalTenantId));
+            () -> brokerStartupContext.getPartitionManagers().get(physicalTenantId));
 
     final var result = concurrencyControl.<BrokerAdminServiceImpl>createFuture();
     final var submitActorFuture =
@@ -127,31 +153,5 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
           }
         });
     return result;
-  }
-
-  @Override
-  void shutdownInternal(
-      final BrokerStartupContext brokerShutdownContext,
-      final ConcurrencyControl concurrencyControl,
-      final ActorFuture<BrokerStartupContext> shutdownFuture) {
-
-    final var tenantIds = brokerShutdownContext.getPhysicalTenantIds().known();
-
-    final var futures =
-        tenantIds.stream()
-            .map(
-                tenantId ->
-                    shutdownTenantService(brokerShutdownContext, tenantId, concurrencyControl))
-            .collect(new ActorFutureCollector<>(concurrencyControl));
-
-    concurrencyControl.runOnCompletion(
-        futures,
-        (ok, error) -> {
-          if (error != null) {
-            shutdownFuture.completeExceptionally(error);
-          } else {
-            shutdownFuture.complete(brokerShutdownContext);
-          }
-        });
   }
 }

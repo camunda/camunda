@@ -1,0 +1,75 @@
+---
+# Source: camunda-platform/templates/optimize/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: optimize-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-810-opensearch-physical-tenants
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    app.kubernetes.io/component: optimize
+
+apiVersion: v1
+data:
+  environment-config.yaml: |
+    zeebe:
+      enabled: true
+      partitionCount: 3
+      name: "zeebe-record"
+    es:
+      connection:
+        nodes:
+          - host: "opensearch"
+            httpPort: 9200
+    spring:
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+      profiles:
+        active: "ccsm"
+    security:
+      auth:
+        cookie:
+          same-site:
+            enabled: false
+        ccsm:
+          redirectRootUrl: "http://localhost:8083"
+    api:
+      audience: "optimize-api"
+      jwtSetUri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
+  application-ccsm.yaml: |
+    spring:
+      config:
+        import: optional:file:/optimize/config/application.yml
+    camunda:
+      identity:
+        clientId: "optimize"
+        audience: "optimize-api"
+        issuer: "http://localhost:18080/auth/realms/camunda-platform"
+        issuerBackendUrl: "http://keycloak:18080/auth/realms/camunda-platform"
+      security:
+        authentication:
+          method: "oidc"
+          oidc:
+            client-id: "optimize"
+            client-secret: ${VALUES_OPTIMIZE_CLIENT_SECRET:}
+            audiences:
+              - "optimize"
+              - "optimize-api"
+              - "web-modeler-api"
+            authorization-uri: "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
+            jwk-set-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
+            token-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
+            redirect-uri: "http://localhost:8083/api/authentication/callback"
+  application.yml: |
+    historyCleanup:
+      cronTrigger: '*/30 * * * *'
+      ttl: 'P1D'
+      processDataCleanup:
+        enabled: true

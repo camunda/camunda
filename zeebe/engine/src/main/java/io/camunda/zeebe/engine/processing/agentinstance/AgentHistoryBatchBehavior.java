@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.agentinstance;
 
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.state.immutable.AgentHistoryState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
@@ -20,8 +21,10 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -53,17 +56,26 @@ public final class AgentHistoryBatchBehavior {
   static final String ERROR_MSG_LOOP_ITERATION_MISSING =
       "Expected to add history item with historyItemId '%s' to agent instance, but loopIteration "
           + "is missing (got %d). Each history item must declare a positive loopIteration.";
+  static final String ERROR_MSG_JOB_KEY_REQUIRED =
+      "Expected to update agent instance, but no jobKey was provided. A command must always be "
+          + "attributed to the active job that produced it.";
+  static final String ERROR_MSG_JOB_LEASE_TOKEN_REQUIRED =
+      "Expected to update agent instance related to job with key '%d', but no jobLeaseToken was "
+          + "provided. A command must always carry the lease its job was activated with.";
   static final String ERROR_MSG_JOB_NOT_ACTIVE =
       "Expected to update agent instance related to job with key '%d', but job was not active.";
-  static final String ERROR_MSG_JOB_LEASE_MISMATCH =
+  static final String ERROR_MSG_JOB_LEASE_TOKEN_MISMATCH =
       "Expected to update agent instance related to job with key '%d', but job did not hold the "
           + "supplied lease. The job may have been re-activated.";
+  static final String ERROR_MSG_JOB_NOT_LEASED =
+      "Expected to update agent instance related to job with key '%d', but job has no lease "
+          + "token. The job must be activated with a lease before it can be referenced.";
   static final String ERROR_MSG_JOB_ELEMENT_MISMATCH =
       "Expected to update agent instance related to job with key '%d', but job belongs to element "
           + "instance '%d' instead of the requested element instance '%d'.";
-  static final String ERROR_MSG_JOB_REQUIRED_FOR_HISTORY =
-      "Expected a job to be provided for the embedded history batch, but no jobKey was set."
-          + " A history batch must be attributed to the active job that produced it.";
+  static final String ERROR_MSG_DUPLICATE_HISTORY_ITEM_ID_IN_REQUEST =
+      "Expected to create or update agent instance history, but historyItemId '%s' is used by more "
+          + "than one history item. Each history item must have a unique historyItemId.";
   private static final String ERROR_MSG_UNKNOWN_ATTRIBUTES =
       "Expected to update agent instance configuration with history item '%s',"
           + " but changedAttributes contained unknown attribute(s) %s. Allowed attributes are: %s.";
@@ -82,29 +94,52 @@ public final class AgentHistoryBatchBehavior {
   }
 
   /**
-   * Validates the job context a command carries. {@code jobKey} may be omitted only when no history
-   * batch is present; once a batch is attached to the command, {@code jobKey} becomes required — a
-   * batch must always be attributed to the active job that produced it. When a job is supplied
-   * (with or without a batch), it must refer to a currently-active job, that job's lease token (if
-   * any) must match {@code jobLease}, and the job must belong to {@code elementInstanceKey}.
+   * Whether {@link #validateJobContext} rejects a command whose {@code jobLeaseToken} does not
+   * match the job's current lease, or accepts it as stale.
+   */
+  public enum LeaseMismatchHandling {
+    /**
+     * Reject on a lease mismatch. For callers whose effects apply immediately and can't be deferred
+     * to a later commit step (e.g. {@code AGENT_INSTANCE:CREATE}, which applies a CONFIGURATION
+     * item's changes and commits it right away).
+     */
+    REJECT,
+    /**
+     * Accept a stale lease. For callers that store the batch as PENDING under its own lease —
+     * resolved later by the commit/discard machinery.
+     */
+    ALLOW_STALE
+  }
+
+  /**
+   * Validates the job context a command carries. {@code jobKey} and {@code jobLeaseToken} are
+   * always required — a command must always be attributed to the active job that produced it and
+   * carry the lease it was activated with, and is rejected outright if either is unset. The
+   * referenced job must be currently active, must hold a lease, and must belong to {@code
+   * elementInstanceKey}.
    *
-   * @return the active {@link JobRecord} if a job was supplied and is valid, {@code null} wrapped
-   *     in {@link Either#right} if no job was supplied and none was required, otherwise the {@link
-   *     Rejection} to surface
+   * <p>{@code jobLeaseToken} is a fencing token, not an authorization check (see ADR 0005-810):
+   * whether a mismatch against the job's current lease is fatal depends on {@code
+   * leaseMismatchHandling}, see {@link LeaseMismatchHandling}.
+   *
+   * @return the active {@link JobRecord} if {@code jobKey} refers to a valid job, otherwise the
+   *     {@link Rejection} to surface
    */
   public Either<Rejection, JobRecord> validateJobContext(
       final long jobKey,
-      final String jobLease,
+      final String jobLeaseToken,
       final long elementInstanceKey,
-      final List<? extends AgentHistoryRecordValue> history) {
+      final LeaseMismatchHandling leaseMismatchHandling) {
 
     if (jobKey == -1L) {
-      if (history != null && !history.isEmpty()) {
-        return Either.left(
-            new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MSG_JOB_REQUIRED_FOR_HISTORY));
-      } else {
-        return Either.right(null);
-      }
+      return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MSG_JOB_KEY_REQUIRED));
+    }
+
+    if (jobLeaseToken == null || jobLeaseToken.isBlank()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              ERROR_MSG_JOB_LEASE_TOKEN_REQUIRED.formatted(jobKey)));
     }
 
     final var jobState = processingState.getJobState();
@@ -114,9 +149,16 @@ public final class AgentHistoryBatchBehavior {
     }
 
     final var job = jobState.getJob(jobKey);
-    if (job.hasLeaseToken() && !Objects.equals(jobLease, job.getLeaseToken())) {
+    if (!job.hasJobLeaseToken()) {
       return Either.left(
-          new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_LEASE_MISMATCH.formatted(jobKey)));
+          new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_NOT_LEASED.formatted(jobKey)));
+    }
+
+    if (leaseMismatchHandling == LeaseMismatchHandling.REJECT
+        && !Objects.equals(jobLeaseToken, job.getJobLeaseToken())) {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND, ERROR_MSG_JOB_LEASE_TOKEN_MISMATCH.formatted(jobKey)));
     }
 
     final var jobElementInstanceKey = job.getElementInstanceKey();
@@ -147,6 +189,7 @@ public final class AgentHistoryBatchBehavior {
       return Either.rightVoid();
     }
 
+    final var seenHistoryItemIds = new HashSet<String>();
     for (int i = 0; i < history.size(); i++) {
       final var item = history.get(i);
       final var historyItemId = item.getHistoryItemId();
@@ -155,6 +198,13 @@ public final class AgentHistoryBatchBehavior {
         return Either.left(
             new Rejection(
                 RejectionType.INVALID_ARGUMENT, ERROR_MSG_HISTORY_ITEM_ID_MISSING.formatted(i)));
+      }
+
+      if (!seenHistoryItemIds.add(historyItemId)) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                ERROR_MSG_DUPLICATE_HISTORY_ITEM_ID_IN_REQUEST.formatted(historyItemId)));
       }
 
       if (item.getRole() == AgentHistoryRole.UNSPECIFIED) {
@@ -201,34 +251,44 @@ public final class AgentHistoryBatchBehavior {
   /**
    * Applies an already-validated batch onto {@code target}, in array order: builds one {@code
    * AGENT_HISTORY} event per item (a full copy of the item, with its record-context fields
-   * overwritten to match {@code target}/{@code jobKey}/{@code jobLease}) and accumulates metrics
-   * immediately. Whichever of model/provider/systemPrompt/tools/limits a {@link
-   * AgentHistoryRole#CONFIGURATION} item names in its own {@code changedAttributes} is only applied
-   * immediately if {@code applyConfigurationChanges} is {@code true} — CREATE passes {@code true}
-   * so a newly created instance always has a valid definition, while UPDATE passes {@code false}
-   * and instead defers that application to when the item is committed (see {@code
-   * AgentHistoryCommitProcessor}).
+   * overwritten to match {@code target}/{@code jobKey}/{@code jobLeaseToken}) and accumulates
+   * metrics immediately. Never applies a {@link AgentHistoryRole#CONFIGURATION} item's own
+   * model/provider/systemPrompt/tools/limits changes itself — that is always the caller's explicit
+   * responsibility, via {@link #applyConfigurationChanges(AgentInstanceRecord,
+   * AgentHistoryRecordValue)}, at whichever point the caller considers the item committed
+   * (immediately, for {@code CREATE}, which commits its own {@code CONFIGURATION} items inline; at
+   * real commit time via {@code AgentHistoryCommitProcessor}, for {@code UPDATE}).
    *
-   * <p><strong>Mutates {@code target} in place</strong> (metrics, definition, tools, limits,
-   * history) and does not itself emit any event — the caller is responsible for turning {@code
-   * target.getHistory()} into {@code AGENT_HISTORY:CREATED} follow-up events.
+   * <p><strong>Mutates {@code target} in place</strong> (metrics, history — never
+   * definition/tools/limits) and does not itself emit any event — the caller is responsible for
+   * turning {@code target.getHistory()} into {@code AGENT_HISTORY:CREATED} follow-up events. An
+   * item already pending under the same {@code (jobKey, jobLeaseToken)} pair is echoed back with
+   * {@code isDuplicate} set instead: it is skipped for metrics accumulation, and the caller must
+   * filter it out rather than turn it into a {@code CREATED} event or apply its configuration
+   * changes.
    *
-   * @param applyConfigurationChanges whether a CONFIGURATION item's changes should be applied onto
-   *     {@code target} immediately, rather than deferred until the item is committed
    * @return the {@code AgentInstanceRecord} attribute names that actually changed as a result
+   *     (currently only ever {@link AgentInstanceRecord#ATTR_METRICS})
    */
   Set<String> applyInstanceChangesFromHistory(
       final AgentInstanceRecord target,
       final long jobKey,
-      final String jobLease,
+      final String jobLeaseToken,
       final long elementInstanceKey,
-      final List<? extends AgentHistoryRecordValue> history,
-      final boolean applyConfigurationChanges) {
+      final List<? extends AgentHistoryRecordValue> history) {
     final var changedAttributes = new HashSet<String>();
     final var items = new ArrayList<AgentHistoryRecord>(history.size());
+    final var agentHistoryState = processingState.getAgentHistoryState();
+    final var pendingByHistoryItemId = collectPendingByHistoryItemId(jobKey, jobLeaseToken);
 
     for (final var item : history) {
-      final var historyKey = keyGenerator.nextKey();
+      final var historyItemId = item.getHistoryItemId();
+      final var committedKey =
+          agentHistoryState.getCommittedHistoryItemKey(target.getAgentInstanceKey(), historyItemId);
+      final var matchedKey =
+          committedKey != null ? committedKey : pendingByHistoryItemId.get(historyItemId);
+      final var isDuplicate = matchedKey != null;
+      final var historyKey = isDuplicate ? matchedKey : keyGenerator.nextKey();
 
       final var event = new AgentHistoryRecord();
       // `item` is always a concrete AgentHistoryRecord at runtime (the only implementation of
@@ -245,13 +305,16 @@ public final class AgentHistoryBatchBehavior {
           .setProcessDefinitionKey(target.getProcessDefinitionKey())
           .setTenantId(target.getTenantId())
           .setJobKey(jobKey)
-          .setJobLease(jobLease);
+          .setJobLeaseToken(jobLeaseToken)
+          .setDuplicate(isDuplicate);
 
-      if (applyMetrics(target.getMetrics(), item)) {
+      // A duplicate is skipped entirely: no metrics accumulation — re-applying values the
+      // instance already reflects would be unobservable, so the durable signal that it was
+      // skipped is the isDuplicate flag on the echoed item alone.
+      if (!isDuplicate
+          && !agentHistoryState.hasAccumulatedMetrics(target.getAgentInstanceKey(), historyItemId)
+          && applyMetrics(target.getMetrics(), item)) {
         changedAttributes.add(AgentInstanceRecord.ATTR_METRICS);
-      }
-      if (applyConfigurationChanges) {
-        changedAttributes.addAll(applyConfigurationChanges(target, item));
       }
 
       items.add(event);
@@ -259,6 +322,24 @@ public final class AgentHistoryBatchBehavior {
 
     target.setHistory(items);
     return changedAttributes;
+  }
+
+  /**
+   * Collects, by {@code historyItemId}, the {@code agentHistoryKey} of every history item already
+   * pending under this exact {@code (jobKey, jobLeaseToken)} pair. A pending item stored under a
+   * different lease is never a duplicate — that item belongs to an attempt that may still lose — so
+   * an unleased request ({@code jobLeaseToken} empty) only matches other pending items that were
+   * themselves pushed without a lease for the same job.
+   */
+  private Map<String, Long> collectPendingByHistoryItemId(
+      final long jobKey, final String jobLeaseToken) {
+    final var pendingByHistoryItemId = new HashMap<String, Long>();
+    final AgentHistoryState.AgentHistoryVisitor collect =
+        pending ->
+            pendingByHistoryItemId.putIfAbsent(
+                pending.getHistoryItemId(), pending.getAgentHistoryKey());
+    processingState.getAgentHistoryState().visitByJobLeaseToken(jobKey, jobLeaseToken, collect);
+    return pendingByHistoryItemId;
   }
 
   /**
@@ -309,6 +390,30 @@ public final class AgentHistoryBatchBehavior {
     }
 
     return changed;
+  }
+
+  /**
+   * Returns a copy of {@code record} with {@code systemPrompt}/{@code tools} cleared whenever they
+   * are absent from {@code record}'s own {@code changedAttributes} — those two fields can carry
+   * large payloads, so an UPDATED event that didn't touch them shouldn't re-transmit their current
+   * value on every unrelated update (e.g. a metrics-only or status-only change). {@code record}
+   * itself is left untouched, since it may still be needed afterwards (e.g. for the command
+   * response, which must keep reporting the full, current state).
+   *
+   * <p>Only meant for the {@code AgentInstanceIntent.UPDATED} event value: CREATED/COMPLETED/
+   * MIGRATED events always carry full data and must not be trimmed this way.
+   */
+  public static AgentInstanceRecord trimUnchangedContentFields(final AgentInstanceRecord record) {
+    final var changed = Set.copyOf(record.getChangedAttributes());
+    final var copy = new AgentInstanceRecord();
+    copy.copyFrom(record);
+    if (!changed.contains(AgentInstanceRecord.ATTR_SYSTEM_PROMPT)) {
+      copy.getDefinition().setSystemPrompt(List.of());
+    }
+    if (!changed.contains(AgentInstanceRecord.ATTR_TOOLS)) {
+      copy.setTools(List.of());
+    }
+    return copy;
   }
 
   /**

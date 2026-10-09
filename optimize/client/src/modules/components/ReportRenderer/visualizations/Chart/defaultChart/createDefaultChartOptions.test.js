@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {ColorPicker} from 'components';
+
 import {determineBarColor} from '../colorsUtils';
 import {
   createDatasetOptions,
@@ -90,11 +92,12 @@ it('should create dataset option for pie reports', () => {
     isStriped: false,
     isDark: false,
   });
+  const pieColors = ColorPicker.getGeneratedColors(data.length);
   expect(options).toEqual({
-    backgroundColor: ['#aec7e9', '#6391d2'],
+    backgroundColor: pieColors,
     borderColor: '#fff',
     borderWidth: undefined,
-    hoverBackgroundColor: ['#aec7e9', '#6391d2'],
+    hoverBackgroundColor: pieColors,
   });
 });
 

@@ -9,7 +9,7 @@
 import {useActorRef, useSelector} from '@xstate/react';
 import {useQueryClient} from '@tanstack/react-query';
 import type {SnapshotFrom} from 'xstate';
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {taskAssignmentMachine} from './taskAssignmentMachine';
 import {useCallback} from 'react';
 
@@ -42,7 +42,7 @@ function useTaskAssignment({
 	assignee,
 }: {
 	userTaskKey: string;
-	currentUser: string;
+	currentUser: string | null;
 	taskState: UserTask['state'];
 	assignee: string | null;
 }) {

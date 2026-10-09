@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl;
 
 import static io.camunda.zeebe.db.ColumnFamilyMetricsDoc.*;
+import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.db.ColumnFamilyMetrics;
 import io.camunda.zeebe.protocol.EnumValue;
@@ -15,7 +16,6 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.util.Objects;
 
 public final class FineGrainedColumnFamilyMetrics implements ColumnFamilyMetrics {
 
@@ -28,7 +28,7 @@ public final class FineGrainedColumnFamilyMetrics implements ColumnFamilyMetrics
   public <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
       FineGrainedColumnFamilyMetrics(
           final ColumnFamilyNames columnFamily, final MeterRegistry registry) {
-    this.registry = Objects.requireNonNull(registry, "registry cannot be null");
+    this.registry = requireNonNull(registry, "registry cannot be null");
     final var columnFamilyLabel = columnFamily.name();
     get = createTimer(columnFamilyLabel, OperationType.GET);
     put = createTimer(columnFamilyLabel, OperationType.PUT);

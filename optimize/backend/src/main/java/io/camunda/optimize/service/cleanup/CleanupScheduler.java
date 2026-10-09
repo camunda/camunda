@@ -57,7 +57,7 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
   }
 
   @Override
-  public void run() {
+  protected void run() {
     runCleanup();
   }
 

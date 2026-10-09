@@ -88,6 +88,6 @@ describe('<TenantField />', () => {
 
 		const screen = await render(<TenantField />, {wrapper: getWrapper({tenantId: 'invalid-tenant'})});
 
-		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toHaveTextContent('Select a tenant');
+		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toMatchTextContent('Select a tenant');
 	});
 });

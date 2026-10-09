@@ -123,14 +123,14 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorMessage,
       final Long retryBackOff,
       final Map<String, Object> variables,
-      final String leaseToken,
+      final String jobLeaseToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerFailJobRequest(jobKey, retries, retryBackOff)
             .setVariables(getDocumentOrEmpty(variables))
             .setErrorMessage(errorMessage);
-    if (leaseToken != null) {
-      request.setLeaseToken(leaseToken);
+    if (jobLeaseToken != null) {
+      request.setJobLeaseToken(jobLeaseToken);
     }
     return sendBrokerRequest(request, authentication);
   }
@@ -140,14 +140,14 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorCode,
       final String errorMessage,
       final Map<String, Object> variables,
-      final String leaseToken,
+      final String jobLeaseToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerThrowErrorRequest(jobKey, errorCode)
             .setErrorMessage(errorMessage)
             .setVariables(getDocumentOrEmpty(variables));
-    if (leaseToken != null) {
-      request.setLeaseToken(leaseToken);
+    if (jobLeaseToken != null) {
+      request.setJobLeaseToken(jobLeaseToken);
     }
     return sendBrokerRequest(request, authentication);
   }
@@ -156,14 +156,14 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final long jobKey,
       final Map<String, Object> variables,
       final JobResult result,
-      final String leaseToken,
+      final String jobLeaseToken,
       final String businessId,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerCompleteJobRequest(
             jobKey, getDocumentOrEmpty(variables), result, maxVariableNameLength);
-    if (leaseToken != null) {
-      request.setLeaseToken(leaseToken);
+    if (jobLeaseToken != null) {
+      request.setJobLeaseToken(jobLeaseToken);
     }
     if (businessId != null) {
       request.setBusinessId(businessId);
@@ -175,7 +175,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final long jobKey,
       final Long operationReference,
       final UpdateJobChangeset changeset,
-      final String leaseToken,
+      final String jobLeaseToken,
       final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerUpdateJobRequest(
@@ -183,8 +183,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);
     }
-    if (leaseToken != null) {
-      brokerRequest.setLeaseToken(leaseToken);
+    if (jobLeaseToken != null) {
+      brokerRequest.setJobLeaseToken(jobLeaseToken);
     }
     return sendBrokerRequest(brokerRequest, authentication);
   }

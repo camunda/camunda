@@ -9,6 +9,7 @@ package io.camunda.zeebe.msgpack.property;
 
 import io.camunda.zeebe.msgpack.value.EnumValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import org.jspecify.annotations.Nullable;
 
 public final class EnumProperty<E extends Enum<E>> extends BaseProperty<EnumValue<E>> {
   public EnumProperty(final String key, final Class<E> type) {
@@ -27,7 +28,7 @@ public final class EnumProperty<E extends Enum<E>> extends BaseProperty<EnumValu
     super(key, new EnumValue<>(type), new EnumValue<>(type, defaultValue));
   }
 
-  public E getValue() {
+  public @Nullable E getValue() {
     return resolveValue().getValue();
   }
 

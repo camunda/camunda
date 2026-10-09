@@ -139,7 +139,8 @@ public class RaftServerSenderSubjectsTest {
     return p ->
         p.configure(
             MEMBER_ID,
-            new ConfigureRequest(1, "b", 0, 0, Collections.emptyList(), Collections.emptyList()));
+            new ConfigureRequest(
+                1, "b", 0, 0, Collections.emptyList(), Collections.emptyList(), 1));
   }
 
   static Consumer<RaftServerProtocol> forceConfigureRequest() {

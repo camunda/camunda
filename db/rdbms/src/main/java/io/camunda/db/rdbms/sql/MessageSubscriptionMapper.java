@@ -18,6 +18,8 @@ public interface MessageSubscriptionMapper
 
   void insert(MessageSubscriptionDbModel messageSubscription);
 
+  void createIfNotExists(MessageSubscriptionDbModel messageSubscription);
+
   void update(MessageSubscriptionDbModel messageSubscription);
 
   Long count(MessageSubscriptionDbQuery filter);

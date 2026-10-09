@@ -6,9 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack} from '@carbon/react';
-import {Warning} from '@carbon/react/icons';
-import styles from './CamundaFormRenderer.module.scss';
+import {CircleAlert} from '@camunda/design-system/icons';
 
 type Props = {
 	screenReaderMessage?: string;
@@ -17,16 +15,10 @@ type Props = {
 
 const FormLevelErrorMessage: React.FC<Props> = ({screenReaderMessage, readableMessage}) => {
 	return (
-		<Stack
-			orientation="horizontal"
-			gap={3}
-			className={styles.validationMessage}
-			role="alert"
-			aria-label={screenReaderMessage}
-		>
-			<Warning aria-hidden className={styles.warningFilled} />
-			<div aria-hidden>{readableMessage}</div>
-		</Stack>
+		<div className="flex items-start gap-2" role="alert" aria-label={screenReaderMessage}>
+			<CircleAlert className="size-4 shrink-0 text-danger-action-default" aria-hidden />
+			<div aria-hidden={screenReaderMessage !== undefined}>{readableMessage}</div>
+		</div>
 	);
 };
 

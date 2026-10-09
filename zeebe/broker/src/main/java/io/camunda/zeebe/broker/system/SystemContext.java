@@ -47,7 +47,6 @@ import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
-import io.camunda.zeebe.broker.system.monitoring.BrokerRootMetrics;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerValidator;
@@ -65,7 +64,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.TlsConfigUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -168,9 +166,7 @@ public final class SystemContext {
     this.scheduler = scheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
-    this.meterRegistry =
-        MicrometerUtil.wrap(
-            meterRegistry, BrokerRootMetrics.rootTags(brokerCfg.getCluster().getMemberId()));
+    this.meterRegistry = meterRegistry;
 
     this.physicalTenantContexts = Map.copyOf(physicalTenantContexts);
     this.userServicesForTenant = userServicesForTenant;

@@ -669,6 +669,7 @@ public final class BpmnJobBehavior {
         .setTags(getTagsFromProcessInstance(context))
         .setPriority(props.getPriority())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setStorageOrdinal(context.getStorageOrdinal())
         .setBusinessId(getBusinessIdFromProcessInstance(context));
     setJobSecretReferences(secretReferences);
 
@@ -829,10 +830,12 @@ public final class BpmnJobBehavior {
         // The job is destroyed without completing — discard all its pending history items. The
         // lease is left empty on purpose: the whole job is gone, so every activation's items must
         // be discarded regardless of the lease they were created with.
-        commandWriter.appendFollowUpCommand(
-            jobKey,
+        commandWriter.appendNewCommand(
             AgentHistoryIntent.DISCARD,
-            new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+            new AgentHistoryRecord()
+                .setJobKey(jobKey)
+                .ignoreLease()
+                .setProcessInstanceKey(job.getProcessInstanceKey()));
       }
     }
   }

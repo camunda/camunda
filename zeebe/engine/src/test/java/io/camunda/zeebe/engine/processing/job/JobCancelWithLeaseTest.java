@@ -61,8 +61,8 @@ public final class JobCancelWithLeaseTest {
     final Record<JobBatchRecordValue> batch =
         ENGINE.jobs().withType(jobType).withLease().activate();
     final long jobKey = batch.getValue().getJobKeys().get(0);
-    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();

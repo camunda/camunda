@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.queryapi;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -218,6 +219,11 @@ public final class QueryApiIT {
     @Override
     public RequestType getRequestType() {
       return RequestType.QUERY;
+    }
+
+    @Override
+    public String getPartitionGroup() {
+      return DEFAULT_PHYSICAL_TENANT_ID;
     }
 
     @Override

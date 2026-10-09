@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.client.api.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.UnsupportedBrokerResponseException;
@@ -18,11 +20,11 @@ import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +37,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
   protected final int schemaId;
   protected final int templateId;
 
-  private String partitionGroup;
+  private @Nullable String partitionGroup;
 
   public BrokerRequest(final int schemaId, final int templateId) {
     this.schemaId = schemaId;
@@ -43,7 +45,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
   }
 
   @Override
-  public String getPartitionGroup() {
+  public @Nullable String getPartitionGroup() {
     return partitionGroup;
   }
 
@@ -57,7 +59,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
    * {@link io.camunda.cluster.PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID}.
    */
   public void setPartitionGroup(final String partitionGroup) {
-    Objects.requireNonNull(partitionGroup, "partitionGroup must not be null");
+    requireNonNull(partitionGroup, "partitionGroup must not be null");
     if (partitionGroup.isBlank()) {
       throw new IllegalArgumentException("partitionGroup must not be blank");
     }
@@ -87,7 +89,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
   }
 
   // public so we can do assertions in tests
-  public abstract BufferWriter getRequestWriter();
+  public abstract @Nullable BufferWriter getRequestWriter();
 
   public void serializeValue() {
     final BufferWriter valueWriter = getRequestWriter();

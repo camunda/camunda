@@ -54,14 +54,15 @@ public class RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterES
     return commandResult;
   }
 
-  public DecisionDefinitionReader getDecisionDefinitionReader() {
+  protected DecisionDefinitionReader getDecisionDefinitionReader() {
     return this.decisionDefinitionReader;
   }
 
-  public DecisionQueryFilterEnhancerES getQueryFilterEnhancer() {
+  protected DecisionQueryFilterEnhancerES getQueryFilterEnhancer() {
     return this.queryFilterEnhancer;
   }
 
+  @Override
   public DecisionGroupByInterpreterFacadeES getGroupByInterpreter() {
     return this.groupByInterpreter;
   }
@@ -70,7 +71,8 @@ public class RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterES
     return this.viewInterpreter;
   }
 
-  public OptimizeElasticsearchClient getEsClient() {
+  @Override
+  protected OptimizeElasticsearchClient getEsClient() {
     return this.esClient;
   }
 }

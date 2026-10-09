@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Full metadata for a single checkpoint, stored in the CHECKPOINTS column family. Tracks all
@@ -53,7 +54,7 @@ public final class CheckpointMetadataValue extends UnpackedObject implements DbV
     return this;
   }
 
-  public CheckpointType getCheckpointType() {
+  public @Nullable CheckpointType getCheckpointType() {
     return checkpointTypeProperty.getValue();
   }
 

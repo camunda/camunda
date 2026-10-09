@@ -9,11 +9,11 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -48,6 +48,8 @@ public final class ProcessInstanceResumeProcessor
       MESSAGE_PREFIX + "no such process was found";
   private static final String PROCESS_NOT_SUSPENDED_MESSAGE =
       MESSAGE_PREFIX + "it is not currently suspended";
+  private static final String PROCESS_TERMINATING_MESSAGE =
+      MESSAGE_PREFIX + "it is already being terminated";
 
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
@@ -56,11 +58,13 @@ public final class ProcessInstanceResumeProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final CslAuthorizationCheck cslCheck;
   private final SuspensionState suspensionState;
+  private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceResumeProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final SuspensionMetrics suspensionMetrics) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
@@ -68,6 +72,7 @@ public final class ProcessInstanceResumeProcessor
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
     suspensionState = processingState.getSuspensionState();
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -76,6 +81,7 @@ public final class ProcessInstanceResumeProcessor
 
     validateNotFound(command, elementInstance)
         .flatMap(ei -> validateAuthorized(command, ei))
+        .flatMap(ei -> validateNotTerminating(command, ei))
         .flatMap(ei -> validateSuspensionState(command, ei))
         .ifRightOrLeft(
             ei -> resume(command, ei),
@@ -90,15 +96,18 @@ public final class ProcessInstanceResumeProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 
   private Either<Rejection, ElementInstance> validateNotFound(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
-    if (elementInstance == null
-        || elementInstance.getParentKey() > 0
-        || elementInstance.isTerminating()) {
+    if (elementInstance == null || elementInstance.getParentKey() > 0) {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND, PROCESS_NOT_FOUND_MESSAGE.formatted(command.getKey())));
@@ -129,6 +138,17 @@ public final class ProcessInstanceResumeProcessor
                 PROCESS_NOT_FOUND_MESSAGE.formatted(
                     elementInstance.getValue().getProcessInstanceKey())))
         .map(ignored -> elementInstance);
+  }
+
+  private Either<Rejection, ElementInstance> validateNotTerminating(
+      final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
+    if (elementInstance.isTerminating()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE,
+              PROCESS_TERMINATING_MESSAGE.formatted(command.getKey())));
+    }
+    return Either.right(elementInstance);
   }
 
   private Either<Rejection, ElementInstance> validateSuspensionState(
@@ -174,6 +194,9 @@ public final class ProcessInstanceResumeProcessor
     // buffer spans several command batches, and RESUMED is written only once it is empty
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.RESUMING, value, command);
+    if (!isRestart) {
+      suspensionMetrics.startResumeDuration(command.getKey());
+    }
   }
 
   /**

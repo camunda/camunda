@@ -27,7 +27,7 @@ import io.camunda.client.api.command.AgentTool;
 import io.camunda.client.api.response.DocumentMetadata;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.protocol.rest.AgentInstanceDocumentContent;
-import io.camunda.client.protocol.rest.AgentInstanceHistoryItemMetrics;
+import io.camunda.client.protocol.rest.AgentInstanceHistoryItemMetricsRequest;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryRoleEnum;
 import io.camunda.client.protocol.rest.AgentInstanceMessageContent;
 import io.camunda.client.protocol.rest.AgentInstanceObjectContent;
@@ -163,14 +163,17 @@ final class AgentInstanceHistoryMapper {
     return protocolToolCalls;
   }
 
-  static AgentInstanceHistoryItemMetrics toProtocolMetrics(
+  static AgentInstanceHistoryItemMetricsRequest toProtocolMetrics(
       final AgentInstanceHistoryMetrics metrics) {
     if (metrics == null) {
       return null;
     }
-    return new AgentInstanceHistoryItemMetrics()
+    return new AgentInstanceHistoryItemMetricsRequest()
         .inputTokens(metrics.getInputTokens())
         .outputTokens(metrics.getOutputTokens())
+        .reasoningTokenCount(metrics.getReasoningTokenCount())
+        .cacheCreationTokenCount(metrics.getCacheCreationTokenCount())
+        .cacheReadTokenCount(metrics.getCacheReadTokenCount())
         .durationMs(metrics.getDurationMs());
   }
 

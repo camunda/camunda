@@ -6,19 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {isEqual} from 'lodash';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
 import {Field, Form} from 'react-final-form';
-import {ComboBox, Dropdown, Stack} from '@carbon/react';
+import {ComboBox, Dropdown, InlineNotification, Stack} from '@carbon/react';
 import type {
 	AuditLogOperationType,
 	AuditLogEntityType,
 	AuditLogResult,
-} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
-import {auditLogResultSchema} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
+import {auditLogResultSchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
@@ -31,6 +31,10 @@ import {DateRangeField} from '#/operate/shared/DateRangeField/DateRangeField';
 import {FilterMultiSelect} from '#/operate/shared/FilterMultiSelect/FilterMultiSelect';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES, AUDIT_LOG_OPERATION_TYPE_FILTER_VALUES} from './operationsLogFilters';
+import {
+	operationsLogDefinitionsQuery,
+	selectedDefinitionsQuery,
+} from '#/operate/shared/queries/processDefinitions.queries';
 import type {OperationsLogSearch} from './operationsLog.schema';
 
 type Props = {
@@ -41,6 +45,7 @@ type FormValues = {
 	tenantId?: string;
 	process?: string;
 	version?: number;
+	allVersions?: boolean;
 	processInstanceKey?: string;
 	operationType?: AuditLogOperationType[];
 	entityType?: AuditLogEntityType[];
@@ -56,31 +61,46 @@ const Filters: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
+	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 
 	const {sort: _sort, ...filterValues} = search;
 
-	const specificTenantId = isSpecificTenant(search.tenantId) ? search.tenantId : undefined;
-	const {data: processDefinitions} = useSuspenseQuery(
-		queries.queryProcessDefinitions({
-			page: {limit: 1000},
-			filter: specificTenantId ? {tenantId: specificTenantId} : undefined,
+	const {
+		data: processDefinitions,
+		isPending: isProcessListPending,
+		isError: isProcessListError,
+	} = useQuery({
+		...operationsLogDefinitionsQuery({
+			isLatestVersion: true,
+			...(isSpecificTenant(search.tenantId) ? {tenantId: search.tenantId} : {}),
 		}),
+		enabled: !isMultiTenancyEnabled || search.tenantId !== undefined,
+		retry: false,
+	});
+	const {data: currentUser} = useQuery({...queries.getCurrentUser(), enabled: isMultiTenancyEnabled});
+	const tenantNames = useMemo(
+		() => Object.fromEntries(currentUser?.tenants.map(({tenantId, name}) => [tenantId, name]) ?? []),
+		[currentUser],
 	);
-
-	const processItems = [...new Map(processDefinitions.items.map((def) => [def.processDefinitionId, def])).values()]
-		.map((def) => ({id: def.processDefinitionId, label: def.name ?? def.processDefinitionId}))
-		.sort((a, b) => a.label.localeCompare(b.label));
-	const selectedProcess = processItems.find((item) => item.id === search.process) ?? null;
-
-	const versionNumbers = search.process
-		? [
-				undefined,
-				...processDefinitions.items
-					.filter((def) => def.processDefinitionId === search.process)
-					.sort((a, b) => b.version - a.version)
-					.map((def) => def.version),
-			]
-		: [];
+	const processItems = useMemo(() => {
+		const definitions = new Map(
+			(processDefinitions ?? []).map((definition) => [
+				JSON.stringify([definition.tenantId, definition.processDefinitionId]),
+				definition,
+			]),
+		);
+		return [...definitions.values()]
+			.map((definition) => ({
+				id: definition.processDefinitionId,
+				tenantId: definition.tenantId,
+				version: definition.version,
+				label:
+					isMultiTenancyEnabled && !isSpecificTenant(search.tenantId)
+						? `${definition.name ?? definition.processDefinitionId} - ${tenantNames[definition.tenantId] ?? definition.tenantId}`
+						: (definition.name ?? definition.processDefinitionId),
+			}))
+			.sort((a, b) => a.label.localeCompare(b.label));
+	}, [processDefinitions, isMultiTenancyEnabled, search.tenantId, tenantNames]);
 
 	const handleFiltersSubmit = (values: FormValues) => {
 		void navigate({
@@ -91,6 +111,7 @@ const Filters: React.FC<Props> = ({search}) => {
 				tenantId: values.tenantId || undefined,
 				process: values.process || undefined,
 				version: values.version,
+				allVersions: values.allVersions || undefined,
 				processInstanceKey: values.processInstanceKey || undefined,
 				operationType: values.operationType?.length ? values.operationType : undefined,
 				entityType: values.entityType?.length ? values.entityType : undefined,
@@ -118,13 +139,14 @@ const Filters: React.FC<Props> = ({search}) => {
 						}}
 					>
 						<Stack gap={5}>
-							{getClientConfig().deployment.isMultiTenancyEnabled && (
+							{isMultiTenancyEnabled && (
 								<div>
 									<Title>{t('operate.operationsLog.filters.tenant')}</Title>
 									<TenantField
 										onChange={() => {
 											form.change('process', undefined);
 											form.change('version', undefined);
+											form.change('allVersions', undefined);
 										}}
 									/>
 								</div>
@@ -133,41 +155,72 @@ const Filters: React.FC<Props> = ({search}) => {
 								<Title>{t('operate.operationsLog.filters.processSection')}</Title>
 								<Stack gap={5}>
 									<Field name="process">
+										{({input}) => {
+											const specificTenantId = isSpecificTenant(values.tenantId) ? values.tenantId : undefined;
+											const items = specificTenantId
+												? processItems.filter((item) => item.tenantId === specificTenantId)
+												: processItems;
+											const matches = items.filter(
+												(item) => item.id === input.value && (!specificTenantId || item.tenantId === specificTenantId),
+											);
+											const selectedProcess = matches.length === 1 ? matches[0] : undefined;
+											return (
+												<ComboBox
+													id="process-filter"
+													titleText={t('operate.processes.filters.name')}
+													placeholder={t('operate.processes.filters.searchByName')}
+													items={items}
+													itemToString={(item) => item?.label ?? ''}
+													selectedItem={
+														input.value
+															? (selectedProcess ?? {
+																	id: input.value,
+																	tenantId: specificTenantId ?? '',
+																	version: undefined,
+																	label: input.value,
+																})
+															: null
+													}
+													disabled={
+														isProcessListPending || isProcessListError || (isMultiTenancyEnabled && !values.tenantId)
+													}
+													size="sm"
+													onChange={({selectedItem}) => {
+														if (
+															selectedItem &&
+															selectedItem.id === input.value &&
+															(values.tenantId === undefined || selectedItem.tenantId === values.tenantId)
+														) {
+															return;
+														}
+														input.onChange(selectedItem?.id);
+														form.change('version', selectedItem?.version);
+														form.change('allVersions', undefined);
+														if (isMultiTenancyEnabled && selectedItem) {
+															form.change('tenantId', selectedItem.tenantId);
+														}
+													}}
+												/>
+											);
+										}}
+									</Field>
+									<Field name="version">
 										{({input}) => (
-											<ComboBox
-												id="process-filter"
-												titleText={t('operate.processes.filters.name')}
-												placeholder={t('operate.processes.filters.searchByName')}
-												items={processItems}
-												itemToString={(item) => item?.label ?? ''}
-												selectedItem={input.value ? selectedProcess : null}
-												size="sm"
-												onChange={({selectedItem}) => {
-													input.onChange(selectedItem?.id);
-													form.change('version', undefined);
+											<ProcessVersionDropdown
+												process={values.process}
+												tenantId={values.tenantId}
+												value={input.value === '' ? undefined : input.value}
+												isAllVersionsSelected={values.allVersions === true}
+												onChange={(version) => {
+													input.onChange(version);
+													form.change('allVersions', version === undefined ? true : undefined);
 												}}
 											/>
 										)}
 									</Field>
-									<Field name="version">
-										{({input}) => (
-											<Dropdown
-												id="process-version-filter"
-												titleText={t('operate.processes.filters.version')}
-												label={t('operate.processes.filters.selectVersion')}
-												items={versionNumbers}
-												itemToString={(item) =>
-													item === undefined || item === null
-														? t('operate.processes.filters.allVersions')
-														: String(item)
-												}
-												selectedItem={input.value}
-												disabled={!search.process}
-												size="sm"
-												onChange={({selectedItem}) => input.onChange(selectedItem ?? undefined)}
-											/>
-										)}
-									</Field>
+									{isProcessListError && (
+										<InlineNotification kind="error" title={t('operate.operationsLog.filters.definitionsListFailed')} />
+									)}
 									<Field name="processInstanceKey">
 										{({input}) => (
 											<TextInputField
@@ -241,6 +294,68 @@ const Filters: React.FC<Props> = ({search}) => {
 				</StyledForm>
 			)}
 		</Form>
+	);
+};
+
+const ProcessVersionDropdown: React.FC<{
+	process?: string;
+	tenantId?: string;
+	value?: number;
+	isAllVersionsSelected: boolean;
+	onChange: (value?: number) => void;
+}> = ({process, tenantId, value, isAllVersionsSelected, onChange}) => {
+	const {t} = useTranslation();
+	const {
+		data: definitions,
+		isPending,
+		isError,
+	} = useQuery({
+		...selectedDefinitionsQuery(process ?? '', tenantId),
+		enabled: Boolean(process),
+		retry: false,
+	});
+	const matchingDefinitions = definitions?.filter(
+		(definition) =>
+			definition.processDefinitionId === process && (!isSpecificTenant(tenantId) || definition.tenantId === tenantId),
+	);
+	const isUnambiguous =
+		isSpecificTenant(tenantId) || new Set(matchingDefinitions?.map((definition) => definition.tenantId)).size === 1;
+	const distinctVersions = [
+		...new Map(matchingDefinitions?.map((definition) => [definition.version, definition]) ?? []).values(),
+	].sort((a, b) => b.version - a.version);
+	const versions =
+		distinctVersions.length > 1 || isAllVersionsSelected
+			? [{version: undefined, state: undefined}, ...distinctVersions]
+			: distinctVersions;
+	return (
+		<>
+			<Dropdown
+				id="process-version-filter"
+				titleText={t('operate.processes.filters.version')}
+				label={t('operate.processes.filters.selectVersion')}
+				items={
+					value !== undefined && !versions.some((item) => item.version === value)
+						? [...versions, {version: value, state: undefined}]
+						: versions
+				}
+				itemToString={(item) =>
+					item?.version === undefined
+						? t('operate.processes.filters.allVersions')
+						: item.state === 'DELETED'
+							? t('operate.operationsLog.filters.deletedVersion', {version: item.version})
+							: String(item.version)
+				}
+				selectedItem={
+					value === undefined && !isAllVersionsSelected
+						? null
+						: (versions.find((item) => item.version === value) ?? {version: value, state: undefined})
+				}
+				disabled={!process || isPending || !matchingDefinitions?.length || !isUnambiguous}
+				size="sm"
+				onChange={({selectedItem}) => onChange(selectedItem?.version)}
+			/>
+			{isError && <InlineNotification kind="error" title={t('operate.operationsLog.filters.definitionsListFailed')} />}
+		</>
 	);
 };
 

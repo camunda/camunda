@@ -60,7 +60,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
    * history for a destroyed job, an empty lease discards all items for the job regardless of which
    * activation produced them.
    */
-  public static final String EMPTY_LEASE = "";
+  public static final String EMPTY_JOB_LEASE_TOKEN = "";
 
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
   public static final String RETRIES = "retries";
@@ -100,10 +100,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringValue("isUserTaskMigration");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue PRIORITY_KEY = new StringValue(PRIORITY);
-  private static final StringValue LEASE_TOKEN_KEY = new StringValue("leaseToken");
+  private static final StringValue JOB_LEASE_TOKEN_KEY = new StringValue("jobLeaseToken");
   private static final StringValue SECRET_REFERENCES_KEY = new StringValue("secretReferences");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
@@ -150,11 +150,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new BooleanProperty(IS_JOB_TO_USERTASK_MIGRATION_KEY, false);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalKeyProp =
-      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, EMPTY_STRING);
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, 0);
-  private final StringProperty leaseTokenProp = new StringProperty(LEASE_TOKEN_KEY, EMPTY_STRING);
+  private final StringProperty jobLeaseTokenProp =
+      new StringProperty(JOB_LEASE_TOKEN_KEY, EMPTY_STRING);
   private final ArrayProperty<JobSecretReference> secretReferencesProp =
       new ArrayProperty<>(SECRET_REFERENCES_KEY, JobSecretReference::new);
 
@@ -186,10 +186,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(tagsProp)
         .declareProperty(isJobToUserTaskMigrationProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(priorityProp)
         .declareProperty(businessIdProp)
-        .declareProperty(leaseTokenProp)
+        .declareProperty(jobLeaseTokenProp)
         .declareProperty(secretReferencesProp);
   }
 
@@ -221,10 +221,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
     setTags(record.getTags());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
-    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
     priorityProp.setValue(record.getPriority());
     businessIdProp.setValue(record.getBusinessIdBuffer());
-    leaseTokenProp.setValue(record.getLeaseTokenBuffer());
+    jobLeaseTokenProp.setValue(record.getJobLeaseTokenBuffer());
     copySecretReferencesFrom(record);
   }
 
@@ -357,8 +357,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
-  public String getLeaseToken() {
-    return bufferAsString(leaseTokenProp.getValue());
+  public String getJobLeaseToken() {
+    return bufferAsString(jobLeaseTokenProp.getValue());
   }
 
   @Override
@@ -484,8 +484,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
-  public JobRecord setLeaseToken(final String leaseToken) {
-    leaseTokenProp.setValue(leaseToken);
+  public JobRecord setJobLeaseToken(final String jobLeaseToken) {
+    jobLeaseTokenProp.setValue(jobLeaseToken);
     return this;
   }
 
@@ -610,22 +610,22 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @JsonIgnore
-  public boolean hasLeaseToken() {
-    return !getLeaseToken().isEmpty();
+  public boolean hasJobLeaseToken() {
+    return !getJobLeaseToken().isEmpty();
   }
 
   @JsonIgnore
-  public DirectBuffer getLeaseTokenBuffer() {
-    return leaseTokenProp.getValue();
+  public DirectBuffer getJobLeaseTokenBuffer() {
+    return jobLeaseTokenProp.getValue();
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public JobRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public JobRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 

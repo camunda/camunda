@@ -55,12 +55,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Exercises {@link ClusterConfigurationManagerService} end-to-end against the new
- * multi-partition-group model ({@code USE_NEW_CONFIG = true}). Assertions read the {@link
+ * Exercises {@link ClusterConfigurationManagerService} end-to-end. Assertions read the {@link
  * CurrentClusterConfiguration} directly (via {@link
  * ClusterConfigurationManagerService#getClusterConfiguration()}) rather than the legacy compat
- * projection ({@code getClusterTopology()}/{@code toLegacyDefault()}), since that projection cannot
- * distinguish "uninitialized" from "initialized but empty" for the new model.
+ * projection ({@code toLegacyDefault()}), since that projection cannot distinguish "uninitialized"
+ * from "initialized but empty" for the new model.
  */
 class ClusterConfigurationManagementIntegrationTest {
 
@@ -204,7 +203,7 @@ class ClusterConfigurationManagementIntegrationTest {
                 Either.right(
                     CurrentClusterConfiguration.toPhases(
                         List.of(
-                            new PartitionJoinOperation(MEMBER_0, 2, 1),
+                            new PartitionJoinOperation(MEMBER_0, 2, 1, true),
                             new PartitionLeaveOperation(MEMBER_1, 1, 1)))))
         .join();
 
@@ -267,9 +266,9 @@ class ClusterConfigurationManagementIntegrationTest {
                 Either.right(
                     CurrentClusterConfiguration.toPhases(
                         List.of(
-                            new PartitionJoinOperation(MEMBER_0, 2, 1),
+                            new PartitionJoinOperation(MEMBER_0, 2, 1, true),
                             new PartitionLeaveOperation(MEMBER_1, 1, 1),
-                            new PartitionJoinOperation(MEMBER_1, 1, 1)))))
+                            new PartitionJoinOperation(MEMBER_1, 1, 1, true)))))
         .join();
 
     // then

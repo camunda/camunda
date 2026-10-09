@@ -23,6 +23,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * <ul>
  *   <li>{@code camunda.secrets.cache.ttl}
  *   <li>{@code camunda.secrets.cache.max-size}
+ *   <li>{@code camunda.secrets.max-concurrency}
  *   <li>{@code camunda.secrets.stores.file.<id>.path}
  *   <li>{@code camunda.secrets.stores.aws.<id>.region}
  *   <li>{@code camunda.secrets.stores.aws.<id>.path-prefix}
@@ -45,8 +46,78 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @NullMarked
 public class Secrets {
 
+  /**
+   * Floor for {@link #DEFAULT_MAX_CONCURRENCY}, so a small container does not end up with fewer
+   * permits than it has callers competing for them: below the number of concurrently resolving
+   * callers, the shared semaphore is a throttle rather than a speed-up, and a two-core node would
+   * otherwise resolve more slowly than it did before the semaphore existed.
+   */
+  private static final int MIN_DEFAULT_MAX_CONCURRENCY = 8;
+
+  /**
+   * Default upper bound on one call to a cloud secret store, retries included, and on a single
+   * attempt within it. Shared by the AWS and GCP stores so both are bounded the same way; mirrored
+   * by {@code AwsSecretsManagerStoreConfig#DEFAULT_CALL_TIMEOUT} and {@code
+   * GcpSecretManagerStoreConfig#DEFAULT_CALL_TIMEOUT} in the store modules, which this module
+   * cannot depend on. Keep them in sync.
+   */
+  private static final Duration DEFAULT_CALL_TIMEOUT = Duration.ofSeconds(5);
+
+  private static final Duration DEFAULT_ATTEMPT_TIMEOUT = Duration.ofSeconds(2);
+
+  /**
+   * Twice the core count, not once: the permits bound blocking backend round trips rather than CPU
+   * work, and staying clear of the virtual-thread carrier pool (sized to the core count) leaves
+   * room for a store whose client pins its carrier. It also keeps the default above
+   * partitions-per-node, which is what the callers competing for these permits scale with.
+   */
+  private static final int DEFAULT_MAX_CONCURRENCY_PER_CORE = 2;
+
+  /**
+   * Default for {@link #maxConcurrency}. Derived from the host rather than fixed, since the callers
+   * sharing these permits (one per partition on this node, plus the REST resolution path) scale
+   * with the node's size, and a fixed number too far below them turns the shared semaphore into a
+   * throttle.
+   *
+   * <p>Computed here rather than read from {@code secret-store-api} for the same reason {@link
+   * Cache}'s defaults are restated as literals: this module deliberately does not depend on that
+   * module.
+   */
+  private static final int DEFAULT_MAX_CONCURRENCY =
+      Math.max(
+          MIN_DEFAULT_MAX_CONCURRENCY,
+          Runtime.getRuntime().availableProcessors() * DEFAULT_MAX_CONCURRENCY_PER_CORE);
+
   @NestedConfigurationProperty private Stores stores = new Stores();
   @NestedConfigurationProperty private Cache cache = new Cache();
+
+  /**
+   * How many sequential backend calls a store whose cost scales with call count ({@code
+   * namesPerCall()} less than the request size) may issue at once, bounded by a semaphore shared by
+   * every such store the registry wraps. {@code 1} resolves exactly as before this setting existed:
+   * one call at a time, on the calling thread. A store that already covers the whole request in one
+   * call (a container-style store, or one backed by local disk) is unaffected either way; a batched
+   * store (e.g. AWS's {@code BatchGetSecretValue} mode) is included once its request needs more
+   * than one batch.
+   *
+   * <p>The permits are shared per node and physical tenant, so they bound how many backend calls
+   * this node has in flight for such stores at once. A request small enough to resolve in a single
+   * call (at most {@code namesPerCall()} names) takes no permit, so actual concurrency can exceed
+   * this value by one such call per concurrent caller. The bound is on call concurrency, not
+   * request rate, so it only approximates a provider quota measured in calls per second rather than
+   * guaranteeing it sees at most this value times the node count.
+   *
+   * <p>Raising it past what one request can use changes nothing, since a request is split into
+   * {@code ceil(names / namesPerCall())} chunks and cannot use more permits than it has chunks. The
+   * resolve endpoint caps its request size at 20 names via the {@code maxItems} on its {@code
+   * references} array; background resolution defaults to the same 20 via {@code
+   * camunda.processing.engine.secrets.batch-resolution-limit}, but that limit is a configurable
+   * default, not a hard cap. For a one-by-one store the endpoint's cap puts the chunk ceiling at
+   * 20; for a batched store it is {@code ceil(20 / batchSize)}.
+   *
+   * <p>Defaults to twice the available processor count, and never below {@code 8}.
+   */
+  private Integer maxConcurrency = DEFAULT_MAX_CONCURRENCY;
 
   public Stores getStores() {
     return stores;
@@ -67,6 +138,26 @@ public class Secrets {
 
   public void setCache(final Cache cache) {
     this.cache = cache;
+  }
+
+  /**
+   * @throws IllegalArgumentException if max-concurrency is below 1
+   */
+  public int getMaxConcurrency() {
+    if (maxConcurrency < 1) {
+      throw new IllegalArgumentException(
+          "camunda.secrets.max-concurrency must be at least 1, but was " + maxConcurrency);
+    }
+    return maxConcurrency;
+  }
+
+  /**
+   * @param maxConcurrency the configured value, or {@code null}, bound to the same outcome {@code
+   *     ttl}/{@code max-size} already have, rather than the two disagreeing on what an empty value
+   *     means (routine for an env-var-driven deployment)
+   */
+  public void setMaxConcurrency(final @Nullable Integer maxConcurrency) {
+    this.maxConcurrency = maxConcurrency == null ? DEFAULT_MAX_CONCURRENCY : maxConcurrency;
   }
 
   public static class Stores {
@@ -290,6 +381,22 @@ public class Secrets {
      */
     private @Nullable String containerSecretId;
 
+    /**
+     * Upper bound on one call to AWS Secrets Manager, retries included. The AWS SDK sets no such
+     * bound by default, which lets an unresponsive endpoint hold the caller for minutes. The
+     * background secret resolution calls the store from an IO-bound actor thread shared with every
+     * partition's exporter, so an unbounded call there stalls exporting broker-wide
+     * (camunda/camunda#62869). Must be positive.
+     */
+    private Duration callTimeout = DEFAULT_CALL_TIMEOUT;
+
+    /**
+     * Upper bound on a single HTTP attempt within a call, so one stalled socket does not consume
+     * the whole {@link #callTimeout} budget. Must be positive and not longer than {@link
+     * #callTimeout}, which would make it unreachable.
+     */
+    private Duration attemptTimeout = DEFAULT_ATTEMPT_TIMEOUT;
+
     public @Nullable String getRegion() {
       return region;
     }
@@ -330,6 +437,30 @@ public class Secrets {
       this.containerSecretId = containerSecretId;
     }
 
+    public Duration getCallTimeout() {
+      return callTimeout;
+    }
+
+    /**
+     * @param callTimeout the configured value, or {@code null}, bound to the default the same way
+     *     an unset property is, so an explicitly empty value does not leave the store unbounded
+     */
+    public void setCallTimeout(final @Nullable Duration callTimeout) {
+      this.callTimeout = callTimeout == null ? DEFAULT_CALL_TIMEOUT : callTimeout;
+    }
+
+    public Duration getAttemptTimeout() {
+      return attemptTimeout;
+    }
+
+    /**
+     * @param attemptTimeout the configured value, or {@code null}, bound to the same outcome {@code
+     *     callTimeout} already has for an empty value
+     */
+    public void setAttemptTimeout(final @Nullable Duration attemptTimeout) {
+      this.attemptTimeout = attemptTimeout == null ? DEFAULT_ATTEMPT_TIMEOUT : attemptTimeout;
+    }
+
     /**
      * Mirrors the invariants of {@code io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig}'s
      * canonical constructor in the {@code secret-store-aws} module (not depended on from here, to
@@ -361,6 +492,29 @@ public class Secrets {
                 + storeId
                 + ".batch-enabled and .container-secret-id are mutually exclusive, but both were "
                 + "configured");
+      }
+      if (!callTimeout.isPositive()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.aws."
+                + storeId
+                + ".call-timeout must be positive, but was "
+                + callTimeout);
+      }
+      if (!attemptTimeout.isPositive()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.aws."
+                + storeId
+                + ".attempt-timeout must be positive, but was "
+                + attemptTimeout);
+      }
+      if (attemptTimeout.compareTo(callTimeout) > 0) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.aws."
+                + storeId
+                + ".attempt-timeout must not be longer than .call-timeout ("
+                + callTimeout
+                + "), but was "
+                + attemptTimeout);
       }
     }
   }
@@ -422,6 +576,14 @@ public class Secrets {
      */
     private @Nullable String containerSecretId;
 
+    /**
+     * Upper bound on one call to GCP Secret Manager, retries included. gax's defaults let an
+     * unresponsive endpoint hold the caller far longer than that. The background secret resolution
+     * calls the store from an IO-bound actor thread shared with every partition's exporter, so an
+     * unbounded call there stalls exporting broker-wide (camunda/camunda#62869). Must be positive.
+     */
+    private Duration callTimeout = DEFAULT_CALL_TIMEOUT;
+
     public @Nullable String getProjectId() {
       return projectId;
     }
@@ -452,6 +614,18 @@ public class Secrets {
 
     public void setContainerSecretId(final @Nullable String containerSecretId) {
       this.containerSecretId = containerSecretId;
+    }
+
+    public Duration getCallTimeout() {
+      return callTimeout;
+    }
+
+    /**
+     * @param callTimeout the configured value, or {@code null}, bound to the default the same way
+     *     an unset property is, so an explicitly empty value does not leave the store unbounded
+     */
+    public void setCallTimeout(final @Nullable Duration callTimeout) {
+      this.callTimeout = callTimeout == null ? DEFAULT_CALL_TIMEOUT : callTimeout;
     }
 
     /**
@@ -503,6 +677,13 @@ public class Secrets {
                 + "id, but was '"
                 + containerSecretId
                 + "'");
+      }
+      if (!callTimeout.isPositive()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.gcp."
+                + storeId
+                + ".call-timeout must be positive, but was "
+                + callTimeout);
       }
       if (containerSecretId != null) {
         final int fullLength =

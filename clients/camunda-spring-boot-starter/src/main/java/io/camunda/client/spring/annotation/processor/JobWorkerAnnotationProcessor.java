@@ -68,12 +68,12 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   }
 
   @Override
-  public boolean isApplicableFor(final BeanInfo beanInfo) {
+  protected boolean isApplicableFor(final BeanInfo beanInfo) {
     return isJobWorker(beanInfo);
   }
 
   @Override
-  public void configureFor(final BeanInfo beanInfo) {
+  protected void configureFor(final BeanInfo beanInfo) {
     final List<ManagedJobWorker> newManagedJobWorkers = new ArrayList<>();
 
     doWithMethods(
@@ -109,14 +109,14 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   }
 
   @Override
-  public void start(final CamundaClient client, final String clientName) {
+  protected void start(final CamundaClient client, final String clientName) {
     managedJobWorkers.forEach(
         managedJobWorker ->
             jobWorkerManager.createJobWorker(client, managedJobWorker, this, clientName));
   }
 
   @Override
-  public void stop(final CamundaClient client, final String clientName) {
+  protected void stop(final CamundaClient client, final String clientName) {
     // close only the workers registered by this processor on the given client, so stopping one
     // client's workers does not tear down the others'
     jobWorkerManager.closeJobWorkers(this, client);

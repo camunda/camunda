@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {TooltipProvider} from '@camunda/design-system';
 import {render} from 'vitest-browser-react';
 import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
@@ -19,11 +20,8 @@ describe('<DiagramControls />', () => {
 		const onZoomOut = vi.fn();
 		const screen = await render(
 			<DiagramControls onZoomReset={onZoomReset} onZoomIn={onZoomIn} onZoomOut={onZoomOut} />,
+			{wrapper: TooltipProvider},
 		);
-
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Zoom in diagram'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Zoom out diagram'})).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Reset diagram zoom'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Zoom in diagram'}));

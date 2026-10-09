@@ -118,6 +118,19 @@ public final class SecretStoreRegistry {
   }
 
   /**
+   * Whether {@code storeId} names a real, operator-configured store rather than the {@link
+   * NoopSecretStore} placeholder registered under {@link #DEFAULT_STORE_ID} when nothing is
+   * configured, or no entry at all. A caller that only needs this answer — e.g. to word a message
+   * that must not claim a store exists when it does not — should use this instead of reading {@link
+   * #getStores()} and inlining the {@code NoopSecretStore} check itself, which duplicates knowledge
+   * this class already holds and drags the placeholder's type into unrelated callers.
+   */
+  public boolean isConfigured(final String storeId) {
+    final var store = stores.get(storeId);
+    return store != null && !store.is(NoopSecretStore.class);
+  }
+
+  /**
    * Rejects a set of caches that cannot be used as given: one for a store that is not configured,
    * or one instance shared by two store IDs. Both are configuration mistakes rather than states to
    * recover from, and a shared instance would silently break the collision-freedom this class

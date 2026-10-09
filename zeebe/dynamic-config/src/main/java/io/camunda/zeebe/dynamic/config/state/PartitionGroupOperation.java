@@ -21,8 +21,7 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    *
    * @param memberId the member id of the member that will apply this operation
    */
-  record DeleteHistoryOperation(MemberId memberId)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+  record DeleteHistoryOperation(MemberId memberId) implements PartitionGroupOperation {}
 
   /**
    * Represents an operation to update the routing state of a member in the cluster configuration.
@@ -33,15 +32,14 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    *     io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION} leader
    */
   record UpdateRoutingState(MemberId memberId, Optional<RoutingState> routingState)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+      implements PartitionGroupOperation {}
 
   /**
    * Represents an operation to update the incarnation number in the cluster configuration.
    *
    * @param memberId the identifier of the member who will update the incarnation number
    */
-  record UpdateIncarnationNumberOperation(MemberId memberId)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+  record UpdateIncarnationNumberOperation(MemberId memberId) implements PartitionGroupOperation {}
 
   /**
    * Records that an operator has explicitly discarded this physical tenant, allowing a broker
@@ -50,11 +48,9 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    * @param memberId the broker applying this operation — usually the coordinator, but a forced
    *     request names whichever broker received it, since the coordinator may be unreachable
    */
-  record RemovePhysicalTenantOperation(MemberId memberId)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+  record RemovePhysicalTenantOperation(MemberId memberId) implements PartitionGroupOperation {}
 
-  record ModeChangeOperation(MemberId memberId, Mode mode)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+  record ModeChangeOperation(MemberId memberId, Mode mode) implements PartitionGroupOperation {}
 
   /**
    * Operation to change the exporting state of every partition replica owned by the given member.
@@ -65,7 +61,7 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    * @param state the exporting state to apply to all of the member's partitions
    */
   record ExportingStateChangeOperation(MemberId memberId, ExportingState state)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+      implements PartitionGroupOperation {}
 
   /**
    * Verifies that a member's partition manager has finished starting in the target mode. Emitted
@@ -77,10 +73,12 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    * @param mode the mode the member is expected to have transitioned into
    */
   record AwaitModeChangeOperation(MemberId memberId, Mode mode)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+      implements PartitionGroupOperation {}
 
-  sealed interface ScaleUpOperation
-      extends io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {
+  /** Applies this partition group's schema before any local data is dropped for restore. */
+  record SchemaInitializationOperation(MemberId memberId) implements PartitionGroupOperation {}
+
+  sealed interface ScaleUpOperation extends PartitionGroupOperation {
     /**
      * Operation to initiate partition scale up. This instructs the cluster to redistribute
      * resources and relocate data.
@@ -118,8 +116,7 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
     }
   }
 
-  sealed interface PartitionChangeOperation
-      extends io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {
+  sealed interface PartitionChangeOperation extends PartitionGroupOperation {
     int partitionId();
 
     /**
@@ -128,8 +125,15 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
      * @param memberId the member id of the member that will start replicating the partition
      * @param partitionId id of the partition to join
      * @param priority priority of the member in the partition used for Raft's priority election
+     * @param asLearner whether the member joins as a non-voting learner that a subsequent {@link
+     *     PartitionPromoteOperation} makes a voting member, or directly as a voting member. Every
+     *     current emitter joins as a learner. Operations serialized by a version that did not know
+     *     the two-phase join decode as {@code false} and keep their original meaning of a complete,
+     *     single-step join, so a change that was in flight during a rolling upgrade still runs to
+     *     completion instead of leaving the member a learner that nothing promotes.
      */
-    record PartitionJoinOperation(MemberId memberId, int partitionId, int priority)
+    record PartitionJoinOperation(
+        MemberId memberId, int partitionId, int priority, boolean asLearner)
         implements PartitionChangeOperation {}
 
     /**
@@ -140,6 +144,32 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
      * @param minimumAllowedReplicas 0 if the operation is part of a cluster purge
      */
     record PartitionLeaveOperation(MemberId memberId, int partitionId, int minimumAllowedReplicas)
+        implements PartitionChangeOperation {}
+
+    /**
+     * Operation to promote a member that joined a partition as a learner to a full voting member -
+     * the second phase of a two-phase join. The applying member asks the partition's leader, which
+     * accepts the promotion only once the member is caught up, so this operation is retried until
+     * the catch-up gate accepts.
+     *
+     * @param memberId the member id of the member that will apply this operation and be promoted
+     * @param partitionId id of the partition
+     */
+    record PartitionPromoteOperation(MemberId memberId, int partitionId)
+        implements PartitionChangeOperation {}
+
+    /**
+     * Operation to demote a member to a non-voting member of a partition's replication group - the
+     * first phase of a two-phase leave, so that the subsequent {@link PartitionLeaveOperation}
+     * commits without the departing member's participation. Must only be emitted when the partition
+     * retains at least one other active member afterwards: a non-empty replication group without
+     * any voting member could neither elect a leader nor commit, and the leader rejects such a
+     * configuration.
+     *
+     * @param memberId the member id of the member that will apply this operation and be demoted
+     * @param partitionId id of the partition
+     */
+    record PartitionDemoteOperation(MemberId memberId, int partitionId)
         implements PartitionChangeOperation {}
 
     /**

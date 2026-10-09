@@ -25,6 +25,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 /** Wraps the request and response for "Take Backup" sent between gateway and broker */
 public final class BrokerBackupRequest extends BrokerRequest<BackupResponse> {
@@ -58,7 +59,7 @@ public final class BrokerBackupRequest extends BrokerRequest<BackupResponse> {
   }
 
   @Override
-  public BufferWriter getRequestWriter() {
+  public @Nullable BufferWriter getRequestWriter() {
     return null;
   }
 

@@ -7,3 +7,19 @@
  */
 
 @import 'tailwindcss';
+
+/*
+ * Tailwind's automatic source scanner cannot extract this compound
+ * arbitrary-variant candidate (nested `:has()` + attribute selectors) from
+ * ComposedCell.tsx, so it must be declared explicitly here to be generated.
+ */
+@source inline("[&_tr:has([data-expandable=false])_[data-slot=data-table-expand-toggle]]:hidden!");
+
+/*
+ * Same scanner limitation for this compound arbitrary-variant candidate
+ * (attribute selector + an arbitrary-value `border-b` color) used in
+ * ComposedCell.tsx and NativeExpansionCell.tsx to harden the DS
+ * `<TableRow>`'s row-divider color against a Chromium invalidation bug on
+ * subtree remount.
+ */
+@source inline("[&_[data-slot=table-row]]:border-b-[var(--border)]");

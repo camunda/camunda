@@ -1,8 +1,8 @@
 # Orchestration cluster webapp
 
-`@camunda/orchestration-cluster-webapp` is the unified React webapp that
-will replace the Operate, Tasklist, and Admin frontends shipped today
-from `operate/client`, `tasklist/client`, and `identity/client`.
+`@camunda/orchestration-cluster-webapp` is the unified React webapp for Operate, Tasklist, and
+Admin. Tasklist lives here under `src/tasklist/`; the app is replacing the remaining legacy
+frontends shipped from `operate/client` and `identity/client`.
 
 ## Tech stack
 
@@ -49,6 +49,7 @@ apps/orchestration-cluster-webapp/
 │   ├── a11y/               # Accessibility (Axe)
 │   ├── integration/        # MSW-mocked integration
 │   ├── visual/             # Visual regression
+│   ├── docs-screenshots/   # docs.camunda.io image generation
 │   ├── pw-modules/         # Shared fixtures (MSW + Axe)
 │   └── pages/              # Page objects
 ├── shared-test-modules/    # Test utils shared between unit and Playwright tests
@@ -112,6 +113,7 @@ Co-located styles and tests mirror the component name (e.g. `DashboardPage.modul
 | `test:a11y`               | Playwright a11y projects (light + dark)                                                                                             |
 | `test:visual`             | Playwright visual-regression projects (light/dark × desktop/tablet)                                                                 |
 | `test:integration`        | Playwright integration project (MSW-mocked)                                                                                         |
+| `test:docs-screenshots`   | Regenerate docs.camunda.io images in a containerized browser (manual, no CI)                                                        |
 | `generate:svg`            | Convert `src/shared/assets/svg/` to React components (see [Generating SVG components](./development-process/generating-svg-components.md)) |
 
 ## Dev server & backend integration
@@ -138,5 +140,7 @@ Co-located styles and tests mirror the component name (e.g. `DashboardPage.modul
 - **Visual regression** — Playwright; uses a containerized browser
   (`CONTAINERIZED_BROWSER=true` runs the official `mcr.microsoft.com/playwright`
   image) for stable rendering across machines.
+- **Docs screenshots** — Playwright in the same containerized browser;
+  generates the images for docs.camunda.io pages. Run manually, no CI.
 
 See [Testing](./testing.md) for the full guide.

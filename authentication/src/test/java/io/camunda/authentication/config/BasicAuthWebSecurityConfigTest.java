@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 import io.camunda.authentication.config.controllers.TestApiController;
-import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import jakarta.servlet.http.Cookie;
@@ -68,14 +67,7 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
   }
 
   private Cookie logInAsDemoAndGetSessionCookie() {
-    final MvcTestResult loginResult =
-        mockMvcTester
-            .post()
-            .uri("https://localhost/login")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .formField("username", TestUserDetailsService.DEMO_USERNAME)
-            .formField("password", TestUserDetailsService.DEMO_USERNAME)
-            .exchange();
+    final MvcTestResult loginResult = logInAsDemo("https://localhost/login");
     final Cookie sessionCookie =
         loginResult.getResponse().getCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
     assertThat(sessionCookie).isNotNull();
@@ -144,28 +136,23 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
   }
 
   @Test
-  public void shouldReturnCsrfTokenOnSuccessfulLogin() {
+  public void shouldIssueCsrfTokenOnLoginPageAndAcceptItOnLogin() {
     // when
-    final MvcTestResult testResult =
-        mockMvcTester
-            .post()
-            .uri("https://localhost/login")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .formField("username", TestUserDetailsService.DEMO_USERNAME)
-            .formField("password", TestUserDetailsService.DEMO_USERNAME)
-            .exchange();
+    final MvcTestResult csrfResult = requestCsrfTokenForLogin("https://localhost/login");
 
     // then
-    assertThat(testResult)
-        .hasStatus(HttpStatus.NO_CONTENT)
+    assertThat(csrfResult)
         .containsHeader(EXPECTED_CSRF_HEADER_NAME)
         .cookies()
         .containsCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
 
-    final Cookie csrfCookie = testResult.getResponse().getCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
+    final Cookie csrfCookie = csrfResult.getResponse().getCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
 
     assertThat(csrfCookie.isHttpOnly()).isFalse();
     assertThat(csrfCookie.getSecure()).isTrue();
+
+    // and the login itself succeeds when that token is echoed back
+    assertThat(logInAsDemo("https://localhost/login")).hasStatus(HttpStatus.NO_CONTENT);
   }
 
   @Test
@@ -174,14 +161,7 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
     final String loginUrl = "http://localhost/login"; // note: http - not https
 
     // when
-    final MvcTestResult testResult =
-        mockMvcTester
-            .post()
-            .uri(loginUrl)
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .formField("username", TestUserDetailsService.DEMO_USERNAME)
-            .formField("password", TestUserDetailsService.DEMO_USERNAME)
-            .exchange();
+    final MvcTestResult testResult = requestCsrfTokenForLogin(loginUrl);
 
     // then
     assertThat(testResult).cookies().containsCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);

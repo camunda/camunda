@@ -125,9 +125,6 @@ jobs:
         if: inputs.build
         with:
           distball: ${{ steps.build-zeebe.outputs.distball }}
-          # This image is only ever scanned, never started, so training a cache for it
-          # would buy a startup nobody performs. The cache is also opaque to Snyk.
-          aot-cache: 'false'
       # Prepares the bash environment for the step which will actually run Snyk, to avoid mixing too
       # much the GitHub Action contexts/syntax and bash itself.
       - name: Build Snyk Environment

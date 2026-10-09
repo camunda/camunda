@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.search.request;
 
+import io.camunda.client.api.search.filter.AgentDefinitionFilter;
 import io.camunda.client.api.search.filter.AgentInstanceFilter;
 import io.camunda.client.api.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.client.api.search.filter.AuditLogFilter;
@@ -49,6 +50,7 @@ import io.camunda.client.api.search.page.CursorBackwardPage;
 import io.camunda.client.api.search.page.CursorForwardPage;
 import io.camunda.client.api.search.page.LimitPage;
 import io.camunda.client.api.search.page.OffsetPage;
+import io.camunda.client.api.search.sort.AgentDefinitionSort;
 import io.camunda.client.api.search.sort.AgentInstanceHistorySort;
 import io.camunda.client.api.search.sort.AgentInstanceSort;
 import io.camunda.client.api.search.sort.AuditLogSort;
@@ -85,6 +87,7 @@ import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
 import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.client.impl.search.filter.AgentDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.AgentInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.AgentInstanceHistoryFilterImpl;
 import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
@@ -119,6 +122,7 @@ import io.camunda.client.impl.search.page.CursorForwardPageImpl;
 import io.camunda.client.impl.search.page.LimitPageImpl;
 import io.camunda.client.impl.search.page.OffsetPageImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
+import io.camunda.client.impl.search.sort.AgentDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.AgentInstanceHistorySortImpl;
 import io.camunda.client.impl.search.sort.AgentInstanceSortImpl;
 import io.camunda.client.impl.search.sort.AuditLogSortImpl;
@@ -588,6 +592,19 @@ public final class SearchRequestBuilders {
   public static GlobalTaskListenerSort globalTaskListenerSort(
       final Consumer<GlobalTaskListenerSort> fn) {
     final GlobalTaskListenerSort sort = new GlobalTaskListenerSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AgentDefinitionFilter agentDefinitionFilter(
+      final Consumer<AgentDefinitionFilter> fn) {
+    final AgentDefinitionFilter filter = new AgentDefinitionFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static AgentDefinitionSort agentDefinitionSort(final Consumer<AgentDefinitionSort> fn) {
+    final AgentDefinitionSort sort = new AgentDefinitionSortImpl();
     fn.accept(sort);
     return sort;
   }

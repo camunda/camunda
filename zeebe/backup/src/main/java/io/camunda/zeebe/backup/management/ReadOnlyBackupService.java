@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Read-only {@link ReadOnlyBackupManager} used while a partition is in recovery mode. Serves the
@@ -110,7 +111,8 @@ public final class ReadOnlyBackupService extends Actor implements ReadOnlyBackup
         new BackupIdentifierImpl(nodeId, partition.number(), checkpointId));
   }
 
-  private static Collection<BackupRangeStatus> toRangeStatuses(final BackupMetadata metadata) {
+  private static Collection<BackupRangeStatus> toRangeStatuses(
+      final @Nullable BackupMetadata metadata) {
     if (metadata == null) {
       return List.of();
     }

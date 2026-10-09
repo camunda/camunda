@@ -25,7 +25,6 @@ import io.camunda.client.api.search.response.AgentInstance;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -39,6 +38,7 @@ import org.junit.jupiter.api.Test;
 public class AgentInstanceSearchIT {
 
   private static final String AGENT_ELEMENT_ID = "agentAhsp";
+  private static final String AGENT_JOB_TYPE = "agent-task";
 
   private static CamundaClient camundaClient;
 
@@ -64,7 +64,7 @@ public class AgentInstanceSearchIT {
         Bpmn.createExecutableProcess("AgentInstanceSearchProcess1")
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent("end")
             .done();
@@ -79,7 +79,7 @@ public class AgentInstanceSearchIT {
         Bpmn.createExecutableProcess("AgentInstanceSearchProcess2")
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
             .zeebeAiAgentSubProcessDefinition()
             .endEvent("end")
             .done();
@@ -114,7 +114,7 @@ public class AgentInstanceSearchIT {
         .elementInstanceKey(ei1)
         .status(AgentInstanceUpdateStatus.THINKING)
         .jobKey(created1.jobKey())
-        .jobLease(created1.jobLease())
+        .jobLeaseToken(created1.jobLeaseToken())
         .send()
         .join();
 
@@ -178,7 +178,7 @@ public class AgentInstanceSearchIT {
     final var activatedJob =
         camundaClient
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(AGENT_JOB_TYPE)
             .maxJobsToActivate(1)
             .withLease(true)
             .timeout(Duration.ofMinutes(5))
@@ -192,7 +192,7 @@ public class AgentInstanceSearchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
-            .jobLease(activatedJob.getLeaseToken())
+            .jobLeaseToken(activatedJob.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -209,7 +209,7 @@ public class AgentInstanceSearchIT {
             .getAgentInstanceKey();
 
     return new CreatedAgentInstance(
-        agentInstanceKey, activatedJob.getKey(), activatedJob.getLeaseToken());
+        agentInstanceKey, activatedJob.getKey(), activatedJob.getJobLeaseToken());
   }
 
   private static long fetchAgentDefinitionKey(final long agentInstanceKey) {
@@ -530,5 +530,5 @@ public class AgentInstanceSearchIT {
     assertThat(page1Keys).doesNotContainAnyElementsOf(page2Keys);
   }
 
-  private record CreatedAgentInstance(long agentInstanceKey, long jobKey, String jobLease) {}
+  private record CreatedAgentInstance(long agentInstanceKey, long jobKey, String jobLeaseToken) {}
 }

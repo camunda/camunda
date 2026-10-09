@@ -9,7 +9,7 @@
 import {createPortal} from 'react-dom';
 import {observer} from 'mobx-react-lite';
 import {CheckmarkOutline, Error, RadioButtonChecked, WarningFilled} from '@carbon/react/icons';
-import type {ProcessDefinitionStatistic, DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessDefinitionStatistic, DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.11';
 import {themeStore} from '#/shared/theme/theme';
 import {Container} from './styled';
 
@@ -32,6 +32,8 @@ const StateOverlay: React.FC<Props> = observer(
 			<Container
 				data-testid={testId}
 				title={title}
+				role={title === undefined ? undefined : 'img'}
+				aria-label={title === undefined ? undefined : showStatistic ? `${title}: ${count}` : title}
 				$theme={themeStore.actualTheme}
 				$state={state}
 				$isFaded={isFaded}

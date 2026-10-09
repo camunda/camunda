@@ -1,0 +1,33 @@
+---
+# Source: load-test-setup/charts/prometheus-elasticsearch-exporter/templates/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: prom-els-exporter
+  namespace: c8-golden-main-opensearch-physical-tenants
+  labels:
+
+    app.kubernetes.io/name: prometheus-elasticsearch-exporter
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+    release: monitoring
+spec:
+  endpoints:
+  - interval: 10s
+    scrapeTimeout: 10s
+    honorLabels: true
+    port: http
+    path: /metrics
+    scheme: http
+  jobLabel: elasticsearch-exporter
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus-elasticsearch-exporter
+      app.kubernetes.io/instance: load-test-setup
+  namespaceSelector:
+    matchNames:
+      - c8-golden-main-opensearch-physical-tenants
+  sampleLimit: 0

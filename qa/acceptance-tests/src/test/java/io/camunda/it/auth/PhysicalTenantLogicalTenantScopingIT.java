@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
  * IT-3b — logical-tenant scoping within physical tenants, converted to the {@link MultiDbTest} +
@@ -35,17 +34,9 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  *
  * <p>Multi-tenancy is a cluster-wide toggle (not per-PT); the per-PT containment comes from each
  * PT's independent schema.
- *
- * <p>RDBMS only — Elasticsearch/OpenSearch variants are skipped because per-PT secondary-storage
- * schema init and the per-PT writer are not yet available, so non-default PTs have no ES/OS indices
- * to read from.
  */
 @MultiDbTest
 @MultiDbPhysicalTenants({"tenanta", "tenantb"})
-@EnabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$",
-    disabledReason = "Physical-tenant secondary storage is RDBMS-only")
 final class PhysicalTenantLogicalTenantScopingIT {
 
   @MultiDbTestApplication

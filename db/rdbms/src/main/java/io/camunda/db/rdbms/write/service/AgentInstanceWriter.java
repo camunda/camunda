@@ -58,21 +58,32 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
                   .processDefinitionId(agentInstance.processDefinitionId())
                   .processDefinitionKey(agentInstance.processDefinitionKey())
                   .processDefinitionVersion(agentInstance.processDefinitionVersion())
-                  .versionTag(agentInstance.versionTag())
+                  .processDefinitionVersionTag(agentInstance.processDefinitionVersionTag())
                   .elementId(agentInstance.elementId())
                   .status(agentInstance.status())
                   .model(agentInstance.model())
                   .provider(agentInstance.provider())
-                  .systemPrompt(agentInstance.systemPrompt())
                   .maxTokens(agentInstance.maxTokens())
                   .maxModelCalls(agentInstance.maxModelCalls())
                   .maxToolCalls(agentInstance.maxToolCalls())
                   .inputTokens(agentInstance.inputTokens())
                   .outputTokens(agentInstance.outputTokens())
+                  .reasoningTokenCount(agentInstance.reasoningTokenCount())
+                  .cacheCreationTokenCount(agentInstance.cacheCreationTokenCount())
+                  .cacheReadTokenCount(agentInstance.cacheReadTokenCount())
                   .modelCalls(agentInstance.modelCalls())
                   .toolCalls(agentInstance.toolCalls())
-                  .toolValues(agentInstance.toolValues())
                   .lastUpdatedDate(agentInstance.lastUpdatedDate());
+              // `systemPrompt`/`tools`: null on the raw field means this record's handler chose
+              // not to populate it (unchanged since the last write) -- see
+              // AgentInstanceExportHandler#mapToDbModel. Guarded on the raw field, not the
+              // derived accessor, to keep this check aligned with that decision.
+              if (agentInstance.systemPrompt() != null) {
+                b.systemPrompt(agentInstance.systemPrompt());
+              }
+              if (agentInstance.tools() != null) {
+                b.toolValues(agentInstance.toolValues());
+              }
               if (agentInstance.completionDate() != null) {
                 b.completionDate(agentInstance.completionDate());
               }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.restore.validation;
 
 import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
+import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -150,7 +150,7 @@ public final class RestoreValidator
   private Map<Integer, long[]> resolveBackupsByPartition(final List<Long> backupIds) {
     final var ids = backupIds.stream().mapToLong(Long::longValue).sorted().toArray();
     final var store =
-        Objects.requireNonNull(backupStore, "Backup store must be configured to load backups");
+        requireNonNull(backupStore, "Backup store must be configured to load backups");
     return awaitResult(
             FuturesUtil.parTraverse(
                 IntStream.rangeClosed(1, partitionCount).boxed().toList(),
@@ -231,7 +231,7 @@ public final class RestoreValidator
 
   private List<BackupMetadata> loadMetadataForAllPartitions(final int partitionCount) {
     final var store =
-        Objects.requireNonNull(backupStore, "Backup store must be configured to load backups");
+        requireNonNull(backupStore, "Backup store must be configured to load backups");
     final var metadataByPartition =
         awaitResult(
             FuturesUtil.parTraverse(

@@ -12,17 +12,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.util.ZoneFixtures;
 import java.util.List;
@@ -31,9 +35,9 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
- * Covers {@code forceRemoveZone} and {@code addZone}, which only make sense for an already
- * zone-aware cluster. The coordinator's physical id is {@link ZoneFixtures.ZONE_A_0} so that a
- * fully zone-aware topology (whose lowest member is always zone-a's first broker) routes correctly
+ * Covers {@code removeZone} and {@code addZone}, which only make sense for an already zone-aware
+ * cluster. The coordinator's physical id is {@link ZoneFixtures.ZONE_A_0} so that a fully
+ * zone-aware topology (whose lowest member is always zone-a's first broker) routes correctly
  * through the real {@code communicationService}.
  */
 final class ZoneAwareClusterConfigurationManagementApiTest
@@ -45,9 +49,9 @@ final class ZoneAwareClusterConfigurationManagementApiTest
 
   @Override
   protected List<MemberId> extraPhysicalMembers() {
-    // shouldForceRemoveZone removes zone-a, so the coordinator resolved at request time is
-    // zone-b_0 (lowest member outside the removed zone), not the physical coordinator node
-    // (zone-a_0); start it so communicationService can route to it.
+    // The forced removal removes zone-a, so the coordinator resolved at request time is zone-b_0
+    // (the lowest member outside the removed zone), not the physical coordinator node (zone-a_0);
+    // start it so communicationService can route to it.
     return List.of(ZONE_B_0);
   }
 
@@ -71,10 +75,10 @@ final class ZoneAwareClusterConfigurationManagementApiTest
                 ZONE_A_1, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)))
             .setPartitionDistributorConfig(new ZoneAwareConfig(DUAL_REGION));
     setCurrentTopology(currentTopology);
-    final var request = new ForceZoneRemoveRequest(ZONE_A, false);
+    final var request = new RemoveZoneRequest(ZONE_A, false, true);
 
     // when
-    final var changeStatus = clientApi.forceRemoveZone(request).join().get();
+    final var changeStatus = clientApi.removeZone(request).join().get();
 
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
@@ -111,11 +115,15 @@ final class ZoneAwareClusterConfigurationManagementApiTest
     assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(
             new MemberJoinOperation(ZONE_B_0),
+            new PreScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_A_1, ZONE_B_0)),
+            new PostScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_A_1, ZONE_B_0)),
             new UpdatePartitionDistributorConfigOperation(
                 ZONE_A_0,
                 new ZoneAwareConfig(
                     List.of(new ZoneSpec(ZONE_A, 1, 1), new ZoneSpec(ZONE_B, 1, 2)))),
-            new PartitionJoinOperation(ZONE_B_0, 1, 2),
+            new PartitionJoinOperation(ZONE_B_0, 1, 2, true),
+            new PartitionPromoteOperation(ZONE_B_0, 1),
+            new PartitionDemoteOperation(ZONE_A_1, 1),
             new PartitionLeaveOperation(ZONE_A_1, 1, 1));
   }
 }

@@ -10,7 +10,7 @@ import {makeObservable, observable, action} from 'mobx';
 import {endpoints} from '#/shared/http/endpoints';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {reactQueryClient} from '#/shared/http/reactQueryClient';
-import {request} from '#/shared/http/request';
+import {request, requestCsrfToken} from '#/shared/http/request';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {z} from 'zod';
 
@@ -41,6 +41,10 @@ class Authentication {
 	}
 
 	handleLogin = async (username: string, password: string) => {
+		// The login endpoint rejects a POST without a CSRF token, and a GET of the login page is where
+		// the server sends one.
+		await requestCsrfToken(endpoints.loginCsrfToken());
+
 		const {response, error} = await request(endpoints.login({username, password}), {
 			skipSessionCheck: true,
 		});

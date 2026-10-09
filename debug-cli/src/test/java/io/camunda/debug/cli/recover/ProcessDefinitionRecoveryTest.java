@@ -15,7 +15,7 @@ import io.camunda.debug.cli.recover.ProcessDefinitionRecovery.ExistingDocuments;
 import io.camunda.debug.cli.recover.ProcessDefinitionRecovery.ProcessSource;
 import io.camunda.debug.cli.recover.ProcessDefinitionRecovery.Summary;
 import io.camunda.exporter.handlers.EmbeddedFormHandler;
-import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.form.FormEntity;
@@ -35,8 +35,8 @@ final class ProcessDefinitionRecoveryTest {
   private static final String PROCESS_INDEX = "process";
   private static final String FORM_INDEX = "form";
 
-  private final ProcessHandler processHandler =
-      new ProcessHandler(
+  private final ProcessCreatedHandler processHandler =
+      new ProcessCreatedHandler(
           PROCESS_INDEX, new NoopProcessCache(), new ExtensionPropertyConfiguration());
   private final EmbeddedFormHandler embeddedFormHandler = new EmbeddedFormHandler(FORM_INDEX);
 

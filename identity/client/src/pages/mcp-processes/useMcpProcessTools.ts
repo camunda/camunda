@@ -70,7 +70,12 @@ export const useMcpProcessTools = () => {
   const { pageParams, page, ...paginationRest } = usePagination();
 
   const searchTermsFilter = useMemo(() => {
-    const term = pageParams.filter?.toolName?.trim();
+    const rawToolName = pageParams.filter?.toolName;
+    if (typeof rawToolName !== "string") {
+      // Already a structured filter (e.g. `{ $like }`) — pass it through as-is.
+      return rawToolName ? { toolName: rawToolName } : undefined;
+    }
+    const term = rawToolName.trim();
     if (!term) return undefined;
     return { toolName: { $like: `*${term}*` } };
   }, [pageParams.filter]);

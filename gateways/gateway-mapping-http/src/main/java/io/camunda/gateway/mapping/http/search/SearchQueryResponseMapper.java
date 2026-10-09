@@ -1005,7 +1005,11 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
     return BatchOperationResponse.Builder.create()
         .batchOperationKey(entity.batchOperationKey())
-        .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
+        .batchOperationType(
+            ofNullable(entity.operationType())
+                .map(Enum::name)
+                .map(BatchOperationTypeEnum::fromValue)
+                .orElse(null))
         .state(BatchOperationStateEnum.fromValue(entity.state().name()))
         .operationsCompletedCount(entity.operationsCompletedCount())
         .operationsFailedCount(entity.operationsFailedCount())
@@ -2177,6 +2181,9 @@ public final class SearchQueryResponseMapper {
         AgentInstanceMetrics.Builder.create()
             .inputTokens(m.inputTokens())
             .outputTokens(m.outputTokens())
+            .reasoningTokenCount(m.reasoningTokenCount())
+            .cacheCreationTokenCount(m.cacheCreationTokenCount())
+            .cacheReadTokenCount(m.cacheReadTokenCount())
             .modelCalls(m.modelCalls())
             .toolCalls(m.toolCalls())
             .build();
@@ -2223,7 +2230,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(keyToString(entity.processDefinitionKey()))
         .processDefinitionId(entity.processDefinitionId())
         .processDefinitionVersion(entity.processDefinitionVersion())
-        .processDefinitionVersionTag(entity.versionTag())
+        .processDefinitionVersionTag(entity.processDefinitionVersionTag())
         .tenantId(entity.tenantId())
         .creationDate(formatDate(entity.creationDate()))
         .lastUpdatedDate(formatDate(entity.lastUpdatedDate()))
@@ -2275,6 +2282,9 @@ public final class SearchQueryResponseMapper {
           AgentInstanceHistoryItemMetrics.Builder.create()
               .inputTokens(m.inputTokens())
               .outputTokens(m.outputTokens())
+              .reasoningTokenCount(m.reasoningTokenCount())
+              .cacheCreationTokenCount(m.cacheCreationTokenCount())
+              .cacheReadTokenCount(m.cacheReadTokenCount())
               .durationMs(m.durationMs())
               .build();
     }
@@ -2309,7 +2319,7 @@ public final class SearchQueryResponseMapper {
         .agentInstanceKey(keyToString(entity.agentInstanceKey()))
         .elementInstanceKey(keyToString(entity.elementInstanceKey()))
         .jobKey(keyToString(entity.jobKey()))
-        .jobLease(entity.jobLease())
+        .jobLeaseToken(entity.jobLeaseToken())
         .loopIteration(entity.loopIteration())
         .role(AgentInstanceHistoryRoleEnum.fromValue(entity.role().name()))
         .content(content)

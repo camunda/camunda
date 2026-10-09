@@ -8,9 +8,10 @@
 
 package io.camunda.configuration;
 
-import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_ELECTION_TIMEOUT;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAULT_MAX_APPENDS_PER_FOLLOWER;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAULT_MAX_APPEND_BATCH_SIZE;
+import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_JOIN_CATCH_UP_TIMEOUT;
+import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_PROMOTION_LAG_THRESHOLD;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_CHUNK_SIZE;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
 
@@ -110,10 +111,13 @@ public class Raft {
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
 
   /**
-   * Sets the timeout for all requests send by raft leaders and followers.When modifying the values
-   * for requestTimeout, it might also be useful to update snapshotTimeout.
+   * Sets the timeout for all requests sent by raft leaders and followers. When modifying the values
+   * for requestTimeout, it might also be useful to update snapshotRequestTimeout.
+   *
+   * <p>When not set, it is derived from the configured electionTimeout during configuration
+   * resolution.
    */
-  private Duration requestTimeout = DEFAULT_ELECTION_TIMEOUT;
+  private Duration requestTimeout = null;
 
   /**
    * Sets the timeout for all snapshot requests sent by raft leaders to the followers. If the
@@ -130,6 +134,22 @@ public class Raft {
    * requestTimeout is recommended.
    */
   private Duration configurationChangeTimeout = Duration.ofSeconds(10);
+
+  /**
+   * Sets how long a member joining a partition is given to catch up to the entry that admitted it.
+   * A join is only complete once the joiner has replicated that entry; until then it is a
+   * non-voting learner. If the joiner does not get there in time, the attempt fails and is retried
+   * from scratch, so a value below the time a joiner needs to replicate the backlog makes joins
+   * fail repeatedly. On slow networks or with large logs, raise it.
+   */
+  private Duration joinCatchUpTimeout = DEFAULT_JOIN_CATCH_UP_TIMEOUT;
+
+  /**
+   * Sets the maximum replication lag, in bytes, a learner may have for the leader to promote it to
+   * a voting member. Promoting a learner that still lags would shrink the effective quorum, so the
+   * leader waits until the learner is within this threshold.
+   */
+  private DataSize promotionLagThreshold = DEFAULT_PROMOTION_LAG_THRESHOLD;
 
   /**
    * If the leader is not able to reach the quorum, the leader may step down. This is triggered if
@@ -332,6 +352,22 @@ public class Raft {
 
   public void setConfigurationChangeTimeout(final Duration configurationChangeTimeout) {
     this.configurationChangeTimeout = configurationChangeTimeout;
+  }
+
+  public Duration getJoinCatchUpTimeout() {
+    return joinCatchUpTimeout;
+  }
+
+  public void setJoinCatchUpTimeout(final Duration joinCatchUpTimeout) {
+    this.joinCatchUpTimeout = joinCatchUpTimeout;
+  }
+
+  public DataSize getPromotionLagThreshold() {
+    return promotionLagThreshold;
+  }
+
+  public void setPromotionLagThreshold(final DataSize promotionLagThreshold) {
+    this.promotionLagThreshold = promotionLagThreshold;
   }
 
   public Duration getMaxQuorumResponseTimeout() {

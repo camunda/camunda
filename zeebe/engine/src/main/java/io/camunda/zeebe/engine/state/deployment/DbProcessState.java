@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
@@ -37,6 +39,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.Counter;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -197,12 +200,33 @@ public final class DbProcessState implements MutableProcessState {
             pendingDeletionKey,
             DbNil.INSTANCE);
 
+    final var collectedDoc = EngineMetricsDoc.PROCESS_CACHE_COLLECTED;
+    final var collectedCounter =
+        Counter.builder(collectedDoc.getName())
+            .description(collectedDoc.getDescription())
+            .register(zeebeDb.getMeterRegistry());
+
     processByTenantAndKeyCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
-    processesByTenantAndProcessIdAndVersionCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+        newProcessCacheBuilder(config)
+            // both caches hold the same values, so counting one avoids double-counting
+            .<TenantIdAndProcessDefinitionKey, DeployedProcess>removalListener(
+                notification -> {
+                  if (notification.getCause() == RemovalCause.COLLECTED) {
+                    collectedCounter.increment();
+                  }
+                })
+            .build();
+    processesByTenantAndProcessIdAndVersionCache = newProcessCacheBuilder(config).build();
     processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache =
         CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+  }
+
+  private static CacheBuilder<Object, Object> newProcessCacheBuilder(
+      final EngineConfiguration config) {
+    final var builder = CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity());
+    // soft values: a cached process is a large object graph (parsed model, compiled FEEL
+    // expressions) whose size we can't weigh, so let the GC reclaim entries under heap pressure
+    return config.isProcessCacheSoftValues() ? builder.softValues() : builder;
   }
 
   @Override
@@ -414,14 +438,7 @@ public final class DbProcessState implements MutableProcessState {
 
   // is called on getters, if process is not in memory
   private DeployedProcess updateInMemoryState(final PersistedProcess persistedProcess) {
-
-    // we have to copy to store this in cache
-    final byte[] bytes = new byte[persistedProcess.getLength()];
-    final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
-    persistedProcess.write(buffer, 0);
-
-    final PersistedProcess copiedProcess = new PersistedProcess();
-    copiedProcess.wrap(buffer, 0, persistedProcess.getLength());
+    final PersistedProcess copiedProcess = copy(persistedProcess);
 
     final BpmnModelInstance modelInstance =
         readModelInstanceFromBuffer(copiedProcess.getResource());
@@ -447,6 +464,17 @@ public final class DbProcessState implements MutableProcessState {
     addProcessToInMemoryState(deployedProcess);
 
     return deployedProcess;
+  }
+
+  private static PersistedProcess copy(final PersistedProcess persistedProcess) {
+    // we have to copy to store this in cache
+    final byte[] bytes = new byte[persistedProcess.getLength()];
+    final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+    persistedProcess.write(buffer, 0);
+
+    final PersistedProcess copiedProcess = new PersistedProcess();
+    copiedProcess.wrap(buffer, 0, persistedProcess.getLength());
+    return copiedProcess;
   }
 
   private BpmnModelInstance readModelInstanceFromBuffer(final DirectBuffer buffer) {
@@ -485,6 +513,39 @@ public final class DbProcessState implements MutableProcessState {
       return lookupProcessByIdAndPersistedVersion(latestVersion, tenantId);
     }
     return cachedProcess;
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>When the highest version is active (see {@link DeployedProcess#isActive()}), it is returned
+   * immediately without loading known versions. The reverse scan only runs when that version is not
+   * active, and it skips {@code version >= latestVersion} because that version was already checked.
+   */
+  @Override
+  public DeployedProcess getLatestActiveProcessVersionByProcessId(
+      final DirectBuffer processIdBuffer, final String tenantId) {
+    DeployedProcess process = getLatestProcessVersionByProcessId(processIdBuffer, tenantId);
+    if (process == null) {
+      return null;
+    }
+    if (process.isActive()) {
+      return process;
+    }
+
+    final int latestVersion = process.getVersion();
+    final var knownVersions = getKnownProcessVersions(bufferAsString(processIdBuffer), tenantId);
+    for (int i = knownVersions.size() - 1; i >= 0; i--) {
+      final int version = knownVersions.get(i).intValue();
+      if (version >= latestVersion) {
+        continue;
+      }
+      process = getProcessByProcessIdAndVersion(processIdBuffer, version, tenantId);
+      if (process != null && process.isActive()) {
+        return process;
+      }
+    }
+    return null;
   }
 
   @Override
@@ -614,6 +675,34 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
+  public void cacheProcess(
+      final long processDefinitionKey,
+      final String tenantId,
+      final ExecutableProcess executableProcess) {
+    tenantIdKey.wrapString(tenantId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+
+    final PersistedProcess persistedProcess =
+        processColumnFamily.get(tenantAwareProcessDefinitionKey);
+    if (persistedProcess == null) {
+      throw new IllegalStateException(
+          "Expected to cache process with key '%d' for tenant '%s', but it is not persisted"
+              .formatted(processDefinitionKey, tenantId));
+    }
+    if (!BufferUtil.equals(executableProcess.getId(), persistedProcess.getBpmnProcessId())) {
+      throw new IllegalStateException(
+          "Expected to cache process with key '%d' for tenant '%s' and bpmnProcessId '%s', but the given executable process has bpmnProcessId '%s'"
+              .formatted(
+                  processDefinitionKey,
+                  tenantId,
+                  bufferAsString(persistedProcess.getBpmnProcessId()),
+                  bufferAsString(executableProcess.getId())));
+    }
+
+    addProcessToInMemoryState(new DeployedProcess(executableProcess, copy(persistedProcess)));
+  }
+
+  @Override
   public void forEachProcess(
       final ProcessIdentifier previousProcess, final PersistedProcessVisitor visitor) {
 
@@ -679,7 +768,8 @@ public final class DbProcessState implements MutableProcessState {
         processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
 
     if (processWithVersionAndId != null) {
-      return updateInMemoryState(processWithVersionAndId);
+      // the by-version copy is written once at deployment and goes stale when the state changes
+      return lookupPersistenceStateForProcessByKey(processWithVersionAndId.getKey(), tenantId);
     }
     return null;
   }
@@ -694,14 +784,8 @@ public final class DbProcessState implements MutableProcessState {
         processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
 
     if (processWithVersionAndId != null) {
-      updateInMemoryState(processWithVersionAndId);
-
-      final var tenantIdAndProcessIdAndVersion =
-          new TenantIdAndProcessIdAndVersion(tenantId, processIdBuffer, version);
-
-      // return the cached copy
-      return processesByTenantAndProcessIdAndVersionCache.getIfPresent(
-          tenantIdAndProcessIdAndVersion);
+      // the by-version copy is written once at deployment and goes stale when the state changes
+      return lookupPersistenceStateForProcessByKey(processWithVersionAndId.getKey(), tenantId);
     }
     // does not exist in persistence and in memory state
     return null;
@@ -715,10 +799,7 @@ public final class DbProcessState implements MutableProcessState {
     final PersistedProcess processWithKey =
         processColumnFamily.get(tenantAwareProcessDefinitionKey);
     if (processWithKey != null) {
-      updateInMemoryState(processWithKey);
-
-      final var key = new TenantIdAndProcessDefinitionKey(tenantId, processDefinitionKey);
-      return processByTenantAndKeyCache.getIfPresent(key);
+      return updateInMemoryState(processWithKey);
     }
     // does not exist in persistence and in memory state
     return null;

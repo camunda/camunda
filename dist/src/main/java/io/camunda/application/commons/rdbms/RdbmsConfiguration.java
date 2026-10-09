@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -46,6 +47,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+@NullMarked
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
 @Import(MyBatisConfiguration.class)
@@ -73,18 +75,21 @@ public class RdbmsConfiguration {
                 Collectors.toMap(
                     Map.Entry::getKey,
                     e -> {
-                      final var cacheDuration =
+                      final var rdbms =
                           physicalTenantResolver
                               .forPhysicalTenant(e.getKey())
                               .getData()
                               .getSecondaryStorage()
-                              .getRdbms()
-                              .getMetrics()
-                              .getTableRowCountCacheDuration();
+                              .getRdbms();
+                      final var cacheDuration = rdbms.getMetrics().getTableRowCountCacheDuration();
                       final var executor = rdbmsMetricsRefreshExecutor(e.getKey());
                       executors.add(executor);
                       return new RdbmsTableRowCountProvider(
-                          e.getValue().tableMetricsMapper(), cacheDuration, executor);
+                          e.getValue().tableMetricsMapper(),
+                          e.getValue().vendorDatabaseProperties(),
+                          rdbms.getPrefix(),
+                          cacheDuration,
+                          executor);
                     }));
     return new PhysicalTenantsRdbmsTableRowCountMetrics(rowCountProviders, executors);
   }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.client.api;
 
 import static io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PARTITION_ROLE;
+import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.cluster.PartitionId;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.util.collection.Table;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -30,7 +30,7 @@ public final class BrokerClientTopologyMetrics {
   private final Table<PartitionId, BrokerMemberId, AtomicInteger> brokerTopologyRole;
 
   public BrokerClientTopologyMetrics(final MeterRegistry registry) {
-    this.registry = Objects.requireNonNull(registry, "must specify a meter registry");
+    this.registry = requireNonNull(registry, "must specify a meter registry");
     brokerTopologyRole = Table.simple();
   }
 

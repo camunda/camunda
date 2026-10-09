@@ -351,7 +351,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromRoleUserSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::roleMember,
             SearchQuerySortRequestMapper::applyRoleUserSortField);
-    final var filter = FilterBuilders.roleMember().build();
+    final var filter = SearchQueryFilterMapper.toRoleUserFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 

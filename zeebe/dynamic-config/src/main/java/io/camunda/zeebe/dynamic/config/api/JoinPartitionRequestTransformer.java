@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
@@ -53,8 +54,12 @@ public final class JoinPartitionRequestTransformer implements ConfigurationChang
                   .formatted(partitionId, groupId)));
     }
 
+    // A two-phase join: the member joins as a learner and is promoted to a voting member once it
+    // has caught up on the partition's log.
     final List<PartitionGroupOperation> operations =
-        List.of(new PartitionJoinOperation(memberId, partitionId, priority));
+        List.of(
+            new PartitionJoinOperation(memberId, partitionId, priority, true),
+            new PartitionPromoteOperation(memberId, partitionId));
     return Either.right(List.of(PartitionGroupPhase.sequential(Map.of(groupId, operations))));
   }
 }

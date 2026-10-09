@@ -34,7 +34,6 @@ import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.query.AgentDefinitionQuery;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
@@ -66,6 +65,7 @@ public class DeleteProcessDefinitionHistoryIT {
 
   private static final Duration DELETION_TIMEOUT = Duration.ofSeconds(30);
   private static final String AGENT_ELEMENT_ID = "agentAhsp";
+  private static final String AGENT_JOB_TYPE = "agent-task";
   private static final String AGENT_ELEMENT_ID_V1_1 = "agentAhspV1First";
   private static final String AGENT_ELEMENT_ID_V1_2 = "agentAhspV1Second";
   private static CamundaClient camundaClient;
@@ -574,10 +574,10 @@ public class DeleteProcessDefinitionHistoryIT {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .adHocSubProcess(AGENT_ELEMENT_ID_V1_1, p -> p.task("agentTask1"))
-                .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                .zeebeJobType(AGENT_JOB_TYPE)
                 .zeebeAiAgentSubProcessDefinition()
                 .adHocSubProcess(AGENT_ELEMENT_ID_V1_2, p -> p.task("agentTask2"))
-                .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                .zeebeJobType(AGENT_JOB_TYPE)
                 .zeebeAiAgentSubProcessDefinition()
                 .endEvent("end")
                 .done(),
@@ -590,7 +590,7 @@ public class DeleteProcessDefinitionHistoryIT {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTaskV2"))
-                .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                .zeebeJobType(AGENT_JOB_TYPE)
                 .zeebeAiAgentSubProcessDefinition()
                 .endEvent("end")
                 .done(),
@@ -611,7 +611,7 @@ public class DeleteProcessDefinitionHistoryIT {
             Bpmn.createExecutableProcess(otherProcessId)
                 .startEvent()
                 .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-                .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                .zeebeJobType(AGENT_JOB_TYPE)
                 .zeebeAiAgentSubProcessDefinition()
                 .endEvent("end")
                 .done(),
@@ -648,7 +648,7 @@ public class DeleteProcessDefinitionHistoryIT {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
-                .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                .zeebeJobType(AGENT_JOB_TYPE)
                 .zeebeAiAgentSubProcessDefinition()
                 .endEvent("end")
                 .done(),

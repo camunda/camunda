@@ -18,7 +18,8 @@ public interface SuspensionState {
 
   enum State {
     SUSPENDED,
-    RESUMING
+    RESUMING,
+    SUSPENDING
   }
 
   /**
@@ -28,14 +29,10 @@ public interface SuspensionState {
   @Nullable State getSuspensionState(long processInstanceKey);
 
   /**
-   * @return {@code true} if the process instance has any suspension marker (either {@link
-   *     State#SUSPENDED} or {@link State#RESUMING}); {@code false} if it has none. The marker is
-   *     only removed once resuming has fully drained the buffer.
-   *     <p>This reflects marker <em>presence</em>, not a specific state, and does not imply {@link
-   *     State#SUSPENDED} and {@link State#RESUMING} should be gated identically — e.g. the primary
-   *     buffering gate must buffer forward-progress commands while {@code SUSPENDED} but pass them
-   *     through while {@code RESUMING}. Callers that need to distinguish the two should branch on
-   *     {@link #getSuspensionState} instead.
+   * @return {@code true} while the process instance is {@link State#SUSPENDING}, {@link
+   *     State#SUSPENDED}, or {@link State#RESUMING}; {@code false} without a marker. The marker
+   *     remains while buffered commands drain during resuming. Use {@link
+   *     #getSuspensionState(long)} to distinguish the states.
    */
   boolean isSuspended(long processInstanceKey);
 
@@ -50,11 +47,17 @@ public interface SuspensionState {
    * Reads the head of the process instance's FIFO buffer without scanning the rest of it, so that
    * draining one command per {@code DRAIN} cycle stays cheap no matter how much is buffered.
    *
-   * @return the oldest buffered command, or {@link Optional#empty()} if the process instance has
-   *     none buffered, or if the secondary index has an entry with no matching primary record (an
-   *     inconsistency that is logged but must not throw here, as it sits on the resume hot path)
+   * @return the oldest buffered command after {@code afterCommandKey}, or {@link Optional#empty()}
+   *     if none remain
    */
-  Optional<BufferedCommand> getOldestBufferedCommand(long processInstanceKey);
+  Optional<BufferedCommand> findNextBufferedCommand(long processInstanceKey, long afterCommandKey);
+
+  /**
+   * Counts the buffered commands for the given process instance without reading their values,
+   * unlike {@link #visitBufferedCommands} which deserializes every record. Use this when only the
+   * count is needed, e.g. for a dropped-commands metric on termination.
+   */
+  int countBufferedCommands(long processInstanceKey);
 
   @FunctionalInterface
   interface BufferedCommandVisitor {

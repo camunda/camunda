@@ -38,6 +38,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /incidents/{incidentKey}:
     get:
@@ -82,6 +83,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /incidents/{incidentKey}/resolution:
     post:
@@ -135,6 +137,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /incidents/statistics/process-instances-by-error:
     post:
@@ -175,6 +178,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /incidents/statistics/process-instances-by-definition:
     post:
@@ -216,6 +220,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -255,7 +260,12 @@ components:
           allOf:
             - $ref: '#/components/schemas/IncidentErrorTypeFilterProperty'
         errorMessage:
-          description: The error message of this incident.
+          description: >
+            The error message of this incident. For `$eq`, `$neq`, `$in`, and `$notIn`,
+            matching is case-insensitive and matches if the incident's error message
+            contains the given value as a phrase, not necessarily the entire error
+            message. `$like` matches on individual words of the error message and does
+            not support multi-word patterns.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         elementId:

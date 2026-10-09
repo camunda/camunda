@@ -6,7 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Heading} from '@camunda/design-system';
+
 const AdminPage: React.FC = () => {
-	return <h1>Admin</h1>;
+	return (
+		<Heading as="h1" variant="heading-lg">
+			Admin
+		</Heading>
+	);
 };
 export {AdminPage};

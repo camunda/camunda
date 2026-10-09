@@ -164,12 +164,20 @@ export class OperateFiltersPanelPage {
     if (await this.isOptionalFilterDisplayed(filterName)) {
       return;
     }
-    await this.moreFiltersButton.click();
-    await this.page
-      .getByRole('menuitem', {
-        name: filterName,
-      })
-      .click();
+    await expect(this.moreFiltersButton).toBeVisible({timeout: 10000});
+    const menuItem = this.page.getByRole('menuitem', {
+      name: filterName,
+    });
+    // The item exists only while the menu is open, so retry opening it rather
+    // than waiting longer. Checked before each click: clicking the trigger on
+    // an open menu closes it again.
+    await expect(async () => {
+      if (!(await menuItem.isVisible())) {
+        await this.moreFiltersButton.click();
+      }
+      await expect(menuItem).toBeVisible({timeout: 5000});
+    }).toPass({timeout: 30000});
+    await menuItem.click();
   }
 
   async removeOptionalFilter(filterName: OptionalFilter) {
@@ -221,14 +229,17 @@ export class OperateFiltersPanelPage {
   async selectFlowNode(option: string) {
     // The flow-node dropdown can fail to open, or render before its options
     // have loaded; retry opening it until the target option is present (same
-    // approach as selectVersion).
+    // approach as selectVersion). Changing the version reloads the diagram,
+    // which rebuilds this option list -- so the option can detach (and the menu
+    // collapse) between resolving it and clicking, making a click outside the
+    // retry burn its whole timeout on a stale element. Open AND click inside
+    // the retry so a detach just re-opens and re-clicks.
     await expect(async () => {
       await this.flowNodeFilter.click();
-      await expect(this.getOptionByName(option, false)).toBeVisible({
-        timeout: 5_000,
-      });
+      const optionLocator = this.getOptionByName(option, false);
+      await expect(optionLocator).toBeVisible({timeout: 5_000});
+      await optionLocator.click({timeout: 5_000});
     }).toPass({timeout: 30_000});
-    await this.getOptionByName(option, false).click({timeout: 30000});
   }
 
   async fillBusinessIdFilter(value: string) {
@@ -308,16 +319,19 @@ export class OperateFiltersPanelPage {
     await expect(this.processInstanceKeysFilter).toBeVisible();
     await expect(this.processInstanceKeysFilter).toBeEnabled();
     await this.processInstanceKeysFilter.click();
-    // Clear any existing content first: pressSequentially appends, so typing
-    // on a retry or a reused filter without clearing produces a doubled value
-    // (e.g. "45034503"). fill('') clears and fires the controlled input's
-    // onChange; pressSequentially then types char-by-char so the value sticks.
-    await this.processInstanceKeysFilter.fill('');
-    await this.processInstanceKeysFilter.pressSequentially(processInstanceKey);
-    await expect(this.processInstanceKeysFilter).toHaveValue(
-      processInstanceKey,
-      {timeout: 30000},
-    );
+    // Clear before each attempt: pressSequentially appends, so retyping over a
+    // partial value would double it. The retry is for the first keystroke,
+    // which the controlled input can drop before it has settled.
+    await expect(async () => {
+      await this.processInstanceKeysFilter.fill('');
+      await this.processInstanceKeysFilter.pressSequentially(
+        processInstanceKey,
+      );
+      await expect(this.processInstanceKeysFilter).toHaveValue(
+        processInstanceKey,
+        {timeout: 10000},
+      );
+    }).toPass({timeout: 60000});
   }
 
   async fillParentProcessInstanceKeyFilter(parentProcessInstanceKey: string) {
@@ -397,6 +411,21 @@ export class OperateFiltersPanelPage {
 
   async clickActiveInstancesCheckbox(): Promise<void> {
     await this.activeInstancesCheckbox.click();
+  }
+
+  /** Reads the URL rather than clicking blindly: a click on an already-checked
+   * box turns the filter off. */
+  async applySuspendedFilter(): Promise<void> {
+    // Retried until the URL carries it: a click issued while the Processes
+    // tab is still navigating is undone when that navigation lands.
+    await expect(async () => {
+      if (new URL(this.page.url()).searchParams.get('suspended') !== 'true') {
+        await this.clickSuspendedInstancesCheckbox();
+      }
+      expect(new URL(this.page.url()).searchParams.get('suspended')).toBe(
+        'true',
+      );
+    }).toPass({timeout: 30000});
   }
 
   async clickSuspendedInstancesCheckbox(): Promise<void> {

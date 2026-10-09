@@ -9,6 +9,7 @@ package io.camunda.search.schema.opensearch;
 
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
 import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -30,12 +31,17 @@ import io.camunda.search.schema.opensearch.OpensearchEngineClient.ISMPolicyState
 import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,6 +49,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 
@@ -187,6 +194,21 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
+  void shouldReadReplicaCountsForExistingIndices() throws IOException {
+    final var index =
+        createTestIndexDescriptor(
+            "index_name_replicas-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfReplicas(2);
+    opensearchEngineClient.createIndex(index, settings);
+
+    final var replicaCounts =
+        opensearchEngineClient.getNumberOfReplicas(List.of(index.getFullQualifiedName() + "*"));
+
+    assertThat(replicaCounts).containsEntry(index.getFullQualifiedName(), 2);
+  }
+
+  @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     // given
     final var index1 =
@@ -282,7 +304,7 @@ public class OpensearchEngineClientIT {
 
     // when
     final Map<String, String> newSettings = Map.of("index.refresh_interval", "5s");
-    opensearchEngineClient.putSettings(List.of(index), newSettings);
+    opensearchEngineClient.putSettings(index, newSettings);
 
     // then
     final var indices =
@@ -343,40 +365,131 @@ public class OpensearchEngineClientIT {
     assertThat(ismPolicyState.exists()).isFalse();
   }
 
+  /**
+   * Regression test for #63543/#63569's underlying failure mode (a cluster-state master overloaded
+   * by concurrent, redundant writes) recurring for ISM policies: {@code putIndexLifeCyclePolicy}
+   * used to PUT unconditionally on every schema-init attempt, even when the policy already matched
+   * configuration.
+   */
   @Test
   @DisabledIfSystemProperty(
       named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI - policies not allowed for shared DBs")
-  void shouldAlwaysUpdateIndexLifeCyclePolicyEvenIfExistingHasSameValue() throws IOException {
+  void shouldNotUpdateIndexLifeCyclePolicyWhenExistingHasSameValue() throws IOException {
     // given
-    opensearchEngineClient.putIndexLifeCyclePolicy("always_update_ism_policy_name", "20d");
+    opensearchEngineClient.putIndexLifeCyclePolicy("no_change_ism_policy_name", "20d");
 
     // then: policy state after first creation
     final ISMPolicyState policyStateAfterCreation =
-        opensearchEngineClient.getCurrentISMPolicyState("always_update_ism_policy_name");
+        opensearchEngineClient.getCurrentISMPolicyState("no_change_ism_policy_name");
 
     // then: verify state after creation
     assertThat(policyStateAfterCreation.exists()).isTrue();
-    assertThat(getPolicyMinAge("always_update_ism_policy_name")).isEqualTo("20d");
+    assertThat(getPolicyMinAge("no_change_ism_policy_name")).isEqualTo("20d");
 
-    // when: update ISM with same parameters
+    // when: PUT again with the same min_index_age
     assertThatNoException()
         .isThrownBy(
             () ->
-                opensearchEngineClient.putIndexLifeCyclePolicy(
-                    "always_update_ism_policy_name", "20d"));
+                opensearchEngineClient.putIndexLifeCyclePolicy("no_change_ism_policy_name", "20d"));
 
-    // then: policy state after first creation
+    // then: policy state after the redundant PUT
     final ISMPolicyState policyStateAfterUpdate =
-        opensearchEngineClient.getCurrentISMPolicyState("always_update_ism_policy_name");
+        opensearchEngineClient.getCurrentISMPolicyState("no_change_ism_policy_name");
 
-    // then: state seq no should increment, but others should remain the same
-    assertThat(policyStateAfterUpdate.exists()).isTrue();
-    assertThat(policyStateAfterUpdate.primaryTerm())
-        .isEqualTo(policyStateAfterCreation.primaryTerm());
+    // then: nothing was written, so seq_no/primary_term stay exactly where they were
+    assertThat(policyStateAfterUpdate).isEqualTo(policyStateAfterCreation);
+    assertThat(getPolicyMinAge("no_change_ism_policy_name")).isEqualTo("20d");
+  }
+
+  /** See {@link #shouldNotUpdateIndexLifeCyclePolicyWhenExistingHasSameValue}. */
+  @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policies not allowed for shared DBs")
+  void shouldUpdateIndexLifeCyclePolicyWhenMinAgeChanged() throws IOException {
+    // given
+    opensearchEngineClient.putIndexLifeCyclePolicy("changed_ism_policy_name", "20d");
+    final ISMPolicyState policyStateAfterCreation =
+        opensearchEngineClient.getCurrentISMPolicyState("changed_ism_policy_name");
+    assertThat(policyStateAfterCreation.exists()).isTrue();
+
+    // when: PUT again with a different min_index_age
+    opensearchEngineClient.putIndexLifeCyclePolicy("changed_ism_policy_name", "30d");
+
+    // then: the write actually happened, so seq_no moved on and the new value is in effect
+    final ISMPolicyState policyStateAfterUpdate =
+        opensearchEngineClient.getCurrentISMPolicyState("changed_ism_policy_name");
     assertThat(policyStateAfterUpdate.seqNo()).isGreaterThan(policyStateAfterCreation.seqNo());
-    assertThat(getPolicyMinAge("always_update_ism_policy_name")).isEqualTo("20d");
+    assertThat(getPolicyMinAge("changed_ism_policy_name")).isEqualTo("30d");
+  }
+
+  /**
+   * Regression test asserting that upgrading to a schema-manager version whose policy template
+   * newly states {@code retry} explicitly does not force a one-time PUT for every pre-existing
+   * fleet policy. A policy created by an older template (without an explicit {@code retry} block)
+   * already has OpenSearch's own default {@code retry} block persisted into it at creation time, so
+   * the fetched and desired definitions match without ever needing a write.
+   */
+  @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policies not allowed for shared DBs")
+  void shouldNotUpdatePolicyCreatedByOlderTemplateWithoutExplicitRetry() throws IOException {
+    // given - a policy created the way an older template (predating the explicit retry block)
+    // would have, i.e. without ever specifying retry on the delete action
+    final var policyName = "legacy_ism_policy_name";
+    final var legacyPolicyBody =
+        """
+        {
+          "policy": {
+            "description": "Archived index policy",
+            "default_state": "archived",
+            "states": [
+              {
+                "name": "archived",
+                "actions": [],
+                "transitions": [
+                  {
+                    "state_name": "deleted",
+                    "conditions": { "min_index_age": "20d" }
+                  }
+                ]
+              },
+              {
+                "name": "deleted",
+                "actions": [ { "delete": {} } ],
+                "transitions": []
+              }
+            ]
+          }
+        }
+        """;
+    final var createRequest =
+        Requests.builder()
+            .method("PUT")
+            .endpoint(
+                String.format("%s/%s", OpensearchEngineClient.ISM_POLICIES_ENDPOINT, policyName))
+            .body(Body.from(legacyPolicyBody.getBytes(StandardCharsets.UTF_8), "application/json"))
+            .build();
+    try (final var response = openSearchClient.generic().execute(createRequest)) {
+      assertThat(response.getStatus()).isEqualTo(201);
+    }
+    final var policyStateAfterCreation =
+        opensearchEngineClient.getCurrentISMPolicyState(policyName);
+    assertThat(policyStateAfterCreation.exists()).isTrue();
+
+    // when - schema-init runs putIndexLifeCyclePolicy() with today's template, which states retry
+    // explicitly
+    opensearchEngineClient.putIndexLifeCyclePolicy(policyName, "20d");
+
+    // then - nothing was written, so seq_no/primary_term stay exactly where they were
+    final var policyStateAfterSchemaInit =
+        opensearchEngineClient.getCurrentISMPolicyState(policyName);
+    assertThat(policyStateAfterSchemaInit).isEqualTo(policyStateAfterCreation);
   }
 
   @Test
@@ -411,6 +524,114 @@ public class OpensearchEngineClientIT {
 
     // then
     verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  /**
+   * Regression test for #63764: every index template {@link IndexDescriptors} registers must be
+   * left untouched by a repeated schema initialization that changes neither its schema file nor its
+   * configuration. Before the fix, the settings check diffed the schema file against the search
+   * engine's normalized rendering of it, which never matched for templates with an {@code analysis}
+   * block, so those were rewritten on every restart.
+   */
+  @ParameterizedTest
+  @MethodSource("templateDescriptors")
+  void shouldNotRewriteIndexTemplateOnRepeatedSchemaInitialization(
+      final IndexTemplateDescriptor template) throws IOException {
+    // given
+    final var settings = new IndexConfiguration();
+
+    final var indicesSpy = spy(openSearchClient.indices());
+    final var clientSpy = spy(openSearchClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient = new OpensearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, settings, true);
+    reset(indicesSpy); // ignore create
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, settings);
+
+    // then
+    verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  private static Stream<Named<IndexTemplateDescriptor>> templateDescriptors() {
+    return new IndexDescriptors("unchanged-template-settings", false)
+        .templates().stream()
+            .map(template -> Named.of(template.getMappingsClasspathFilename(), template));
+  }
+
+  @Test
+  void shouldIssuePutIndexTemplateOnceWhenAnalysisSettingsChanged() throws IOException {
+    // given
+    final var template =
+        createTestTemplateDescriptor("template_analysis_change", "/mappings-and-analysis.json");
+    final var settings = new IndexConfiguration();
+
+    final var indicesSpy = spy(openSearchClient.indices());
+    final var clientSpy = spy(openSearchClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient = new OpensearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, settings, true);
+    template.setMappingsClasspathFilename("/mappings-and-updated-analysis.json");
+    reset(indicesSpy); // ignore create
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, settings);
+    engineClient.updateIndexTemplateSettings(template, settings);
+
+    // then
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+    final var normalizer =
+        openSearchClient
+            .indices()
+            .getIndexTemplate(req -> req.name(template.getTemplateName()))
+            .indexTemplates()
+            .getFirst()
+            .indexTemplate()
+            .template()
+            .settings()
+            .index()
+            .analysis()
+            .normalizer()
+            .get("case_insensitive");
+    assertThat(normalizer.custom().filter()).containsExactly("lowercase", "asciifolding");
+  }
+
+  @Test
+  void shouldRewriteTemplateWithoutSettingsFingerprintOnlyOnce() throws IOException {
+    // given - a template as written before settings fingerprints existed
+    final var template = createTestTemplateDescriptor("template_no_fingerprint", "/mappings.json");
+    final var settings = new IndexConfiguration();
+    openSearchClient
+        .indices()
+        .putIndexTemplate(
+            req ->
+                req.name(template.getTemplateName())
+                    .indexPatterns(template.getIndexPattern())
+                    .template(t -> t.settings(s -> s.numberOfShards(1))));
+
+    final var indicesSpy = spy(openSearchClient.indices());
+    final var clientSpy = spy(openSearchClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient = new OpensearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, settings);
+    engineClient.updateIndexTemplateSettings(template, settings);
+
+    // then - the first check adds the fingerprint, the second one finds it
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+    final var meta =
+        openSearchClient
+            .indices()
+            .getIndexTemplate(req -> req.name(template.getTemplateName()))
+            .indexTemplates()
+            .getFirst()
+            .indexTemplate()
+            .meta();
+    assertThat(meta).containsKey(SETTINGS_FINGERPRINT_META_KEY);
   }
 
   @ParameterizedTest

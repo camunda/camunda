@@ -226,8 +226,8 @@ public final class JobUpdateRetriesTest {
         ENGINE.jobs().withType(jobType).withLease().activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = job.getLeaseToken();
-    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("job was leased").isNotEmpty();
 
     // when
     final Record<JobRecordValue> updatedRecord =
@@ -251,8 +251,8 @@ public final class JobUpdateRetriesTest {
         ENGINE.jobs().withType(jobType).withLease().activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = job.getLeaseToken();
-    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("job was leased").isNotEmpty();
 
     // when
     final Record<JobRecordValue> updatedRecord =
@@ -260,7 +260,7 @@ public final class JobUpdateRetriesTest {
             .job()
             .withKey(jobKey)
             .withRetries(NEW_RETRIES)
-            .withLeaseToken(leaseToken)
+            .withJobLeaseToken(jobLeaseToken)
             .updateRetries();
 
     // then
@@ -281,8 +281,8 @@ public final class JobUpdateRetriesTest {
         ENGINE.jobs().withType(jobType).withLease().activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = job.getLeaseToken();
-    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("job was leased").isNotEmpty();
 
     // when
     final Record<JobRecordValue> rejection =
@@ -290,7 +290,7 @@ public final class JobUpdateRetriesTest {
             .job()
             .withKey(jobKey)
             .withRetries(NEW_RETRIES)
-            .withLeaseToken("stale-lease-token")
+            .withJobLeaseToken("stale-lease-token")
             .expectRejection()
             .updateRetries();
 
@@ -299,6 +299,6 @@ public final class JobUpdateRetriesTest {
     assertThat(rejection.getRejectionReason())
         .describedAs("mismatch rejection explains the lease no longer matches")
         .contains("does not match")
-        .doesNotContain(leaseToken);
+        .doesNotContain(jobLeaseToken);
   }
 }

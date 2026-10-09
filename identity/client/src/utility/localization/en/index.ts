@@ -7,6 +7,7 @@
  */
 
 import components from "./components.json";
+import entitySelection from "./entitySelection.json";
 import permissions from "./permissions.json";
 import authorizations from "./authorizations.json";
 import tenants from "./tenants.json";
@@ -23,6 +24,7 @@ import navigation from "./navigation.json";
 
 export default {
   components,
+  entitySelection,
   permissions,
   authorizations,
   tenants,

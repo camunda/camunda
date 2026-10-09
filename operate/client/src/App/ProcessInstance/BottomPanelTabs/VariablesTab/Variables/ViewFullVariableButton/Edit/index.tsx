@@ -47,6 +47,7 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
       {isModalVisible && (
         <RichTextEditorModal
           value={variableEditor.fieldValue}
+          variableName={variableName}
           onClose={() => {
             setIsModalVisible(false);
             tracking.track({

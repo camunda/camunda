@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {parseIds} from './parseIds';
 
 const VALUE_SEPARATOR = '_';

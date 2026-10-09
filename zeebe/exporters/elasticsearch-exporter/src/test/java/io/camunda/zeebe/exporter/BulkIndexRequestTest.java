@@ -93,18 +93,18 @@ final class BulkIndexRequestTest {
     recordAsMap.remove("agent");
     recordAsMap.remove("requestChannelType");
     recordAsMap.remove("requestToolName");
-    // the storage ordinal key is stripped from every record value during serialization; it can
-    // appear at any nesting level (e.g. embedded job records), so remove it recursively
-    removeStorageOrdinalKeys(recordAsMap);
+    // storageOrdinal is stripped from record values during serialization;
+    // it can appear at any nesting level (e.g. embedded job records), so remove it recursively
+    removeStrippedKeys(recordAsMap);
     return MAPPER.writeValueAsBytes(recordAsMap).length;
   }
 
-  private static void removeStorageOrdinalKeys(final Object node) {
+  private static void removeStrippedKeys(final Object node) {
     if (node instanceof final Map<?, ?> map) {
-      map.remove("storageOrdinalKey");
-      map.values().forEach(BulkIndexRequestTest::removeStorageOrdinalKeys);
+      map.remove("storageOrdinal");
+      map.values().forEach(BulkIndexRequestTest::removeStrippedKeys);
     } else if (node instanceof final Collection<?> collection) {
-      collection.forEach(BulkIndexRequestTest::removeStorageOrdinalKeys);
+      collection.forEach(BulkIndexRequestTest::removeStrippedKeys);
     }
   }
 
@@ -521,14 +521,14 @@ final class BulkIndexRequestTest {
     }
 
     @Test
-    void shouldIndexJobRecordWithoutLeaseTokenOnPreviousVersion() {
+    void shouldIndexJobRecordWithoutJobLeaseTokenOnPreviousVersion() {
       // given
       final var record =
           recordFactory.generateRecord(
               ValueType.JOB,
               r ->
                   r.withBrokerVersion(VersionUtil.getPreviousVersion())
-                      .withValue(new JobRecord().setLeaseToken("lease-abc-123")));
+                      .withValue(new JobRecord().setJobLeaseToken("lease-abc-123")));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -541,20 +541,20 @@ final class BulkIndexRequestTest {
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
           .describedAs(
-              "Expect that job records are NOT serialized with leaseToken on previous version")
+              "Expect that job records are NOT serialized with jobLeaseToken on previous version")
           .allSatisfy(
-              value -> assertThat((Map<String, Object>) value).doesNotContainKey("leaseToken"));
+              value -> assertThat((Map<String, Object>) value).doesNotContainKey("jobLeaseToken"));
     }
 
     @Test
-    void shouldIndexJobRecordWithLeaseTokenOnCurrentVersion() {
+    void shouldIndexJobRecordWithJobLeaseTokenOnCurrentVersion() {
       // given
       final var record =
           recordFactory.generateRecord(
               ValueType.JOB,
               r ->
                   r.withBrokerVersion(VersionUtil.getVersion())
-                      .withValue(new JobRecord().setLeaseToken("lease-abc-123")));
+                      .withValue(new JobRecord().setJobLeaseToken("lease-abc-123")));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -566,8 +566,9 @@ final class BulkIndexRequestTest {
           .hasSize(1)
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("leaseToken"))
-          .describedAs("Expect that job records are serialized with leaseToken on current version")
+          .extracting(source -> ((Map<String, Object>) source).get("jobLeaseToken"))
+          .describedAs(
+              "Expect that job records are serialized with jobLeaseToken on current version")
           .containsExactly("lease-abc-123");
     }
 

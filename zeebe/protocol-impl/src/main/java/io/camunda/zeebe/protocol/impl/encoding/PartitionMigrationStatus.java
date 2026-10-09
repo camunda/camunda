@@ -8,9 +8,9 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 /**
- * A single partition replica's migration status, reported by {@code
- * PartitionAdminAccess#getMigrationStatus()} and carried over the wire by {@link
- * MigrationStatusPayload}.
+ * A single partition replica's migration status, reported by a {@code PartitionAdminAccess}
+ * migration-status method (e.g. {@code getMigrationStatus()}, {@code
+ * getExportingMigrationStatus()}) and carried over the wire by {@link MigrationStatusPayload}.
  *
  * @param code whether this replica is migrated, confidently not yet migrated, or unknown
  * @param detail a short, human-readable explanation

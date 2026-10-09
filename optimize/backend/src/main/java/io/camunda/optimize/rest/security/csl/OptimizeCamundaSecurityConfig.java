@@ -16,10 +16,13 @@ import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
+import io.camunda.security.spring.oidc.LazyClientRegistrationRepository;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.session.WebSessionConfiguration;
 import io.camunda.security.spring.spi.OidcAuthenticationEntryPoint;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -154,19 +157,26 @@ public class OptimizeCamundaSecurityConfig {
   // /oauth2/authorization/{id} endpoint; anything else falls back to /login so a picker can show.
   private static String resolveLoginRedirectTarget(
       final ClientRegistrationRepository clientRegistrationRepository) {
-    if (clientRegistrationRepository instanceof final Iterable<?> registrations) {
-      ClientRegistration single = null;
-      int count = 0;
-      for (final Object registration : registrations) {
-        if (registration instanceof final ClientRegistration clientRegistration) {
-          single = clientRegistration;
-          count++;
-        }
-      }
-      if (count == 1) {
-        return "/oauth2/authorization/" + single.getRegistrationId();
-      }
+    final List<String> registrationIds = registrationIds(clientRegistrationRepository);
+    return registrationIds.size() == 1
+        ? "/oauth2/authorization/" + registrationIds.getFirst()
+        : "/login";
+  }
+
+  // The bean above is built while the application context comes up, so this must read the ids from
+  // configuration alone. Reading a registration resolves it and thus performs OIDC discovery, which
+  // an unreachable provider fails — and with it the context.
+  private static List<String> registrationIds(
+      final ClientRegistrationRepository clientRegistrationRepository) {
+    if (clientRegistrationRepository instanceof final LazyClientRegistrationRepository lazy) {
+      return List.copyOf(lazy.registrationIds());
     }
-    return "/login";
+    if (clientRegistrationRepository instanceof final Iterable<?> registrations) {
+      return StreamSupport.stream(registrations.spliterator(), false)
+          .filter(ClientRegistration.class::isInstance)
+          .map(registration -> ((ClientRegistration) registration).getRegistrationId())
+          .toList();
+    }
+    return List.of();
   }
 }

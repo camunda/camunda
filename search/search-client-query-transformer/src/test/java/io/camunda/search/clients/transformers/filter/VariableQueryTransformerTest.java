@@ -331,6 +331,135 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByStringValueNotIn() {
+    // given
+    final var filter =
+        FilterBuilders.variable((f) -> f.valueOperations(Operation.notIn("done", "cancelled")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              assertThat(boolQuery.mustNot()).hasSize(1);
+              final var termsQuery =
+                  (SearchTermsQuery) boolQuery.mustNot().getFirst().queryOption();
+              assertThat(termsQuery.field()).isEqualTo("value");
+              assertThat(termsQuery.values())
+                  .extracting(TypedValue::stringValue)
+                  .containsExactlyInAnyOrder("done", "cancelled");
+            });
+  }
+
+  @Test
+  public void shouldQueryByIntegerValueNotInWithBothNumericRepresentations() {
+    // given
+    final var filter =
+        FilterBuilders.variable((f) -> f.valueOperations(Operation.notIn("356", "400")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              assertThat(boolQuery.mustNot()).hasSize(1);
+              final var termsQuery =
+                  (SearchTermsQuery) boolQuery.mustNot().getFirst().queryOption();
+              assertThat(termsQuery.field()).isEqualTo("value");
+              final var valueStrings =
+                  termsQuery.values().stream()
+                      .map(v -> v.isString() ? v.stringValue() : String.valueOf(v.longValue()))
+                      .toList();
+              assertThat(valueStrings).containsExactlyInAnyOrder("356", "356.0", "400", "400.0");
+            });
+  }
+
+  @Test
+  public void shouldQueryByDoubleValueNotIn() {
+    // given
+    final var filter =
+        FilterBuilders.variable((f) -> f.valueOperations(Operation.notIn("3.14", "2.71")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              assertThat(boolQuery.mustNot()).hasSize(1);
+              final var termsQuery =
+                  (SearchTermsQuery) boolQuery.mustNot().getFirst().queryOption();
+              assertThat(termsQuery.field()).isEqualTo("value");
+              assertThat(termsQuery.values())
+                  .extracting(TypedValue::doubleValue)
+                  .containsExactlyInAnyOrder(3.14, 2.71);
+            });
+  }
+
+  @Test
+  public void shouldQueryByBooleanValueNotIn() {
+    // A single value collapses to a term (rather than terms) query, mirroring
+    // objectTerms()'s existing single-value optimization used by IN.
+    // given
+    final var filter = FilterBuilders.variable((f) -> f.valueOperations(Operation.notIn("true")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              assertThat(boolQuery.mustNot()).hasSize(1);
+              assertThat(boolQuery.mustNot().getFirst().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      term -> {
+                        assertThat(term.field()).isEqualTo("value");
+                        assertThat(term.value().stringValue()).isEqualTo("true");
+                      });
+            });
+  }
+
+  @Test
+  public void shouldQueryByNullValueNotInAsNegatedLiteralNullTerm() {
+    // given
+    final var filter = FilterBuilders.variable((f) -> f.valueOperations(Operation.notIn("null")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              assertThat(boolQuery.mustNot()).hasSize(1);
+              assertThat(boolQuery.mustNot().getFirst().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      term -> {
+                        assertThat(term.field()).isEqualTo("value");
+                        assertThat(term.value().stringValue()).isEqualTo("null");
+                      });
+            });
+  }
+
+  @Test
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =

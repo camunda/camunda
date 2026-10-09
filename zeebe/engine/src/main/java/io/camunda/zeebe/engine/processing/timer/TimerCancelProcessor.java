@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.timer;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -49,12 +49,21 @@ public final class TimerCancelProcessor
       rejectionWriter.appendRejection(
           record, RejectionType.NOT_FOUND, String.format(NO_TIMER_FOUND_MESSAGE, record.getKey()));
     } else {
+      // state is the source of truth for the ordinal: a CANCEL command written before the ordinal
+      // existed carries 0, and the CANCELED event below reuses this record
+      timer.setStorageOrdinal(TimerStorageOrdinals.of(timerInstance));
+
       stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.CANCELED, timer);
     }
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<TimerRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<TimerRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<TimerRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

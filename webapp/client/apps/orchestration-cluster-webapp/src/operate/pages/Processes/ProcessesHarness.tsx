@@ -31,12 +31,16 @@ function ProcessesHarness() {
 				incidents={search.incidents === undefined ? true : Boolean(search.incidents)}
 				completed={Boolean(search.completed)}
 				canceled={Boolean(search.canceled)}
+				suspended={search.suspended === undefined ? true : Boolean(search.suspended)}
 				tenantId={toOptionalString(search.tenantId)}
 				processInstanceKey={toOptionalString(search.processInstanceKey)}
 				parentProcessInstanceKey={toOptionalString(search.parentProcessInstanceKey)}
 				businessId={toOptionalString(search.businessId)}
 				batchOperationKey={toOptionalString(search.batchOperationKey)}
 				errorMessage={toOptionalString(search.errorMessage)}
+				incidentErrorHashCode={
+					typeof search.incidentErrorHashCode === 'number' ? search.incidentErrorHashCode : undefined
+				}
 				hasRetriesLeft={search.hasRetriesLeft === undefined ? undefined : Boolean(search.hasRetriesLeft)}
 				startDateFrom={toOptionalString(search.startDateFrom)}
 				startDateTo={toOptionalString(search.startDateTo)}

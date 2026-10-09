@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/camunda/camunda/c8run/internal/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type stubProcessHandler struct {
@@ -31,6 +33,62 @@ func (s *stubProcessHandler) WritePIDToFile(pidPath string, pid int) error {
 }
 
 func (s *stubProcessHandler) TrackProcessTree(pidPath string, rootPid int) {}
+
+// capturingProcessHandler records the callbacks passed to AttemptToStartProcess so a
+// test can drive the failure path without launching a real process.
+type capturingProcessHandler struct {
+	attemptCount int
+	capturedStop context.CancelFunc
+}
+
+func (c *capturingProcessHandler) AttemptToStartProcess(pidPath string, processName string, startProcess func(), healthCheck func() error, stop context.CancelFunc) {
+	c.attemptCount++
+	c.capturedStop = stop
+}
+
+func (c *capturingProcessHandler) WritePIDToFile(pidPath string, pid int) error { return nil }
+
+func (c *capturingProcessHandler) TrackProcessTree(pidPath string, rootPid int) {}
+
+func TestStartConnectorsHealthFailureDoesNotStopCluster(t *testing.T) {
+	// given a Connectors startup whose health check will fail
+	capturing := &capturingProcessHandler{}
+	handler := &StartupHandler{ProcessHandler: capturing}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	state := &types.State{
+		Settings: types.C8RunSettings{},
+		ProcessInfo: types.Processes{
+			Connectors: types.Process{PidPath: "connectors.pid", Version: "8.10.0"},
+		},
+	}
+
+	// when Connectors is started and the process handler reports it as unhealthy
+	handler.startConnectors(ctx, cancel, state, t.TempDir(), "java")
+	require.Equal(t, 1, capturing.attemptCount)
+	require.NotNil(t, capturing.capturedStop)
+	capturing.capturedStop()
+
+	// then the shared context stays active so Camunda keeps running
+	assert.NoError(t, ctx.Err())
+}
+
+func TestStartConnectorsSkippedWhenDisabled(t *testing.T) {
+	// given connectors are disabled
+	capturing := &capturingProcessHandler{}
+	handler := &StartupHandler{ProcessHandler: capturing}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	state := &types.State{
+		Settings: types.C8RunSettings{DisableConnectors: true},
+	}
+
+	// when starting connectors
+	handler.startConnectors(ctx, cancel, state, t.TempDir(), "java")
+
+	// then no startup attempt is made
+	assert.Equal(t, 0, capturing.attemptCount)
+}
 
 func TestEnsurePortAvailable(t *testing.T) {
 	inUseListener, err := net.Listen("tcp4", ":0")

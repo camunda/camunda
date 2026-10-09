@@ -74,7 +74,7 @@ public final class InputMappingResultBuilder implements MappingResultBuilder {
    * name resolves to in the scope chain, unless an earlier mapping assigned that name whole.
    */
   @Override
-  public @Nullable DirectBuffer getVariable(final String name) {
+  public @Nullable DirectBuffer get(final String name) {
     final var entry = entries.get(name);
     if (entry == null) {
       return null;

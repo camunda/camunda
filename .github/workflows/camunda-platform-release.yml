@@ -113,7 +113,7 @@ jobs:
       # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -231,6 +231,13 @@ jobs:
           # Assign the amount of seconds that the plugin will wait for a deployment
           # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
           CENTRAL_WAIT_MAX_TIME: "10800"
+          # maven-scm discards git's stderr (GitRemoteInfoCommand builds its
+          # ScmException from the URL alone), so a failed ls-remote reports nothing
+          # but "unbale to execute ls-remote". A file path routes git's own
+          # diagnostics past maven; NO_DATA keeps packfile bodies out of the trace.
+          GIT_TRACE: ${{ runner.temp }}/git-trace.log
+          GIT_TRACE_CURL: ${{ runner.temp }}/git-trace-curl.log
+          GIT_TRACE_CURL_NO_DATA: "1"
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -270,6 +277,65 @@ jobs:
           echo "Release tag ${RELEASE_TAG} points to commit ${TAG_COMMIT_SHA}"
           echo "tagCommitSha=${TAG_COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           popd
+
+      # release:perform's `git ls-remote` (run from java.io.tmpdir) has failed
+      # intermittently on 8.10.0-alpha5-rc2, 8.9.19, 8.8.39 and 8.10.0-rc1 -- always
+      # in under a second, always after the clone and every push in the same job had
+      # succeeded against the same URL. That is an answer, not a timeout, but maven
+      # swallowed it every time. These failure-only steps record whether the remote
+      # rejected us (HTTP status) or the runner never reached it (DNS/connect). All
+      # are best-effort: a release is never failed by its own diagnostics.
+      - name: Probe git remote access
+        id: probe-git-remote
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          APP_TOKEN: ${{ steps.github-token.outputs.token }}
+          PROBE_LOG: ${{ runner.temp }}/git-remote-probe.log
+          REF_ADVERTISEMENT: https://github.com/camunda/camunda.git/info/refs?service=git-upload-pack
+        run: .github/scripts/probe-git-remote.sh
+
+      # GIT_TRACE_CURL records request headers, Authorization included. Scrub before
+      # the traces leave the runner.
+      - name: Redact git traces
+        id: redact-git-traces
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        env:
+          DIAGNOSTICS_DIR: ${{ runner.temp }}/git-remote-diagnostics
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${DIAGNOSTICS_DIR}"
+
+          for source in \
+            "${{ runner.temp }}/git-trace.log" \
+            "${{ runner.temp }}/git-trace-curl.log" \
+            "${{ runner.temp }}/git-remote-probe.log"; do
+            [ -f "${source}" ] || continue
+            destination="${DIAGNOSTICS_DIR}/$(basename "${source}")"
+            # Keep only the last 5 MB: the failure is at the end of the trace, and
+            # the artifact stays bounded however verbose git gets.
+            tail -c 5M "${source}" | sed -E \
+              -e 's#//[^@/[:space:]]*@#//***@#g' \
+              -e 's#(authorization|AUTHORIZATION): .*#\1: ***#gI' \
+              -e 's#(x-access-token|ghs_|github_pat_)[A-Za-z0-9_]*#\1***#g' \
+              > "${destination}"
+          done
+
+      - name: Upload git remote diagnostics
+        if: >-
+          failure() &&
+          steps.maven-perform-release.outcome == 'failure' &&
+          steps.redact-git-traces.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: git-remote-diagnostics-${{ env.RELEASE_VERSION }}
+          path: ${{ runner.temp }}/git-remote-diagnostics/
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Validate flattened POM metadata
         if: ${{ inputs.dryRun }}
@@ -669,6 +735,53 @@ jobs:
       dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/camunda:{0}', inputs.releaseVersion) }}
     secrets: inherit
 
+  # Shadow run of the new release-notes generator (#57713), beside the legacy
+  # zcl changelog the `github` job builds. Read-only, non-blocking, its own
+  # job so the token stays read-only unlike `github`'s. Runs after `github`
+  # (shared GITHUB_TOKEN, avoids tripping the secondary rate limit) and is
+  # skipped for patches/alphas only where the walked tag can't yet resolve
+  # (dry runs) or the comparison isn't useful (minors, candidates). Kill
+  # switch: repo variable RELEASE_NOTES_SHADOW_DISABLED=true. Full rationale
+  # and the version-shape rules: GENERATOR.md.
+  release-notes-shadow:
+    needs: [release, github]
+    name: Release Notes (shadow run)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    continue-on-error: true
+    timeout-minutes: 60 # A minor walks thousands of commits; give it headroom.
+    if: ${{ always() && !cancelled() &&
+      needs.release.result == 'success' && needs.github.result == 'success' &&
+      vars.RELEASE_NOTES_SHADOW_DISABLED != 'true' &&
+      !inputs.dryRun && !inputs.releaseProcessDryRun && !contains(inputs.releaseVersion, 'dryrun') &&
+      !contains(inputs.releaseVersion, '-rc') && !endsWith(inputs.releaseVersion, '.0') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+          fetch-depth: 0 # Tags and full history — the range walk needs both.
+          persist-credentials: false
+      - name: Generate Changelog (new generator, shadow run)
+        id: gen-changelog-shadow
+        continue-on-error: true
+        uses: ./.github/actions/release-notes/generate
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-version: ${{ inputs.releaseVersion }}
+          release-branch: ${{ env.RELEASE_BRANCH }}
+          allow-unattributed: 'true'
+          unattributed-reason: 'shadow run (#57713) — comparing against the legacy zcl changelog, not yet gating'
+          output-dir: release-notes-shadow
+      # continue-on-error above hides a timeout or crash from the job's own
+      # status; surface it here so a swallowed failure still shows up.
+      - name: Report shadow-run outcome
+        if: always()
+        run: |
+          echo "### Release Notes shadow run: ${{ steps.gen-changelog-shadow.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
   # - With dryRun=true: Skips creating the actual GitHub release (only prepares artifacts and changelog)
@@ -694,14 +807,22 @@ jobs:
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
           persist-credentials: false
       - name: Install Zeebe changelog tool
-        run: |
-          gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
-          tar -xzvf zeebe-changelog_*
-          chmod +x zcl
+        # retry to tolerate transient GitHub API failures (e.g. TLS handshake timeouts)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          retry_on: any
+          timeout_minutes: 2
+          max_attempts: 3
+          retry_wait_seconds: 10
+          # --clobber so a partial download from a timed-out attempt does not block the retry
+          command: |
+            gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz' --clobber
+            tar -xzvf zeebe-changelog_*
+            chmod +x zcl
       - name: Identify previous release version
         id: prev_version
         if: ${{ !inputs.dryRun }}
-        uses: camunda/infra-global-github-actions/previous-version@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # previous-version: v1.0.0
+        uses: camunda/infra-global-github-actions/previous-version@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # previous-version-1.0.0
         with:
           version: "${{ inputs.releaseVersion }}"
           verbose: 'false'
@@ -859,9 +980,9 @@ jobs:
             secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
       - name: Get FOSSA context
         id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@fc4fa13813cbc1835129967f10a12f24aa7a393c
+        uses: camunda/infra-global-github-actions/fossa/info@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
       - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@fc4fa13813cbc1835129967f10a12f24aa7a393c
+        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -869,7 +990,7 @@ jobs:
           revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@fc4fa13813cbc1835129967f10a12f24aa7a393c
+        uses: camunda/infra-global-github-actions/fossa/release@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -1179,5 +1300,4 @@ jobs:
                 }
               ]
             }
-
 

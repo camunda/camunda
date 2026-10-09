@@ -19,10 +19,14 @@ import {formatEvaluationDate} from '#/operate/shared/utils/formatEvaluationDate'
 
 const DECISION_INSTANCE_ID = '123567';
 
-function renderHeader() {
+function renderHeader({
+	initialEntry = `/operate/decisions/${DECISION_INSTANCE_ID}`,
+	basepath,
+}: {initialEntry?: string; basepath?: string} = {}) {
 	return renderWithRouter(() => <Header decisionEvaluationInstanceKey={DECISION_INSTANCE_ID} onOpenDrd={() => {}} />, {
 		path: '/operate/decisions/$decisionInstanceId',
-		initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`,
+		initialEntry,
+		basepath,
 	});
 }
 
@@ -69,7 +73,10 @@ describe('<Header />', () => {
 					name: `View decision "${decisionInstance.decisionDefinitionName} version ${decisionInstance.decisionDefinitionVersion}" instances`,
 				}),
 			)
-			.toHaveTextContent(decisionInstance.decisionDefinitionVersion.toString());
+			.toHaveAttribute(
+				'href',
+				'/operate/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1&evaluated=true&failed=true',
+			);
 		await expect.element(screen.getByText(formatEvaluationDate(decisionInstance.evaluationDate))).toBeVisible();
 		await expect
 			.element(
@@ -78,6 +85,13 @@ describe('<Header />', () => {
 				}),
 			)
 			.toBeVisible();
+		await expect
+			.element(
+				screen.getByRole('link', {
+					name: `View process instance ${decisionInstance.processInstanceKey}`,
+				}),
+			)
+			.toHaveAttribute('href', `/operate/processes/${decisionInstance.processInstanceKey}`);
 	});
 
 	it('should display a failed evaluation state', async ({worker}) => {
@@ -92,5 +106,50 @@ describe('<Header />', () => {
 		await expect.element(screen.getByTestId('FAILED-icon')).toBeVisible();
 		await expect.element(screen.getByText(failedInstance.decisionDefinitionName)).toBeVisible();
 		await expect.element(screen.getByText('1 incident')).toBeVisible();
+	});
+
+	it('should keep process instance links under the configured basepath', async ({worker}) => {
+		const decisionInstance = createDecisionInstance({processInstanceKey: '2251799813685243'});
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockGetDecisionInstanceEndpoint({successResponse: HttpResponse.json(decisionInstance)}),
+		);
+
+		const screen = await renderHeader({
+			basepath: '/camunda',
+			initialEntry: `/camunda/operate/decisions/${DECISION_INSTANCE_ID}`,
+		});
+
+		await expect
+			.element(
+				screen.getByRole('link', {
+					name: `View process instance ${decisionInstance.processInstanceKey}`,
+				}),
+			)
+			.toHaveAttribute('href', `/camunda/operate/processes/${decisionInstance.processInstanceKey}`);
+		await expect
+			.element(
+				screen.getByRole('link', {
+					name: `View decision "${decisionInstance.decisionDefinitionName} version ${decisionInstance.decisionDefinitionVersion}" instances`,
+				}),
+			)
+			.toHaveAttribute(
+				'href',
+				'/camunda/operate/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1&evaluated=true&failed=true',
+			);
+	});
+
+	it('should show None without a process instance link when the key is empty', async ({worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(createDecisionInstance({processInstanceKey: ''})),
+			}),
+		);
+
+		const screen = await renderHeader();
+
+		await expect.element(screen.getByText('None')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: /View process instance/})).not.toBeInTheDocument();
 	});
 });

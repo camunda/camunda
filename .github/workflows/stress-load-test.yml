@@ -101,7 +101,7 @@ jobs:
     name: Setup
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -122,12 +122,12 @@ jobs:
     needs: setup
     if: needs.setup.result == 'success'
     timeout-minutes: 20
-    permissions: { }
+    permissions: {}
     steps:
       - name: Wait for warmup period
         run: sleep "${WARMUP_SECONDS}"
 
-  # Profile the first 30 minutes post-warmup via async-profiler. Runs concurrently with soak (not
+  # Profile the first 10 minutes post-warmup via async-profiler. Runs concurrently with soak (not
   # on its critical path).
   profile:
     name: Profile pods
@@ -135,14 +135,12 @@ jobs:
     if: needs.warmup.result == 'success'
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
       name: c8-${{ inputs.name }}
-      pod: ''
-      test-type: ${{ inputs.name }}
-      duration-seconds: '1800'
+      duration-seconds: '600'
 
   # Wait 3 hours, anchored to this variant's own setup completion, before taking its metrics
   # snapshot. Variants build+deploy independently and don't reliably finish at the same time, so
@@ -161,7 +159,7 @@ jobs:
     needs: setup
     if: needs.setup.result == 'success'
     timeout-minutes: 195
-    permissions: { }
+    permissions: {}
     outputs:
       soak_end_epoch: ${{ steps.timing.outputs.soak_end_epoch }}
     steps:
@@ -177,9 +175,7 @@ jobs:
     name: Collect metrics
     needs: [ setup, soak ]
     if: needs.soak.result == 'success' && needs.setup.result == 'success'
-    permissions:
-      contents: read
-      id-token: write
+    permissions: {}
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
@@ -198,7 +194,7 @@ jobs:
     needs: [ collect-metrics, soak ]
     if: always() && needs.collect-metrics.result == 'success'
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     steps:
       - name: Write variant metrics manifest
         env:
@@ -208,8 +204,8 @@ jobs:
           jq -n \
             --arg namespace "${NAMESPACE}" \
             --argjson soakEndEpoch "${SOAK_END_EPOCH:-0}" \
-            --argjson results "${RESULTS_JSON:-{}}" \
-            '{namespace: $namespace, soakEndEpoch: $soakEndEpoch, results: $results}' \
+            --argjson results "${RESULTS_JSON:-null}" \
+            '{namespace: $namespace, soakEndEpoch: $soakEndEpoch, results: ($results // {})}' \
             > stress-result.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -240,7 +236,7 @@ jobs:
     if: always()
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:

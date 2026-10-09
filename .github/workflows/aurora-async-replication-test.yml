@@ -17,9 +17,7 @@ on:
         description: 'Ref of camunda/camunda-deployment-references to use'
         type: string
         required: false
-        # TODO: revert to 'main' once the aurora-mysql-engine-option branch
-        # (engine/port parameterization for Aurora MySQL) is merged there.
-        default: 'aurora-mysql-engine-option'
+        default: 'main'
       db_engine:
         description: 'Aurora engine to provision (postgresql or mysql)'
         type: string
@@ -35,9 +33,7 @@ on:
         description: 'Ref of camunda/camunda-deployment-references to use'
         type: string
         required: false
-        # TODO: revert to 'main' once the aurora-mysql-engine-option branch
-        # (engine/port parameterization for Aurora MySQL) is merged there.
-        default: 'aurora-mysql-engine-option'
+        default: 'main'
       db_engine:
         description: 'Aurora engine to provision'
         type: choice
@@ -62,6 +58,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/data-layer'
   AWS_REGION: eu-west-1
   TF_DIR: .github/terraform/aurora-replication-it
   TF_IN_AUTOMATION: 'true'
@@ -72,7 +69,7 @@ env:
   TF_STATE_BUCKET_REGION: eu-west-1
   # engine-derived config: keep all engine differences here so the steps below stay generic.
   # engine_version and the database port are intentionally NOT set here — the aurora-global
-  # module (via the aurora-mysql-engine-option branch) derives both from TF_VAR_engine itself
+  # module derives both from TF_VAR_engine itself
   # (per-engine version defaults, and a `db_port` output used for the SSM tunnel below).
   TF_VAR_engine: ${{ (inputs.db_engine || 'postgresql') == 'mysql' && 'aurora-mysql' || 'aurora-postgresql' }}
 
@@ -122,7 +119,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL;
 
       - name: Configure AWS CLI
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           aws-access-key-id: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
@@ -298,6 +295,7 @@ jobs:
             verify -pl qa/acceptance-tests
             ${{ (inputs.db_engine || 'postgresql') == 'mysql' && '-Prdbms-aurora-mysql' || '-Prdbms-aurora' }}
             -DskipUTs -DskipChecks -DskipTests=false
+            -Dfailsafe.timeout=5400
 
       - name: Upload test reports and SSM logs
         if: always()
@@ -357,7 +355,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "@zeebe-medic Aurora infrastructure `${{ steps.tfvars.outputs.name_prefix }}` was NOT destroyed. Please clean it up manually.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    "text": "@distributed-systems-medic Aurora infrastructure `${{ steps.tfvars.outputs.name_prefix }}` was NOT destroyed. Please clean it up manually.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                   }
                 }
               ]

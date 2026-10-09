@@ -25,6 +25,8 @@
 /.github/actions/renew-github-token/*                    @camunda/engineering-operations
 /.github/actions/dependency-vuln-check/*                 @camunda/engineering-operations
 /.github/dependency-review-config.json                   @camunda/engineering-operations
+/.github/actions/release-notes/**                        @camunda/engineering-operations
+/.github/workflows/release-notes*                        @camunda/engineering-operations
 
 ###################
 ## Core Features ##
@@ -33,10 +35,9 @@
 # CI Files
 /.github/workflows/operate-playwright.yml                 @camunda/core-features
 /.github/workflows/ci-operate.yml                         @camunda/core-features
-/.github/workflows/ci-tasklist.yml                        @camunda/core-features
 /.github/workflows/ci-optimize.yml                        @camunda/core-features
 /.github/workflows/optimize-check-c4.yml                  @camunda/core-features
-/.github/workflows/optimize-e2e-tests-sm-nightly.yml      @camunda/core-features
+/.github/workflows/optimize-e2e-smoke.yml                 @camunda/bi-intelligence
 /.github/workflows/optimize-ci-data-upgrade-nightly.yml                       @camunda/core-features
 /.github/workflows/assign-urgency-to-issues-cron.yml                          @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-nightly-metrics-report.yml        @camunda/core-features
@@ -119,9 +120,35 @@
 ## Identity  ##
 ###############
 
-/identity/        @camunda/identity-frontend
+/identity/        @camunda/operate-admin-pod
 /authentication/  @camunda/identity
 /security/        @camunda/identity
+
+###################################
+## Orchestration Cluster Webapp  ##
+###################################
+
+# Default for the unified webapp frontend; pod areas below override it.
+/webapp/client/                                                       @camunda/orchestration-cluster-webapps
+/webapp/client/apps/orchestration-cluster-webapp/src/routes/          @camunda/orchestration-cluster-webapps
+/webapp/client/apps/orchestration-cluster-webapp/src/shared/          @camunda/orchestration-cluster-webapps
+
+# Pod areas
+/webapp/client/apps/orchestration-cluster-webapp/src/admin/                    @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/src/operate/                  @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/src/tasklist/                 @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/integration/admin/       @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/integration/operate/     @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/integration/tasklist/    @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/a11y/admin/              @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/a11y/operate/            @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/a11y/tasklist/           @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/pages/admin/             @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/pages/operate/           @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/pages/tasklist/          @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/visual/admin/            @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/visual/operate/          @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/visual/tasklist/         @camunda/employee-engagement-tasklist
 
 
 ##########################
@@ -142,39 +169,43 @@
 # AI Assistant Instructions
 /CLAUDE.md      @camunda/orchestration-cluster
 /AGENTS.md      @camunda/orchestration-cluster
-/.claude/skills/README.md    @camunda/orchestration-cluster
-/.claude/skills/create-issue/ @camunda/orchestration-cluster
-/.claude/skills/grill-me/    @camunda/orchestration-cluster
-/.claude/skills/load-test-ops/ @camunda/reliability-testing
+/.agents/skills/README.md    @camunda/orchestration-cluster
+/.agents/skills/create-issue/ @camunda/orchestration-cluster
+/.agents/skills/grill-me/    @camunda/orchestration-cluster
+/.agents/skills/load-test-ops/ @camunda/reliability-testing
 
 # CI skills
-/.claude/skills/act-testing/**                   @camunda/engineering-operations
-/.claude/skills/agentic-workflows/**             @camunda/engineering-operations
-/.claude/skills/ci-fix-failure/**                @camunda/engineering-operations
-/.claude/skills/ci-incident/**                   @camunda/engineering-operations
-/.claude/skills/ci-push-workflow-health/**       @camunda/engineering-operations
-/.claude/skills/ci-runner-utilization/**         @camunda/engineering-operations
-/.claude/skills/ci-scheduled-workflow-health/**  @camunda/engineering-operations
-/.claude/skills/ci-security-compliance/**        @camunda/engineering-operations
-/.claude/skills/ci-validation/**                 @camunda/engineering-operations
-/.claude/skills/ci-workflow-authoring/**         @camunda/engineering-operations
+/.agents/skills/act-testing/**                   @camunda/engineering-operations
+/.agents/skills/agentic-workflows/**             @camunda/engineering-operations
+/.agents/skills/ci-fix-failure/**                @camunda/engineering-operations
+/.agents/skills/ci-incident/**                   @camunda/engineering-operations
+/.agents/skills/ci-push-workflow-health/**       @camunda/engineering-operations
+/.agents/skills/ci-runner-utilization/**         @camunda/engineering-operations
+/.agents/skills/ci-scheduled-workflow-health/**  @camunda/engineering-operations
+/.agents/skills/ci-security-compliance/**        @camunda/engineering-operations
+/.agents/skills/ci-validation/**                 @camunda/engineering-operations
+/.agents/skills/ci-workflow-authoring/**         @camunda/engineering-operations
 
 # Engine-expert skill
-/.claude/skills/engine-expert/  @korthout @camunda/core-features
+/.agents/skills/engine-expert/  @korthout @camunda/core-features
 
-# Frontend skills
-/.claude/skills/frontend-feature/          @camunda/core-features
-/.claude/skills/frontend-integration-test/ @camunda/core-features
-/.claude/skills/frontend-migrator/         @camunda/core-features
-/.claude/skills/frontend-operate-migrator/ @camunda/core-features
-/.claude/skills/frontend-unit-test/        @camunda/core-features
-/.claude/skills/operate-frontend/          @camunda/core-features
-/.claude/skills/tasklist-frontend/         @camunda/core-features
+# Experience FE frontend skills
+/.agents/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-operate-migrator/ @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-unit-test/        @camunda/orchestration-cluster-webapps
+
+# Operate frontend skills
+/.agents/skills/operate-engineering-loop/ @camunda/operate-admin-pod
+/.agents/skills/operate-frontend/         @camunda/operate-admin-pod
+
+# Tasklist frontend skills
+/.agents/skills/tasklist-frontend/ @camunda/employee-engagement-tasklist
 
 #################
 ## Camunda Ex  ##
 #################
-/clients/        @camunda/c8-java-sdk
+/clients/        @camunda/c8-api-team
 /library-parent/ @camunda/c8-java-sdk
 /testing/        @camunda/c8-testing
 
@@ -208,3 +239,4 @@
 /.github/workflows/c8-orchestration-cluster-nightly-main-api-es.yml               @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-main-api-rdbms.yml            @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-main-e2e.yml                  @camunda/test-automation-team
+/.github/workflows/trigger-coverage-gate.yml                                      @camunda/test-automation-team

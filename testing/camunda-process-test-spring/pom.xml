@@ -168,8 +168,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-standalone</artifactId>
+      <groupId>org.wiremock.integrations</groupId>
+      <artifactId>wiremock-spring-boot</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -188,6 +188,15 @@
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Jackson 3 is the client's default JSON mapper on Spring Boot 4. It is an optional
+         dependency of camunda-spring-boot-starter, so it has to be requested explicitly to
+         cover the assertions end-to-end against a Jackson 3 based JsonMapper. -->
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -213,6 +222,9 @@
           <execution>
             <id>analyze-dependencies</id>
             <configuration>
+              <ignoredUsedUndeclaredDependencies combine.children="append">
+                <dep>org.wiremock:wiremock</dep>
+              </ignoredUsedUndeclaredDependencies>
               <ignoredNonTestScopedDependencies combine.children="append">
                 <dep>org.awaitility:awaitility</dep>
                 <dep>org.apache.httpcomponents.client5:httpclient5</dep>

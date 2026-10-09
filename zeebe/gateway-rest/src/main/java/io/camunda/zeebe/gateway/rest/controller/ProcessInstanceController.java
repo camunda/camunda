@@ -163,7 +163,9 @@ public class ProcessInstanceController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/{processInstanceKey}/incident-resolution")
+  @CamundaPostMapping(
+      path = "/{processInstanceKey}/incident-resolution",
+      consumes = {})
   public CompletableFuture<ResponseEntity<Object>> resolveProcessInstanceIncidents(
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long processInstanceKey) {
@@ -300,7 +302,7 @@ public class ProcessInstanceController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceCancellationBatchOperationRequest request) {
     return processInstanceMapper
-        .toRequiredProcessInstanceFilter(request.getFilter())
+        .toProcessInstanceCancellationFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             filter -> batchOperationCancellation(physicalTenantId, filter));

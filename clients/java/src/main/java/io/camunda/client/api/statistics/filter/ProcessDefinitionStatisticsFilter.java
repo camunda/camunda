@@ -177,6 +177,14 @@ public interface ProcessDefinitionStatisticsFilter extends ProcessDefinitionStat
   @Override
   ProcessDefinitionStatisticsFilter incidentErrorHashCode(final Consumer<IntegerProperty> fn);
 
+  /** Filter by businessId */
+  @Override
+  ProcessDefinitionStatisticsFilter businessId(final String businessId);
+
+  /** Filter by businessId using {@link StringProperty} consumer */
+  @Override
+  ProcessDefinitionStatisticsFilter businessId(final Consumer<StringProperty> fn);
+
   /** Filter by or conjunction using {@link ProcessInstanceFilterBase} consumer */
   ProcessDefinitionStatisticsFilter orFilters(
       List<Consumer<ProcessDefinitionStatisticsFilterBase>> filters);

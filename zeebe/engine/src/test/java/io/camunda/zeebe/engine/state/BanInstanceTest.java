@@ -250,7 +250,7 @@ public final class BanInstanceTest {
     }
 
     @Override
-    public int getStorageOrdinalKey() {
+    public int getStorageOrdinal() {
       return 0;
     }
   }

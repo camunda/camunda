@@ -10,7 +10,7 @@ import {Page, Locator, expect} from '@playwright/test';
 
 export class IdentityHeader {
   readonly page: Page;
-  readonly openSettingsButton: Locator;
+  readonly userMenuButton: Locator;
   readonly logoutButton: Locator;
   readonly rolesTab: Locator;
   readonly tenantsTab: Locator;
@@ -21,10 +21,8 @@ export class IdentityHeader {
 
   constructor(page: Page) {
     this.page = page;
-    this.openSettingsButton = page.getByRole('button', {
-      name: 'Open Settings',
-    });
-    this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.userMenuButton = page.getByRole('button', {name: /^User menu/});
+    this.logoutButton = page.getByRole('menuitem', {name: /log out/i});
     this.rolesTab = page.locator('nav a').filter({hasText: /^Roles$/});
     this.tenantsTab = page.locator('nav a').filter({hasText: /^Tenants$/});
     this.authorizationsTab = page
@@ -41,7 +39,7 @@ export class IdentityHeader {
   }
 
   async logout() {
-    await this.openSettingsButton.click();
+    await this.userMenuButton.click();
     await this.logoutButton.click();
     await expect(this.page.getByText('logged out...')).toBeVisible({
       timeout: 15000,

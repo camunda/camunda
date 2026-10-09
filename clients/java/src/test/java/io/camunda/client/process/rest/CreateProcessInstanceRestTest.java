@@ -195,6 +195,28 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
   }
 
   @Test
+  void shouldAddVariablesIncrementally() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .addVariable("first", 1)
+        .addVariable("second", 2)
+        .addVariables(Collections.singletonMap("third", 3))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    assertThat(request.getVariables())
+        .containsOnly(entry("first", 1), entry("second", 2), entry("third", 3));
+  }
+
+  @Test
   public void shouldRaiseAnErrorIfRequestFails() {
     // given
     gatewayService.errorOnRequest(

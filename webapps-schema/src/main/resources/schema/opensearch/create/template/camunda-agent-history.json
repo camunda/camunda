@@ -35,7 +35,7 @@
       "jobKey": {
         "type": "long"
       },
-      "jobLease": {
+      "jobLeaseToken": {
         "type": "keyword"
       },
       "loopIteration": {
@@ -55,6 +55,15 @@
         "type": "long"
       },
       "outputTokens": {
+        "type": "long"
+      },
+      "reasoningTokenCount": {
+        "type": "long"
+      },
+      "cacheCreationTokenCount": {
+        "type": "long"
+      },
+      "cacheReadTokenCount": {
         "type": "long"
       },
       "durationMs": {

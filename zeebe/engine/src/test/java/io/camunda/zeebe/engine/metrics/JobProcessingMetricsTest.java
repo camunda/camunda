@@ -122,7 +122,7 @@ public class JobProcessingMetricsTest {
     final long processInstanceKey = createProcessInstanceWithJob(jobType);
 
     // lease the job, then fail it back to activatable so it stays leased but activatable
-    final String leaseToken =
+    final String jobLeaseToken =
         engine
             .jobs()
             .withType(jobType)
@@ -131,12 +131,12 @@ public class JobProcessingMetricsTest {
             .getValue()
             .getJobs()
             .get(0)
-            .getLeaseToken();
+            .getJobLeaseToken();
     engine
         .job()
         .ofInstance(processInstanceKey)
         .withType(jobType)
-        .withLeaseToken(leaseToken)
+        .withJobLeaseToken(jobLeaseToken)
         .withRetries(1)
         .fail();
     RecordingExporter.jobRecords(JobIntent.FAILED)

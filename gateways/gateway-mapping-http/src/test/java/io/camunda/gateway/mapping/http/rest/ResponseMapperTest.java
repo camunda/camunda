@@ -207,7 +207,7 @@ class ResponseMapperTest {
     }
 
     @Test
-    void shouldMapActivatedJobWithLeaseToken() {
+    void shouldMapActivatedJobWithJobLeaseToken() {
       // given
       final JobRecord jobRecord =
           new JobRecord()
@@ -222,7 +222,7 @@ class ResponseMapperTest {
               .setWorker("worker")
               .setRetries(3)
               .setDeadline(0L)
-              .setLeaseToken("lease-token-1")
+              .setJobLeaseToken("lease-token-1")
               .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
       final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
@@ -239,11 +239,11 @@ class ResponseMapperTest {
       final var jobs = result.getActivateJobsResponse().getJobs();
       assertThat(jobs)
           .singleElement()
-          .satisfies(job -> assertThat(job.getLeaseToken()).isEqualTo("lease-token-1"));
+          .satisfies(job -> assertThat(job.getJobLeaseToken()).isEqualTo("lease-token-1"));
     }
 
     @Test
-    void shouldNotSetLeaseTokenWhenNotLeasedForActivatedJob() {
+    void shouldNotSetJobLeaseTokenWhenNotLeasedForActivatedJob() {
       // given - job activated without a lease (empty string on the record)
       final JobRecord jobRecord =
           new JobRecord()
@@ -258,7 +258,7 @@ class ResponseMapperTest {
               .setWorker("worker")
               .setRetries(3)
               .setDeadline(0L)
-              // leaseToken defaults to an empty string when not set
+              // jobLeaseToken defaults to an empty string when not set
               .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
       final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
@@ -275,8 +275,8 @@ class ResponseMapperTest {
       final var jobs = result.getActivateJobsResponse().getJobs();
       assertThat(jobs)
           .singleElement()
-          // leaseToken should be null when the record carries an empty string
-          .satisfies(job -> assertThat(job.getLeaseToken()).isNull());
+          // jobLeaseToken should be null when the record carries an empty string
+          .satisfies(job -> assertThat(job.getJobLeaseToken()).isNull());
     }
 
     @Test
@@ -381,8 +381,6 @@ class ResponseMapperTest {
               "TASK_LISTENER job with invalid or empty header values",
               JobKind.TASK_LISTENER,
               Map.of(
-                  // action is required by the OpenAPI contract; headers must carry it for
-                  // TASK_LISTENER jobs
                   Protocol.USER_TASK_ACTION_HEADER_NAME, "complete",
                   Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "",
                   Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "invalid_string",
@@ -433,7 +431,12 @@ class ResponseMapperTest {
               props ->
                   assertThat(props)
                       .as("User task properties should be null for EXECUTION_LISTENER jobs")
-                      .isNull()));
+                      .isNull()),
+          new ActivatedJobWithUserTaskPropsCase(
+              "TASK_LISTENER job without action header (pre-fix broker-internal path)",
+              JobKind.TASK_LISTENER,
+              Map.of(Protocol.USER_TASK_KEY_HEADER_NAME, "2251799813685268"),
+              props -> assertThat(props.getAction()).isEqualTo("")));
     }
 
     @ParameterizedTest
@@ -513,7 +516,7 @@ class ResponseMapperTest {
           .setDeadline(jobRecord.getDeadline())
           .setTenantId(jobRecord.getTenantId())
           .setBusinessId(jobRecord.getBusinessId())
-          .setLeaseToken(jobRecord.getLeaseToken());
+          .setJobLeaseToken(jobRecord.getJobLeaseToken());
 
       // Set variables as empty MsgPack map
       final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());

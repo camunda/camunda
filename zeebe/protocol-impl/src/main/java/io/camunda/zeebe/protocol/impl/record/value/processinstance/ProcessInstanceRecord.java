@@ -58,7 +58,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue TAGS_KEY = new StringValue("tags");
   public static final StringValue ROOT_PROCESS_INSTANCE_KEY =
       new StringValue("rootProcessInstanceKey");
-  public static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  public static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
 
@@ -99,8 +99,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY, -1L);
 
-  private final IntegerProperty storageOrdinalKeyProp =
-      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
 
@@ -124,7 +123,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(callingElementPathProp)
         .declareProperty(tagsProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp)
         .declareProperty(resumeFromJobKeyProp);
   }
@@ -142,7 +141,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
-    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
     businessIdProp.setValue(record.getBusinessId());
     resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
   }
@@ -373,12 +372,12 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public ProcessInstanceRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public ProcessInstanceRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 

@@ -1,0 +1,56 @@
+[project]
+name = "loadtestctl"
+version = "0.1.0"
+description = "A helper CLI for controlling and operating on load tests"
+readme = "README.md"
+authors = [
+    { name = "Christopher Kujawa", email = "ChrisKujawa@users.noreply.github.com" },
+    { name = "Jonathan Ballet", email = "65311+multani@users.noreply.github.com"}
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic==2.13.5",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+loadtestctl = "loadtestctl.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = [
+    "--cov=loadtestctl",
+    "--cov-branch",
+    "--cov-report=html",
+    "--cov-report=term",
+    "--ruff",
+    "--ruff-format",
+]
+
+[tool.mypy]
+strict=true
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "pytest-ruff>=0.5",
+    "ruff>=0.16.10",
+    "types-pyyaml>=6.0.12.20260906",
+]
+

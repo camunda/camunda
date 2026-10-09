@@ -8,7 +8,7 @@
 
 import {Tooltip} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
-import type {AuditLog, AuditLogActorType} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
+import type {AuditLog, AuditLogActorType} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import {ActorIcon} from '#/operate/shared/OperationsLogDetailsModal/ActorIcon';
 import {AiAgentIcon} from '#/operate/shared/OperationsLogDetailsModal/AiAgentIcon';
 import {McpIcon} from '#/operate/shared/OperationsLogDetailsModal/McpIcon';

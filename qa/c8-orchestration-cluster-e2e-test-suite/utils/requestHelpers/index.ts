@@ -12,6 +12,7 @@ export * from './resource-requestHelpers';
 export * from './form-requestHelpers';
 export * from './user-task-requestHelpers';
 export * from './process-instance-requestHelpers';
+export * from './process-definition-requestHelpers';
 export * from './get-value-from-state-requestHelpers';
 export * from './batch-operation-requestHelpers';
 export {createRoleAndStoreResponseFields} from './role-requestHelpers';
@@ -54,6 +55,10 @@ export {
   type Authorization,
   expectAuthorizationCanNotBeFound,
 } from './authorization-requestHelpers';
+export {
+  searchVariableByNameAndProcessInstanceKey,
+  expectVariableValue,
+} from './variable-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
 export {
@@ -61,14 +66,18 @@ export {
   activateJobToObtainAValidJobKey,
   activateJobAndGetHeaders,
   activateJobsByType,
+  activateSingleJob,
   activateFirstJobVariables,
+  activateJobWithLease,
   completeJob,
   countJobsByType,
   expectJobsByType,
   getLast24HoursRange,
+  updateJobRetries,
   type StatisticsJobItem,
   type ActivatedJob,
   type ActivatedJobWithVars,
+  type LeasedJob,
 } from './job-requestHelpers';
 export {
   createGlobalClusterVariable,
@@ -81,6 +90,8 @@ export {
   assertNoMetadataLeak,
 } from './cluster-variable-requestHelpers';
 export {
+  searchIncidentByPIK,
+  expectNoIncidents,
   createProcessInstanceWithAJob,
   createSingleIncidentProcessInstance,
   createTwoIncidentsInOneProcess,

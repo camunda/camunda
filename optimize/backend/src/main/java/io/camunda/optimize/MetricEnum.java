@@ -28,16 +28,36 @@ public enum MetricEnum {
       MetricType.IMPORT,
       "newPageFetchTime",
       "Records the time spent for fetching next import page from Zeebe Elasticsearch"),
+  IMPORT_DB_WRITE_FAILURES_METRIC(
+      MetricType.IMPORT,
+      "dbWriteFailures",
+      "Counts failed attempts to write an import page to the database, the page is retried until"
+          + " it succeeds"),
+  IMPORTED_UNTIL_METRIC(
+      MetricType.IMPORT,
+      "importedUntil",
+      "Epoch time up to which all exported records of this type and partition are imported",
+      "seconds"),
   REPORT_LATENCY_METRIC(
       MetricType.REPORT, "reportLatency", "Records the time taken to evaluate a report"),
   ERROR_METRIC(MetricType.GENERAL, "error", "Counter for errors occurring across Optimize");
   private final String id;
   private final String name;
   private final String description;
+  private final String baseUnit;
 
   MetricEnum(final MetricType metricType, final String id, final String description) {
+    this(metricType, id, description, null);
+  }
+
+  MetricEnum(
+      final MetricType metricType,
+      final String id,
+      final String description,
+      final String baseUnit) {
     this.id = id;
     this.description = description;
+    this.baseUnit = baseUnit;
     name = metricType.prefix + "." + id;
   }
 
@@ -51,6 +71,10 @@ public enum MetricEnum {
 
   public String getDescription() {
     return description;
+  }
+
+  public String getBaseUnit() {
+    return baseUnit;
   }
 
   private enum MetricType {

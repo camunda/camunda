@@ -24,35 +24,62 @@ import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Objects;
+import org.agrona.CloseHelper;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Tag("async-repl")
 @TestInstance(Lifecycle.PER_CLASS)
 abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer> {
 
   protected static final Duration DEFAULT_MAX_LAG = Duration.ofSeconds(3);
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractAsyncReplicationIT.class);
 
   /** The replication cluster; created by {@link #createCluster()} in {@link #beforeAll()}. */
-  protected @AutoClose R cluster;
+  protected R cluster;
 
-  protected @AutoClose TestCamundaApplication testInstance;
-  protected @AutoClose CamundaClient camundaClient;
+  protected TestCamundaApplication testInstance;
+  protected CamundaClient camundaClient;
   protected MeterRegistry meterRegistry;
 
   /**
    * Creates the database replication cluster for this test. Called once before any test runs.
-   * Subclasses return a concrete cluster implementation (Postgres or MSSQL).
+   * Subclasses return a concrete cluster implementation for the database under test.
    */
   protected abstract R createCluster();
 
   protected Duration getMaxLag() {
     return DEFAULT_MAX_LAG;
+  }
+
+  protected Duration getExporterAcknowledgementTimeout() {
+    return Duration.ofMinutes(1);
+  }
+
+  /**
+   * How often the RDBMS writer flushes on its own schedule, independent of per-record exports.
+   * Defaults to a realistic non-zero interval; override to {@code Duration.ZERO} for scenarios that
+   * need every export to flush inline via {@code RdbmsExporter.export(Record)} instead of the
+   * periodic {@code flushAndReschedule()} background task - the latter does not escalate {@code
+   * ExporterPositionMismatchException} to a reopen the way the inline path does.
+   */
+  protected Duration getFlushInterval() {
+    return Duration.ofMillis(500);
+  }
+
+  /**
+   * The JDBC URL used to wire {@link TestCamundaApplication} to the cluster. Defaults to the
+   * primary's URL; overridden by failover scenarios that need a URL covering multiple hosts.
+   */
+  protected String jdbcUrl(final R cluster) {
+    return cluster.getJdbcUrl();
   }
 
   /**
@@ -74,13 +101,13 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
             .withUnifiedConfig(
                 cfg -> {
                   cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
-                  cfg.getData().getSecondaryStorage().getRdbms().setUrl(cluster.getJdbcUrl());
+                  cfg.getData().getSecondaryStorage().getRdbms().setUrl(jdbcUrl(cluster));
                   cfg.getData().getSecondaryStorage().getRdbms().setUsername(cluster.getUsername());
                   cfg.getData().getSecondaryStorage().getRdbms().setPassword(cluster.getPassword());
                   cfg.getData()
                       .getSecondaryStorage()
                       .getRdbms()
-                      .setFlushInterval(Duration.ofMillis(500));
+                      .setFlushInterval(getFlushInterval());
                   cfg.getData()
                       .getSecondaryStorage()
                       .getRdbms()
@@ -106,6 +133,18 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
                       .getRdbms()
                       .getAsyncReplication()
                       .setPauseOnMaxLagExceeded(true);
+                  if (getReplicationType() == ReplicationType.DELAY) {
+                    cfg.getData()
+                        .getSecondaryStorage()
+                        .getRdbms()
+                        .getAsyncReplication()
+                        .setDelay(Duration.ofSeconds(30));
+                  }
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setQueueDebounceTime(Duration.ZERO);
                 })
             .withBasicAuth();
 
@@ -124,6 +163,12 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
     waitForProcessesToBeDeployed(camundaClient, 1);
 
     exporterAcknowledgedAll();
+  }
+
+  @AfterAll
+  void afterAll() {
+    // preserve order, first shutdown Camunda, then the database
+    CloseHelper.closeAll(camundaClient, testInstance, cluster);
   }
 
   protected void startProcessInstances(final int count) {
@@ -158,14 +203,23 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
   }
 
   protected void exporterAcknowledgedAll() {
+    LOG.info("Waiting for exporter acknowledgement");
     Awaitility.await()
+        .pollInterval(Duration.ofSeconds(5))
         .ignoreExceptions()
-        .atMost(Duration.ofMinutes(1))
+        .atMost(getExporterAcknowledgementTimeout())
         .untilAsserted(
-            () ->
-                assertThat(getCurrentExporterPosition())
-                    // not all records are processed by the exporter, so we need a closeTo here
-                    .isCloseTo(getCurrentAcknowledgedExporterPosition(), Offset.offset(5L)));
+            () -> {
+              final long exporterPosition = getCurrentExporterPosition();
+              final long acknowledgedPosition = getCurrentAcknowledgedExporterPosition();
+              LOG.info(
+                  "Exporter acknowledgement progress: exported position {}, acknowledged position {}",
+                  exporterPosition,
+                  acknowledgedPosition);
+              assertThat(exporterPosition)
+                  // not all records are processed by the exporter, so we need a closeTo here
+                  .isCloseTo(acknowledgedPosition, Offset.offset(5L));
+            });
   }
 
   protected long getCurrentExporterPosition() {

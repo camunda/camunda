@@ -1,0 +1,18 @@
+---
+# Source: load-test-setup/templates/keycloak/keycloak-user-admin.yaml
+# This configures the "admin" credentials for Keycloak itself.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "keycloak-admin-user"
+  labels:
+    deadline-date: TEST_DATE
+    camunda.io/created-by: "golden-test"
+    camunda.io/purpose: load-test
+  annotations:
+    kubernetes.io/description: |-
+      The credentials for the "admin" user of Keycloak.
+type: kubernetes.io/basic-auth
+data:
+  username: "YWRtaW4="
+  password: "WGl4Y1R1d3UwO05ldm8="

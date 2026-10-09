@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -227,7 +228,8 @@ public record PartitionGroupConfiguration(
    * @throws IllegalStateException if the broker is not part of the group
    */
   public PartitionGroupConfiguration updateMember(
-      final MemberId memberId, final UnaryOperator<BrokerPartitionState> memberStateUpdater) {
+      final MemberId memberId,
+      final Function<BrokerPartitionState, @Nullable BrokerPartitionState> memberStateUpdater) {
     final BrokerPartitionState current = members.get(memberId);
     if (current == null) {
       throw new IllegalStateException(
@@ -235,11 +237,15 @@ public record PartitionGroupConfiguration(
               "Expected to update member %s, but it is not part of the group", memberId.id()));
     }
     final var updated = memberStateUpdater.apply(current);
-    if (updated.equals(current)) {
+    if (current.equals(updated)) {
       return this;
     }
     final var updatedMembers = new HashMap<>(members);
-    updatedMembers.put(memberId, updated);
+    if (updated != null) {
+      updatedMembers.put(memberId, updated);
+    } else {
+      updatedMembers.remove(memberId);
+    }
     return withMembers(updatedMembers);
   }
 
@@ -260,6 +266,11 @@ public record PartitionGroupConfiguration(
 
   public boolean isDisabled() {
     return availability.state() != TenantAvailability.State.ENABLED;
+  }
+
+  /** Whether any member of this group is currently in {@link Mode#RECOVERING}. */
+  public boolean isRecovering() {
+    return members.values().stream().anyMatch(member -> member.mode() == Mode.RECOVERING);
   }
 
   /**
@@ -469,11 +480,14 @@ public record PartitionGroupConfiguration(
   }
 
   /**
-   * Returns the <em>desired leader</em> of the given partition within this group (the broker that
-   * replicates the partition with the highest {@link PartitionState#priority() priority}).
+   * Returns the <em>desired leader</em> of the given partition within this group (the highest-
+   * priority broker that durably participates in its Raft quorum right now - see {@link
+   * PartitionState.State#isActiveReplica()}). A learner catching up, or a member on its way out,
+   * cannot become leader and must not be reported as the desired one.
    *
    * @param partitionId the partition id, unique only within this group
-   * @return the desired leader, or empty if no broker in this group replicates the partition
+   * @return the desired leader, or empty if no eligible broker in this group replicates the
+   *     partition
    */
   public Optional<MemberId> getDesiredLeader(final int partitionId) {
     return members.entrySet().stream()
@@ -482,7 +496,7 @@ public record PartitionGroupConfiguration(
               final PartitionState partition = entry.getValue().getPartition(partitionId);
               return partition == null ? null : Map.entry(entry.getKey(), partition);
             })
-        .filter(Objects::nonNull)
+        .filter(entry -> entry != null && entry.getValue().state().isActiveReplica())
         .max(
             Comparator.<Entry<MemberId, PartitionState>>comparingInt(
                     entry -> entry.getValue().priority())
@@ -528,9 +542,20 @@ public record PartitionGroupConfiguration(
         .size();
   }
 
+  /**
+   * Returns the highest-priority member currently eligible to lead this partition: one that durably
+   * participates in its Raft quorum (see {@link PartitionState.State#isActiveReplica()}). A learner
+   * catching up, or a member on its way out, cannot become leader and must not be reported as the
+   * primary.
+   */
   public Optional<MemberId> getPrimaryForPartition(final int partitionId) {
     return members.entrySet().stream()
         .filter(entry -> entry.getValue().hasPartition(partitionId))
+        .filter(
+            entry ->
+                Objects.requireNonNull(entry.getValue().getPartition(partitionId))
+                    .state()
+                    .isActiveReplica())
         .max(
             Comparator.comparingInt(
                 e -> Objects.requireNonNull(e.getValue().getPartition(partitionId)).priority()))

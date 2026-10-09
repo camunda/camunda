@@ -28,6 +28,7 @@ type BaseModalProps = {
   submitDisabled?: boolean;
   loading?: boolean;
   loadingDescription?: string | null;
+  hideCancelButton?: boolean;
   buttons?: ReactNode[];
   /** Semantic size token from the Camunda design system. */
   size?: ComponentProps<typeof DialogContent>["size"];
@@ -59,6 +60,7 @@ const Modal: FC<ModalProps> = ({
   submitDisabled = false,
   loading = false,
   loadingDescription,
+  hideCancelButton = false,
   buttons,
   size = "lg",
   passiveModal = false,
@@ -89,9 +91,11 @@ const Modal: FC<ModalProps> = ({
               buttons
             ) : (
               <>
-                <Button variant="secondary" onClick={onClose}>
-                  {t("cancel")}
-                </Button>
+                {!hideCancelButton && (
+                  <Button variant="secondary" onClick={onClose}>
+                    {t("cancel")}
+                  </Button>
+                )}
                 <Button
                   variant={danger ? "destructive" : "default"}
                   loading={loading}

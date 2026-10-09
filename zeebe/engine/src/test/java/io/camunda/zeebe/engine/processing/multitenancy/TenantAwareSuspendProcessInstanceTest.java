@@ -12,9 +12,12 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -109,6 +112,52 @@ public class TenantAwareSuspendProcessInstanceTest {
   }
 
   @Test
+  public void shouldRejectSuspendTerminatingInstanceForUnauthorizedTenant() {
+    // given
+    final var tenantId = Strings.newRandomValidBpmnId();
+    final var username = createUserOfOtherTenant();
+    final long processInstanceKey = createTerminatingInstance(tenantId);
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectSuspendRejection()
+            .suspend(username);
+
+    // then - the tenant check hides that the instance exists and is terminating
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to suspend a process instance with key '%s', but no such process was found"
+                .formatted(processInstanceKey));
+  }
+
+  @Test
+  public void shouldRejectResumeTerminatingInstanceForUnauthorizedTenant() {
+    // given
+    final var tenantId = Strings.newRandomValidBpmnId();
+    final var username = createUserOfOtherTenant();
+    final long processInstanceKey = createTerminatingInstance(tenantId);
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectResumeRejection()
+            .resume(username);
+
+    // then - the tenant check hides that the instance exists and is terminating
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to resume a process instance with key '%s', but no such process was found"
+                .formatted(processInstanceKey));
+  }
+
+  @Test
   public void shouldSuspendInstanceForSpecificTenant() {
     // given
     ENGINE
@@ -137,5 +186,54 @@ public class TenantAwareSuspendProcessInstanceTest {
     assertThat(suspended)
         .describedAs("Expect that suspension was successful")
         .hasIntent(ProcessInstanceIntent.SUSPENDED);
+  }
+
+  private static String createUserOfOtherTenant() {
+    final var otherTenantId = Strings.newRandomValidBpmnId();
+    final var username = Strings.newRandomValidBpmnId();
+    ENGINE.user().newUser(username).create();
+    ENGINE.tenant().newTenant().withTenantId(otherTenantId).create();
+    ENGINE
+        .tenant()
+        .addEntity(otherTenantId)
+        .withEntityType(EntityType.USER)
+        .withEntityId(username)
+        .add();
+    return username;
+  }
+
+  /** Creates an instance whose cancel waits for a canceling task listener job. */
+  private static long createTerminatingInstance(final String tenantId) {
+    final var processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(
+                    "task",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.canceling().type(processId)))
+                .endEvent()
+                .done())
+        .withTenantId(tenantId)
+        .deploy();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withTenantId(tenantId).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("task")
+        .await();
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .forAuthorizedTenants(tenantId)
+        .expectTerminating()
+        .cancel();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(processId)
+        .await();
+    return processInstanceKey;
   }
 }

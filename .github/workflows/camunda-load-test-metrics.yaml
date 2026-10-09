@@ -61,9 +61,7 @@ jobs:
     name: Query Prometheus and render summary
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    permissions: {}
     outputs:
       results-json: ${{ steps.run-queries.outputs.results-json }}
     steps:

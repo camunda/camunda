@@ -46,6 +46,7 @@ const DeleteDefinitionModal: React.FC<Props> = ({
 			preventCloseOnClickOutside
 			modalHeading={title}
 			primaryButtonText={t('operate.shared.deleteDefinitionModal.deleteButton')}
+			primaryButtonDisabled={!isConfirmed}
 			secondaryButtonText={t('operate.shared.deleteDefinitionModal.cancelButton')}
 			onRequestSubmit={() => {
 				if (!isConfirmed) {

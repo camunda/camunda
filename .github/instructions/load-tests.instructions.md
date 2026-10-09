@@ -59,6 +59,15 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
    A plain `make -n <target>` dry run — or the golden file tests, which never set this variable on
    the command line — will not catch this class of regression.
 
+## Choosing a language for new tooling
+
+When adding or extending a load-test script (metrics, reporting, profiling, ops helpers), follow
+the language standard in
+[`load-tests/docs/scripts/README.md`](https://github.com/camunda/camunda/blob/main/load-tests/docs/scripts/README.md#choosing-a-language-for-new-tooling):
+Python is the default for non-trivial operational/reporting scripts; shell is for thin wrappers and
+glue only; Go is for a maintained binary, stronger compile-time guarantees, parallelism/performance
+work, or a real multi-command CLI.
+
 ## What gets backported
 
 **Never backport** (update the versioned folder on `main` instead):
@@ -81,6 +90,13 @@ if related documentation needs updating:
 - `load-tests/setup/test/README.md` — golden file snapshot tests; run `make update-golden` after setup changes
 - Workflow YAML header comments (`.github/workflows/*load-test*`, etc.) — per-workflow reference
 - `docs/testing/reliability-testing.md` — goals, test variants, observability, chaos engineering
+- `camunda-docs`'s
+  [`sizing-self-managed.md`](https://github.com/camunda/camunda-docs/blob/main/docs/components/best-practices/architecture/sizing-self-managed.md)
+  — its "Baseline resource configuration" table quotes exact values from
+  `load-tests/setup/charts/load-test-setup/values.yaml` (Elasticsearch CPU/memory/disk) and
+  `load-tests/setup/<branch>/values/camunda-platform-values-defaults.yaml` (Orchestration Cluster
+  CPU/memory/disk). Changing any of these values here should come with a matching `camunda-docs`
+  PR (the main `docs/` copy plus the versioned copy for any affected stable branch).
 - This file (`.github/instructions/load-tests.instructions.md`) — AI-facing guidance
 
 ## Scheduled Release Load Tests
@@ -89,3 +105,9 @@ The file `camunda-scheduled-release-load-tests.yml` uses hardcoded release tags
 per stable branch. Patch releases do not require updates. When reviewing PRs that
 create a new minor version (e.g., 8.10) or deprecate a stable branch, verify that
 this workflow is updated accordingly.
+
+## k6 scripts
+
+When editing k6 scripts under `load-tests/setup/charts/load-test-setup/k6/scripts`:
+
+- Format the JavaScript files with: `make -C load-tests/setup/charts/load-test-setup/k6 fmt`

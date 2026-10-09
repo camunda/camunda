@@ -44,7 +44,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
   private static final String PROVIDER = "openai";
   private static final String SYSTEM_PROMPT = "You are a helpful assistant.";
   private static final long JOB_KEY = 91011L;
-  private static final String JOB_LEASE = "lease-token";
+  private static final String JOB_LEASE_TOKEN = "lease-token";
   private static final OffsetDateTime PRODUCED_AT = OffsetDateTime.parse("2025-06-01T12:00:00Z");
 
   // ── Happy-path: request body ──────────────────────────────────────────────
@@ -60,7 +60,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
         .newCreateAgentInstanceCommand()
         .elementInstanceKey(ELEMENT_INSTANCE_KEY)
         .jobKey(JOB_KEY)
-        .jobLease(JOB_LEASE)
+        .jobLeaseToken(JOB_LEASE_TOKEN)
         .history(
             Collections.singletonList(
                 new AgentInstanceHistoryItem()
@@ -96,7 +96,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ELEMENT_INSTANCE_KEY)
             .jobKey(JOB_KEY)
-            .jobLease(JOB_LEASE)
+            .jobLeaseToken(JOB_LEASE_TOKEN)
             .history(
                 Collections.singletonList(
                     new AgentInstanceHistoryItem()
@@ -129,7 +129,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(invalidKey)
                     .jobKey(JOB_KEY)
-                    .jobLease(JOB_LEASE)
+                    .jobLeaseToken(JOB_LEASE_TOKEN)
                     .history(
                         Collections.singletonList(
                             new AgentInstanceHistoryItem()
@@ -165,39 +165,39 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
         .hasMessage("jobKey must be greater than 0");
   }
 
-  // ── Argument validation: jobLease ─────────────────────────────────────────
+  // ── Argument validation: jobLeaseToken ─────────────────────────────────────────
 
   @Test
-  void shouldRejectNullJobLease() {
+  void shouldRejectNullJobLeaseToken() {
     assertThatThrownBy(
             () ->
                 client
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .jobLease(null))
+                    .jobLeaseToken(null))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("jobLease must not be null");
+        .hasMessage("jobLeaseToken must not be null");
   }
 
-  @ParameterizedTest(name = "jobLease=''{0}'' should be rejected")
+  @ParameterizedTest(name = "jobLeaseToken=''{0}'' should be rejected")
   @ValueSource(strings = {"", " "})
-  void shouldRejectBlankJobLease(final String jobLease) {
+  void shouldRejectBlankJobLeaseToken(final String jobLeaseToken) {
     assertThatThrownBy(
             () ->
                 client
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .jobLease(jobLease))
+                    .jobLeaseToken(jobLeaseToken))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("jobLease must not be blank");
+        .hasMessage("jobLeaseToken must not be blank");
   }
 
   // ── History batch mapping ─────────────────────────────────────────────────
 
   @Test
-  void shouldSendJobKeyJobLeaseAndHistoryInRequestBody() {
+  void shouldSendJobKeyJobLeaseTokenAndHistoryInRequestBody() {
     // given
     gatewayService.onCreateAgentInstanceRequest(
         new AgentInstanceCreationResult().agentInstanceKey("1"));
@@ -207,7 +207,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
         .newCreateAgentInstanceCommand()
         .elementInstanceKey(ELEMENT_INSTANCE_KEY)
         .jobKey(JOB_KEY)
-        .jobLease(JOB_LEASE)
+        .jobLeaseToken(JOB_LEASE_TOKEN)
         .history(
             Arrays.asList(
                 new AgentInstanceHistoryItem()
@@ -241,7 +241,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
         gatewayService.getLastRequest(AgentInstanceCreationRequest.class);
     assertThat(body.getElementInstanceKey()).isEqualTo(String.valueOf(ELEMENT_INSTANCE_KEY));
     assertThat(body.getJobKey()).isEqualTo(String.valueOf(JOB_KEY));
-    assertThat(body.getJobLease()).isEqualTo(JOB_LEASE);
+    assertThat(body.getJobLeaseToken()).isEqualTo(JOB_LEASE_TOKEN);
     assertThat(body.getHistory())
         .extracting(item -> item.getHistoryItemId())
         .containsExactly("item-0", "item-1", "item-2");
@@ -255,7 +255,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .jobLease(JOB_LEASE)
+                    .jobLeaseToken(JOB_LEASE_TOKEN)
                     .history(
                         Collections.singletonList(
                             new AgentInstanceHistoryItem()
@@ -281,7 +281,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .jobLease(JOB_LEASE)
+                    .jobLeaseToken(JOB_LEASE_TOKEN)
                     .history(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("history must not be null");
@@ -295,7 +295,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .jobLease(JOB_LEASE)
+                    .jobLeaseToken(JOB_LEASE_TOKEN)
                     .history(Collections.emptyList())
                     .execute())
         .isInstanceOf(IllegalArgumentException.class)
@@ -310,7 +310,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
                     .newCreateAgentInstanceCommand()
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .jobLease(JOB_LEASE)
+                    .jobLeaseToken(JOB_LEASE_TOKEN)
                     .history(Collections.singletonList(null)))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("history must not contain null elements");
@@ -342,7 +342,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ELEMENT_INSTANCE_KEY)
             .jobKey(JOB_KEY)
-            .jobLease(JOB_LEASE)
+            .jobLeaseToken(JOB_LEASE_TOKEN)
             .history(
                 Collections.singletonList(
                     new AgentInstanceHistoryItem()
@@ -381,7 +381,7 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ELEMENT_INSTANCE_KEY)
             .jobKey(JOB_KEY)
-            .jobLease(JOB_LEASE)
+            .jobLeaseToken(JOB_LEASE_TOKEN)
             .history(
                 Collections.singletonList(
                     new AgentInstanceHistoryItem()

@@ -40,4 +40,8 @@ public final class AgentHistoryRecordStream
   public AgentHistoryRecordStream withRole(final AgentHistoryRole role) {
     return valueFilter(v -> v.getRole() == role);
   }
+
+  public AgentHistoryRecordStream withHistoryItemId(final String historyItemId) {
+    return valueFilter(v -> v.getHistoryItemId().equals(historyItemId));
+  }
 }

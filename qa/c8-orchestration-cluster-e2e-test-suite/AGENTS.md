@@ -19,7 +19,7 @@ repository instead.
 
 - **Framework**: `@playwright/test` ^1.51.0
 - **Language**: TypeScript 5.9
-- **Node.js**: 24.16.0 (pinned in `.nvmrc` / `.tool-versions` — use `nvm use` or `asdf install`)
+- **Node.js**: 26.10.0 (pinned in `.nvmrc` / `.tool-versions` — use `nvm use` or `asdf install`)
 - **Pattern**: Page Object Model (POM) with Playwright fixtures
 - **API client**: `@camunda8/sdk`
 - **Linting**: ESLint + Prettier (enforced via `npm run lint`)
@@ -145,7 +145,7 @@ npx playwright show-report html-report
 |---------------------------------|-------------------------------------------------------------------------------|
 | `html-report/`                  | Latest Playwright HTML report (open `index.html`)                             |
 | `test-results/`                 | Per-test traces (`trace.zip`), screenshots, videos — only retained on failure |
-| `test-results/junit-report.xml` | JUnit XML (consumed by TestRail)                                              |
+| `test-results/junit-report.xml` | JUnit XML report                                                              |
 | `json-report/results.json`      | JSON results (parsed by the flakiness agent and CI)                           |
 
 Inspect a failing test's trace with `npx playwright show-trace test-results/<test-dir>/trace.zip`,
@@ -237,12 +237,13 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 
 ## CI Workflows
 
-|                      Workflow                      |        Trigger         |                                                       Link                                                       |
-|----------------------------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
-| `c8-orchestration-cluster-e2e-tests-nightly.yml`   | Nightly (all versions) | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)   |
-| `c8-orchestration-cluster-e2e-tests-on-demand.yml` | Manual                 | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
+|                        Workflow                         |                           Trigger                            |                                                       Link                                                       |
+|---------------------------------------------------------|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `c8-orchestration-cluster-nightly-<version>-<type>.yml` | Nightly, per version and type (`e2e`, `api-es`, `api-rdbms`) | [Runbook](docs/nightly-runbook.md)                                                                               |
+| `c8-orchestration-cluster-e2e-tests-on-demand.yml`      | Manual                                                       | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
 
-Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and TestRail.
+Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results`. The schedule, test ownership
+and failure handling are in [`docs/nightly-runbook.md`](docs/nightly-runbook.md).
 
 ## Branching and Backports
 
@@ -272,7 +273,6 @@ Each supported version lives on its own branch in `camunda/camunda`:
   Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
 - **Run the on-demand workflow against your branch before requesting review.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
-- Link the [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description if any test or page file is modified.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable
   (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a
@@ -391,6 +391,167 @@ Orchestration-suite failures almost always trace to a module inside this same re
 | c8Run setup / packaging             | `camunda/camunda`               | `c8run/`                                    |
 | Helm chart / deploy config          | `camunda/camunda-platform-helm` | `charts/`                                   |
 
+### Labels for the issue (both owning repos)
+
+Bugs are triaged by their labels, and no automation adds them for you: `camunda/camunda`'s
+`opened_issue_labeler.yml` reads only the markers of its bug-report form, and the body this agent
+writes has none. Set **all** of the applicable labels on `gh issue create`. When you reuse, reopen,
+or append a fingerprint to an existing issue, add the ones it is missing (see step 1).
+
+Both repos in the routing table above — `camunda/camunda` and `camunda/camunda-platform-helm` —
+define `severity/`, `likelihood/`, `affects/` and `component/`, so the only per-repo differences are
+`qa/automation-found` and the component vocabulary.
+
+|         Label         |                                                                                               Value                                                                                               |
+|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `kind/bug`            | Always, in both repos.                                                                                                                                                                            |
+| `qa/automation-found` | `camunda/camunda` only — its marker for an automation-found bug. `camunda/camunda-platform-helm` does not define it.                                                                              |
+| `component/<x>`       | From the per-repo vocabulary below.                                                                                                                                                               |
+| `severity/<x>`        | From the severity rules below. Always, in both repos.                                                                                                                                             |
+| `likelihood/<x>`      | `likelihood/high`, because Gate A already proved the failure is deterministic. Use `likelihood/mid` only when it fails in some scenarios or on some nights of the same version and not in others. |
+| `affects/<X.Y>`       | The version of the failing run (`8.10` -> `affects/8.10`). Omit it for `main`.                                                                                                                    |
+
+**Standing rule:** a repo only accepts labels it defines. Confirm with
+`gh label list --repo <owner>/<repo> --search "<prefix>"` when unsure, and drop a label the repo
+does not have rather than letting `gh issue create` fail — but never drop a whole category in
+silence: see **Fields you cannot determine** below.
+
+#### `component/` vocabulary
+
+`camunda/camunda`, by failure surface:
+
+|                    Failure surface                    |       `component/` label        |
+|-------------------------------------------------------|---------------------------------|
+| Identity, Admin UI, authorizations, RBA (8.10+)       | `component/identity`            |
+| Management Identity (Self-Managed)                    | `component/management-identity` |
+| Operate                                               | `component/operate`             |
+| Tasklist                                              | `component/tasklist`            |
+| Optimize                                              | `component/optimize`            |
+| REST API v2 contract (status codes, filters, OpenAPI) | `component/c8-api`              |
+| Engine behavior (BPMN/DMN execution, process state)   | `component/zeebe-engine`        |
+| Broker, cluster, partitions, backups                  | `component/zeebe`               |
+| Exporters, secondary storage (ES/OS/RDBMS), import    | `component/data-layer`          |
+| c8Run packaging or startup                            | `component/c8run`               |
+| Cannot tell                                           | `needs component label`         |
+
+`camunda/camunda-platform-helm`:
+
+|                                                            Failure surface                                                             |                                   `component/` label                                   |
+|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| Chart templating, values, install/upgrade itself                                                                                       | `component/helm`                                                                       |
+| A component's chart config (Operate, Tasklist, Optimize, Zeebe, Identity, Console, Connectors, Web Modeler, Elasticsearch, monitoring) | the matching `component/<name>`                                                        |
+| Shared/core chart wiring                                                                                                               | `component/core` or `component/orchestration`                                          |
+| Cannot tell                                                                                                                            | omit `component/` and say so in the comment (this repo has no "needs component" label) |
+
+#### Severity
+
+Severity follows [CONTRIBUTING.md](https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#severity-and-likelihood-bugs)
+and applies in both repos:
+
+- `severity/critical` — **data loss** (user data deleted, lost or corrupted, for example entities
+  gone after an upgrade) or **unauthorized access** (a user without the permission reaches data or
+  actions). There is no workaround.
+- `severity/high` — a user-facing flow is blocked and no workaround is known, or the only
+  workaround is very complex (a login fails, an action in the UI cannot complete).
+- `severity/mid` — a noticeable impact with a known, simple workaround (the same action works
+  through the REST API, another UI path, or another filter). Name the workaround in the body.
+- `severity/low` — little impact on users: a wrong status code for invalid input, a cosmetic
+  defect, log noise.
+- `severity/unknown` — only when you genuinely cannot tell without a deep investigation, **and**
+  only together with the comment required below. Never omit severity instead.
+
+When you hesitate between two severities, take the higher one. Give the reason in the `### Severity`
+section of the body.
+
+**Exact strings matter.** Use `severity/mid`, never `severity/medium` — `camunda/camunda` defines
+both, and `severity/mid` is the one CONTRIBUTING.md documents.
+
+#### Fields you cannot determine
+
+Never omit a required category in silence. When you cannot confidently determine the component, the
+severity, or the affected version:
+
+1. **Apply the marker label** where the repo has one. **Both repos define `severity/unknown` and
+   `likelihood/unknown`**, so those categories are never left unset. Only the component marker is
+   repo-specific: `camunda/camunda` has `needs component label`; `camunda/camunda-platform-helm`
+   has none, so omit `component/` there and rely on the comment.
+2. **Always post a comment** naming each field and why. The comment is the part that works in both
+   repos, so it is mandatory even where a marker label exists:
+
+   ```bash
+   gh issue comment <n> --repo <owner>/<repo> --body \
+     "Automated triage could not determine **<field>**: <reason>. Please set it during triage."
+   ```
+
+   One comment listing every undetermined field is enough — do not post one per field.
+
+Never change a `component/`, `severity/`, `likelihood/` or `affects/` label that a person already
+set on an existing issue. Add only the categories that are missing.
+
+#### Team board routing — why the `component/` label is load-bearing
+
+**Never add the issue to a project board yourself.** `gh project item-add` needs a `project` scope
+the qa-processes App token does not carry, and every owning repo already automates it. What those
+automations route on is the **`component/` label you set at creation** — so an issue filed without
+one reaches no team. It lands on the catch-all Quality Board, where nobody owns it. That is the
+single most consequential reason the label table above is mandatory.
+
+This works on creation: labels passed to `gh issue create` do emit `labeled` webhook events, so
+`camunda/camunda`'s `add-to-projects.yml` — which triggers on `labeled`, **not** `opened` — fires for
+issues this agent files. [camunda/camunda#60836](https://github.com/camunda/camunda/issues/60836) is
+the counter-example worth remembering: filed by the bot with only `kind/bug`, it reached no team
+board until a human added `component/optimize` six weeks later.
+
+`camunda/camunda` — `.github/workflows/add-to-projects.yml`:
+
+|            `component/` label you set             |                                                                                 Team board it routes to                                                                                  |
+|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `operate`, `tasklist`, `optimize`, `zeebe-engine` | [Core Features #173](https://github.com/orgs/camunda/projects/173)                                                                                                                       |
+| `c8-api`                                          | [Core Features #173](https://github.com/orgs/camunda/projects/173) **and** [CamundaEx #182](https://github.com/orgs/camunda/projects/182)                                                |
+| `zeebe`                                           | [Core Features #173](https://github.com/orgs/camunda/projects/173) **and** [Distributed Systems / ZDP #92](https://github.com/orgs/camunda/projects/92) — added to both, unconditionally |
+| `data-layer`                                      | [Data Layer #184](https://github.com/orgs/camunda/projects/184)                                                                                                                          |
+| `identity`, `management-identity`                 | [Identity #209](https://github.com/orgs/camunda/projects/209)                                                                                                                            |
+| `c8run`                                           | [Distribution #33](https://github.com/orgs/camunda/projects/33)                                                                                                                          |
+| `needs component label`                           | ⚠️ **no team board** — only the Quality Board                                                                                                                                            |
+
+`kind/bug` additionally puts it on the [Quality Board #187](https://github.com/orgs/camunda/projects/187) regardless of component.
+
+The other repo in this agent's routing table:
+
+|              Repo               |                             What routes it                              |                                      Board                                       |
+|---------------------------------|-------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `camunda/camunda-platform-helm` | `.github/workflows/add-new-issue.yaml`, unconditional on issue creation | [Distribution #33](https://github.com/orgs/camunda/projects/33), + Quality Board |
+
+It routes whatever labels you set, so the `component/` label matters there for triage rather than
+for routing — but it is still mandatory, and `camunda-platform-helm` has no severity label, so the
+`Severity` section of the body is the only record of that.
+
+#### Use the target repo's own bug template
+
+**Every repo's template is different — read it before filing** and use *its* section headings:
+
+```bash
+gh api "repos/<owner>/<repo>/contents/.github/ISSUE_TEMPLATE" --jq '.[].name'
+```
+
+A body that matches the template is what makes the issue triageable by the people who own it, and
+in some repos (`camunda/camunda-platform-helm`) an automation parses those exact headings.
+
+Five things this agent must record **in every repo**, whatever the template looks like:
+**Current behavior vs Expected behavior**, **Environment**, **Version**, **Severity**, and the
+**`Fingerprint:`** line. When the repo's template has no section for one of them, append it under its
+own heading rather than dropping it — `Severity` especially, since several repos have no severity
+label and the body is then the only record of it.
+
+|           Owning repo           |                     Its bug template                     |                                                                                                                                                      Headings to use                                                                                                                                                       |
+|---------------------------------|----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `camunda/camunda`               | `.github/ISSUE_TEMPLATE/1. bug_report.yml`               | The canonical shape below — it is modelled on this template.                                                                                                                                                                                                                                                               |
+| `camunda/camunda-platform-helm` | `.github/ISSUE_TEMPLATE/issue.md` (markdown, not a form) | Its own `##` headings, exactly: `## Description`, `## Expected vs Actual Behavior`, `## Steps to Reproduce`, `## Acceptance Criteria`. **Its AI triage reads this body to assign labels and severity**, so keep the headings verbatim; append `## Environment`, `## Version`, `## Severity` and `## Rootcause` after them. |
+
+When a repo has no usable bug template, use the canonical shape in step 2 of
+**Filing the bug ticket** below — it is `camunda/camunda`'s, and the most complete of the Camunda
+templates.
+
 ### Filing the bug ticket (dedupe FIRST)
 
 > **Token:** use the default `GH_TOKEN` (the qa-processes App token) for ALL `gh` calls FIRST —
@@ -431,20 +592,72 @@ Orchestration-suite failures almost always trace to a module inside this same re
 
      Put its URL in `fix-meta.json`.
 
-2. **File the issue** when none exists. You MAY use the repo's `create-issue` skill (bug template +
-   component label), but the body MUST contain the fingerprint line below so dedupe works:
+   - In **every** case above, also add the labels the issue is missing (see **Labels for the issue
+     (both owning repos)**) — a reused or human-filed issue is exactly where severity and component
+     are most often absent:
+     `gh issue edit <n> --repo <owner>/<repo> --add-label "<label>,<label>"`. Drop a label the repo
+     does not define, never change one a person already set, and post the comment required by
+     **Fields you cannot determine** if a category stays unset.
+
+2. **File the issue** when none exists, using **that repo's own** bug template (see **Use the
+   target repo's own bug template** above). Whatever the template, the four dropdowns a Camunda form
+   would ask for — Component, Affected version, Severity, Likelihood — are carried by the **labels**
+   instead, which is why every one of them is mandatory above. The shape below is
+   `camunda/camunda`'s; adapt its headings per the table above when filing in
+   `camunda/camunda-platform-helm`. Do **not** write the form's HTML markers
+   (`<!-- Component -->`, `<!-- Severity -->`) into the body: that hands label selection back to
+   `opened_issue_labeler.yml`, whose regexes have mislabelled bot issues before, and it hides from
+   the command which labels were actually set. You MAY use the repo's `create-issue` skill instead,
+   but only if the result carries the same sections, the same labels, and the fingerprint line:
 
    ```bash
-   gh issue create --repo camunda/camunda \
+   # every label from "Labels for the issue (both owning repos)"
+   # Quote each label: `needs component label` holds spaces.
+   # camunda/camunda:
+   LABELS=(--label kind/bug --label qa/automation-found --label "component/<x>" \
+     --label "severity/<x>" --label "likelihood/<x>" --label "affects/<X.Y>")
+   # camunda/camunda-platform-helm (no qa/automation-found there):
+   # LABELS=(--label kind/bug --label "component/<x>" \
+   #   --label "severity/<x>" --label "likelihood/<x>" --label "affects/<X.Y>")
+
+   gh issue create --repo <owner>/<repo> \
      --title "<module>: <one-line symptom> (nightly <version>)" \
-     --label "kind/bug" --label "nightly-detected" \
+     "${LABELS[@]}" \
      --body "$(cat <<'BODY'
    Detected by orchestration-cluster nightly triage. The failing test is **correct** and the failure
    is **not flaky** — it traces to a recent product change.
 
-   - **Failing test:** `<file>` › `<test_name>` (<test_type>, <version>)
-   - **Symptom:** <what the screenshot / error shows>
-   - **Suspected change:** <commit sha + subject, or PR #, or docs reference>
+   ### Description
+   <one-line symptom, in product terms rather than test terms>
+
+   ### Steps to reproduce
+   1. Run `<file>` › `<test_name>` (<test_type>) on <version>.
+   2. See the nightly run: <e2e / api run URL>
+
+   ### Current behavior
+   <what the screenshot / trace / error actually shows the product doing>
+
+   ### Expected behavior
+   <what the assertion expects, and the docs reference if the behavior is documented>
+
+   ### Environment
+   SM
+   <!-- the template's Environment dropdown is SM / SaaS / SaaS & SM; this suite runs SM -->
+   **Secondary storage:** <Elasticsearch | OpenSearch | RDBMS (<vendor>)> — <any scenario flags>
+
+   ### Version
+   <X.Y> (branch `<stable/X.Y | main>`)
+
+   ### Workaround
+   <the workaround that justified severity/mid, or "none known">
+
+   ### Severity
+   <severity label> — <one-line reason>
+
+   ### Rootcause
+   <commit sha + subject, or PR #, or docs reference, or "not pinned">
+
+   ### Triage
    - **Nightly run(s):** <e2e / api run URLs>
    - **Triage run:** <triage_run_url>
 
@@ -453,8 +666,12 @@ Orchestration-suite failures almost always trace to a module inside this same re
    )"
    ```
 
-   The `Fingerprint:` line is **mandatory**. `kind/bug` / `nightly-detected` are defaults — drop a
-   label the repo rejects rather than failing.
+   The `Fingerprint:` line is **mandatory**. Keep every `###` heading even when a value is unknown:
+   write "not determined — see comment" under it and post the comment required by **Fields you
+   cannot determine**. If a label is rejected, check its name against the tables above and retry;
+   drop only a label the repo genuinely does not define (an `affects/<X.Y>` that does not exist yet,
+   or `qa/automation-found` in `camunda/camunda-platform-helm`). Never drop a whole category without
+   the explaining comment.
 
 3. **Skip the failing test with a bug-linked annotation**, static `test.skip(...)` form, with the
    annotation comment on the line directly above — exact format, no deviation:
@@ -473,6 +690,88 @@ Orchestration-suite failures almost always trace to a module inside this same re
 
 5. Record the verdict in `/tmp/fix-meta.json` (see the product-bug schema in **Result manifest**) —
    the skip PR goes in `prs`, the issue(s) in `product_bugs` — and stop.
+
+---
+
+## Time Budget and Incremental Checkpointing
+
+This applies to every agent invoked from `c8-orchestration-cluster-e2e-nightly-fix.yml` —
+both the Nightly Fix Agent and the Workflow-Level Failure Fix Agent below. The calling
+workflow passes your deadline as a single absolute unix epoch in the prompt (computed from
+the job's own start time plus a safety margin under its `timeout-minutes`, so it already
+accounts for however long this run's setup steps took — you don't need to add anything to
+it or otherwise adjust it).
+
+The job's `timeout-minutes` is a hard GitHub Actions cutoff: past it, the step is killed
+mid-process with no signal your code can catch and no chance to write anything. A run that
+has fixed 2 of 5 dispatched failures but only writes `/tmp/fix-meta.json` once, at the very
+end, reports **zero** fixes if it is killed while working on the 3rd — even though real,
+committable work already exists. Your deadline is set below that hard cutoff specifically
+so you have room to stop yourself first.
+
+**Rules:**
+
+- **Track elapsed time.** Compare `$(date -u +%s)` against the deadline epoch you were
+  given; the budget is exhausted once current time passes it.
+- **Order work cheapest-first.** When a dispatch has multiple independent root causes,
+  handle the ones needing only the docker-compose (ES) environment before any needing the
+  Live Docker Verify RDBMS path — a from-source Maven build is by far the most expensive
+  single step available to you, and starting one you can't finish wastes the remaining
+  budget on nothing.
+- **Checkpoint `/tmp/fix-meta.json` at every milestone as a running snapshot of "done so
+  far" plus "still pending"** — not only once at the very end, and not only once per
+  root-cause group. The Live Docker Verify loop (below) is itself the most likely place to
+  be cut off, since it is the most expensive part of the work, so both sides of that
+  snapshot must already be on disk *before* that loop runs, not only after it concludes or
+  after every entry has been looked at:
+  1. **Before triaging anything, or doing any other setup** (downloading artifacts,
+     starting Live Docker Verify, etc.) — this is a required first action, not an optional
+     one: every dispatched entry is pending, so write
+     `{"prs": [], "unaddressed": [...every entry from /tmp/test_specs.json...]}` before
+     you do anything else. Skipping this because you expect to finish quickly is exactly
+     how this section's whole premise fails: it recreates the original all-or-nothing gap
+     if you are killed before reaching your next checkpoint. (The calling workflow already
+     seeds `/tmp/fix-meta.json` with this exact shape before invoking you, as a floor for
+     the case where you are killed or fail before your first tool call — your own write
+     here immediately supersedes that seed with a live one and is still required, not a
+     nice-to-have, since it is what keeps the manifest current from then on.)
+  2. **The moment a PR is opened** for a root-cause group — rewrite the manifest: add the
+     PR (omitting `verify`, which defaults to `"skipped"` and correctly leaves the PR in
+     draft) *and* remove every test it covers from `unaddressed`. If you are killed
+     anywhere inside the Live Docker Verify loop that follows, this PR is still reported,
+     and every other still-untouched entry is still listed as pending — not silently
+     merged into "must have been fine" by omission.
+  3. **The moment the Live Docker Verify loop concludes** for that PR — rewrite the same
+     PR entry with the real outcome (`verified` / `unverified` / `not-reproduced`);
+     `unaddressed` doesn't change here, those tests already left it in step 2.
+  4. Same rule for a product-bug skip PR and for an entry marked `not-reproduced` at the
+     reproduce gate — resolve it and remove it from `unaddressed` the moment its fate is
+     decided, not batched up for later.
+
+  Every write replaces the whole file with the full current truth — every PR opened so far
+  plus everything still pending — rather than appending or only tracking whichever one you
+  happened to touch most recently. This way a hard cancellation at *any* point still
+  reports both what actually got finished and what didn't, instead of only whichever of
+  the two your last write happened to cover.
+
+  **Write each checkpoint atomically.** Truncating `/tmp/fix-meta.json` in place (e.g. a
+  plain `>` redirect) leaves a window where a hard cancellation catches it empty or
+  half-written — corrupt JSON that breaks every downstream `jq` call and throws away the
+  very progress this checkpoint exists to preserve. Write the new content to a temp file
+  (e.g. `/tmp/fix-meta.json.tmp`) and `mv` it over `/tmp/fix-meta.json` instead — the
+  rename is atomic, so the file is always either the last complete checkpoint or the new
+  one, never a torn mix of both.
+
+- **Stop starting new root-cause groups once fewer than ~10 minutes of budget remain.**
+  Because `unaddressed` has been kept current all along (see above), there is nothing
+  extra to compute at this point — the untouched entries are already sitting there from
+  your last checkpoint. Leaving them dispatched-but-untriaged is fine; the next nightly
+  triage cycle re-dispatches whatever is still failing. Going silent about *which* entries
+  those were is not.
+
+- **Never let the file go unwritten.** If you are cut off before finishing anything at all,
+  the very first checkpoint from step 1 above already covers you — that's the whole reason
+  it exists as its own step rather than being deferred to "whenever you get around to it."
 
 ---
 
@@ -761,7 +1060,7 @@ Agent (no single spec to reproduce against).
 
 ### Constraints
 
-- **Allowed tools, outside the Live Docker Verify loop:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`, `npm run responses:regenerate`. Everything else — `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test` — is forbidden here: the fix agent does **not** execute tests from artifact evidence alone.
+- **Allowed tools, outside the Live Docker Verify loop:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `date` (needed for the Time Budget checkpoint comparisons above), `mv` (needed for atomic checkpoint writes above), `npx prettier`, `npx eslint`, `npm run responses:regenerate`. Everything else — `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test` — is forbidden here: the fix agent does **not** execute tests from artifact evidence alone.
 - **Allowed tools, inside the Live Docker Verify loop only:** additionally `nvm`, `npm ci`, `npx playwright install`, `docker`/`docker compose` (via `scripts/start-verify-env.sh`/`stop-verify-env.sh` only), `./mvnw` (via the same scripts, RDBMS path only), and `npx playwright test` scoped to the dispatched spec(s) — never the full suite. `kubectl` and `helm` remain forbidden everywhere; there is no cluster to reach. The on-demand workflow triggered after the PR opens remains the full-matrix regression safety net regardless of the live-verify outcome — the loop above does not replace it.
 - **Skipping is forbidden EXCEPT for a confirmed product bug:** the ONLY sanctioned use of `test.skip()` is a product regression that passes all three gates in `## Product-Bug Escalation` and has a filed/linked ticket — there you skip with the mandatory `// Skipped due to bug #<number>: <url>` annotation and open one skip PR. For flakiness, can't-determine, or any other reason, `test.skip()` / `test.fixme()` / `test.only` remain **absolutely forbidden**. A bare `{"prs":[]}` is sanctioned ONLY for the Gate B manual-intervention case (an unpinnable green→red flip on a test that is already hardened) and must carry a `manual_intervention` note; never leave `{"prs":[]}` with no note and no issue filed for any other reason.
 - **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result. Manual edits will be overwritten and produce misleading diffs.
@@ -830,6 +1129,18 @@ no verification run is triggered and the fix is never validated automatically.**
 
 Use `{"prs": []}` if no PR was opened (regardless of reason).
 
+**`unaddressed`** — optional array of dispatched entries not yet resolved, each
+`{"file": ..., "test_name": ..., "test_type": ...}` copied straight from
+`/tmp/test_specs.json`. Maintain it live across every checkpoint (see "Time Budget and
+Incremental Checkpointing" above), not only at the very end: start with every entry in it,
+and remove an entry the moment a PR is opened covering it (or it's marked `not-reproduced`,
+or covered by a product-bug skip) — regardless of whether Live Docker Verify has run yet
+for that PR. This is distinct from `not-reproduced` (you *did* run it against a live
+environment and it no longer fails) and from a product-bug skip (you diagnosed it and it's
+tracked by an issue) — an entry stays in `unaddressed` for as long as you haven't started
+or finished triaging it at all. Omit the
+field entirely if every dispatched entry was addressed one way or another.
+
 A confirmed product bug always lands as a skip PR, so `prs` carries that PR (set `has_e2e`/`has_api`
 from the skipped test types so the skip is verified) and `product_bugs` lists one object per
 filed/reused issue (a dispatch may yield several bugs):
@@ -842,6 +1153,9 @@ filed/reused issue (a dispatch may yield several bugs):
     {
       "repo": "camunda/camunda",
       "component": "operate",
+      "severity": "high",
+      "affects": ["8.10"],
+      "undetermined_fields": [],
       "issue_url": "https://github.com/camunda/camunda/issues/55864",
       "issue_number": 55864,
       "fingerprint": "<FP>",
@@ -854,9 +1168,229 @@ filed/reused issue (a dispatch may yield several bugs):
 ```
 
 `category`, the skip PR in `prs`, and a non-empty `product_bugs` are all required for this verdict.
+`component`, `severity` and `affects` must match the labels you actually set, and
+`undetermined_fields` lists any category you could not determine and had to flag with a comment
+(`["component"]`, `["severity"]`, …) — `[]` when every field is set. `c8-orchestration-cluster-e2e-nightly-fix.yml`
+renders them in the Slack thread and the job summary, so the owning team is named there rather than
+having to open the issue to find out the bug is theirs.
 `suspect_commit` is surfaced directly in the Slack thread. The triage dispatcher reads each issue's
 fingerprint marker to suppress re-dispatch while the issue is open; once the skip PR merges the test
 no longer runs, and when the issue is later closed the skip should be removed so the test runs again.
+
+## Unskip Verify Agent
+
+This section is read automatically by the Claude Code agent dispatched from
+`c8-orchestration-cluster-unskip-verify.yml`. It is a *different* job from the Nightly
+Fix Agent above: nothing is failing in CI yet. A weekly workflow in
+`camunda/qa-metrics-exporter` opens one PR per branch + category that flips
+`test.skip(` back to `test(` for every test whose referenced bug is now **closed**,
+and your job is to answer the question that PR cannot answer on its own — *do those
+tests actually pass now?* — and to make them pass when they don't.
+
+A test that has been skipped for weeks or months is usually stale in some small way
+(a renamed selector, a changed default, a flow that gained a confirmation step) even
+when the product bug really is fixed. Repairing that staleness is the main value here.
+
+### Context you receive
+
+The calling workflow prepares everything before you start:
+
+* **The environment is already running** — `scripts/start-verify-env.sh` has been run
+  for this cell (`DATABASE`, `TASKLIST_MODE`), `npm ci` is done, Chromium is
+  installed, and `.env` is written. **Never restart, rebuild, or tear it down**, and
+  never start a second one. You are changing test code, not product code.
+* **`/tmp/cell-plan.json`** — this cell's plan:
+  * `spec_paths` — the spec files that actually execute in this dimension.
+  * `projects` — the Playwright projects to pass.
+  * `unskipped_tests` — `{file, test_name, bug}` for each test this PR un-skipped
+    (`bug` is the closed issue the skip marker pointed at).
+  * `manual_markers` — `{path, line, bug, reason}` for skips the unskip workflow
+    deliberately left in place (see the second pass below).
+* **`/tmp/baseline/results.json`** — the Playwright JSON report of the reproduce run,
+  and `BASELINE` (`green` / `red`) tells you its outcome at a glance.
+* Env vars: `PR_NUMBER`, `BRANCH`, `BASE_REF`, `VERSION`, `CELL`, `CATEGORY`,
+  `DATABASE`, `TASKLIST_MODE`, `SPEC_PATHS`, `PROJECT_ARGS`, `REPO`.
+
+Re-run the scoped specs with exactly:
+
+```bash
+npx playwright test $PROJECT_ARGS $SPEC_PATHS
+```
+
+Never run the full suite, and never widen the scope beyond `spec_paths`.
+
+### The loop
+
+**Pass 1 — the un-skipped tests.**
+
+1. If `BASELINE=green`, every un-skipped test in this cell already passes. Do not
+   touch the code. Go straight to Pass 2.
+2. Otherwise, read the failures out of `/tmp/baseline/results.json` (error message,
+   `snippet`, and the trace/screenshot under `test-results/`) and diagnose each one
+   the same way the Nightly Fix Agent does — the "### Diagnosis steps" guidance above
+   applies verbatim, minus the artifact download (you have a live environment
+   instead, which is strictly better evidence).
+3. Classify every failure before editing:
+   * **Test-side staleness** — selector moved, an added dialog, a changed label, a
+     wait that is now too short, an assertion that contradicts current *documented*
+     behaviour. This is the expected case. Fix it.
+   * **Product-side** — the closed bug is not actually fixed, or a new regression
+     broke the flow. See "When the product is still broken" below. **Do not fix it
+     test-side and do not re-skip it.**
+4. Apply the fix and re-run the scoped specs against the same environment. Green →
+   done. Still red → refine and retry. **Maximum 3 iterations** — a hard cost cap,
+   not a suggestion.
+5. **A shared root cause applies to every sibling flow in this PR.** These tests were
+   skipped around the same time, often by the same change; when one fix explains more
+   than one failure, apply it to all of them in this PR rather than fixing one and
+   letting the next cell rediscover it.
+
+**Pass 2 — the manual-review markers.**
+
+`cell_plan.manual_markers` lists skips the unskip workflow refused to touch
+automatically: a skip inside a conditional/ternary, or a marker sitting above
+commented-out code that could not be re-enabled without unbalancing brackets. Their
+bugs are closed too, so they are in scope for you — this pass is the whole reason a
+human-quality agent is doing this job.
+
+For each marker, in the file at `path` around `line`:
+
+1. Re-enable the test the way the code actually shapes it — pick the live branch of a
+   ternary and drop the dead one, or uncomment the block and drop the marker comment.
+   Keep prose/`!Note:` comments; they are documentation, not code.
+2. Run the scoped specs. Fix what is stale, exactly as in Pass 1 (the 3-iteration cap
+   covers both passes together — do not spend the whole budget here).
+3. If re-enabling it cannot be done safely — the commented-out code no longer
+   compiles against the current page objects, the ternary guards a genuinely
+   version-specific path, or the flow it tests no longer exists — **leave the marker
+   exactly as it was** and record it as `left-as-is` with a one-line reason. A marker
+   you cannot resolve is a fine outcome; a marker you resolve badly is not.
+
+### When the product is still broken
+
+If a test is red because the product genuinely misbehaves — the closed bug was not
+actually fixed, or something regressed since — then:
+
+1. Confirm it against the three gates in "## Product-Bug Escalation" above (not
+   flaky, pinned to a product change, the test itself is still correct).
+2. **Leave the test un-skipped and failing.** Do NOT re-add `test.skip(`, do NOT mask
+   it with a longer timeout, a viewport pin, or a weakened assertion. The PR is
+   *supposed* to go red here: that is the signal a human needs.
+3. Reopen the closed issue the marker referenced (`gh issue reopen`) and add the labels
+   it is missing (see "### Labels for the issue (both owning repos)") — or file a new
+   one per "### Filing the bug ticket (dedupe FIRST)" when the original is not the
+   right home — and comment on it linking this verification run.
+4. Comment on the unskip PR (`gh pr comment $PR_NUMBER --repo $REPO`) with the test,
+   the evidence, and the reopened issue link.
+5. Record the test as `product-bug` in the result manifest with the issue URL. The
+   calling workflow labels the PR `unverified` and a human decides whether to drop
+   that test from the PR or keep waiting on the fix.
+
+Use the default `GH_TOKEN` (qa-processes) for every `gh` call first; only if one
+fails retry that same command once with `GH_TOKEN="$GH_PAT"`.
+
+### Committing
+
+You are working **on the unskip PR's own branch**, already checked out.
+
+1. Lint every file you touched, from the suite directory:
+
+   ```bash
+   npx prettier --write <changed-files>
+   npx eslint <changed-files> --fix
+   ```
+
+   Fix any remaining eslint errors before committing.
+
+2. Commit with the `test:` type (commitlint rejects `fix:` for test-only changes):
+   `git commit -m "test: <what was stale and how it was fixed> (unskip ${VERSION})"`.
+
+3. Push onto the same branch:
+
+   ```bash
+   git push origin HEAD:"$BRANCH"
+   ```
+
+   Environment cells run one at a time, each from the branch's current tip, so this
+   is normally a fast-forward. Only if the push is *rejected* — another cell landed
+   a commit meanwhile — rebase onto the new tip and push again; never force-push:
+
+   ```bash
+   git fetch origin "$BRANCH" && git rebase FETCH_HEAD && git push origin HEAD:"$BRANCH"
+   ```
+4. **Never open a new PR and never create another branch.** Every change belongs to
+   the PR being verified.
+
+### Constraints
+
+- **Allowed:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`,
+  `npx prettier`, `npx eslint`, and `npx playwright test` **scoped to `$SPEC_PATHS`**.
+- **Forbidden:** `make`, `mvn`, `./mvnw`, `docker`/`docker compose`, `kubectl`,
+  `helm`, `npm install`, `npm ci`, `npm run build`, the `start-verify-env.sh` /
+  `stop-verify-env.sh` scripts, and any unscoped `npx playwright test`. The
+  environment is provisioned for you and torn down for you.
+- **Re-skipping is forbidden.** This agent exists to *remove* skips. `test.skip()` /
+  `test.fixme()` / `test.only` must not appear in any diff you produce — not for a
+  product bug (leave it red and escalate), not for flakiness (fix the wait), not for
+  a test you find hard to repair (report it and leave it red).
+- **Never weaken a check to go green:** no viewport pinning for a responsive-layout
+  failure (see the Nightly Fix Agent constraint above — it applies here in full), no
+  deleted assertions, no `continue-on-error`, no timeout lowered to skip a slow step.
+  Fix the wait, or fix a provably-wrong assertion after confirming intended behaviour
+  in `camunda-docs` for this exact version.
+- **Never edit `json-body-assertions/_generated/responses.json` by hand** —
+  regenerate it with `npm run responses:regenerate`.
+- **Minimal diff:** only the files carrying un-skipped tests or the page objects and
+  helpers they depend on. No refactoring, no dependency bumps, no formatting sweeps.
+
+### Result manifest
+
+Always write `/tmp/unskip-meta.json` before stopping, even when you changed nothing:
+
+```json
+{
+  "verdict": "green",
+  "iterations": 0,
+  "pushed": false,
+  "root_cause": "One sentence, or empty when nothing was wrong.",
+  "fix": "One sentence describing what changed, or empty.",
+  "tests": [
+    {
+      "file": "tests/operate/dashboard.spec.ts",
+      "test_name": "Navigate to processes view (same truncated error message)",
+      "outcome": "green",
+      "bug": "https://github.com/camunda/camunda/issues/45129",
+      "note": ""
+    }
+  ],
+  "manual_markers": [
+    {"path": "tests/operate/operations.spec.ts", "line": 66, "outcome": "unskipped-fixed", "note": ""}
+  ],
+  "product_bugs": []
+}
+```
+
+`verdict` — the cell as a whole:
+
+| `verdict` |                          Meaning                           |
+|-----------|------------------------------------------------------------|
+| `green`   | Everything passed untouched; nothing was committed.        |
+| `fixed`   | Everything passes after your changes, which are pushed.    |
+| `partial` | Some tests/markers are green, at least one is still red.   |
+| `blocked` | Nothing could be made green (product bug, or no safe fix). |
+
+`tests[].outcome` — one per entry in `cell_plan.unskipped_tests`: `green` (passed
+untouched), `fixed` (passed after your change), `still-red` (no safe fix found), or
+`product-bug` (escalated — set `note` to the reopened/filed issue URL).
+
+`manual_markers[].outcome` — one per entry in `cell_plan.manual_markers`:
+`unskipped-green`, `unskipped-fixed`, `left-as-is`, or `product-bug`.
+
+`pushed` must be `true` if and only if you pushed at least one commit — the workflow
+reports it, and a `fixed` verdict with `pushed: false` is a contradiction that will be
+read as a bug in your run. `product_bugs` uses the same object shape as the Nightly
+Fix Agent's manifest (`repo`, `component`, `issue_url`, `root_cause`,
+`suspect_commit`), but there is **no skip PR** — the failing test stays un-skipped.
 
 ## Workflow-Level Failure Fix Agent
 
@@ -936,13 +1470,11 @@ Realistically that is limited to: the runner host itself died (out of memory or 
 ### Constraints
 
 - **Never recommend re-running the workflow as the outcome** — if flakiness is the cause, the resilience goes into the file, not into a human instruction.
-- **`continue-on-error: true` is absolutely forbidden — with no exceptions and no rationalisations.** This includes post-test reporting steps (TestRail, artifact upload, Slack notification). The reasoning "it is only reporting, not a gate" is exactly the rationalisation that must be rejected: if a post-test step fails, that failure is a defect in our code or configuration that deserves a real fix. `continue-on-error` silences the failure rather than fixing it, which means the same bug runs again tomorrow and the day after.
-  - **TestRail `add_case` failure** → the step fails because something in *our* code caused trcli to error (e.g. a test case title whose derived `custom_automation_id` exceeds 250 characters). Find the offending test title in the spec files and shorten it. That is the fix.
-  - **TestRail auth / network failure** → add a retry around the trcli call, or fix the credential configuration. Do not silence.
-  - **Any other post-test step** → find what our code does wrong and fix it. If you genuinely cannot find any code fix after thorough investigation, write `not-determined` — but `continue-on-error` is never a valid alternative.
+- **`continue-on-error: true` is absolutely forbidden — with no exceptions and no rationalisations.** This includes post-test reporting steps (artifact upload, Slack notification). The reasoning "it is only reporting, not a gate" is exactly the rationalisation that must be rejected: if a post-test step fails, that failure is a defect in our code or configuration that deserves a real fix. `continue-on-error` silences the failure rather than fixing it, which means the same bug runs again tomorrow and the day after.
+  - **Any post-test step failure** → find what our code does wrong and fix it. If you genuinely cannot find any code fix after thorough investigation, write `not-determined` — but `continue-on-error` is never a valid alternative.
 - **No skipping** — same absolute no-skip / no-fixme rule as the Nightly Fix Agent.
 - **`.github/workflows/` is always in scope** — the repo "Ask first" constraint applies to application libraries (`webapps-common/`, `webapp/client/`, `security/`), not to CI workflow files.
 - **Minimal diff** — fix only what is broken; no refactoring, no dependency bumps, no unrelated edits.
-- **Allowed tools**: `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`
+- **Allowed tools**: `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `date` (needed for the Time Budget checkpoint comparisons above), `mv` (needed for atomic checkpoint writes above)
 - **Forbidden**: `make`, `helm`, `kubectl`, `npm run build`, `go test`, any deploy command
 

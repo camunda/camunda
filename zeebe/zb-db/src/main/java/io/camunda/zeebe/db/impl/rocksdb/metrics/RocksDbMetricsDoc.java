@@ -453,6 +453,11 @@ public enum RocksDbMetricsDoc implements RocksDbMeterDoc {
     public String propertyName() {
       return "rocksdb.estimate-pending-compaction-bytes";
     }
+
+    @Override
+    protected String gaugeSuffix() {
+      return "estimate.pending.compaction.size";
+    }
   },
 
   BACKGROUND_ERRORS {

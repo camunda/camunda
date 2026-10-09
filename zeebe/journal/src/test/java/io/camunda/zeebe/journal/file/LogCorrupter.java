@@ -9,13 +9,10 @@ package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.record.SBESerializer;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public final class LogCorrupter {
 
@@ -26,51 +23,24 @@ public final class LogCorrupter {
    * @param index index of record to be corrupted
    * @return true if the specified record was successfully corrupted; otherwise, returns false
    */
-  public static boolean corruptRecord(final File file, final long index) throws IOException {
-    final byte[] bytes = new byte[Math.toIntExact(file.length())];
-    int read;
-
-    try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
-      final int available = in.available();
-      read = in.read(bytes, 0, bytes.length);
-
-      // reached EOF
-      if (read == -1) {
-        read = available;
-      }
-    }
+  public static boolean corruptRecord(final Path file, final long index) throws IOException {
+    final byte[] bytes = Files.readAllBytes(file);
 
     if (!corruptRecord(bytes, index)) {
       return false;
     }
 
-    try (final BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
-      out.write(bytes, 0, read);
-    }
-
+    Files.write(file, bytes);
     return true;
   }
 
-  public static void corruptDescriptor(final File file) throws IOException {
-    final byte[] bytes = new byte[SegmentDescriptorSerializer.currentEncodingLength()];
-    int read;
-
-    try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
-      final int available = in.available();
-      read = in.read(bytes, 0, bytes.length);
-
-      // reached EOF
-      if (read == -1) {
-        read = available;
-      }
-    }
+  public static void corruptDescriptor(final Path file) throws IOException {
+    final byte[] bytes = Files.readAllBytes(file);
 
     final byte schemaId = bytes[MessageHeaderDecoder.schemaIdEncodingOffset() + 1];
     bytes[MessageHeaderDecoder.schemaIdEncodingOffset() + 1] = (byte) ~schemaId;
 
-    try (final BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
-      out.write(bytes, 0, read);
-    }
+    Files.write(file, bytes);
   }
 
   private static boolean corruptRecord(final byte[] bytes, final long targetIndex) {

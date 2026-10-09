@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -103,6 +102,7 @@ public final class ProcessInstanceBatchActivateProcessor
     final var nextBatchRecord =
         new ProcessInstanceBatchRecord()
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+            .setStorageOrdinal(recordValue.getStorageOrdinal())
             .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
             .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
             .setIndex(remainingChildrenToActivate);
@@ -135,8 +135,12 @@ public final class ProcessInstanceBatchActivateProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<ProcessInstanceBatchRecord> record) {
-    return SuspensionBehavior.BUFFER;
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceBatchRecord> record) {
+    return SuspensionAction.BUFFER;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceBatchRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

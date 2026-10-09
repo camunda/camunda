@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -169,6 +168,7 @@ public final class JobFailProcessor
             value.getProcessDefinitionKey(),
             value.getProcessInstanceKey(),
             value.getRootProcessInstanceKey(),
+            value.getStorageOrdinal(),
             value.getBpmnProcessIdBuffer(),
             value.getTenantId(),
             variables);
@@ -203,6 +203,7 @@ public final class JobFailProcessor
         .setBpmnProcessId(value.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setStorageOrdinal(value.getStorageOrdinal())
         .setElementId(value.getElementIdBuffer())
         .setElementInstanceKey(value.getElementInstanceKey())
         .setJobKey(key)
@@ -236,7 +237,12 @@ public final class JobFailProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
-    return SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
   }
 }

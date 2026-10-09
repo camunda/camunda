@@ -10,10 +10,8 @@ package io.camunda.authentication.pt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityConfiguration;
 import io.camunda.security.spring.handler.AuthFailureHandlerConfiguration;
 import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
@@ -213,16 +211,6 @@ class PhysicalTenantDefaultAliasChainIT {
     @Bean
     ObjectMapper objectMapper() {
       return new ObjectMapper();
-    }
-  }
-
-  /** The OC host's {@link SecurityPathPort}, so CSL knows {@code /v2/**} is an API path. */
-  @Configuration
-  static class OcPathsConfig {
-
-    @Bean
-    SecurityPathPort securityPathPort() {
-      return new SecurityPathAdapter();
     }
   }
 }

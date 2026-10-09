@@ -10,6 +10,9 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
+import org.jspecify.annotations.Nullable;
 
 public final class EngineCfg implements ConfigurationEntry {
 
@@ -23,6 +26,12 @@ public final class EngineCfg implements ConfigurationEntry {
   private JobMetricsCfg jobMetrics = new JobMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
+  private EngineConfiguration.InputMappingMode inputMappingMode =
+      EngineConfiguration.InputMappingMode.COMBINED;
+  private @Nullable InputMappingMode inputComparisonMode = null;
+  private EngineConfiguration.OutputMappingMode outputMappingMode =
+      EngineConfiguration.OutputMappingMode.COMBINED;
+  private @Nullable OutputMappingMode outputComparisonMode = null;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
@@ -119,6 +128,38 @@ public final class EngineCfg implements ConfigurationEntry {
     this.maxProcessDepth = maxProcessDepth;
   }
 
+  public EngineConfiguration.InputMappingMode getInputMappingMode() {
+    return inputMappingMode;
+  }
+
+  public void setInputMappingMode(final EngineConfiguration.InputMappingMode inputMappingMode) {
+    this.inputMappingMode = inputMappingMode;
+  }
+
+  public @Nullable InputMappingMode getInputComparisonMode() {
+    return inputComparisonMode;
+  }
+
+  public void setInputComparisonMode(final @Nullable InputMappingMode inputComparisonMode) {
+    this.inputComparisonMode = inputComparisonMode;
+  }
+
+  public EngineConfiguration.OutputMappingMode getOutputMappingMode() {
+    return outputMappingMode;
+  }
+
+  public void setOutputMappingMode(final EngineConfiguration.OutputMappingMode outputMappingMode) {
+    this.outputMappingMode = outputMappingMode;
+  }
+
+  public @Nullable OutputMappingMode getOutputComparisonMode() {
+    return outputComparisonMode;
+  }
+
+  public void setOutputComparisonMode(final @Nullable OutputMappingMode outputComparisonMode) {
+    this.outputComparisonMode = outputComparisonMode;
+  }
+
   public GlobalListenersCfg getGlobalListeners() {
     return globalListeners;
   }
@@ -200,6 +241,14 @@ public final class EngineCfg implements ConfigurationEntry {
         + startup
         + ", storageOrdinals="
         + storageOrdinals
+        + ", inputMappingMode="
+        + inputMappingMode
+        + ", inputComparisonMode="
+        + inputComparisonMode
+        + ", outputMappingMode="
+        + outputMappingMode
+        + ", outputComparisonMode="
+        + outputComparisonMode
         + '}';
   }
 
@@ -211,6 +260,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setFormCacheCapacity(caches.getFormCacheCapacity())
         .setResourceCacheCapacity(caches.getResourceCacheCapacity())
         .setProcessCacheCapacity(caches.getProcessCacheCapacity())
+        .setProcessCacheSoftValues(caches.isProcessCacheSoftValues())
         .setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity())
         .setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl())
         .setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity())
@@ -235,6 +285,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setSecretResolutionRetryMaxDelay(secretResolution.getRetryMaxDelay())
         .setSecretResolutionRetryBackoffFactor(secretResolution.getRetryBackoffFactor())
         .setSecretResolutionBatchLimit(secretResolution.getBatchResolutionLimit())
+        .setSecretResolutionWakeDelay(secretResolution.getWakeDelay())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
         .setJobMetricsExportInterval(jobMetrics.getExportInterval())
         .setJobMetricsExportEnabled(jobMetrics.isEnabled())
@@ -261,6 +312,10 @@ public final class EngineCfg implements ConfigurationEntry {
         .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
         .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
         .setArchiverlessEnabled(storageOrdinals.isEnableArchiverless())
-        .setFixedStorageOrdinalKey(storageOrdinals.getFixedStorageOrdinalKey());
+        .setFixedStorageOrdinal(storageOrdinals.getFixedStorageOrdinal())
+        .setInputMappingMode(inputMappingMode)
+        .setInputComparisonMode(inputComparisonMode)
+        .setOutputMappingMode(outputMappingMode)
+        .setOutputComparisonMode(outputComparisonMode);
   }
 }

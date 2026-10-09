@@ -79,7 +79,7 @@ const DeleteDefinitionModal: React.FC<Props> = ({
           id="confirmation-checkbox"
           labelText={confirmationText}
           invalid={hasConfirmationError}
-          invalidText="Please tick this box if you want to proceed."
+          invalidText="Tick this box if you want to proceed."
           warnText=""
           onChange={(_, {checked}) => {
             if (checked && hasConfirmationError) {

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect} from '@playwright/test';
+import {expect, type Locator} from '@playwright/test';
 import {test} from '@/visual-fixtures';
 import {
   compensationProcessInstance,
@@ -18,6 +18,37 @@ import {
 } from '@/mocks/processInstance';
 import {URL_API_PATTERN} from '@/constants';
 import {clientConfigMock} from '@/mocks/clientConfig';
+
+const expectInlineEditorToBeContained = async (inlineEditor: Locator) => {
+  const bounds = await inlineEditor.evaluate((wrapper) => {
+    const grid = wrapper.parentElement;
+    const editor = wrapper.querySelector('.cm-editor');
+    const content = wrapper.querySelector('.cm-content');
+
+    if (grid === null || editor === null || content === null) {
+      throw new Error('Inline editor grid structure was not found');
+    }
+
+    const gridRect = grid.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const editorRect = editor.getBoundingClientRect();
+    const contentRect = content.getBoundingClientRect();
+
+    return {
+      gridLeft: gridRect.left,
+      gridRight: gridRect.right,
+      wrapperLeft: wrapperRect.left,
+      wrapperRight: wrapperRect.right,
+      editorRight: editorRect.right,
+      contentRight: contentRect.right,
+    };
+  });
+
+  expect(bounds.wrapperLeft).toBeGreaterThanOrEqual(bounds.gridLeft - 1);
+  expect(bounds.wrapperRight).toBeLessThanOrEqual(bounds.gridRight + 1);
+  expect(bounds.editorRight).toBeLessThanOrEqual(bounds.wrapperRight + 1);
+  expect(bounds.contentRight).toBeLessThanOrEqual(bounds.wrapperRight + 1);
+};
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -211,6 +242,12 @@ test.describe('process instance page', () => {
     await expect(
       page.getByRole('heading', {name: 'Edit a new Variable'}),
     ).toBeVisible();
+    await processInstancePage.variablesEditor.hideCaret();
+    await page.addStyleTag({
+      content:
+        '.monaco-editor :is(.scrollbar, .decorationsOverviewRuler) {opacity: 0 !important;}',
+    });
+    await page.mouse.move(0, 0);
 
     await expect(page).toHaveScreenshot();
   });
@@ -305,10 +342,60 @@ test.describe('process instance page', () => {
     await page.getByRole('link', {name: 'Incidents'}).click();
 
     await page.getByRole('button', {name: /expand current row/i}).click();
-    await expect(page.getByText('Job ID')).toBeVisible();
-    await expect(page.getByText('Error message')).toBeVisible();
+
+    const expandedRow = page.getByRole('row').last();
+    await expect(expandedRow.getByText('Job ID')).toBeVisible();
+    await expect(expandedRow.getByText('Error message')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+  });
+
+  test('instance with incident keeps operations reachable at narrow width', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.setViewportSize({width: 600, height: 720});
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: instanceWithIncident.detail,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        elementInstances: instanceWithIncident.elementInstances,
+        statistics: instanceWithIncident.statistics,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        variables: instanceWithIncident.variables,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: instanceWithIncident.detail.processInstanceKey,
+    });
+
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page.getByRole('link', {name: 'Incidents'}).click();
+
+    const tableContainer = page.getByTestId('data-table-container');
+    await expect(tableContainer).toBeVisible();
+    await expect
+      .poll(async () =>
+        tableContainer.evaluate(
+          (element) => element.scrollWidth > element.clientWidth,
+        ),
+      )
+      .toBe(true);
+
+    await tableContainer.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+
+    await expect(
+      page.getByRole('columnheader', {name: 'Operations'}),
+    ).toBeVisible();
   });
 
   test('completed instance', async ({page, processInstancePage}) => {
@@ -487,10 +574,23 @@ test.describe('process instance page', () => {
 
     await processInstancePage.variablesEditor.waitForEditorToLoad();
 
+    await expect(page.locator('.cm-editor .cm-line')).toHaveText([
+      '{',
+      '"status": "active",',
+      '"count": 42',
+      '}',
+    ]);
+    await expect(page.locator('.cm-editor')).toHaveCSS('height', '80px');
+
     await processInstancePage.variablesEditor.clear();
     await processInstancePage.variablesEditor.fill('{invalid');
 
     await expect(page.getByText('Value has to be JSON')).toBeVisible();
+
+    await expect(page.locator('.cm-editor.cm-focused')).toHaveCSS(
+      'outline-style',
+      'none',
+    );
 
     await processInstancePage.variablesEditor.hideCaret();
 
@@ -525,13 +625,72 @@ test.describe('process instance page', () => {
 
     await processInstancePage.newVariableNameField.fill('newPayload');
 
-    await expect(
-      page
-        .getByTestId('json-editor-wrapper')
-        .getByTestId('json-editor-readonly'),
-    ).toBeVisible();
+    const inlineEditor = page.getByTestId('json-editor-wrapper');
+    const codeMirrorEditor = inlineEditor.getByRole('textbox', {name: 'Value'});
+
+    await expect(codeMirrorEditor).toBeVisible();
+    await expect(processInstancePage.newVariableNameField).toBeFocused();
+    await expectInlineEditorToBeContained(inlineEditor);
 
     await expect(page).toHaveScreenshot();
+
+    const widthBeforeFocus = await inlineEditor.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+
+    await codeMirrorEditor.click();
+    await expect(codeMirrorEditor).toBeFocused();
+    const textColor = await codeMirrorEditor.evaluate(
+      (element) => getComputedStyle(element).color,
+    );
+    await expect(inlineEditor.locator('.cm-cursor').first()).toHaveCSS(
+      'border-left-color',
+      textColor,
+    );
+    await expect(inlineEditor.locator('.cm-editor')).toHaveCSS(
+      'outline-style',
+      'none',
+    );
+    expect(
+      await inlineEditor
+        .locator('.cm-editor')
+        .evaluate(
+          (element) => getComputedStyle(element, '::after').outlineWidth,
+        ),
+    ).toBe('2px');
+
+    const widthAfterFocus = await inlineEditor.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+
+    expect(widthAfterFocus).toBeLessThanOrEqual(widthBeforeFocus + 1);
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill(
+      `"${'long-value-'.repeat(100)}"`,
+    );
+    await expectInlineEditorToBeContained(inlineEditor);
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('["alpha", "al"]');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Control+Space');
+    const suggestion = page.getByRole('option', {name: 'alpha', exact: true});
+    await expect(suggestion).toBeVisible();
+    await expect(suggestion).toBeInViewport();
+    await page.keyboard.press('Enter');
+    await expect(codeMirrorEditor).toHaveText('["alpha", "alpha"]');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Control+Space');
+    await expect(suggestion).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(suggestion).not.toBeVisible();
+    await expect(codeMirrorEditor).not.toBeFocused();
+
+    await codeMirrorEditor.focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(processInstancePage.newVariableNameField).toBeFocused();
   });
 
   test('inline JSON edit - error state after blur', async ({
@@ -584,8 +743,9 @@ test.describe('process instance page', () => {
     await processInstancePage.variablesEditor.blur();
 
     await expect(
-      page.getByTestId('edit-variable-value-readonly'),
-    ).toBeVisible();
+      page.getByRole('textbox', {name: 'payload'}),
+    ).not.toBeFocused();
+    await expect(page.getByText('Value has to be JSON')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });

@@ -75,6 +75,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
+          "jobLeaseToken": "lease-abc",
           "history": [
             {
               "historyItemId": "item-0",
@@ -148,6 +149,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
+          "jobLeaseToken": "lease-abc",
           "history": [
             {
               "historyItemId": "item-0",
@@ -216,6 +218,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
+          "jobLeaseToken": "lease-abc",
           "history": [
             {
               "historyItemId": "item-0",
@@ -314,7 +317,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(JOB_KEY)),
-            "No elementInstanceKey provided."),
+            "No elementInstanceKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "null elementInstanceKey",
@@ -337,7 +340,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(JOB_KEY)),
-            "No elementInstanceKey provided."),
+            "No elementInstanceKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "non-numeric elementInstanceKey",
@@ -362,7 +365,8 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     .formatted(JOB_KEY)),
             "The provided elementInstanceKey 'not-a-number' is not a valid key."
                 + " Expected a numeric value."
-                + " Did you pass an entity id instead of an entity key?."),
+                + " Did you pass an entity id instead of an entity key?."
+                + " No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "zero elementInstanceKey",
@@ -385,7 +389,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(JOB_KEY)),
-            "The value for elementInstanceKey is '0' but must be > 0."),
+            "The value for elementInstanceKey is '0' but must be > 0. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "negative elementInstanceKey",
@@ -408,7 +412,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(JOB_KEY)),
-            "The value for elementInstanceKey is '-1' but must be > 0."),
+            "The value for elementInstanceKey is '-1' but must be > 0. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "missing history",
@@ -418,7 +422,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
-            "No jobKey provided. No history provided."),
+            "No jobKey provided. No jobLeaseToken provided. No history provided."),
         Arguments.of(
             named(
                 "history without jobKey",
@@ -447,7 +451,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
-            "No jobKey provided."),
+            "No jobKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "non-numeric jobKey",
@@ -471,7 +475,8 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
             "The provided jobKey 'not-a-number' is not a valid key. Expected a numeric value."
-                + " Did you pass an entity id instead of an entity key?."),
+                + " Did you pass an entity id instead of an entity key?."
+                + " No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "history without a CONFIGURATION item establishing the definition",
@@ -491,7 +496,8 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
-            "No CONFIGURATION history item sets 'model'; add a CONFIGURATION history item that"
+            "No jobLeaseToken provided."
+                + " No CONFIGURATION history item sets 'model'; add a CONFIGURATION history item that"
                 + " sets it. No CONFIGURATION history item sets 'provider'; add a CONFIGURATION"
                 + " history item that sets it. No CONFIGURATION history item sets"
                 + " 'systemPrompt'; add a CONFIGURATION history item that sets it."));
@@ -508,6 +514,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
+          "jobLeaseToken": "lease-abc",
           "history": [
             {
               "historyItemId": "item-0",
@@ -546,10 +553,12 @@ class AgentInstanceControllerTest extends RestControllerTest {
         """
         {
           "elementInstanceKey": "%d",
+          "jobKey": "%d",
+          "jobLeaseToken": "lease-abc",
           "status": "THINKING"
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY);
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
     // when / then
     webClient
@@ -589,10 +598,12 @@ class AgentInstanceControllerTest extends RestControllerTest {
     final var requestBody =
         """
         {
-          "elementInstanceKey": "%d"
+          "elementInstanceKey": "%d",
+          "jobKey": "%d",
+          "jobLeaseToken": "lease-abc"
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY);
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
     // when / then
     webClient
@@ -662,7 +673,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     """
                     { "status": "THINKING" }
                     """)),
-            "No elementInstanceKey provided."),
+            "No elementInstanceKey provided. No jobKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "null elementInstanceKey",
@@ -671,7 +682,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     """
                     { "elementInstanceKey": null, "status": "THINKING" }
                     """)),
-            "No elementInstanceKey provided."),
+            "No elementInstanceKey provided. No jobKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "non-numeric elementInstanceKey",
@@ -682,7 +693,8 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     """)),
             "The provided elementInstanceKey 'not-a-number' is not a valid key."
                 + " Expected a numeric value."
-                + " Did you pass an entity id instead of an entity key?."),
+                + " Did you pass an entity id instead of an entity key?."
+                + " No jobKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "zero agentInstanceKey",
@@ -692,7 +704,8 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     { "elementInstanceKey": "%d", "status": "IDLE" }
                     """
                         .formatted(ELEMENT_INSTANCE_KEY))),
-            "The value for agentInstanceKey is '0' but must be > 0."),
+            "The value for agentInstanceKey is '0' but must be > 0."
+                + " No jobKey provided. No jobLeaseToken provided."),
         Arguments.of(
             named(
                 "negative agentInstanceKey",
@@ -702,7 +715,8 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     { "elementInstanceKey": "%d", "status": "IDLE" }
                     """
                         .formatted(ELEMENT_INSTANCE_KEY))),
-            "The value for agentInstanceKey is '-1' but must be > 0."));
+            "The value for agentInstanceKey is '-1' but must be > 0."
+                + " No jobKey provided. No jobLeaseToken provided."));
   }
 
   @Test
@@ -719,9 +733,9 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(
             """
-            { "elementInstanceKey": "%d", "status": "IDLE" }
+            { "elementInstanceKey": "%d", "jobKey": "%d", "jobLeaseToken": "lease-abc", "status": "IDLE" }
             """
-                .formatted(ELEMENT_INSTANCE_KEY))
+                .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))
         .exchange()
         .expectStatus()
         .is5xxServerError();
@@ -759,7 +773,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               %s,
               %s,
@@ -803,7 +817,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
               assertArg(
                   record -> {
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(3);
                     assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
                     assertThat(record.getHistory().get(0).getContent().get(0).getText())
@@ -815,7 +829,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
     }
 
     @Test
-    void shouldAcceptHistoryBatchWithoutJobLease() {
+    void shouldAcceptHistoryBatchWithJobLeaseToken() {
       // given
       final var responseRecord = new AgentInstanceRecord();
       responseRecord.addHistoryItem(
@@ -834,6 +848,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
+            "jobLeaseToken": "lease-abc",
             "history": [
               %s,
               %s
@@ -874,7 +889,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
               assertArg(
                   record -> {
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                    assertThat(record.getJobLease()).isEmpty();
+                    assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(2);
                   }),
               any());
@@ -901,7 +916,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
             "elementInstanceKey": "%d",
             "status": "THINKING",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               %s,
               %s
@@ -943,7 +958,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   record -> {
                     assertThat(record.getStatus().name()).isEqualTo("THINKING");
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(2);
                     assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
                     assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-2");
@@ -962,10 +977,12 @@ class AgentInstanceControllerTest extends RestControllerTest {
           """
           {
             "elementInstanceKey": "%d",
+            "jobKey": "%d",
+            "jobLeaseToken": "lease-abc",
             "history": []
           }
           """
-              .formatted(ELEMENT_INSTANCE_KEY);
+              .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
       // when / then
       webClient
@@ -1010,7 +1027,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               %s,
               %s
@@ -1098,7 +1115,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               {
                 "historyItemId": "item-0",
@@ -1164,7 +1181,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   record -> {
                     assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(3);
                     assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-0");
                     assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-1");
@@ -1176,7 +1193,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
     }
 
     @Test
-    void shouldAcceptHistoryBatchWithoutJobLease() {
+    void shouldAcceptHistoryBatchWithJobLeaseToken() {
       // given
       final var responseRecord = new AgentInstanceRecord();
       responseRecord.setAgentInstanceKey(AGENT_INSTANCE_KEY);
@@ -1196,6 +1213,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
+            "jobLeaseToken": "lease-abc",
             "history": [
               {
                 "historyItemId": "item-0",
@@ -1248,7 +1266,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
               assertArg(
                   record -> {
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                    assertThat(record.getJobLease()).isEmpty();
+                    assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(2);
                   }),
               any());
@@ -1278,7 +1296,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           {
             "elementInstanceKey": "%d",
             "jobKey": "%d",
-            "jobLease": "lease-abc",
+            "jobLeaseToken": "lease-abc",
             "history": [
               {
                 "historyItemId": "item-0",

@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -49,6 +48,9 @@ public final class ProcessInstanceCancelProcessor
 
   private static final String PROCESS_CANCEL_IN_PROGRESS_MESSAGE =
       MESSAGE_PREFIX + "a cancel request is already in progress";
+
+  private static final String PROCESS_TERMINATING_MESSAGE =
+      MESSAGE_PREFIX + "it is already being terminated";
 
   private final ElementInstanceState elementInstanceState;
   private final AsyncRequestState asyncRequestState;
@@ -93,16 +95,19 @@ public final class ProcessInstanceCancelProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 
-    if (elementInstance == null
-        || !elementInstance.canTerminate()
-        || elementInstance.getParentKey() > 0) {
+    if (elementInstance == null || elementInstance.getParentKey() > 0) {
       rejectionWriter.appendRejection(
           command,
           RejectionType.NOT_FOUND,
@@ -163,6 +168,14 @@ public final class ProcessInstanceCancelProcessor
             command.getKey(), ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
     if (existingAsyncRequest.isPresent()) {
       final String reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
+      enrichRejectionCommand(command, elementInstance.getValue());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
+      return false;
+    }
+
+    if (elementInstance.isTerminating()) {
+      final String reason = String.format(PROCESS_TERMINATING_MESSAGE, command.getKey());
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
       responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);

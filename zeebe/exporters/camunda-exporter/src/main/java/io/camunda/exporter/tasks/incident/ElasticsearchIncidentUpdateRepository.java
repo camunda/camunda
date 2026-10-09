@@ -14,6 +14,8 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -44,7 +46,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -86,6 +90,21 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
+  }
+
+  @Override
+  public CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition) {
+    final var query = createPendingIncidentsBatchQuery(fromPosition);
+
+    final CountRequest countRequest =
+        new CountRequest.Builder()
+            .index(pendingUpdateAlias)
+            .query(query)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    return client.count(countRequest).thenApplyAsync(r -> Math.toIntExact(r.count()), executor);
   }
 
   @Override
@@ -203,33 +222,15 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
 
   @Override
   public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate bulk) {
-    final var updates = bulk.stream().map(this::createUpdateOperation).toList();
-    if (updates.isEmpty()) {
-      return CompletableFuture.completedFuture(List.of());
-    }
+    final var docUpdatesStream = bulk.stream();
+    return bulkUpdate(
+        docUpdatesStream, Refresh.WaitFor, this::extractUpdatedIdsDetectingPartialUpdate);
+  }
 
-    final var request =
-        new BulkRequest.Builder()
-            .operations(updates)
-            .source(s -> s.fetch(false))
-            .refresh(Refresh.WaitFor)
-            .build();
-
-    return client
-        .bulk(request)
-        .thenComposeAsync(
-            r -> {
-              if (r.errors()) {
-                return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
-              }
-
-              return CompletableFuture.completedFuture(
-                  r.items().stream()
-                      .filter(f -> f.result() != null && f.result().equalsIgnoreCase("updated"))
-                      .map(BulkResponseItem::id)
-                      .toList());
-            },
-            executor);
+  @Override
+  public CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate bulk) {
+    final var docUpdatesStream = bulk.stream();
+    return bulkUpdate(docUpdatesStream, Refresh.False, this::extractUpdatedIds);
   }
 
   @Override
@@ -265,6 +266,59 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
 
     return fetchUnboundedDocumentCollection(
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
+  }
+
+  private CompletableFuture<List<String>> bulkUpdate(
+      final Stream<? extends IncidentTaskUpdate> docUpdatesStream,
+      final Refresh refresh,
+      final Function<BulkResponse, CompletableFuture<List<String>>> responseHandler) {
+    final var updates = docUpdatesStream.map(this::createUpdateOperation).toList();
+    if (updates.isEmpty()) {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
+    final var request =
+        new BulkRequest.Builder()
+            .operations(updates)
+            .source(s -> s.fetch(false))
+            .refresh(refresh)
+            .build();
+
+    return client
+        .bulk(request)
+        .exceptionallyCompose(error -> CompletableFuture.failedFuture(translateBulkFailure(error)))
+        .thenComposeAsync(responseHandler, executor);
+  }
+
+  private CompletableFuture<List<String>> extractUpdatedIds(final BulkResponse response) {
+    if (response.errors()) {
+      return CompletableFuture.failedFuture(collectBulkErrors(response.items()));
+    }
+
+    return CompletableFuture.completedFuture(collectUpdatedIds(response));
+  }
+
+  private CompletableFuture<List<String>> extractUpdatedIdsDetectingPartialUpdate(
+      final BulkResponse response) {
+    final var updatedIds = collectUpdatedIds(response);
+    if (response.errors()) {
+      if (!updatedIds.isEmpty()) {
+        return CompletableFuture.failedFuture(
+            new IncidentPartialBulkUpdateException(
+                collectBulkErrorsIntoMessage(response.items()), updatedIds));
+      } else {
+        return CompletableFuture.failedFuture(collectBulkErrors(response.items()));
+      }
+    }
+
+    return CompletableFuture.completedFuture(updatedIds);
+  }
+
+  private List<String> collectUpdatedIds(final BulkResponse response) {
+    return response.items().stream()
+        .filter(f -> f.result() != null && f.result().equalsIgnoreCase("updated"))
+        .map(BulkResponseItem::id)
+        .toList();
   }
 
   private CompletionStage<RefreshResponse> refreshPostImporterQueueIndex() {
@@ -311,7 +365,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     return QueryBuilders.bool(b -> b.must(piKeyQ, typeQ, stateQ));
   }
 
-  private BulkOperation createUpdateOperation(final DocumentUpdate update) {
+  private BulkOperation createUpdateOperation(final IncidentTaskUpdate update) {
     return new UpdateOperation.Builder<>()
         .index(update.index())
         .id(update.id())
@@ -368,9 +422,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   private Query createPendingIncidentsBatchQuery(final long fromPosition) {
     final var positionQ =
         QueryBuilders.range(
-            r ->
-                r.number(
-                    n -> n.field(PostImporterQueueTemplate.POSITION).gt((double) fromPosition)));
+            r -> r.longNumber(n -> n.field(PostImporterQueueTemplate.POSITION).gt(fromPosition)));
     final var typeQ =
         QueryBuilders.term(
             t ->

@@ -494,8 +494,9 @@
   <update id="updateStateAndEndDate"
     parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$EndProcessInstanceDto">
     UPDATE ${prefix}PROCESS_INSTANCE
-    SET STATE    = #{state},
-        END_DATE = #{endDate}
+    SET STATE          = #{state},
+        END_DATE       = #{endDate},
+        SUSPENDED_DATE = NULL
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 

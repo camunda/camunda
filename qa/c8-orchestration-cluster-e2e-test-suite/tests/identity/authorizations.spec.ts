@@ -84,16 +84,21 @@ test.describe.serial('component authorizations CRUD', () => {
     await identityAuthorizationsPage.selectAuthorizationOwnerType({
       ownerType: NEW_COMPONENT_AUTHORIZATION.ownerType,
     });
-    await identityAuthorizationsPage.selectAuthorizationOwner({
-      ownerId: NEW_COMPONENT_AUTHORIZATION.ownerId,
-    });
+
+    // No owner is selected here: the owner field is now a search that only
+    // lists existing owners, and this role is intentionally never created.
+    // Resource ID validation is field-level and independent of the owner.
+    // selectAuthorizationOwnerType() already waits for the owner combobox's
+    // trigger to be visible, so no extra readiness wait is needed before
+    // moving on -- the search input itself only mounts once that trigger is
+    // opened, which this test never does.
     await identityAuthorizationsPage.fillResourceId('invalid!!%');
     await expect(
       identityAuthorizationsPage.createAuthorizationModal,
     ).toContainText('Please enter a valid Resource ID');
     await expect(
       identityAuthorizationsPage.createAuthorizationResourceIdField,
-    ).toHaveAttribute('data-invalid', 'true');
+    ).toHaveAttribute('aria-invalid', 'true');
   });
 
   test('create user authorization', async ({
@@ -472,9 +477,17 @@ test.describe('secret authorizations', () => {
         'Secret',
       );
 
+      // The resource-id cell renders the fully-qualified value
+      // (`camunda.secrets.<reference>`) inside a button that truncates its
+      // visible text with an ellipsis when long, so toContainText -- which
+      // reads the truncated visible text -- no longer sees the full reference.
+      // The complete value is preserved as the cell's accessible name, so
+      // assert against that instead.
       await expect(
-        identityAuthorizationsPage.authorizationRowByOwnerId(testRole.id),
-      ).toContainText(secretReference);
+        identityAuthorizationsPage
+          .authorizationRowByOwnerId(testRole.id)
+          .getByRole('cell', {name: secretReference}),
+      ).toBeVisible();
     });
   });
 });

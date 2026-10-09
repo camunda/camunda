@@ -11,10 +11,12 @@ import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -39,7 +41,9 @@ public final class JobEventProcessors {
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final IncidentMetrics incidentMetrics,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final SecretResolutionScheduler secretResolutionScheduler,
+      final SuspensionMetrics suspensionMetrics) {
 
     final var keyGenerator = processingState.getKeyGenerator();
 
@@ -50,7 +54,8 @@ public final class JobEventProcessors {
             writers,
             processingState.getProcessState(),
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
 
     final var jobBackoffChecker =
         new JobBackoffCheckScheduler(clock, scheduledTaskStateFactory.get().getJobState());
@@ -104,7 +109,12 @@ public final class JobEventProcessors {
             ValueType.JOB,
             JobIntent.TIME_OUT,
             new JobTimeOutProcessor(
-                processingState, writers, jobMetrics, bpmnBehaviors.jobActivationBehavior(), clock))
+                processingState,
+                writers,
+                jobMetrics,
+                bpmnBehaviors.jobActivationBehavior(),
+                suspensionMetrics,
+                clock))
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE_RETRIES,
@@ -139,7 +149,8 @@ public final class JobEventProcessors {
                 tenantCheck,
                 clock,
                 bpmnBehaviors.incidentBehavior(),
-                secretStoreRegistry))
+                secretStoreRegistry,
+                secretResolutionScheduler))
         .withListener(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),

@@ -26,6 +26,7 @@ import {tracking} from 'modules/tracking';
 import {handleOperationError} from 'modules/utils/notifications';
 import {
   useBatchOperationMutationRequestBody,
+  useCancelProcessInstancesBatchOperationMutationRequestBody,
   useDeleteProcessInstancesBatchOperationMutationRequestBody,
   useResumeProcessInstancesBatchOperationMutationRequestBody,
   useSuspendProcessInstancesBatchOperationMutationRequestBody,
@@ -73,7 +74,6 @@ const Toolbar: React.FC<Props> = observer(
       searchParams.get('completed') === 'true' ||
       searchParams.get('canceled') === 'true';
     const hasIncidentFilter = searchParams.get('incidents') === 'true';
-    const hasParentFilter = searchParams.has('parentProcessInstanceKey');
     const hasStateFilter =
       hasActiveFilter || hasSuspendedFilter || hasFinishedFilter;
     const hasSelectedState = (
@@ -88,18 +88,15 @@ const Toolbar: React.FC<Props> = observer(
       processInstancesSelectionStore.hasSelectedRunningInstances,
       hasActiveFilter,
     );
-    const hasSelectedActiveRootInstances =
-      !hasParentFilter &&
-      hasSelectedState(
-        processInstancesSelectionStore.hasSelectedActiveRootInstances,
-        hasActiveFilter,
-      );
-    const hasSelectedSuspendedRootInstances =
-      !hasParentFilter &&
-      hasSelectedState(
-        processInstancesSelectionStore.hasSelectedSuspendedRootInstances,
-        hasSuspendedFilter,
-      );
+    const hasSelectedSuspendedInstances = hasSelectedState(
+      processInstancesSelectionStore.hasSelectedSuspendedInstances,
+      hasSuspendedFilter,
+    );
+    const hasSelectedCancelableInstances = hasSelectedState(
+      processInstancesSelectionStore.hasSelectedRunningInstances ||
+        processInstancesSelectionStore.hasSelectedSuspendedInstances,
+      hasActiveFilter || hasSuspendedFilter,
+    );
     const hasSelectedFinishedInstances = hasSelectedState(
       processInstancesSelectionStore.hasSelectedFinishedInstances,
       hasFinishedFilter,
@@ -115,6 +112,9 @@ const Toolbar: React.FC<Props> = observer(
 
     const batchOperationMutationRequestBody =
       useBatchOperationMutationRequestBody();
+
+    const cancelBatchOperationMutationRequestBody =
+      useCancelProcessInstancesBatchOperationMutationRequestBody();
 
     const deleteBatchOperationMutationRequestBody =
       useDeleteProcessInstancesBatchOperationMutationRequestBody();
@@ -201,7 +201,7 @@ const Toolbar: React.FC<Props> = observer(
       }
 
       if (modalMode === 'CANCEL_PROCESS_INSTANCE') {
-        cancelMutation.mutate(batchOperationMutationRequestBody);
+        cancelMutation.mutate(cancelBatchOperationMutationRequestBody);
       } else if (modalMode === 'DELETE_PROCESS_INSTANCE') {
         deleteMutation.mutate(deleteBatchOperationMutationRequestBody);
       } else if (modalMode === 'RESOLVE_INCIDENT') {
@@ -225,8 +225,9 @@ const Toolbar: React.FC<Props> = observer(
         return '';
       }
 
-      const runningInstancesCount =
-        processInstancesSelectionStore.checkedRunningIds.length;
+      const cancelableInstancesCount =
+        processInstancesSelectionStore.checkedRunningIds.length +
+        processInstancesSelectionStore.checkedSuspendedIds.length;
 
       const selectedInstancesText = isSelectedCountTruncated
         ? `${selectedInstancesCount}+ instances`
@@ -257,13 +258,13 @@ const Toolbar: React.FC<Props> = observer(
         }
       } else if (modalMode === 'SUSPEND_PROCESS_INSTANCE') {
         messages.push(
-          'Only active root process instances will be suspended. Other selected instances will be ignored.',
+          'Only active process instances will be suspended. Other selected instances will be ignored.',
         );
       } else if (modalMode === 'RESUME_PROCESS_INSTANCE') {
         messages.push(
-          'Only suspended root process instances will be resumed. Other selected instances will be ignored.',
+          'Only suspended process instances will be resumed. Other selected instances will be ignored.',
         );
-      } else if (selectedInstancesCount > runningInstancesCount) {
+      } else if (selectedInstancesCount > cancelableInstancesCount) {
         messages.push('Finished instances in your selection will be ignored.');
       }
 
@@ -305,13 +306,13 @@ const Toolbar: React.FC<Props> = observer(
               onClick={() => setModalMode('SUSPEND_PROCESS_INSTANCE')}
               disabled={
                 batchModificationStore.state.isEnabled ||
-                !hasSelectedActiveRootInstances
+                !hasSelectedRunningInstances
               }
               title={
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
-                  : !hasSelectedActiveRootInstances
-                    ? 'No active root process instances selected. Please select at least one active root process instance to suspend.'
+                  : !hasSelectedRunningInstances
+                    ? 'No active process instances selected. Select at least one active process instance to suspend.'
                     : undefined
               }
             >
@@ -322,13 +323,13 @@ const Toolbar: React.FC<Props> = observer(
               onClick={() => setModalMode('RESUME_PROCESS_INSTANCE')}
               disabled={
                 batchModificationStore.state.isEnabled ||
-                !hasSelectedSuspendedRootInstances
+                !hasSelectedSuspendedInstances
               }
               title={
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
-                  : !hasSelectedSuspendedRootInstances
-                    ? 'No suspended root process instances selected. Please select at least one suspended root process instance to resume.'
+                  : !hasSelectedSuspendedInstances
+                    ? 'No suspended process instances selected. Select at least one suspended process instance to resume.'
                     : undefined
               }
             >
@@ -345,7 +346,7 @@ const Toolbar: React.FC<Props> = observer(
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
                   : !hasSelectedFinishedInstances
-                    ? 'No finished process instances selected. Please select at least one completed or canceled process instance to delete.'
+                    ? 'No finished process instances selected. Select at least one completed or canceled process instance to delete.'
                     : undefined
               }
               data-testid="delete-batch-operation"
@@ -357,13 +358,13 @@ const Toolbar: React.FC<Props> = observer(
               onClick={() => setModalMode('CANCEL_PROCESS_INSTANCE')}
               disabled={
                 batchModificationStore.state.isEnabled ||
-                !hasSelectedRunningInstances
+                !hasSelectedCancelableInstances
               }
               title={
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
-                  : !hasSelectedRunningInstances
-                    ? 'No running process instances selected. Please select at least one active or incident process instance to cancel.'
+                  : !hasSelectedCancelableInstances
+                    ? 'No running process instances selected. Select at least one active, incident or suspended process instance to cancel.'
                     : undefined
               }
               data-testid="cancel-batch-operation"
@@ -381,7 +382,7 @@ const Toolbar: React.FC<Props> = observer(
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
                   : !hasSelectedInstancesWithIncidents
-                    ? 'No process instances with an incident selected. Please select at least one process instance with an incident to retry.'
+                    ? 'No process instances with an incident selected. Select at least one process instance with an incident to retry.'
                     : undefined
               }
               data-testid="retry-batch-operation"

@@ -47,12 +47,12 @@ public class ProcessGroupByFlowNodeEndDateInterpreterOS
   }
 
   @Override
-  public DateAggregationServiceOS getDateAggregationService() {
+  protected DateAggregationServiceOS getDateAggregationService() {
     return dateAggregationService;
   }
 
   @Override
-  public MinMaxStatsServiceOS getMinMaxStatsService() {
+  protected MinMaxStatsServiceOS getMinMaxStatsService() {
     return minMaxStatsService;
   }
 
@@ -62,7 +62,7 @@ public class ProcessGroupByFlowNodeEndDateInterpreterOS
   }
 
   @Override
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return definitionService;
   }
 

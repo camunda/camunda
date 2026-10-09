@@ -35,12 +35,10 @@ describe('<MultitenancySelect />', () => {
 		});
 
 		const combobox = screen.getByRole('combobox', {name: /tenant/i});
-		await expect.element(combobox).toBeVisible();
 
-		await userEvent.selectOptions(combobox, '<default>');
-		await expect.element(combobox).toHaveValue('<default>');
-
-		await userEvent.selectOptions(combobox, 'tenant-a');
-		await expect.element(combobox).toHaveValue('tenant-a');
+		await userEvent.click(combobox);
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'Tenant A'}), {force: true});
+		await expect.element(combobox).toHaveTextContent('Tenant A');
 	});
 });

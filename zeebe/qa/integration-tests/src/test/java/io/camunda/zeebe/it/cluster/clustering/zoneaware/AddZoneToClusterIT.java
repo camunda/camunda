@@ -31,7 +31,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Verifies that a new zone can be added to a running zone-aware cluster via {@code PUT
- * /actuator/cluster/partition-distribution}.
+ * /actuator/cluster/partitioning}.
  *
  * <p>Adding a zone requires the new zone's broker(s) to already be members of the persisted cluster
  * topology before the distribution is updated, otherwise {@code ZoneAwarePartitionDistributor}
@@ -81,7 +81,7 @@ final class AddZoneToClusterIT {
       Awaitility.await()
           .untilAsserted(
               () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
-      assertThat(actuator.getTopology().getPartitionDistribution().getZones())
+      assertThat(actuator.getTopology().getPartitioning().getZones())
           .contains(new ZoneSpec(scenario.newZone(), 1, priority));
       assertZoneHostsPartitions(actuator, scenario.newZone(), 0);
     }

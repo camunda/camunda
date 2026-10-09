@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
@@ -66,6 +67,7 @@ public final class StartEventSubscriptions {
                     timerStartEvent.getId(),
                     deployedProcess.getTenantId(),
                     NO_ELEMENT_INSTANCE,
+                    StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED,
                     BufferUtil.bufferAsString(deployedProcess.getBpmnProcessId()),
                     BpmnElementType.START_EVENT,
                     failureOrTimer.get());

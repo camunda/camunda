@@ -1,6 +1,6 @@
 # Camunda 8 Run
 
-C8 Run is a packaged distribution of Camunda 8, which allows you to spin up Camunda 8 within seconds.
+c8run is a packaged distribution of Camunda 8, which allows you to spin up Camunda 8 within seconds.
 It packages the Java-based local Camunda runtime with a bundled JRE; the Docker Compose distribution is published separately.
 
 Please refer to the [local installation with Camunda 8 Run guide](https://docs.camunda.io/docs/next/self-managed/quickstart/developer-quickstart/c8run/) for further details.
@@ -19,6 +19,52 @@ Camunda 8 Run now starts with H2 as the secondary storage backend. No additional
    ```bash
    ./c8run stop
    ```
+
+## Local secrets
+
+c8run configures a local file secret store in your platform's user data directory. Add a value without exposing it in your shell history:
+
+```bash
+./c8run secrets set OPENAI_API_KEY
+```
+
+Reference it in Process Models with `=camunda.secrets.OPENAI_API_KEY`. To set several values, pass multiple names and enter each value at its prompt. Use `C8RUN_SECRETS_DIR` in your environment or c8run `.env` file to store secrets in another directory, and `C8RUN_SECRETS_CACHE_TTL` to change the default 20-minute resolution cache. Run `./c8run secrets path` to show the c8run-managed local directory. The default directory is shared across projects and c8run versions for the current OS user. This store is for local development only.
+
+Use a dedicated dotenv file such as `.env.secrets` for imports. `c8run secrets` refuses to import the c8run `.env` because that file can contain runtime, download, and packaging credentials.
+
+`C8RUN_SECRETS_MODE` defaults to `local`. Local mode makes `C8RUN_SECRETS_DIR` authoritative. Set `C8RUN_SECRETS_MODE=external` when `--config` or Spring settings configure a file, AWS, or GCP store; local `c8run secrets` commands are disabled in external mode.
+
+## Physical tenants
+
+Physical tenants are fully isolated engines inside one c8run. Each one has its own partitions, its own data in secondary storage, its own users, and its own Operate, Tasklist, Admin and Orchestration Cluster API. They require Camunda 8.10 or newer.
+
+```bash
+./c8run tenants add sales        # saved for the current OS user
+./c8run start                    # starts "default" plus every saved tenant
+./c8run tenants list             # status, login, connectors and URLs per tenant
+./c8run tenants remove sales
+```
+
+A tenant is served under `http://localhost:8080/physical-tenants/<id>/`, for example `/physical-tenants/sales/operate` or `/physical-tenants/sales/v2/`. The `default` tenant always exists and keeps the unprefixed URLs. gRPC clients select a tenant with the `Camunda-Physical-Tenant` header; the Java client and Spring starter use `camunda.client.physical-tenant-id`. The startup summary lists every tenant's URLs and readiness.
+
+Tenant IDs use lowercase letters and digits only, up to 64 characters (8 with RDBMS or H2 storage, see below). By default every tenant gets the same login as `c8run start` (`--username`/`--password`, `demo`/`demo` unless changed). To give a tenant its own user, run `./c8run tenants add hr --username alice`; c8run prompts for the password (or reads it with `--password-stdin`) and saves it in the tenants file, which only you can read. It never appears in the generated Camunda configuration, a command line, or your shell history.
+
+Each tenant gets its own connectors runtime on the next free port from 8087 upwards (logs in `log/connectors-<id>.log`). Use `--no-connectors` on `tenants add` to skip it for one tenant, or `--disable-connectors` on `start` to skip all connectors. Each tenant has its own local secrets, so a tenant never resolves the default tenant's or another tenant's `camunda.secrets.*` values. Manage them with `--tenant`, for example `./c8run secrets --tenant sales set OPENAI_API_KEY`.
+
+To run with tenants for one start only, without saving them (useful in CI), use `./c8run start --physical-tenants sales,hr`. Removing a tenant keeps its data in secondary storage under the tenant's prefix, so adding the same ID again restores it, including the users created in that tenant. `./c8run tenants reset` removes all saved tenants.
+
+`./c8run tenants path` shows where tenants are saved; `C8RUN_TENANTS_FILE` selects another file. If your `--config` already declares `camunda.physical-tenants`, c8run uses it as-is and does not apply its saved tenants. Set `C8RUN_TENANTS_MODE=external` to leave tenants entirely to your `--config`: the `tenants` commands are disabled, saved tenants are not applied, and `start --physical-tenants` is rejected.
+
+Tools that wrap c8run, such as `c8ctl cluster`, can set `C8RUN_CLI_NAME` to the command users type, for example `C8RUN_CLI_NAME="c8ctl cluster"`. c8run then shows that name in help output and in command hints such as `c8ctl cluster tenants list`. When the variable is unset, output names `c8run`.
+
+### Limitations
+
+- Physical tenants require Camunda 8.10 or newer. On older versions every `tenants` command is refused; `./c8run tenants path` still shows the saved file if you need to delete it.
+- With RDBMS secondary storage, including the bundled H2, tenant IDs can be at most 8 characters, because the tenant's tables are named `<ID>_<table>` and database identifier length is limited. Elasticsearch and OpenSearch allow up to 64.
+- Removing a tenant does not delete its data; it stays in secondary storage under the tenant's prefix.
+- c8run does not manage tenants when your `--config`, `CAMUNDA_PHYSICALTENANTS_*` environment variables or `JAVA_OPTS` already declare them, or when `C8RUN_TENANTS_MODE=external` is set.
+- Each tenant's connectors runtime uses an extra local port (from 8087 upwards) and its own JVM.
+- Tenants need `C8RUN_SECRETS_MODE=local`, the default, so each tenant gets its own secret store.
 
 ## CI requirement for merging
 
@@ -97,3 +143,9 @@ The workflow produces platform-specific artifacts for Linux, macOS (ARM and Inte
 C8Run automatically starts the connectors runtime through Spring Boot's `PropertiesLauncher` for connector bundles versioned 8.9.0 or newer (including snapshots). Older bundles continue to run via the legacy `JarLauncher`, so you can switch versions in `.env` without extra configuration.
 
 If you want to run your own connectors runtime, start C8Run with `./c8run start --disable-connectors` to skip launching the bundled connectors jar.
+
+To run the bundled connectors runtime on a port other than `8086`, use `./c8run start --connectors-port <port>`.
+
+### Headless startup
+
+To start C8Run without opening a browser window (for example, in a headless dev environment or an autostart script), use `./c8run start --no-browser`. A headless start also leaves the quickstart marker untouched, so the next regular (non-headless) start still shows the quickstart URL instead of jumping straight to Operate.

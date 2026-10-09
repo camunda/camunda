@@ -23,6 +23,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
+import io.camunda.exporter.utils.CamundaExporterSchemaUtils;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.SchemaManager;
@@ -46,7 +47,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.YearMonth;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -999,8 +1000,12 @@ final class OpenSearchArchiverRepositoryIT {
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
-    assertThat(batch.finishDate())
-        .isEqualTo(YearMonth.now(ZoneId.systemDefault()).atDay(1).toString()); // rollover is 1M
+    final var expectedBucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            LocalDate.ofInstant(now.minus(Duration.ofHours(2)), ZoneId.of("UTC")).toString(),
+            config.getUsageMetricsRolloverInterval(),
+            "date");
+    assertThat(batch.finishDate()).isEqualTo(expectedBucketStart); // rollover interval is 1 month
   }
 
   @Test
@@ -1213,7 +1218,7 @@ final class OpenSearchArchiverRepositoryIT {
                 verify(
                         genericClientSpy,
                         times(
-                            46) // number of index templates * 2 (for change policy requests and add
+                            48) // number of index templates * 2 (for change policy requests and add
                         // policy requests)
                         )
                     .executeAsync(captor.capture()));
@@ -1221,7 +1226,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
         .filteredOn(req -> req.getEndpoint().contains("_ism/add"))
-        .hasSize(23)
+        .hasSize(24) // number of index templates
         .allSatisfy(
             request -> {
               final var indexPattern =
@@ -1707,13 +1712,16 @@ final class OpenSearchArchiverRepositoryIT {
                     .connect(connectConfig)
                     .retention(retention)
                     .schemaManager(schemaManagerConfig));
-    new SchemaManager(
+
+    try (final SchemaManager schemaManager =
+        new SchemaManager(
             searchEngineClient,
             resourceProvider.getIndexDescriptors(),
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
-            MAPPER)
-        .startupOnce();
+            MAPPER)) {
+      CamundaExporterSchemaUtils.startupSchemaWithRetries(schemaManager);
+    }
   }
 
   private void createBatchOperationIndex() throws IOException {

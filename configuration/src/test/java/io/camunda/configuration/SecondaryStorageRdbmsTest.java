@@ -15,10 +15,7 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
 import io.camunda.operate.OperatePropertiesOverride;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.DatabaseType;
-import io.camunda.tasklist.TasklistPropertiesOverride;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.ValidatorsCfg;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
@@ -37,11 +34,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@ActiveProfiles({"broker", "tasklist", "operate"})
+@ActiveProfiles({"broker", "operate"})
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
-  TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
   SearchEngineConnectPropertiesOverride.class,
@@ -132,18 +128,12 @@ public class SecondaryStorageRdbmsTest {
         "camunda.data.secondary-storage.rdbms.max-varchar-field-length=200",
       })
   class WithOnlyUnifiedConfigSet {
-    final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
 
     WithOnlyUnifiedConfigSet(
-        @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
-      this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
     }

@@ -652,7 +652,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: failure()
         with:
-          node-version: "24"
+          node-version: "26"
       - name: Import Slack token
         id: slack-secrets
         if: failure()
@@ -775,7 +775,14 @@ jobs:
     # zeebeVersion. success() keeps the implicit needs-succeeded gate that a
     # custom `if` would otherwise drop.
     if: success() && needs.build-and-push.outputs.image-tag != ''
-    timeout-minutes: 35
+    # Must stay above `wait-downstream`'s own 65min deadline. When this fires
+    # first the runner kills the step mid-poll, the job lands as `cancelled`,
+    # and the loop's timeout path -- which writes
+    # `downstream_conclusion=timeout` and the AlwaysGreen failure context --
+    # never runs. Keep the loop as the timeout mechanism and this as the
+    # backstop for what a deadline cannot bound: a single `gh api` call that
+    # hangs indefinitely rather than returning an error to retry.
+    timeout-minutes: 75
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions: { }
     # Surfaced for the same reason as helm-deploy-status: a SaaS-only failure must
@@ -785,12 +792,21 @@ jobs:
       slack_ts: ${{ steps.feedback.outputs.slack_ts }}
       slack_channel: ${{ steps.feedback.outputs.slack_channel }}
     steps:
+      # The waiter's deadline has to be measured on the same clock as this
+      # job's `timeout-minutes`, which starts here -- not when the waiter
+      # step happens to begin. Checkout, Vault/token generation and the
+      # dispatch are all unbounded, so deriving the deadline from the
+      # waiter's own start would make "deadline < job timeout" an assumption
+      # about how long they take rather than a guarantee.
+      - name: Record job start
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Generate GitHub App Token (for dispatch)
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
@@ -803,7 +819,45 @@ jobs:
           owner: camunda
           repositories: camunda,c8-cross-component-e2e-tests
 
+      - name: Check downstream SaaS workflow is enabled
+        id: check-downstream
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          # Fail CLOSED on the gate (see the two dispatch/wait steps below,
+          # which require enabled == 'true' explicitly) but fail OPEN on
+          # inability to determine state: a transient API blip here must not
+          # silently skip real SaaS coverage on an otherwise-normal PR, so a
+          # retry-exhausted check falls back to the pre-this-PR behavior
+          # (dispatch as usual) rather than skipping.
+          STATE=""
+          for attempt in 1 2 3; do
+            if STATE="$(gh api repos/camunda/c8-cross-component-e2e-tests/actions/workflows/playwright_saas_pr_trigger_monorepo.yml --jq .state 2>&1)"; then
+              break
+            fi
+            echo "::warning::Attempt ${attempt}/3 to read downstream workflow state failed: $STATE" >&2
+            STATE=""
+            [[ $attempt -lt 3 ]] && sleep $((attempt * 5))
+          done
+
+          if [[ -z "$STATE" ]]; then
+            echo "::warning::Could not determine downstream workflow state after 3 attempts -- defaulting to enabled so a transient API issue doesn't silently skip real SaaS coverage."
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$STATE" != "active" ]]; then
+            echo "Downstream workflow state: $STATE"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### SaaS E2E tests skipped"
+              echo ""
+              echo "The downstream workflow (\`playwright_saas_pr_trigger_monorepo.yml\` in camunda/c8-cross-component-e2e-tests) is currently **${STATE}**, not active -- skipping dispatch instead of waiting up to 50 minutes for a run that will never start."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Downstream workflow state: $STATE"
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Trigger repository_dispatch for SaaS Monorepo
+        if: steps.check-downstream.outputs.enabled == 'true'
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
@@ -833,119 +887,77 @@ jobs:
                   }
                 }'
 
+      # A GitHub App token lives 1h, but the wait below is budgeted at 65min
+      # (see .ci/scripts/ci/wait-for-downstream-saas-e2e.sh). So the wait runs in
+      # two phases: the first stops 45min after the job started, a fresh token is
+      # minted, and the second phase picks the same downstream run back up.
+      # Runs that finish inside phase 1 (most of them) never need the refresh.
       - name: Wait for downstream workflow to finish
         id: wait-downstream
+        if: steps.check-downstream.outputs.enabled == 'true'
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
+          PHASE_ONLY: "true"
         run: |
-          set -euo pipefail
-          echo "Waiting for downstream E2E workflow run in camunda/c8-cross-component-e2e-tests for correlation id: $CORRELATION_ID"
+          # Measured from the job's start, the same clock as `timeout-minutes`.
+          WAIT_DEADLINE=$(( ${JOB_STARTED_AT:-$(date +%s)} + 45 * 60 ))
+          export WAIT_DEADLINE
+          bash .ci/scripts/ci/wait-for-downstream-saas-e2e.sh
 
-          TARGET_REPO="camunda/c8-cross-component-e2e-tests"
-          WORKFLOW_FILE="playwright_saas_pr_trigger_monorepo.yml"
+      - name: Generate GitHub App Token (for the rest of the wait)
+        id: github-token-refresh
+        if: steps.wait-downstream.outputs.wait_incomplete == 'true'
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda,c8-cross-component-e2e-tests
 
-          gh_api_with_retry() {
-            local endpoint="$1"
-            local max_attempts="${2:-6}"
-            local sleep_s="${3:-2}"
-            local attempt=1
-            local out
-
-            while true; do
-              if out="$(gh api "$endpoint" 2>&1)"; then
-                printf '%s' "$out"
-                return 0
-              fi
-
-              if echo "$out" | grep -Eq 'HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF|tls: failed to verify certificate|x509: certificate'; then
-                if (( attempt >= max_attempts )); then
-                  echo "gh api failed after ${attempt}/${max_attempts} attempts for $endpoint" >&2
-                  echo "$out" >&2
-                  return 1
-                fi
-                echo "Transient gh/api error (attempt ${attempt}/${max_attempts}) for $endpoint:" >&2
-                echo "$out" >&2
-                sleep "$sleep_s"
-                attempt=$((attempt + 1))
-                sleep_s=$((sleep_s * 2))
-                continue
-              fi
-
-              echo "Non-retryable gh/api error for $endpoint:" >&2
-              echo "$out" >&2
-              return 1
-            done
-          }
-
-          RUN_ID=""
-
-          for _ in {1..80}; do
-            if [[ -z "$RUN_ID" ]]; then
-              RUN_ID=$(
-                gh_api_with_retry "/repos/$TARGET_REPO/actions/workflows/$WORKFLOW_FILE/runs?event=repository_dispatch&per_page=50" \
-                | jq -r --arg c "$CORRELATION_ID" '
-                    .workflow_runs
-                    | map(select(.display_title != null and (.display_title | contains($c))))
-                    | sort_by(.created_at)
-                    | last
-                    | .id // empty
-                  '
-              )
-
-              if [[ -z "$RUN_ID" ]]; then
-                echo "No downstream run found yet for correlation id. Sleeping..."
-                sleep 30
-                continue
-              fi
-
-              echo "Locked onto downstream run id: $RUN_ID"
-              echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
-            fi
-
-            RUN_JSON="$(gh_api_with_retry "/repos/$TARGET_REPO/actions/runs/$RUN_ID")"
-            STATUS="$(jq -r .status <<<"$RUN_JSON")"
-            CONCLUSION="$(jq -r .conclusion <<<"$RUN_JSON")"
-            echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
-
-            if [[ "$STATUS" == "completed" ]]; then
-              if [[ "$CONCLUSION" == "success" ]]; then
-                echo "downstream_conclusion=success" >> "$GITHUB_OUTPUT"
-                echo "Downstream workflow succeeded!"
-                exit 0
-              else
-                echo "downstream_conclusion=${CONCLUSION}" >> "$GITHUB_OUTPUT"
-                echo "Downstream workflow failed: $CONCLUSION"
-                exit 1
-              fi
-            fi
-
-            sleep 30
-          done
-
-          echo "downstream_conclusion=timeout" >> "$GITHUB_OUTPUT"
-          echo "Timed out waiting for downstream workflow to complete."
-          exit 1
+      - name: Wait for downstream workflow to finish (after token refresh)
+        id: wait-downstream-final
+        if: steps.wait-downstream.outputs.wait_incomplete == 'true'
+        env:
+          GH_TOKEN: ${{ steps.github-token-refresh.outputs.token }}
+          CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
+          DOWNSTREAM_RUN_ID: ${{ steps.wait-downstream.outputs.downstream_run_id }}
+        run: |
+          # Final deadline: 65min from the job's start, 10min below the job timeout.
+          WAIT_DEADLINE=$(( ${JOB_STARTED_AT:-$(date +%s)} + 65 * 60 ))
+          export WAIT_DEADLINE
+          bash .ci/scripts/ci/wait-for-downstream-saas-e2e.sh
 
       - name: Add SaaS downstream workflow link to Job Summary
         if: always()
         run: |
-          if [ -n "${{ steps.wait-downstream.outputs.downstream_run_url }}" ]; then
+          if [ -n "${{ (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) }}" ]; then
             {
               echo "### SaaS Downstream Workflow Run"
               echo ""
               echo "**Correlation ID:** \`${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}\`"
               echo ""
-              echo "[Open the triggered SaaS E2E workflow run in camunda/c8-cross-component-e2e-tests](${{ steps.wait-downstream.outputs.downstream_run_url }})"
+              echo "[Open the triggered SaaS E2E workflow run in camunda/c8-cross-component-e2e-tests](${{ (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) }})"
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "No downstream workflow run URL found." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Add debugging guidance on failure
-        if: steps.wait-downstream.outcome == 'failure'
+        # `always() &&` is load-bearing: an `if` with no status-check function
+        # gets an implicit `success()`, and the waiter having failed is exactly
+        # when that is false -- so without it this step is skipped on the only
+        # path it exists for, and the timeout the loop reports lands with no
+        # guidance attached.
+        if: always() && (steps.wait-downstream.outcome == 'failure' || steps.wait-downstream-final.outcome == 'failure')
         run: |
-          DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
+          DOWNSTREAM_URL="${{ (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) }}"
           COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
           {
             echo ""
@@ -979,12 +991,12 @@ jobs:
       # consumer can read it alongside the per-job failure-context artifacts.
       - name: Resolve downstream SaaS E2E failure category
         id: downstream-category
-        if: always() && steps.wait-downstream.outputs.downstream_run_url != ''
+        if: always() && (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) != ''
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token-refresh.outputs.token || steps.github-token.outputs.token }}
         run: |
           set -euo pipefail
-          DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
+          DOWNSTREAM_URL="${{ (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) }}"
           RUN_ID="${DOWNSTREAM_URL##*/}"
           TARGET_REPO="camunda/c8-cross-component-e2e-tests"
 
@@ -999,6 +1011,7 @@ jobs:
 
           DOWNSTREAM_CATEGORY="unknown"
           DOWNSTREAM_OWNER="@camunda/test-automation-team"
+          DOWNSTREAM_FAILED_JOB=""
 
           case "$DOWNSTREAM_CONCLUSION" in
             success)
@@ -1047,25 +1060,80 @@ jobs:
                   DOWNSTREAM_CATEGORY="unknown"
                 fi
               else
-                # The artifact was unreachable. Distinguish this from a
-                # genuinely "unknown" categorisation so consumers don't
-                # confuse "we couldn't tell" with "we tried and the data
-                # was ambiguous". This is an integration / permissions
-                # problem with the parent workflow (owned by Distribution,
-                # see TEST_OWNER above) -- not a downstream test failure,
-                # and not something monorepo-ci-medic has a runbook for.
+                # No report to read. Two very different causes hide behind that,
+                # and they have different owners:
+                #   - the downstream run never uploaded one, usually because its
+                #     own pre-test setup (org creation, cluster generation, lint)
+                #     failed and the test jobs were skipped -- a downstream SaaS
+                #     failure, owned by test-automation like every other one;
+                #   - the artifacts cannot be read at all (the dispatch GitHub
+                #     App installation lacks `actions: read` → 403, retention
+                #     expired → 404) -- an integration / permissions problem
+                #     with this parent workflow, owned by Distribution (see
+                #     TEST_OWNER above), and not something monorepo-ci-medic
+                #     has a runbook for.
+                # Listing the artifacts settles which one it is: a successful
+                # listing proves access, so no `json-report` in it means the
+                # downstream run never uploaded one. The total is counted too,
+                # because "uploaded nothing at all" (setup died) and "uploaded
+                # other artifacts but no report" (tests ran, the report upload
+                # or merge broke) are both test-automation's, but they are not
+                # the same bug to go looking for.
                 DOWNLOAD_ERR=$(tr '\n' ' ' < "$DOWNLOAD_LOG" 2>/dev/null | sed 's/  */ /g' | cut -c1-300)
                 echo "::warning::Could not download downstream json-report artifact: ${DOWNLOAD_ERR:-no stderr}" >&2
-                DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
-                DOWNSTREAM_OWNER="@camunda/distribution"
-                {
-                  echo "### Downstream Category Unavailable"
-                  echo ""
-                  echo "\`gh run download\` failed for run $RUN_ID on $TARGET_REPO."
-                  echo "Common causes: the dispatch GitHub App installation lacks \`actions: read\` on the downstream repo, or the artifact retention window has expired."
-                  echo ""
-                  echo "stderr: \`${DOWNLOAD_ERR:-(empty)}\`"
-                } >> "$GITHUB_STEP_SUMMARY"
+                ARTIFACT_NAMES="${WORK_DIR}/.artifact-names"
+                if gh api "/repos/$TARGET_REPO/actions/runs/$RUN_ID/artifacts?per_page=100" \
+                    --paginate --jq '.artifacts[].name' > "$ARTIFACT_NAMES" 2>/dev/null; then
+                  REPORT_COUNT=$(grep -c '^json-report' "$ARTIFACT_NAMES" || true)
+                  ARTIFACT_TOTAL=$(wc -l < "$ARTIFACT_NAMES" | tr -d '[:space:]')
+                else
+                  REPORT_COUNT="unreadable"
+                  ARTIFACT_TOTAL="unreadable"
+                fi
+                echo "downstream artifacts: total=$ARTIFACT_TOTAL json-report=$REPORT_COUNT"
+
+                if [[ "$REPORT_COUNT" == "0" ]]; then
+                  # Same verdict as an empty report (TOTAL == 0 above): no test
+                  # produced a result. DOWNSTREAM_OWNER already points at
+                  # test-automation, so only the category and the evidence change.
+                  DOWNSTREAM_CATEGORY="infrastructure"
+                  DOWNSTREAM_FAILED_JOB=$(gh api \
+                    "/repos/$TARGET_REPO/actions/runs/$RUN_ID/jobs?per_page=100" \
+                    --paginate --jq '.jobs[] | select(.conclusion == "failure") | .name' \
+                    2>/dev/null | head -n 1 || true)
+                  if [[ "$ARTIFACT_TOTAL" == "0" ]]; then
+                    WHAT="uploaded no artifacts at all, so it failed before any test ran"
+                  else
+                    WHAT="uploaded $ARTIFACT_TOTAL artifact(s) but no \`json-report\`, so either no test ran or the report upload/merge failed"
+                  fi
+                  {
+                    echo "### Downstream SaaS E2E Failure Without a Report"
+                    echo ""
+                    echo "Run $RUN_ID on $TARGET_REPO $WHAT."
+                    echo ""
+                    echo "First failing downstream job: \`${DOWNSTREAM_FAILED_JOB:-(unresolved)}\`"
+                  } >> "$GITHUB_STEP_SUMMARY"
+                else
+                  DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
+                  DOWNSTREAM_OWNER="@camunda/distribution"
+                  # Both remaining cases are parent-side plumbing, but they need
+                  # different first moves: an unreadable listing points at access
+                  # or retention, while a readable one that names a `json-report`
+                  # rules both out and leaves the download itself.
+                  if [[ "$REPORT_COUNT" == "unreadable" ]]; then
+                    CAUSE="Could not list the run's artifacts either. Common causes: the dispatch GitHub App installation lacks \`actions: read\` on the downstream repo, or the artifact retention window has expired."
+                  else
+                    CAUSE="The run has $REPORT_COUNT \`json-report\` artifact(s) and the listing succeeded, so access and retention are both fine — the download itself failed."
+                  fi
+                  {
+                    echo "### Downstream Category Unavailable"
+                    echo ""
+                    echo "\`gh run download\` failed for run $RUN_ID on $TARGET_REPO."
+                    echo "$CAUSE"
+                    echo ""
+                    echo "stderr: \`${DOWNLOAD_ERR:-(empty)}\`"
+                  } >> "$GITHUB_STEP_SUMMARY"
+                fi
               fi
               ;;
           esac
@@ -1087,8 +1155,11 @@ jobs:
               downstream_run_url:$downstream_run_url
             }' > "$CONTEXT_FILE"
 
-          echo "downstream_category=$DOWNSTREAM_CATEGORY" >> "$GITHUB_OUTPUT"
-          echo "downstream_owner=$DOWNSTREAM_OWNER" >> "$GITHUB_OUTPUT"
+          {
+            echo "downstream_category=$DOWNSTREAM_CATEGORY"
+            echo "downstream_owner=$DOWNSTREAM_OWNER"
+            echo "downstream_failed_job=$DOWNSTREAM_FAILED_JOB"
+          } >> "$GITHUB_OUTPUT"
           {
             echo "### Downstream SaaS E2E Failure Category"
             echo ""
@@ -1112,7 +1183,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: failure()
         with:
-          node-version: "24"
+          node-version: "26"
       - name: Import Slack token
         id: slack-secrets
         if: failure()
@@ -1134,8 +1205,9 @@ jobs:
         env:
           DOWNSTREAM_CATEGORY: ${{ steps.downstream-category.outputs.downstream_category }}
           DOWNSTREAM_OWNER: ${{ steps.downstream-category.outputs.downstream_owner }}
-          DOWNSTREAM_URL: ${{ steps.wait-downstream.outputs.downstream_run_url }}
-          DOWNSTREAM_CONCLUSION: ${{ steps.wait-downstream.outputs.downstream_conclusion }}
+          DOWNSTREAM_URL: ${{ (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) }}
+          DOWNSTREAM_CONCLUSION: ${{ (steps.wait-downstream-final.outputs.downstream_conclusion || steps.wait-downstream.outputs.downstream_conclusion) }}
+          DOWNSTREAM_FAILED_JOB: ${{ steps.downstream-category.outputs.downstream_failed_job }}
         run: |
           set -euo pipefail
           case "${DOWNSTREAM_CATEGORY:-}" in
@@ -1161,6 +1233,12 @@ jobs:
 
           if [[ -n "${DOWNSTREAM_URL:-}" ]]; then
             EVIDENCE="Downstream SaaS E2E run ${DOWNSTREAM_CONCLUSION:-failed} (category: ${DOWNSTREAM_CATEGORY:-unresolved}) — ${DOWNSTREAM_URL}"
+            # Set only when the downstream run uploaded no json-report at all;
+            # naming the job saves the medic a click to find out whether it was
+            # org creation, the cluster, or lint.
+            if [[ -n "${DOWNSTREAM_FAILED_JOB:-}" ]]; then
+              EVIDENCE="${EVIDENCE} — no test report, first failing downstream job: \`${DOWNSTREAM_FAILED_JOB}\`"
+            fi
           else
             EVIDENCE="SaaS E2E dispatch or wait failed before a downstream run could be resolved."
           fi
@@ -1193,7 +1271,7 @@ jobs:
           slack_bot_token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           # Same app token the dispatch uses; its installation covers camunda, so
           # no second token step is needed for the PR comment.
-          github_token: ${{ steps.github-token.outputs.token }}
+          github_token: ${{ steps.github-token-refresh.outputs.token || steps.github-token.outputs.token }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1226,7 +1304,7 @@ jobs:
             --arg escalation_team "$OWNER_TEAM" \
             --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --arg status "${{ job.status }}" \
-            --arg downstream_conclusion "${{ steps.wait-downstream.outputs.downstream_conclusion }}" \
+            --arg downstream_conclusion "${{ (steps.wait-downstream-final.outputs.downstream_conclusion || steps.wait-downstream.outputs.downstream_conclusion) }}" \
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,downstream_conclusion:$downstream_conclusion}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
         if: ${{ always() && (failure() || cancelled()) }}

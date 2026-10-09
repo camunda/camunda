@@ -55,14 +55,14 @@ public final class ActivateJobsWithLeaseTest {
     final List<JobRecordValue> jobs = batch.getValue().getJobs();
     assertThat(jobs).hasSize(2);
     assertThat(jobs)
-        .extracting(JobRecordValue::getLeaseToken)
+        .extracting(JobRecordValue::getJobLeaseToken)
         .describedAs("each activated job carries a distinct, non-empty lease token")
         .allSatisfy(token -> assertThat(token).isNotEmpty())
         .doesNotHaveDuplicates();
   }
 
   @Test
-  public void shouldNotSetLeaseTokenWhenActivatingWithoutLease() {
+  public void shouldNotSetJobLeaseTokenWhenActivatingWithoutLease() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
 
@@ -71,13 +71,13 @@ public final class ActivateJobsWithLeaseTest {
 
     // then
     assertThat(batch.getValue().getJobs())
-        .extracting(JobRecordValue::getLeaseToken)
+        .extracting(JobRecordValue::getJobLeaseToken)
         .describedAs("activating without a lease leaves the token empty")
         .containsOnly("");
   }
 
   @Test
-  public void shouldGenerateNewLeaseTokenOnReactivation() {
+  public void shouldGenerateNewJobLeaseTokenOnReactivation() {
     // given a job that was leased, then failed back to activatable
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final String firstToken =
@@ -89,8 +89,8 @@ public final class ActivateJobsWithLeaseTest {
             .getValue()
             .getJobs()
             .get(0)
-            .getLeaseToken();
-    ENGINE.job().withKey(jobKey).withLeaseToken(firstToken).withRetries(1).fail();
+            .getJobLeaseToken();
+    ENGINE.job().withKey(jobKey).withJobLeaseToken(firstToken).withRetries(1).fail();
     jobRecords(JobIntent.FAILED).withRecordKey(jobKey).await();
 
     // when it is leased again
@@ -103,7 +103,7 @@ public final class ActivateJobsWithLeaseTest {
             .getValue()
             .getJobs()
             .get(0)
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // then
     assertThat(firstToken).describedAs("the first activation generated a lease token").isNotEmpty();
@@ -114,10 +114,10 @@ public final class ActivateJobsWithLeaseTest {
   }
 
   @Test
-  public void shouldRetainLeaseTokenAfterFailure() {
+  public void shouldRetainJobLeaseTokenAfterFailure() {
     // given a leased job
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    final String leaseToken =
+    final String jobLeaseToken =
         ENGINE
             .jobs()
             .withType(jobType)
@@ -126,26 +126,26 @@ public final class ActivateJobsWithLeaseTest {
             .getValue()
             .getJobs()
             .get(0)
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when it fails back to activatable
-    ENGINE.job().withKey(jobKey).withLeaseToken(leaseToken).withRetries(1).fail();
+    ENGINE.job().withKey(jobKey).withJobLeaseToken(jobLeaseToken).withRetries(1).fail();
 
     // then
     final Record<JobRecordValue> failed =
         jobRecords(JobIntent.FAILED).withRecordKey(jobKey).getFirst();
-    assertThat(leaseToken).describedAs("the job was leased on activation").isNotEmpty();
-    assertThat(failed.getValue().getLeaseToken())
+    assertThat(jobLeaseToken).describedAs("the job was leased on activation").isNotEmpty();
+    assertThat(failed.getValue().getJobLeaseToken())
         .describedAs("the failed job retains its lease token")
-        .isEqualTo(leaseToken);
+        .isEqualTo(jobLeaseToken);
   }
 
   @Test
-  public void shouldRetainLeaseTokenAfterTimeout() {
+  public void shouldRetainJobLeaseTokenAfterTimeout() {
     // given a leased job
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final Duration timeout = Duration.ofSeconds(10);
-    final String leaseToken =
+    final String jobLeaseToken =
         ENGINE
             .jobs()
             .withType(jobType)
@@ -155,7 +155,7 @@ public final class ActivateJobsWithLeaseTest {
             .getValue()
             .getJobs()
             .get(0)
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when the lease times out
     ENGINE.increaseTime(timeout.plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
@@ -163,18 +163,18 @@ public final class ActivateJobsWithLeaseTest {
     // then
     final Record<JobRecordValue> timedOut =
         jobRecords(JobIntent.TIMED_OUT).withRecordKey(jobKey).getFirst();
-    assertThat(leaseToken).describedAs("the job was leased on activation").isNotEmpty();
-    assertThat(timedOut.getValue().getLeaseToken())
+    assertThat(jobLeaseToken).describedAs("the job was leased on activation").isNotEmpty();
+    assertThat(timedOut.getValue().getJobLeaseToken())
         .describedAs("the timed-out job retains its lease token")
-        .isEqualTo(leaseToken);
+        .isEqualTo(jobLeaseToken);
   }
 
   @Test
-  public void shouldRetainLeaseTokenAfterReplay() {
+  public void shouldRetainJobLeaseTokenAfterReplay() {
     // given a leased job with a timeout
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final Duration timeout = Duration.ofSeconds(10);
-    final String leaseToken =
+    final String jobLeaseToken =
         ENGINE
             .jobs()
             .withType(jobType)
@@ -184,7 +184,7 @@ public final class ActivateJobsWithLeaseTest {
             .getValue()
             .getJobs()
             .get(0)
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when the engine restarts and replays the log
     ENGINE.replay();
@@ -193,17 +193,17 @@ public final class ActivateJobsWithLeaseTest {
     ENGINE.increaseTime(timeout.plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
     final Record<JobRecordValue> timedOut =
         jobRecords(JobIntent.TIMED_OUT).withRecordKey(jobKey).getFirst();
-    assertThat(leaseToken).describedAs("the job was leased on activation").isNotEmpty();
-    assertThat(timedOut.getValue().getLeaseToken())
+    assertThat(jobLeaseToken).describedAs("the job was leased on activation").isNotEmpty();
+    assertThat(timedOut.getValue().getJobLeaseToken())
         .describedAs("the lease token survives an engine restart and log replay")
-        .isEqualTo(leaseToken);
+        .isEqualTo(jobLeaseToken);
   }
 
   @Test
   public void shouldSkipLeasedJobWhenActivatingWithoutLease() {
     // given a leased job that failed back to activatable, alongside two unleased jobs
     final long leasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    final String leaseToken =
+    final String jobLeaseToken =
         ENGINE
             .jobs()
             .withType(jobType)
@@ -212,8 +212,8 @@ public final class ActivateJobsWithLeaseTest {
             .getValue()
             .getJobs()
             .get(0)
-            .getLeaseToken();
-    ENGINE.job().withKey(leasedJobKey).withLeaseToken(leaseToken).withRetries(1).fail();
+            .getJobLeaseToken();
+    ENGINE.job().withKey(leasedJobKey).withJobLeaseToken(jobLeaseToken).withRetries(1).fail();
     jobRecords(JobIntent.FAILED).withRecordKey(leasedJobKey).await();
     final long unleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final long otherUnleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
@@ -234,7 +234,7 @@ public final class ActivateJobsWithLeaseTest {
     // given a leased job that failed back to activatable, alongside two unleased jobs.
     // The leased job is created first (lowest key) so it is visited before the batch fills.
     final long leasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    final String leaseToken =
+    final String jobLeaseToken =
         ENGINE
             .jobs()
             .withType(jobType)
@@ -243,8 +243,8 @@ public final class ActivateJobsWithLeaseTest {
             .getValue()
             .getJobs()
             .get(0)
-            .getLeaseToken();
-    ENGINE.job().withKey(leasedJobKey).withLeaseToken(leaseToken).withRetries(1).fail();
+            .getJobLeaseToken();
+    ENGINE.job().withKey(leasedJobKey).withJobLeaseToken(jobLeaseToken).withRetries(1).fail();
     jobRecords(JobIntent.FAILED).withRecordKey(leasedJobKey).await();
     final long unleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final long otherUnleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();

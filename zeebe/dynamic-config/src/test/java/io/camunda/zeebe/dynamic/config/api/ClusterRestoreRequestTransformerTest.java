@@ -19,11 +19,9 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -31,6 +29,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
@@ -45,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 final class ClusterRestoreRequestTransformerTest {
@@ -65,6 +65,8 @@ final class ClusterRestoreRequestTransformerTest {
 
     // then — one phase, scoped to tenant-b's own partition; the other two tenants are untouched
     EitherAssert.assertThat(result).isRight();
+    assertThat(schemaOperationsOf(result.get()))
+        .containsExactly(new SchemaInitializationOperation(MEMBER));
     assertThat(groupOperationsOf(result.get()))
         .isEqualTo(Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L))));
   }
@@ -83,6 +85,11 @@ final class ClusterRestoreRequestTransformerTest {
 
     // then — all three physical tenants restore in the same phase, each from its own backup
     EitherAssert.assertThat(result).isRight();
+    assertThat(schemaOperationsOf(result.get()))
+        .containsExactly(
+            new SchemaInitializationOperation(MEMBER),
+            new SchemaInitializationOperation(MEMBER),
+            new SchemaInitializationOperation(MEMBER));
     assertThat(groupOperationsOf(result.get()))
         .isEqualTo(
             Map.of(
@@ -230,12 +237,6 @@ final class ClusterRestoreRequestTransformerTest {
         Optional.empty());
   }
 
-  private static ClusterConfiguration recoveringConfiguration() {
-    final var partitions = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
-    return ClusterConfiguration.init()
-        .addMember(MEMBER, MemberState.initializeAsActive(partitions).toRecovering());
-  }
-
   /** Resolves every request to the backups it asked for, on the single partition of the member. */
   private static RequestValidatorRegistry registry() {
     return registryOf(1);
@@ -279,6 +280,25 @@ final class ClusterRestoreRequestTransformerTest {
   private static Map<String, List<PartitionGroupOperation>> groupOperationsOf(
       final List<Phase> phases) {
     assertThat(phases).singleElement().isInstanceOf(PartitionGroupPhase.class);
-    return ((PartitionGroupPhase) phases.getFirst()).groupOperations();
+    return ((PartitionGroupPhase) phases.getFirst())
+        .groupOperations().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry ->
+                        entry.getValue().stream()
+                            .filter(
+                                operation -> !(operation instanceof SchemaInitializationOperation))
+                            .toList()));
+  }
+
+  private static List<SchemaInitializationOperation> schemaOperationsOf(final List<Phase> phases) {
+    assertThat(phases).singleElement().isInstanceOf(PartitionGroupPhase.class);
+    return ((PartitionGroupPhase) phases.getFirst())
+        .groupOperations().values().stream()
+            .flatMap(List::stream)
+            .filter(SchemaInitializationOperation.class::isInstance)
+            .map(SchemaInitializationOperation.class::cast)
+            .toList();
   }
 }

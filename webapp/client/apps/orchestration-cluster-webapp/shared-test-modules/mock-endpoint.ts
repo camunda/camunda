@@ -21,6 +21,11 @@ type CreateEndpointMockParams<Method extends RequestMethod> = {
 type SuccessMockParams = {
 	successResponse: Response;
 	delay?: DelayMode | number;
+	/**
+	 * Handle only the first matching request. Use carefully: our apps poll frequently,
+	 * so a background poll may consume it before the intended request.
+	 */
+	once?: boolean;
 };
 
 type PayloadMockParams<Schema extends z.ZodType> = {
@@ -28,6 +33,11 @@ type PayloadMockParams<Schema extends z.ZodType> = {
 	failureResponse: Response;
 	successResponse: Response;
 	delay?: DelayMode | number;
+	/**
+	 * Handle only the first matching request. Use carefully: our apps poll frequently,
+	 * so a background poll may consume it before the intended request.
+	 */
+	once?: boolean;
 };
 
 type PayloadMock = {
@@ -63,18 +73,20 @@ function createEndpointMock<Method extends RequestMethod>({
 			}
 		};
 
+		const options = {once: params.once ?? false};
+
 		switch (method) {
 			case 'POST':
-				return http.post(endpoint, resolver);
+				return http.post(endpoint, resolver, options);
 			case 'PUT':
-				return http.put(endpoint, resolver);
+				return http.put(endpoint, resolver, options);
 			case 'PATCH':
-				return http.patch(endpoint, resolver);
+				return http.patch(endpoint, resolver, options);
 			case 'DELETE':
-				return http.delete(endpoint, resolver);
+				return http.delete(endpoint, resolver, options);
 			case 'GET':
 			default:
-				return http.get(endpoint, resolver);
+				return http.get(endpoint, resolver, options);
 		}
 	};
 }

@@ -7,22 +7,19 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import java.nio.charset.StandardCharsets;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.Platform;
 import jnr.ffi.Platform.OS;
-import jnr.ffi.Pointer;
-import jnr.ffi.Runtime;
 import jnr.ffi.annotations.In;
 import jnr.ffi.annotations.Out;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Helper class to format RocksDB options. */
 final class RocksDbOptionsFormatter {
   private static final Logger LOG = LoggerFactory.getLogger(RocksDbOptionsFormatter.class);
-  private static LibC libC;
-  private static Runtime runtime;
-  private static boolean libCUnavailable = false;
 
   static String format(final boolean value) {
     return String.valueOf(value);
@@ -44,16 +41,14 @@ final class RocksDbOptionsFormatter {
    * @see <a href="https://github.com/facebook/rocksdb/issues/13841">facebook/rocksdb#13841</a>
    */
   static String format(final double value) {
-    if (ensureLibCIsAvailable()) {
+    if (Holder.LIB_C != null) {
       try {
-        // Allocate a buffer for the formatted string
-        // 64 bytes should be more than enough for any reasonable double formatting
-        final var buffer = runtime.getMemoryManager().allocateDirect(64);
-        final var bytesWritten = libC.sprintf(buffer, "%f", value);
+        // fits the longest "%f" output, -Double.MAX_VALUE (317 chars), plus the terminator
+        final var buffer = new byte[320];
+        final var bytesWritten = Holder.LIB_C.sprintf(buffer, "%f", value);
 
         if (bytesWritten >= 0) {
-          // Convert the C string to Java String
-          return buffer.getString(0);
+          return new String(buffer, 0, bytesWritten, StandardCharsets.US_ASCII);
         } else {
           LOG.warn(
               "sprintf failed to format double value: {}, falling back to String.format", value);
@@ -70,28 +65,6 @@ final class RocksDbOptionsFormatter {
     return String.format("%f", value);
   }
 
-  private static boolean ensureLibCIsAvailable() {
-    if (libC != null && runtime != null) {
-      return true;
-    }
-    if (libCUnavailable) {
-      return false;
-    }
-    try {
-      if (Platform.getNativePlatform().getOS() == OS.WINDOWS) {
-        libC = LibraryLoader.create(LibC.class).load("msvcrt");
-      } else {
-        libC = LibraryLoader.create(LibC.class).load("c");
-      }
-      runtime = Runtime.getRuntime(libC);
-      return true;
-    } catch (final Throwable e) {
-      libCUnavailable = true;
-      LOG.warn("Failed to load libc for sprintf formatting, will fall back to String.format", e);
-      return false;
-    }
-  }
-
   /** Interface to access libc functions via JNR-FFI. */
   public interface LibC {
     /**
@@ -102,6 +75,37 @@ final class RocksDbOptionsFormatter {
      * @param args the values to format
      * @return number of characters written (excluding null terminator)
      */
-    int sprintf(@Out Pointer str, @In String format, Object... args);
+    int sprintf(@Out byte[] str, @In String format, Object... args);
+  }
+
+  /**
+   * Lazy-init holder which binds libc at most once per JVM. The JVM guarantees the static
+   * initializer runs exactly once, under the class-init lock, which provides both mutual exclusion
+   * (jnr-ffi's {@link LibraryLoader} is not safe to call concurrently, see {@code
+   * io.camunda.zeebe.journal.fs.LibC#ofNativeLibrary()}) and safe publication of the fields.
+   *
+   * <p>A bind failure is caught inside the initializer and leaves the field null, so callers
+   * permanently fall back to {@link String#format}; it must not escape, or any later access to this
+   * class would throw {@link NoClassDefFoundError}.
+   */
+  private static final class Holder {
+    private static final @Nullable LibC LIB_C;
+
+    static {
+      LibC libC = null;
+      try {
+        if (Platform.getNativePlatform().getOS() == OS.WINDOWS) {
+          libC = LibraryLoader.create(LibC.class).load("msvcrt");
+        } else {
+          libC = LibraryLoader.create(LibC.class).load("c");
+        }
+      } catch (final Throwable e) {
+        LOG.warn("Failed to load libc for sprintf formatting, will fall back to String.format", e);
+        libC = null;
+      }
+      LIB_C = libC;
+    }
+
+    private Holder() {}
   }
 }

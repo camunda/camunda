@@ -20,6 +20,7 @@ import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,7 +43,8 @@ public class PhysicalTenantSearchEngineConfigurations {
     return physicalTenantResolver.mapValues(PhysicalTenantSearchEngineConfigurations::convert);
   }
 
-  private static SearchEngineConfiguration convert(final Camunda tenantCamunda) {
+  @VisibleForTesting
+  static SearchEngineConfiguration convert(final Camunda tenantCamunda) {
     final var index = new SearchEngineIndexProperties();
     SearchEngineIndexPropertiesOverride.applyTo(tenantCamunda, index);
     final var retention = new SearchEngineRetentionProperties();

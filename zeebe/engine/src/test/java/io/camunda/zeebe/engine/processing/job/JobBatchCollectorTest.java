@@ -791,7 +791,7 @@ final class JobBatchCollectorTest {
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             // the job stays activatable while holding a token, which is the state an unleased
             // activation has to skip over
-            .setLeaseToken("lease-token");
+            .setJobLeaseToken("lease-token");
     final long jobKey = state.getKeyGenerator().nextKey();
 
     state.getJobState().create(jobKey, jobRecord);

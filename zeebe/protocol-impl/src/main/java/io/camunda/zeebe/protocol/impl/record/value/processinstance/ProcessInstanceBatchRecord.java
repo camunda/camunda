@@ -37,8 +37,7 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
    */
   private final LongProperty indexProperty = new LongProperty("index", -1L);
 
-  private final IntegerProperty storageOrdinalKeyProperty =
-      new IntegerProperty("storageOrdinalKey", 0);
+  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
 
   public ProcessInstanceBatchRecord() {
     super(5);
@@ -46,7 +45,7 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(batchElementInstanceKeyProperty)
         .declareProperty(indexProperty)
-        .declareProperty(storageOrdinalKeyProperty);
+        .declareProperty(storageOrdinalProperty);
   }
 
   @Override
@@ -96,12 +95,12 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProperty.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
   }
 
-  public ProcessInstanceBatchRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+  public ProcessInstanceBatchRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
     return this;
   }
 }

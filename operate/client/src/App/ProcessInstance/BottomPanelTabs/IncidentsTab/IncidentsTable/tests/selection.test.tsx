@@ -87,4 +87,23 @@ describe('Selection', () => {
       );
     });
   });
+
+  it('should not select the row when the error message tooltip trigger receives focus', () => {
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[firstIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    const trigger = screen
+      .getByTestId('cell-errorMessage')
+      .querySelector('[tabindex="0"]') as HTMLElement;
+    trigger.focus();
+
+    expect(screen.queryByRole('row', {selected: true})).not.toBeInTheDocument();
+    expect(screen.getByTestId('search')).toHaveTextContent('');
+  });
 });

@@ -416,6 +416,55 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  public void shouldGetElementStatisticsWithBusinessId() {
+    // given
+    final long processDefinitionKey = 1L;
+    final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
+    when(processDefinitionServices.elementStatistics(any(), any())).thenReturn(stats);
+    final var request =
+        """
+            {
+              "filter": {
+                "businessId": "order-1"
+              }
+            }""";
+    final var response =
+        """
+            {"items":[
+              {
+                "elementId": "node1",
+                "active": 1,
+                "canceled": 1,
+                "incidents": 1,
+                "completed": 1
+              }
+            ]}""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "1/statistics/element-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices)
+        .elementStatistics(
+            eq(
+                new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
+                    .businessIds("order-1")
+                    .build()),
+            any());
+  }
+
+  @Test
   public void shouldGetElementStatisticsWithOrOperator() {
     // given
     final long processDefinitionKey = 1L;
@@ -428,7 +477,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                 "state": "ACTIVE",
                 "$or": [
                   { "elementId": "elementId" },
-                  { "processInstanceKey": "123", "hasElementInstanceIncident": true }
+                  { "processInstanceKey": "123", "hasElementInstanceIncident": true, "businessId": "order-1" }
                 ]
               }
             }""";
@@ -472,6 +521,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                         new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
                             .processInstanceKeys(123L)
                             .hasFlowNodeInstanceIncident(true)
+                            .businessIds("order-1")
                             .build())
                     .build()),
             any());
@@ -658,6 +708,50 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .json(FORM_ITEM_JSON, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices, times(1)).getProcessDefinitionStartForm(eq(1L), any());
+  }
+
+  @Test
+  public void shouldReturn204WhenProcessHasNoStartForm() {
+    when(processDefinitionServices.getProcessDefinitionStartForm(eq(1L), any()))
+        .thenReturn(Optional.empty());
+
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "1/form")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+  }
+
+  @Test
+  public void shouldReturn404WhenLinkedStartFormIsMissing() {
+    when(processDefinitionServices.getProcessDefinitionStartForm(eq(1L), any()))
+        .thenThrow(
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Start form 'invoice-start-form' not found for process definition key '1'",
+                    CamundaSearchException.Reason.NOT_FOUND)));
+
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "1/form")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "Start form 'invoice-start-form' not found for process definition key '1'",
+              "instance": "/v2/process-definitions/1/form"
+            }
+            """,
+            JsonCompareMode.STRICT);
   }
 
   @Test

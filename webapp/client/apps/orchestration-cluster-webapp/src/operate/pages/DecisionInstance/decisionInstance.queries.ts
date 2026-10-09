@@ -7,8 +7,9 @@
  */
 
 import {queryOptions, useQuery} from '@tanstack/react-query';
-import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
-import {request} from '#/shared/http/request';
+import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import {request, requestErrorSchema} from '#/shared/http/request';
+import {ForbiddenError} from '#/shared/errors';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
@@ -25,8 +26,24 @@ function decisionInstanceQuery(decisionEvaluationInstanceKey: string) {
 	});
 }
 
-function useDecisionInstance(decisionEvaluationInstanceKey: string) {
-	return useQuery(decisionInstanceQuery(decisionEvaluationInstanceKey));
+function getDecisionInstanceErrorKind(error: unknown): 'forbidden' | 'notFound' | 'generic' {
+	if (error instanceof ForbiddenError) {
+		return 'forbidden';
+	}
+	const requestError = requestErrorSchema.safeParse(error);
+	return requestError.success && requestError.data.response?.status === 404 ? 'notFound' : 'generic';
 }
 
-export {decisionInstanceQuery, useDecisionInstance};
+function useDecisionInstance(decisionEvaluationInstanceKey: string) {
+	const query = useQuery(decisionInstanceQuery(decisionEvaluationInstanceKey));
+	const errorKind = query.isError ? getDecisionInstanceErrorKind(query.error) : null;
+
+	return {
+		query,
+		isUnauthorized: errorKind === 'forbidden',
+		isNotFound: errorKind === 'notFound',
+		isGenericError: errorKind === 'generic',
+	};
+}
+
+export {decisionInstanceQuery, getDecisionInstanceErrorKind, useDecisionInstance};

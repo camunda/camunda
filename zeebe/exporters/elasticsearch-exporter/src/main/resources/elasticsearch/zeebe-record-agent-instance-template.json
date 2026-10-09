@@ -49,7 +49,7 @@
             "processDefinitionVersion": {
               "type": "integer"
             },
-            "versionTag": {
+            "processDefinitionVersionTag": {
               "type": "keyword"
             },
             "tenantId": {
@@ -128,7 +128,7 @@
             "jobKey": {
               "type": "long"
             },
-            "jobLease": {
+            "jobLeaseToken": {
               "type": "keyword"
             },
             "history": {
@@ -160,7 +160,7 @@
                 "jobKey": {
                   "type": "long"
                 },
-                "jobLease": {
+                "jobLeaseToken": {
                   "type": "keyword"
                 },
                 "loopIteration": {

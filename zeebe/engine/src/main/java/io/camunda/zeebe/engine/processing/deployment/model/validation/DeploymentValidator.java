@@ -58,7 +58,7 @@ public final class DeploymentValidator {
       return Either.left(new Failure("Expected to deploy at least one resource, but none given"));
     }
 
-    final var errors = new DeploymentErrorCollector();
+    final var errors = new DeploymentErrorCollector(config.validatorResultsOutputMaxSize());
 
     for (final DeploymentResource resource : deployment.resources()) {
       final var resourceName = resource.getResourceName();
@@ -103,7 +103,7 @@ public final class DeploymentValidator {
    * </ul>
    */
   private Either<Failure, Void> validateResourceIds(final DeploymentRecord deployment) {
-    final var errors = new DeploymentErrorCollector();
+    final var errors = new DeploymentErrorCollector(config.validatorResultsOutputMaxSize());
 
     checkForDuplicateIds(
         deployment.processesMetadata(),
@@ -193,7 +193,7 @@ public final class DeploymentValidator {
       return Either.right(null);
     }
 
-    final var errors = new DeploymentErrorCollector();
+    final var errors = new DeploymentErrorCollector(config.validatorResultsOutputMaxSize());
 
     final var validator = new BpmnDeploymentBindingValidator(deploymentEvent);
     for (final var elements : bpmnContexts) {

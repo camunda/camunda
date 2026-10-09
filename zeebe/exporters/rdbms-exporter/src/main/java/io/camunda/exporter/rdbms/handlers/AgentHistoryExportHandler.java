@@ -77,13 +77,19 @@ public class AgentHistoryExportHandler implements RdbmsExportHandler<AgentHistor
             .tenantId(value.getTenantId())
             .partitionId(record.getPartitionId())
             .jobKey(value.getJobKey())
-            .jobLease(value.getJobLease())
+            .jobLeaseToken(value.getJobLeaseToken())
             .loopIteration(value.getLoopIteration())
             .role(mapRole(value.getRole()))
             .commitStatus(mapCommitStatus(intent))
             .producedAt(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(producedAtMillis)))
             .inputTokens(ExportUtil.nullIfNegative(value.getMetrics().getInputTokens()))
             .outputTokens(ExportUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
+            .reasoningTokenCount(
+                ExportUtil.nullIfNegative(value.getMetrics().getReasoningTokenCount()))
+            .cacheCreationTokenCount(
+                ExportUtil.nullIfNegative(value.getMetrics().getCacheCreationTokenCount()))
+            .cacheReadTokenCount(
+                ExportUtil.nullIfNegative(value.getMetrics().getCacheReadTokenCount()))
             .durationMs(ExportUtil.nullIfNegative(value.getMetrics().getDurationMs()))
             .contentItems(AgentContentMapper.mapContent(value.getContent()))
             .toolCallValues(mapToolCalls(value.getToolCalls()))

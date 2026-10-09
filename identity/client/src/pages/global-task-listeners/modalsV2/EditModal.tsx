@@ -160,6 +160,7 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
                 onValueChange={(value) =>
                   field.onChange(syncAllEventType(value, field.value))
                 }
+                aria-invalid={!!fieldState.error}
               />
             )}
           </FormField>

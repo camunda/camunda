@@ -36,14 +36,17 @@ orchestration:
         zeebe.broker.flowControl.write.enabled: "true"
         zeebe.broker.flowControl.write.limit: 10000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
+        # Grant the dedicated leader-balancer client (declared via `identity.clients`) cluster-admin
+        # access, so it can call the coordinated `/cluster/v2/rebalance` endpoint.
+        camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
         # History cleanup adjust batch sizes
         camunda.data.secondary-storage.rdbms.history.history-cleanup-batch-size: 100000
         camunda.data.secondary-storage.rdbms.history.history-cleanup-process-instance-batch-size: 2000
         # set to 2001 and not 2000 to directly see when queue is full in metrics dashboard
         camunda.data.secondary-storage.rdbms.queue-size: 2001
-        camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT1H
-        camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1S
-        camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT1M
+        camunda.data.secondary-storage.rdbms.history.default-history-ttl: P1D
+        camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1H
+        camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT3H
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.

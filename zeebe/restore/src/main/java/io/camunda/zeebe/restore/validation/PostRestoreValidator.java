@@ -22,14 +22,24 @@ public class PostRestoreValidator {
   private final MemberId memberId;
   private final Map<PartitionMetadata, Path> partitionsToRestore;
   private final Path rootDataDirectory;
+  private final boolean expectTopologyFile;
 
   public PostRestoreValidator(
       final MemberId memberId,
       final Map<PartitionMetadata, Path> partitionsToRestore,
       final Path rootDataDirectory) {
+    this(memberId, partitionsToRestore, rootDataDirectory, true);
+  }
+
+  public PostRestoreValidator(
+      final MemberId memberId,
+      final Map<PartitionMetadata, Path> partitionsToRestore,
+      final Path rootDataDirectory,
+      final boolean expectTopologyFile) {
     this.memberId = memberId;
     this.partitionsToRestore = partitionsToRestore;
     this.rootDataDirectory = rootDataDirectory;
+    this.expectTopologyFile = expectTopologyFile;
   }
 
   /**
@@ -67,7 +77,7 @@ public class PostRestoreValidator {
   }
 
   private boolean checkTopologyFileIsRestored() {
-    if (memberId.nodeIdx() == 0) {
+    if (expectTopologyFile && memberId.nodeIdx() == 0) {
       final var topologyFile =
           rootDataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
       return topologyFile.toFile().exists() && topologyFile.toFile().isFile();

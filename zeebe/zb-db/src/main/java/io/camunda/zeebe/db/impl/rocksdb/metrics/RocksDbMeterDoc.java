@@ -13,4 +13,8 @@ public interface RocksDbMeterDoc extends ExtendedMeterDocumentation {
   String propertyName();
 
   String namespace();
+
+  default double convertToBaseUnit(final double value) {
+    return value;
+  }
 }

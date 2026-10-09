@@ -41,13 +41,16 @@ class AgentHistoryEntityMapperTest {
             .tenantId("<default>")
             .partitionId(1)
             .jobKey(700L)
-            .jobLease("lease-abc")
+            .jobLeaseToken("lease-abc")
             .loopIteration(3)
             .role(AgentInstanceHistoryRole.ASSISTANT)
             .commitStatus(AgentInstanceHistoryCommitStatus.COMMITTED)
             .producedAt(producedAt)
             .inputTokens(150L)
             .outputTokens(75L)
+            .reasoningTokenCount(40L)
+            .cacheCreationTokenCount(20L)
+            .cacheReadTokenCount(10L)
             .durationMs(300L)
             .contentItems(
                 List.of(new ContentItem(ContentType.TEXT, "Hello from assistant", null, null)))
@@ -76,13 +79,16 @@ class AgentHistoryEntityMapperTest {
     assertThat(entity.processDefinitionId()).isEqualTo("myProcess");
     assertThat(entity.tenantId()).isEqualTo("<default>");
     assertThat(entity.jobKey()).isEqualTo(700L);
-    assertThat(entity.jobLease()).isEqualTo("lease-abc");
+    assertThat(entity.jobLeaseToken()).isEqualTo("lease-abc");
     assertThat(entity.loopIteration()).isEqualTo(3);
     assertThat(entity.role()).isEqualTo(AgentInstanceHistoryRole.ASSISTANT);
     assertThat(entity.commitStatus()).isEqualTo(AgentInstanceHistoryCommitStatus.COMMITTED);
     assertThat(entity.producedAt()).isEqualTo(producedAt);
     assertThat(entity.metrics().inputTokens()).isEqualTo(150L);
     assertThat(entity.metrics().outputTokens()).isEqualTo(75L);
+    assertThat(entity.metrics().reasoningTokenCount()).isEqualTo(40L);
+    assertThat(entity.metrics().cacheCreationTokenCount()).isEqualTo(20L);
+    assertThat(entity.metrics().cacheReadTokenCount()).isEqualTo(10L);
     assertThat(entity.metrics().durationMs()).isEqualTo(300L);
     assertThat(entity.content()).hasSize(1);
     assertThat(entity.content().get(0).contentType()).isEqualTo(ContentType.TEXT);
@@ -164,9 +170,16 @@ class AgentHistoryEntityMapperTest {
 
   @Test
   void shouldMapAllNullMetricsToNullMetrics() {
-    // given — all three null means metrics were never provided
+    // given — all six metrics fields null means metrics were never provided
     final var dbModel =
-        minimalDbModel(43L).inputTokens(null).outputTokens(null).durationMs(null).build();
+        minimalDbModel(43L)
+            .inputTokens(null)
+            .outputTokens(null)
+            .reasoningTokenCount(null)
+            .cacheCreationTokenCount(null)
+            .cacheReadTokenCount(null)
+            .durationMs(null)
+            .build();
 
     // when
     final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
@@ -177,9 +190,17 @@ class AgentHistoryEntityMapperTest {
 
   @Test
   void shouldPreservePartialMetricsWhenOnlyDurationMsIsNull() {
-    // given — inputTokens and outputTokens set, durationMs absent
+    // given — inputTokens/outputTokens/reasoningTokenCount/cacheCreationTokenCount/
+    // cacheReadTokenCount set, durationMs absent
     final var dbModel =
-        minimalDbModel(44L).inputTokens(100L).outputTokens(200L).durationMs(null).build();
+        minimalDbModel(44L)
+            .inputTokens(100L)
+            .outputTokens(200L)
+            .reasoningTokenCount(30L)
+            .cacheCreationTokenCount(20L)
+            .cacheReadTokenCount(10L)
+            .durationMs(null)
+            .build();
 
     // when
     final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
@@ -188,6 +209,9 @@ class AgentHistoryEntityMapperTest {
     assertThat(entity.metrics()).isNotNull();
     assertThat(entity.metrics().inputTokens()).isEqualTo(100L);
     assertThat(entity.metrics().outputTokens()).isEqualTo(200L);
+    assertThat(entity.metrics().reasoningTokenCount()).isEqualTo(30L);
+    assertThat(entity.metrics().cacheCreationTokenCount()).isEqualTo(20L);
+    assertThat(entity.metrics().cacheReadTokenCount()).isEqualTo(10L);
     assertThat(entity.metrics().durationMs()).isNull();
   }
 
@@ -203,7 +227,7 @@ class AgentHistoryEntityMapperTest {
         .tenantId("<default>")
         .partitionId(1)
         .jobKey(6L)
-        .jobLease("lease")
+        .jobLeaseToken("lease")
         .loopIteration(1)
         .role(AgentInstanceHistoryRole.USER)
         .commitStatus(AgentInstanceHistoryCommitStatus.PENDING)

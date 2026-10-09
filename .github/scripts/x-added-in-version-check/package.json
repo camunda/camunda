@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "camunda-schema-bundler": "^2.4.1",
-    "dotenv": "^17.0.0",
+    "dotenv": "^18.0.0",
     "yaml": "^2.8.3"
   }
 }

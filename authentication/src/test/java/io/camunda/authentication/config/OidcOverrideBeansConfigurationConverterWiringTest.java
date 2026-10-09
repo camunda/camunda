@@ -20,6 +20,7 @@ import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -222,6 +223,7 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
         defaultConverter,
         request,
         oidcProviderRepository,
+        AdditionalJwkSetUrisByRegistrationId.empty(),
         membershipPort,
         propagator,
         environment);

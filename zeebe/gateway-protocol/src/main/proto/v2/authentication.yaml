@@ -25,6 +25,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /authentication/me/authorizations/search:
     post:
@@ -59,6 +60,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -104,7 +106,10 @@ components:
           example: swillis@acme.com
           nullable: true
         authorizedComponents:
-          description: The web components the user is authorized to use.
+          description: >-
+            The web components the user is authorized to use. When authorizations are disabled
+            for the cluster, this always returns `["*"]`, regardless of the user's actual
+            permissions, since access is not restricted in that case.
           type: array
           example:
             - "*"

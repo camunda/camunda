@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
@@ -151,7 +152,8 @@ class ManifestManagerTest {
       final var inProgressManifest = manifestManager.createInitialManifest(backup);
     }
 
-    final Collection<Manifest> manifests = manifestManager.listManifests(wildcard);
+    final Collection<Manifest> manifests =
+        manifestManager.listManifests(wildcard, ListOptions.all());
 
     assertThat(manifests).hasSize(expectedSize);
   }
@@ -183,7 +185,7 @@ class ManifestManagerTest {
       final var deleting = deleter.submit(() -> deletable.forEach(manifestManager::deleteManifest));
       do {
         // then every listing succeeds and still reports the manifest nothing deleted
-        assertThat(manifestManager.listManifests(wildcard))
+        assertThat(manifestManager.listManifests(wildcard, ListOptions.all()))
             .extracting(manifest -> manifest.id().checkpointId())
             .contains(1L);
         listings++;
@@ -251,7 +253,7 @@ class ManifestManagerTest {
 
       // then the walk carries on, having collected nothing for the entry that is no longer there
       assertThat(result).isEqualTo(FileVisitResult.CONTINUE);
-      assertThat(collector.manifests()).isEmpty();
+      assertThat(collector.manifestFiles()).isEmpty();
     }
 
     @Test

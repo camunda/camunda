@@ -13,17 +13,22 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,8 +46,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
   private static final String SERVICE_TASK_ID = "agent-task";
   private static final String BOUNDARY_ID = "error-boundary";
   private static final String ERROR_CODE = "boom";
-  private static final String AGENTIC_JOB_TYPE =
-      JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+  private static final String AGENTIC_JOB_TYPE = "agentic-task";
   private static final String PLAIN_JOB_TYPE = "plain-service-task";
   private static final String EXTERNAL_AGENT_JOB_TYPE = "external-agent-task";
 
@@ -58,7 +62,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
     ENGINE.processInstance().withInstanceKey(fixture.processInstanceKey).cancel();
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -74,7 +78,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .job(JobIntent.CANCEL, new JobRecord().setType(AGENTIC_JOB_TYPE)));
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -89,11 +93,12 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .job()
         .ofInstance(fixture.processInstanceKey)
         .withType(AGENTIC_JOB_TYPE)
+        .withJobLeaseToken(fixture.jobLeaseToken)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -117,7 +122,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .job(JobIntent.CANCEL, new JobRecord().setType(EXTERNAL_AGENT_JOB_TYPE)));
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -142,11 +147,12 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .job()
         .ofInstance(fixture.processInstanceKey)
         .withType(EXTERNAL_AGENT_JOB_TYPE)
+        .withJobLeaseToken(fixture.jobLeaseToken)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -167,7 +173,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
     ENGINE.processInstance().withInstanceKey(fixture.processInstanceKey).cancel();
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -210,23 +216,26 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .isFalse();
   }
 
-  private void assertItemDiscarded(final long jobKey, final long itemKey) {
+  private void assertItemDiscarded(final Fixture fixture) {
     // the DISCARD follow-up command is emitted for the destroyed job
     final var discardCommand =
         RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARD)
             .onlyCommands()
-            .withJobKey(jobKey)
+            .withJobKey(fixture.jobKey)
             .getFirst();
     assertThat(discardCommand.getRecordType()).isEqualTo(RecordType.COMMAND);
-    assertThat(discardCommand.getValue().getJobLease()).isEmpty();
+    assertThat(discardCommand.getKey()).isEqualTo(-1L);
+    assertThat(discardCommand.getValue().getJobLeaseToken()).isEmpty();
+    assertThat(discardCommand.getValue().getProcessInstanceKey())
+        .isEqualTo(fixture.processInstanceKey);
 
     // and the pending item is discarded
     final var discarded =
         RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARDED)
-            .withRecordKey(itemKey)
+            .withRecordKey(fixture.itemKey)
             .getFirst();
-    assertThat(discarded.getKey()).isEqualTo(itemKey);
-    assertThat(discarded.getValue().getJobKey()).isEqualTo(jobKey);
+    assertThat(discarded.getKey()).isEqualTo(fixture.itemKey);
+    assertThat(discarded.getValue().getJobKey()).isEqualTo(fixture.jobKey);
   }
 
   // --- fixture / helpers ---
@@ -262,35 +271,61 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .getFirst();
     final long elementInstanceKey = serviceTaskInstance.getKey();
 
-    ENGINE.jobs().withType(jobType).activate();
+    final var jobBatch = ENGINE.jobs().withType(jobType).withLease().activate();
     final long jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(jobType)
             .getFirst()
             .getKey();
+    final String jobLeaseToken =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getJobLeaseToken();
 
     final long agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
-            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
-            .create()
-            .getKey();
-
-    final long itemKey =
-        ENGINE
-            .agentHistories()
-            .withAgentInstanceKey(agentInstanceKey)
             .withJobKey(jobKey)
-            .withElementInstanceKey(elementInstanceKey)
-            .withRole(AgentHistoryRole.USER)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
-    return new Fixture(processInstanceKey, elementInstanceKey, jobKey, itemKey);
+    final var historyItemId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
+        .withJobLeaseToken(jobLeaseToken)
+        .withHistory(
+            List.of(
+                new AgentHistoryRecord()
+                    .setHistoryItemId(historyItemId)
+                    .setRole(AgentHistoryRole.USER)
+                    .setLoopIteration(1)
+                    .addContent(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText("hi"))))
+        .update();
+    final long itemKey =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.CREATED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .filter(r -> r.getValue().getHistoryItemId().equals(historyItemId))
+            .getFirst()
+            .getKey();
+
+    return new Fixture(processInstanceKey, elementInstanceKey, jobKey, jobLeaseToken, itemKey);
   }
 
   private record Fixture(
-      long processInstanceKey, long elementInstanceKey, long jobKey, long itemKey) {}
+      long processInstanceKey,
+      long elementInstanceKey,
+      long jobKey,
+      String jobLeaseToken,
+      long itemKey) {}
 }

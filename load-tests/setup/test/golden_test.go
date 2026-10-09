@@ -3,6 +3,7 @@ package golden
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,8 +31,9 @@ var update = flag.Bool("update-golden", false,
 // dedicated make target (e.g. template-load-test-setup-chaos). This avoids
 // duplicating the full storage matrix for features that are orthogonal to storage.
 //
-// PhysicalTenants, when true, passes physical_tenants=true to the platform
-// template target. Only supported for rdbms secondary_storage (main version only).
+// PhysicalTenantCount, when > 0, passes physical_tenant_count=<N> to the platform
+// template target. Only supported on versions with physical-tenant config support
+// (main, stable-810).
 //
 // PlatformOnly, when true, renders only the platform chart. Use it for
 // scenarios whose assertions are scoped to platform-only templates.
@@ -47,15 +49,16 @@ var update = flag.Bool("update-golden", false,
 // empty (the default) to keep comparing every rendered file, unchanged from
 // today's behavior.
 type scenario struct {
-	Name            string
-	Storage         string // elasticsearch | opensearch | postgresql | none
-	Optimize        bool
-	Stable          bool
-	Workload        string // "" = default profile; e.g. "max", "realistic"
-	SetupTarget     string // named make target for template-load-test-setup variants
-	PhysicalTenants bool
-	PlatformOnly    bool
-	PathFilter      []string
+	Name                string
+	Storage             string // elasticsearch | opensearch | postgresql | none
+	Optimize            bool
+	Stable              bool
+	Workload            string // "" = default profile; e.g. "max", "realistic"
+	SetupTarget         string // named make target for template-load-test-setup variants
+	PhysicalTenantCount int
+	PlatformOnly        bool
+	PathFilter          []string
+	ExtraArgs           []string // extra newLoadTest.sh flags, e.g. "--use-pgbouncer"
 }
 
 // versionedScenario defines a scenario with a specific version
@@ -96,14 +99,27 @@ var defaultScenarios = []scenario{
 	{Name: "opensearch-stable", Storage: "opensearch", Optimize: true, Stable: true},
 	{Name: "rdbms-stable", Storage: "postgresql", Optimize: false, Stable: true},
 	{Name: "max", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "max"},
+	// The max rate depends on the storage (500 PI/s for none, 300 otherwise), see common.mk.
+	{Name: "max-none", Storage: "none", Optimize: false, Stable: false, Workload: "max"},
 	{Name: "realistic", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "realistic"},
 	// SetupTarget scenarios render only the load-test-setup chart via a named
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.
 	{Name: "chaos-killer", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup-chaos"},
-	// physical_tenants=true deploys a second tenant alongside the default on a
-	// shared RDBMS (table-prefix isolation). Only supported for rdbms storage.
-	{Name: "rdbms-physical-tenants", Storage: "postgresql", Optimize: false, PhysicalTenants: true},
+	// The CNPG Pooler (PgBouncer) is baked in at scaffold time via
+	// newLoadTest.sh --use-pgbouncer (see ExtraArgs below), and only applies
+	// to postgresql, unlike chaos-killer above, so this scaffolds with
+	// postgresql storage rather than an arbitrary one.
+	{Name: "rdbms-pooler", Storage: "postgresql", Optimize: false, SetupTarget: "template-load-test-setup", ExtraArgs: []string{"--use-pgbouncer"}},
+	// physical_tenant_count=1 deploys a pt1 tenant alongside the default one, sharing the
+	// default tenant's secondary storage (table prefix for rdbms, index prefix for ES/OS,
+	// REST-routing/authorization only for none). One scenario per storage type; N>1 is
+	// deliberately not covered by golden snapshots (loop correctness is exercised by a
+	// manual load test instead — see the load-tests README).
+	{Name: "elasticsearch-physical-tenants", Storage: "elasticsearch", Optimize: true, PhysicalTenantCount: 1},
+	{Name: "opensearch-physical-tenants", Storage: "opensearch", Optimize: true, PhysicalTenantCount: 1},
+	{Name: "rdbms-physical-tenants", Storage: "postgresql", Optimize: false, PhysicalTenantCount: 1},
+	{Name: "none-physical-tenants", Storage: "none", Optimize: false, PhysicalTenantCount: 1},
 }
 
 // versions lists the setup directories under test, each the name of a directory
@@ -146,8 +162,9 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 				}
 			}
 
-			// physical_tenants=true is only implemented in the main Makefile.
-			if s.PhysicalTenants && v != "main" {
+			// physical_tenant_count > 0 requires product-side physical-tenant config
+			// support, present on main and stable-810 only.
+			if s.PhysicalTenantCount > 0 && v != "main" && v != "stable-810" {
 				continue
 			}
 
@@ -176,7 +193,7 @@ func TestGoldenFiles(t *testing.T) {
 		t.Run(namespace, func(t *testing.T) {
 			t.Parallel()
 
-			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize))
+			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize), s.ExtraArgs...)
 			defer ns.Cleanup()
 
 			if s.Workload != "" {
@@ -200,8 +217,8 @@ func TestGoldenFiles(t *testing.T) {
 			}
 
 			var extraVars []string
-			if s.PhysicalTenants {
-				extraVars = append(extraVars, "physical_tenants=true")
+			if s.PhysicalTenantCount > 0 {
+				extraVars = append(extraVars, fmt.Sprintf("physical_tenant_count=%d", s.PhysicalTenantCount))
 			}
 
 			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "", s.PathFilter, extraVars...)

@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.gateway.protocol.model.AgentDefinitionTypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
+import io.camunda.gateway.protocol.model.BatchOperationResponse;
+import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ConditionWaitStateDetails;
@@ -37,8 +39,10 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
@@ -141,6 +145,81 @@ class SearchQueryResponseMapperTest {
     assertThat(response.getBatchOperationKey()).isEqualTo("batch-1");
     assertThat(response.getItemKey()).isEqualTo("123");
     assertThat(response.getProcessInstanceKey()).isEqualTo("456");
+  }
+
+  @Test
+  void shouldConvertBatchOperationEntity() {
+    // given
+    final var entity =
+        new BatchOperationEntity(
+            "batch-1",
+            BatchOperationState.COMPLETED,
+            BatchOperationType.CANCEL_PROCESS_INSTANCE,
+            OffsetDateTime.parse("2025-01-15T11:53:00Z"),
+            OffsetDateTime.parse("2025-01-15T12:53:00Z"),
+            AuditLogActorType.USER,
+            "actor-1",
+            10,
+            2,
+            8,
+            List.of());
+
+    // when
+    final BatchOperationResponse response = SearchQueryResponseMapper.toBatchOperation(entity);
+
+    // then
+    assertThat(response.getBatchOperationKey()).isEqualTo("batch-1");
+    assertThat(response.getState()).isEqualTo(BatchOperationStateEnum.COMPLETED);
+    assertThat(response.getBatchOperationType())
+        .isEqualTo(BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE);
+    assertThat(response.getOperationsTotalCount()).isEqualTo(10);
+    assertThat(response.getOperationsFailedCount()).isEqualTo(2);
+    assertThat(response.getOperationsCompletedCount()).isEqualTo(8);
+  }
+
+  @Test
+  void shouldMapNullBatchOperationTypeInsteadOfFailingWholeResponse() {
+    // given — a batch operation whose type was never recorded in secondary storage
+    final var untyped =
+        new BatchOperationEntity(
+            "batch-untyped",
+            BatchOperationState.COMPLETED,
+            null, // operationType
+            null,
+            null,
+            null,
+            null,
+            1,
+            0,
+            1,
+            List.of());
+    final var typed =
+        new BatchOperationEntity(
+            "batch-typed",
+            BatchOperationState.ACTIVE,
+            BatchOperationType.RESOLVE_INCIDENT,
+            null,
+            null,
+            null,
+            null,
+            1,
+            0,
+            0,
+            List.of());
+
+    // when
+    final var response =
+        SearchQueryResponseMapper.toBatchOperationSearchQueryResult(
+            new SearchQueryResult<>(2, false, List.of(untyped, typed), null, null));
+
+    // then — the untyped item maps to null rather than taking down its siblings
+    assertThat(response.getItems())
+        .extracting(
+            BatchOperationResponse::getBatchOperationKey,
+            BatchOperationResponse::getBatchOperationType)
+        .containsExactly(
+            tuple("batch-untyped", null),
+            tuple("batch-typed", BatchOperationTypeEnum.RESOLVE_INCIDENT));
   }
 
   @Test
@@ -291,7 +370,8 @@ class SearchQueryResponseMapperTest {
             1, // processDefinitionVersion
             null, // customHeaders
             50, // priority
-            null); // tags
+            null, // tags
+            false); // suspended
 
     // when
     final var response = SearchQueryResponseMapper.toUserTask(entity);
@@ -942,7 +1022,8 @@ class SearchQueryResponseMapperTest {
             1, // processDefinitionVersion
             null, // customHeaders
             50, // priority
-            null); // tags
+            null, // tags
+            false); // suspended
 
     // when
     final var response = SearchQueryResponseMapper.toUserTask(entity);
@@ -1050,7 +1131,44 @@ class SearchQueryResponseMapperTest {
                 "gpt-4o",
                 "openai",
                 List.of(new ContentItem(ContentType.TEXT, "You are helpful", null, null))),
-            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 1, 2),
+            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 0L, 0L, 0L, 1, 2),
+            new AgentInstanceEntity.AgentInstanceLimits(1000L, 5, 6),
+            List.of(
+                new AgentInstanceEntity.AgentInstanceTool("search", "Web search", "searchTask")),
+            "agentElement", // elementId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            321L, // processDefinitionKey
+            "processId", // processDefinitionId
+            1, // processDefinitionVersion
+            "v1", // processDefinitionVersionTag
+            "tenant", // tenantId
+            OffsetDateTime.now(), // creationDate
+            OffsetDateTime.now(), // lastUpdatedDate
+            null); // completionDate
+
+    // when
+    final var response = SearchQueryResponseMapper.toAgentInstanceResult(entity);
+
+    // then
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getAgentDefinitionKey()).isEqualTo("654");
+  }
+
+  @Test
+  void shouldMapAllMetricsForAgentInstance() {
+    // given
+    final var entity =
+        new AgentInstanceEntity(
+            123L, // agentInstanceKey
+            654L, // agentDefinitionKey
+            List.of(456L), // elementInstanceKeys
+            AgentInstanceEntity.AgentInstanceStatus.IDLE,
+            new AgentInstanceEntity.AgentInstanceDefinition(
+                "gpt-4o",
+                "openai",
+                List.of(new ContentItem(ContentType.TEXT, "You are helpful", null, null))),
+            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 30L, 40L, 50L, 1, 2),
             new AgentInstanceEntity.AgentInstanceLimits(1000L, 5, 6),
             List.of(
                 new AgentInstanceEntity.AgentInstanceTool("search", "Web search", "searchTask")),
@@ -1070,8 +1188,13 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toAgentInstanceResult(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
-    assertThat(response.getAgentDefinitionKey()).isEqualTo("654");
+    assertThat(response.getMetrics().getInputTokens()).isEqualTo(10);
+    assertThat(response.getMetrics().getOutputTokens()).isEqualTo(20);
+    assertThat(response.getMetrics().getReasoningTokenCount()).isEqualTo(30);
+    assertThat(response.getMetrics().getCacheCreationTokenCount()).isEqualTo(40);
+    assertThat(response.getMetrics().getCacheReadTokenCount()).isEqualTo(50);
+    assertThat(response.getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(response.getMetrics().getToolCalls()).isEqualTo(2);
   }
 
   @Test
@@ -1476,7 +1599,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(new ContentItem(ContentType.TEXT, "Hello", null, null)),
               List.of(),
-              new Metrics(10L, 20L, 30L),
+              new Metrics(10L, 20L, 30L, 40L, 50L, 60L),
               null,
               null,
               null,
@@ -1494,13 +1617,16 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getAgentInstanceKey()).isEqualTo("200");
       assertThat(result.getElementInstanceKey()).isEqualTo("300");
       assertThat(result.getJobKey()).isEqualTo("600");
-      assertThat(result.getJobLease()).isEqualTo("lease-1");
+      assertThat(result.getJobLeaseToken()).isEqualTo("lease-1");
       assertThat(result.getLoopIteration()).isEqualTo(3);
       assertThat(result.getRole().getValue()).isEqualTo("USER");
       assertThat(result.getCommitStatus().getValue()).isEqualTo("COMMITTED");
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(10);
       assertThat(result.getMetrics().getOutputTokens()).isEqualTo(20);
-      assertThat(result.getMetrics().getDurationMs()).isEqualTo(30);
+      assertThat(result.getMetrics().getReasoningTokenCount()).isEqualTo(30);
+      assertThat(result.getMetrics().getCacheCreationTokenCount()).isEqualTo(40);
+      assertThat(result.getMetrics().getCacheReadTokenCount()).isEqualTo(50);
+      assertThat(result.getMetrics().getDurationMs()).isEqualTo(60);
       assertThat(result.getContent()).hasSize(1);
       assertThat(result.getContent().get(0).getContentType()).isEqualTo("TEXT");
     }
@@ -1527,7 +1653,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.ASSISTANT,
               List.of(new ContentItem(ContentType.DOCUMENT, null, docRef, null)),
               List.of(),
-              new Metrics(0L, 0L, 0L),
+              new Metrics(0L, 0L, null, null, null, 0L),
               null,
               null,
               null,
@@ -1565,7 +1691,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.TOOL_RESULT,
               null,
               null,
-              new Metrics(0L, 0L, 0L),
+              new Metrics(0L, 0L, null, null, null, 0L),
               null,
               null,
               null,
@@ -1602,7 +1728,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.ASSISTANT,
               List.of(),
               List.of(toolCall),
-              new Metrics(5L, 10L, 100L),
+              new Metrics(5L, 10L, null, null, null, 100L),
               null,
               null,
               null,
@@ -1640,7 +1766,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(),
               List.of(),
-              new Metrics(0L, 0L, 0L),
+              new Metrics(0L, 0L, null, null, null, 0L),
               null,
               null,
               null,
@@ -1712,7 +1838,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.ASSISTANT,
               List.of(),
               List.of(),
-              new Metrics(100L, 200L, null),
+              new Metrics(100L, 200L, null, null, null, null),
               null,
               null,
               null,
@@ -1728,6 +1854,9 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getMetrics()).isNotNull();
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(100L);
       assertThat(result.getMetrics().getOutputTokens()).isEqualTo(200L);
+      assertThat(result.getMetrics().getReasoningTokenCount()).isNull();
+      assertThat(result.getMetrics().getCacheCreationTokenCount()).isNull();
+      assertThat(result.getMetrics().getCacheReadTokenCount()).isNull();
       assertThat(result.getMetrics().getDurationMs()).isNull();
     }
 

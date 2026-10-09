@@ -81,7 +81,6 @@ import java.util.stream.Stream;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -884,7 +883,8 @@ public final class ProcessInstanceServiceTest {
   }
 
   @Nested
-  @DisplayName("Retry on different partitions")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Retry on different partitions")
   class RetryPartitionsTest {
 
     private static Stream<Named<Throwable>> retryableErrors() {

@@ -10,12 +10,14 @@ package io.camunda.search.schema;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.validateMappings;
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
 import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -24,14 +26,18 @@ import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -245,7 +251,7 @@ public class ElasticsearchEngineClientIT {
     elsEngineClient.createIndex(index, new IndexConfiguration());
 
     final Map<String, String> newSettings = Map.of("index.lifecycle.name", "test");
-    elsEngineClient.putSettings(List.of(index), newSettings);
+    elsEngineClient.putSettings(index, newSettings);
 
     final var indices = elsClient.indices().get(req -> req.index(index.getFullQualifiedName()));
 
@@ -259,6 +265,19 @@ public class ElasticsearchEngineClientIT {
                 .lifecycle()
                 .name())
         .isEqualTo("test");
+  }
+
+  @Test
+  void shouldReadReplicaCountsForExistingIndices() throws IOException {
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfReplicas(2);
+    elsEngineClient.createIndex(index, settings);
+
+    final var replicaCounts =
+        elsEngineClient.getNumberOfReplicas(List.of(index.getFullQualifiedName() + "*"));
+
+    assertThat(replicaCounts).containsEntry(index.getFullQualifiedName(), 2);
   }
 
   @Test
@@ -320,6 +339,93 @@ public class ElasticsearchEngineClientIT {
     assertThat(policy.result().get("policy_name").policy().phases().delete().actions()).isNotNull();
   }
 
+  /**
+   * Regression test for #63543/#63569's underlying failure mode ({@code
+   * process_cluster_event_timeout_exception} from concurrent, redundant cluster-state writes)
+   * recurring for ILM policies: {@code putIndexLifeCyclePolicy} used to PUT unconditionally on
+   * every schema-init attempt, even when the policy already matched configuration.
+   */
+  @Test
+  void shouldNotIssuePutIndexLifeCyclePolicyWhenMinAgeUnchanged() throws IOException {
+    // given
+    elsEngineClient.putIndexLifeCyclePolicy("policy_no_change", "20d");
+
+    final var ilmSpy = spy(elsClient.ilm());
+    final var clientSpy = spy(elsClient);
+    doReturn(ilmSpy).when(clientSpy).ilm();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when
+    engineClient.putIndexLifeCyclePolicy("policy_no_change", "20d");
+
+    // then
+    verify(ilmSpy, never()).putLifecycle(any(PutLifecycleRequest.class));
+  }
+
+  /** See {@link #shouldNotIssuePutIndexLifeCyclePolicyWhenMinAgeUnchanged}. */
+  @Test
+  void shouldIssuePutIndexLifeCyclePolicyWhenMinAgeChanged() throws IOException {
+    // given
+    elsEngineClient.putIndexLifeCyclePolicy("policy_change", "20d");
+
+    final var ilmSpy = spy(elsClient.ilm());
+    final var clientSpy = spy(elsClient);
+    doReturn(ilmSpy).when(clientSpy).ilm();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when
+    engineClient.putIndexLifeCyclePolicy("policy_change", "30d");
+
+    // then
+    verify(ilmSpy, times(1)).putLifecycle(any(PutLifecycleRequest.class));
+    final var policy = elsClient.ilm().getLifecycle(req -> req.name("policy_change"));
+    assertThat(policy.result().get("policy_change").policy().phases().delete().minAge().time())
+        .isEqualTo("30d");
+  }
+
+  /**
+   * Regression test asserting that stating {@code delete_searchable_snapshot} explicitly in the PUT
+   * (see the fix in {@link ElasticsearchEngineClient#putLifecycleRequest}) does not force a
+   * one-time PUT for every pre-existing fleet policy on upgrade. A policy created by an older
+   * version of this client (without ever specifying {@code delete_searchable_snapshot}) already has
+   * Elasticsearch's own default persisted into it at creation time, so the fetched and desired
+   * policies still match without ever needing a write.
+   */
+  @Test
+  void shouldNotUpdatePolicyCreatedByOlderClientWithoutExplicitDeleteSearchableSnapshot()
+      throws IOException {
+    // given - a policy created the way an older client version (predating the explicit
+    // delete_searchable_snapshot) would have, i.e. without ever specifying that field
+    final var policyName = "legacy_ilm_policy_name";
+    final var legacyPolicyRequest =
+        new PutLifecycleRequest.Builder()
+            .name(policyName)
+            .policy(
+                policy ->
+                    policy.phases(
+                        phase ->
+                            phase.delete(
+                                del ->
+                                    del.minAge(m -> m.time("20d")).actions(a -> a.delete(d -> d)))))
+            .build();
+    elsClient.ilm().putLifecycle(legacyPolicyRequest);
+
+    final var ilmSpy = spy(elsClient.ilm());
+    final var clientSpy = spy(elsClient);
+    doReturn(ilmSpy).when(clientSpy).ilm();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when - schema-init runs putIndexLifeCyclePolicy() with today's client, which states
+    // delete_searchable_snapshot explicitly
+    engineClient.putIndexLifeCyclePolicy(policyName, "20d");
+
+    // then - nothing was written
+    verify(ilmSpy, never()).putLifecycle(any(PutLifecycleRequest.class));
+  }
+
   @Test
   void shouldAccountForAllPropertyFieldsWhenGetMappings() {
     final var index = createTestIndexDescriptor("index_name", "/mappings-complex-property.json");
@@ -360,6 +466,117 @@ public class ElasticsearchEngineClientIT {
 
     // then
     verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  /**
+   * Regression test for #63764: every index template {@link IndexDescriptors} registers must be
+   * left untouched by a repeated schema initialization that changes neither its schema file nor its
+   * configuration. Before the fix, the settings check diffed the schema file against the search
+   * engine's normalized rendering of it, which never matched for templates with an {@code analysis}
+   * block, so those were rewritten on every restart.
+   */
+  @ParameterizedTest
+  @MethodSource("templateDescriptors")
+  void shouldNotRewriteIndexTemplateOnRepeatedSchemaInitialization(
+      final IndexTemplateDescriptor template) throws IOException {
+    // given
+    final var settings = new IndexConfiguration();
+
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, settings, true);
+    reset(indicesSpy); // ignore create
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, settings);
+
+    // then
+    verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  private static Stream<Named<IndexTemplateDescriptor>> templateDescriptors() {
+    return new IndexDescriptors("", true)
+        .templates().stream()
+            .map(template -> Named.of(template.getMappingsClasspathFilename(), template));
+  }
+
+  @Test
+  void shouldIssuePutIndexTemplateOnceWhenAnalysisSettingsChanged() throws IOException {
+    // given
+    final var template =
+        createTestTemplateDescriptor("template_analysis_change", "/mappings-and-analysis.json");
+    final var settings = new IndexConfiguration();
+
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, settings, true);
+    template.setMappingsClasspathFilename("/mappings-and-updated-analysis.json");
+    reset(indicesSpy); // ignore create
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, settings);
+    engineClient.updateIndexTemplateSettings(template, settings);
+
+    // then
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+    final var normalizer =
+        elsClient
+            .indices()
+            .getIndexTemplate(req -> req.name(template.getTemplateName()))
+            .indexTemplates()
+            .getFirst()
+            .indexTemplate()
+            .template()
+            .settings()
+            .index()
+            .analysis()
+            .normalizer()
+            .get("case_insensitive");
+    assertThat(normalizer.custom().filter()).containsExactly("lowercase", "asciifolding");
+  }
+
+  @Test
+  void shouldRewriteTemplateWithoutSettingsFingerprintOnlyOnce() throws IOException {
+    // given - a template as written before settings fingerprints existed
+    final var template = createTestTemplateDescriptor("template_no_fingerprint", "/mappings.json");
+    final var settings = new IndexConfiguration();
+    elsClient
+        .indices()
+        .putIndexTemplate(
+            req ->
+                req.name(template.getTemplateName())
+                    .indexPatterns(template.getIndexPattern())
+                    .template(t -> t.settings(s -> s.numberOfShards("1"))));
+
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, settings);
+    engineClient.updateIndexTemplateSettings(template, settings);
+
+    // then - the first check adds the fingerprint, the second one finds it
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+    final var meta =
+        elsClient
+            .indices()
+            .getIndexTemplate(req -> req.name(template.getTemplateName()))
+            .indexTemplates()
+            .getFirst()
+            .indexTemplate()
+            .meta();
+    assertThat(meta).containsKey(SETTINGS_FINGERPRINT_META_KEY);
   }
 
   @ParameterizedTest

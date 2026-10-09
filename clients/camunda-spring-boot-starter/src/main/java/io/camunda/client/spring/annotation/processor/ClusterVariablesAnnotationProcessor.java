@@ -64,12 +64,12 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
   }
 
   @Override
-  public boolean isApplicableFor(final BeanInfo beanInfo) {
+  protected boolean isApplicableFor(final BeanInfo beanInfo) {
     return isClusterVariables(beanInfo);
   }
 
   @Override
-  public void configureFor(final BeanInfo beanInfo) {
+  protected void configureFor(final BeanInfo beanInfo) {
     final List<? extends ClusterVariablesValue> classValues =
         AnnotationUtil.getClusterVariablesValuesFromClass(beanInfo);
     if (!classValues.isEmpty()) {
@@ -97,7 +97,7 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
   }
 
   @Override
-  public void start(final CamundaClient client) {
+  protected void start(final CamundaClient client) {
     // Process variables from properties
     final List<ClusterVariableEntry> propertyVariables = properties.resolveVariables();
     if (!propertyVariables.isEmpty()) {
@@ -108,9 +108,9 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
     // Process variables from annotations
     for (final ClusterVariablesValue value : clusterVariablesValues) {
       final List<ClusterVariableEntry> variables;
-      if (value instanceof ResourceClusterVariablesValue resourceValue) {
+      if (value instanceof final ResourceClusterVariablesValue resourceValue) {
         variables = loadVariablesFromResources(resourceValue.getResources());
-      } else if (value instanceof MethodClusterVariablesValue methodValue) {
+      } else if (value instanceof final MethodClusterVariablesValue methodValue) {
         variables = loadVariablesFromSupplier(methodValue.getVariableSupplier());
       } else {
         continue;
@@ -130,7 +130,7 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
   }
 
   @Override
-  public void stop(final CamundaClient client) {
+  protected void stop(final CamundaClient client) {
     clusterVariablesValues.clear();
   }
 

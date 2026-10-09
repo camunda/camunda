@@ -73,13 +73,6 @@ variable "engine" {
   default = "aurora-postgresql"
 }
 
-# Left null so the module picks its own per-engine default (postgresql_engine_version /
-# mysql_engine_version). Set explicitly here only to pin a specific version.
-variable "engine_version" {
-  type    = string
-  default = null
-}
-
 # Scaled 1 -> 0 -> 1 by the test to remove/restore the replica instance while
 # keeping the secondary cluster (and storage replication) in place.
 variable "secondary_num_instances" {
@@ -128,7 +121,6 @@ module "aurora" {
 
   global_cluster_identifier = "${var.name_prefix}-global"
   engine                    = var.engine
-  engine_version            = var.engine_version
   master_username           = var.master_username
   master_password           = var.master_password
   instance_class            = var.instance_class

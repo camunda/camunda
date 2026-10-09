@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.cluster.migration.MigrationState;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
@@ -30,6 +31,7 @@ import io.camunda.gateway.protocol.model.ClusterBrokerInfo;
 import io.camunda.gateway.protocol.model.ClusterStatusResponse;
 import io.camunda.gateway.protocol.model.ClusterStatusResponse.StatusEnum;
 import io.camunda.gateway.protocol.model.ClusterTopologyResponse;
+import io.camunda.gateway.protocol.model.ClusterUpgradeStatusResponse;
 import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
@@ -259,7 +261,7 @@ public final class ResponseMapper {
         .tags(job.getTags())
         .userTask(toUserTaskProperties(job))
         .priority(job.getPriority())
-        .leaseToken(emptyToNull(job.getLeaseToken()))
+        .jobLeaseToken(emptyToNull(job.getJobLeaseToken()))
         .physicalTenantId(physicalTenantId)
         .build();
   }
@@ -277,7 +279,7 @@ public final class ResponseMapper {
             mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME)))
         .changedAttributes(
             mapStringToList(headers.get(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)))
-        .action(requireNonNull(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME), "action"))
+        .action(Objects.requireNonNullElse(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME), ""))
         .assignee(headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME))
         .dueDate(headers.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME))
         .followUpDate(headers.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME))
@@ -470,7 +472,7 @@ public final class ResponseMapper {
   public static MessagePublicationResult toMessagePublicationResponse(
       final BrokerResponse<MessageRecord> brokerResponse) {
     return MessagePublicationResult.Builder.create()
-        .tenantId(brokerResponse.getResponse().getTenantId())
+        .tenantId(brokerResponse.getResponseOrThrow().getTenantId())
         .messageKey(keyToString(brokerResponse.getKey()))
         .build();
   }
@@ -652,14 +654,14 @@ public final class ResponseMapper {
   public static SignalBroadcastResult toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
     return SignalBroadcastResult.Builder.create()
-        .tenantId(brokerResponse.getResponse().getTenantId())
+        .tenantId(brokerResponse.getResponseOrThrow().getTenantId())
         .signalKey(keyToString(brokerResponse.getKey()))
         .build();
   }
 
   public static EvaluateConditionalResult toConditionalEvaluationResponse(
       final BrokerResponse<ConditionalEvaluationRecord> brokerResponse) {
-    final var response = brokerResponse.getResponse();
+    final var response = brokerResponse.getResponseOrThrow();
     final var processInstances =
         response.getStartedProcessInstances().stream()
             .map(
@@ -807,7 +809,7 @@ public final class ResponseMapper {
 
   public static EvaluateDecisionResult toEvaluateDecisionResponse(
       final BrokerResponse<DecisionEvaluationRecord> brokerResponse) {
-    final var decisionEvaluationRecord = brokerResponse.getResponse();
+    final var decisionEvaluationRecord = brokerResponse.getResponseOrThrow();
     final var evaluatedDecisions = buildEvaluatedDecisions(decisionEvaluationRecord);
     return EvaluateDecisionResult.Builder.create()
         .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())
@@ -949,6 +951,19 @@ public final class ResponseMapper {
               case HEALTHY -> StatusEnum.HEALTHY;
               case DEGRADED -> StatusEnum.DEGRADED;
               case DOWN -> StatusEnum.DOWN;
+            })
+        .build();
+  }
+
+  public static ClusterUpgradeStatusResponse toClusterUpgradeStatusResponse(
+      final MigrationState state) {
+    return ClusterUpgradeStatusResponse.Builder.create()
+        .status(
+            switch (state) {
+              case MIGRATED -> ClusterUpgradeStatusResponse.StatusEnum.MIGRATED;
+              case MIGRATION_IN_PROGRESS ->
+                  ClusterUpgradeStatusResponse.StatusEnum.MIGRATION_IN_PROGRESS;
+              case UNKNOWN -> ClusterUpgradeStatusResponse.StatusEnum.UNKNOWN;
             })
         .build();
   }

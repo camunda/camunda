@@ -45,6 +45,39 @@ export async function activateJobToObtainAValidJobKey(
   return activateJson.jobs[0].jobKey;
 }
 
+export interface LeasedJob {
+  jobKey: number;
+  jobLeaseToken: string;
+}
+
+/**
+ * Activates a single job of the given type with a lease, for callers that need to
+ * attribute a follow-up command (e.g. an agent-instance CREATE/UPDATE) to the
+ * activation. The timeout is generous by default so the lease stays valid across
+ * a serial test suite's later assertions, not just the immediate activation.
+ */
+export async function activateJobWithLease(
+  request: APIRequestContext,
+  jobType: string,
+  timeout: number = 300_000,
+): Promise<LeasedJob> {
+  const res = await request.post(buildUrl('/jobs/activation'), {
+    headers: jsonHeaders(),
+    data: {type: jobType, timeout, maxJobsToActivate: 1, withLease: true},
+  });
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {path: '/jobs/activation', method: 'POST', status: '200'},
+    res,
+  );
+  const json = await res.json();
+  expect(json.jobs).toHaveLength(1);
+  return {
+    jobKey: json.jobs[0].jobKey,
+    jobLeaseToken: json.jobs[0].jobLeaseToken,
+  };
+}
+
 export async function searchJobKey(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -117,12 +150,22 @@ export async function completeJob(
   request: APIRequestContext,
   jobKey: number,
   variables?: Record<string, unknown>,
+  // A job activated with a lease (see activateJobWithLease) rejects completion
+  // without the matching token — see JobCompletionRequest#jobLeaseToken.
+  jobLeaseToken?: string,
 ): Promise<void> {
+  const data: Record<string, unknown> = {};
+  if (variables !== undefined) {
+    data.variables = variables;
+  }
+  if (jobLeaseToken !== undefined) {
+    data.jobLeaseToken = jobLeaseToken;
+  }
   const completeRes = await request.post(
     buildUrl('/jobs/{jobKey}/completion', {jobKey}),
     {
       headers: jsonHeaders(),
-      ...(variables !== undefined && {data: {variables}}),
+      ...(Object.keys(data).length > 0 && {data}),
     },
   );
   await assertStatusCode(completeRes, 204);
@@ -134,6 +177,10 @@ export async function completeJob(
  *
  * NOTE: /jobs/activation has no processInstanceKey filter — results are
  * filtered client-side using the processInstanceKey field on each activated job.
+ *
+ * `requestTimeoutMs` caps the broker's long poll. Without it activation blocks
+ * for about 10s when no job matches, which exceeds the suite's action timeout —
+ * pass it whenever a caller expects to find nothing.
  */
 export async function activateJobsByType(
   request: APIRequestContext,
@@ -141,6 +188,7 @@ export async function activateJobsByType(
   processInstanceKey: string,
   fetchVariables: string[] = [],
   maxJobs = 10,
+  requestTimeoutMs?: number,
 ): Promise<ActivatedJobWithVars[]> {
   const res = await request.post(buildUrl('/jobs/activation'), {
     headers: jsonHeaders(),
@@ -148,6 +196,7 @@ export async function activateJobsByType(
       type: jobType,
       maxJobsToActivate: maxJobs,
       timeout: 10_000,
+      ...(requestTimeoutMs !== undefined && {requestTimeout: requestTimeoutMs}),
       ...(fetchVariables.length > 0 && {fetchVariable: fetchVariables}),
     },
   });
@@ -289,4 +338,48 @@ export interface StatisticsJobItem {
     lastUpdatedAt: string;
   };
   workers: number;
+}
+
+/**
+ * Retries until exactly one job of the given type is activatable for the process
+ * instance and returns its key. Activation only becomes possible once the token
+ * has reached the task, so the wait is on the engine rather than on an index.
+ *
+ * Each attempt asks the broker not to long-poll: left to its default the
+ * activation holds the request for about ten seconds, which overruns the
+ * action timeout before this retry loop gets a chance to run again.
+ */
+export async function activateSingleJob(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+): Promise<number> {
+  let jobKey = 0;
+  await expect(async () => {
+    const jobs = await activateJobsByType(
+      request,
+      jobType,
+      processInstanceKey,
+      [],
+      10,
+      1_000,
+    );
+    expect(jobs).toHaveLength(1);
+    jobKey = Number(jobs[0]!.jobKey);
+  }).toPass(defaultAssertionOptions);
+  return jobKey;
+}
+
+export async function updateJobRetries(
+  request: APIRequestContext,
+  jobKey: string,
+  retries: number,
+): Promise<void> {
+  await assertStatusCode(
+    await request.patch(buildUrl('/jobs/{jobKey}', {jobKey}), {
+      headers: jsonHeaders(),
+      data: {changeset: {retries}},
+    }),
+    204,
+  );
 }

@@ -180,7 +180,13 @@ test.describe.parallel('Get User Task Form Tests', () => {
   test('Get user task form - not found - non existing user task', async ({
     request,
   }) => {
-    const nonExistingUserTaskKey = '2251799813711183';
+    // Must be a key outside Zeebe's assignable range: the form endpoint returns
+    // 404 only for a key that maps to no user task, but 204 for a task that
+    // exists with no associated form. '2251799813711183' sits in the normal
+    // partition-1 key range and collided with a real formless task on a shared
+    // parallel run (204, not 404). Use the out-of-range sentinel the sibling
+    // user-task not-found tests use so it can never map to a real task.
+    const nonExistingUserTaskKey = '9999999999999999';
     await expect(async () => {
       const res = await request.get(
         buildUrl('/user-tasks/{userTaskKey}/form', {

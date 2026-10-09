@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -24,16 +26,14 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
-import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
+import io.camunda.exporter.tasks.util.BulkRequestTooLargeException;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.operate.TreePath;
-import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -67,8 +67,10 @@ final class IncidentUpdateTaskTest {
   private final IncidentUpdateRepository repository = Mockito.mock(IncidentUpdateRepository.class);
   private final CamundaExporterMetrics metrics = Mockito.mock(CamundaExporterMetrics.class);
 
-  private final ArgumentCaptor<IncidentBulkUpdate> bulkUpdateCaptor =
+  private final ArgumentCaptor<IncidentBulkUpdate> incidentBulkUpdateCaptor =
       ArgumentCaptor.forClass(IncidentBulkUpdate.class);
+  private final ArgumentCaptor<NonIncidentBulkUpdate> nonIncidentBulkUpdateCaptor =
+      ArgumentCaptor.forClass(NonIncidentBulkUpdate.class);
 
   @BeforeEach
   void beforeEach() {
@@ -210,12 +212,19 @@ final class IncidentUpdateTaskTest {
       when(repository.getActiveIncidentsByTreePaths(any()))
           .thenReturn(CompletableFuture.completedFuture(List.of()));
 
-      when(repository.bulkUpdate(any()))
+      when(repository.bulkUpdate(any(IncidentBulkUpdate.class)))
           .then(
               inv -> {
                 final IncidentBulkUpdate update = inv.getArgument(0);
                 return CompletableFuture.completedFuture(
-                    update.stream().map(DocumentUpdate::id).toList());
+                    update.stream().map(IncidentTaskUpdate::id).toList());
+              });
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .then(
+              inv -> {
+                final NonIncidentBulkUpdate update = inv.getArgument(0);
+                return CompletableFuture.completedFuture(
+                    update.stream().map(IncidentTaskUpdate::id).toList());
               });
     }
 
@@ -303,7 +312,8 @@ final class IncidentUpdateTaskTest {
       assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(1);
 
       verify(metrics).recordIncidentUpdatesRetriesNeeded(1);
-      verify(repository, never()).bulkUpdate(any());
+      verify(repository, never()).bulkUpdate(any(NonIncidentBulkUpdate.class));
+      verify(repository, never()).bulkUpdate(any(IncidentBulkUpdate.class));
       verify(incidentNotifier, never()).notifyAsync(any());
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
     }
@@ -338,31 +348,26 @@ final class IncidentUpdateTaskTest {
       // then - no NPE, no retry: the batch is processed with a sparse tree path rooted at the PI
       assertThat(result).succeedsWithin(TIMEOUT);
       verify(metrics, never()).recordIncidentUpdatesRetriesNeeded(anyInt());
-      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
-      final var update = bulkUpdateCaptor.getValue();
-      assertThat(update.incidentRequests())
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var incidentBulkUpdate = incidentBulkUpdateCaptor.getValue();
+      assertThat(incidentBulkUpdate.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5",
-                  "incidents",
-                  Map.of(
-                      IncidentTemplate.STATE,
-                      IncidentState.ACTIVE,
-                      IncidentTemplate.TREE_PATH,
-                      "PI_3/FNI_4"),
-                  null));
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_3/FNI_4"));
+
+      final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
       // only the PI and flow node referenced by the sparse path are touched (no parent ancestry)
-      assertThat(update.listViewRequests())
+      assertThat(nonIncidentBulkUpdate.listViewRequests())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate("3", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"),
-              new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"));
-      assertThat(update.flowNodeInstanceRequests())
+              new ListViewInstanceUpdate("3", "list-view", "3", true),
+              new ListViewInstanceUpdate("4", "list-view", "3", true));
+      assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests())
           .hasSize(1)
-          .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, true), null));
+          .containsExactlyInAnyOrder(new FlowNodeInstanceUpdate("4", "flow-nodes", true));
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(highestPosition);
       verify(metrics).recordIncidentUpdatesProcessed(1);
       verify(metrics).recordIncidentUpdatesDocumentsUpdated(4);
@@ -395,20 +400,16 @@ final class IncidentUpdateTaskTest {
       // then - processed with the sparse fallback, not retried
       assertThat(result).succeedsWithin(TIMEOUT);
       verify(metrics, never()).recordIncidentUpdatesRetriesNeeded(anyInt());
-      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
-      final var update = bulkUpdateCaptor.getValue();
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var update = incidentBulkUpdateCaptor.getValue();
       assertThat(update.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5",
-                  "incidents",
-                  Map.of(
-                      IncidentTemplate.STATE,
-                      IncidentState.ACTIVE,
-                      IncidentTemplate.TREE_PATH,
-                      "PI_3/FNI_4"),
-                  null));
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_3/FNI_4"));
+
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(highestPosition);
     }
 
@@ -492,20 +493,16 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
-      final var update = bulkUpdateCaptor.getValue();
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var update = incidentBulkUpdateCaptor.getValue();
       assertThat(update.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5",
-                  "incidents",
-                  Map.of(
-                      IncidentTemplate.STATE,
-                      IncidentState.ACTIVE,
-                      IncidentTemplate.TREE_PATH,
-                      "PI_1/FNI_2/PI_3/FNI_4"),
-                  null));
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_1/FNI_2/PI_3/FNI_4"));
+
       final var incident =
           new IncidentEntity()
               .setKey(5L)
@@ -539,15 +536,18 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
-      final var update = bulkUpdateCaptor.getValue();
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var update = nonIncidentBulkUpdateCaptor.getValue();
       assertThat(update.listViewRequests())
           .hasSize(4)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate("1", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "1"),
-              new DocumentUpdate("2", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "1"),
-              new DocumentUpdate("3", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"),
-              new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"));
+              new ListViewInstanceUpdate("1", "list-view", "1", true),
+              new ListViewInstanceUpdate("2", "list-view", "1", true),
+              new ListViewInstanceUpdate("3", "list-view", "3", true),
+              new ListViewInstanceUpdate("4", "list-view", "3", true));
       final var incident =
           new IncidentEntity()
               .setKey(5L)
@@ -581,15 +581,16 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
-      final var update = bulkUpdateCaptor.getValue();
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var update = nonIncidentBulkUpdateCaptor.getValue();
       assertThat(update.flowNodeInstanceRequests())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "2", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, true), null),
-              new DocumentUpdate(
-                  "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, true), null));
+              new FlowNodeInstanceUpdate("2", "flow-nodes", true),
+              new FlowNodeInstanceUpdate("4", "flow-nodes", true));
       final var incident =
           new IncidentEntity()
               .setKey(5L)
@@ -634,25 +635,21 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
-      final var update = bulkUpdateCaptor.getValue();
-      assertThat(update.incidentRequests())
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var incidentBulkUpdate = incidentBulkUpdateCaptor.getValue();
+      assertThat(incidentBulkUpdate.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5",
-                  "incidents",
-                  Map.of(
-                      IncidentTemplate.STATE,
-                      IncidentState.ACTIVE,
-                      IncidentTemplate.TREE_PATH,
-                      "PI_1/FNI_1"),
-                  null));
-      assertThat(update.flowNodeInstanceRequests()).isEmpty();
-      assertThat(update.listViewRequests())
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_1/FNI_1"));
+
+      final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
+      assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests()).isEmpty();
+      assertThat(nonIncidentBulkUpdate.listViewRequests())
           .hasSize(1)
-          .containsExactlyInAnyOrder(
-              new DocumentUpdate("1", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "1"));
+          .containsExactlyInAnyOrder(new ListViewInstanceUpdate("1", "list-view", "1", true));
 
       final var incident =
           new IncidentEntity()
@@ -698,27 +695,29 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
-      final var update = bulkUpdateCaptor.getValue();
-      assertThat(update.incidentRequests())
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var incidentBulkUpdate = incidentBulkUpdateCaptor.getValue();
+      assertThat(incidentBulkUpdate.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5", "incidents", Map.of(IncidentTemplate.STATE, IncidentState.RESOLVED), null));
-      assertThat(update.flowNodeInstanceRequests())
+              new IncidentUpdate("5", "incidents", IncidentState.RESOLVED, null));
+
+      final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
+      assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "2", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, false), null),
-              new DocumentUpdate(
-                  "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, false), null));
-      assertThat(update.listViewRequests())
+              new FlowNodeInstanceUpdate("2", "flow-nodes", false),
+              new FlowNodeInstanceUpdate("4", "flow-nodes", false));
+      assertThat(nonIncidentBulkUpdate.listViewRequests())
           .hasSize(4)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate("1", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "1"),
-              new DocumentUpdate("2", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "1"),
-              new DocumentUpdate("3", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"),
-              new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"));
+              new ListViewInstanceUpdate("1", "list-view", "1", false),
+              new ListViewInstanceUpdate("2", "list-view", "1", false),
+              new ListViewInstanceUpdate("3", "list-view", "3", false),
+              new ListViewInstanceUpdate("4", "list-view", "3", false));
 
       verify(incidentNotifier, times(0)).notifyAsync(any());
       verify(metrics).recordIncidentUpdatesProcessed(1);
@@ -760,26 +759,28 @@ final class IncidentUpdateTaskTest {
       // then - we should mark the child process instance, the call activity, and the task as
       // incident free, but NOT the parent process instance as it still has an active incident
       assertThat(result).succeedsWithin(TIMEOUT);
-      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
-      final var update = bulkUpdateCaptor.getValue();
-      assertThat(update.incidentRequests())
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var incidentBulkUpdate = incidentBulkUpdateCaptor.getValue();
+      assertThat(incidentBulkUpdate.incidentRequests())
           .hasSize(1)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "5", "incidents", Map.of(IncidentTemplate.STATE, IncidentState.RESOLVED), null));
-      assertThat(update.flowNodeInstanceRequests())
+              new IncidentUpdate("5", "incidents", IncidentState.RESOLVED, null));
+
+      final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
+      assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate(
-                  "2", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, false), null),
-              new DocumentUpdate(
-                  "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, false), null));
-      assertThat(update.listViewRequests())
+              new FlowNodeInstanceUpdate("2", "flow-nodes", false),
+              new FlowNodeInstanceUpdate("4", "flow-nodes", false));
+      assertThat(nonIncidentBulkUpdate.listViewRequests())
           .hasSize(3)
           .containsExactlyInAnyOrder(
-              new DocumentUpdate("2", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "1"),
-              new DocumentUpdate("3", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"),
-              new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"));
+              new ListViewInstanceUpdate("2", "list-view", "1", false),
+              new ListViewInstanceUpdate("3", "list-view", "3", false),
+              new ListViewInstanceUpdate("4", "list-view", "3", false));
       verify(metrics).recordIncidentUpdatesProcessed(1);
       verify(metrics).recordIncidentUpdatesDocumentsUpdated(6);
     }
@@ -809,14 +810,193 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result).succeedsWithin(TIMEOUT);
-      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
-      final var update = bulkUpdateCaptor.getValue();
-      assertThat(update.listViewRequests()).isEmpty();
-      assertThat(update.incidentRequests()).isEmpty();
-      assertThat(update.flowNodeInstanceRequests()).isEmpty();
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var incidentBulkUpdate = incidentBulkUpdateCaptor.getValue();
+      assertThat(incidentBulkUpdate.incidentRequests()).isEmpty();
+
+      final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
+      assertThat(nonIncidentBulkUpdate.listViewRequests()).isEmpty();
+      assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests()).isEmpty();
+
       verify(incidentNotifier, times(0)).notifyAsync(any());
       verify(metrics).recordIncidentUpdatesProcessed(1);
       verify(metrics).recordIncidentUpdatesDocumentsUpdated(0);
+    }
+  }
+
+  @Nested
+  final class BatchSizeReductionTest {
+    private static final int CONFIGURED_BATCH_SIZE = 100;
+    private final IncidentEntity incidentEntity =
+        new IncidentEntity()
+            .setKey(5L)
+            .setId("5")
+            .setState(IncidentState.PENDING)
+            .setProcessInstanceKey(1L)
+            .setFlowNodeInstanceKey(2L)
+            .setTreePath(new TreePath().startTreePath(1).appendFlowNodeInstance(2).toString());
+    private final IncidentDocument incident =
+        new IncidentDocument("5", "incidents", incidentEntity);
+
+    @BeforeEach
+    void beforeEach() {
+      when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new PendingIncidentUpdateBatch(
+                      10, Map.of(incident.incident().getKey(), IncidentState.ACTIVE))));
+      when(repository.getIncidentDocuments(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(incident)));
+      when(repository.getProcessInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(
+                      new ProcessInstanceDocument(
+                          "1", "list-view", 1, new TreePath().startTreePath(1).toString()))));
+      when(repository.deletedProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(Set.of()));
+      when(repository.getFlowNodesInListView(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(new Document("2", "list-view"))));
+      when(repository.getFlowNodeInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(new Document("2", "flow-nodes"))));
+      when(repository.analyzeTreePath(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.getActiveIncidentsByTreePaths(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.bulkUpdate(any(IncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.completedFuture(List.of("5")));
+    }
+
+    @Test
+    void shouldHalveTheReadWhenTheStoreRefusesTheWriteAsTooLarge() {
+      // given - the write is refused for its size
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+
+      // when
+      failCycle(task);
+      succeedNonIncidentWrite();
+      task.execute().toCompletableFuture().join();
+
+      // then
+      assertThat(readSizes()).containsExactly(CONFIGURED_BATCH_SIZE, CONFIGURED_BATCH_SIZE / 2);
+    }
+
+    @Test
+    void shouldNotRestoreTheReadWhenABatchIsSkippedForMissingData() {
+      // given - one refused cycle, so the read is reduced
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+      failCycle(task);
+
+      // when - the next cycle finds data missing, so it skips the batch without writing or
+      // advancing the position
+      succeedNonIncidentWrite();
+      when(repository.getProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      task.execute().toCompletableFuture().join();
+      task.execute().toCompletableFuture().join();
+
+      // then - the read stays reduced: restoring it here would rebuild the same oversized write
+      // against the same unadvanced position
+      assertThat(readSizes()).containsExactly(100, 50, 50);
+    }
+
+    @Test
+    void shouldResetTheReadAfterACycleGetsThrough() {
+      // given - one refused cycle, so the read is reduced
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+      failCycle(task);
+
+      // when - the smaller cycle succeeds
+      succeedNonIncidentWrite();
+      task.execute().toCompletableFuture().join();
+      task.execute().toCompletableFuture().join();
+
+      // then - not sticky, since the fan-out depends on which incidents the batch holds
+      assertThat(readSizes()).containsExactly(100, 50, 100);
+    }
+
+    @Test
+    void shouldAlsoHalveWhenTheIncidentWriteIsTheOneRefused() {
+      // given - the second of the two flushes is the one refused
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      when(repository.bulkUpdate(any(IncidentBulkUpdate.class)))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new BulkRequestTooLargeException("circuit_breaking_exception")));
+
+      // when
+      failCycle(task);
+      failCycle(task);
+
+      // then
+      assertThat(readSizes()).containsExactly(100, 50);
+    }
+
+    @Test
+    void shouldNotChangeTheReadOnAnUnrelatedFailure() {
+      // given - a failure that writing less would not help with
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.failedFuture(new ExporterException("version conflict")));
+
+      // when
+      failCycle(task);
+      failCycle(task);
+
+      // then
+      assertThat(readSizes()).containsExactly(100, 100);
+    }
+
+    @Test
+    void shouldNotCommitThePositionWhenTheWriteIsRefused() {
+      // given
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+
+      // when
+      final var result = task.execute();
+
+      // then - the same pending updates are read again on the next cycle, now in smaller pieces
+      assertThat(result)
+          .failsWithin(TIMEOUT)
+          .withThrowableThat()
+          .withRootCauseInstanceOf(BulkRequestTooLargeException.class);
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(-1);
+    }
+
+    private IncidentUpdateTask createTask(final int batchSize) {
+      return new IncidentUpdateTask(
+          metadata, repository, false, batchSize, EXECUTOR, incidentNotifier, metrics, LOGGER);
+    }
+
+    private void refuseNonIncidentWriteAsTooLarge() {
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new BulkRequestTooLargeException("circuit_breaking_exception")));
+    }
+
+    private void succeedNonIncidentWrite() {
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+    }
+
+    private void failCycle(final IncidentUpdateTask task) {
+      assertThat(task.execute()).failsWithin(TIMEOUT);
+    }
+
+    private List<Integer> readSizes() {
+      final var sizes = ArgumentCaptor.forClass(Integer.class);
+      verify(repository, atLeastOnce()).getPendingIncidentsBatch(anyLong(), sizes.capture());
+      return sizes.getAllValues();
     }
   }
 }

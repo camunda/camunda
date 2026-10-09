@@ -7,11 +7,12 @@
  */
 
 import {Button, Link} from '@carbon/react';
-import {Link as RouterLink} from '@tanstack/react-router';
+import {createLink} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
+import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {InstanceHeader, type Column} from '#/operate/shared/InstanceHeader/InstanceHeader';
 import {InstanceHeaderSkeleton} from '#/operate/shared/InstanceHeader/InstanceHeaderSkeleton';
 import {useDecisionInstance} from './decisionInstance.queries';
@@ -21,14 +22,22 @@ import {getHeaderColumns} from './headerColumns';
 type Props = {
 	decisionEvaluationInstanceKey: string;
 	onOpenDrd: () => void;
+	openDrdButtonRef?: React.Ref<HTMLButtonElement>;
 };
 
-const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => {
+const DecisionInstanceLink = createLink(Link);
+
+const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd, openDrdButtonRef}) => {
 	const {t} = useTranslation();
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 	const {data: tenants} = useSuspenseQuery({...queries.getCurrentUser(), select: ({tenants}) => tenants});
 	const tenantsById = Object.fromEntries(tenants.map(({tenantId, name}) => [tenantId, name]));
-	const {data: decisionInstance, status} = useDecisionInstance(decisionEvaluationInstanceKey);
+	const {query, isGenericError} = useDecisionInstance(decisionEvaluationInstanceKey);
+	const {data: decisionInstance, status, refetch} = query;
+
+	if (isGenericError) {
+		return <GenericErrorPage reset={() => void refetch()} />;
+	}
 
 	if (status === 'pending') {
 		return <InstanceHeaderSkeleton headerColumns={getHeaderColumns(t, {isMultiTenancyEnabled})} />;
@@ -58,10 +67,20 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 			{
 				hideOverflowingContent: false,
 				content: (
-					// TODO(#55977): point at the filtered Decisions list once its search schema exists
-					<Link as={RouterLink} to="/operate/decisions" title={versionLinkTitle} aria-label={versionLinkTitle}>
+					<DecisionInstanceLink
+						to="/operate/decisions"
+						search={{
+							decisionDefinitionId: decisionInstance.decisionDefinitionId,
+							decisionDefinitionVersion: decisionInstance.decisionDefinitionVersion,
+							evaluated: true,
+							failed: true,
+							...(isMultiTenancyEnabled ? {tenantId} : {}),
+						}}
+						title={versionLinkTitle}
+						aria-label={versionLinkTitle}
+					>
 						{decisionInstance.decisionDefinitionVersion}
-					</Link>
+					</DecisionInstanceLink>
 				),
 			},
 			{
@@ -82,10 +101,9 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 				title: decisionInstance.processInstanceKey ?? t('operate.decisionInstance.header.noProcessInstance'),
 				hideOverflowingContent: false,
 				content: decisionInstance.processInstanceKey ? (
-					// TODO(#56029): point at the real Process Instance route once it exists
-					<Link
-						as={RouterLink}
-						to="/"
+					<DecisionInstanceLink
+						to="/operate/processes/$processInstanceId"
+						params={{processInstanceId: decisionInstance.processInstanceKey}}
 						title={t('operate.decisionInstance.header.processInstanceLinkTitle', {
 							processInstanceKey: decisionInstance.processInstanceKey,
 						})}
@@ -94,7 +112,7 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 						})}
 					>
 						{decisionInstance.processInstanceKey}
-					</Link>
+					</DecisionInstanceLink>
 				) : (
 					t('operate.decisionInstance.header.noProcessInstance')
 				),
@@ -114,6 +132,7 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 						kind="tertiary"
 						title={t('operate.decisionInstance.header.openDrdButton')}
 						aria-label={t('operate.decisionInstance.header.openDrdButton')}
+						ref={openDrdButtonRef}
 						onClick={onOpenDrd}
 					>
 						{t('operate.decisionInstance.header.openDrdButton')}

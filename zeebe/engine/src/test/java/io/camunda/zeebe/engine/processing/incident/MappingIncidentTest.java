@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -39,6 +40,16 @@ import org.junit.Test;
 public final class MappingIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  // Pinned to ORDERED: the test below verifies that ORDERED evaluates failing sources on
+  // superseded duplicate targets, which is ORDERED-specific behavior (COMBINED resolves
+  // duplicates at expression-build time and never evaluates the superseded source).
+  @ClassRule
+  public static final EngineRule ENGINE_ORDERED =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              c -> c.setOutputMappingMode(EngineConfiguration.OutputMappingMode.ORDERED));
+
   private static final BpmnModelInstance PROCESS_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
@@ -299,9 +310,10 @@ public final class MappingIncidentTest {
 
   @Test
   public void shouldRaiseIncidentForPreviouslyDroppedDuplicateOutputMappingSource() {
-    // given: two output mappings targeting the same key; under the OLD (pre-fix) behavior the
-    // first (an always-failing assert) would have been silently dropped as a superseded duplicate
-    // and never evaluated — now every source is evaluated in modeling order, so it fails first
+    // given: two output mappings targeting the same key; under COMBINED mode the first
+    // (an always-failing assert) is silently dropped at expression-build time and never evaluated.
+    // Under ORDERED mode every source is evaluated in modeling order, so it fails and raises an
+    // incident — this test pins that ORDERED-specific behavior.
     final var process =
         Bpmn.createExecutableProcess("process-duplicate-target-fail")
             .startEvent()
@@ -313,13 +325,11 @@ public final class MappingIncidentTest {
                         .zeebeOutputExpression("2", "x"))
             .endEvent()
             .done();
-    ENGINE.deployment().withXmlResource(process).deploy();
+    ENGINE_ORDERED.deployment().withXmlResource(process).deploy();
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process-duplicate-target-fail").create();
-    ENGINE.job().ofInstance(processInstanceKey).withType("test").complete();
+        ENGINE_ORDERED.processInstance().ofBpmnProcessId("process-duplicate-target-fail").create();
+    ENGINE_ORDERED.job().ofInstance(processInstanceKey).withType("test").complete();
 
-    // then: an incident is raised for the first mapping's failing source, and 'x' is never
-    // created — the second, winning mapping is never reached
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)

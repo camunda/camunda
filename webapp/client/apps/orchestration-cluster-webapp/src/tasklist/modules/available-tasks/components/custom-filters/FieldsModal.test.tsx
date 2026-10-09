@@ -80,7 +80,7 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		const dialog = screen.getByRole('dialog', {name: /custom filters modal/i});
+		const dialog = screen.getByRole('dialog', {name: /apply filters/i});
 		await expect.element(dialog).toBeVisible();
 		await expect.element(screen.getByRole('heading', {name: /apply filters/i})).toBeVisible();
 
@@ -114,13 +114,11 @@ describe('<FieldsModal />', () => {
 		);
 
 		const combobox = screen.getByRole('combobox', {name: /process/i});
-		await expect.element(combobox).toBeVisible();
 
-		await userEvent.selectOptions(combobox, '0');
-		await expect.element(combobox).toHaveValue('0');
-
-		await userEvent.selectOptions(combobox, '1');
-		await expect.element(combobox).toHaveValue('1');
+		await userEvent.click(combobox);
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'Process 0 - v1'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'Process 1 - v2'})).toBeVisible();
 	});
 
 	it('should reveal user and group inputs when user and group is selected', async ({worker}) => {
@@ -140,7 +138,7 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByText('User and group'));
 
@@ -165,15 +163,16 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByText('User and group'));
 
 		const groupCombobox = screen.getByRole('combobox', {name: /in a group/i});
-		await expect.element(groupCombobox).toBeVisible();
 
-		await userEvent.selectOptions(groupCombobox, 'accounting');
-		await expect.element(groupCombobox).toHaveValue('accounting');
+		await userEvent.click(groupCombobox);
+		await expect.element(screen.getByRole('listbox')).toBeVisible();
+		await userEvent.click(screen.getByRole('option', {name: 'accounting'}), {force: true});
+		await expect.element(groupCombobox).toHaveTextContent('accounting');
 	});
 
 	it('should reveal advanced fields when the advanced toggle is on', async ({worker}) => {
@@ -193,11 +192,11 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(
 			screen
-				.getByRole('dialog', {name: 'Custom filters modal'})
+				.getByRole('dialog', {name: 'Apply filters'})
 				.getByRole('switch', {name: 'Advanced filters', checked: false}),
 			{
 				force: true,
@@ -226,11 +225,11 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(
 			screen
-				.getByRole('dialog', {name: 'Custom filters modal'})
+				.getByRole('dialog', {name: 'Apply filters'})
 				.getByRole('switch', {name: 'Advanced filters', checked: false}),
 			{
 				force: true,
@@ -253,7 +252,7 @@ describe('<FieldsModal />', () => {
 			'clientConfig',
 			JSON.stringify(
 				createSystemConfiguration({
-					deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0},
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
 				}),
 			),
 		);
@@ -273,7 +272,7 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: /tenant/i})).toBeVisible();
 	});
 
@@ -295,14 +294,18 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: /process/i})).toBeVisible();
 	});
 
 	it('should load processes from the only accessible tenant', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
 		);
 		worker.use(
 			mockCurrentUserEndpoint({
@@ -340,7 +343,11 @@ describe('<FieldsModal />', () => {
 	it('should load processes from all accessible tenants', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
 		);
 		worker.use(
 			mockCurrentUserEndpoint({
@@ -381,7 +388,11 @@ describe('<FieldsModal />', () => {
 	it('should load processes from the explicitly selected tenant', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
 		);
 		worker.use(
 			mockCurrentUserEndpoint({
@@ -475,10 +486,10 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 		await expect.element(screen.getByRole('radio', {name: /^me$/i})).toBeChecked();
 		await expect.element(screen.getByRole('radio', {name: /completed/i})).toBeChecked();
-		await expect.element(screen.getByRole('combobox', {name: /process/i})).toHaveValue('0');
+		await expect.element(screen.getByRole('combobox', {name: /process/i})).toHaveTextContent('Process 0 - v1');
 		await expect.element(screen.getByRole('textbox', {name: /task id/i})).toHaveValue('task-0');
 		await expect.element(screen.getByRole('textbox', {name: /business id/i})).toHaveValue('order-0');
 		await expect.element(screen.getByRole('textbox', {name: /^name$/i})).toHaveValue('variable-0');
@@ -502,7 +513,7 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 		await expect.element(screen.getByRole('textbox', {name: /filter name/i})).toHaveValue('My filter');
 	});
 
@@ -523,7 +534,7 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 		await expect.element(screen.getByRole('heading', {name: /apply filters/i})).toBeVisible();
 	});
 
@@ -545,13 +556,12 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByText('Unassigned'));
 		await userEvent.click(screen.getByRole('button', {name: /^apply$/i}));
 
-		expect(mockOnApply).toHaveBeenCalledOnce();
-		expect(mockOnApply.mock.calls[0]![0]).toMatchObject({assignee: 'unassigned'});
+		expect(mockOnApply).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({assignee: 'unassigned'}));
 	});
 
 	it('should call onSave with values when Save is clicked', async ({worker}) => {
@@ -572,13 +582,12 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByText('Completed'));
 		await userEvent.click(screen.getByRole('button', {name: /^save$/i}));
 
-		expect(mockOnSave).toHaveBeenCalledOnce();
-		expect(mockOnSave.mock.calls[0]![0]).toMatchObject({status: 'completed'});
+		expect(mockOnSave).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({status: 'completed'}));
 	});
 
 	it('should call onEdit with values when Save and apply is clicked for a named filter', async ({worker}) => {
@@ -599,13 +608,12 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByText('Open'));
 		await userEvent.click(screen.getByRole('button', {name: /save and apply/i}));
 
-		expect(mockOnEdit).toHaveBeenCalledOnce();
-		expect(mockOnEdit.mock.calls[0]![0]).toMatchObject({status: 'open', name: 'My filter'});
+		expect(mockOnEdit).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({status: 'open', name: 'My filter'}));
 	});
 
 	it('should call onDelete when Delete is clicked for a named filter', async ({worker}) => {
@@ -626,7 +634,7 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: /^delete$/i}));
 
@@ -651,7 +659,7 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: /cancel/i}));
 
@@ -675,7 +683,7 @@ describe('<FieldsModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByText('Completed'));
 		await expect.element(screen.getByRole('radio', {name: /completed/i})).toBeChecked();
@@ -683,5 +691,128 @@ describe('<FieldsModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: /reset/i}));
 
 		await expect.element(screen.getByRole('radio', {name: /completed/i})).not.toBeChecked();
+	});
+
+	it('should omit advanced filters on Save and apply after the advanced toggle is turned off', async ({worker}) => {
+		worker.use(...getMocks());
+		const mockOnEdit = vi.fn();
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={{
+						name: 'My filter',
+						assignee: 'me',
+						status: 'open',
+						dueDateFrom: new Date('2022-01-01'),
+						taskId: 'task-0',
+						businessId: 'eq_order-0',
+						variables: [{name: 'variable-0', value: '"value-0"'}],
+					}}
+					onClose={() => {}}
+					onApply={() => {}}
+					onSave={() => {}}
+					onEdit={mockOnEdit}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
+		await expect.element(screen.getByRole('textbox', {name: /task id/i})).toHaveValue('task-0');
+
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters', checked: true}), {force: true});
+		await expect.element(screen.getByRole('switch', {name: 'Advanced filters', checked: false})).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: /save and apply/i}));
+
+		expect(mockOnEdit).toHaveBeenCalledExactlyOnceWith({name: 'My filter', assignee: 'me', status: 'open'});
+	});
+
+	it('should omit advanced filters on Apply after the advanced toggle is turned off', async ({worker}) => {
+		worker.use(...getMocks());
+		const mockOnApply = vi.fn();
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={DEFAULT_VALUES}
+					onClose={() => {}}
+					onApply={mockOnApply}
+					onSave={() => {}}
+					onEdit={() => {}}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters', checked: false}), {force: true});
+		await userEvent.fill(screen.getByRole('textbox', {name: /task id/i}), 'task-0');
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters', checked: true}), {force: true});
+		await expect.element(screen.getByRole('textbox', {name: /task id/i})).not.toBeInTheDocument();
+		await userEvent.click(screen.getByRole('button', {name: /^apply$/i}));
+
+		expect(mockOnApply).toHaveBeenCalledExactlyOnceWith({assignee: 'all', status: 'all'});
+	});
+
+	it('should clear advanced field values when the advanced toggle is turned off', async ({worker}) => {
+		worker.use(...getMocks());
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={{
+						...DEFAULT_VALUES,
+						taskId: 'task-0',
+						businessId: 'eq_order-0',
+						variables: [{name: 'variable-0', value: '"value-0"'}],
+					}}
+					onClose={() => {}}
+					onApply={() => {}}
+					onSave={() => {}}
+					onEdit={() => {}}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
+		await expect.element(screen.getByRole('textbox', {name: /task id/i})).toHaveValue('task-0');
+
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters', checked: true}), {force: true});
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters', checked: false}), {force: true});
+
+		await expect.element(screen.getByRole('textbox', {name: /task id/i})).toHaveValue('');
+		await expect.element(screen.getByRole('textbox', {name: /business id/i})).toHaveValue('');
+		await expect.element(screen.getByRole('button', {name: /add variable/i})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /remove variable/i})).not.toBeInTheDocument();
+	});
+
+	it('should keep the advanced toggle off when the only advanced filter is an empty variables list', async ({
+		worker,
+	}) => {
+		worker.use(...getMocks());
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={{...DEFAULT_VALUES, variables: []}}
+					onClose={() => {}}
+					onApply={() => {}}
+					onSave={() => {}}
+					onEdit={() => {}}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
+		await expect.element(screen.getByRole('switch', {name: 'Advanced filters'})).not.toBeChecked();
+		await expect.element(screen.getByRole('textbox', {name: /task id/i})).not.toBeInTheDocument();
 	});
 });

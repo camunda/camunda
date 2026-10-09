@@ -283,7 +283,7 @@ public class ClientPropertiesConfigurationTest {
 
     // then
     assertThat(config.getRestAddress())
-        .isEqualTo(URI.create("https://eu-west.zeebe.camunda.io:443/my-cluster"));
+        .isEqualTo(URI.create("https://eu-west.api.camunda.io:443/my-cluster"));
     assertThat(config.getGrpcAddress())
         .isEqualTo(URI.create("https://my-cluster.eu-west.zeebe.camunda.io:443"));
   }

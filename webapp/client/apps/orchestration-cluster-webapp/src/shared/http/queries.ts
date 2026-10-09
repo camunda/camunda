@@ -8,7 +8,6 @@
 
 import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
 import type {
-	GetSystemConfigurationResponseBody,
 	CurrentUser,
 	License,
 	Form,
@@ -26,15 +25,41 @@ import type {
 	QueryUserTaskAuditLogsRequestBody,
 	QueryUserTaskAuditLogsResponseBody,
 	GetAuditLogResponseBody,
+	QueryAuditLogsRequestBody,
+	QueryAuditLogsResponseBody,
 	Variable,
 	QueryDecisionDefinitionsRequestBody,
 	QueryDecisionDefinitionsResponseBody,
 	GetProcessDefinitionResponseBody,
 	GetProcessStartFormResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+	GetSystemConfigurationResponseBody,
+	QueryMessageSubscriptionsRequestBody,
+	QueryMessageSubscriptionsResponseBody,
+	QueryMappingRulesRequestBody,
+	QueryMappingRulesResponseBody,
+	User,
+	QueryUsersRequestBody,
+	QueryUsersResponseBody,
+	ClusterVariable,
+	QueryClusterVariablesRequestBody,
+	QueryClusterVariablesResponseBody,
+	QueryTenantsRequestBody,
+	QueryTenantsResponseBody,
+	QueryGlobalTaskListenersRequestBody,
+	QueryGlobalTaskListenersResponseBody,
+	GlobalTaskListener,
+	Authorization,
+	QueryAuthorizationsRequestBody,
+	QueryAuthorizationsResponseBody,
+	QueryRolesRequestBody,
+	QueryRolesResponseBody,
+	QueryGroupsRequestBody,
+	QueryGroupsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
+import {parseAdminClientConfig, type AdminClientConfig} from './adminClientConfig';
 
 const DEFAULT_MAX_ITEM_PER_PAGE = 50;
 
@@ -63,10 +88,29 @@ const queryKeys = {
 	processDefinition: (processDefinitionKey: string) => ['processDefinition', processDefinitionKey] as const,
 	processStartForm: (processDefinitionKey: string) => ['processStartForm', processDefinitionKey] as const,
 	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) => ['queryDecisionDefinitions', body] as const,
+	queryMessageSubscriptions: (body: QueryMessageSubscriptionsRequestBody) =>
+		['queryMessageSubscriptions', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
 		['getIncidentProcessInstanceStatisticsByError', body] as const,
+	queryAuditLogs: (body: QueryAuditLogsRequestBody) => ['queryAuditLogs', body] as const,
+	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
+	users: (body: QueryUsersRequestBody) => ['users', body] as const,
+	user: (username: string) => ['user', username] as const,
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody) => ['queryClusterVariables', body] as const,
+	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
+		['getClusterVariable', variable] as const,
+	queryTenants: (body: QueryTenantsRequestBody) => ['queryTenants', body] as const,
+	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
+		['searchGlobalTaskListeners', body] as const,
+	globalTaskListener: (id: string) => ['globalTaskListener', id] as const,
+	queryAuthorizations: (body: QueryAuthorizationsRequestBody) => ['queryAuthorizations', body] as const,
+	getAuthorization: (authorization: Pick<Authorization, 'authorizationKey'>) =>
+		['getAuthorization', authorization] as const,
+	queryRoles: (body: QueryRolesRequestBody) => ['queryRoles', body] as const,
+	queryGroups: (body: QueryGroupsRequestBody) => ['queryGroups', body] as const,
+	adminClientConfig: () => ['adminClientConfig'] as const,
 };
 
 const queries = {
@@ -313,6 +357,10 @@ const queries = {
 				return response.text();
 			},
 			staleTime: 'static',
+			// Blanket retry:false, matching getCurrentUser/getVariable above: a 403/404 here is
+			// permanent (missing authorization / unknown process), and this app has a dedicated
+			// forbidden-state UI, so a fast failure matters more than retrying transient 5xx.
+			retry: false,
 		}),
 
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
@@ -397,6 +445,18 @@ const queries = {
 			},
 		}),
 
+	queryMessageSubscriptions: (body: QueryMessageSubscriptionsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryMessageSubscriptions(body),
+			queryFn: async (): Promise<QueryMessageSubscriptionsResponseBody> => {
+				const {response, error} = await request(endpoints.queryMessageSubscriptions(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
 	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) =>
 		queryOptions({
 			queryKey: queryKeys.queryDecisionDefinitions(body),
@@ -406,6 +466,174 @@ const queries = {
 					throw mapQueryError(error);
 				}
 				return response.json();
+			},
+		}),
+
+	queryUsers: (body: QueryUsersRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.users(body),
+			queryFn: async (): Promise<QueryUsersResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsers(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getUser: (username: string) =>
+		queryOptions({
+			queryKey: queryKeys.user(username),
+			queryFn: async (): Promise<User> => {
+				const {response, error} = await request(endpoints.getUser({username}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryAuditLogs: (body: QueryAuditLogsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryAuditLogs(body),
+			queryFn: async (): Promise<QueryAuditLogsResponseBody> => {
+				const {response, error} = await request(endpoints.queryAuditLogs(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMappingRules: (body: QueryMappingRulesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryMappingRules(body),
+			queryFn: async (): Promise<QueryMappingRulesResponseBody> => {
+				const {response, error} = await request(endpoints.queryMappingRules(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryClusterVariables(body),
+			queryFn: async (): Promise<QueryClusterVariablesResponseBody> => {
+				const {response, error} = await request(endpoints.queryClusterVariables(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.searchGlobalTaskListeners(body),
+			queryFn: async (): Promise<QueryGlobalTaskListenersResponseBody> => {
+				const {response, error} = await request(endpoints.searchGlobalTaskListeners(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
+		queryOptions({
+			queryKey: queryKeys.getClusterVariable(variable),
+			queryFn: async (): Promise<ClusterVariable> => {
+				const {response, error} = await request(endpoints.getClusterVariable(variable));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryTenants: (body: QueryTenantsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryTenants(body),
+			queryFn: async (): Promise<QueryTenantsResponseBody> => {
+				const {response, error} = await request(endpoints.queryTenants(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+	getGlobalTaskListener: (id: string) =>
+		queryOptions({
+			queryKey: queryKeys.globalTaskListener(id),
+			queryFn: async (): Promise<GlobalTaskListener> => {
+				const {response, error} = await request(endpoints.getGlobalTaskListener({id}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryAuthorizations: (body: QueryAuthorizationsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryAuthorizations(body),
+			queryFn: async (): Promise<QueryAuthorizationsResponseBody> => {
+				const {response, error} = await request(endpoints.queryAuthorizations(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getAuthorization: (authorization: Pick<Authorization, 'authorizationKey'>) =>
+		queryOptions({
+			queryKey: queryKeys.getAuthorization(authorization),
+			queryFn: async (): Promise<Authorization> => {
+				const {response, error} = await request(endpoints.getAuthorization(authorization));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryRoles: (body: QueryRolesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryRoles(body),
+			queryFn: async (): Promise<QueryRolesResponseBody> => {
+				const {response, error} = await request(endpoints.queryRoles(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryGroups: (body: QueryGroupsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryGroups(body),
+			queryFn: async (): Promise<QueryGroupsResponseBody> => {
+				const {response, error} = await request(endpoints.queryGroups(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	// Fixed for the lifetime of the server, so it is fetched once per session.
+	adminClientConfig: () =>
+		queryOptions({
+			queryKey: queryKeys.adminClientConfig(),
+			staleTime: Infinity,
+			queryFn: async (): Promise<AdminClientConfig> => {
+				const {response, error} = await request(endpoints.getAdminClientConfig());
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return parseAdminClientConfig(await response.text());
 			},
 		}),
 } as const;

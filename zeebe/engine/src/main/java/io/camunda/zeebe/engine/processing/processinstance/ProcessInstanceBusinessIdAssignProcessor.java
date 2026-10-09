@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -159,12 +158,17 @@ public class ProcessInstanceBusinessIdAssignProcessor
         .setTenantId(processInstanceRecord.getTenantId())
         .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
         .setBpmnProcessId(processInstanceRecord.getBpmnProcessId())
-        .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey())
+        .setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<ProcessInstanceBusinessIdRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceBusinessIdRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceBusinessIdRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

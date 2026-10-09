@@ -233,8 +233,8 @@ class PartitionManagerStepTest {
     @Test
     void shouldPassDistinctFeatureFlagsToEachPhysicalTenant() throws Exception {
       // given — two tenants each with a distinct FeatureFlags instance
-      final var flagsA = new FeatureFlags(true, false, false, false, false, false, true, true);
-      final var flagsB = new FeatureFlags(false, false, true, false, false, false, false, true);
+      final var flagsA = new FeatureFlags(true, false, false, false, false, false, true);
+      final var flagsB = new FeatureFlags(false, false, true, false, false, false, false);
       final var secondTenantId = "second";
 
       final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();

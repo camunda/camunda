@@ -24,7 +24,6 @@
     <module>build-tools</module>
     <module>zeebe</module>
     <module>operate</module>
-    <module>tasklist</module>
     <module>identity</module>
     <module>webapp</module>
     <module>webapps-common</module>
@@ -40,6 +39,7 @@
     <module>gateways/gateway-mcp</module>
     <module>spring-utils</module>
     <module>clients/java</module>
+    <module>clients/spring-boot-protobuf-compatibility</module>
     <module>clients/camunda-spring-boot-starter</module>
     <module>clients/camunda-spring-boot-3-starter</module>
     <module>clients/camunda-spring-boot-4-starter</module>
@@ -79,7 +79,6 @@
             <excludes>
               <exclude>**/target/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
-              <exclude>tasklist/client/**/*</exclude>
               <exclude>operate/client/**/*</exclude>
               <exclude>optimize/client/**/*.md</exclude>
               <exclude>webapp/client/**/*</exclude>
@@ -88,7 +87,9 @@
               YamlFrontMatter flexmark extension
               -->
               <exclude>.github/instructions/**/*.md</exclude>
+              <exclude>.claude/agents/**/*.md</exclude>
               <exclude>.claude/skills/**/*.md</exclude>
+              <exclude>.agents/skills/**/*.md</exclude>
               <exclude>.github/agents/**/*.md</exclude>
               <exclude>.github/workflows/**/*.md</exclude>
               <exclude>load-tests/skills/**/*.md</exclude>

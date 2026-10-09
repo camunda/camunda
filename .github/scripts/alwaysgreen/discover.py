@@ -27,6 +27,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from dataclasses import asdict
 from pathlib import Path
+from typing import Callable
 
 import classify
 import plan as planning
@@ -38,12 +39,58 @@ FIX_LABEL = os.environ.get("ALWAYSGREEN_FIX_LABEL", "alwaysgreen-fix")
 #: Prefix of the per-dispatch-key label the fix workflow stamps on every PR it opens.
 KEY_LABEL_PREFIX = "alwaysgreen-key:"
 #: How long a no-fix verdict keeps its fingerprints out of dispatch.
-NO_FIX_COOLDOWN_DAYS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS", "7"))
+#:
+#: A no-fix verdict records no issue and nothing to close — FIX-AGENT.md is explicit
+#: that it "expires on its own" — so it is a statement about the conditions the agent
+#: met, not about the test. Conditions move on a scale of hours, and seven days let a
+#: transient one mask a week of later failures: run 33464059381 met a Web Modeler
+#: `/api/internal/login` 500, correctly declined to mask it, and thereby suppressed
+#: both SaaS smoke tests until 2026-09-08 — long after the outage had cleared.
+#:
+#: The pipeline runs every 20-40 minutes and an agent takes 7-14, so a genuinely
+#: persistent problem costs a few dispatches a day at this window rather than one a
+#: week. If that proves too eager, the answer is an escalation ladder — stop
+#: dispatching after N consecutive no-fix verdicts on one fingerprint and tell a
+#: human — not a longer blind window.
+NO_FIX_COOLDOWN_HOURS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_HOURS", "6"))
+
+#: The knob changed unit with the window, so the old name is refused rather than
+#: converted: reading `..._DAYS=7` as 168 hours would restore the very window this
+#: replaced. Refusing it silently would be indistinguishable from it working, so a
+#: leftover setting says so in the run instead.
+if os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS"):
+    print(
+        "::warning::ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS is no longer read. The no-fix "
+        "cooldown is now set in hours via ALWAYSGREEN_NO_FIX_COOLDOWN_HOURS "
+        f"(currently {NO_FIX_COOLDOWN_HOURS}h).",
+        file=sys.stderr,
+    )
 #: How long an open fix PR keeps holding its dispatch key; see
-#: planning.PR_LOCK_TTL_DAYS. Set to 0 to restore the old never-expiring lock.
-PR_LOCK_TTL_DAYS = int(
-    os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_DAYS", str(planning.PR_LOCK_TTL_DAYS))
-)
+#: planning.PR_LOCK_TTL_HOURS. Set to 0 to restore the old never-expiring lock.
+#: Read defensively, matching the degrade-don't-crash bias of everything else here: an
+#: unreadable `createdAt` keeps the lock and a failed lookup suppresses, so a malformed
+#: dial must not raise at import and take down every entry point in this module.
+try:
+    PR_LOCK_TTL_HOURS = int(
+        os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_HOURS", "").strip()
+        or planning.PR_LOCK_TTL_HOURS
+    )
+except ValueError:
+    print(
+        "::warning::unparseable ALWAYSGREEN_PR_LOCK_TTL_HOURS; using the default "
+        f"({planning.PR_LOCK_TTL_HOURS}h).",
+        file=sys.stderr,
+    )
+    PR_LOCK_TTL_HOURS = planning.PR_LOCK_TTL_HOURS
+#: Refused rather than converted, for the same reason as the no-fix knob above: reading
+#: `..._DAYS=2` as 48 hours would restore the window this replaced.
+if os.environ.get("ALWAYSGREEN_PR_LOCK_TTL_DAYS"):
+    print(
+        "::warning::ALWAYSGREEN_PR_LOCK_TTL_DAYS is no longer read. The open fix PR "
+        "lock is now set in hours via ALWAYSGREEN_PR_LOCK_TTL_HOURS "
+        f"(currently {PR_LOCK_TTL_HOURS}h).",
+        file=sys.stderr,
+    )
 #: Cap on artifact downloads while reading past verdicts, so a burst of agent runs
 #: cannot make triage slow.
 NO_FIX_MAX_RUNS = 20
@@ -159,7 +206,14 @@ def failing_jobs(run_id: str) -> list[dict]:
 
 
 def sm_candidates(run_id: str, base_ref: str, job_name: str, workdir: Path) -> planning.Candidate:
-    """Build the SM candidate from playwright-results-json on the AlwaysGreen run."""
+    """Build the SM candidate from playwright-results-json on the AlwaysGreen run.
+
+    The artifact pattern and the download directory are both keyed on the job when
+    it is a preview-env matrix leg: that workflow produces one JSON report per
+    version in the same run, so a single shared `playwright-results-json*` download
+    would hand every leg the same pile of reports and attribute 8.8's failures to
+    8.10 as well.
+    """
     cand = planning.Candidate(
         base_ref=base_ref,
         surface=classify.SURFACE_SM_E2E,
@@ -167,9 +221,11 @@ def sm_candidates(run_id: str, base_ref: str, job_name: str, workdir: Path) -> p
         evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
         evidence_repo=REPO,
     )
-    dest = workdir / "sm"
-    if not download_artifacts(run_id, REPO, "playwright-results-json*", dest):
-        log("::warning::no playwright-results-json artifact for the SM e2e failure")
+    version = classify.preview_env_version(job_name)
+    pattern = f"playwright-results-json-{version}-*" if version else "playwright-results-json*"
+    dest = workdir / (f"sm-{version}" if version else "sm")
+    if not download_artifacts(run_id, REPO, pattern, dest):
+        log(f"::warning::no {pattern} artifact for the SM e2e failure")
         return cand
 
     for report in read_json_files(dest, "playwright-results.json"):
@@ -258,11 +314,17 @@ MAX_ATTEMPT_LOOKBACK = 5
 
 
 def downstream_failing_jobs(downstream_id: str, attempts: int) -> list[dict]:
-    """Failing jobs of the most recent downstream attempt that had any.
+    """Jobs that explain the most recent downstream attempt that has an explanation.
 
     A re-run turns every job of the latest attempt green while the parent run
     keeps the conclusion triage reacted to, so reading only the latest attempt
     silently loses the evidence.
+
+    Within an attempt, a job GitHub stopped rather than let fail counts only when
+    no job actually failed: a cancellation alongside a failure is a consequence
+    of it, not a cause. On its own it is all the run has to say — a run can go
+    red with no failing job at all, which is how a queued job GitHub never placed
+    on a runner reads. The caller still puts it through the noise prefilter.
     """
     for attempt in range(attempts, max(attempts - MAX_ATTEMPT_LOOKBACK, 0), -1):
         data = gh_json(
@@ -273,11 +335,14 @@ def downstream_failing_jobs(downstream_id: str, attempts: int) -> list[dict]:
             ],
             {},
         )
-        failing = [
-            j
-            for j in (data.get("jobs") or [])
-            if isinstance(j, dict) and j.get("conclusion") == "failure"
-        ]
+        jobs = [j for j in (data.get("jobs") or []) if isinstance(j, dict)]
+        failing = [j for j in jobs if j.get("conclusion") == "failure"]
+        if not failing:
+            failing = [
+                j for j in jobs if j.get("conclusion") in classify.STALLED_CONCLUSIONS
+            ]
+            if failing:
+                log(f"downstream: no failing job; {len(failing)} stalled job(s)")
         if failing:
             if attempt != attempts:
                 log(f"downstream re-run since triage; reading attempt {attempt}")
@@ -286,11 +351,15 @@ def downstream_failing_jobs(downstream_id: str, attempts: int) -> list[dict]:
 
 
 def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
-    """Describe the failing jobs of a downstream run whose specs all passed.
+    """Describe the jobs that made a downstream run red though its specs all passed.
 
-    The same noise prefilter as the parent run applies: a downstream job killed
-    by a GitHub platform error or a cancellation carries no evidence and must not
-    reach the agent.
+    The same noise prefilter as the parent run applies, now over stalled jobs
+    too, and it is what separates the two ways a job ends up cancelled. One
+    stopped part-way through a step — because somebody cancelled the run, or
+    because another job failed it out — carries the "operation was canceled"
+    annotation and stays noise. One GitHub could not place on a runner carries
+    "not acquired by Runner of type hosted" instead, which names the defect, so
+    it reaches the agent rather than leaving the run red with nobody dispatched.
     """
     run = gh_json(["api", f"repos/{E2E_REPO}/actions/runs/{downstream_id}"], {})
     workflow_path = run.get("path") or ""
@@ -299,8 +368,9 @@ def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
     specs: list[classify.FailingSpec] = []
     for job in downstream_failing_jobs(downstream_id, int(attempts)):
         steps = job.get("steps") or []
+        conclusion = job.get("conclusion") or "failure"
         verdict = classify.noise_verdict(
-            conclusion="failure",
+            conclusion=conclusion,
             step_count=len(steps),
             failure_annotations=failure_annotations(job.get("check_run_url")),
         )
@@ -311,6 +381,7 @@ def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
             classify.ci_job_spec(
                 job.get("name") or "",
                 workflow_path=workflow_path,
+                conclusion=conclusion,
                 failing_steps=[
                     s.get("name") or ""
                     for s in steps
@@ -326,78 +397,136 @@ def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
 # ---------------------------------------------------------------------------
 
 
-def covered_fingerprints() -> set[str]:
-    """Fingerprints claimed by an open fix PR, in any repo a fix can land in.
+def open_fix_prs(repo: str) -> tuple[list[dict], bool]:
+    """Open fix PRs in one repository, with the fields dedupe needs. Returns (prs, ok).
 
-    Scoped to every repo in FIX_PR_REPOS, not just the monorepo: most fixes land in
-    the e2e or chart repo, and reading only `REPO` made those coverage blocks
-    invisible here, so their specs stayed dispatchable.
+    A seam, so `dedupe_inputs` can be unit-tested without a token.
     """
-    out: set[str] = set()
-    for repo in FIX_PR_REPOS:
-        prs = gh_json(
-            [
-                "pr", "list", "--repo", repo,
-                "--search", f"label:{FIX_LABEL} is:open",
-                "--limit", "100", "--json", "number,body",
-            ],
-            [],
-        )
-        for pr in prs if isinstance(prs, list) else []:
-            out |= planning.parse_coverage_block(pr.get("body"))
-    return out
+    prs, err = gh_json_ex(
+        [
+            "pr", "list", "--repo", repo,
+            "--search", f"label:{FIX_LABEL} is:open",
+            "--limit", "100", "--json", "labels,number,createdAt,body,mergeable",
+        ],
+        None,
+    )
+    if prs is None or not isinstance(prs, list):
+        log(f"::warning::open fix PR lookup failed for {repo}: {err.strip()[:200]}")
+        return [], False
+    return prs, True
 
 
-def open_fix_pr_keys() -> tuple[set[str], bool]:
-    """Dispatch keys that already have an open fix PR, in any repo a fix can land in.
+def dedupe_inputs() -> tuple[set[str], set[str], set[str], dict[str, object], bool]:
+    """(covered fingerprints, keys with an open PR, keys decided per spec, refs, ok).
 
-    Read from the `alwaysgreen-key:<base_ref>:<surface>` label the fix workflow
-    stamps, not from the PR body: the body's coverage block is written by the agent
-    and cannot be relied on to exist.
+    `refs` is what the Slack message needs to say *which* PR accounts for a failure:
+    `{"covered_by": {fingerprint: "owner/repo#n"}, "keys": {key: ["owner/repo#n"]}}`.
+    Built here rather than looked up again by the notifier, because the answer is a
+    by-product of the decision that was already made — re-deriving it would be a second
+    PR listing that could disagree with the one the plan was built from.
 
-    A PR past PR_LOCK_TTL_DAYS stops holding its key, so a fix PR left unreviewed
-    cannot wedge its surface shut for good; `covered_fingerprints` still suppresses a
-    repeat of the specs it already claims.
+    One lookup behind one `ok`, across every repo a fix can land in. Coverage used to
+    come from a second, separate `gh` call whose failure was swallowed into an empty
+    set. That was survivable while every open fix PR locked its whole surface, because
+    the key layer caught what the empty set missed; once a claiming PR's key stops
+    locking, the two must agree or a failed coverage lookup dispatches a duplicate fix
+    for a spec that PR already claims.
 
-    Returns (keys, ok). As with `inflight_keys`, a failed lookup makes the caller
-    suppress rather than risk a duplicate PR.
+    Read from the `alwaysgreen-key:<base_ref>:<surface>` label the fix workflow stamps,
+    not from the PR body: the body's coverage block is written by the agent and cannot
+    be relied on to exist.
+
+    A PR past PR_LOCK_TTL_HOURS stops holding its key, so a fix PR left unreviewed
+    cannot wedge its surface shut for good.
+
+    `keys_with_coverage` is the subset whose every active holder claims at least one
+    fingerprint, so `plan` can decide those keys per spec instead of locking the
+    surface. A block that parses to nothing — absent, or present with no `fp=` line —
+    claims nothing, and a key any of whose active holders claims nothing stays out of
+    the subset: the marker comment alone is not a statement of remit.
+
+    Coverage is collected from every open fix PR, expired or not: the specs a PR claims
+    stay claimed for as long as it is open, and only the coarse key lock is time-bound
+    — except a PR GitHub reports as `CONFLICTING` (see `planning.pr_is_stale`), whose
+    claims are dropped immediately rather than waiting on a human to close it. Its key
+    label still counts towards `keys_with_coverage`, so a stale-but-claiming PR still
+    frees its surface's *other* specs for per-spec accounting; only the specific
+    fingerprints it can no longer land get a fresh chance.
+
+    As with `inflight_keys`, a failed lookup makes the caller suppress rather than risk
+    a duplicate PR.
     """
-    out: set[str] = set()
+    covered: set[str] = set()
+    keys: set[str] = set()
+    uncovered: set[str] = set()
+    covered_by: dict[str, str] = {}
+    key_refs: dict[str, list[str]] = {}
     ok = True
     now = datetime.now(timezone.utc)
     for repo in FIX_PR_REPOS:
-        prs, err = gh_json_ex(
-            [
-                "pr", "list", "--repo", repo,
-                "--search", f"label:{FIX_LABEL} is:open",
-                "--limit", "100", "--json", "labels,number,createdAt",
-            ],
-            None,
-        )
-        if prs is None:
-            log(f"::warning::open fix PR lookup failed for {repo}: {err.strip()[:200]}")
+        prs, repo_ok = open_fix_prs(repo)
+        if not repo_ok:
             ok = False
             continue
-        for pr in prs if isinstance(prs, list) else []:
-            keys: set[str] = set()
+        for pr in prs:
+            claims = planning.parse_coverage_block(pr.get("body"))
+            if claims and planning.pr_is_stale(pr.get("mergeable")):
+                log(
+                    f"stale fix PR {repo}#{pr.get('number')} is "
+                    f"{pr.get('mergeable')}; not treating its {len(claims)} "
+                    f"claimed spec(s) as covered"
+                )
+            else:
+                covered |= claims
+                # First claimant wins, so the reported PR matches the one whose claim
+                # actually suppressed the dispatch.
+                for claim in claims:
+                    covered_by.setdefault(claim, f"{repo}#{pr.get('number')}")
+            pr_keys: set[str] = set()
             for label in pr.get("labels") or []:
                 name = (label.get("name") or "").strip()
                 if name.startswith(KEY_LABEL_PREFIX):
                     key = name[len(KEY_LABEL_PREFIX) :].strip()
                     if key:
-                        keys.add(key)
-            if not keys:
+                        pr_keys.add(key)
+            if not pr_keys:
                 continue
             if planning.pr_lock_expired(
-                pr.get("createdAt") or "", now, PR_LOCK_TTL_DAYS
+                pr.get("createdAt") or "", now, PR_LOCK_TTL_HOURS
             ):
                 log(
-                    f"lock expired after {PR_LOCK_TTL_DAYS}d: {repo}#{pr.get('number')} "
-                    f"no longer holds {', '.join(sorted(keys))}"
+                    f"lock expired after {PR_LOCK_TTL_HOURS}h: {repo}#{pr.get('number')} "
+                    f"no longer holds {', '.join(sorted(pr_keys))}"
                 )
                 continue
-            out |= keys
-    return out, ok
+            keys |= pr_keys
+            for key in pr_keys:
+                key_refs.setdefault(key, []).append(f"{repo}#{pr.get('number')}")
+            if not claims:
+                uncovered |= pr_keys
+            log(
+                f"open fix PR {repo}#{pr.get('number')} holds "
+                f"{', '.join(sorted(pr_keys))}, claiming {len(claims)} spec(s)"
+            )
+    # Per key, not per PR: dispatchability is an intersection over every active holder,
+    # so a PR-level line cannot state it. Logged so a suppressed run names its blocker
+    # without anyone cross-listing open fix PRs by hand.
+    for key in sorted(keys):
+        log(
+            f"key {key}: "
+            + (
+                "locked (a holder claims no specs)"
+                if key in uncovered
+                else "decided per spec (every holder claims some)"
+            )
+        )
+    return (
+        covered,
+        keys,
+        keys - uncovered,
+        {"covered_by": covered_by, "keys": key_refs},
+        ok,
+    )
 
 
 def inflight_keys() -> tuple[set[str], bool]:
@@ -454,7 +583,7 @@ def recent_no_fix_fingerprints(workdir: Path) -> set[str]:
     if not isinstance(runs, list):
         return set()
 
-    cutoff = datetime.now(timezone.utc) - timedelta(days=NO_FIX_COOLDOWN_DAYS)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=NO_FIX_COOLDOWN_HOURS)
     out: set[str] = set()
     fetched = 0
     for run in runs:
@@ -533,21 +662,31 @@ def fixed_upstream_fingerprints(
     return out
 
 
-def product_bug_fingerprints() -> set[str]:
+def product_bug_fingerprints() -> tuple[set[str], dict[str, str]]:
+    """(fingerprints, fingerprint -> issue URL).
+
+    The URL is carried so a suppressed failure can name the bug it is tracked by. A
+    medic told only "tracked as a known product bug" still has to find the issue by
+    hand, which is the whole cost the message was supposed to save.
+    """
     issues = gh_json(
         [
             "search", "issues", "nightly-product-bug is:issue",
             "--owner", "camunda", "--state", "open",
-            "--limit", "200", "--json", "body",
+            "--limit", "200", "--json", "body,url",
         ],
         [],
     )
     out: set[str] = set()
+    urls: dict[str, str] = {}
     for issue in issues if isinstance(issues, list) else []:
         for line in (issue.get("body") or "").splitlines():
             if "nightly-product-bug fp=" in line:
-                out.add(line.split("fp=", 1)[1].strip()[:8])
-    return out
+                fp = line.split("fp=", 1)[1].strip()[:8]
+                out.add(fp)
+                if issue.get("url"):
+                    urls.setdefault(fp, str(issue["url"]))
+    return out, urls
 
 
 # ---------------------------------------------------------------------------
@@ -555,7 +694,21 @@ def product_bug_fingerprints() -> set[str]:
 # ---------------------------------------------------------------------------
 
 
+def branch_tip_sha(ref: str) -> str:
+    """Tip commit of `ref`, e.g. a branch name like "stable/8.8"."""
+    commit = gh_json(["api", f"repos/{REPO}/commits/{ref}"], {})
+    return (commit or {}).get("sha") or ""
+
+
 def resolve_blame(head_sha: str) -> classify.Blame:
+    """Resolve blame for the PR that produced `head_sha`.
+
+    `head_sha` must be the tip of the branch the failing candidate actually ran
+    against, not the AlwaysGreen run's own head_sha: preview-env-smoke-test.yml
+    runs one workflow against four branches (main, stable/8.7..8.10), so the
+    run's head_sha (always main's) would name a main-branch PR as the cause of a
+    stable-branch failure.
+    """
     prs = gh_json(["api", f"repos/{REPO}/commits/{head_sha}/pulls"], [])
     if not isinstance(prs, list):
         prs = []
@@ -566,6 +719,11 @@ def resolve_blame(head_sha: str) -> classify.Blame:
         )
 
     return classify.resolve_blame(head_sha=head_sha, prs=prs, lookup_pr=lookup)
+
+
+def resolve_blame_for_ref(ref: str) -> classify.Blame:
+    """Resolve blame for whichever PR most recently landed on `ref`."""
+    return resolve_blame(branch_tip_sha(ref))
 
 
 # ---------------------------------------------------------------------------
@@ -599,6 +757,12 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
         if surface is None:
             continue
 
+        # Not necessarily the run's ref: preview-env-smoke-test.yml tests four
+        # branches in one run.
+        job_base_ref = classify.base_ref_for_job(name, base_ref)
+        if job_base_ref != base_ref:
+            log(f"base_ref for '{classify.job_leaf_name(name)}': {job_base_ref}")
+
         verdict = classify.noise_verdict(
             conclusion="failure",
             step_count=len(job.get("steps") or []),
@@ -610,9 +774,9 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
             continue
 
         if surface == classify.SURFACE_SM_E2E:
-            candidates.append(sm_candidates(run_id, base_ref, name, workdir))
+            candidates.append(sm_candidates(run_id, job_base_ref, name, workdir))
         elif surface == classify.SURFACE_SAAS_E2E:
-            candidates.append(saas_candidate(run_id, base_ref, name, workdir))
+            candidates.append(saas_candidate(run_id, job_base_ref, name, workdir))
         elif surface == classify.SURFACE_HELM_INSTALL:
             text = job_log(str(job.get("id") or ""))
             if text is None:
@@ -626,7 +790,7 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
                 continue
             candidates.append(
                 planning.Candidate(
-                    base_ref=base_ref, surface=surface, job_name=name, job_level=True,
+                    base_ref=job_base_ref, surface=surface, job_name=name, job_level=True,
                     evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
                     evidence_repo=REPO,
                 )
@@ -634,7 +798,7 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
         else:
             candidates.append(
                 planning.Candidate(
-                    base_ref=base_ref, surface=surface, job_name=name, job_level=True,
+                    base_ref=job_base_ref, surface=surface, job_name=name, job_level=True,
                     evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
                     evidence_repo=REPO,
                 )
@@ -643,9 +807,30 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
     return candidates, noise
 
 
-def serialise(result: planning.Plan, blame: classify.Blame, run_id: str) -> dict:
+def serialise(
+    result: planning.Plan,
+    blame: classify.Blame,
+    run_id: str,
+    blame_for_ref: Callable[[str], classify.Blame] | None = None,
+    base_ref: str = "",
+    references: dict | None = None,
+) -> dict:
+    """`blame` is the run's own ref, kept at top level for the job summary.
+
+    Each dispatch gets its own `blame`, resolved from its own base_ref via
+    `blame_for_ref`: preview-env-smoke-test.yml dispatches candidates against
+    four different branches from one run, so the run's own blame is only
+    correct for the candidate that happens to share its ref. Falls back to the
+    top-level blame when no resolver is given, e.g. in tests.
+    """
+    dispatch_blame = blame_for_ref or (lambda _ref: blame)
     return {
         "run_url": f"https://github.com/{REPO}/actions/runs/{run_id}",
+        "base_ref": base_ref,
+        # Which PR or issue accounts for each suppressed fingerprint and each locked
+        # dispatch key. notify.py renders it; the job summary and the artifact keep
+        # using the reason codes.
+        "references": references or {},
         "blame": asdict(blame),
         "dispatches": [
             {
@@ -660,6 +845,7 @@ def serialise(result: planning.Plan, blame: classify.Blame, run_id: str) -> dict
                 "evidence_repo": c.evidence_repo,
                 "job_level": c.job_level,
                 "fingerprints": c.fingerprints,
+                "blame": asdict(dispatch_blame(c.base_ref)),
                 "test_specs": [
                     {
                         "file": s.file,
@@ -679,8 +865,21 @@ def serialise(result: planning.Plan, blame: classify.Blame, run_id: str) -> dict
             {
                 "surface": s.candidate.surface,
                 "dispatch_key": s.candidate.key,
+                # Per candidate, not the run's: preview-env-smoke-test.yml carries
+                # candidates for four branches in one `main` run.
+                "base_ref": s.candidate.base_ref,
                 "reason": s.reason,
                 "detail": s.detail,
+                # What failed and how much of it, so the Slack line can say so without
+                # anyone opening the run. `fingerprints` is what maps a suppression to
+                # the PR or issue in `references`.
+                "job_name": classify.job_leaf_name(s.candidate.job_name),
+                "also_failing_jobs": [
+                    classify.job_leaf_name(n) for n in s.candidate.also_failing_jobs
+                ],
+                "job_level": s.candidate.job_level,
+                "spec_count": len(s.candidate.specs),
+                "fingerprints": s.candidate.fingerprints,
             }
             for s in result.suppressed
         ],
@@ -712,20 +911,33 @@ def main() -> int:
             keys = {c.key for c in candidates}
             log("::warning::in-flight lookup failed; suppressing dispatch this run")
 
-        pr_keys, pr_keys_ok = open_fix_pr_keys()
-        if not pr_keys_ok:
+        lookups_failed: list[str] = []
+        if not keys_ok:
+            lookups_failed.append("inflight")
+
+        covered, pr_keys, pr_keys_covered, pr_refs, dedupe_ok = dedupe_inputs()
+        if not dedupe_ok:
+            # Cannot prove what an open PR already covers, so suppress every candidate:
+            # the key set and the coverage set must be one snapshot or a partial read
+            # licenses a duplicate PR.
             pr_keys = {c.key for c in candidates}
+            pr_keys_covered = set()
+            pr_refs = {}
+            lookups_failed.append("open_prs")
             log("::warning::open fix PR lookup failed; suppressing dispatch this run")
 
         run = gh_json(["api", f"repos/{REPO}/actions/runs/{args.run_id}"], {})
         started = run.get("run_started_at") or run.get("created_at") or ""
 
+        bug_fps, bug_urls = product_bug_fingerprints()
+
         result = planning.plan_dispatches(
             candidates,
-            covered_fingerprints=covered_fingerprints(),
+            covered_fingerprints=covered,
             inflight_keys=keys,
             open_pr_keys=pr_keys,
-            product_bug_fingerprints=product_bug_fingerprints(),
+            open_pr_keys_with_coverage=pr_keys_covered,
+            product_bug_fingerprints=bug_fps,
             recent_no_fix_fingerprints=recent_no_fix_fingerprints(workdir),
             fixed_upstream_fingerprints=fixed_upstream_fingerprints(candidates, started),
             max_dispatches=args.max_dispatches,
@@ -734,7 +946,32 @@ def main() -> int:
 
         blame = resolve_blame(run.get("head_sha") or "")
 
-        payload = serialise(result, blame, args.run_id)
+        # Cached per ref: several dispatches commonly share a base_ref (e.g. two
+        # sm-smoke-e2e legs both against stable/8.9), and each cache hit saves two
+        # `gh api` calls.
+        blame_cache: dict[str, classify.Blame] = {base_ref: blame}
+
+        def blame_for_ref(ref: str) -> classify.Blame:
+            if ref not in blame_cache:
+                blame_cache[ref] = resolve_blame_for_ref(ref)
+            return blame_cache[ref]
+
+        payload = serialise(
+            result,
+            blame,
+            args.run_id,
+            blame_for_ref=blame_for_ref,
+            base_ref=base_ref,
+            references={
+                "covered_by": (pr_refs or {}).get("covered_by") or {},
+                "keys": (pr_refs or {}).get("keys") or {},
+                "product_bugs": bug_urls,
+                # Which lookups could not be proven. Every suppression above fails
+                # closed, so without this the message states a reason that is really a
+                # guess — "an agent is already running" when nothing is.
+                "lookups_failed": lookups_failed,
+            },
+        )
 
     text = json.dumps(payload, indent=2)
     if args.out == "-":

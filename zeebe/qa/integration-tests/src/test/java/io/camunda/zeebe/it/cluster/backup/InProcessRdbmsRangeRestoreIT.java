@@ -7,17 +7,24 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride.RDBMS_EXPORTER_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
+import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Map;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -29,9 +36,59 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
 
   private static @TempDir Path backupDir;
 
-  @Override
-  protected Path backupDir() {
-    return backupDir;
+  @Test
+  void shouldInvokeLiquibaseDuringPrimaryRestore() throws Exception {
+    // given
+    final Interval interval;
+    try (final var client = broker.newClientBuilder().build()) {
+      final var processKey = deployTestProcess(client);
+      interval = createProcessInstancesAndTakeBackups(client, processKey);
+    }
+    takeAndAwaitBackup();
+    ExportersActuator.of(broker).disableExporter(RDBMS_EXPORTER_NAME);
+    awaitBackupCoversExportedPositionsOnEveryPartition();
+    final var clusterActuator = enterRecovering();
+    final var dataSource =
+        broker.bean(RdbmsDataSources.class).dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+
+    try (final var connection = dataSource.getConnection();
+        final var statement = connection.createStatement()) {
+      assertThat(deployedResourceTableExists(connection)).isTrue();
+      statement.execute("DROP TABLE DEPLOYED_RESOURCE");
+      // Liquibase only reapplies the table's changeset when its execution record is absent.
+      assertThat(
+              statement.executeUpdate(
+                  "DELETE FROM DATABASECHANGELOG WHERE ID = 'create_deployed_resource_table'"
+                      + " AND AUTHOR = 'camunda'"
+                      + " AND FILENAME = 'db/changelog/rdbms-exporter/changesets/8.10.0.xml'"))
+          .isOne();
+      assertThat(statement.executeUpdate("DELETE FROM DATABASECHANGELOGLOCK")).isOne();
+      connection.commit();
+      assertThat(deployedResourceTableExists(connection)).isFalse();
+    }
+
+    // when
+    try (final var client = broker.newClientBuilder().build()) {
+      final var changeId =
+          InProcessRestoreTestUtil.triggerRestore(
+              client, Map.of("from", interval.start().toString(), "to", interval.end().toString()));
+      awaitChangeCompletesAndBrokerActive(clusterActuator, changeId);
+    }
+
+    // then
+    try (final var connection = dataSource.getConnection()) {
+      assertThat(deployedResourceTableExists(connection)).isTrue();
+    }
+  }
+
+  private static boolean deployedResourceTableExists(final Connection connection)
+      throws SQLException {
+    try (final var tables =
+        connection
+            .getMetaData()
+            .getTables(null, "PUBLIC", "DEPLOYED_RESOURCE", new String[] {"TABLE"})) {
+      return tables.next();
+    }
   }
 
   @Override
@@ -68,6 +125,11 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
           .isEqualTo(409);
       assertThat(response.body()).contains("No usable range found");
     }
+  }
+
+  @Override
+  protected Path backupDir() {
+    return backupDir;
   }
 
   private ClusterActuator enterRecovering() {

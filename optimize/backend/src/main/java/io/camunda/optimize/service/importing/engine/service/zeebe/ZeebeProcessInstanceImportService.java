@@ -64,7 +64,7 @@ public class ZeebeProcessInstanceImportService
   }
 
   @Override
-  protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
+  List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
       final List<ZeebeProcessInstanceRecordDto> zeebeRecords) {
     final List<ProcessInstanceDto> optimizeDtos =
         new ArrayList<>(

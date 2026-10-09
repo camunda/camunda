@@ -7,9 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
@@ -21,6 +27,8 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,16 +36,19 @@ import org.junit.jupiter.api.Test;
 
 final class BpmnResourceTransformerTest {
 
+  private final KeyGenerator keyGenerator = mock(KeyGenerator.class);
+  private final StateWriter stateWriter = mock(StateWriter.class);
+  private final ProcessState processState = mock(ProcessState.class);
   private BpmnResourceTransformer transformer;
 
   @BeforeEach
   void setUp() {
     transformer =
         new BpmnResourceTransformer(
-            mock(KeyGenerator.class),
-            mock(StateWriter.class),
+            keyGenerator,
+            stateWriter,
             new ChecksumGenerator(),
-            mock(ProcessState.class),
+            processState,
             mock(ExpressionProcessor.class),
             false,
             ValidationConfig.builder().build(),
@@ -118,6 +129,32 @@ final class BpmnResourceTransformerTest {
 
     // then
     assertThat(transformer.hasParsedModelFor(resource)).isFalse();
+  }
+
+  @Test
+  void shouldCacheTransformedProcessAfterAppendingProcessCreated() {
+    // given
+    final long processDefinitionKey = 123L;
+    when(keyGenerator.nextKey()).thenReturn(processDefinitionKey);
+    final DeploymentResource resource = bpmnResource("process.bpmn");
+    final var deployment = new DeploymentRecord();
+    assertThat(transformer.createMetadata(resource, deployment).isRight()).isTrue();
+
+    // when
+    transformer.writeRecords(resource, deployment);
+
+    // then
+    final var inOrder = inOrder(stateWriter, processState);
+    inOrder
+        .verify(stateWriter)
+        .appendFollowUpEvent(
+            eq(processDefinitionKey), eq(ProcessIntent.CREATED), any(ProcessRecord.class));
+    inOrder
+        .verify(processState)
+        .cacheProcess(
+            eq(processDefinitionKey),
+            eq(deployment.getTenantId()),
+            argThat(process -> "process".equals(bufferAsString(process.getId()))));
   }
 
   private static DeploymentResource bpmnResource(final String resourceName) {

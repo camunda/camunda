@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -59,7 +59,7 @@ import org.jspecify.annotations.NullMarked;
  * is ending ({@code ELEMENT_TERMINATING}/{@code ELEMENT_COMPLETING}): resuming and publishing a job
  * in any of those cases would act on a resume this cycle no longer owns.
  *
- * <p>{@link SuspensionBehavior#PROCESS} is unconditional: the marker is still {@code RESUMING} at
+ * <p>{@link SuspensionAction#PROCESS} is unconditional: the marker is still {@code RESUMING} at
  * this point, and gating would strand the instance there forever.
  */
 @ExcludeAuthorizationCheck
@@ -87,11 +87,13 @@ public final class ProcessInstanceResumeJobsProcessor
   private final SuspensionState suspensionState;
   private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceResumeJobsProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final SuspensionMetrics suspensionMetrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -101,6 +103,7 @@ public final class ProcessInstanceResumeJobsProcessor
         new ProcessInstanceSuspensionJobBehavior(
             elementInstanceState, processingState.getJobState(), stateWriter);
     this.jobActivationBehavior = jobActivationBehavior;
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -132,6 +135,24 @@ public final class ProcessInstanceResumeJobsProcessor
       nextIntent = ProcessInstanceIntent.COMPLETE_RESUMING;
     }
     commandWriter.appendFollowUpCommand(processInstanceKey, nextIntent, followUpValue);
+    if (resumedJobKey >= 0) {
+      suspensionMetrics.jobResumed();
+    }
+  }
+
+  /**
+   * A cycle's own writes are small on their own — one {@code Job.RESUMED}, at most one {@code
+   * JobBatch.ACTIVATED}, one follow-up command — but without this override the stream processor
+   * keeps reusing the same result builder across consecutive {@code RESUME_JOBS} cycles instead of
+   * starting a fresh one per command, so an instance with many suspended jobs would still
+   * accumulate every cycle's hand-out into that one shared batch until it exceeds the log's maximum
+   * fragment size — the same reasoning {@code SecretReferenceBatchReactivateJobsProcessor} gives
+   * for its own override. Isolating each cycle keeps the batch bounded by one job's hand-out,
+   * matching what already holds for that job at creation time.
+   */
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
   }
 
   /**
@@ -153,24 +174,14 @@ public final class ProcessInstanceResumeJobsProcessor
     return resumedJobKey.get();
   }
 
-  /**
-   * A cycle's own writes are small on their own — one {@code Job.RESUMED}, at most one {@code
-   * JobBatch.ACTIVATED}, one follow-up command — but without this override the stream processor
-   * keeps reusing the same result builder across consecutive {@code RESUME_JOBS} cycles instead of
-   * starting a fresh one per command, so an instance with many suspended jobs would still
-   * accumulate every cycle's hand-out into that one shared batch until it exceeds the log's maximum
-   * fragment size — the same reasoning {@code SecretReferenceBatchReactivateJobsProcessor} gives
-   * for its own override. Isolating each cycle keeps the batch bounded by one job's hand-out,
-   * matching what already holds for that job at creation time.
-   */
   @Override
-  public boolean shouldProcessResultsInSeparateBatches() {
-    return true;
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
-    return SuspensionBehavior.PROCESS;
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 
   private void reject(final TypedRecord<ProcessInstanceRecord> command, final String reason) {

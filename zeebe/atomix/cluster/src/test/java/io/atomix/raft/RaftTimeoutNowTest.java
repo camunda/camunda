@@ -27,6 +27,7 @@ import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.VoteRequest;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +36,9 @@ import java.util.function.Function;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class RaftTimeoutNowTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);

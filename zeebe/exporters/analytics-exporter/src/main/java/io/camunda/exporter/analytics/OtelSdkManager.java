@@ -35,6 +35,7 @@ import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.common.InternalTelemetryVersion;
+import io.opentelemetry.sdk.common.export.RetryPolicy;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
@@ -221,6 +222,10 @@ public class OtelSdkManager implements AutoCloseable {
     final var builder =
         OtlpHttpLogRecordExporter.builder()
             .setEndpoint(config.getEndpoint() + OTLP_LOGS_PATH)
+            .setConnectTimeout(config.getHttpConnectTimeout())
+            .setTimeout(config.getHttpRequestTimeout())
+            .setRetryPolicy(
+                RetryPolicy.builder().setMaxAttempts(config.getHttpMaxRetryAttempts()).build())
             .addHeader(AnalyticsExporterContext.HEADER_FINGERPRINT, context.fingerprint())
             .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId())
             .setMeterProvider(bridge)
@@ -249,6 +254,10 @@ public class OtelSdkManager implements AutoCloseable {
     final var builder =
         OtlpHttpMetricExporter.builder()
             .setEndpoint(config.getEndpoint() + OTLP_METRICS_PATH)
+            .setConnectTimeout(config.getHttpConnectTimeout())
+            .setTimeout(config.getHttpRequestTimeout())
+            .setRetryPolicy(
+                RetryPolicy.builder().setMaxAttempts(config.getHttpMaxRetryAttempts()).build())
             .setAggregationTemporalitySelector(AggregationTemporalitySelector.deltaPreferred())
             .addHeader(AnalyticsExporterContext.HEADER_FINGERPRINT, context.fingerprint())
             .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId())

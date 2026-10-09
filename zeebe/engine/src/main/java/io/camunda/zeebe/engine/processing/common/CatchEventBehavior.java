@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -385,6 +386,7 @@ public final class CatchEventBehavior {
 
     final long processInstanceKey = context.getProcessInstanceKey();
     final long rootProcessInstanceKey = context.getRootProcessInstanceKey();
+    final int storageOrdinal = context.getStorageOrdinal();
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = context.getProcessDefinitionKey();
@@ -409,6 +411,7 @@ public final class CatchEventBehavior {
     subscription.setInterrupting(event.isInterrupting());
     subscription.setTenantId(context.getTenantId());
     subscription.setRootProcessInstanceKey(rootProcessInstanceKey);
+    subscription.setStorageOrdinal(storageOrdinal);
     subscription.setBusinessId(businessId);
     subscription.setElementType(event.getElementType());
 
@@ -429,6 +432,7 @@ public final class CatchEventBehavior {
         businessId,
         event.getId(),
         rootProcessInstanceKey,
+        storageOrdinal,
         event.getElementType());
 
     final String subscriptionMessageName = subscription.getMessageName();
@@ -460,6 +464,7 @@ public final class CatchEventBehavior {
                   event.getId(),
                   context.getTenantId(),
                   context.getRootProcessInstanceKey(),
+                  context.getStorageOrdinal(),
                   BufferUtil.bufferAsString(context.getBpmnProcessId()),
                   context.getBpmnElementType(),
                   timer);
@@ -473,6 +478,7 @@ public final class CatchEventBehavior {
       final DirectBuffer handlerNodeId,
       final String tenantId,
       final long rootProcessInstanceKey,
+      final int storageOrdinal,
       final String bpmnProcessId,
       final BpmnElementType elementType,
       final Timer timer) {
@@ -487,6 +493,7 @@ public final class CatchEventBehavior {
         .setProcessDefinitionKey(processDefinitionKey)
         .setTenantId(tenantId)
         .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setStorageOrdinal(storageOrdinal)
         .setBpmnProcessId(bpmnProcessId)
         .setElementType(elementType);
 
@@ -521,6 +528,7 @@ public final class CatchEventBehavior {
         .setTenantId(context.getTenantId())
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setStorageOrdinal(context.getStorageOrdinal())
         .setBpmnElementType(event.getElementType());
 
     final var subscriptionKey = keyGenerator.nextKey();
@@ -566,6 +574,7 @@ public final class CatchEventBehavior {
         .setVariableEvents(conditional.getVariableEvents())
         .setTenantId(context.getTenantId())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setStorageOrdinal(context.getStorageOrdinal())
         .setElementType(event.getElementType());
 
     final var subscriptionKey = keyGenerator.nextKey();
@@ -642,6 +651,7 @@ public final class CatchEventBehavior {
         .setProcessDefinitionKey(timer.getProcessDefinitionKey())
         .setTenantId(timer.getTenantId())
         .setRootProcessInstanceKey(timer.getRootProcessInstanceKey())
+        .setStorageOrdinal(TimerStorageOrdinals.of(timer))
         .setBpmnProcessId(timer.getBpmnProcessId())
         .setElementType(timer.getElementType());
 
@@ -666,20 +676,30 @@ public final class CatchEventBehavior {
     final String messageNameString = subscription.getRecord().getMessageName();
     final int subscriptionPartitionId = subscription.getRecord().getSubscriptionPartitionId();
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
+    final int storageOrdinal = subscription.getRecord().getStorageOrdinal();
     final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
     final long processDefinitionKey = subscription.getRecord().getProcessDefinitionKey();
     final String tenantId = subscription.getRecord().getTenantId();
 
+    // Quote the stored key so the message-side stale-delete guard can reject a close a resume has
+    // superseded (-1 means legacy/unacknowledged). Captured before DELETING, whose applier re-reads
+    // the shared record.
+    final long subscriptionKey = subscription.getRecord().getSubscriptionKey();
+
     stateWriter.appendFollowUpEvent(
-        subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
+        subscription.getKey(),
+        ProcessMessageSubscriptionIntent.DELETING,
+        subscription.getRecord().setClosedForSuspend(false));
 
     sendCloseMessageSubscriptionCommand(
         subscriptionPartitionId,
         processInstanceKey,
+        storageOrdinal,
         elementInstanceKey,
         processDefinitionKey,
         messageName,
-        subscription.getRecord().getTenantId());
+        subscription.getRecord().getTenantId(),
+        subscriptionKey);
     final var lastSentTime = clock.millis();
 
     // update transient state in a side-effect to ensure that these changes only take effect after
@@ -695,17 +715,21 @@ public final class CatchEventBehavior {
   private boolean sendCloseMessageSubscriptionCommand(
       final int subscriptionPartitionId,
       final long processInstanceKey,
+      final int storageOrdinal,
       final long elementInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer messageName,
-      final String tenantId) {
+      final String tenantId,
+      final long subscriptionKey) {
     return subscriptionCommandSender.closeMessageSubscription(
         subscriptionPartitionId,
         processInstanceKey,
         elementInstanceKey,
         processDefinitionKey,
         messageName,
-        tenantId);
+        tenantId,
+        subscriptionKey,
+        storageOrdinal);
   }
 
   private boolean sendOpenMessageSubscription(
@@ -721,6 +745,7 @@ public final class CatchEventBehavior {
       final DirectBuffer businessId,
       final DirectBuffer elementId,
       final long rootProcessInstanceKey,
+      final int storageOrdinal,
       final BpmnElementType elementType) {
     return subscriptionCommandSender.openMessageSubscription(
         subscriptionPartitionId,
@@ -735,6 +760,7 @@ public final class CatchEventBehavior {
         businessId,
         elementId,
         rootProcessInstanceKey,
+        storageOrdinal,
         elementType);
   }
 

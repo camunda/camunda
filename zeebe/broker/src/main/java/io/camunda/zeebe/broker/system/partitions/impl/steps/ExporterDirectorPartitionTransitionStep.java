@@ -125,6 +125,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .logStream(context.getLogStream())
             .zeebeDb(context.getZeebeDb())
             .distributionInterval(exportingCfg.distributionInterval())
+            .migrationStatusScanMaxRecords(exportingCfg.migrationStatusScanMaxRecords())
             .partitionMessagingService(context.getMessagingService())
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)

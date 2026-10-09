@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.nio.file.Path;
 import org.jspecify.annotations.Nullable;
 
 /** Raft log builder. */
@@ -40,7 +41,7 @@ public class SegmentedJournalBuilder {
   private static final int DEFAULT_PARTITION_ID = -1;
 
   protected String name = DEFAULT_NAME;
-  protected File directory = new File(DEFAULT_DIRECTORY);
+  protected Path directory = Path.of(DEFAULT_DIRECTORY);
   protected int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
 
   private long freeDiskSpace = DEFAULT_MIN_FREE_DISK_SPACE;
@@ -76,7 +77,7 @@ public class SegmentedJournalBuilder {
    * @throws NullPointerException If the {@code directory} is {@code null}
    */
   public SegmentedJournalBuilder withDirectory(final String directory) {
-    return withDirectory(new File(checkNotNull(directory, "directory cannot be null")));
+    return withDirectory(Path.of(checkNotNull(directory, "directory cannot be null")));
   }
 
   /**
@@ -88,9 +89,21 @@ public class SegmentedJournalBuilder {
    * @return The journal builder.
    * @throws NullPointerException If the {@code directory} is {@code null}
    */
-  public SegmentedJournalBuilder withDirectory(final File directory) {
+  public SegmentedJournalBuilder withDirectory(final Path directory) {
     this.directory = checkNotNull(directory, "directory cannot be null");
     return this;
+  }
+
+  /**
+   * Sets the journal directory, returning the builder for method chaining.
+   *
+   * @param directory The journal directory.
+   * @return The journal builder.
+   * @deprecated Use {@link #withDirectory(Path)} instead.
+   */
+  @Deprecated
+  public SegmentedJournalBuilder withDirectory(final File directory) {
+    return withDirectory(checkNotNull(directory, "directory cannot be null").toPath());
   }
 
   /**

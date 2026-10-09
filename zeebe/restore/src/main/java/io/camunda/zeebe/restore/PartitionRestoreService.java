@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.restore;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -33,8 +35,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +63,7 @@ public class PartitionRestoreService {
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
     this.brokerId = brokerId;
-    this.fileInfoProvider = Objects.requireNonNull(fileInfoProvider);
+    this.fileInfoProvider = requireNonNull(fileInfoProvider);
     this.meterRegistry = meterRegistry;
   }
 
@@ -136,7 +138,7 @@ public class PartitionRestoreService {
    * index of the source journal.
    */
   private void copyBetweenCheckpoints(
-      final Backup previousBackup,
+      final @Nullable Backup previousBackup,
       final Backup sourceBackup,
       final Path sourceDirectory,
       final Journal targetJournal) {

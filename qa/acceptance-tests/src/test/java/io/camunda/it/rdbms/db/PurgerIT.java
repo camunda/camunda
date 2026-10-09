@@ -7,6 +7,9 @@
  */
 package io.camunda.it.rdbms.db;
 
+import static io.camunda.db.rdbms.RdbmsTableNames.SCHEMA_VERSION;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
@@ -17,6 +20,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import java.time.OffsetDateTime;
+import javax.sql.DataSource;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -31,9 +35,11 @@ public class PurgerIT {
 
   @TestTemplate
   public void shouldSaveAndFindProcessInstanceByKey(
-      final CamundaRdbmsTestApplication testApplication) {
+      final CamundaRdbmsTestApplication testApplication) throws Exception {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DataSource dataSource = testApplication.bean(DataSource.class);
+    final String schemaVersionBeforePurge = readSchemaVersion(dataSource);
 
     ProcessInstanceFixtures.createAndSaveRandomProcessInstances(rdbmsWriters);
     ProcessDefinitionFixtures.createAndSaveRandomProcessDefinitions(rdbmsWriters);
@@ -51,5 +57,16 @@ public class PurgerIT {
                 .search(ProcessDefinitionQuery.of(b -> b))
                 .total())
         .isZero();
+
+    assertThat(readSchemaVersion(dataSource)).isEqualTo(schemaVersionBeforePurge);
+  }
+
+  private String readSchemaVersion(final DataSource dataSource) throws Exception {
+    try (final var connection = dataSource.getConnection();
+        final var statement = connection.createStatement();
+        final var result = statement.executeQuery("SELECT VERSION FROM " + SCHEMA_VERSION)) {
+      assertThat(result.next()).isTrue();
+      return result.getString(1);
+    }
   }
 }

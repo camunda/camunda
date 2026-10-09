@@ -12,6 +12,7 @@ import static org.slf4j.MDC.*;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -190,7 +191,12 @@ public final class StartupProcess<CONTEXT> {
       logCurrentStepSynchronized("Startup", stepToStart);
 
       final var before = System.nanoTime();
-      final var stepStartupFuture = stepToStart.startup(context);
+      ActorFuture<CONTEXT> stepStartupFuture;
+      try {
+        stepStartupFuture = stepToStart.startup(context);
+      } catch (final Exception e) {
+        stepStartupFuture = CompletableActorFuture.completedExceptionally(e);
+      }
       ongoingStartupStep = stepToStart;
       ongoingStartupStepFuture = stepStartupFuture;
 
@@ -304,7 +310,12 @@ public final class StartupProcess<CONTEXT> {
 
       logCurrentStepSynchronized("Shutdown", stepToShutdown);
 
-      final var shutdownStepFuture = stepToShutdown.shutdown(context);
+      ActorFuture<CONTEXT> shutdownStepFuture;
+      try {
+        shutdownStepFuture = stepToShutdown.shutdown(context);
+      } catch (final Exception e) {
+        shutdownStepFuture = CompletableActorFuture.completedExceptionally(e);
+      }
 
       concurrencyControl.runOnCompletion(
           shutdownStepFuture,

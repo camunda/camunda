@@ -7,6 +7,7 @@
  */
 package io.camunda.search.schema.elasticsearch;
 
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
 import static io.camunda.search.schema.utils.SearchEngineClientUtils.convertValue;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -22,11 +23,11 @@ import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
-import co.elastic.clients.elasticsearch.ilm.DeleteAction;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.IndexTemplate;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
@@ -49,7 +50,6 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.SearchEngineClientUtils;
-import io.camunda.search.schema.utils.SearchEngineClientUtils.SchemaSettingsAppender;
 import io.camunda.search.schema.utils.SuppressLogger;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -61,7 +61,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -215,23 +214,85 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putSettings(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings);
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
+    final var request = putIndexSettingsRequest(indexDescriptor, toAppendSettings);
 
     try {
       client.indices().putSettings(request);
     } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format(
-              "settings PUT failed for the following indices [%s]",
-              utils.listIndicesByAlias(indexDescriptors));
+              "settings PUT failed for the following indices [%s]", indexDescriptor.getAlias());
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
     }
   }
 
   @Override
+  public Map<String, Integer> getNumberOfShards(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfShards)
+                      .map(shards -> Map.entry(entry.getKey(), Integer.parseInt(shards)))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | ElasticsearchException e) {
+      // Deliberately not logged here: this read only ever backs a best-effort startup diagnostic,
+      // and logging at ERROR would page an operator about a failure the caller goes on to ignore.
+      // The caller owns the severity.
+      throw new SearchEngineException(
+          String.format("Failed to retrieve shard counts for indices '%s'", indexNames), e);
+    }
+  }
+
+  @Override
+  public Map<String, Integer> getNumberOfReplicas(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfReplicas)
+                      .map(replicas -> Map.entry(entry.getKey(), Integer.parseInt(replicas)))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | ElasticsearchException e) {
+      throw new SearchEngineException(
+          String.format("Failed to retrieve replica counts for indices '%s'", indexNames), e);
+    }
+  }
+
+  @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
+    if (lifecyclePolicyMatches(policyName, deletionMinAge)) {
+      LOG.debug(
+          "Index lifecycle policy [{}] already matches configuration; skipping PUT", policyName);
+      return;
+    }
+
     final PutLifecycleRequest request = putLifecycleRequest(policyName, deletionMinAge);
 
     try {
@@ -239,6 +300,40 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException e) {
       final var errMsg = String.format("Index lifecycle policy [%s] failed to PUT", policyName);
       LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  /**
+   * Compares the full policy body the PUT would send, not just {@code min_age}, so that a changed
+   * or removed delete action/phase is repaired rather than silently skipped. The fetched and
+   * desired {@code IlmPolicy} instances are never {@code equals()} to one another (the client's
+   * generated types don't implement it), so both are serialized to their JSON representation first
+   * and compared as maps.
+   */
+  private boolean lifecyclePolicyMatches(final String policyName, final String deletionMinAge) {
+    try {
+      final var lifecycle =
+          client.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+      if (lifecycle == null) {
+        // policy does not exist yet, so there is nothing to compare against
+        return false;
+      }
+      final var desiredPolicy = putLifecycleRequest(policyName, deletionMinAge).policy();
+      return serializeAsMap(lifecycle.policy()).equals(serializeAsMap(desiredPolicy));
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 404) {
+        // policy does not exist yet, so there is nothing to compare against
+        return false;
+      }
+      final var errMsg =
+          String.format("Failed to retrieve index lifecycle policy [%s]", policyName);
+      LOG.warn(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format("Failed to retrieve index lifecycle policy [%s]", policyName);
+      LOG.warn(errMsg, e);
       throw new SearchEngineException(errMsg, e);
     }
   }
@@ -404,35 +499,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private PutIndicesSettingsRequest putIndexSettingsRequest(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
-        utils.mapToSettings(
-            toAppendSettings,
-            (inp) ->
-                deserializeJson(
-                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
-    return new PutIndicesSettingsRequest.Builder()
-        .index(utils.listIndicesByAlias(indexDescriptors))
-        .settings(settings)
-        .build();
-  }
-
-  public PutLifecycleRequest putLifecycleRequest(
-      final String policyName, final String deletionMinAge) {
-    return new PutLifecycleRequest.Builder()
-        .name(policyName)
-        .policy(
-            policy ->
-                policy.phases(
-                    phase ->
-                        phase.delete(
-                            del ->
-                                del.minAge(m -> m.time(deletionMinAge))
-                                    .actions(a -> a.delete(DeleteAction.of(d -> d))))))
-        .build();
-  }
-
   @Override
   public Set<String> getIndexNames(final String pattern) {
     try {
@@ -452,6 +518,44 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   @Override
   public String getEngineName() {
     return DatabaseConfig.ELASTICSEARCH;
+  }
+
+  private PutIndicesSettingsRequest putIndexSettingsRequest(
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
+    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
+        utils.mapToSettings(
+            toAppendSettings,
+            (inp) ->
+                deserializeJson(
+                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
+    final var builder =
+        new PutIndicesSettingsRequest.Builder()
+            .index(indexDescriptor.getAlias())
+            .allowNoIndices(indexDescriptor.allowMissing())
+            .ignoreUnavailable(indexDescriptor.allowMissing())
+            .settings(settings);
+    return builder.build();
+  }
+
+  public PutLifecycleRequest putLifecycleRequest(
+      final String policyName, final String deletionMinAge) {
+    return new PutLifecycleRequest.Builder()
+        .name(policyName)
+        .policy(
+            policy ->
+                policy.phases(
+                    phase ->
+                        phase.delete(
+                            del ->
+                                del.minAge(m -> m.time(deletionMinAge))
+                                    .actions(
+                                        a ->
+                                            a.delete(
+                                                // matches the default Elasticsearch itself fills
+                                                // in, so the fetched and desired policies compare
+                                                // equal without ever having been PUT explicitly
+                                                d -> d.deleteSearchableSnapshot(true))))))
+        .build();
   }
 
   private Map<String, TypeMapping> getCurrentMappings(
@@ -551,14 +655,14 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try (final var templateFile =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
 
+      final var templateSettings =
+          utils.new SchemaSettingsAppender(templateFile)
+              .withNumberOfReplicas(settings.getNumberOfReplicas().toString())
+              .withNumberOfShards(settings.getNumberOfShards().toString())
+              .withRefreshInterval(settings.getRefreshInterval());
+      final var priority = convertValue(settings.getTemplatePriority(), Long::valueOf);
       final var templateFields =
-          deserializeJson(
-              IndexTemplateMapping._DESERIALIZER,
-              utils.new SchemaSettingsAppender(templateFile)
-                  .withNumberOfReplicas(settings.getNumberOfReplicas().toString())
-                  .withNumberOfShards(settings.getNumberOfShards().toString())
-                  .withRefreshInterval(settings.getRefreshInterval())
-                  .build());
+          deserializeJson(IndexTemplateMapping._DESERIALIZER, templateSettings.build());
       return PutIndexTemplateRequest.of(
           b ->
               b.name(indexTemplateDescriptor.getTemplateName())
@@ -568,7 +672,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                           t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
                               .mappings(templateFields.mappings())
                               .settings(templateFields.settings()))
-                  .priority(convertValue(settings.getTemplatePriority(), Long::valueOf))
+                  .priority(priority)
+                  .meta(
+                      SETTINGS_FINGERPRINT_META_KEY,
+                      JsonData.of(templateSettings.settingsFingerprint(priority)))
                   .composedOf(indexTemplateDescriptor.getComposedOf())
                   .create(create));
     } catch (final IOException e) {
@@ -594,8 +701,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var configuredPriority =
           convertValue(indexConfiguration.getTemplatePriority(), Long::valueOf);
 
-      if (areTemplateSettingsEqualToConfigured(
-          currentTemplate, configuredSettings, configuredPriority)) {
+      final var configuredFingerprint = configuredSettings.settingsFingerprint(configuredPriority);
+      if (configuredFingerprint.equals(storedSettingsFingerprint(currentTemplate))) {
         LOG.debug(
             "Index template settings for [{}] are already up to date",
             indexTemplateDescriptor.getTemplateName());
@@ -620,7 +727,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                                   .mappings(currentTemplate.template().mappings())
                                   .aliases(currentTemplate.template().aliases()))
                       .composedOf(currentTemplate.composedOf())
-                      .priority(configuredPriority)));
+                      .priority(configuredPriority)
+                      .meta(SETTINGS_FINGERPRINT_META_KEY, JsonData.of(configuredFingerprint))));
     } catch (final IOException e) {
       throw new SearchEngineException(
           "Failed to load file "
@@ -630,12 +738,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private boolean areTemplateSettingsEqualToConfigured(
-      final IndexTemplate currentTemplate,
-      final SchemaSettingsAppender configuredSettings,
-      final Long configuredPriority) {
-    return Objects.equals(configuredPriority, currentTemplate.priority())
-        && configuredSettings.equalsSettings(serializeAsMap(currentTemplate.template().settings()));
+  private static String storedSettingsFingerprint(final IndexTemplate template) {
+    final var fingerprint = template.meta().get(SETTINGS_FINGERPRINT_META_KEY);
+    return fingerprint == null ? null : fingerprint.to(String.class);
   }
 
   private IndexTemplate getIndexTemplateState(

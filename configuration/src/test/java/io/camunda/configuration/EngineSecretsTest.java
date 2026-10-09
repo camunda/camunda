@@ -31,7 +31,8 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
       "camunda.processing.engine.secrets.retry-initial-delay=2s",
       "camunda.processing.engine.secrets.retry-max-delay=60s",
       "camunda.processing.engine.secrets.retry-backoff-factor=3",
-      "camunda.processing.engine.secrets.batch-resolution-limit=7"
+      "camunda.processing.engine.secrets.batch-resolution-limit=7",
+      "camunda.processing.engine.secrets.wake-delay=25ms"
     })
 public class EngineSecretsTest {
   final BrokerBasedProperties brokerCfg;
@@ -49,5 +50,6 @@ public class EngineSecretsTest {
     assertThat(secretResolution.getRetryMaxDelay()).isEqualTo(Duration.ofSeconds(60));
     assertThat(secretResolution.getRetryBackoffFactor()).isEqualTo(3);
     assertThat(secretResolution.getBatchResolutionLimit()).isEqualTo(7);
+    assertThat(secretResolution.getWakeDelay()).isEqualTo(Duration.ofMillis(25));
   }
 }

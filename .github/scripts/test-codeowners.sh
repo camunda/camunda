@@ -328,19 +328,180 @@ echo ""
 echo "── .claude/skills overrides ──"
 
 assert_owner \
-  ".claude/skills/engine-expert/ → core-features (overrides orchestration-cluster)" \
-  ".claude/skills/engine-expert/SKILL.md" \
+  ".agents/skills/engine-expert/ → core-features (overrides orchestration-cluster)" \
+  ".agents/skills/engine-expert/SKILL.md" \
   "@camunda/core-features"
 
 assert_owner \
-  ".claude/skills/load-test-ops/ → reliability-testing (overrides orchestration-cluster)" \
-  ".claude/skills/load-test-ops/SKILL.md" \
+  ".agents/skills/frontend-feature/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-feature/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".agents/skills/frontend-integration-test/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-integration-test/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".agents/skills/frontend-operate-migrator/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-operate-migrator/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".agents/skills/frontend-unit-test/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-unit-test/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".agents/skills/operate-engineering-loop/ → operate-admin-pod" \
+  ".agents/skills/operate-engineering-loop/SKILL.md" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  ".agents/skills/operate-frontend/ → operate-admin-pod" \
+  ".agents/skills/operate-frontend/SKILL.md" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  ".agents/skills/tasklist-frontend/ → employee-engagement-tasklist" \
+  ".agents/skills/tasklist-frontend/SKILL.md" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  ".agents/skills/load-test-ops/ → reliability-testing (overrides orchestration-cluster)" \
+  ".agents/skills/load-test-ops/SKILL.md" \
   "@camunda/reliability-testing"
 
 assert_owner \
-  ".claude/skills/ci-validation/ → engineering-operations (overrides orchestration-cluster)" \
-  ".claude/skills/ci-validation/SKILL.md" \
+  ".agents/skills/ci-validation/ → engineering-operations (overrides orchestration-cluster)" \
+  ".agents/skills/ci-validation/SKILL.md" \
   "@camunda/engineering-operations"
+
+# ── webapp/client → frontend pods ─────────────────────────────────────────────
+echo ""
+echo "── webapp/client → frontend pods ──"
+
+OCW="webapp/client/apps/orchestration-cluster-webapp"
+
+assert_owner \
+  "webapp/server/ → core-features (not overridden by webapp/client rules)" \
+  "webapp/server/src/main/java/io/camunda/webapp/WebappModuleConfiguration.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "webapp/client/ → orchestration-cluster-webapps (default)" \
+  "webapp/client/package.json" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp src/main.tsx → orchestration-cluster-webapps (default)" \
+  "${OCW}/src/main.tsx" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp test/integration root → orchestration-cluster-webapps (default)" \
+  "${OCW}/test/integration/login.test.ts" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp src/routes/ → orchestration-cluster-webapps" \
+  "${OCW}/src/routes/_shadcn/_auth/tasklist/_tasks/\$userTaskKey/history/route.tsx" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp src/shared/ → orchestration-cluster-webapps" \
+  "${OCW}/src/shared/login/shadcn.components/Disclaimer/index.tsx" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp src/admin/ → operate-admin-pod" \
+  "${OCW}/src/admin/modules/operations-log/searchSchema.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp src/operate/ → operate-admin-pod" \
+  "${OCW}/src/operate/pages/Dashboard/shadcn.components/variants/NativeExpansionCell.tsx" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp src/tasklist/ → employee-engagement-tasklist" \
+  "${OCW}/src/tasklist/modules/task-details/components/process-diagram/ProcessDiagramView.tsx" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  "webapp test/integration/admin/ → operate-admin-pod" \
+  "${OCW}/test/integration/admin/admin-index.test.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/integration/operate/ → operate-admin-pod" \
+  "${OCW}/test/integration/operate/operate-processes.test.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/integration/tasklist/ → employee-engagement-tasklist" \
+  "${OCW}/test/integration/tasklist/header.test.ts" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  "webapp test/a11y root → orchestration-cluster-webapps (default)" \
+  "${OCW}/test/a11y/error-pages.test.ts" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp test/a11y/admin/ → operate-admin-pod" \
+  "${OCW}/test/a11y/admin/admin-login.test.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/a11y/operate/ → operate-admin-pod" \
+  "${OCW}/test/a11y/operate/operate-preview.test.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/a11y/tasklist/ → employee-engagement-tasklist" \
+  "${OCW}/test/a11y/tasklist/tasklist.test.ts" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  "webapp test/pages root → orchestration-cluster-webapps (default)" \
+  "${OCW}/test/pages/BasePage.ts" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp test/pages/admin/ → operate-admin-pod" \
+  "${OCW}/test/pages/admin/AdminIndex.page.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/pages/operate/ → operate-admin-pod" \
+  "${OCW}/test/pages/operate/OperateIndex.page.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/pages/tasklist/ → employee-engagement-tasklist" \
+  "${OCW}/test/pages/tasklist/TasklistIndex.page.ts" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  "webapp test/visual root snapshot → orchestration-cluster-webapps (default)" \
+  "${OCW}/test/visual/login.test.ts-snapshots/should-match-the-login-page-snapshot-1-visual-dark-linux.png" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp test/visual/admin/ snapshot → operate-admin-pod" \
+  "${OCW}/test/visual/admin/admin.test.ts-snapshots/should-match-the-admin-index-page-snapshot-1-visual-dark-linux.png" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/visual/operate/ helper → operate-admin-pod" \
+  "${OCW}/test/visual/operate/movePointerAwayFromNavigation.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/visual/tasklist/ snapshot → employee-engagement-tasklist" \
+  "${OCW}/test/visual/tasklist/tasklist.test.ts-snapshots/should-match-the-tasklist-index-page-snapshot-1-visual-dark-linux.png" \
+  "@camunda/employee-engagement-tasklist"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo ""

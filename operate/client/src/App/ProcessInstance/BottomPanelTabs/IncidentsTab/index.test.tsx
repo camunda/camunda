@@ -84,11 +84,12 @@ describe('IncidentsTab', () => {
       screen.queryByTestId('data-table-skeleton'),
     );
 
-    const table = within(screen.getByRole('table'));
-    expect(table.getByText(/^Type/)).toBeInTheDocument();
-    expect(table.getByText(/^Failing Element/)).toBeInTheDocument();
-    expect(table.getByText(/^Created/)).toBeInTheDocument();
-    expect(table.getByText(/^Operations/)).toBeInTheDocument();
+    const headerRow = within(screen.getAllByRole('row')[0]!);
+    expect(headerRow.getByText(/^Error message/)).toBeInTheDocument();
+    expect(headerRow.getByText(/^Type/)).toBeInTheDocument();
+    expect(headerRow.getByText(/^Failing Element/)).toBeInTheDocument();
+    expect(headerRow.getByText(/^Created/)).toBeInTheDocument();
+    expect(headerRow.getByText(/^Operations/)).toBeInTheDocument();
   });
 
   it('should render incident rows', async () => {

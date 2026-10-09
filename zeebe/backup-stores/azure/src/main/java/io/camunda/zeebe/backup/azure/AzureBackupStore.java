@@ -23,6 +23,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ContainerDoesNotExist;
 import io.camunda.zeebe.backup.common.BackupImpl;
@@ -30,15 +31,16 @@ import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
@@ -53,15 +55,25 @@ import org.slf4j.LoggerFactory;
  */
 public final class AzureBackupStore implements BackupStore {
   public static final String ERROR_MSG_BACKUP_NOT_FOUND =
-      "Expected to restore from backup with id '%s', but does not exist.";
-  public static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
-      "Expected to restore from completed backup with id '%s', but was in state '%s'";
+      "Expected to find backup with id '%s', but does not exist.";
+  public static final String ERROR_MSG_BACKUP_NOT_COMPLETED =
+      "Expected to find completed backup with id '%s', but was in state '%s'";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
   public static final String METADATA_OBJECT_NAME = "metadata.json";
   static final int MAX_CONCURRENT_FILE_OPERATIONS = 128;
+
+  /**
+   * Retention hands the leader a batch of up to a thousand deletions at once, only waiting for the
+   * commands to be processed, not for the backups to be gone, so every deletion starts right away.
+   * Each one makes several requests, so without a bound a large batch opens far more connections
+   * than the client can sustain. Bounded to the same width GCS uses for the same reason.
+   */
+  static final int DELETE_PARALLELISM = 16;
+
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
+  private final Semaphore deleteConcurrencyLimit = new Semaphore(DELETE_PARALLELISM);
   private final ReentrantLock containerCreationLock = new ReentrantLock();
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
@@ -88,7 +100,7 @@ public final class AzureBackupStore implements BackupStore {
             createContainer,
             executor,
             MAX_CONCURRENT_FILE_OPERATIONS);
-    manifestManager = new ManifestManager(blobContainerClient, createContainer);
+    manifestManager = new ManifestManager(blobContainerClient, createContainer, executor);
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
@@ -206,19 +218,23 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
+        () ->
+            manifestManager.listManifests(wildcard, options).stream()
+                .map(Manifest::toStatus)
+                .toList(),
         executor);
   }
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    return CompletableFuture.runAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
-            return;
+            return null;
           } else if (manifest.statusCode() != StatusCode.DELETED) {
             throw new UnexpectedManifestState(
                 "Cannot delete Backup with id '%s', must be marked as deleted."
@@ -230,8 +246,10 @@ public final class AzureBackupStore implements BackupStore {
           allUrls.addAll(segmentUrls);
           fileSetManager.deleteBlobs(allUrls);
           manifestManager.deleteManifest(manifest);
+          return null;
         },
-        executor);
+        executor,
+        deleteConcurrencyLimit);
   }
 
   @Override
@@ -245,7 +263,7 @@ public final class AzureBackupStore implements BackupStore {
           return switch (manifest.statusCode()) {
             case FAILED, IN_PROGRESS, DELETED ->
                 throw new UnexpectedManifestState(
-                    ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
+                    ERROR_MSG_BACKUP_NOT_COMPLETED.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
               final var snapshot =
@@ -274,13 +292,17 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
-    return CompletableFuture.supplyAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            throw new UnexpectedManifestState(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
+          }
           manifestManager.markAsDeleted(manifest);
           return BackupStatusCode.DELETED;
         },
-        executor);
+        executor,
+        deleteConcurrencyLimit);
   }
 
   @Override

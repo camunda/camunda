@@ -126,6 +126,47 @@ public class CCSMTenantAuthorizationServiceTest {
   }
 
   @Test
+  public void shouldNotCacheFailedTenantLookupAndRetry() {
+    // given — Identity fails on the first attempt (e.g. a transient outage), then resolves the real
+    // tenants once it recovers
+    final List<TenantDto> authorizedTenants =
+        List.of(new TenantDto("tenant1Id", "tenant1", ZEEBE_DATA_SOURCE));
+    when(ccsmTokenService.getAuthorizedTenantsFromToken(TEST_TOKEN))
+        .thenThrow(new RuntimeException("identity unavailable"))
+        .thenReturn(authorizedTenants);
+
+    // when — the first resolution fails
+    final List<TenantDto> firstResult = underTest.getCurrentUserAuthorizedTenants();
+
+    // then — the failed lookup is not cached
+    assertThat(firstResult).isEmpty();
+
+    // when — a subsequent call is made before the cache TTL would have expired
+    final List<TenantDto> secondResult = underTest.getCurrentUserAuthorizedTenants();
+
+    // then — Identity is queried again (the failure was never cached) and the resolved tenants are
+    // returned instead of a stale empty list
+    Mockito.verify(ccsmTokenService, times(2)).getAuthorizedTenantsFromToken(TEST_TOKEN);
+    assertThat(secondResult).containsExactlyInAnyOrderElementsOf(authorizedTenants);
+  }
+
+  @Test
+  public void shouldCacheSuccessfulEmptyTenantAuthorizations() {
+    // given — Identity successfully resolves that the user genuinely has no tenants (e.g. right
+    // after multi-tenancy is enabled, before any mapping rule exists)
+    when(ccsmTokenService.getAuthorizedTenantsFromToken(TEST_TOKEN)).thenReturn(List.of());
+
+    // when — the tenants are resolved twice before the cache TTL would have expired
+    final List<TenantDto> firstResult = underTest.getCurrentUserAuthorizedTenants();
+    final List<TenantDto> secondResult = underTest.getCurrentUserAuthorizedTenants();
+
+    // then — the empty result is cached, so Identity is queried only once rather than per request
+    Mockito.verify(ccsmTokenService, times(1)).getAuthorizedTenantsFromToken(TEST_TOKEN);
+    assertThat(firstResult).isEmpty();
+    assertThat(secondResult).isEmpty();
+  }
+
+  @Test
   public void noTenantAuthorizationsReturnedIfNoUserTokenPresent() {
     // given
     when(ccsmTokenService.getCurrentUserIdFromAuthToken()).thenReturn(Optional.empty());

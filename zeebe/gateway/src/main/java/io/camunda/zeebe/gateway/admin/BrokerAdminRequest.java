@@ -20,6 +20,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
   private final AdminRequest request = new AdminRequest();
@@ -51,6 +52,10 @@ public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
 
   public void getMigrationStatus() {
     request.setType(AdminRequestType.GET_MIGRATION_STATUS);
+  }
+
+  public void getExportingMigrationStatus() {
+    request.setType(AdminRequestType.GET_EXPORTING_MIGRATION_STATUS);
   }
 
   public void getFLowControlConfiguration() {
@@ -103,7 +108,7 @@ public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
    * @return null to avoid writing any serialized value
    */
   @Override
-  public BufferWriter getRequestWriter() {
+  public @Nullable BufferWriter getRequestWriter() {
     return null;
   }
 

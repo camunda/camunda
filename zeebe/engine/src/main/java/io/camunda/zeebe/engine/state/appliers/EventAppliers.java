@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
@@ -76,6 +77,7 @@ import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
@@ -111,6 +113,7 @@ public final class EventAppliers implements EventApplier {
     register(ProcessInstanceResultIntent.COMPLETED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.TERMINATED, NOOP_EVENT_APPLIER);
+    register(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED, NOOP_EVENT_APPLIER);
 
     registerProcessAppliers(state);
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));
@@ -173,6 +176,7 @@ public final class EventAppliers implements EventApplier {
     registerJobMetricsBatchEventAppliers(state);
     registerAgentInstanceEventAppliers(state);
     registerAgentHistoryEventAppliers(state);
+    registerAgentHistoryBatchEventAppliers(state);
     registerAgentDefinitionEventAppliers(state);
     registerSecretReferenceEventAppliers(state);
     return this;
@@ -203,6 +207,12 @@ public final class EventAppliers implements EventApplier {
     register(AgentHistoryIntent.DISCARDED, new AgentHistoryDiscardedApplier(state));
   }
 
+  private void registerAgentHistoryBatchEventAppliers(final MutableProcessingState state) {
+    register(
+        AgentHistoryBatchIntent.CLEANED,
+        new AgentHistoryBatchCleanedApplier(state.getAgentHistoryState()));
+  }
+
   private void registerAgentDefinitionEventAppliers(final MutableProcessingState state) {
     register(
         AgentDefinitionIntent.CREATED,
@@ -219,7 +229,13 @@ public final class EventAppliers implements EventApplier {
             state.getAgentInstanceState(), state.getElementInstanceState()));
     register(
         AgentInstanceIntent.UPDATED,
-        new AgentInstanceUpdatedApplier(
+        1,
+        new AgentInstanceUpdatedV1Applier(
+            state.getAgentInstanceState(), state.getElementInstanceState()));
+    register(
+        AgentInstanceIntent.UPDATED,
+        2,
+        new AgentInstanceUpdatedV2Applier(
             state.getAgentInstanceState(), state.getElementInstanceState()));
     register(
         AgentInstanceIntent.COMPLETED,
@@ -294,9 +310,12 @@ public final class EventAppliers implements EventApplier {
   private void registerTimeEventAppliers(final MutableProcessingState state) {
     register(TimerIntent.CREATED, new TimerCreatedApplier(state.getTimerState()));
     register(TimerIntent.CREATED, 2, new TimerCreatedV2Applier(state.getTimerState()));
+    register(TimerIntent.CREATED, 3, new TimerCreatedV3Applier(state.getTimerState()));
     register(TimerIntent.CANCELED, new TimerCancelledApplier(state.getTimerState()));
     register(TimerIntent.TRIGGERED, new TimerTriggeredApplier(state.getTimerState()));
     register(TimerIntent.MIGRATED, new TimerInstanceMigratedApplier(state.getTimerState()));
+    register(TimerIntent.SUSPENDED, new TimerSuspendedApplier(state.getTimerState()));
+    register(TimerIntent.RESUMED, new TimerResumedApplier(state.getTimerState()));
   }
 
   private void registerDeploymentAppliers(final MutableProcessingState state) {
@@ -386,6 +405,16 @@ public final class EventAppliers implements EventApplier {
             multiInstanceState,
             bufferedStartMessageEventStateApplier));
     register(
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
+        3,
+        new ProcessInstanceElementCompletedV3Applier(
+            elementInstanceState,
+            eventScopeInstanceState,
+            variableState,
+            processState,
+            multiInstanceState,
+            bufferedStartMessageEventStateApplier));
+    register(
         ProcessInstanceIntent.ELEMENT_TERMINATING,
         new ProcessInstanceElementTerminatingApplier(elementInstanceState));
     register(
@@ -456,6 +485,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.RESUMED,
         new ProcessInstanceResumedApplier(state.getSuspensionState()));
+    register(
+        ProcessInstanceIntent.SUSPENDING,
+        new ProcessInstanceSuspendingApplier(state.getSuspensionState()));
     register(
         ProcessInstanceIntent.SUSPENDED,
         new ProcessInstanceSuspendedApplier(state.getSuspensionState()));
@@ -574,6 +606,11 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageSubscriptionIntent.REJECTED,
         new MessageSubscriptionRejectedApplier(
+            state.getMessageState(), state.getMessageSubscriptionState()));
+    register(
+        MessageSubscriptionIntent.REJECTED,
+        2,
+        new MessageSubscriptionRejectedV2Applier(
             state.getMessageState(), state.getMessageSubscriptionState()));
     register(
         MessageSubscriptionIntent.DELETED,
@@ -731,6 +768,10 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.CREATING,
         new ProcessMessageSubscriptionCreatingApplier(subscriptionState));
+    register(
+        ProcessMessageSubscriptionIntent.CREATING,
+        2,
+        new ProcessMessageSubscriptionCreatingV2Applier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.CREATED,
         new ProcessMessageSubscriptionCreatedApplier(subscriptionState));

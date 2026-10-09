@@ -146,6 +146,11 @@ public final class StreamProcessorBuilder {
           "Batch processing limit must be >= 1 but was %s"
               .formatted(streamProcessorContext.getMaxCommandsInBatch()));
     }
+    if (streamProcessorContext.getMaxPendingSideEffects() < 1) {
+      throw new IllegalArgumentException(
+          "maxPendingSideEffects must be >= 1 but was %s"
+              .formatted(streamProcessorContext.getMaxPendingSideEffects()));
+    }
     if (streamProcessorContext.getMaxRecoverableRetries() < 1) {
       throw new IllegalArgumentException(
           "maxRecoverableRetries must be >= 1 but was %s"
@@ -155,6 +160,11 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder maxCommandsInBatch(final int maxCommandsInBatch) {
     streamProcessorContext.maxCommandsInBatch(maxCommandsInBatch);
+    return this;
+  }
+
+  public StreamProcessorBuilder maxPendingSideEffects(final int maxPendingSideEffects) {
+    streamProcessorContext.maxPendingSideEffects(maxPendingSideEffects);
     return this;
   }
 

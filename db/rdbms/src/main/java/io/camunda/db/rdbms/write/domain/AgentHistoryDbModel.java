@@ -37,13 +37,16 @@ public record AgentHistoryDbModel(
     String tenantId,
     int partitionId,
     long jobKey,
-    String jobLease,
+    String jobLeaseToken,
     int loopIteration,
     AgentInstanceHistoryRole role,
     AgentInstanceHistoryCommitStatus commitStatus,
     OffsetDateTime producedAt,
     Long inputTokens,
     Long outputTokens,
+    Long reasoningTokenCount,
+    Long cacheCreationTokenCount,
+    Long cacheReadTokenCount,
     Long durationMs,
     String content,
     String toolCalls,
@@ -69,12 +72,13 @@ public record AgentHistoryDbModel(
   }
 
   public AgentHistoryDbModel truncate(final int sizeLimit, final Integer byteLimit) {
-    final var truncatedJobLease = TruncateUtil.truncateValue(jobLease, sizeLimit, byteLimit);
+    final var truncatedJobLeaseToken =
+        TruncateUtil.truncateValue(jobLeaseToken, sizeLimit, byteLimit);
     final var truncatedHistoryItemId =
         TruncateUtil.truncateValue(historyItemId, sizeLimit, byteLimit);
     final var truncatedModel = TruncateUtil.truncateValue(model, sizeLimit, byteLimit);
     final var truncatedProvider = TruncateUtil.truncateValue(provider, sizeLimit, byteLimit);
-    if (Objects.equals(truncatedJobLease, jobLease)
+    if (Objects.equals(truncatedJobLeaseToken, jobLeaseToken)
         && Objects.equals(truncatedHistoryItemId, historyItemId)
         && Objects.equals(truncatedModel, model)
         && Objects.equals(truncatedProvider, provider)) {
@@ -92,13 +96,16 @@ public record AgentHistoryDbModel(
         tenantId,
         partitionId,
         jobKey,
-        truncatedJobLease,
+        truncatedJobLeaseToken,
         loopIteration,
         role,
         commitStatus,
         producedAt,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         durationMs,
         content,
         toolCalls,
@@ -223,13 +230,16 @@ public record AgentHistoryDbModel(
         .tenantId(tenantId)
         .partitionId(partitionId)
         .jobKey(jobKey)
-        .jobLease(jobLease)
+        .jobLeaseToken(jobLeaseToken)
         .loopIteration(loopIteration)
         .role(role)
         .commitStatus(commitStatus)
         .producedAt(producedAt)
         .inputTokens(inputTokens)
         .outputTokens(outputTokens)
+        .reasoningTokenCount(reasoningTokenCount)
+        .cacheCreationTokenCount(cacheCreationTokenCount)
+        .cacheReadTokenCount(cacheReadTokenCount)
         .durationMs(durationMs)
         .historyItemId(historyItemId)
         .model(model)
@@ -263,13 +273,16 @@ public record AgentHistoryDbModel(
     private String tenantId;
     private int partitionId;
     private long jobKey;
-    private String jobLease;
+    private String jobLeaseToken;
     private int loopIteration;
     private AgentInstanceHistoryRole role;
     private AgentInstanceHistoryCommitStatus commitStatus;
     private OffsetDateTime producedAt;
     private Long inputTokens;
     private Long outputTokens;
+    private Long reasoningTokenCount;
+    private Long cacheCreationTokenCount;
+    private Long cacheReadTokenCount;
     private Long durationMs;
     private String content;
     private String toolCalls;
@@ -351,8 +364,8 @@ public record AgentHistoryDbModel(
       return this;
     }
 
-    public Builder jobLease(final String jobLease) {
-      this.jobLease = jobLease;
+    public Builder jobLeaseToken(final String jobLeaseToken) {
+      this.jobLeaseToken = jobLeaseToken;
       return this;
     }
 
@@ -383,6 +396,21 @@ public record AgentHistoryDbModel(
 
     public Builder outputTokens(final Long outputTokens) {
       this.outputTokens = outputTokens;
+      return this;
+    }
+
+    public Builder reasoningTokenCount(final Long reasoningTokenCount) {
+      this.reasoningTokenCount = reasoningTokenCount;
+      return this;
+    }
+
+    public Builder cacheCreationTokenCount(final Long cacheCreationTokenCount) {
+      this.cacheCreationTokenCount = cacheCreationTokenCount;
+      return this;
+    }
+
+    public Builder cacheReadTokenCount(final Long cacheReadTokenCount) {
+      this.cacheReadTokenCount = cacheReadTokenCount;
       return this;
     }
 
@@ -454,13 +482,16 @@ public record AgentHistoryDbModel(
           tenantId,
           partitionId,
           jobKey,
-          jobLease,
+          jobLeaseToken,
           loopIteration,
           role,
           commitStatus,
           producedAt,
           inputTokens,
           outputTokens,
+          reasoningTokenCount,
+          cacheCreationTokenCount,
+          cacheReadTokenCount,
           durationMs,
           content,
           toolCalls,

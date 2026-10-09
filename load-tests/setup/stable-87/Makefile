@@ -6,10 +6,16 @@ enable_optimize ?= __ENABLE_OPTIMIZE__
 # - RDBMS, OpenSearch installation, and physical tenants are not supported for this version.
 # - Optimize still needs the Elasticsearch overlay even with Elasticsearch secondary storage.
 # - The max scenario uses the 8.7 Zeebe extraConfiguration map key.
+# - 8.7 keeps gRPC (rather than the REST default of newer setups) for the load testers.
+# - 8.7 doesn't have the `/cluster/v2/rebalance` endpoint.
+# - 8.7 doesn't have the `/v2/process-definitions/search` endpoint, used by the k6 `data-read` test.
 rdbms_storages =
 optimize_self_sufficient_storages =
 scenario_max_override_key = zeebe.extraConfiguration.application-override\.yml=
 install_storage_target =
-physical_tenants_rdbms_values_file =
+physical_tenants_supported = false
+prefer_rest = false
+cluster_rebalance_supported = false
+k6_data_read_supported = false
 
 include ../common.mk

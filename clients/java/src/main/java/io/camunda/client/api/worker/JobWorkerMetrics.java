@@ -40,6 +40,33 @@ public interface JobWorkerMetrics {
   default void jobHandled(final int count) {}
 
   /**
+   * Called every time one or more jobs are refused by the executor that runs the job handler,
+   * before the handler had a chance to run.
+   *
+   * <p>A refused job is neither worked on nor kept: one the worker polled for is handed straight
+   * back to the broker, and one the broker pushed to it is left to time out. Such a job is reported
+   * to {@link #jobActivated(int)} but never to {@link #jobHandled(int)}, so subtracting this count
+   * and {@link #jobExpired(int)} as well is what gives the number of jobs the worker is actually
+   * working on.
+   *
+   * @param count the amount of jobs that were refused
+   */
+  default void jobRefused(final int count) {}
+
+  /**
+   * Called every time one or more jobs are dropped for having waited for a free job handler thread
+   * for longer than the timeout they were activated with, before the handler had a chance to run.
+   *
+   * <p>Such a job may already have been offered to another worker, so running it would risk doing
+   * the same work twice. It is reported to {@link #jobActivated(int)} but never to {@link
+   * #jobHandled(int)}. A count that keeps climbing says the worker takes on more jobs than it can
+   * start within their timeout.
+   *
+   * @param count the amount of jobs that were dropped
+   */
+  default void jobExpired(final int count) {}
+
+  /**
    * Called every time the streaming job worker recreates its stream because the configured stream
    * inactivity timeout elapsed without any activity. Useful to monitor whether the inactivity
    * watchdog is firing in a given deployment (e.g. due to an upstream proxy idle close), without

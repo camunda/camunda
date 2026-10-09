@@ -19,8 +19,10 @@ import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Optional;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
@@ -30,6 +32,7 @@ import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
@@ -38,6 +41,10 @@ import org.slf4j.LoggerFactory;
 public final class ElasticsearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
+
+  private static final int DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS = 180_000;
+  private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5_000;
+  private static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 30_000;
 
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
@@ -132,6 +139,7 @@ public final class ElasticsearchConnector {
     }
 
     setupConnectionPool(httpAsyncClientBuilder, configuration);
+    setupKeepAlive(httpAsyncClientBuilder);
 
     for (final HttpRequestInterceptor interceptor : interceptors) {
       httpAsyncClientBuilder.addInterceptorLast(interceptor);
@@ -170,13 +178,33 @@ public final class ElasticsearchConnector {
     }
   }
 
-  private Builder setTimeouts(final Builder builder, final ConnectConfiguration elsConfig) {
-    if (elsConfig.getSocketTimeout() != null) {
-      builder.setSocketTimeout(elsConfig.getSocketTimeout());
-    }
-    if (elsConfig.getConnectTimeout() != null) {
-      builder.setConnectTimeout(elsConfig.getConnectTimeout());
-    }
+  /**
+   * Enables TCP keepalive on the NIO sockets, which the Apache HttpAsyncClient leaves off by
+   * default. Without it, a firewall or NAT device between this client and Elasticsearch drops its
+   * connection tracking entry for an idle connection without sending a RST or FIN, and the next
+   * request to reuse that pooled connection blocks until the socket timeout expires.
+   */
+  private void setupKeepAlive(final HttpAsyncClientBuilder httpAsyncClientBuilder) {
+    httpAsyncClientBuilder.setDefaultIOReactorConfig(
+        IOReactorConfig.custom().setSoKeepAlive(true).build());
+  }
+
+  @VisibleForTesting
+  Builder setTimeouts(final Builder builder, final ConnectConfiguration elsConfig) {
+    // ES does set some defaults via RestClientBuilder, but we will set them explictly here
+    // so it's clearer what they are
+    final var socketTimeoutMillis =
+        Optional.ofNullable(elsConfig.getSocketTimeout()).orElse(DEFAULT_SOCKET_TIMEOUT_MILLIS);
+    builder.setSocketTimeout(socketTimeoutMillis);
+
+    final var connectTimeoutMillis =
+        Optional.ofNullable(elsConfig.getConnectTimeout()).orElse(DEFAULT_CONNECT_TIMEOUT_MILLIS);
+    builder.setConnectTimeout(connectTimeoutMillis);
+
+    // by default RestClientBuilder does not set this, so we aligning this with the OS client
+    // default of 3 minutes
+    builder.setConnectionRequestTimeout(DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS);
+
     return builder;
   }
 

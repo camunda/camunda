@@ -40,7 +40,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   public static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   public static final StringValue TAGS_KEY = new StringValue("tags");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
-  public static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  public static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -54,8 +54,8 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   private final ArrayProperty<StringValue> tagsProperty =
       new ArrayProperty<>(TAGS_KEY, StringValue::new);
   private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
-  private final IntegerProperty storageOrdinalKeyProperty =
-      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+  private final IntegerProperty storageOrdinalProperty =
+      new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   public ProcessInstanceResultRecord() {
     super(9);
@@ -67,7 +67,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
         .declareProperty(variablesProperty)
         .declareProperty(tagsProperty)
         .declareProperty(businessIdProperty)
-        .declareProperty(storageOrdinalKeyProperty);
+        .declareProperty(storageOrdinalProperty);
   }
 
   @Override
@@ -182,12 +182,12 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProperty.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
   }
 
-  public ProcessInstanceResultRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+  public ProcessInstanceResultRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
     return this;
   }
 }

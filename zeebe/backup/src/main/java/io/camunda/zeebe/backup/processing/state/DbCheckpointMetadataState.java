@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.processing.state;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.collections.MutableLong;
+import org.jspecify.annotations.Nullable;
 
 /**
  * State backed by the CHECKPOINTS column family. Stores full metadata for every created markers and
@@ -74,7 +77,7 @@ public final class DbCheckpointMetadataState {
   }
 
   /** Point lookup for a single checkpoint. Returns null if not found. */
-  public CheckpointMetadataValue getCheckpoint(final long checkpointId) {
+  public @Nullable CheckpointMetadataValue getCheckpoint(final long checkpointId) {
     checkpointIdKey.wrapLong(checkpointId);
     return checkpointsColumnFamily.get(checkpointIdKey);
   }
@@ -86,7 +89,7 @@ public final class DbCheckpointMetadataState {
         (key, value) ->
             result.add(
                 new Checkpoint(
-                    value.getCheckpointType(),
+                    requireNonNull(value.getCheckpointType(), "checkpoint type"),
                     key.getValue(),
                     value.getCheckpointTimestamp(),
                     value.getCheckpointPosition(),
@@ -112,7 +115,7 @@ public final class DbCheckpointMetadataState {
     checkpointsColumnFamily.whileTrueReverse(
         checkpointIdKey,
         (key, value) -> {
-          if (value.getCheckpointType().shouldCreateBackup()) {
+          if (requireNonNull(value.getCheckpointType(), "checkpoint type").shouldCreateBackup()) {
             result.set(key.getValue());
             return false; // stop iteration
           }
@@ -137,7 +140,7 @@ public final class DbCheckpointMetadataState {
     checkpointsColumnFamily.whileTrue(
         checkpointIdKey,
         (key, value) -> {
-          if (value.getCheckpointType().shouldCreateBackup()) {
+          if (requireNonNull(value.getCheckpointType(), "checkpoint type").shouldCreateBackup()) {
             result.set(key.getValue());
             return false; // stop iteration
           }

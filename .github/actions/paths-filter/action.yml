@@ -90,27 +90,6 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-operate.outputs.operate-frontend-change == 'true'
       }}
-  tasklist-frontend-changes:
-    description: Output whether Tasklist frontend tests should be run based on GitHub event and files changed
-    value: >-
-      ${{
-        github.event_name == 'push' ||
-        github.event_name == 'schedule' ||
-        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
-        steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
-      }}
-  tasklist-backend-changes:
-    description: Output whether Tasklist backend build should be run based on GitHub event and files changed
-    value: >-
-      ${{
-        github.event_name == 'push' ||
-        github.event_name == 'schedule' ||
-        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
-        steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
-        steps.filter-common.outputs.webapps-change == 'true' ||
-        steps.filter-common.outputs.maven-change == 'true' ||
-        steps.filter-common.outputs.dockerfile-change == 'true'
-      }}
   optimize-frontend-changes:
     description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
     value: >-
@@ -161,6 +140,15 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.frontend-change == 'true' ||
         steps.filter-identity.outputs.frontend-identity == 'true'
+      }}
+  process-test-coverage-frontend-changes:
+    description: Output whether the Camunda Process Test coverage report frontend should be built
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.process-test-coverage-frontend-change == 'true'
       }}
   zeebe-changes:
     description: Output whether any Zeebe code has changed
@@ -220,6 +208,15 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.async-replication-change == 'true'
       }}
+  release-notes-action:
+    description: Output whether the release-notes action's tests and bundle-drift guards should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.release-notes-action-change == 'true'
+      }}
   renovate-config-changes:
     description: Output whether renovate config validator needs to be run
     value: >-
@@ -274,13 +271,31 @@ outputs:
         steps.filter-load-test-setup.outputs.load-test-setup-change == 'true'
       }}
   scripts-changes:
-    description: Output whether any file under .github/scripts/ or .ci/db-versions.yml changed, so their Python unit tests should be run
+    description: Output whether any repository Python-tested script changed, so their Python unit tests should be run
     value: >-
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-scripts.outputs.scripts-change == 'true'
+      }}
+  load-test-scripts-changes:
+    description: Output whether load-test Python script tests should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-scripts.outputs.load-test-scripts-change == 'true'
+      }}
+  load-test-k6-changes:
+    description: Output whether the load-test k6 scripts formatting check should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-scripts.outputs.load-test-k6-change == 'true'
       }}
 
 runs:
@@ -298,10 +313,27 @@ runs:
           - '.github/workflows/**'
           - '.github/actionlint*'
           - '.github/conftest-*.rego'
+          - '.github/scripts/download-with-retry.sh'
 
         renovate-config-change:
           - '**/renovate.json5'
           - '.github/renovate/**.json5'
+
+        # The gate workflow is included so a change to it still runs the action's
+        # tests and the bundle-drift guard that back it.
+        #
+        # The first two globs overlap `ci-relevant` (which already covers
+        # .github/actions/** and .github/workflows/**) and are kept on purpose:
+        # ci-relevant additionally requires check.sh to judge the change
+        # CI-relevant, so an excluded path there would otherwise skip the
+        # action's own tests. The last two are not GitHub Actions files at all,
+        # so only this filter catches them — and both are drift-guarded by the
+        # action's CI, which is exactly what must run when they change.
+        release-notes-action-change:
+          - '.github/actions/release-notes/**'
+          - '.github/workflows/release-notes*'
+          - '.github/pull_request_template.md'
+          - 'commitlint.config.cjs'
 
         # We use specific src/main and src/test path to:
         #  * react on java code (production + test) changes
@@ -340,9 +372,12 @@ runs:
 
         frontend-change:
           - 'operate/client/**'
-          - 'tasklist/client/**'
           - 'identity/client/**'
           - 'optimize/client/**'
+
+        # Lives in a Maven module, not a client/ folder, so `frontend-change` misses it.
+        process-test-coverage-frontend-change:
+          - 'testing/camunda-process-test-coverage/**'
 
         protobuf-change:
           - '**/*.proto'
@@ -437,18 +472,6 @@ runs:
           - operate/client/**
 
   - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-    id: filter-tasklist
-    with:
-      base: ${{ github.event.merge_group.base_ref || '' }}
-      ref: ${{ github.event.merge_group.head_ref || github.ref }}
-      filters: |
-        tasklist-backend-change:
-          - 'tasklist/!(client/**)/**'
-
-        tasklist-frontend-change:
-          - tasklist/client/**
-
-  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-optimize
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -539,6 +562,10 @@ runs:
         scripts-change:
           - '.github/scripts/**'
           - '.ci/db-versions.yml'
+        load-test-scripts-change:
+          - 'load-tests/loadtestctl/**'
+        load-test-k6-change:
+          - 'load-tests/setup/charts/load-test-setup/k6/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch

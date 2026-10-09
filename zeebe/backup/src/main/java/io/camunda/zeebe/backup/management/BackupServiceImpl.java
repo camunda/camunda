@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import static io.camunda.zeebe.util.Unit.unit;
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRange;
@@ -15,6 +18,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Checkpoint;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
@@ -31,6 +35,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
@@ -38,16 +43,23 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.SequencedCollection;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 final class BackupServiceImpl {
   private static final Logger LOG = LoggerFactory.getLogger(BackupServiceImpl.class);
+
+  /** Most backups checked for being in progress after a leader change. */
+  private static final int IN_PROGRESS_SCAN_LIMIT = 1000;
+
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
   private final LogStreamWriter logStreamWriter;
@@ -56,7 +68,7 @@ final class BackupServiceImpl {
   private final BackupMetadataSyncer metadataSyncer;
   private final BackupStoreQueries storeQueries;
   private final int partitionId;
-  private ConcurrencyControl concurrencyControl;
+  private @Nullable ConcurrencyControl concurrencyControl;
 
   BackupServiceImpl(
       final BackupStore backupStore,
@@ -137,7 +149,7 @@ final class BackupServiceImpl {
             .addKeyValue("backup", inProgressBackup.id())
             .setMessage("Backup is already completed, will not take a new one")
             .log();
-        backupSaved.complete(null);
+        backupSaved.complete(unit());
       }
       case FAILED, IN_PROGRESS -> {
         LOG.atWarn()
@@ -177,11 +189,16 @@ final class BackupServiceImpl {
         .onComplete(
             proceed(
                 error -> failBackup(inProgressBackup, backupSaved, error),
-                () -> backupSaved.complete(null)));
+                () -> backupSaved.complete(unit())));
   }
 
   private ActorFuture<Void> saveBackup(final InProgressBackup inProgressBackup) {
-    final ActorFuture<Void> future = concurrencyControl.createFuture();
+    final var executor = concurrencyControl;
+    if (executor == null) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalStateException("concurrencyControl must be set before saving a backup"));
+    }
+    final ActorFuture<Void> future = executor.createFuture();
     final var backup = inProgressBackup.createBackup();
     LOG.atDebug().addKeyValue("backup", inProgressBackup.id()).setMessage("Saving backup").log();
     backupStore
@@ -189,12 +206,12 @@ final class BackupServiceImpl {
         .whenCompleteAsync(
             (ignore, error) -> {
               if (error == null) {
-                future.complete(null);
+                future.complete(unit());
               } else {
                 future.completeExceptionally("Failed to save backup", error);
               }
             },
-            concurrencyControl);
+            executor);
     return future;
   }
 
@@ -208,7 +225,8 @@ final class BackupServiceImpl {
         .setMessage("Marking backup as failed")
         .log();
     backupSaved.completeExceptionally(error);
-    backupStore.markFailed(inProgressBackup.id(), error.getMessage());
+    final var errorMessage = error.getMessage() != null ? error.getMessage() : error.toString();
+    backupStore.markFailed(inProgressBackup.id(), errorMessage);
   }
 
   private void closeInProgressBackup(final InProgressBackup inProgressBackup) {
@@ -252,7 +270,7 @@ final class BackupServiceImpl {
     }
   }
 
-  private BiConsumer<Void, Throwable> proceed(
+  private BiConsumer<Void, @Nullable Throwable> proceed(
       final Consumer<Throwable> onError, final Runnable nextStep) {
     return (ignore, error) -> {
       if (error != null) {
@@ -268,28 +286,39 @@ final class BackupServiceImpl {
     return storeQueries.getBackupStatus(partitionId, checkpointId, executor);
   }
 
+  /**
+   * Marks backups a previous leader left in progress as failed. Reading every manifest of the
+   * partition takes minutes on a large store, so only the newest backups are scanned: anything
+   * older was left behind by a leader change that an earlier scan already cleaned up.
+   */
   void failInProgressBackups(
       final int partitionId, final long lastCheckpointId, final ConcurrencyControl executor) {
-    if (lastCheckpointId != CheckpointState.NO_CHECKPOINT) {
-      executor.run(
-          () ->
-              backupStore
-                  .list(
-                      new BackupIdentifierWildcardImpl(
-                          Optional.empty(), Optional.of(partitionId), CheckpointPattern.any()))
-                  .thenAcceptAsync(
-                      backups ->
-                          backups.stream()
-                              .filter(b -> b.id().checkpointId() <= lastCheckpointId)
-                              .forEach(b -> failInProgressBackup(b, executor)),
-                      executor)
-                  .exceptionallyAsync(
-                      failure -> {
-                        LOG.warn("Failed to list backups that should be marked as failed", failure);
-                        return null;
-                      },
-                      executor));
+    if (lastCheckpointId == CheckpointState.NO_CHECKPOINT) {
+      return;
     }
+    // The store call is deferred into executor.run below so a store that is shutting down (a
+    // racing leadership change) fails the returned future asynchronously instead of throwing
+    // RejectedExecutionException synchronously on the caller's thread.
+    executor.run(
+        () ->
+            backupStore
+                .list(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.empty(), Optional.of(partitionId), CheckpointPattern.any()),
+                    ListOptions.newestFirst(
+                        OptionalLong.empty(), OptionalInt.of(IN_PROGRESS_SCAN_LIMIT)))
+                .thenAcceptAsync(
+                    backups ->
+                        backups.stream()
+                            .filter(backup -> backup.id().checkpointId() <= lastCheckpointId)
+                            .forEach(backup -> failInProgressBackup(backup, executor)),
+                    executor)
+                .exceptionallyAsync(
+                    failure -> {
+                      LOG.warn("Failed to list backups that should be marked as failed", failure);
+                      return null;
+                    },
+                    executor));
   }
 
   private void failInProgressBackup(
@@ -330,7 +359,8 @@ final class BackupServiceImpl {
       case Either.Left(final var error) ->
           deleteCompleted.completeExceptionally(
               new RuntimeException("Failed to write DELETE_BACKUP command: " + error));
-      case final Either.Right<WriteFailure, Long> ignoredPosition -> deleteCompleted.complete(null);
+      case final Either.Right<WriteFailure, Long> ignoredPosition ->
+          deleteCompleted.complete(unit());
     }
     return deleteCompleted;
   }
@@ -350,7 +380,8 @@ final class BackupServiceImpl {
       case Either.Left(final var error) ->
           clearCompleted.completeExceptionally(
               new RuntimeException("Failed to write CLEAR_STATE command: " + error));
-      case final Either.Right<WriteFailure, Long> ignoredPosition -> clearCompleted.complete(null);
+      case final Either.Right<WriteFailure, Long> ignoredPosition ->
+          clearCompleted.complete(unit());
     }
     return clearCompleted;
   }
@@ -420,7 +451,7 @@ final class BackupServiceImpl {
         checkpointId,
         meta.getCheckpointPosition(),
         meta.getCheckpointTimestamp(),
-        meta.getCheckpointType(),
+        requireNonNull(meta.getCheckpointType()),
         meta.getFirstLogPosition());
   }
 

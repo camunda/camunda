@@ -47,7 +47,7 @@ class AgentHistoryEntityTransformerTest {
     source.setTenantId("<default>");
     source.setPartitionId(1);
     source.setJobKey(500L);
-    source.setJobLease("lease-token");
+    source.setJobLeaseToken("lease-token");
     source.setLoopIteration(3);
     source.setHistoryItemId("history-item-1");
     source.setRole(AgentHistoryRole.ASSISTANT);
@@ -55,6 +55,9 @@ class AgentHistoryEntityTransformerTest {
     source.setProducedAt(OffsetDateTime.parse("2024-06-01T12:00:00Z"));
     source.setInputTokens(50L);
     source.setOutputTokens(30L);
+    source.setReasoningTokenCount(15L);
+    source.setCacheCreationTokenCount(9L);
+    source.setCacheReadTokenCount(5L);
     source.setDurationMs(1200L);
     source.setContent(List.of(AgentHistoryContentValue.text("Hello, world!")));
     source.setToolCalls(
@@ -82,13 +85,16 @@ class AgentHistoryEntityTransformerTest {
     assertThat(result.processDefinitionId()).isEqualTo("my-process");
     assertThat(result.tenantId()).isEqualTo("<default>");
     assertThat(result.jobKey()).isEqualTo(500L);
-    assertThat(result.jobLease()).isEqualTo("lease-token");
+    assertThat(result.jobLeaseToken()).isEqualTo("lease-token");
     assertThat(result.loopIteration()).isEqualTo(3);
     assertThat(result.role()).isEqualTo(AgentInstanceHistoryRole.ASSISTANT);
     assertThat(result.commitStatus()).isEqualTo(AgentInstanceHistoryCommitStatus.COMMITTED);
     assertThat(result.producedAt()).isEqualTo(OffsetDateTime.parse("2024-06-01T12:00:00Z"));
     assertThat(result.metrics().inputTokens()).isEqualTo(50L);
     assertThat(result.metrics().outputTokens()).isEqualTo(30L);
+    assertThat(result.metrics().reasoningTokenCount()).isEqualTo(15L);
+    assertThat(result.metrics().cacheCreationTokenCount()).isEqualTo(9L);
+    assertThat(result.metrics().cacheReadTokenCount()).isEqualTo(5L);
     assertThat(result.metrics().durationMs()).isEqualTo(1200L);
     assertThat(result.content()).hasSize(1);
     assertThat(result.content().get(0).contentType()).isEqualTo(ContentType.TEXT);
@@ -124,6 +130,20 @@ class AgentHistoryEntityTransformerTest {
 
     // then
     assertThat(result.toolCalls()).isEmpty();
+  }
+
+  @Test
+  void shouldMapMissingJobLeaseTokenToEmptyString() {
+    // given — a document indexed before the field was renamed carries no jobLeaseToken, so Jackson
+    // leaves it null; AgentInstanceHistoryEntity rejects a null, which would fail the whole search
+    final var source = buildSource();
+    source.setJobLeaseToken(null);
+
+    // when
+    final AgentInstanceHistoryEntity result = transformer.apply(source);
+
+    // then
+    assertThat(result.jobLeaseToken()).isEmpty();
   }
 
   @Test
@@ -221,10 +241,13 @@ class AgentHistoryEntityTransformerTest {
 
   @Test
   void shouldMapAllNullMetricsToNullMetrics() {
-    // given — all three metric fields null means metrics were never provided
+    // given — all six metric fields null means metrics were never provided
     final var source = buildSource();
     source.setInputTokens(null);
     source.setOutputTokens(null);
+    source.setReasoningTokenCount(null);
+    source.setCacheCreationTokenCount(null);
+    source.setCacheReadTokenCount(null);
     source.setDurationMs(null);
 
     // when
@@ -236,10 +259,14 @@ class AgentHistoryEntityTransformerTest {
 
   @Test
   void shouldPreservePartialMetricsWhenOnlyDurationMsIsNull() {
-    // given — inputTokens and outputTokens set, durationMs absent
+    // given — inputTokens/outputTokens/reasoningTokenCount/cacheCreationTokenCount/
+    // cacheReadTokenCount set, durationMs absent
     final var source = buildSource();
     source.setInputTokens(100L);
     source.setOutputTokens(200L);
+    source.setReasoningTokenCount(30L);
+    source.setCacheCreationTokenCount(20L);
+    source.setCacheReadTokenCount(10L);
     source.setDurationMs(null);
 
     // when
@@ -249,6 +276,9 @@ class AgentHistoryEntityTransformerTest {
     assertThat(result.metrics()).isNotNull();
     assertThat(result.metrics().inputTokens()).isEqualTo(100L);
     assertThat(result.metrics().outputTokens()).isEqualTo(200L);
+    assertThat(result.metrics().reasoningTokenCount()).isEqualTo(30L);
+    assertThat(result.metrics().cacheCreationTokenCount()).isEqualTo(20L);
+    assertThat(result.metrics().cacheReadTokenCount()).isEqualTo(10L);
     assertThat(result.metrics().durationMs()).isNull();
   }
 

@@ -16,6 +16,7 @@ import com.google.rpc.Status;
 import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.PartitionInRecoveryException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -77,6 +78,23 @@ final class GrpcErrorMapperTest {
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
     assertThat(recorder.getAppendedEvents()).hasSize(1);
     final LogEvent event = recorder.getAppendedEvents().get(0);
+    assertThat(event.getLevel()).isEqualTo(Level.TRACE);
+  }
+
+  @Test
+  void shouldReturnUnavailableOnPartitionInRecovery() {
+    // given
+    final var exception = new PartitionInRecoveryException(1);
+
+    // when
+    log.setLevel(Level.TRACE);
+    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+    // then
+    assertThat(statusException.getStatus().getCode()).isEqualTo(Code.UNAVAILABLE);
+    assertThat(statusException.getStatus().getDescription()).contains("recovery mode");
+    assertThat(recorder.getAppendedEvents()).hasSize(1);
+    final LogEvent event = recorder.getAppendedEvents().getFirst();
     assertThat(event.getLevel()).isEqualTo(Level.TRACE);
   }
 

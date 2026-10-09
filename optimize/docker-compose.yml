@@ -30,7 +30,7 @@ services:
     volumes:
       - /var/tmp:/var/tmp
   opensearch:
-    image: opensearchproject/opensearch:${OS_VERSION:-2.19.5}
+    image: opensearchproject/opensearch:${OS_VERSION:-2.19.6}
     profiles: ["opensearch", "setup-integration-test"]
     container_name: opensearch
     environment:

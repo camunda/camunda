@@ -76,7 +76,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .listenerEventType(JobListenerEventTypeEnum.START)
             .rootProcessInstanceKey("321")
             .businessId("business-1")
-            .leaseToken("lease-token-1")
+            .jobLeaseToken("lease-token-1")
             .priority(15);
 
     final ActivatedJobResult activatedJob2 =
@@ -135,7 +135,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(String.valueOf(job.getRootProcessInstanceKey()))
         .isEqualTo(activatedJob1.getRootProcessInstanceKey());
     assertThat(job.getBusinessId()).isEqualTo(activatedJob1.getBusinessId());
-    assertThat(job.getLeaseToken()).isEqualTo(activatedJob1.getLeaseToken());
+    assertThat(job.getJobLeaseToken()).isEqualTo(activatedJob1.getJobLeaseToken());
     assertThat(job.getCustomHeaders()).isEqualTo(activatedJob1.getCustomHeaders());
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
@@ -162,7 +162,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(String.valueOf(job.getRootProcessInstanceKey()))
         .isEqualTo(activatedJob2.getRootProcessInstanceKey());
     assertThat(job.getBusinessId()).isEqualTo(activatedJob2.getBusinessId());
-    assertThat(job.getLeaseToken()).isNull();
+    assertThat(job.getJobLeaseToken()).isNull();
     assertThat(String.valueOf(job.getProcessInstanceKey()))
         .isEqualTo(activatedJob2.getProcessInstanceKey());
     assertThat(job.getCustomHeaders()).isEqualTo(activatedJob2.getCustomHeaders());

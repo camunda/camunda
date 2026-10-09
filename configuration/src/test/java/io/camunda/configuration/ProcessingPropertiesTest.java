@@ -46,6 +46,7 @@ public class ProcessingPropertiesTest {
   private static final boolean
       EXPECTED_CONFIGURED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE = false;
   private static final int EXPECTED_MAX_RECOVERABLE_RETRIES = 50;
+  private static final int EXPECTED_MAX_PENDING_SIDE_EFFECTS = 250;
 
   @Nested
   @TestPropertySource(
@@ -67,7 +68,8 @@ public class ProcessingPropertiesTest {
             + EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
         "camunda.processing.evaluate-boundary-event-correlation-key-in-activity-scope="
             + EXPECTED_CONFIGURED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
-        "camunda.processing.max-recoverable-retries=" + EXPECTED_MAX_RECOVERABLE_RETRIES
+        "camunda.processing.max-recoverable-retries=" + EXPECTED_MAX_RECOVERABLE_RETRIES,
+        "camunda.processing.max-pending-side-effects=" + EXPECTED_MAX_PENDING_SIDE_EFFECTS
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerBasedProperties;
@@ -83,7 +85,8 @@ public class ProcessingPropertiesTest {
           .returns(
               EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL, ProcessingCfg::getScheduledTaskCheckInterval)
           .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions)
-          .returns(EXPECTED_MAX_RECOVERABLE_RETRIES, ProcessingCfg::getMaxRecoverableRetries);
+          .returns(EXPECTED_MAX_RECOVERABLE_RETRIES, ProcessingCfg::getMaxRecoverableRetries)
+          .returns(EXPECTED_MAX_PENDING_SIDE_EFFECTS, ProcessingCfg::getMaxPendingSideEffects);
 
       assertThat(brokerBasedProperties.getExperimental().getConsistencyChecks())
           .returns(EXPECTED_ENABLE_PRECONDITIONS_CHECK, ConsistencyCheckCfg::isEnablePreconditions)
@@ -199,6 +202,7 @@ public class ProcessingPropertiesTest {
         "camunda.processing.evaluate-boundary-event-correlation-key-in-activity-scope="
             + EXPECTED_DEFAULT_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
         "camunda.processing.max-recoverable-retries=" + EXPECTED_MAX_RECOVERABLE_RETRIES,
+        "camunda.processing.max-pending-side-effects=" + EXPECTED_MAX_PENDING_SIDE_EFFECTS,
 
         // legacy
         "zeebe.broker.processingCfg.maxCommandsInBatch=1",
@@ -228,7 +232,8 @@ public class ProcessingPropertiesTest {
           .returns(
               EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL, ProcessingCfg::getScheduledTaskCheckInterval)
           .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions)
-          .returns(EXPECTED_MAX_RECOVERABLE_RETRIES, ProcessingCfg::getMaxRecoverableRetries);
+          .returns(EXPECTED_MAX_RECOVERABLE_RETRIES, ProcessingCfg::getMaxRecoverableRetries)
+          .returns(EXPECTED_MAX_PENDING_SIDE_EFFECTS, ProcessingCfg::getMaxPendingSideEffects);
 
       assertThat(brokerBasedProperties.getExperimental().getConsistencyChecks())
           .returns(EXPECTED_ENABLE_PRECONDITIONS_CHECK, ConsistencyCheckCfg::isEnablePreconditions)

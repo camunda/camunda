@@ -16,6 +16,7 @@ import io.camunda.client.api.response.UpdateUserResponse;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.User;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,7 @@ public class UsersUpdateIT {
     assertThat(updateUserResponse.getEmail()).isEqualTo(updatedEmail);
 
     Awaitility.await("User is updated")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -98,6 +100,7 @@ public class UsersUpdateIT {
 
     // then
     Awaitility.await("User is updated")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -134,6 +137,7 @@ public class UsersUpdateIT {
 
   private static void assertUserCreated(final String userName) {
     Awaitility.await("User is created and exported")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

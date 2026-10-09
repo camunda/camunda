@@ -71,8 +71,8 @@ public final class YieldJobTest {
         ENGINE.jobs().withType(jobType).withLease().activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final String leaseToken = job.getLeaseToken();
-    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("job was leased").isNotEmpty();
 
     // when
     final Record<JobRecordValue> yieldRecord =

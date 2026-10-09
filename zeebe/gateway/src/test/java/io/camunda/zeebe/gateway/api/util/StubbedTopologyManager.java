@@ -13,7 +13,6 @@ import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.UUID;
@@ -62,7 +61,8 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
+  public void onClusterConfigurationUpdated(
+      final CurrentClusterConfiguration clusterConfiguration) {
     throw new UnsupportedOperationException("Not yet implemented");
   }
 

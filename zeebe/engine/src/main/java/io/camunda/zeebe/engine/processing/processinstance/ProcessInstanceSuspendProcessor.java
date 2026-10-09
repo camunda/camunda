@@ -8,11 +8,12 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.InstantSource;
 
 public final class ProcessInstanceSuspendProcessor
     implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
@@ -44,6 +47,8 @@ public final class ProcessInstanceSuspendProcessor
       MESSAGE_PREFIX + "a cancel request is already in progress";
   private static final String PROCESS_ALREADY_SUSPENDED_MESSAGE =
       MESSAGE_PREFIX + "it is already suspended";
+  private static final String PROCESS_TERMINATING_MESSAGE =
+      MESSAGE_PREFIX + "it is already being terminated";
 
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
@@ -53,11 +58,17 @@ public final class ProcessInstanceSuspendProcessor
   private final AsyncRequestState asyncRequestState;
   private final SuspensionState suspensionState;
   private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
+  private final ProcessInstanceSuspensionMessageSubscriptionBehavior suspensionSubscriptionBehavior;
+  private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceSuspendProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final InstantSource clock,
+      final SuspensionMetrics suspensionMetrics) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
@@ -68,6 +79,16 @@ public final class ProcessInstanceSuspendProcessor
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
             elementInstanceState, processingState.getJobState(), stateWriter);
+    suspensionSubscriptionBehavior =
+        new ProcessInstanceSuspensionMessageSubscriptionBehavior(
+            elementInstanceState,
+            processingState.getProcessMessageSubscriptionState(),
+            stateWriter,
+            writers.sideEffect(),
+            subscriptionCommandSender,
+            transientProcessMessageSubscriptionState,
+            clock);
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -79,20 +100,33 @@ public final class ProcessInstanceSuspendProcessor
     }
 
     final ProcessInstanceRecord value = elementInstance.getValue();
-    // Park jobs before the instance-level SUSPENDED event so suspension is complete when the
-    // marker is written. A later SUSPENDING intermediate state can chunk this work first.
-    suspensionJobBehavior.suspendJobs(command.getKey());
+    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDING, value);
+    final int suspendedJobCount = closeSubscriptionsAndSuspendJobs(command.getKey());
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
+    suspensionMetrics.instanceSuspended();
+    if (suspendedJobCount > 0) {
+      suspensionMetrics.jobsSuspended(suspendedJobCount);
+    }
+  }
+
+  /**
+   * Keep this order, closing subscriptions first keeps RocksDB seeks cheap. Currently, subscription
+   * closures visit all element instance subscriptions which runs a RocksDB seek command. If the
+   * order is reversed, job suspensions will write to the transaction batch first, which requires
+   * the seek command to also check against those batched writes. See <a
+   * href="https://github.com/camunda/camunda/issues/62933">#62933</a>.
+   */
+  private int closeSubscriptionsAndSuspendJobs(final long processInstanceKey) {
+    suspensionSubscriptionBehavior.closeSubscriptions(processInstanceKey);
+    return suspensionJobBehavior.suspendJobs(processInstanceKey);
   }
 
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 
-    if (elementInstance == null
-        || elementInstance.getParentKey() > 0
-        || elementInstance.isTerminating()) {
+    if (elementInstance == null || elementInstance.getParentKey() > 0) {
       final var reason = String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
@@ -138,7 +172,16 @@ public final class ProcessInstanceSuspendProcessor
       return false;
     }
 
-    if (suspensionState.isSuspended(command.getKey())) {
+    if (elementInstance.isTerminating()) {
+      final var reason = String.format(PROCESS_TERMINATING_MESSAGE, command.getKey());
+      enrichRejectionCommand(command, elementInstance.getValue());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
+      return false;
+    }
+
+    // Check marker presence so all duplicate suspend requests are rejected.
+    if (suspensionState.getSuspensionState(command.getKey()) != null) {
       final var reason = String.format(PROCESS_ALREADY_SUSPENDED_MESSAGE, command.getKey());
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
@@ -161,9 +204,14 @@ public final class ProcessInstanceSuspendProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<ProcessInstanceRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceRecord> record) {
     // reject: a repeated suspend while a marker is present must fail like the processor's own
     // "already suspended" rejection; buffering would silently swallow it.
-    return SuspensionBehavior.REJECT;
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.REJECT;
   }
 }

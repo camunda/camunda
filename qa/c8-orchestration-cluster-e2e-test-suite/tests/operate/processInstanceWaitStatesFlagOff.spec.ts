@@ -10,6 +10,7 @@ import {readFileSync} from 'node:fs';
 import {test} from 'fixtures';
 import {expect, request as playwrightRequest} from '@playwright/test';
 import {encode} from 'utils/http';
+import {logInViaApi} from 'utils/logInViaApi';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {
   startIsolatedEnvironmentWaitStatesOff,
@@ -93,12 +94,12 @@ test.describe.serial('Wait States Flag Off', () => {
     });
 
     await test.step('Log in against the isolated stack', async () => {
-      const loginRes = await page
-        .context()
-        .request.post(`${ISOLATED_BASE_URL}/login`, {
-          form: {username: 'demo', password: 'demo'},
-        });
-      expect(loginRes.ok()).toBe(true);
+      const login = await logInViaApi(
+        page.context().request,
+        ISOLATED_BASE_URL,
+        {username: 'demo', password: 'demo'},
+      );
+      expect(login.response.ok()).toBe(true);
     });
 
     await test.step('Open the process instance and confirm no waiting UI or query', async () => {

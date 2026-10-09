@@ -103,13 +103,16 @@ public final class SecretReferenceBatchCreateIncidentsProcessorTest {
         .when(stateWriter)
         .appendFollowUpEvent(anyLong(), eq(SecretReferenceIntent.BATCH_INCIDENTS_CREATED), any());
 
+    processor = buildProcessor(true);
+  }
+
+  private SecretReferenceBatchCreateIncidentsProcessor buildProcessor(
+      final boolean defaultSecretStoreConfigured) {
     final var writers = mock(Writers.class);
     when(writers.state()).thenReturn(stateWriter);
     when(writers.command()).thenReturn(commandWriter);
-
-    processor =
-        new SecretReferenceBatchCreateIncidentsProcessor(
-            writers, keyGenerator, processingState, incidentMetrics);
+    return new SecretReferenceBatchCreateIncidentsProcessor(
+        writers, keyGenerator, processingState, incidentMetrics, defaultSecretStoreConfigured);
   }
 
   private MockTypedRecord<SecretReferenceRecord> command(final SecretReferenceRecord value) {
@@ -243,6 +246,32 @@ public final class SecretReferenceBatchCreateIncidentsProcessorTest {
         .contains(SECRET_REF)
         .contains("the configured secret store")
         .doesNotContain("'" + SecretStoreRegistry.DEFAULT_STORE_ID + "'");
+  }
+
+  @Test
+  void shouldSayNoStoreIsConfiguredWhenDefaultStoreIsNotConfigured() {
+    // given - C8Run and any Self-Managed setup that configures no store at all leave the caller
+    // (EngineProcessors, from SecretStoreRegistry#isConfigured) unable to name a real store; which
+    // of a NoopSecretStore or no entry at all backs it is that method's concern, not this class's
+    processor = buildProcessor(false);
+    createWaitingJob(1L, 11L, SecretStoreRegistry.DEFAULT_STORE_ID);
+    final var value =
+        new SecretReferenceRecord()
+            .setStoreId(SecretStoreRegistry.DEFAULT_STORE_ID)
+            .setSecretReference(SECRET_REF)
+            .addJobKey(1L);
+
+    // when
+    processor.processRecord(command(value));
+
+    // then - the message says no store is configured instead of pointing at one that does not exist
+    final var incidentCaptor = ArgumentCaptor.forClass(IncidentRecord.class);
+    verify(stateWriter)
+        .appendFollowUpEvent(eq(999L), eq(IncidentIntent.CREATED), incidentCaptor.capture());
+    Assertions.assertThat(incidentCaptor.getValue().getErrorMessage())
+        .contains(SECRET_REF)
+        .contains("No secret store is configured")
+        .doesNotContain("the configured secret store");
   }
 
   @Test

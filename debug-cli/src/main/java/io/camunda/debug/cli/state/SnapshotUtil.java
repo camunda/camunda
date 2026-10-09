@@ -13,11 +13,17 @@ import io.camunda.debug.cli.concurrency.CurrentThreadConcurrencyControl;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
+import io.camunda.zeebe.engine.state.deployment.DbProcessState;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
@@ -27,6 +33,8 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.InstantSource;
 
 public class SnapshotUtil {
 
@@ -50,6 +58,26 @@ public class SnapshotUtil {
     }
     final var runtimeDb = zeebeDbFactory.createDb(runtimePath.toFile());
     return runtimeDb;
+  }
+
+  @SuppressWarnings("unchecked")
+  public ZeebeDb<ZbColumnFamilies> openReadOnly(final Path snapshotPath, final Path runtimePath) {
+    return openSnapshot(snapshotPath, runtimePath);
+  }
+
+  /**
+   * Builds a {@link DbProcessState} over an opened snapshot db. The transformer is only needed to
+   * satisfy the constructor; reading persisted process state does not use it, so a fixed clock and
+   * no-op metrics are fine.
+   */
+  public static DbProcessState openProcessState(
+      final ZeebeDb<ZbColumnFamilies> db, final TransactionContext context) {
+    final var stateTransformer =
+        BpmnFactory.createTransformer(
+            InstantSource.fixed(Instant.EPOCH),
+            ExpressionLanguageMetrics.noop(),
+            Integer.MAX_VALUE);
+    return new DbProcessState(db, context, new EngineConfiguration(), stateTransformer);
   }
 
   public PersistedSnapshot takeSnapshot(

@@ -10,13 +10,11 @@ package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -38,7 +36,7 @@ final class AgentHistoryRecordTest {
     assertThat(record.getAgentInstanceKey()).isEqualTo(-1L);
     assertThat(record.getElementInstanceKey()).isEqualTo(-1L);
     assertThat(record.getJobKey()).isEqualTo(-1L);
-    assertThat(record.getJobLease()).isEmpty();
+    assertThat(record.getJobLeaseToken()).isEmpty();
     assertThat(record.getLoopIteration()).isEqualTo(0);
     assertThat(record.getRole()).isEqualTo(AgentHistoryRole.UNSPECIFIED);
     assertThat(record.getProducedAt()).isEqualTo(-1L);
@@ -58,7 +56,7 @@ final class AgentHistoryRecordTest {
             .setAgentInstanceKey(2251799813685251L)
             .setElementInstanceKey(2251799813685249L)
             .setJobKey(2251799813685252L)
-            .setJobLease("job-lease-abc123")
+            .setJobLeaseToken("job-lease-abc123")
             .setLoopIteration(3)
             .setRole(AgentHistoryRole.USER)
             .setProducedAt(1717200000000L);
@@ -72,23 +70,24 @@ final class AgentHistoryRecordTest {
     assertThat(copy.getAgentInstanceKey()).isEqualTo(original.getAgentInstanceKey());
     assertThat(copy.getElementInstanceKey()).isEqualTo(original.getElementInstanceKey());
     assertThat(copy.getJobKey()).isEqualTo(original.getJobKey());
-    assertThat(copy.getJobLease()).isEqualTo(original.getJobLease());
+    assertThat(copy.getJobLeaseToken()).isEqualTo(original.getJobLeaseToken());
     assertThat(copy.getLoopIteration()).isEqualTo(original.getLoopIteration());
     assertThat(copy.getRole()).isEqualTo(original.getRole());
     assertThat(copy.getProducedAt()).isEqualTo(original.getProducedAt());
   }
 
   @Test
-  void shouldRoundTripJobLeaseViaMsgPack() {
+  void shouldRoundTripJobLeaseTokenViaMsgPack() {
     // given
-    final AgentHistoryRecord original = new AgentHistoryRecord().setJobLease("job-lease-abc123");
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord().setJobLeaseToken("job-lease-abc123");
 
     // when
     final AgentHistoryRecord copy = new AgentHistoryRecord();
     copy.copyFrom(original);
 
     // then
-    assertThat(copy.getJobLease()).isEqualTo("job-lease-abc123");
+    assertThat(copy.getJobLeaseToken()).isEqualTo("job-lease-abc123");
   }
 
   @Test
@@ -134,7 +133,7 @@ final class AgentHistoryRecordTest {
     final var objectBlock =
         new AgentHistoryMessageContent()
             .setContentType(AgentHistoryContentType.OBJECT)
-            .setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(objectData)));
+            .setObject(objectData);
 
     final AgentHistoryRecord original =
         new AgentHistoryRecord().setContent(List.of(textBlock, documentBlock, objectBlock));
@@ -170,7 +169,8 @@ final class AgentHistoryRecordTest {
         Arguments.of(Named.named("array of scalars", List.of(10, 20, 30)), List.class),
         Arguments.of(Named.named("number", 42), Integer.class),
         Arguments.of(Named.named("boolean", true), Boolean.class),
-        Arguments.of(Named.named("string scalar", "hello"), String.class));
+        Arguments.of(Named.named("string scalar", "hello"), String.class),
+        Arguments.of(Named.named("null", null), null));
   }
 
   @ParameterizedTest(name = "shouldRoundTripObjectContent [{0}]")
@@ -180,14 +180,18 @@ final class AgentHistoryRecordTest {
     final var content =
         new AgentHistoryMessageContent()
             .setContentType(AgentHistoryContentType.OBJECT)
-            .setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(value)));
+            .setObject(value);
 
     // when
     final var copy = new AgentHistoryMessageContent();
     copy.copy(content);
 
     // then
-    assertThat(copy.getObject()).isInstanceOf(expectedType).isEqualTo(value);
+    if (value == null) {
+      assertThat(copy.getObject()).isNull();
+    } else {
+      assertThat(copy.getObject()).isInstanceOf(expectedType).isEqualTo(value);
+    }
   }
 
   @Test
@@ -232,7 +236,7 @@ final class AgentHistoryRecordTest {
             .setToolCallId("call-123")
             .setToolName("myTool")
             .setElementId("element-456")
-            .setArguments(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(args)));
+            .setArguments(args);
 
     final AgentHistoryRecord original = new AgentHistoryRecord().setToolCalls(List.of(toolCall));
 

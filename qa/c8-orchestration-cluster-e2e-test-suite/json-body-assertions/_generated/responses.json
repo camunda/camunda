@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "65610413cd6d875f518faaa59ab48ae3ce46c913",
-    "generatedAt": "2026-08-25T12:10:01.817Z",
+    "commit": "c2df7a5f797dc8ce2abe7076c15d293a4bd58695",
+    "generatedAt": "2026-09-27T12:12:29.492Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "f3cfd5034cd86db5e5236734a4167b2a960704c67ff105a948e7eb54e785c4a2"
+    "specSha256": "45766daa7736fb018107793a167261fe068ef55c318fe28e090c1dd2eb7e3c46"
   },
   "responses": [
     {
@@ -265,6 +265,14 @@
             "children": {
               "required": [
                 {
+                  "name": "cacheCreationTokenCount",
+                  "type": "number"
+                },
+                {
+                  "name": "cacheReadTokenCount",
+                  "type": "number"
+                },
+                {
                   "name": "inputTokens",
                   "type": "number"
                 },
@@ -274,6 +282,10 @@
                 },
                 {
                   "name": "outputTokens",
+                  "type": "number"
+                },
+                {
+                  "name": "reasoningTokenCount",
                   "type": "number"
                 },
                 {
@@ -472,6 +484,14 @@
                   "children": {
                     "required": [
                       {
+                        "name": "cacheCreationTokenCount",
+                        "type": "number"
+                      },
+                      {
+                        "name": "cacheReadTokenCount",
+                        "type": "number"
+                      },
+                      {
                         "name": "inputTokens",
                         "type": "number"
                       },
@@ -481,6 +501,10 @@
                       },
                       {
                         "name": "outputTokens",
+                        "type": "number"
+                      },
+                      {
+                        "name": "reasoningTokenCount",
                         "type": "number"
                       },
                       {
@@ -636,7 +660,7 @@
                   "type": "string"
                 },
                 {
-                  "name": "jobLease",
+                  "name": "jobLeaseToken",
                   "type": "string"
                 },
                 {
@@ -666,10 +690,20 @@
                 },
                 {
                   "name": "metrics",
-                  "type": "0",
+                  "type": "object",
                   "nullable": true,
                   "children": {
                     "required": [
+                      {
+                        "name": "cacheCreationTokenCount",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "cacheReadTokenCount",
+                        "type": "number",
+                        "nullable": true
+                      },
                       {
                         "name": "durationMs",
                         "type": "number",
@@ -682,6 +716,11 @@
                       },
                       {
                         "name": "outputTokens",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "reasoningTokenCount",
                         "type": "number",
                         "nullable": true
                       }
@@ -2320,24 +2359,7 @@
                 {
                   "name": "batchOperationType",
                   "type": "string",
-                  "enumValues": [
-                    "ADD_VARIABLE",
-                    "CANCEL_PROCESS_INSTANCE",
-                    "DELETE_DECISION_DEFINITION",
-                    "DELETE_DECISION_INSTANCE",
-                    "DELETE_PROCESS_DEFINITION",
-                    "DELETE_PROCESS_INSTANCE",
-                    "MIGRATE_PROCESS_INSTANCE",
-                    "MODIFY_PROCESS_INSTANCE",
-                    "RESOLVE_INCIDENT",
-                    "RESUME_PROCESS_INSTANCE",
-                    "SUSPEND_PROCESS_INSTANCE",
-                    "UPDATE_JOB",
-                    "UPDATE_VARIABLE"
-                  ],
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "batchOperationType",
-                  "wrapper": true
+                  "nullable": true
                 },
                 {
                   "name": "endDate",
@@ -2457,24 +2479,7 @@
           {
             "name": "batchOperationType",
             "type": "string",
-            "enumValues": [
-              "ADD_VARIABLE",
-              "CANCEL_PROCESS_INSTANCE",
-              "DELETE_DECISION_DEFINITION",
-              "DELETE_DECISION_INSTANCE",
-              "DELETE_PROCESS_DEFINITION",
-              "DELETE_PROCESS_INSTANCE",
-              "MIGRATE_PROCESS_INSTANCE",
-              "MODIFY_PROCESS_INSTANCE",
-              "RESOLVE_INCIDENT",
-              "RESUME_PROCESS_INSTANCE",
-              "SUSPEND_PROCESS_INSTANCE",
-              "UPDATE_JOB",
-              "UPDATE_VARIABLE"
-            ],
-            "underlyingPrimitive": "string",
-            "rawRefName": "batchOperationType",
-            "wrapper": true
+            "nullable": true
           },
           {
             "name": "endDate",
@@ -5813,6 +5818,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "jobLeaseToken",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "kind",
                   "type": "string",
                   "enumValues": [
@@ -5824,11 +5834,6 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "kind",
                   "wrapper": true
-                },
-                {
-                  "name": "leaseToken",
-                  "type": "string",
-                  "nullable": true
                 },
                 {
                   "name": "listenerEventType",
@@ -8926,6 +8931,10 @@
                   "type": "boolean"
                 },
                 {
+                  "name": "isCamundaGroupsEnabled",
+                  "type": "boolean"
+                },
+                {
                   "name": "isLoginDelegated",
                   "type": "boolean"
                 }
@@ -8972,6 +8981,10 @@
               "required": [
                 {
                   "name": "isMultiTenancyEnabled",
+                  "type": "boolean"
+                },
+                {
+                  "name": "isTenantsApiEnabled",
                   "type": "boolean"
                 },
                 {
@@ -9479,7 +9492,8 @@
                           "joining",
                           "active",
                           "leaving",
-                          "recovering"
+                          "recovering",
+                          "learner"
                         ]
                       }
                     ],
@@ -10726,7 +10740,9 @@
                           "LEADER_CHANGED",
                           "NO_LEADER",
                           "NO_RESPONSE",
-                          "CANCELLED"
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -10856,7 +10872,9 @@
                           "LEADER_CHANGED",
                           "NO_LEADER",
                           "NO_RESPONSE",
-                          "CANCELLED"
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -10957,7 +10975,9 @@
                           "LEADER_CHANGED",
                           "NO_LEADER",
                           "NO_RESPONSE",
-                          "CANCELLED"
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -11087,7 +11107,9 @@
                           "LEADER_CHANGED",
                           "NO_LEADER",
                           "NO_RESPONSE",
-                          "CANCELLED"
+                          "CANCELLED",
+                          "PHYSICAL_TENANT_DISABLED",
+                          "PHYSICAL_TENANT_RECOVERING"
                         ],
                         "nullable": true
                       }
@@ -11205,6 +11227,25 @@
       }
     },
     {
+      "path": "/cluster/v2/status/upgrade",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "MIGRATED",
+              "MIGRATION_IN_PROGRESS",
+              "UNKNOWN"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/cluster/v2/topology",
       "method": "GET",
       "status": "200",
@@ -11298,7 +11339,8 @@
                                 "joining",
                                 "active",
                                 "leaving",
-                                "recovering"
+                                "recovering",
+                                "learner"
                               ]
                             }
                           ],

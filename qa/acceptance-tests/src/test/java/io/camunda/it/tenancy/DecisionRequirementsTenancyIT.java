@@ -18,10 +18,10 @@ import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
@@ -192,7 +192,7 @@ public class DecisionRequirementsTenancyIT {
       final CamundaClient client, final String tenant, final int numOfAssignments) {
 
     Awaitility.await("should assign users to tenant " + tenant)
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -204,7 +204,7 @@ public class DecisionRequirementsTenancyIT {
   private static void waitForDecisionRequirementsToBeDeployed(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision definitions")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

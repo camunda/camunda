@@ -68,7 +68,7 @@ public sealed class ReadOnlyBackupApiRequestHandler
   }
 
   @Override
-  public void onActorStarted() {
+  protected void onActorStarted() {
     transport
         .unsubscribe(partitionId, RequestType.BACKUP)
         .thenAccept(v -> transport.subscribe(partitionId, RequestType.BACKUP, this), actor);

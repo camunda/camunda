@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 )
@@ -21,7 +22,6 @@ func SetEnvVars() error {
 		"CAMUNDA_OPERATE_CSRFPREVENTIONENABLED":  "false",
 		"CAMUNDA_OPERATE_IMPORTER_READERBACKOFF": "1000",
 		"CAMUNDA_REST_QUERY_ENABLED":             "true",
-		"CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED": "false",
 	}
 
 	for key, value := range envVars {
@@ -60,4 +60,52 @@ func AdjustJavaOpts(javaOpts string, settings types.C8RunSettings) string {
 		log.Error().Err(err).Msg("failed to set CAMUNDA_OPERATE_ZEEBE_RESTADDRESS")
 	}
 	return javaOpts
+}
+
+// SetConnectorsAuthEnvVars provides the bundled Connectors runtime with basic-auth
+// credentials for the seeded user when the cluster requires authenticated API access.
+//
+// Connectors talks to the local Camunda REST/gRPC API as a client. When
+// authorizations are enabled (or the API is protected), unauthenticated calls are
+// rejected and the Connectors health check never turns green. Passing the seeded
+// user's credentials lets Connectors authenticate. When the API is unprotected (the
+// default), no credentials are needed and nothing is set. Pre-existing values are
+// never overwritten so an explicit user override wins.
+func SetConnectorsAuthEnvVars(settings types.C8RunSettings) error {
+	if !ConnectorsAuthRequired(settings.ConfigPaths) {
+		return nil
+	}
+
+	credentials := map[string]string{
+		"CAMUNDA_CLIENT_AUTH_USERNAME": settings.Username,
+		"CAMUNDA_CLIENT_AUTH_PASSWORD": settings.Password,
+	}
+	for key, value := range credentials {
+		if os.Getenv(key) != "" {
+			continue
+		}
+		if err := os.Setenv(key, value); err != nil {
+			return fmt.Errorf("failed to set environment variable %s: %w", key, err)
+		}
+	}
+	return nil
+}
+
+// ConnectorsAuthRequired reports whether the bundled Connectors runtime needs
+// credentials to reach the local Camunda API, based on the effective configuration.
+//
+// configPaths is the ordered list of config sources, highest precedence first (the
+// user --config override before the bundled default), mirroring how Spring layers
+// them at startup. Each security key is resolved independently: the first source that
+// defines it wins, so a user override enabling authorizations is honoured even when
+// the bundled default leaves the API open.
+//
+// It returns true when authorizations are enabled or when API protection is on
+// (unprotected-api: false). Absent, unreadable, or unparseable sources are ignored;
+// when a key is defined nowhere the API is treated as open, matching the default
+// C8Run behaviour.
+func ConnectorsAuthRequired(configPaths []string) bool {
+	authorizationsOn, _ := springconfig.Bool(configPaths, "camunda.security.authorizations.enabled")
+	apiUnprotected, ok := springconfig.Bool(configPaths, "camunda.security.authentication.unprotected-api")
+	return authorizationsOn || (ok && !apiUnprotected)
 }

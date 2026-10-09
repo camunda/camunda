@@ -7,9 +7,9 @@
  */
 
 import {Link} from '@carbon/react';
-import {Link as RouterLink} from '@tanstack/react-router';
+import {Link as RouterLink, createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import {mapToCellEntityKeyData} from '#/operate/shared/OperationsLogDetailsModal/operationsLogUtils';
 
 type Props = {
@@ -17,6 +17,10 @@ type Props = {
 	processDefinitionName?: string | null;
 	decisionDefinitionName?: string | null;
 };
+
+const ProcessInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
+const BatchOperationLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
+const DecisionInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
 
 const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDefinitionName}) => {
 	const {t} = useTranslation();
@@ -34,6 +38,33 @@ const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDe
 					>
 						{label}
 					</RouterLink>
+				) : item.entityType === 'PROCESS_INSTANCE' ? (
+					<ProcessInstanceLink
+						to="/operate/processes/$processInstanceId"
+						params={{processInstanceId: item.entityKey}}
+						title={linkLabel}
+						aria-label={linkLabel}
+					>
+						{label}
+					</ProcessInstanceLink>
+				) : item.entityType === 'BATCH' ? (
+					<BatchOperationLink
+						to="/operate/batch-operations/$batchOperationKey"
+						params={{batchOperationKey: String(item.batchOperationKey)}}
+						title={linkLabel}
+						aria-label={linkLabel}
+					>
+						{label}
+					</BatchOperationLink>
+				) : item.entityType === 'DECISION' && item.operationType === 'EVALUATE' ? (
+					<DecisionInstanceLink
+						to="/operate/decisions/$decisionInstanceId"
+						params={{decisionInstanceId: item.entityKey}}
+						title={linkLabel}
+						aria-label={linkLabel}
+					>
+						{label}
+					</DecisionInstanceLink>
 				) : link ? (
 					<Link href={link} title={linkLabel} aria-label={linkLabel}>
 						{label}

@@ -17,13 +17,11 @@ import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.authentication.pt.PhysicalTenantSecurityConfiguration;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
 import io.camunda.security.core.port.out.BasicAuthUserDetailsPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
-import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import io.camunda.security.spring.security.OidcResourceServerCustomizer;
 import io.camunda.security.spring.spi.WebAppProviderPort;
 import io.camunda.service.RoleServices;
@@ -73,18 +71,10 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 })
 public class WebSecurityConfig {
 
-  /**
-   * The host's path declarations. {@code webapp-enabled} is read here with CSL's own property key
-   * and default, so this gate cannot drift from the cluster webapp chains' conditions, which read
-   * the same key from the same {@link Environment}.
-   */
+  /** The host's path declarations. */
   @Bean
   public SecurityPathPort securityPathPort(final Environment environment) {
-    return new SecurityPathAdapter(
-        environment.getProperty(
-            CamundaSecurityFilterChainConstants.WEBAPP_ENABLED_PROPERTY,
-            Boolean.class,
-            AuthenticationConfiguration.DEFAULT_WEBAPP_ENABLED));
+    return SecurityPathAdapter.fromEnvironment(environment);
   }
 
   @Bean

@@ -34,7 +34,7 @@ import org.springframework.stereotype.Component;
  * io.camunda.optimize.service.dashboard.BusinessValueDashboardService#init()} (annotated {@link
  * Ordered#HIGHEST_PRECEDENCE}) has seeded the per-process reports the compute path evaluates.
  * Without this ordering the first tick can run before the reports exist, fail, and then wait the
- * full refresh interval (24h by default) before retrying.
+ * full refresh interval (1h by default) before retrying.
  */
 @Component
 public class BusinessValueOverviewSchedulerService extends AbstractScheduledService {
@@ -89,7 +89,7 @@ public class BusinessValueOverviewSchedulerService extends AbstractScheduledServ
   }
 
   @Override
-  public synchronized boolean startScheduling() {
+  protected synchronized boolean startScheduling() {
     LOG.info("Scheduling business-value overview scheduler");
     return super.startScheduling();
   }

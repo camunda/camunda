@@ -13,7 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseInSingleHasChild;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseInSingleHasChildOrSelf;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -23,6 +23,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.AC
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_STATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_IDS;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
@@ -127,8 +128,10 @@ public class ProcessDefinitionStatisticsFilterTransformer
     ofNullable(filter.hasIncident()).ifPresent(value -> queries.add(term(INCIDENT, value)));
     Optional.of(stringOperations(TENANT_ID, filter.tenantIdOperations()))
         .ifPresent(queries::addAll);
+    Optional.of(stringOperations(BUSINESS_ID, filter.businessIdOperations()))
+        .ifPresent(queries::addAll);
     Optional.ofNullable(
-            stringMatchPhraseInSingleHasChild(
+            stringMatchPhraseInSingleHasChildOrSelf(
                 ERROR_MSG, filter.errorMessageOperations(), ACTIVITIES_JOIN_RELATION))
         .ifPresent(queries::add);
     ofNullable(getProcessVariablesQuery(filter.variableFilters())).ifPresent(queries::add);

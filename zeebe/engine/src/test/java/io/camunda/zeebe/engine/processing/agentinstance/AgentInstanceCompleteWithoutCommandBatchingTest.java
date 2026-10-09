@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -73,16 +74,46 @@ public class AgentInstanceCompleteWithoutCommandBatchingTest {
             .withElementType(BpmnElementType.SERVICE_TASK)
             .withElementId(SECOND_TASK_ID)
             .getFirst();
+    final var firstJobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var firstJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var firstJobLeaseToken =
+        firstJobBatch
+            .getValue()
+            .getJobs()
+            .get(firstJobBatch.getValue().getJobKeys().indexOf(firstJobKey))
+            .getJobLeaseToken();
+    final var secondJobBatch = ENGINE.jobs().withType("other-agent").withLease().activate();
+    final var secondJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("other-agent")
+            .getFirst()
+            .getKey();
+    final var secondJobLeaseToken =
+        secondJobBatch
+            .getValue()
+            .getJobs()
+            .get(secondJobBatch.getValue().getJobKeys().indexOf(secondJobKey))
+            .getJobLeaseToken();
     final var firstAgentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
+            .withJobKey(firstJobKey)
+            .withJobLeaseToken(firstJobLeaseToken)
             .create()
             .getKey();
     final var secondAgentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
+            .withJobKey(secondJobKey)
+            .withJobLeaseToken(secondJobLeaseToken)
             .create()
             .getKey();
 

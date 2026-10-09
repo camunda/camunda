@@ -24,8 +24,13 @@ public class RetentionMetrics implements CloseableSilently {
 
   private final MeterRegistry meterRegistry;
   private final Map<Integer, PartitionMetrics> partitionMetrics = new ConcurrentHashMap<>();
+
+  @SuppressWarnings("NullAway.Init")
   private Gauge lastExecutionGauge;
+
+  @SuppressWarnings("NullAway.Init")
   private Gauge nextExecutionGauge;
+
   private long lastExecution = 0L;
   private long nextExecution = 0L;
 

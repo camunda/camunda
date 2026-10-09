@@ -44,6 +44,7 @@ do
       # Also delete the Keycloak instance and its Secrets in the keycloak-operator
       # namespace. This could be removed once Keycloak instances can be part of
       # the same namespace as the load test itself.
+      # TODO: remove once no Keycloak deployment is left in the keycloak-operator namespace.
       kubectl delete keycloak,secret --ignore-not-found --namespace keycloak-operator --selector "camunda.io/load-test-namespace=$ns"
     fi
     namespacesDeleted+=" * $ns (deadline: $deadlineDate)\n"

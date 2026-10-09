@@ -9,6 +9,8 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.AGENT_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_CREATION_TOKEN_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_READ_TOKEN_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_INSTANCE_KEYS;
@@ -22,12 +24,11 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROVIDER;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.REASONING_TOKEN_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
-import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.SYSTEM_PROMPT;
-import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
-import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.VERSION_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -126,7 +127,7 @@ final class AgentInstanceHandlerTest {
     final long processDefinitionKey = 400L;
     final long agentDefinitionKey = 401L;
     final int processDefinitionVersion = 2;
-    final String versionTag = "v2";
+    final String processDefinitionVersionTag = "v2";
     final String tenantId = "<default>";
     final String model = "gpt-4o";
     final String provider = "openai";
@@ -141,6 +142,9 @@ final class AgentInstanceHandlerTest {
     final int maxToolCalls = 5;
     final long inputTokens = 50L;
     final long outputTokens = 30L;
+    final long reasoningTokenCount = 12L;
+    final long cacheCreationTokenCount = 8L;
+    final long cacheReadTokenCount = 4L;
     final int modelCalls = 2;
     final int toolCalls = 1;
 
@@ -162,7 +166,7 @@ final class AgentInstanceHandlerTest {
             .withProcessDefinitionKey(processDefinitionKey)
             .withAgentDefinitionKey(agentDefinitionKey)
             .withProcessDefinitionVersion(processDefinitionVersion)
-            .withVersionTag(versionTag)
+            .withProcessDefinitionVersionTag(processDefinitionVersionTag)
             .withTenantId(tenantId)
             .withStatus(io.camunda.zeebe.protocol.record.value.AgentInstanceStatus.INITIALIZING)
             .withDefinition(
@@ -181,6 +185,9 @@ final class AgentInstanceHandlerTest {
                 ImmutableAgentInstanceMetricsValue.builder()
                     .withInputTokens(inputTokens)
                     .withOutputTokens(outputTokens)
+                    .withReasoningTokenCount(reasoningTokenCount)
+                    .withCacheCreationTokenCount(cacheCreationTokenCount)
+                    .withCacheReadTokenCount(cacheReadTokenCount)
                     .withModelCalls(modelCalls)
                     .withToolCalls(toolCalls)
                     .build())
@@ -215,7 +222,7 @@ final class AgentInstanceHandlerTest {
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.getAgentDefinitionKey()).isEqualTo(agentDefinitionKey);
     assertThat(entity.getProcessDefinitionVersion()).isEqualTo(processDefinitionVersion);
-    assertThat(entity.getVersionTag()).isEqualTo(versionTag);
+    assertThat(entity.getProcessDefinitionVersionTag()).isEqualTo(processDefinitionVersionTag);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
     assertThat(entity.getModel()).isEqualTo(model);
@@ -228,6 +235,9 @@ final class AgentInstanceHandlerTest {
     assertThat(entity.getMaxToolCalls()).isEqualTo(maxToolCalls);
     assertThat(entity.getInputTokens()).isEqualTo(inputTokens);
     assertThat(entity.getOutputTokens()).isEqualTo(outputTokens);
+    assertThat(entity.getReasoningTokenCount()).isEqualTo(reasoningTokenCount);
+    assertThat(entity.getCacheCreationTokenCount()).isEqualTo(cacheCreationTokenCount);
+    assertThat(entity.getCacheReadTokenCount()).isEqualTo(cacheReadTokenCount);
     assertThat(entity.getModelCalls()).isEqualTo(modelCalls);
     assertThat(entity.getToolCalls()).isEqualTo(toolCalls);
     assertThat(entity.getTools())
@@ -237,6 +247,92 @@ final class AgentInstanceHandlerTest {
     assertThat(entity.getCreationDate()).isEqualTo(expectedTimestamp);
     assertThat(entity.getLastUpdatedDate()).isEqualTo(expectedTimestamp);
     assertThat(entity.getCompletionDate()).isNull();
+  }
+
+  @Test
+  void shouldIncludeSystemPromptAndToolsWhenChangedAttributesIncludesThem() {
+    // given — an UPDATED record where systemPrompt/tools actually changed this commit (see
+    // AgentHistoryBatchBehavior#trimUnchangedContentFields on the engine side)
+    final var newPrompt =
+        ImmutableAgentHistoryMessageContentValue.builder()
+            .withContentType(io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.TEXT)
+            .withText("Updated instructions.")
+            .build();
+    final var newTool =
+        ImmutableAgentInstanceToolValue.builder()
+            .withName("calculator")
+            .withDescription("Does math")
+            .withElementId("calcElement")
+            .build();
+    final var baseline = buildMinimalRecordValue(1L);
+    final var recordValue =
+        ImmutableAgentInstanceRecordValue.builder()
+            .from(baseline)
+            .withDefinition(
+                ImmutableAgentInstanceDefinitionValue.builder()
+                    .from(baseline.getDefinition())
+                    .withSystemPrompt(List.of(newPrompt))
+                    .build())
+            .withTools(List.of(newTool))
+            .withChangedAttributes(List.of("systemPrompt", "tools"))
+            .build();
+    final Record<AgentInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r -> r.withIntent(AgentInstanceIntent.UPDATED).withKey(1L).withValue(recordValue));
+    final var entity = new AgentInstanceEntity().setId("1");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getSystemPrompt())
+        .containsExactly(
+            new AgentHistoryContentValue(
+                AgentHistoryContentType.TEXT, "Updated instructions.", null, null));
+    assertThat(entity.getTools())
+        .containsExactly(new AgentInstanceToolValue("calculator", "Does math", "calcElement"));
+  }
+
+  @Test
+  void shouldPreserveSystemPromptAndToolsAcrossUnrelatedUpdate() {
+    // given — CREATED populates systemPrompt/tools on the entity
+    final var entity = new AgentInstanceEntity().setId("1");
+    final Record<AgentInstanceRecordValue> createdRecord =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r ->
+                r.withIntent(AgentInstanceIntent.CREATED)
+                    .withKey(1L)
+                    .withValue(buildMinimalRecordValue(1L)));
+    underTest.updateEntity(createdRecord, entity);
+    final var systemPromptAfterCreate = entity.getSystemPrompt();
+    final var toolsAfterCreate = entity.getTools();
+    assertThat(systemPromptAfterCreate).isNotNull();
+
+    // when — a later UPDATED record only changes metrics, not systemPrompt/tools
+    final var metricsOnlyValue =
+        ImmutableAgentInstanceRecordValue.builder()
+            .from(buildMinimalRecordValue(1L))
+            .withMetrics(
+                ImmutableAgentInstanceMetricsValue.builder()
+                    .withInputTokens(99L)
+                    .withOutputTokens(1L)
+                    .withModelCalls(1)
+                    .withToolCalls(1)
+                    .build())
+            .withChangedAttributes(List.of())
+            .build();
+    final Record<AgentInstanceRecordValue> updatedRecord =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r -> r.withIntent(AgentInstanceIntent.UPDATED).withKey(1L).withValue(metricsOnlyValue));
+    underTest.updateEntity(updatedRecord, entity);
+
+    // then — systemPrompt/tools untouched, metrics did update
+    assertThat(entity.getSystemPrompt()).isEqualTo(systemPromptAfterCreate);
+    assertThat(entity.getTools()).isEqualTo(toolsAfterCreate);
+    assertThat(entity.getInputTokens()).isEqualTo(99L);
   }
 
   @Test
@@ -424,6 +520,9 @@ final class AgentInstanceHandlerTest {
                 ImmutableAgentInstanceMetricsValue.builder()
                     .withInputTokens(42L)
                     .withOutputTokens(17L)
+                    .withReasoningTokenCount(9L)
+                    .withCacheCreationTokenCount(6L)
+                    .withCacheReadTokenCount(2L)
                     .withModelCalls(3)
                     .withToolCalls(1)
                     .build())
@@ -446,15 +545,20 @@ final class AgentInstanceHandlerTest {
     expectedUpdateFields.put(STATUS, entity.getStatus());
     expectedUpdateFields.put(MODEL, entity.getModel());
     expectedUpdateFields.put(PROVIDER, entity.getProvider());
-    expectedUpdateFields.put(SYSTEM_PROMPT, entity.getSystemPrompt());
+    // SYSTEM_PROMPT is intentionally excluded: buildMinimalRecordValue()'s changedAttributes is
+    // empty, so on this UPDATED record updateEntity() leaves entity.systemPrompt null (not
+    // touched this batch cycle) and flush() omits it, like creationDate.
     expectedUpdateFields.put(MAX_TOKENS, entity.getMaxTokens());
     expectedUpdateFields.put(MAX_MODEL_CALLS, entity.getMaxModelCalls());
     expectedUpdateFields.put(MAX_TOOL_CALLS, entity.getMaxToolCalls());
     expectedUpdateFields.put(INPUT_TOKENS, entity.getInputTokens());
     expectedUpdateFields.put(OUTPUT_TOKENS, entity.getOutputTokens());
+    expectedUpdateFields.put(REASONING_TOKEN_COUNT, entity.getReasoningTokenCount());
+    expectedUpdateFields.put(CACHE_CREATION_TOKEN_COUNT, entity.getCacheCreationTokenCount());
+    expectedUpdateFields.put(CACHE_READ_TOKEN_COUNT, entity.getCacheReadTokenCount());
     expectedUpdateFields.put(MODEL_CALLS, entity.getModelCalls());
     expectedUpdateFields.put(TOOL_CALLS, entity.getToolCalls());
-    expectedUpdateFields.put(TOOLS, entity.getTools());
+    // TOOLS: same exclusion reasoning as SYSTEM_PROMPT above.
     expectedUpdateFields.put(ELEMENT_INSTANCE_KEYS, entity.getElementInstanceKeys());
     expectedUpdateFields.put(LAST_UPDATED_DATE, entity.getLastUpdatedDate());
     // completionDate is null on UPDATED intent but still written so the upsert script
@@ -466,7 +570,8 @@ final class AgentInstanceHandlerTest {
     expectedUpdateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     expectedUpdateFields.put(AGENT_DEFINITION_KEY, entity.getAgentDefinitionKey());
     expectedUpdateFields.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
-    expectedUpdateFields.put(VERSION_TAG, entity.getVersionTag());
+    expectedUpdateFields.put(
+        PROCESS_DEFINITION_VERSION_TAG, entity.getProcessDefinitionVersionTag());
     expectedUpdateFields.put(ELEMENT_ID, entity.getElementId());
 
     verify(mockRequest, times(1)).upsert(index, entity.getId(), entity, expectedUpdateFields);

@@ -25,6 +25,14 @@ export const isTenantsApiEnabled = getClientConfigBoolean(
   "isTenantsApiEnabled",
   false,
 );
+export const isNewDesignSystemEnabled = getClientConfigBoolean(
+  "isNewDesignSystemEnabled",
+  true,
+);
+export const isAdditionalIdpConfigured = getClientConfigBoolean(
+  "isAdditionalIdpConfigured",
+  false,
+);
 
 export const docsUrl = "https://docs.camunda.io/docs/next";
 

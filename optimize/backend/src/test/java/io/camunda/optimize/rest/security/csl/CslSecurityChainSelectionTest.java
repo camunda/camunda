@@ -96,6 +96,9 @@ class CslSecurityChainSelectionTest {
         configurationService.getAuthConfiguration().getCloudAuthConfiguration();
     cloudAuthConfiguration.setClientId("auth0-client");
     cloudAuthConfiguration.setClientSecret("auth0-secret");
+    // OptimizeCloudComponentAccessPolicy fails startup on a blank organization id, as CCSaaS
+    // access control must not silently fail open.
+    cloudAuthConfiguration.setOrganizationId("org-1");
     return configurationService;
   }
 
@@ -191,6 +194,48 @@ class CslSecurityChainSelectionTest {
               assertThat(context).hasSingleBean(CCSaaSSecurityConfigurerAdapter.class);
               assertThat(context).hasSingleBean(CCSaasAuth0WebSecurityConfig.class);
               assertThat(context).doesNotHaveBean(OptimizeCamundaSecurityConfig.class);
+            });
+  }
+
+  @Test
+  void shouldSelectCcsmComponentAccessPolicyForCcsm() {
+    ccsmRunner
+        .withPropertyValues(STATIC_OIDC_PROPERTIES)
+        .withUserConfiguration(
+            OptimizeCcsmComponentAccessPolicy.class, OptimizeCloudComponentAccessPolicy.class)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              assertThat(context.getBean(OptimizeComponentAccessPolicy.class))
+                  .isInstanceOf(OptimizeCcsmComponentAccessPolicy.class);
+            });
+  }
+
+  @Test
+  void shouldSelectCloudComponentAccessPolicyForCcsaas() {
+    ccsaasRunner
+        .withPropertyValues(STATIC_OIDC_PROPERTIES)
+        .withUserConfiguration(
+            OptimizeCcsmComponentAccessPolicy.class, OptimizeCloudComponentAccessPolicy.class)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              assertThat(context.getBean(OptimizeComponentAccessPolicy.class))
+                  .isInstanceOf(OptimizeCloudComponentAccessPolicy.class);
+            });
+  }
+
+  @Test
+  void shouldNotRegisterComponentAccessPolicyWhenFlagExplicitlyDisabled() {
+    // Legacy mode keeps its own access control, so the CSL policy must back off with the chain.
+    ccsmRunner
+        .withPropertyValues(CSL_FLAG_DISABLED)
+        .withUserConfiguration(
+            OptimizeCcsmComponentAccessPolicy.class, OptimizeCloudComponentAccessPolicy.class)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              assertThat(context).doesNotHaveBean(OptimizeComponentAccessPolicy.class);
             });
   }
 

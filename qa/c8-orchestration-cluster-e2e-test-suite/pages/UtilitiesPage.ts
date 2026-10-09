@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, expect} from '@playwright/test';
+import {Locator, Page, expect} from '@playwright/test';
 import {TaskPanelPage} from '@pages/TaskPanelPage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {sleep} from '../utils/sleep';
@@ -96,7 +96,13 @@ export async function completeTaskWithRetry(
 ): Promise<void> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      await taskPanelPage.openTask(taskName);
+      // Give the task list the same 60s per-attempt budget used elsewhere in
+      // the suite for tasks that were just created/completed (e.g.
+      // task-details.spec.ts's processWithDeployedForm calls) -- the default
+      // 10s is regularly too tight for a task to become searchable under CI
+      // load, especially for sequential multi-task flows like the priority
+      // chain in hto-user-flows.spec.ts.
+      await taskPanelPage.openTask(taskName, {timeout: 60000});
       await sleep(500);
       if (!(await taskDetailsPage.assignedToMeText.isVisible())) {
         await taskDetailsPage.clickAssignToMeButton();
@@ -145,4 +151,13 @@ export async function completeTaskWithRetry(
       }
     }
   }
+}
+
+/**
+ * Carbon renders a tooltip's content as a page-level popover rather than inside
+ * the element it annotates, so it cannot be reached through that element's own
+ * locator tree.
+ */
+export function tooltipWithText(page: Page, text: string): Locator {
+  return page.getByRole('tooltip', {name: text});
 }

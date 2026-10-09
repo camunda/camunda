@@ -28,7 +28,7 @@ const waitForDiagramToLoad = async (screen: Screen) => {
   await waitFor(() => {
     const button = screen.getByRole('button', {name: /move/i});
     const title = button.getAttribute('title');
-    expect(title).not.toBe('Please select an element from the diagram first.');
+    expect(title).not.toBe('Select an element from the diagram first.');
   });
 };
 
@@ -56,7 +56,7 @@ describe('<MoveAction />', () => {
     expect(moveButton).toBeDisabled();
     expect(moveButton).toHaveAttribute(
       'title',
-      'Please select an element from the diagram first.',
+      'Select an element from the diagram first.',
     );
   });
 

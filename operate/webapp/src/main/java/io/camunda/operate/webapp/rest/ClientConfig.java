@@ -13,13 +13,18 @@ import io.camunda.operate.EnvironmentService;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.ServletContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ClientConfig {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClientConfig.class);
 
   public boolean isEnterprise;
   public boolean canLogout;
@@ -46,6 +51,14 @@ public class ClientConfig {
 
   @Autowired private ServletContext context;
 
+  @PostConstruct
+  public void logNavV2Resolution() {
+    LOGGER.debug(
+        "Operate nav v2 resolved to {} (explicit override={})",
+        operateProperties.resolveNavV2Enabled(),
+        operateProperties.getNavV2Enabled());
+  }
+
   public String asJson() {
     isEnterprise = operateProperties.isEnterprise();
     clusterId = operateProperties.getCloud().getClusterId();
@@ -61,7 +74,7 @@ public class ClientConfig {
     multiTenancyEnabled = cslProperties.getMultiTenancy().isChecksEnabled();
     databaseType = environmentService.getDatabaseType();
     waitStatesEnabled = waitStatesEnabledProperty;
-    isNavV2Enabled = operateProperties.isNavV2Enabled();
+    isNavV2Enabled = operateProperties.resolveNavV2Enabled();
     try {
       return String.format(
           "window.clientConfig = %s;", new ObjectMapper().writeValueAsString(this));

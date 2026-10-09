@@ -14,6 +14,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
+  cn,
   PageHeader as DSPageHeader,
   PageLayout,
   Text,
@@ -84,9 +85,10 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => (
 );
 
 // TODO: Reevaluate `PageLayout` usage here when `globals` are migrated. It might actually belong in the `AppRoot`...
-const Page: FC<{ children?: ReactNode }> = ({ children }) => (
-  <PageLayout className="h-full">{children}</PageLayout>
-);
+const Page: FC<{ children?: ReactNode; className?: string }> = ({
+  children,
+  className,
+}) => <PageLayout className={cn("h-full", className)}>{children}</PageLayout>;
 
 export const StackPage: FC<{ children?: ReactNode }> = ({ children }) => (
   <Page>

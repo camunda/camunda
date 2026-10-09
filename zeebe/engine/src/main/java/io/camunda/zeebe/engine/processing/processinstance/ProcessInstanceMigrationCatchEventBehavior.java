@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.compensation.CompensationSubscription;
@@ -331,6 +332,7 @@ public class ProcessInstanceMigrationCatchEventBehavior {
           timerRecord.setProcessDefinitionKey(targetProcessDefinition.getKey());
           timerRecord.setTenantId(timerInstance.getTenantId());
           timerRecord.setRootProcessInstanceKey(timerInstance.getRootProcessInstanceKey());
+          timerRecord.setStorageOrdinal(TimerStorageOrdinals.of(timerInstance));
           timerRecord.setBpmnProcessId(timerInstance.getBpmnProcessId());
           timerRecord.setElementType(timerInstance.getElementType());
 

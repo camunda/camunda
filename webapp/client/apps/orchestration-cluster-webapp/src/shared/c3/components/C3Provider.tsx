@@ -14,8 +14,10 @@ import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
 
 const STAGE = getStage(window.location.host);
 
+type CurrentApp = 'tasklist' | 'operate' | 'admin';
+
 type Props = {
-	currentApp: 'tasklist' | 'operate' | 'admin' | undefined;
+	currentApp: CurrentApp | undefined;
 	initialSaasToken: string | null;
 	children: React.ReactNode;
 };
@@ -44,3 +46,4 @@ const C3Provider: React.FC<Props> = ({currentApp, initialSaasToken, children}) =
 };
 
 export {C3Provider};
+export type {CurrentApp};

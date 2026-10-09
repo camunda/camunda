@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.incident.RetryTypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -417,7 +416,12 @@ public class UserTaskProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<UserTaskRecord> record) {
-    return SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<UserTaskRecord> record) {
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<UserTaskRecord> record) {
+    return SuspensionAction.REJECT;
   }
 }

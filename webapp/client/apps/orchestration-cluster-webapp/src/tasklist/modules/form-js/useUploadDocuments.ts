@@ -7,7 +7,7 @@
  */
 
 import {useMutation} from '@tanstack/react-query';
-import type {CreateDocumentsResponseBody, DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CreateDocumentsResponseBody, DocumentReference} from '@camunda/camunda-api-zod-schemas/8.11';
 import {endpoints} from '#/shared/http/endpoints';
 import {request} from '#/shared/http/request';
 

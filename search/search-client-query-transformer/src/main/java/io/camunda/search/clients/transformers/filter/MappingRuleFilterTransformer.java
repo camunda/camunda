@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.MappingRuleIndex.CLAIM_NAME;
@@ -21,6 +22,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.ArrayList;
 
 public class MappingRuleFilterTransformer extends IndexFilterTransformer<MappingRuleFilter> {
 
@@ -30,25 +32,46 @@ public class MappingRuleFilterTransformer extends IndexFilterTransformer<Mapping
 
   @Override
   public SearchQuery toSearchQuery(final MappingRuleFilter filter) {
-    return and(
-        stringTerms(CLAIM_NAME, filter.claimNames()),
-        filter.claimName() == null ? null : term(CLAIM_NAME, filter.claimName()),
-        filter.claimValue() == null ? null : term(CLAIM_VALUE, filter.claimValue()),
-        filter.name() == null ? null : term(NAME, filter.name()),
-        filter.mappingRuleId() == null ? null : term(MAPPING_RULE_ID, filter.mappingRuleId()),
-        filter.claims() == null
-            ? null
-            : or(
-                filter.claims().stream()
-                    .map(
-                        claim ->
-                            and(term(CLAIM_NAME, claim.name()), term(CLAIM_VALUE, claim.value())))
-                    .toList()),
-        filter.mappingRuleIds() == null
-            ? null
-            : filter.mappingRuleIds().isEmpty()
-                ? matchNone()
-                : stringTerms(MAPPING_RULE_ID, filter.mappingRuleIds().stream().sorted().toList()));
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
+    }
+
+    return and(queries);
+  }
+
+  private ArrayList<SearchQuery> toSearchQueryFields(final MappingRuleFilter filter) {
+    final var queries = new ArrayList<SearchQuery>();
+    queries.add(stringTerms(CLAIM_NAME, filter.claimNames()));
+    if (filter.claimName() != null) {
+      queries.add(term(CLAIM_NAME, filter.claimName()));
+    }
+    if (filter.claimValue() != null) {
+      queries.add(term(CLAIM_VALUE, filter.claimValue()));
+    }
+    if (filter.nameOperations() != null && !filter.nameOperations().isEmpty()) {
+      queries.addAll(stringOperations(NAME, filter.nameOperations()));
+    }
+    if (filter.mappingRuleIdOperations() != null && !filter.mappingRuleIdOperations().isEmpty()) {
+      queries.addAll(stringOperations(MAPPING_RULE_ID, filter.mappingRuleIdOperations()));
+    }
+    if (filter.claims() != null) {
+      queries.add(
+          or(
+              filter.claims().stream()
+                  .map(
+                      claim ->
+                          and(term(CLAIM_NAME, claim.name()), term(CLAIM_VALUE, claim.value())))
+                  .toList()));
+    }
+    if (filter.mappingRuleIds() != null) {
+      queries.add(
+          filter.mappingRuleIds().isEmpty()
+              ? matchNone()
+              : stringTerms(MAPPING_RULE_ID, filter.mappingRuleIds().stream().sorted().toList()));
+    }
+    return queries;
   }
 
   @Override

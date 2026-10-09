@@ -126,18 +126,97 @@ test.describe('Custom filters', () => {
 	});
 
 	test('should edit an existing custom filter with prefilled fields', async ({tasklistIndexPage}) => {
-		await tasklistIndexPage.seedCustomFilters({custom: {assignee: 'all', status: 'completed', bpmnProcess: 'order-1'}});
+		await tasklistIndexPage.seedCustomFilters({
+			custom: {assignee: 'all', status: 'completed', bpmnProcess: 'order-1'},
+		});
 
 		await tasklistIndexPage.goto();
 		await tasklistIndexPage.expandFilters();
 
 		await expect(tasklistIndexPage.customFilterLink('Custom')).toBeVisible();
 
-		await tasklistIndexPage.customFilterActionsButton.click();
+		await tasklistIndexPage.customFilterActionsButton('Custom').click();
 		await tasklistIndexPage.customFilterOverflowItem('Edit').click();
 
 		await expect(tasklistIndexPage.customFiltersModal.dialog).toBeVisible();
 		await expect(tasklistIndexPage.customFiltersModal.statusRadio('Completed')).toBeChecked();
+	});
+
+	test('should update the loaded tasks when the advanced toggle is turned off while editing', async ({
+		network,
+		tasklistIndexPage,
+	}) => {
+		await tasklistIndexPage.goto();
+		await tasklistIndexPage.expandFilters();
+		await tasklistIndexPage.newFilterButton.click();
+
+		network.use(
+			mockQueryUserTasksEndpoint({
+				schema: z.object({
+					filter: z
+						.object({
+							state: z.literal('CREATED'),
+							processInstanceVariables: z.tuple([
+								z.object({name: z.literal('orderId'), value: z.literal('"order-0"')}),
+							]),
+						})
+						.strict(),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryUserTasksResponse({
+						items: [createUserTask({userTaskKey: '1', name: 'Variable filtered task'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+
+		await tasklistIndexPage.customFiltersModal.statusOption('Open').click();
+		await tasklistIndexPage.customFiltersModal.advancedFiltersToggle.click();
+		await tasklistIndexPage.customFiltersModal.addVariableButton.click();
+		await tasklistIndexPage.customFiltersModal.variableNameField.fill('orderId');
+		await tasklistIndexPage.customFiltersModal.variableValueField.fill('"order-0"');
+		await tasklistIndexPage.customFiltersModal.saveButton.click();
+		await tasklistIndexPage.filterNameModal.nameInput.fill('My filter');
+		await tasklistIndexPage.filterNameModal.saveAndApplyButton.click();
+
+		await expect(tasklistIndexPage.taskItem('Variable filtered task')).toBeVisible();
+
+		await tasklistIndexPage.expandFilters();
+		await tasklistIndexPage.customFilterActionsButton('My filter').click();
+		await tasklistIndexPage.customFilterOverflowItem('Edit').click();
+
+		await expect(tasklistIndexPage.customFiltersModal.dialog).toBeVisible();
+		await expect(tasklistIndexPage.customFiltersModal.advancedFiltersToggle).toBeChecked();
+
+		await tasklistIndexPage.customFiltersModal.advancedFiltersToggle.click();
+
+		network.use(
+			mockQueryUserTasksEndpoint({
+				schema: z.object({
+					filter: z.object({state: z.literal('CREATED')}).strict(),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryUserTasksResponse({
+						items: [createUserTask({userTaskKey: '2', name: 'Open task'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+
+		await tasklistIndexPage.customFiltersModal.saveAndApplyButton.click();
+
+		await expect(tasklistIndexPage.customFiltersModal.dialog).not.toBeVisible();
+		await expect(tasklistIndexPage.taskItem('Open task')).toBeVisible();
+		await expect(tasklistIndexPage.taskItem('Variable filtered task')).not.toBeVisible();
+
+		await tasklistIndexPage.expandFilters();
+		await tasklistIndexPage.customFilterActionsButton('My filter').click();
+		await tasklistIndexPage.customFilterOverflowItem('Edit').click();
+
+		await expect(tasklistIndexPage.customFiltersModal.dialog).toBeVisible();
+		await expect(tasklistIndexPage.customFiltersModal.advancedFiltersToggle).not.toBeChecked();
 	});
 
 	test('should delete a custom filter and redirect to all-open when active', async ({tasklistIndexPage}) => {
@@ -148,7 +227,7 @@ test.describe('Custom filters', () => {
 
 		await expect(tasklistIndexPage.customFilterLink('Custom')).toBeVisible();
 
-		await tasklistIndexPage.customFilterActionsButton.click();
+		await tasklistIndexPage.customFilterActionsButton('Custom').click();
 		await tasklistIndexPage.customFilterOverflowItem('Delete').click();
 
 		await expect(tasklistIndexPage.deleteFilterModal.dialog).toBeVisible();
@@ -178,8 +257,9 @@ test.describe('Custom filters', () => {
 		await tasklistIndexPage.newFilterButton.click();
 
 		await expect(tasklistIndexPage.customFiltersModal.processSelect).toBeVisible();
-		await expect(tasklistIndexPage.customFiltersModal.processSelect).toContainText('All processes');
-		await expect(tasklistIndexPage.customFiltersModal.processSelect).toContainText('Order Process');
-		await expect(tasklistIndexPage.customFiltersModal.processSelect).toContainText('Payment Process');
+		await tasklistIndexPage.customFiltersModal.processSelect.click();
+		await expect(tasklistIndexPage.customFiltersModal.processOption('All processes')).toBeVisible();
+		await expect(tasklistIndexPage.customFiltersModal.processOption('Order Process - v1')).toBeVisible();
+		await expect(tasklistIndexPage.customFiltersModal.processOption('Payment Process - v2')).toBeVisible();
 	});
 });

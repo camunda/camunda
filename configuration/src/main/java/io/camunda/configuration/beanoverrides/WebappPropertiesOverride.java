@@ -12,6 +12,7 @@ import io.camunda.zeebe.gateway.rest.config.WebappConfiguration.Cloud;
 import java.util.List;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -26,11 +27,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
  */
 @Configuration
 @Profile("!restore")
-@EnableConfigurationProperties({
-  WebappProperties.class,
-  LegacyOperateProperties.class,
-  LegacyTasklistProperties.class
-})
+@EnableConfigurationProperties({WebappProperties.class, LegacyOperateProperties.class})
 @DependsOn("unifiedConfigurationHelper")
 public class WebappPropertiesOverride {
 
@@ -38,17 +35,14 @@ public class WebappPropertiesOverride {
 
   private final WebappProperties webappProperties;
   private final LegacyOperateProperties legacyOperateProperties;
-  private final LegacyTasklistProperties legacyTasklistProperties;
   private final ConfigurableEnvironment environment;
 
   public WebappPropertiesOverride(
       final WebappProperties webappProperties,
       final LegacyOperateProperties legacyOperateProperties,
-      final LegacyTasklistProperties legacyTasklistProperties,
       final ConfigurableEnvironment environment) {
     this.webappProperties = webappProperties;
     this.legacyOperateProperties = legacyOperateProperties;
-    this.legacyTasklistProperties = legacyTasklistProperties;
     this.environment = environment;
   }
 
@@ -81,7 +75,10 @@ public class WebappPropertiesOverride {
 
   private void applyEnterpriseFallback(final WebappProperties target) {
     if (environment.getProperty("camunda.webapp.enterprise") == null
-        && (legacyOperateProperties.isEnterprise() || legacyTasklistProperties.isEnterprise())) {
+        && (legacyOperateProperties.isEnterprise()
+            || Binder.get(environment)
+                .bind("camunda.tasklist.enterprise", Boolean.class)
+                .orElse(false))) {
       target.setEnterprise(true);
     }
   }
@@ -95,9 +92,9 @@ public class WebappPropertiesOverride {
 
   private void applyCloudFallbacks(final WebappProperties target) {
     final Cloud cloud = target.getCloud();
-
-    if (cloud.getStage() == null && legacyTasklistProperties.getCloud().getStage() != null) {
-      cloud.setStage(legacyTasklistProperties.getCloud().getStage());
+    if (cloud.getStage() == null) {
+      cloud.setStage(
+          Binder.get(environment).bind("camunda.tasklist.cloud.stage", String.class).orElse(null));
     }
   }
 }

@@ -1,0 +1,62 @@
+# .claude/skills/
+
+Repo-specific Claude Code skills for the Camunda monorepo. Skills are loaded automatically by
+the harness from this directory.
+
+Each skill lives in its own subdirectory and must contain a `SKILL.md` with a
+frontmatter `name` and `description` that the harness uses to load it:
+
+```
+.claude/skills/
+  my-skill/
+    SKILL.md        ← required: frontmatter + instructions
+    reference.md    ← optional: supporting reference material
+```
+
+Minimal `SKILL.md` structure:
+
+```markdown
+---
+name: my-skill
+description: One-line trigger description used by the harness to decide when to load this skill.
+---
+
+# My Skill
+
+Instructions go here.
+```
+
+Skills here extend the org-level skills in the central
+[camunda/.github AGENTS.md](https://github.com/camunda/.github/blob/main/AGENTS.md).
+When a skill exists for a recurring operation, use it rather than improvising steps.
+
+## Available skills
+
+| Skill                          | Description                                                                                                    |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `analytics-exporter`           | Add a new event handler or metric to the analytics exporter (`zeebe/exporters/analytics-exporter/`)            |
+| `babysit-pr`                   | Self-driving loop to shepherd one or more PRs (incl. backports) to merged: rerun flaky CI, enqueue, re-enqueue |
+| `bug-investigation`            | Investigate a triaged bug issue end to end: reproduce, root-cause, validate a fix, report on the issue         |
+| `camunda-api-zod-schemas`      | Change or release `@camunda/camunda-api-zod-schemas`: fields, endpoints, modules, version trees, version bump  |
+| `ci-flood-triage`              | Orient fast when a flood of CI incidents opens at once — find the shared pattern, flag outliers                |
+| `ci-push-workflow-health`      | Analyze CI failure patterns for push-triggered workflow jobs on main and stable/\* branches                    |
+| `ci-runner-utilization`        | Detect CI runner underutilization and give downsizing recommendations for cost savings                         |
+| `ci-scheduled-workflow-health` | Generate an HTML health report for all scheduled GitHub Actions workflows                                      |
+| `create-issue`                 | Create a GitHub issue with the correct template, component label, and parent link                              |
+| `design-system-migrator`       | Migrate OC webapp routes and components from Carbon to the Camunda design system                               |
+| `engine-expert`                | Implement or fix capabilities in the Zeebe workflow engine (`zeebe/engine/`)                                   |
+| `frontend-feature`             | Build non-Operate features in the orchestration cluster webapp                                                 |
+| `frontend-docs-screenshots`    | Add, change, or run the Playwright tests that make the docs.camunda.io images for the OC webapp                |
+| `frontend-integration-test`    | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp                  |
+| `frontend-operate-migrator`    | Independently port legacy Operate behavior through fidelity review and a draft PR                             |
+| `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp                              |
+| `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
+| `operate-frontend`             | Operate frontend conventions for both codebases — the OC webapp `src/operate/` pod and legacy `operate/client/` |
+| `session-state`                | Persist and resume Claude Code session progress across restarts, `--resume`/`--continue`, and compaction        |
+| `tasklist-frontend`            | Build or change Tasklist pod features in the OC webapp at `src/tasklist/`                                      |
+
+## Adding a new skill
+
+1. Create a new directory under `.claude/skills/` matching the skill name (lowercase, hyphens only).
+2. Add a `SKILL.md` with the required frontmatter (`name`, `description`) and instructions.
+3. Update the table above.

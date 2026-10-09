@@ -13,14 +13,18 @@ import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeSuspended;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.lang.reflect.Method;
@@ -119,5 +123,151 @@ public class BatchOperationCancelProcessInstanceIT {
     assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
         .containsExactly(BatchOperationItemState.COMPLETED);
     assertThat(itemKeys).containsExactlyInAnyOrder(activeKeys.toArray(Long[]::new));
+  }
+
+  @Test
+  void shouldCancelSuspendedProcessInstancesWithBatch() {
+    final List<Long> activeProcessInstanceKeys =
+        activeProcessInstances.stream().map(ProcessInstanceEvent::getProcessInstanceKey).toList();
+
+    // given
+    camundaClient
+        .newCreateBatchOperationCommand()
+        .processInstanceSuspend()
+        .filter(f -> f.processInstanceKey(k -> k.in(activeProcessInstanceKeys)))
+        .send()
+        .join();
+    waitForProcessInstancesToBeSuspended(
+        camundaClient,
+        f -> f.variables(getScopedVariables(testScopeId)),
+        activeProcessInstances.size());
+
+    // when
+    final var result =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .processInstanceCancel()
+            .filter(b -> b.variables(getScopedVariables(testScopeId)))
+            .send()
+            .join();
+    final var batchOperationKey = result.getBatchOperationKey();
+
+    // then
+    assertThat(result).isNotNull();
+
+    waitForBatchOperationWithCorrectTotalCount(
+        camundaClient, batchOperationKey, activeProcessInstances.size());
+    waitForBatchOperationCompleted(
+        camundaClient, batchOperationKey, activeProcessInstances.size(), 0);
+
+    for (final Long key : activeProcessInstanceKeys) {
+      waitForProcessInstanceToBeTerminated(camundaClient, key);
+    }
+
+    final var itemsObj =
+        camundaClient
+            .newBatchOperationItemsSearchRequest()
+            .filter(f -> f.batchOperationKey(batchOperationKey))
+            .send()
+            .join();
+    final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();
+
+    assertThat(itemsObj.items()).hasSize(activeProcessInstances.size());
+    assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
+        .containsExactly(BatchOperationItemState.COMPLETED);
+    assertThat(itemKeys).containsExactlyInAnyOrder(activeProcessInstanceKeys.toArray(Long[]::new));
+  }
+
+  @Test
+  void shouldNotCancelActiveInstancesWhenFilteringForSuspended() {
+    // given
+    final long suspendedKey = activeProcessInstances.get(0).getProcessInstanceKey();
+    final long activeKey = activeProcessInstances.get(1).getProcessInstanceKey();
+    camundaClient.newSuspendProcessInstanceCommand(suspendedKey).send().join();
+    waitForProcessInstancesToBeSuspended(camundaClient, f -> f.processInstanceKey(suspendedKey), 1);
+
+    // when
+    final var batchOperationKey =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .processInstanceCancel()
+            .filter(
+                f ->
+                    f.variables(getScopedVariables(testScopeId))
+                        .state(ProcessInstanceState.SUSPENDED))
+            .send()
+            .join()
+            .getBatchOperationKey();
+
+    // then
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 1);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 1, 0);
+    waitForProcessInstanceToBeTerminated(camundaClient, suspendedKey);
+
+    final var itemKeys = getBatchItemKeys(batchOperationKey);
+    assertThat(itemKeys).containsExactly(suspendedKey);
+    assertThat(camundaClient.newProcessInstanceGetRequest(activeKey).send().join().getState())
+        .isEqualTo(ProcessInstanceState.ACTIVE);
+  }
+
+  @Test
+  void shouldNotCancelSuspendedInstancesWhenFilteringForActive() {
+    // given
+    final long suspendedKey = activeProcessInstances.get(0).getProcessInstanceKey();
+    final long activeKey = activeProcessInstances.get(1).getProcessInstanceKey();
+    camundaClient.newSuspendProcessInstanceCommand(suspendedKey).send().join();
+    waitForProcessInstancesToBeSuspended(camundaClient, f -> f.processInstanceKey(suspendedKey), 1);
+
+    // when
+    final var batchOperationKey =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .processInstanceCancel()
+            .filter(
+                f ->
+                    f.variables(getScopedVariables(testScopeId)).state(ProcessInstanceState.ACTIVE))
+            .send()
+            .join()
+            .getBatchOperationKey();
+
+    // then
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 1);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 1, 0);
+    waitForProcessInstanceToBeTerminated(camundaClient, activeKey);
+
+    final var itemKeys = getBatchItemKeys(batchOperationKey);
+    assertThat(itemKeys).containsExactly(activeKey);
+    assertThat(camundaClient.newProcessInstanceGetRequest(suspendedKey).send().join().getState())
+        .isEqualTo(ProcessInstanceState.SUSPENDED);
+  }
+
+  @Test
+  void shouldRejectCancellationForNonCancellableState() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newCreateBatchOperationCommand()
+                    .processInstanceCancel()
+                    .filter(
+                        f ->
+                            f.variables(getScopedVariables(testScopeId))
+                                .state(ProcessInstanceState.COMPLETED))
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("The value for state is 'COMPLETED' but must be one of");
+  }
+
+  private List<Long> getBatchItemKeys(final String batchOperationKey) {
+    return camundaClient
+        .newBatchOperationItemsSearchRequest()
+        .filter(f -> f.batchOperationKey(batchOperationKey))
+        .send()
+        .join()
+        .items()
+        .stream()
+        .map(BatchOperationItem::getItemKey)
+        .toList();
   }
 }

@@ -6,19 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TextInput as BaseTextInput} from '@carbon/react';
-import {useEffect, useRef, forwardRef, useImperativeHandle} from 'react';
+import {Input as BaseTextInput, Label} from '@camunda/design-system';
+import {forwardRef, useEffect, useImperativeHandle, useRef} from 'react';
 import type {FieldInputProps} from 'react-final-form';
 
 type TextInputRef = HTMLInputElement | null;
 
-type Props = Omit<React.ComponentProps<typeof BaseTextInput>, 'onBlur' | 'onFocus' | 'invalid'> & {
+type Props = Omit<React.ComponentProps<typeof BaseTextInput>, 'onBlur' | 'onFocus'> & {
+	labelText: React.ReactNode;
 	onBlur?: FieldInputProps<string>['onBlur'];
 	onFocus?: FieldInputProps<string>['onFocus'];
 };
 
 const TextInput = forwardRef<TextInputRef, Props>(
-	({autoFocus, onFocus, onBlur, invalidText, ...props}, forwardedRef) => {
+	({autoFocus, onFocus, onBlur, invalidText, labelText, id, ...props}, forwardedRef) => {
 		const inputRef = useRef<TextInputRef>(null);
 
 		// This effect is necessary because of this bug https://github.com/final-form/react-final-form/issues/558
@@ -31,20 +32,20 @@ const TextInput = forwardRef<TextInputRef, Props>(
 		useImperativeHandle<TextInputRef, TextInputRef>(forwardedRef, () => inputRef.current);
 
 		return (
-			<BaseTextInput
-				hideLabel
-				size="sm"
-				{...props}
-				onBlur={(event) => {
-					onBlur?.(event as React.FocusEvent<HTMLElement, Element>);
-				}}
-				onFocus={(event) => {
-					onFocus?.(event as React.FocusEvent<HTMLElement, Element>);
-				}}
-				invalid={invalidText !== undefined}
-				invalidText={invalidText}
-				ref={inputRef}
-			/>
+			<>
+				<Label className="sr-only" htmlFor={id}>
+					{labelText}
+				</Label>
+				<BaseTextInput
+					{...props}
+					id={id}
+					onBlur={onBlur}
+					onFocus={onFocus}
+					aria-invalid={invalidText !== undefined}
+					invalidText={invalidText}
+					ref={inputRef}
+				/>
+			</>
 		);
 	},
 );

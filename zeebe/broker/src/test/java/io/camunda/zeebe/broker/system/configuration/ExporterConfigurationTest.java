@@ -27,6 +27,7 @@ class ExporterConfigurationTest {
     // then
     assertThat(exportingCfg.skipRecords()).isEqualTo(Map.of());
     assertThat(exportingCfg.distributionInterval()).isEqualTo(Duration.ofSeconds(15));
+    assertThat(exportingCfg.migrationStatusScanMaxRecords()).isEqualTo(100_000);
   }
 
   @Test

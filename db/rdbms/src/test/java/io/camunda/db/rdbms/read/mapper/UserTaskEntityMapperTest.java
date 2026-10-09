@@ -49,6 +49,7 @@ public class UserTaskEntityMapperTest {
             .processDefinitionVersion(7)
             .customHeaders(Map.of("key", "value"))
             .priority(8)
+            .isSuspended(true)
             .build();
 
     // When
@@ -78,6 +79,42 @@ public class UserTaskEntityMapperTest {
     assertThat(entity.followUpDate())
         .isCloseTo(dbModel.followUpDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(entity.tags()).isNotNull().isEmpty();
+  }
+
+  @Test
+  public void testToEntitySortsCandidateGroupsAndUsers() {
+    // Given
+    final UserTaskDbModel dbModel =
+        new Builder()
+            .userTaskKey(1L)
+            .elementId("flowNodeBpmnId")
+            .processDefinitionId("processDefinitionId")
+            .creationDate(OffsetDateTime.now())
+            .completionDate(null)
+            .assignee("assignee")
+            .state(UserTaskDbModel.UserTaskState.CREATED)
+            .formKey(1L)
+            .processDefinitionKey(1L)
+            .processInstanceKey(1L)
+            .rootProcessInstanceKey(1L)
+            .elementInstanceKey(1L)
+            .tenantId("tenantId")
+            .dueDate(null)
+            .followUpDate(null)
+            .candidateGroups(List.of("group2", "group1"))
+            .candidateUsers(List.of("user2", "user1"))
+            .externalFormReference("externalFormReference")
+            .processDefinitionVersion(1)
+            .customHeaders(Map.of("key", "value"))
+            .priority(1)
+            .build();
+
+    // When
+    final UserTaskEntity entity = UserTaskEntityMapper.toEntity(dbModel);
+
+    // Then
+    assertThat(entity.candidateGroups()).containsExactly("group1", "group2");
+    assertThat(entity.candidateUsers()).containsExactly("user1", "user2");
   }
 
   @Test

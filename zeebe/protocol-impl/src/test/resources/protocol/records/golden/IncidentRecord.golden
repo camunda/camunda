@@ -44,7 +44,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   private static final StringValue PROCESS_DEFINITION_PATH_KEY =
       new StringValue("processDefinitionPath");
   private static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
-  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
   private final EnumProperty<ErrorType> errorTypeProp =
       new EnumProperty<>(ERROR_TYPE_KEY, ErrorType.class, ErrorType.UNKNOWN);
@@ -54,8 +54,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final LongProperty processInstanceKeyProp =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalKeyProp =
-      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+  private final IntegerProperty storageOrdinalProp =
+      new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
   private final LongProperty elementInstanceKeyProp =
       new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
@@ -77,7 +77,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processInstanceKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(jobKeyProp)
@@ -94,7 +94,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
     processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
-    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     jobKeyProp.setValue(record.getJobKey());
@@ -289,12 +289,12 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public IncidentRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public IncidentRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

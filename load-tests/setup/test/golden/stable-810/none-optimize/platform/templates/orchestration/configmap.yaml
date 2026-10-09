@@ -118,9 +118,9 @@ data:
               - "orchestration"
               - "orchestration-api"
               - "web-modeler-api"
-            authorization-uri: "/protocol/openid-connect/auth"
-            jwk-set-uri: "http://c8-golden-stable-810-none-optimize.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
-            token-uri: "http://c8-golden-stable-810-none-optimize.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
+            authorization-uri: "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
+            jwk-set-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
+            token-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
             redirect-uri: "http://localhost:8080/sso-callback"
             authenticationRefreshInterval: "PT30S"
           method: "oidc"
@@ -181,6 +181,7 @@ data:
         zeebe:
           # Gateway address
           gatewayAddress: "camunda-gateway:26500"
+          secure: false
     
       #
       # Camunda Tasklist Configuration - Separated syntax.
@@ -195,6 +196,7 @@ data:
           # Gateway address
           gatewayAddress: "camunda-gateway:26500"
           restAddress: "http://camunda-gateway:8080"
+          secure: false
     
     #
     # Camunda Zeebe Configuration - Separated syntax.
@@ -224,7 +226,6 @@ data:
         cluster:
           clusterName: c8-golden-stable-810-none-optimize-zeebe
     
-  log4j2.xml: |
   application.yml: |
     # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
     zeebe.broker.executionMetricsExporterEnabled: "true"
@@ -240,5 +241,8 @@ data:
     zeebe.broker.flowControl.write.enabled: "true"
     zeebe.broker.flowControl.write.limit: 10000
     zeebe.broker.flowControl.write.throttling.enabled: "true"
+    # Grant the dedicated leader-balancer client (declared via `identity.clients`) cluster-admin
+    # access, so it can call the coordinated `/cluster/v2/rebalance` endpoint.
+    camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
   application-override.yml: |
     # no overrides

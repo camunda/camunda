@@ -66,6 +66,7 @@ nightly, both before you start. Never try to reach a cluster or run `kubectl`.
 |--------------------------------------|------------------|-----------------------------------------------------------|
 | `playwright-results-json*`           | `sm-smoke-e2e`   | the report, incl. `config.rootDir` and retry history      |
 | `playwright-traces*`                 | `sm-smoke-e2e`   | `trace.zip`, `test-failed-1.png`, screenshots per attempt |
+| `playwright-report-<version>-*`      | `sm-smoke-e2e`   | preview-env leg's HTML report and `test-results/` traces  |
 | `json-report*`, `Playwright Report*` | `saas-smoke-e2e` | downstream report and HTML report                         |
 | `diagnostics-e2e*`                   | `sm-smoke-e2e`   | **namespace dump: describe + logs for every pod**         |
 
@@ -101,6 +102,27 @@ A changed locator has two possible causes, and they land in different repositori
 this **before** picking a repo, because guessing wrong is expensive in both directions:
 reverting an intentional change destroys someone's work, and adapting the test to a real
 regression masks the defect the test exists to catch.
+
+**Zeroth check: does the blamed PR even touch anything relevant?** `originating_pr` in
+`classify.py` matches the PR whose merge produced the commit this run tested — a trigger, not
+a suspect, and that is the *strong* case. Two weaker cases exist: a bot-authored merge (e.g. a
+backport) attributes to a different, original PR instead; and when no PR's merge matches the
+head commit at all, the fallback is just the first candidate in the list, with no established
+connection to this commit whatsoever. See `Blame`'s docstring in `classify.py` for the exact
+three cases. Treat all three as leads, never verdicts.
+
+Whichever case applies, check it before running the intended/regression test below: if the
+blamed PR's file list has no plausible connection to the failing surface (e.g. a Zeebe engine
+test fix blamed for a Tasklist frontend failure), that test does not apply — the real cause
+predates this commit and simply surfaced on the run it happened to trigger, or no commit-level
+attribution exists at all. Say so explicitly in the PR body, and go find the real cause the
+normal way (recent commits touching the failing component, `git log --oneline -- <path>`).
+
+Record the verdict as `"blame_relevant": true` or `false` in `/tmp/fix-meta.json` (omit only
+when the prompt supplied no blame PR at all). The workflow reads this before requesting review
+from, or naming, the blamed author — see "Also name the author..." below. Do not name them in
+the PR body when this is `false`: mentioning an uninvolved person is exactly the noise this
+check exists to prevent, not something it should cause instead.
 
 The discriminator is whether the product still agrees with itself. The breaking PR number
 is in your prompt — read what it changed:
@@ -247,10 +269,15 @@ suppress re-dispatch. **Omit a fingerprint and the same failure is dispatched ag
 next push.** When updating an existing PR, preserve every line already there — the union,
 never a replacement.
 
-Also name the author of the breaking change in the body (supplied in the prompt). The
-workflow tries to add them as a reviewer, but that call fails when they are not a
-collaborator on the repository you opened the PR in, so the body mention is what
-guarantees the signal survives.
+When `blame_relevant` is `true`, name the author of the triggering commit in the body
+(supplied in the prompt). The workflow requests review from them too, gated on the same
+`blame_relevant` flag you wrote to `/tmp/fix-meta.json` — that request can still legitimately
+fail when they are not a collaborator on the repository you opened the PR in, which is why the
+body mention also carries the signal. When `blame_relevant` is `false` (or omitted because no
+blame PR was supplied), do not name them anywhere in the PR body and do not expect a review
+request either — refer to their PR by number only (no `@`) if you must reference it at all:
+naming an uninvolved person still notifies them via GitHub's mention handling even inside a
+sentence explaining that they are not the cause.
 
 ## Constraints
 
@@ -259,7 +286,13 @@ guarantees the signal survives.
   page.
 - **`test.skip()` / `test.fixme()` / `.only` are forbidden**, except for a confirmed
   product regression that has a filed tracking issue — follow
-  `## Product-Bug Escalation` in the e2e repo's `AGENTS.md` and use its annotation format.
+  `## Product-Bug Escalation` in the e2e repo's `AGENTS.md` in full: its three gates, its
+  fingerprint dedupe, its **Labels for the issue** section (`kind/bug`, `component/`,
+  `severity/`, `likelihood/`, `affects/`, plus the per-repo marker and explaining comment
+  when a field cannot be determined), its template-shaped issue body, and its annotation
+  format. A bug filed without those labels reaches nobody, which is the whole reason the
+  escalation path exists. Record the issue in `product_bugs` (below) so it also reaches the
+  Slack thread.
 - **Minimal diff.** No refactoring, no dependency bumps, nothing unrelated.
 - **Fix only the dispatched specs.** Other failures may be visible in the artifacts; leave
   them.
@@ -289,9 +322,31 @@ Write `/tmp/fix-meta.json` before stopping, always:
       "fingerprints": ["1a2b3c4d"]
     }
   ],
+  "product_bugs": [
+    {
+      "repo": "camunda/camunda",
+      "component": "operate",
+      "severity": "high",
+      "affects": ["8.10"],
+      "undetermined_fields": [],
+      "issue_url": "https://github.com/camunda/camunda/issues/55864",
+      "issue_number": 55864,
+      "fingerprint": "1a2b3c4d",
+      "root_cause": "One sentence: which product change broke which flow.",
+      "suspect_commit": "<sha + subject, or PR #, or 'not pinned'>",
+      "skipped_tests": ["<file> › <test_name>"]
+    }
+  ],
   "reason": "Required when prs is empty: what you found and why no change was safe."
 }
 ```
+
+`product_bugs` is required whenever you reached a product-bug verdict, and `[]` otherwise. It
+uses the same object shape as the e2e repo's `## Product-Bug Escalation` manifest, so one
+filing format serves every agent. `component`, `severity` and `affects` must match the labels
+you actually set on the issue, and `undetermined_fields` lists any category you could not
+determine and flagged with a comment — `alwaysgreen-fix.yml` renders them in the Slack
+thread and the job summary, so a filed bug does not sit unnoticed.
 
 `reason` is mandatory whenever `prs` is empty — it is the Slack thread reply and the job
 summary, and it is all the next reader gets.

@@ -10,8 +10,7 @@ package io.camunda.zeebe.engine;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.processinstance.CommandBufferingBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
@@ -49,8 +48,6 @@ public class Engine implements RecordProcessor {
 
   public static final String ERROR_MESSAGE_BANNED_PI =
       "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled.";
-  public static final String ERROR_MESSAGE_SUSPENDED_PI =
-      "Expected to process command for process instance with key '%d', but the process instance is suspended.";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_PROCESSOR_NOT_FOUND =
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";
@@ -58,8 +55,6 @@ public class Engine implements RecordProcessor {
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private static final String DEBUG_MESSAGE_PI_KEY_NOT_FOUND =
       "Expected to reject command for banned process instance, but could not extract process instance key from record '{}'. Skipping rejection response.";
-  private static final String ERROR_MESSAGE_UNEXPECTED_SUSPENSION_DECISION =
-      "Expected to handle a known suspension decision, but got '%s'. Please report this as a bug.";
   private static final EnumSet<ValueType> SUPPORTED_VALUETYPES =
       EnumSet.range(ValueType.JOB, ValueType.SCALE);
 
@@ -67,7 +62,7 @@ public class Engine implements RecordProcessor {
   private RecordProcessorMap recordProcessorMap;
   private MutableProcessingState processingState;
   private CommandBufferingBehavior bufferingBehavior;
-  private SuspensionCheck suspensionCheck;
+  private SuspensionBehavior suspensionBehavior;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
 
@@ -137,12 +132,14 @@ public class Engine implements RecordProcessor {
             recordProcessorContext, writers, config, securityConfig);
     processingState = typedProcessorContext.getProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
-    bufferingBehavior = new CommandBufferingBehavior(processingState.getKeyGenerator(), writers);
-    suspensionCheck = new SuspensionCheck(processingState);
+    suspensionBehavior = new SuspensionBehavior(processingState);
+    final var suspensionMetrics = typedProcessorContext.getSuspensionMetrics();
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
+    bufferingBehavior =
+        new CommandBufferingBehavior(processingState.getKeyGenerator(), writers, suspensionMetrics);
 
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
@@ -190,18 +187,22 @@ public class Engine implements RecordProcessor {
         rejectBannedInstanceCommand(typedCommand);
         return processingResultBuilder.build();
       }
-      final var suspension = suspensionCheck.resolve(typedCommand, currentProcessor);
-      if (suspension.outcome() != SuspensionBehavior.PROCESS) {
-        // Reject or buffer commands for suspended process instances
-        handleSuspensionOutcome(typedCommand, suspension);
-        return processingResultBuilder.build();
-      }
 
       // regular case handling
       if (currentProcessor.shouldProcessResultsInSeparateBatches()) {
         processingResultBuilder.withProcessInASeparateBatch();
       }
-      currentProcessor.processRecord(record, processingResultBuilder);
+
+      final var suspension = suspensionBehavior.process(typedCommand, currentProcessor);
+      switch (suspension.outcome()) {
+        case REJECT -> {
+          rejectInstanceCommand(typedCommand, suspension.rejectionReason());
+        }
+        case BUFFER -> {
+          bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
+        }
+        default -> currentProcessor.processRecord(record, processingResultBuilder);
+      }
     }
     return processingResultBuilder.build();
   }
@@ -277,25 +278,6 @@ public class Engine implements RecordProcessor {
     }
 
     rejectInstanceCommand(typedCommand, String.format(ERROR_MESSAGE_BANNED_PI, processInstanceKey));
-  }
-
-  private void rejectSuspendedInstanceCommand(
-      final TypedRecord<?> typedCommand, final long processInstanceKey) {
-    rejectInstanceCommand(
-        typedCommand, String.format(ERROR_MESSAGE_SUSPENDED_PI, processInstanceKey));
-  }
-
-  private void handleSuspensionOutcome(
-      final TypedRecord<?> typedCommand, final SuspensionCheck.SuspensionResult suspension) {
-    final var outcome = suspension.outcome();
-    if (outcome == SuspensionBehavior.REJECT) {
-      rejectSuspendedInstanceCommand(typedCommand, suspension.processInstanceKey());
-    } else if (outcome == SuspensionBehavior.BUFFER) {
-      bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
-    } else {
-      throw new IllegalStateException(
-          String.format(ERROR_MESSAGE_UNEXPECTED_SUSPENSION_DECISION, outcome));
-    }
   }
 
   private void rejectInstanceCommand(

@@ -75,6 +75,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
@@ -139,6 +140,7 @@ import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -283,6 +285,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_BATCH, this::summarizeProcessInstanceBatch);
+    valueLoggers.put(ValueType.SUSPENSION_BATCH, this::summarizeSuspensionBatch);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
     valueLoggers.put(
         ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
@@ -349,6 +352,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
+    valueLoggers.put(ValueType.AGENT_HISTORY_BATCH, this::summarizeAgentHistoryBatch);
     valueLoggers.put(ValueType.SECRET_REFERENCE, this::summarizeSecretReference);
   }
 
@@ -600,6 +604,11 @@ public class CompactRecordLogger {
     return result.toString();
   }
 
+  protected String summarizeAgentHistoryBatch(final Record<?> record) {
+    final var value = (AgentHistoryBatchRecordValue) record.getValue();
+    return shortenKey(value.getAgentInstanceKey()) + " items:" + value.getHistoryItemIds().size();
+  }
+
   protected String summarizeAgentHistory(final Record<?> record) {
     final var value = (AgentHistoryRecordValue) record.getValue();
     final var result = new StringBuilder();
@@ -615,7 +624,7 @@ public class CompactRecordLogger {
         .append(" ")
         .append(shortenKey(value.getJobKey()))
         .append("#")
-        .append(value.getJobLease());
+        .append(value.getJobLeaseToken());
 
     final var metrics = value.getMetrics();
     if (metrics != null) {
@@ -1087,6 +1096,16 @@ public class CompactRecordLogger {
     }
 
     return result.append(formatTenant(value)).toString();
+  }
+
+  String summarizeSuspensionBatch(final Record<?> record) {
+    final var value = (SuspensionBatchRecordValue) record.getValue();
+    return "PI:"
+        + shortenKey(value.getProcessInstanceKey())
+        + " idx:"
+        + shortenKey(value.getIndexKey())
+        + " parent:"
+        + shortenKey(value.getParentKey());
   }
 
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {

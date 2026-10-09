@@ -495,13 +495,13 @@ public final class JobSecretPushInjectionTest {
     Awaitility.await("until both jobs are leased on the leasing stream")
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(leasingStream.getActivatedJobs()).hasSize(2));
-    final String firstToken = leaseTokenOf(leasingStream, firstJobKey);
-    final String secondToken = leaseTokenOf(leasingStream, secondJobKey);
+    final String firstToken = jobLeaseTokenOf(leasingStream, firstJobKey);
+    final String secondToken = jobLeaseTokenOf(leasingStream, secondJobKey);
 
     // and - each job parks for secret resolution again once its cached value is evicted
     CACHED_SECRETS.remove(SECRET_NAME);
-    engine.job().withKey(firstJobKey).withLeaseToken(firstToken).withRetries(3).fail();
-    engine.job().withKey(secondJobKey).withLeaseToken(secondToken).withRetries(3).fail();
+    engine.job().withKey(firstJobKey).withJobLeaseToken(firstToken).withRetries(3).fail();
+    engine.job().withKey(secondJobKey).withJobLeaseToken(secondToken).withRetries(3).fail();
     awaitResolutionRequests(2);
 
     // and - only a non-leasing stream remains registered by the time the reference resolves
@@ -723,13 +723,13 @@ public final class JobSecretPushInjectionTest {
     return JOB_STREAMER.addJobStream(BufferUtil.wrapString(JOB_TYPE), properties);
   }
 
-  private String leaseTokenOf(final RecordingJobStream jobStream, final long jobKey) {
+  private String jobLeaseTokenOf(final RecordingJobStream jobStream, final long jobKey) {
     return jobStream.getActivatedJobs().stream()
         .filter(activatedJob -> activatedJob.jobKey() == jobKey)
         .findFirst()
         .orElseThrow()
         .jobRecord()
-        .getLeaseToken();
+        .getJobLeaseToken();
   }
 
   private double skippedMetric() {

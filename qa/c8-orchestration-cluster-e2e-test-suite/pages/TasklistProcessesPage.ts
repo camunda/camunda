@@ -60,8 +60,12 @@ class TasklistProcessesPage {
   }
 
   requiresFormInputTagFor(name: string): Locator {
-    return this.processTileByName(name).locator('.cds--tag__label', {
-      hasText: 'Requires form input',
+    // ProcessTile now renders a shadcn `Badge` for this attribute instead of
+    // a Carbon tag, so the old `.cds--tag__label` class no longer exists.
+    // The badge's only visible content is this i18n string (its leading
+    // icon is aria-hidden), so match on that text directly.
+    return this.processTileByName(name).getByText('Requires form input', {
+      exact: true,
     });
   }
 

@@ -1,0 +1,92 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {createFileRoute, Outlet, redirect, useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
+import {useSessionHeartbeat} from '@camunda/session-heartbeat/react';
+import {SessionWatcher} from '#/shared/auth/shadcn.components/SessionWatcher';
+import {authenticationStore} from '#/shared/auth/authentication.store';
+import {resolveLoginRedirect} from '#/shared/auth/resolveLoginRedirect';
+import {endpoints} from '#/shared/http/endpoints';
+import {getCsrfTokenFromStorage} from '#/shared/http/request';
+import {queries} from '#/shared/http/queries';
+import {reactQueryClient} from '#/shared/http/reactQueryClient';
+import {storeSessionState} from '#/shared/browser-storage/session-storage';
+import {Header} from '#/shared/header/shadcn.components/Header';
+import type {CurrentApp} from '#/shared/c3/components/C3Provider';
+import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
+import {getBootConfig} from '#/shared/config/getBootConfig';
+import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
+import {PageLayout} from '@camunda/design-system';
+
+type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
+
+// 'operate' points at /operate-preview while the Dashboard's DS port is in progress —
+// no /_shadcn/_auth/operate route exists yet, so this repoints nav highlighting to the
+// migration-time leaf. Revert to '/operate' at cutover, once that leaf is renamed.
+// See docs/migration/operate-dashboard-tiering.md.
+const APP_ROUTES = [
+	{app: 'tasklist', to: '/tasklist'},
+	{app: 'operate', to: '/operate-preview'},
+	{app: 'admin', to: '/admin'},
+] as const satisfies ReadonlyArray<{app: CurrentApp; to: FileRouteTypes['to']}>;
+
+export const Route = createFileRoute('/_shadcn/_auth')({
+	beforeLoad: async ({location, context: {queryClient}}) => {
+		try {
+			const [, systemConfig] = await Promise.all([
+				queryClient.ensureQueryData(queries.getCurrentUser()),
+				queryClient.ensureQueryData(queries.getSystemConfiguration()),
+				queryClient.ensureQueryData(queries.getLicense()),
+			]);
+
+			storeSessionState('clientConfig', systemConfig);
+		} catch {
+			queryClient.cancelQueries();
+			queryClient.clear();
+
+			throw redirect(resolveLoginRedirect(location));
+		}
+	},
+	loader: async () => {
+		const {organizationId, clusterId} = getBootConfig();
+
+		if (organizationId === null || clusterId === null) {
+			return {initialSaasToken: null};
+		}
+
+		return {initialSaasToken: (await fetchSaasToken()) || null};
+	},
+	notFoundComponent: () => (
+		<PageLayout>
+			<NotFoundPage />
+		</PageLayout>
+	),
+	component: function RouteComponent() {
+		const {initialSaasToken} = Route.useLoaderData();
+		const matchRoute = useMatchRoute();
+		const currentApp = APP_ROUTES.find(({to}) => matchRoute({to, fuzzy: true}) !== false)?.app;
+
+		useSessionHeartbeat({
+			url: endpoints.sessionHeartbeatUrl(),
+			csrfToken: getCsrfTokenFromStorage,
+			onUnauthorized: () => {
+				authenticationStore.disableSession();
+				reactQueryClient.clear();
+			},
+		});
+
+		return (
+			<>
+				<SessionWatcher />
+				<Header currentApp={currentApp} initialSaasToken={initialSaasToken}>
+					<Outlet />
+				</Header>
+			</>
+		);
+	},
+});

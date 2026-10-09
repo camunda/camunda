@@ -33,7 +33,7 @@ test('should match the forbidden page snapshot', async ({network, page, forbidde
 		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 	);
 
-	await page.goto('/operate');
+	await page.goto('/tasklist');
 	await expect(forbiddenPage.heading).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
@@ -45,12 +45,12 @@ test('should match the component access-denied page snapshot', async ({network, 
 			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: []})),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
 		}),
 		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 	);
 
-	await page.goto('/operate');
+	await page.goto('/tasklist');
 	await expect(componentAccessDeniedPage.heading).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
@@ -59,7 +59,7 @@ test('should match the component access-denied page snapshot', async ({network, 
 test('should match the generic error page snapshot', async ({network, page}) => {
 	network.use(mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}));
 
-	await page.goto('/login?redirect=http://evil.com');
+	await page.goto('/tasklist/login?redirect=http://evil.com');
 	await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
 
 	await expect(page).toHaveScreenshot();

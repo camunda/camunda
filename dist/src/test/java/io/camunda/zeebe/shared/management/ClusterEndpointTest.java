@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
@@ -32,14 +33,17 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.management.cluster.AddZoneRequest;
+import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.ConfigurationChange;
+import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
-import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
+import io.camunda.zeebe.management.cluster.PartitioningConfig;
+import io.camunda.zeebe.management.cluster.PartitioningConfig.SchemeEnum;
+import io.camunda.zeebe.management.cluster.UpdatePartitioningRequest;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +55,8 @@ import java.util.concurrent.CompletableFuture;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 
 final class ClusterEndpointTest {
@@ -243,9 +249,9 @@ final class ClusterEndpointTest {
   @Nested
   class UpdatePartitionDistributionEndpoint {
 
-    private static PartitionDistributionConfig zoneAwareConfig() {
-      return new PartitionDistributionConfig()
-          .type(TypeEnum.ZONE_AWARE)
+    private static PartitioningConfig zoneAwareConfig() {
+      return new PartitioningConfig()
+          .scheme(SchemeEnum.ZONE_AWARE)
           .zones(List.of(new ZoneSpec().name("zone-a").numberOfReplicas(1).priority(100)));
     }
 
@@ -271,7 +277,7 @@ final class ClusterEndpointTest {
       // when
       final var response =
           endpoint.updatePartitionDistribution(
-              new UpdatePartitionDistributionRequest().config(config), false);
+              new UpdatePartitioningRequest().config(config), false);
 
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(202);
@@ -298,7 +304,7 @@ final class ClusterEndpointTest {
       // when - dryRun flag is forwarded
       final var response =
           endpoint.updatePartitionDistribution(
-              new UpdatePartitionDistributionRequest().zonePriorities(zoneOrder), true);
+              new UpdatePartitioningRequest().zonePriorities(zoneOrder), true);
 
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(202);
@@ -314,7 +320,7 @@ final class ClusterEndpointTest {
       // when
       final var response =
           endpoint.updatePartitionDistribution(
-              new UpdatePartitionDistributionRequest()
+              new UpdatePartitioningRequest()
                   .config(zoneAwareConfig())
                   .zonePriorities(List.of("zone-a")),
               false);
@@ -332,7 +338,7 @@ final class ClusterEndpointTest {
 
       // when
       final var response =
-          endpoint.updatePartitionDistribution(new UpdatePartitionDistributionRequest(), false);
+          endpoint.updatePartitionDistribution(new UpdatePartitioningRequest(), false);
 
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(400);
@@ -564,6 +570,167 @@ final class ClusterEndpointTest {
     private ClusterConfigurationManagementRequestSender senderAcceptingPatch() {
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
       when(sender.patchCluster(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(
+                      new ClusterConfigurationChangeResponse(
+                          1L,
+                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                              Map.of(), Map.of(), List.of()),
+                          null))));
+      return sender;
+    }
+  }
+
+  @Nested
+  class RemoveZoneEndpoint {
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldPassForceOnToTheRemoveZoneRequest(final boolean force) {
+      // given
+      final var sender = senderAcceptingRemoveZone();
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      final var response = endpoint.removeZone("zone-a", false, force);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(202);
+      verify(sender)
+          .removeZone(
+              new ClusterConfigurationManagementRequest.RemoveZoneRequest("zone-a", false, force));
+    }
+
+    private ClusterConfigurationManagementRequestSender senderAcceptingRemoveZone() {
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      when(sender.removeZone(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(
+                      new ClusterConfigurationChangeResponse(
+                          1L,
+                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                              Map.of(), Map.of(), List.of()),
+                          null))));
+      return sender;
+    }
+  }
+
+  @Nested
+  class AddZoneEndpoint {
+
+    @Test
+    void shouldDeriveZonedBrokerIdsFromNumberOfBrokers() {
+      // given
+      final var sender = senderAcceptingAddZone();
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      final var response =
+          endpoint.addZone(
+              "zone-a",
+              new AddZoneRequest().numberOfReplicas(2).priority(100).numberOfBrokers(3),
+              false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(202);
+      verify(sender)
+          .addZone(
+              new ClusterConfigurationManagementRequest.AddZoneRequest(
+                  "zone-a",
+                  2,
+                  100,
+                  Set.of(
+                      MemberId.from("zone-a", 0),
+                      MemberId.from("zone-a", 1),
+                      MemberId.from("zone-a", 2)),
+                  false));
+    }
+
+    @Test
+    void shouldRejectWhenBothBrokersAndNumberOfBrokersSet() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      final var response =
+          endpoint.addZone(
+              "zone-a",
+              new AddZoneRequest()
+                  .numberOfReplicas(1)
+                  .priority(100)
+                  .brokers(List.of(new BrokerId.String("zone-a_0")))
+                  .numberOfBrokers(1),
+              false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(400);
+      verifyNoInteractions(sender);
+    }
+
+    @Test
+    void shouldRejectWhenNeitherBrokersNorNumberOfBrokersSet() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      final var response =
+          endpoint.addZone(
+              "zone-a",
+              new AddZoneRequest().numberOfReplicas(1).priority(100).brokers(List.of()),
+              false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(400);
+      verifyNoInteractions(sender);
+    }
+
+    @Test
+    void shouldRejectNonPositiveNumberOfBrokers() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      final var response =
+          endpoint.addZone(
+              "zone-a",
+              new AddZoneRequest().numberOfReplicas(1).priority(100).numberOfBrokers(0),
+              false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(400);
+      verifyNoInteractions(sender);
+    }
+
+    @Test
+    void shouldRejectInvalidZoneIdWhenDerivingFromNumberOfBrokers() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      // underscore is reserved as the zone/nodeIdx separator, so it's not a valid zone character
+      final var response =
+          endpoint.addZone(
+              "zone_a",
+              new AddZoneRequest().numberOfReplicas(1).priority(100).numberOfBrokers(1),
+              false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(400);
+      assertThat(((Error) response.getBody()).getMessage())
+          .contains("alphanumeric")
+          .contains("hyphens");
+      verifyNoInteractions(sender);
+    }
+
+    private ClusterConfigurationManagementRequestSender senderAcceptingAddZone() {
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      when(sender.addZone(any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   Either.right(

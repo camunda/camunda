@@ -17,6 +17,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
@@ -47,6 +48,7 @@ public class UnassignClientFromTenantIT {
 
     // verify client is assigned
     Awaitility.await("Client is assigned to the tenant")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -65,6 +67,7 @@ public class UnassignClientFromTenantIT {
 
     // then - verify client is no longer assigned
     Awaitility.await("Client is unassigned from the tenant")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

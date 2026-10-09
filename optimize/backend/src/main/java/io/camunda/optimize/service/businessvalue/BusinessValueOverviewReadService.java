@@ -17,18 +17,23 @@ import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOvervie
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.CategoryDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.CoverageDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.OffTargetEntryDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.OffTargetStatus;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
+import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,6 +76,7 @@ public class BusinessValueOverviewReadService {
       org.slf4j.LoggerFactory.getLogger(BusinessValueOverviewReadService.class);
 
   private final BusinessValueOverviewRepository overviewRepository;
+  private final BusinessValueTargetRepository targetRepository;
   private final TenantService tenantService;
   private final DefinitionService definitionService;
   private final BusinessValueOverviewComputeService computeService;
@@ -85,11 +91,13 @@ public class BusinessValueOverviewReadService {
 
   public BusinessValueOverviewReadService(
       final BusinessValueOverviewRepository overviewRepository,
+      final BusinessValueTargetRepository targetRepository,
       final TenantService tenantService,
       final DefinitionService definitionService,
       final BusinessValueOverviewComputeService computeService,
       final ConfigurationService configurationService) {
     this.overviewRepository = overviewRepository;
+    this.targetRepository = targetRepository;
     this.tenantService = tenantService;
     this.definitionService = definitionService;
     this.computeService = computeService;
@@ -111,30 +119,31 @@ public class BusinessValueOverviewReadService {
           DatabaseConstants.LIST_FETCH_LIMIT);
     }
 
-    if (rawRows.isEmpty()) {
-      return emptyResponse();
-    }
-
     // Overview rows for deleted process definitions would otherwise persist forever — the
     // scheduler stops upserting them but the repository has no deletion path today. Intersecting
     // against the current fully-imported definition set at read time hides orphans immediately,
     // and skipping them here also prevents the stale-read backstop from resurrecting them via
     // computeService (which would otherwise fall back to a synthetic definition entry).
     // Storage-level cleanup is tracked separately.
-    final Set<DefinitionKey> currentDefinitions = currentDefinitions();
-    final List<BusinessValueOverviewDto> rows =
+    final Map<DefinitionKey, String> currentDefinitions = currentDefinitions();
+    final List<BusinessValueOverviewDto> computedRows =
         rawRows.stream()
             .filter(
                 row ->
-                    currentDefinitions.contains(
+                    currentDefinitions.containsKey(
                         new DefinitionKey(row.getTenantId(), row.getProcessDefinitionKey())))
             .toList();
+
+    final OffsetDateTime now = OffsetDateTime.now();
+    final AssembledRows assembled =
+        withTargetOnlyDefinitions(
+            computedRows, currentDefinitions, authorizedTenantIds, range, now);
+    final List<BusinessValueOverviewDto> rows = assembled.rows();
 
     if (rows.isEmpty()) {
       return emptyResponse();
     }
 
-    final OffsetDateTime now = OffsetDateTime.now();
     final Duration staleThreshold = staleThreshold();
 
     int totalProcesses = 0;
@@ -151,6 +160,23 @@ public class BusinessValueOverviewReadService {
     boolean anyRowStale = false;
 
     for (final BusinessValueOverviewDto row : rows) {
+      // A row the repository returned was measured by a sweep that completed, so a null KPI value
+      // means the definition produced no bucket — nothing completed in the range. A row this
+      // service synthesized has never been measured at all. Both are unmet targets, but only the
+      // first is a statement about the process rather than about our own bookkeeping.
+      //
+      // One exception, accepted rather than handled: with overviewComputeEnabled=false the sweep
+      // writes rows it never measured, and a later target save applies the target to one of them
+      // through applyTargetToExistingRows. Such a row reads as NO_COMPLETED_INSTANCES though
+      // nothing measured it. It takes an operator disabling compute, and the next enabled sweep
+      // corrects it.
+      final OffTargetStatus noMeasurementStatus =
+          assembled
+                  .synthesized()
+                  .contains(new DefinitionKey(row.getTenantId(), row.getProcessDefinitionKey()))
+              ? OffTargetStatus.NOT_MEASURED
+              : OffTargetStatus.NO_COMPLETED_INSTANCES;
+
       totalProcesses++;
       if (row.isHasAnyTarget()) {
         processesWithTarget++;
@@ -169,20 +195,29 @@ public class BusinessValueOverviewReadService {
         ctWithTarget++;
         if (Boolean.TRUE.equals(cycleTime.getMet())) {
           ctMet++;
-        } else if (Boolean.FALSE.equals(cycleTime.getMet())
-            && cycleTime.getValue() != null
-            && cycleTime.getTarget() > 0L) {
+        } else if (cycleTime.getTarget() > 0L) {
           // A cycle-time target of zero would produce Infinity gapPct (division by zero) and break
           // the JSON contract. Front-end target validation is the source of truth; this guard
-          // survives if a zero target slips past it.
+          // survives if a zero target slips past it, for every status.
+          //
+          // met is null, not false, when there is no measured value, so this branch covers a
+          // measured miss and an unmeasured target alike. The extra value check guards only the
+          // met/value pair the writer rejects, so an impossible row degrades instead of throwing.
           offTarget.add(
-              buildOffTargetEntry(
-                  row,
-                  Kpi.CYCLE_TIME,
-                  cycleTime.getValue().doubleValue(),
-                  cycleTime.getTarget().doubleValue(),
-                  CYCLE_TIME_DISPLAY_UNIT,
-                  Direction.LOWER_IS_BETTER));
+              Boolean.FALSE.equals(cycleTime.getMet()) && cycleTime.getValue() != null
+                  ? measuredMiss(
+                      row,
+                      Kpi.CYCLE_TIME,
+                      cycleTime.getValue().doubleValue(),
+                      cycleTime.getTarget().doubleValue(),
+                      CYCLE_TIME_DISPLAY_UNIT,
+                      Direction.LOWER_IS_BETTER)
+                  : noMeasurement(
+                      row,
+                      Kpi.CYCLE_TIME,
+                      cycleTime.getTarget().doubleValue(),
+                      CYCLE_TIME_DISPLAY_UNIT,
+                      noMeasurementStatus));
         }
       }
 
@@ -193,22 +228,31 @@ public class BusinessValueOverviewReadService {
         arWithTarget++;
         if (Boolean.TRUE.equals(automationRate.getMet())) {
           arMet++;
-        } else if (Boolean.FALSE.equals(automationRate.getMet())
-            && automationRate.getValue() != null
-            && automationRate.getTarget() > 0) {
+        } else if (automationRate.getTarget() > 0) {
           // Same zero-target guard as cycle time: a 0% automation target divides by zero on gapPct.
           offTarget.add(
-              buildOffTargetEntry(
-                  row,
-                  Kpi.AUTOMATION_RATE,
-                  automationRate.getValue(),
-                  automationRate.getTarget().doubleValue(),
-                  AUTOMATION_RATE_DISPLAY_UNIT,
-                  Direction.HIGHER_IS_BETTER));
+              Boolean.FALSE.equals(automationRate.getMet()) && automationRate.getValue() != null
+                  ? measuredMiss(
+                      row,
+                      Kpi.AUTOMATION_RATE,
+                      automationRate.getValue(),
+                      automationRate.getTarget().doubleValue(),
+                      AUTOMATION_RATE_DISPLAY_UNIT,
+                      Direction.HIGHER_IS_BETTER)
+                  : noMeasurement(
+                      row,
+                      Kpi.AUTOMATION_RATE,
+                      automationRate.getTarget().doubleValue(),
+                      AUTOMATION_RATE_DISPLAY_UNIT,
+                      automationRateNoMeasurementStatus(row, noMeasurementStatus)));
         }
       }
 
-      if (isStale(row.getLastComputedAt(), now, staleThreshold)) {
+      // Only targeted rows are measured by the sweep, so only they can be meaningfully stale. An
+      // untargeted row is never recomputed and its timestamp ages without bound — counting those
+      // would leave the backstop firing a fleet-wide recompute on every single read, forever, as
+      // soon as one untargeted definition exists.
+      if (row.isHasAnyTarget() && isStale(row.getLastComputedAt(), now, staleThreshold)) {
         anyRowStale = true;
       }
     }
@@ -221,7 +265,23 @@ public class BusinessValueOverviewReadService {
       triggerFullScopeBackstop();
     }
 
-    offTarget.sort(Comparator.comparingDouble(OffTargetEntryDto::getGapPct).reversed());
+    // Measured misses lead, worst gap first — that ranking is the point of the list. nullsLast
+    // puts the no-measurement entries after them; comparingDouble would unbox a null gapPct and
+    // throw.
+    //
+    // Process name alone does not break ties: two tenants, or two definitions, may share a display
+    // name, and the repository query imposes no order of its own. Tenant and key finish the job, so
+    // two reads of unchanged data return the same sequence.
+    offTarget.sort(
+        Comparator.comparing(
+                OffTargetEntryDto::getGapPct, Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(
+                OffTargetEntryDto::getProcessName, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(
+                OffTargetEntryDto::getTenantId, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(
+                OffTargetEntryDto::getProcessKey, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(OffTargetEntryDto::getKpi));
 
     return new BusinessValueOverviewResponseDto(
         processesWithTarget > 0,
@@ -233,7 +293,7 @@ public class BusinessValueOverviewReadService {
         offTarget);
   }
 
-  private OffTargetEntryDto buildOffTargetEntry(
+  private OffTargetEntryDto measuredMiss(
       final BusinessValueOverviewDto row,
       final Kpi kpi,
       final double value,
@@ -246,12 +306,63 @@ public class BusinessValueOverviewReadService {
         row.getProcessDefinitionKey(),
         row.getProcessDefinitionName(),
         kpi.getId(),
+        OffTargetStatus.OFF_TARGET,
         verdict.value(),
         verdict.target(),
         displayUnit,
         verdict.gapPct(),
         verdict.direction()); // verdict.direction() is "over"/"under" — matches
     // OffTargetEntryDto.comparison
+  }
+
+  /**
+   * Why an automation-rate target has no value.
+   *
+   * <p>A null automation rate does not imply an idle process. The rate divides over task flow
+   * nodes, so {@code ProcessViewAutomationRateInterpreter} returns null both when nothing completed
+   * and when the process has no automatable tasks at all — a process built only from events,
+   * gateways or sub-process containers never produces a rate however many instances it runs.
+   *
+   * <p>Cycle time separates the two. It comes from a duration aggregation over completed instances,
+   * so it is null only when none completed. A row with a cycle time but no automation rate
+   * therefore ran and simply has nothing to automate, which is a permanent property of the model
+   * rather than a gap in the data.
+   *
+   * <p>A synthesized row has never been measured at all, so that verdict wins over both.
+   */
+  private static OffTargetStatus automationRateNoMeasurementStatus(
+      final BusinessValueOverviewDto row, final OffTargetStatus noMeasurementStatus) {
+    if (noMeasurementStatus == OffTargetStatus.NOT_MEASURED) {
+      return OffTargetStatus.NOT_MEASURED;
+    }
+    final CycleTimeBlock cycleTime = row.getCycleTime();
+    return cycleTime != null && cycleTime.getValue() != null
+        ? OffTargetStatus.NOT_APPLICABLE
+        : OffTargetStatus.NO_COMPLETED_INSTANCES;
+  }
+
+  /**
+   * An entry for a target with no measured value. The verdict function is not consulted: it returns
+   * nulls for every output on a null value, so calling it here would only obscure that the target
+   * is all this entry can report.
+   */
+  private OffTargetEntryDto noMeasurement(
+      final BusinessValueOverviewDto row,
+      final Kpi kpi,
+      final double target,
+      final String displayUnit,
+      final OffTargetStatus status) {
+    return new OffTargetEntryDto(
+        row.getTenantId(),
+        row.getProcessDefinitionKey(),
+        row.getProcessDefinitionName(),
+        kpi.getId(),
+        status,
+        null,
+        target,
+        displayUnit,
+        null,
+        null);
   }
 
   private BusinessValueOverviewResponseDto emptyResponse() {
@@ -265,16 +376,89 @@ public class BusinessValueOverviewReadService {
         List.of());
   }
 
-  private Set<DefinitionKey> currentDefinitions() {
+  private Map<DefinitionKey, String> currentDefinitions() {
     final List<DefinitionWithTenantIdsDto> definitions =
         definitionService.getAllDefinitionsWithTenants(DefinitionType.PROCESS);
-    final Set<DefinitionKey> keys = new HashSet<>();
+    final Map<DefinitionKey, String> keys = new HashMap<>();
     for (final DefinitionWithTenantIdsDto definition : definitions) {
+      final String name = definition.getName() != null ? definition.getName() : definition.getKey();
       for (final String tenantId : definition.getTenantIds()) {
-        keys.add(new DefinitionKey(tenantId, definition.getKey()));
+        keys.put(new DefinitionKey(tenantId, definition.getKey()), name);
       }
     }
     return keys;
+  }
+
+  /**
+   * Adds an entry for every definition that has a target but no computed row yet.
+   *
+   * <p>A safety net rather than the usual path: {@link
+   * BusinessValueOverviewComputeService#computeRowsForTarget} measures the definition and writes
+   * its rows when the target is saved, so this only catches the cases where that did not happen. In
+   * practice it is a definition imported since the last sweep: once any sweep has written a row,
+   * {@code alreadyComputed} excludes it here, so a target saved against it after a failed
+   * write-time measurement waits for the next sweep rather than being synthesized. Cheap enough to
+   * be worth keeping for the case it does cover.
+   *
+   * <p>The entry carries the target and no values, which is what it is: the target is known, the
+   * measurement is not. It contributes to coverage and to the targets-set count, and appears in the
+   * off-target list as {@link OffTargetStatus#NOT_MEASURED} — the target is unmet, and saying so
+   * without claiming a gap is more useful than omitting it.
+   *
+   * <p>Stamped with the current time so it never reads as stale. These rows were never computed, so
+   * a truthful timestamp would trip the backstop into a fleet-wide recompute on every read for as
+   * long as one target-only definition exists.
+   *
+   * <p>Not persisted. The sweep owns the index; this only shapes the response.
+   */
+  private AssembledRows withTargetOnlyDefinitions(
+      final List<BusinessValueOverviewDto> computedRows,
+      final Map<DefinitionKey, String> currentDefinitions,
+      final List<String> authorizedTenantIds,
+      final MetricRange range,
+      final OffsetDateTime now) {
+    final Set<DefinitionKey> alreadyComputed = new HashSet<>();
+    for (final BusinessValueOverviewDto row : computedRows) {
+      alreadyComputed.add(new DefinitionKey(row.getTenantId(), row.getProcessDefinitionKey()));
+    }
+
+    final List<BusinessValueOverviewDto> synthesized = new ArrayList<>();
+    final Set<DefinitionKey> synthesizedKeys = new HashSet<>();
+    for (final BusinessValueTargetDto target :
+        targetRepository.readByTenants(authorizedTenantIds)) {
+      final DefinitionKey key =
+          new DefinitionKey(target.getTenantId(), target.getProcessDefinitionKey());
+      // A cleared target keeps its document with every field null. Synthesizing for those would
+      // add an untargeted process to the coverage denominator while an identical process that was
+      // never targeted stays absent, making the denominator depend on target history.
+      if (alreadyComputed.contains(key)
+          || !currentDefinitions.containsKey(key)
+          || !BusinessValueOverviewComputeService.hasAnyTarget(target)) {
+        continue;
+      }
+      final BusinessValueOverviewDto row =
+          new BusinessValueOverviewDto(
+              target.getTenantId(),
+              target.getProcessDefinitionKey(),
+              currentDefinitions.get(key),
+              range,
+              now,
+              BusinessValueVerdict.cycleTimeBlock(null, null),
+              BusinessValueVerdict.automationRateBlock(null, null),
+              false,
+              0,
+              0);
+      BusinessValueOverviewComputeService.applyTarget(row, target);
+      synthesized.add(row);
+      synthesizedKeys.add(key);
+    }
+
+    if (synthesized.isEmpty()) {
+      return new AssembledRows(computedRows, Set.of());
+    }
+    final List<BusinessValueOverviewDto> all = new ArrayList<>(computedRows);
+    all.addAll(synthesized);
+    return new AssembledRows(all, synthesizedKeys);
   }
 
   private Duration staleThreshold() {
@@ -316,4 +500,12 @@ public class BusinessValueOverviewReadService {
   }
 
   private record DefinitionKey(String tenantId, String processDefinitionKey) {}
+
+  /**
+   * The rows a response is assembled from, plus the subset this service invented because a target
+   * existed without a computed row. The caller needs that subset to tell "measured, nothing
+   * completed" apart from "never measured" — the two are indistinguishable from a row alone.
+   */
+  private record AssembledRows(
+      List<BusinessValueOverviewDto> rows, Set<DefinitionKey> synthesized) {}
 }

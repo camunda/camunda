@@ -24,9 +24,9 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
-import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
 import io.camunda.search.schema.SearchEngineClient;
@@ -133,6 +133,8 @@ abstract class IncidentUpdateRepositoryIT {
 
   protected abstract IncidentUpdateRepository createRepository();
 
+  protected abstract void refresh(String index) throws IOException;
+
   protected abstract <T> Collection<T> search(
       final String index, final String field, final List<String> terms, final Class<T> documentType)
       throws IOException;
@@ -179,6 +181,39 @@ abstract class IncidentUpdateRepositoryIT {
   private void indexIncident(final IncidentEntity incident) throws PersistenceException {
     final var batchRequest = clientAdapter.createBatchRequest();
     batchRequest.add(TargetIndex.mainIndex(incidentTemplate.getFullQualifiedName()), incident);
+    batchRequest.executeWithRefresh();
+  }
+
+  private PostImporterQueueEntity newPendingUpdate() {
+    return new PostImporterQueueEntity()
+        .setActionType(PostImporterActionType.INCIDENT)
+        .setIntent(IncidentIntent.CREATED.name())
+        .setKey(1L)
+        .setPartitionId(PARTITION_ID)
+        .setProcessInstanceKey(1L)
+        .setPosition(1L);
+  }
+
+  private void setupIncidentUpdates(final long fromPosition, final long toPosition)
+      throws PersistenceException {
+    setupIncidentUpdates(fromPosition, toPosition, ignored -> {});
+  }
+
+  private void setupIncidentUpdates(
+      final long fromPosition,
+      final long toPosition,
+      final Consumer<PostImporterQueueEntity> modifier)
+      throws PersistenceException {
+    final var updates =
+        LongStream.rangeClosed(fromPosition, toPosition)
+            .mapToObj(position -> newPendingUpdate().setPosition(position).setKey(position))
+            .peek(modifier)
+            .toList();
+    final var batchRequest = clientAdapter.createBatchRequest();
+    updates.forEach(
+        e ->
+            batchRequest.add(
+                TargetIndex.mainIndex(postImporterQueueTemplate.getFullQualifiedName()), e));
     batchRequest.executeWithRefresh();
   }
 
@@ -389,39 +424,6 @@ abstract class IncidentUpdateRepositoryIT {
           .containsExactly(-1L, Collections.emptyMap());
     }
 
-    private PostImporterQueueEntity newPendingUpdate() {
-      return new PostImporterQueueEntity()
-          .setActionType(PostImporterActionType.INCIDENT)
-          .setIntent(IncidentIntent.CREATED.name())
-          .setKey(1L)
-          .setPartitionId(PARTITION_ID)
-          .setProcessInstanceKey(1L)
-          .setPosition(1L);
-    }
-
-    private void setupIncidentUpdates(final long fromPosition, final long toPosition)
-        throws PersistenceException {
-      setupIncidentUpdates(fromPosition, toPosition, ignored -> {});
-    }
-
-    private void setupIncidentUpdates(
-        final long fromPosition,
-        final long toPosition,
-        final Consumer<PostImporterQueueEntity> modifier)
-        throws PersistenceException {
-      final var updates =
-          LongStream.rangeClosed(fromPosition, toPosition)
-              .mapToObj(position -> newPendingUpdate().setPosition(position).setKey(position))
-              .peek(modifier)
-              .toList();
-      final var batchRequest = clientAdapter.createBatchRequest();
-      updates.forEach(
-          e ->
-              batchRequest.add(
-                  TargetIndex.mainIndex(postImporterQueueTemplate.getFullQualifiedName()), e));
-      batchRequest.executeWithRefresh();
-    }
-
     @Test
     void shouldUpdateLastIncidentUpdatePositionEvenIfBatchMakesNoUpdates() {
       // given
@@ -468,6 +470,35 @@ abstract class IncidentUpdateRepositoryIT {
         Awaitility.await()
             .until(() -> metadata.getLastIncidentUpdatePosition() == incidentUpdatePosition);
       }
+    }
+  }
+
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
+  @Nested
+  final class GetCountOfPendingIncidentUpdatesTest {
+
+    @Test
+    void shouldGetCountsByPosition() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      setupIncidentUpdates(1, 3);
+
+      // when
+      final var countStart = repository.getCountOfPendingIncidentUpdates(-1L);
+      final var countPos1 = repository.getCountOfPendingIncidentUpdates(1L);
+      final var countPos2 = repository.getCountOfPendingIncidentUpdates(2L);
+      final var countPos3 = repository.getCountOfPendingIncidentUpdates(3L);
+      final var countPos4 = repository.getCountOfPendingIncidentUpdates(4L);
+
+      // then
+      assertThat(countStart).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(3);
+      assertThat(countPos1).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(2);
+      assertThat(countPos2).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(1);
+      assertThat(countPos3).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(0);
+      assertThat(countPos4).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(0);
     }
   }
 
@@ -716,7 +747,8 @@ abstract class IncidentUpdateRepositoryIT {
       final var bulk = new IncidentBulkUpdate();
 
       // when
-      bulk.incidentRequests().add(new DocumentUpdate("2", "doesn't-exist", Map.of(), "3"));
+      bulk.incidentRequests()
+          .add(IncidentUpdate.id("2").index("doesn't-exist").state(IncidentState.ACTIVE).build());
       final var result = repository.bulkUpdate(bulk);
 
       // then
@@ -749,18 +781,16 @@ abstract class IncidentUpdateRepositoryIT {
       // when
       bulk.incidentRequests()
           .add(
-              new DocumentUpdate(
-                  "1",
-                  incidentTemplate.getFullQualifiedName(),
-                  Map.of(IncidentTemplate.STATE, IncidentState.ACTIVE),
-                  "1"));
+              IncidentUpdate.id("1")
+                  .index(incidentTemplate.getFullQualifiedName())
+                  .state(IncidentState.ACTIVE)
+                  .build());
       bulk.incidentRequests()
           .add(
-              new DocumentUpdate(
-                  "2",
-                  incidentTemplate.getFullQualifiedName(),
-                  Map.of(IncidentTemplate.STATE, IncidentState.RESOLVED),
-                  "1"));
+              IncidentUpdate.id("2")
+                  .index(incidentTemplate.getFullQualifiedName())
+                  .state(IncidentState.RESOLVED)
+                  .build());
       final var result = repository.bulkUpdate(bulk);
 
       // then
@@ -782,7 +812,7 @@ abstract class IncidentUpdateRepositoryIT {
     void shouldBulkUpdateListView() throws PersistenceException, IOException {
       // given
       final var repository = createRepository();
-      final var bulk = new IncidentBulkUpdate();
+      final var bulk = new NonIncidentBulkUpdate();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
           TargetIndex.mainIndex(listViewTemplate.getFullQualifiedName()),
@@ -797,22 +827,25 @@ abstract class IncidentUpdateRepositoryIT {
       // when
       bulk.listViewRequests()
           .add(
-              new DocumentUpdate(
-                  "1",
-                  listViewTemplate.getFullQualifiedName(),
-                  Map.of(ListViewTemplate.INCIDENT, true),
-                  "1"));
+              ListViewInstanceUpdate.id("1")
+                  .index(listViewTemplate.getFullQualifiedName())
+                  .routing("1")
+                  .hasIncident(true)
+                  .build());
       bulk.listViewRequests()
           .add(
-              new DocumentUpdate(
-                  "2",
-                  listViewTemplate.getFullQualifiedName(),
-                  Map.of(ListViewTemplate.INCIDENT, false),
-                  "2"));
+              ListViewInstanceUpdate.id("2")
+                  .index(listViewTemplate.getFullQualifiedName())
+                  .routing("2")
+                  .hasIncident(false)
+                  .build());
       final var result = repository.bulkUpdate(bulk);
 
       // then
       assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+
+      refresh(listViewTemplate.getFullQualifiedName());
+
       final var processInstances =
           search(
               listViewTemplate.getFullQualifiedName(),
@@ -831,7 +864,7 @@ abstract class IncidentUpdateRepositoryIT {
     void shouldBulkUpdateFlowNodeInstances() throws PersistenceException, IOException {
       // given
       final var repository = createRepository();
-      final var bulk = new IncidentBulkUpdate();
+      final var bulk = new NonIncidentBulkUpdate();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
           TargetIndex.mainIndex(flowNodeInstanceTemplate.getFullQualifiedName()),
@@ -846,22 +879,23 @@ abstract class IncidentUpdateRepositoryIT {
       // when
       bulk.flowNodeInstanceRequests()
           .add(
-              new DocumentUpdate(
-                  "1",
-                  flowNodeInstanceTemplate.getFullQualifiedName(),
-                  Map.of(FlowNodeInstanceTemplate.INCIDENT, true),
-                  "1"));
+              FlowNodeInstanceUpdate.id("1")
+                  .index(flowNodeInstanceTemplate.getFullQualifiedName())
+                  .hasIncident(true)
+                  .build());
       bulk.flowNodeInstanceRequests()
           .add(
-              new DocumentUpdate(
-                  "2",
-                  flowNodeInstanceTemplate.getFullQualifiedName(),
-                  Map.of(FlowNodeInstanceTemplate.INCIDENT, false),
-                  "2"));
+              FlowNodeInstanceUpdate.id("2")
+                  .index(flowNodeInstanceTemplate.getFullQualifiedName())
+                  .hasIncident(false)
+                  .build());
       final var result = repository.bulkUpdate(bulk);
 
       // then
       assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+
+      refresh(flowNodeInstanceTemplate.getFullQualifiedName());
+
       final var flowNodes =
           search(
               flowNodeInstanceTemplate.getFullQualifiedName(),
@@ -962,6 +996,11 @@ abstract class IncidentUpdateRepositoryIT {
         @Override
         public String getIndexName() {
           return getFullQualifiedName() + "alias";
+        }
+
+        @Override
+        public String getComponentName() {
+          return source.getComponentName();
         }
 
         @Override

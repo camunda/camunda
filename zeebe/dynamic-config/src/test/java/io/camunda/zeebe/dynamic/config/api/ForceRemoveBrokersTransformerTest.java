@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
-import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
@@ -16,12 +15,13 @@ import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 final class ForceRemoveBrokersTransformerTest {
 
+  private static final String GROUP_NAME = "temp";
   private final MemberId id0 = MemberId.from("0");
   private final MemberId id1 = MemberId.from("1");
   private final MemberId id2 = MemberId.from("2");
@@ -40,25 +41,54 @@ final class ForceRemoveBrokersTransformerTest {
   @Test
   void shouldForceRemoveBrokers() {
     // given
-    final ClusterConfiguration currentTopology =
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .addMember(id2, MemberState.initializeAsActive(Map.of()))
-            .addMember(id3, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
-            .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
-            .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
+    final var currentTopology =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration
+                        .addMember(id0, BrokerState.initializeAsActive())
+                        .addMember(id1, BrokerState.initializeAsActive())
+                        .addMember(id2, BrokerState.initializeAsActive())
+                        .addMember(id3, BrokerState.initializeAsActive()))
+            .initPartitionGroup(GROUP_NAME)
+            .updatePartitionGroupConfig(
+                GROUP_NAME,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .addMember(
+                            id0,
+                            BrokerPartitionState.initialize(
+                                Map.of(1, PartitionState.active(1, partitionConfig))))
+                        .addMember(
+                            id1,
+                            BrokerPartitionState.initialize(
+                                Map.of(1, PartitionState.active(2, partitionConfig))))
+                        .addMember(
+                            id2,
+                            BrokerPartitionState.initialize(
+                                Map.of(2, PartitionState.active(1, partitionConfig))))
+                        .addMember(
+                            id3,
+                            BrokerPartitionState.initialize(
+                                Map.of(2, PartitionState.active(2, partitionConfig))))
+                        .setRoutingState(RoutingState.initializeWithPartitionCount(2)));
 
     // when
     final var patchRequest = new ForceRemoveBrokersRequest(Set.of(id1, id3), false);
 
     // remove members 1 and 3
     final var expectedTopology =
-        currentTopology.updateMember(id1, ignore -> null).updateMember(id3, ignore -> null);
+        currentTopology
+            .updateGlobalConfiguration(
+                globalConfiguration -> globalConfiguration.updateMember(id1, ignored -> null))
+            .updatePartitionGroupConfig(
+                GROUP_NAME,
+                partitionGroupConfiguration ->
+                    partitionGroupConfiguration
+                        .updateMember(id1, ignored -> null)
+                        .updateMember(id3, ignored -> null));
     final var expectedDistribution =
-        ConfigurationUtil.getPartitionDistributionFrom(expectedTopology, "temp");
+        ConfigurationUtil.getPartitionDistributionFrom(expectedTopology, GROUP_NAME);
 
     // then
     applyRequestAndVerifyResultingTopology(
@@ -74,13 +104,25 @@ final class ForceRemoveBrokersTransformerTest {
     // given
     final var configuration =
         withMirroredTenant(
-            ClusterConfiguration.init()
-                .addMember(id0, MemberState.initializeAsActive(Map.of()))
-                .addMember(id1, MemberState.initializeAsActive(Map.of()))
-                .updateMember(
-                    id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-                .updateMember(
-                    id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig))));
+            CurrentClusterConfiguration.init()
+                .updateGlobalConfiguration(
+                    globalConfiguration ->
+                        globalConfiguration
+                            .addMember(id0, BrokerState.initializeAsActive())
+                            .addMember(id1, BrokerState.initializeAsActive()))
+                .initPartitionGroup(GROUP_NAME)
+                .updatePartitionGroupConfig(
+                    GROUP_NAME,
+                    partitionGroupConfiguration ->
+                        partitionGroupConfiguration
+                            .addMember(
+                                id0,
+                                BrokerPartitionState.initialize(
+                                    Map.of(1, PartitionState.active(1, partitionConfig))))
+                            .addMember(
+                                id1,
+                                BrokerPartitionState.initialize(
+                                    Map.of(1, PartitionState.active(2, partitionConfig))))));
 
     // when — broker 1 is gone
     final var phases =
@@ -101,30 +143,31 @@ final class ForceRemoveBrokersTransformerTest {
       final int partitionCount,
       final Set<MemberId> expectedMembers,
       final ForceRemoveBrokersRequest patchRequest,
-      final ClusterConfiguration oldClusterTopology,
+      final CurrentClusterConfiguration oldClusterTopology,
       final Set<PartitionMetadata> expectedNewDistribution) {
 
     // when
-    final var result =
-        plannedOperations(
-            new ForceRemoveBrokersRequestTransformer(patchRequest.membersToRemove(), id0),
-            oldClusterTopology);
-    assertThat(result).isRight();
-    final var operations = result.get();
+    final var phasesResult =
+        new ForceRemoveBrokersRequestTransformer(patchRequest.membersToRemove(), id0)
+            .phases(oldClusterTopology);
+    assertThat(phasesResult).isRight();
+    final var phases = phasesResult.get();
+    final var operations = TestChangePlan.flatten(phases);
 
-    // apply operations to generate new topology
-    final ClusterConfiguration newTopology =
-        TestTopologyChangeSimulator.apply(oldClusterTopology, operations);
+    // apply phases to generate new topology
+    final var newTopology = TestTopologyChangeSimulator.apply(oldClusterTopology, phases);
 
     // then
-    final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
+    final var newDistribution =
+        ConfigurationUtil.getPartitionDistributionFrom(newTopology, GROUP_NAME);
     Assertions.assertThat(newDistribution)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(expectedNewDistribution);
-    Assertions.assertThat(newTopology.members().keySet())
+    Assertions.assertThat(newTopology.getMembers())
         .describedAs("Expected cluster members")
         .containsExactlyInAnyOrderElementsOf(expectedMembers);
-    Assertions.assertThat(newTopology.partitionCount()).isEqualTo(partitionCount);
+    Assertions.assertThat(newTopology.partitionGroup(GROUP_NAME).partitionCount())
+        .isEqualTo(partitionCount);
   }
 }

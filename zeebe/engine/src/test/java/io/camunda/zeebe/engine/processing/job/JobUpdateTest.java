@@ -268,8 +268,8 @@ public class JobUpdateTest {
     final Record<JobBatchRecordValue> batch =
         ENGINE.jobs().withType(jobType).withLease().activate();
     final long jobKey = batch.getValue().getJobKeys().get(0);
-    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("job was leased").isNotEmpty();
 
     // when
     final Record<JobRecordValue> updated =
@@ -293,8 +293,8 @@ public class JobUpdateTest {
     final Record<JobBatchRecordValue> batch =
         ENGINE.jobs().withType(jobType).withLease().activate();
     final long jobKey = batch.getValue().getJobKeys().get(0);
-    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("job was leased").isNotEmpty();
 
     // when
     final Record<JobRecordValue> rejection =
@@ -303,7 +303,7 @@ public class JobUpdateTest {
             .withKey(jobKey)
             .withTimeout(Duration.ofMinutes(5).toMillis())
             .withChangeset(Set.of("timeout"))
-            .withLeaseToken("stale-lease-token")
+            .withJobLeaseToken("stale-lease-token")
             .expectRejection()
             .update();
 
@@ -312,7 +312,7 @@ public class JobUpdateTest {
     assertThat(rejection.getRejectionReason())
         .describedAs("mismatch rejection explains the lease no longer matches")
         .contains("does not match")
-        .doesNotContain(leaseToken);
+        .doesNotContain(jobLeaseToken);
   }
 
   @Test
@@ -322,8 +322,8 @@ public class JobUpdateTest {
     final Record<JobBatchRecordValue> batch =
         ENGINE.jobs().withType(jobType).withLease().activate();
     final long jobKey = batch.getValue().getJobKeys().get(0);
-    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("job was leased").isNotEmpty();
 
     // when
     final Record<JobRecordValue> updated =
@@ -343,8 +343,8 @@ public class JobUpdateTest {
     final Record<JobBatchRecordValue> batch =
         ENGINE.jobs().withType(jobType).withLease().activate();
     final long jobKey = batch.getValue().getJobKeys().get(0);
-    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("job was leased").isNotEmpty();
 
     // when
     final Record<JobRecordValue> rejection =
@@ -353,7 +353,7 @@ public class JobUpdateTest {
             .withKey(jobKey)
             .withPriority(10)
             .withChangeset(Set.of("priority"))
-            .withLeaseToken("stale-lease-token")
+            .withJobLeaseToken("stale-lease-token")
             .expectRejection()
             .update();
 
@@ -362,7 +362,7 @@ public class JobUpdateTest {
     assertThat(rejection.getRejectionReason())
         .describedAs("mismatch rejection explains the lease no longer matches")
         .contains("does not match")
-        .doesNotContain(leaseToken);
+        .doesNotContain(jobLeaseToken);
   }
 
   @Test

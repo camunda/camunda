@@ -25,7 +25,6 @@ Follow the steps below to get started and run the tests locally.
   - [CI Test Results](#ci-test-results)
 - [Contributing](#contributing)
   - [Project Board](#project-board)
-  - [TestRail Integration](#testrail-integration)
   - [How to Request a New Test Case](#how-to-request-a-new-test-case)
 
 ---
@@ -228,14 +227,10 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ### Automated Nightly Test Runs
 
-- `c8-orchestration-cluster-e2e-tests-nightly.yml`: Runs nightly across all monorepo versions
-  Nightly tests ensure continuous stability
-
-- All nightly test runs can be accessed from [C8 Orchestration Cluster E2E Tests Nightly](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)
-
-- Results posted to Slack channel `#c8-orchestration-cluster-e2e-test-results` with TestRail links
-
-- Failures are reviewed by the `qa-automated-release-manager`
+- `c8-orchestration-cluster-nightly-<version>-<type>.yml`: Runs nightly for `main` and each supported `stable/*` branch, as UI (`e2e`) and API (`api-es`, `api-rdbms`) runs
+- Results posted to Slack channel `#c8-orchestration-cluster-e2e-test-results`
+- Failures are triaged every weekday by `C8 Orchestration Cluster Nightly Triage`, which dispatches a fix agent per failing version
+- See the [nightly runbook](docs/nightly-runbook.md) for the schedule, test ownership, and how to fix, skip, or escalate a failure
 
 ---
 
@@ -243,7 +238,6 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 - Results available under the **Actions** tab for each workflow run
 - View logs, traces, and download artifacts
-- Test runs are published to [TestRail](https://camunda.testrail.com/index.php?/runs/overview/33) for visibility
 
 ---
 
@@ -272,14 +266,6 @@ We track progress via the [C8 Orchestration Cluster E2E Tests Project Board](htt
 - View test case statuses
 - See who's assigned to what
 - Link your PR to the board if needed
-
----
-
-### TestRail Integration
-
-If a PR modifies any test or page file, link the corresponding [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description.
-
-Need TestRail access? Contact the QA team.
 
 ---
 

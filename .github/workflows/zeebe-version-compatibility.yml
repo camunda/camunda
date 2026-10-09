@@ -20,8 +20,50 @@ env:
   TEST_OWNER: '@camunda/core-features'
 
 jobs:
+  prepare-report:
+    name: Prepare Previous Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download previous report
+        # Resolved once here and shared with all shards: the shards assign pending version pairs
+        # based on this report, so they must all see the exact same one or pairs get skipped or
+        # run twice. Looked up by artifact name (newest first) rather than by listing workflow
+        # runs, as the runs listing has returned stale or ancient runs, leaving shards without
+        # a report and re-running the whole matrix.
+        run: |
+          artifact_id=$(gh api '/repos/${{ github.repository }}/actions/artifacts?name=zeebe-version-compatibility&per_page=100' \
+            | jq -r '[.artifacts[] | select(.expired | not) | select(.workflow_run.head_branch == "main")]
+              | sort_by(.created_at) | reverse | .[0].id // empty')
+          if [ -z "$artifact_id" ]; then
+            echo "No previous report found, starting with an empty report"
+            touch zeebe-version-compatibility
+            exit 0
+          fi
+          echo "Using report artifact $artifact_id"
+          gh api "/repos/${{ github.repository }}/actions/artifacts/${artifact_id}/zip" > report.zip
+          unzip -o report.zip zeebe-version-compatibility
+          wc -l zeebe-version-compatibility
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload base report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: previous-zeebe-version-compatibility
+          path: ${{ github.workspace }}/zeebe-version-compatibility
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
   released-versions:
     name: Released Versions
+    needs: prepare-report
     runs-on: ubuntu-latest
     timeout-minutes: 330
     strategy:
@@ -30,42 +72,21 @@ jobs:
         shards: [ 1, 2, 3, 4, 5, 6] # Values are not used, we just need an array of the right length
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Generate cache key with current hour
-        id: cache-key
-        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
-      - name: Cache Zeebe versions (hourly refresh)
+      - name: Cache Zeebe versions (scoped to this run)
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .cache/camunda
-          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
-          restore-keys: |
-            zeebe-versions-
-      - name: Find previous report
-        id: get-last-run-id
-        run: |
-          run_ids=$(gh api '/repos/${{ github.repository }}/actions/workflows/zeebe-version-compatibility.yml/runs?branch=main' \
-            | jq -r '[.workflow_runs[] | select(.status=="completed" and .conclusion!="cancelled").id] | .[:10] | .[]')
-          for run_id in $run_ids; do
-            has_artifact=$(gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/artifacts" \
-              | jq '[.artifacts[] | select(.name=="zeebe-version-compatibility")] | length')
-            if [ "$has_artifact" -gt 0 ]; then
-              echo "Found report artifact in run $run_id"
-              echo "last_run_id=$run_id" >> "$GITHUB_OUTPUT"
-              break
-            fi
-            echo "Run $run_id has no report artifact, trying next..."
-          done
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Download previous report
-        if: steps.get-last-run-id.outputs.last_run_id != ''
+          # Scoped to this run+attempt, with no restore-keys fallback: this only shares one
+          # run's freshly-verified release data across its shards. A key/fallback that could
+          # match another run (an hour, a day, ...) would let a cache created before this
+          # file's per-tag release check went in keep bypassing that check indefinitely, since
+          # discoverVersions() only fetches and re-verifies when the local cache file is absent.
+          key: zeebe-versions-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Download report shared by prepare-report
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        continue-on-error: true
         with:
-          name: zeebe-version-compatibility
+          name: previous-zeebe-version-compatibility
           path: ${{ github.workspace }}
-          run-id: ${{ steps.get-last-run-id.outputs.last_run_id }}
-          github-token: ${{ github.token }}
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -114,16 +135,13 @@ jobs:
     if: always()
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Generate cache key with current hour
-        id: cache-key
-        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
-      - name: Cache Zeebe versions (hourly refresh)
+      - name: Cache Zeebe versions (scoped to this run)
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .cache/camunda
-          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
-          restore-keys: |
-            zeebe-versions-
+          # See the "Released Versions" job's cache step for why this is scoped to this
+          # run+attempt with no restore-keys fallback.
+          key: zeebe-versions-${{ github.run_id }}-${{ github.run_attempt }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true

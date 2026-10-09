@@ -71,12 +71,12 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
-  public CreateAgentInstanceCommandStep4 jobLease(final String jobLease) {
-    ArgumentUtil.ensureNotNull("jobLease", jobLease);
-    if (jobLease.trim().isEmpty()) {
-      throw new IllegalArgumentException("jobLease must not be blank");
+  public CreateAgentInstanceCommandStep4 jobLeaseToken(final String jobLeaseToken) {
+    ArgumentUtil.ensureNotNull("jobLeaseToken", jobLeaseToken);
+    if (jobLeaseToken.trim().isEmpty()) {
+      throw new IllegalArgumentException("jobLeaseToken must not be blank");
     }
-    request.jobLease(jobLease);
+    request.jobLeaseToken(jobLeaseToken);
     return this;
   }
 

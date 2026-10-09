@@ -28,9 +28,11 @@ import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.micrometer.core.instrument.Timer;
@@ -76,7 +78,14 @@ final class SequentialRebalanceRunnerTest {
       TRANSFER_WATCHDOG_TIMEOUT.toMillis()
           / SequentialRebalanceRunner.LEADERSHIP_OBSERVATION_INTERVAL.toMillis();
 
+  private static final long OBSERVATIONS_UNTIL_ELECTION_TIMEOUT = 3;
+
+  private static final Duration ELECTION_TIMEOUT =
+      SequentialRebalanceRunner.LEADERSHIP_OBSERVATION_INTERVAL.multipliedBy(
+          (int) OBSERVATIONS_UNTIL_ELECTION_TIMEOUT);
+
   private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+  private final ClusterRebalanceMetrics metrics = new ClusterRebalanceMetrics(registry);
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
   private final TestConcurrencyControl executor = new TestConcurrencyControl(true);
   private final Map<String, Map<Integer, MemberId>> leaders = new HashMap<>();
@@ -174,6 +183,90 @@ final class SequentialRebalanceRunnerTest {
 
     // then
     assertThat(groupLookups).containsEntry(GROUP, 1);
+  }
+
+  @Test
+  void shouldNotPlanThePartitionsOfADisabledPhysicalTenant() {
+    // given
+    leaders.computeIfAbsent("tenant-a", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration =
+        configurationOf(
+                Map.of(
+                    "tenant-a",
+                        Map.of(MEMBER_1, Map.of(1, active(1)), MEMBER_2, Map.of(1, active(2))),
+                    "tenant-b",
+                        Map.of(MEMBER_1, Map.of(1, active(2)), MEMBER_2, Map.of(1, active(1)))))
+            .updatePartitionGroupConfig("tenant-b", PartitionGroupConfiguration::disable);
+
+    // when
+    final var rebalance = planDryRun(configuration);
+
+    // then
+    assertThat(rebalance.partitions())
+        .containsExactly(PartitionRebalance.pending("tenant-a", 1, MEMBER_1, MEMBER_2));
+  }
+
+  @Test
+  void shouldNotLookUpTheTopologyOfADisabledPhysicalTenant() {
+    // given
+    unavailableGroups.add("tenant-b");
+    leaders.computeIfAbsent("tenant-a", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration =
+        configurationOf(
+                Map.of(
+                    "tenant-a", Map.of(MEMBER_1, Map.of(1, active(1))),
+                    "tenant-b", Map.of(MEMBER_1, Map.of(1, active(1)))))
+            .updatePartitionGroupConfig("tenant-b", PartitionGroupConfiguration::disable);
+
+    // when
+    final var rebalance = planDryRun(configuration);
+
+    // then
+    assertThat(rebalance.partitions())
+        .map(PartitionRebalance::physicalTenantId)
+        .containsExactly("tenant-a");
+  }
+
+  @Test
+  void shouldNotPlanThePartitionsOfARecoveringPhysicalTenant() {
+    // given
+    leaders.computeIfAbsent("tenant-a", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration =
+        configurationOf(
+                Map.of(
+                    "tenant-a",
+                        Map.of(MEMBER_1, Map.of(1, active(1)), MEMBER_2, Map.of(1, active(2))),
+                    "tenant-b",
+                        Map.of(MEMBER_1, Map.of(1, active(2)), MEMBER_2, Map.of(1, active(1)))))
+            .updatePartitionGroupConfig("tenant-b", SequentialRebalanceRunnerTest::recovering);
+
+    // when
+    final var rebalance = planDryRun(configuration);
+
+    // then
+    assertThat(rebalance.partitions())
+        .containsExactly(PartitionRebalance.pending("tenant-a", 1, MEMBER_1, MEMBER_2));
+  }
+
+  @Test
+  void shouldNotLookUpTheTopologyOfARecoveringPhysicalTenant() {
+    // given
+    unavailableGroups.add("tenant-b");
+    leaders.computeIfAbsent("tenant-a", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration =
+        configurationOf(
+                Map.of(
+                    "tenant-a", Map.of(MEMBER_1, Map.of(1, active(1))),
+                    "tenant-b", Map.of(MEMBER_1, Map.of(1, active(1)))))
+            .updatePartitionGroupConfig("tenant-b", SequentialRebalanceRunnerTest::recovering);
+
+    // when
+    final var rebalance = planDryRun(configuration);
+
+    // then
+    assertThat(rebalance.partitions())
+        .map(PartitionRebalance::physicalTenantId)
+        .containsExactly("tenant-a");
   }
 
   @Test
@@ -515,8 +608,174 @@ final class SequentialRebalanceRunnerTest {
     transfers.report(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
 
     // then
+    assertThat(rebalance.partition(0).progress())
+        .isEqualTo(PartitionRebalanceProgress.TRANSFERRING);
+
+    // when
+    for (long observation = 0; observation < OBSERVATIONS_UNTIL_ELECTION_TIMEOUT; observation++) {
+      executor.runAll();
+    }
+
+    // then
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
     assertThat(rebalance.partition(0).outcome())
         .isEqualTo(PartitionRebalanceOutcome.TIMEOUT_NOW_EXHAUSTED);
+  }
+
+  @Test
+  void
+      shouldRecordTransferredWhenTheDesiredLeaderAppearsWithinTheElectionTimeoutAfterTimeoutNowExhaustion() {
+    // given
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var rebalance = start(groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2)));
+    transfers.accept();
+    transfers.report(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
+
+    // when
+    leaders.get(GROUP).put(1, MEMBER_2);
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(rebalance.partition(0).outcome()).isEqualTo(PartitionRebalanceOutcome.TRANSFERRED);
+    assertThat(rebalance.partition(0).currentLeader()).isEqualTo(MEMBER_2);
+  }
+
+  @Test
+  void shouldNotLetAnAbandonedRunsStaleLateTransferCallbackClearANewerRunsConfirmation() {
+    // given
+    final var runner = newRunner();
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var firstRun =
+        new RebalanceRun(
+            7,
+            RebalanceOverrides.none(),
+            false,
+            groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2)),
+            Instant.EPOCH);
+    runner.run(firstRun);
+    transfers.report(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
+    firstRun.abandon();
+
+    // when
+    final var secondRun =
+        new RebalanceRun(
+            9,
+            RebalanceOverrides.none(),
+            false,
+            groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_3, 2)),
+            Instant.EPOCH);
+    runner.run(secondRun);
+    transfers.report(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
+    for (long observation = 0; observation < OBSERVATIONS_UNTIL_ELECTION_TIMEOUT; observation++) {
+      executor.runAll();
+    }
+
+    // then
+    assertThat(secondRun.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(secondRun.partition(0).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.TIMEOUT_NOW_EXHAUSTED);
+    assertThat(firstRun.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.TRANSFERRING);
+  }
+
+  @Test
+  void shouldNotOvershootAnElectionTimeoutThatIsNotAMultipleOfTheObservationInterval() {
+    // given
+    final var control = new DelayCapturingConcurrencyControl();
+    final var electionTimeout = Duration.ofMillis(2500);
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var rebalance =
+        new RebalanceRun(
+            7,
+            RebalanceOverrides.none(),
+            false,
+            groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2)),
+            Instant.EPOCH);
+    runnerWithElectionTimeout(control, electionTimeout).run(rebalance);
+    control.scheduledDelaysMs.clear();
+
+    // when
+    transfers.report(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
+    for (int observation = 0; observation < 3; observation++) {
+      control.runAll();
+    }
+
+    // then
+    assertThat(control.scheduledDelaysMs).containsExactly(1000L, 1000L, 500L);
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(rebalance.partition(0).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.TIMEOUT_NOW_EXHAUSTED);
+  }
+
+  @Test
+  void shouldScheduleOnlyTheRemainingTimeoutWhenItIsShorterThanTheObservationInterval() {
+    // given
+    final var control = new DelayCapturingConcurrencyControl();
+    final var electionTimeout = Duration.ofMillis(300);
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var rebalance =
+        new RebalanceRun(
+            7,
+            RebalanceOverrides.none(),
+            false,
+            groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2)),
+            Instant.EPOCH);
+    runnerWithElectionTimeout(control, electionTimeout).run(rebalance);
+    control.scheduledDelaysMs.clear();
+
+    // when
+    transfers.report(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
+    control.runAll();
+
+    // then
+    assertThat(control.scheduledDelaysMs).containsExactly(300L);
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(rebalance.partition(0).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.TIMEOUT_NOW_EXHAUSTED);
+  }
+
+  @Test
+  void shouldCompleteWithPhysicalTenantDisabledDuringLateTransferConfirmation() {
+    // given
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    run(rebalance);
+    transfers.report(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
+
+    // when
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(GROUP, PartitionGroupConfiguration::disable));
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(rebalance.partition(0).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED);
+  }
+
+  @Test
+  void shouldCompleteWithLeaderChangedWhenAThirdMemberLeadsDuringLateTransferConfirmation() {
+    // given
+    final var groupLeaders = leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>());
+    groupLeaders.put(1, MEMBER_1);
+    groupLeaders.put(2, MEMBER_1);
+    final var rebalance = start(twoPartitionsConfiguration());
+    transfers.report(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
+
+    // when
+    groupLeaders.put(1, MEMBER_3);
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(rebalance.partition(0).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.LEADER_CHANGED);
+    assertThat(rebalance.partition(0).currentLeader()).isEqualTo(MEMBER_3);
+    assertThat(rebalance.partition(1).progress())
+        .isEqualTo(PartitionRebalanceProgress.TRANSFERRING);
+    assertThat(transfers.lastInitiated().partitionId()).isEqualTo(2);
   }
 
   @Test
@@ -600,6 +859,189 @@ final class SequentialRebalanceRunnerTest {
     assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
     assertThat(rebalance.partition(0).outcome()).isEqualTo(PartitionRebalanceOutcome.CANCELLED);
     assertThat(completion.isDone()).isTrue();
+  }
+
+  @Test
+  void shouldStopWaitingForALeaderOnceThePhysicalTenantIsDisabled() {
+    // given
+    final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    final var completion = run(rebalance);
+
+    // when
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(GROUP, PartitionGroupConfiguration::disable));
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(rebalance.partition(0).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED);
+    assertThat(transfers.initiated).isEmpty();
+    assertThat(completion.isDone()).isTrue();
+  }
+
+  @Test
+  void shouldLeaveAlonePartitionsOfAPhysicalTenantDisabledBeforeTheRebalanceReachesThem() {
+    // given
+    leaders.computeIfAbsent("tenant-a", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    leaders.computeIfAbsent("tenant-b", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration =
+        configurationOf(
+            Map.of(
+                "tenant-a", Map.of(MEMBER_1, Map.of(1, active(1)), MEMBER_2, Map.of(1, active(2))),
+                "tenant-b",
+                    Map.of(MEMBER_1, Map.of(1, active(1)), MEMBER_2, Map.of(1, active(2)))));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    run(rebalance);
+
+    // when
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig("tenant-b", PartitionGroupConfiguration::disable));
+    transfers.accept();
+    transfers.report(LeadershipTransferResult.TRANSFERRED);
+
+    // then
+    assertThat(rebalance.partition(1).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED);
+    assertThat(transfers.initiated)
+        .map(initiated -> initiated.physicalTenantId())
+        .containsExactly("tenant-a");
+  }
+
+  @Test
+  void shouldStopWatchingATransferOnceThePhysicalTenantIsDisabled() {
+    // given
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    final var completion = run(rebalance);
+    transfers.accept();
+
+    // when
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(GROUP, PartitionGroupConfiguration::disable));
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED);
+    assertThat(completion.isDone()).isTrue();
+  }
+
+  @Test
+  void shouldStopWaitingForALeaderOnceThePhysicalTenantIsRecovering() {
+    // given
+    final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    final var completion = run(rebalance);
+
+    // when
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(GROUP, SequentialRebalanceRunnerTest::recovering));
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(rebalance.partition(0).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.PHYSICAL_TENANT_RECOVERING);
+    assertThat(transfers.initiated).isEmpty();
+    assertThat(completion.isDone()).isTrue();
+  }
+
+  @Test
+  void shouldLeaveAlonePartitionsOfAPhysicalTenantEnteringRecoveryBeforeTheRebalanceReachesThem() {
+    // given
+    leaders.computeIfAbsent("tenant-a", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    leaders.computeIfAbsent("tenant-b", ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration =
+        configurationOf(
+            Map.of(
+                "tenant-a", Map.of(MEMBER_1, Map.of(1, active(1)), MEMBER_2, Map.of(1, active(2))),
+                "tenant-b",
+                    Map.of(MEMBER_1, Map.of(1, active(1)), MEMBER_2, Map.of(1, active(2)))));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    run(rebalance);
+
+    // when
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(
+            "tenant-b", SequentialRebalanceRunnerTest::recovering));
+    transfers.accept();
+    transfers.report(LeadershipTransferResult.TRANSFERRED);
+
+    // then
+    assertThat(rebalance.partition(1).outcome())
+        .isEqualTo(PartitionRebalanceOutcome.PHYSICAL_TENANT_RECOVERING);
+    assertThat(transfers.initiated)
+        .map(initiated -> initiated.physicalTenantId())
+        .containsExactly("tenant-a");
+  }
+
+  @Test
+  void shouldPreserveAnInFlightTransferWhenThePhysicalTenantEntersRecovery() {
+    // given
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    run(rebalance);
+    transfers.accept();
+
+    // when
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(GROUP, SequentialRebalanceRunnerTest::recovering));
+    transfers.report(LeadershipTransferResult.TRANSFERRED);
+
+    // then
+    assertThat(rebalance.partition(0).outcome()).isEqualTo(PartitionRebalanceOutcome.TRANSFERRED);
+  }
+
+  @Test
+  void shouldRebalanceAPhysicalTenantThatReturnsToProcessingWhileTheRebalanceRuns() {
+    // given
+    final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    run(rebalance);
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(GROUP, SequentialRebalanceRunnerTest::recovering));
+
+    // when
+    rebalance.observeConfiguration(configuration);
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).progress())
+        .isEqualTo(PartitionRebalanceProgress.TRANSFERRING);
+    assertThat(transfers.lastInitiated().leader()).isEqualTo(MEMBER_1);
+  }
+
+  @Test
+  void shouldRebalanceAPhysicalTenantThatIsEnabledAgainWhileTheRebalanceRuns() {
+    // given
+    final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
+    final var rebalance =
+        new RebalanceRun(7, RebalanceOverrides.none(), false, configuration, Instant.EPOCH);
+    run(rebalance);
+    rebalance.observeConfiguration(
+        configuration.updatePartitionGroupConfig(GROUP, PartitionGroupConfiguration::disable));
+
+    // when
+    rebalance.observeConfiguration(configuration);
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).progress())
+        .isEqualTo(PartitionRebalanceProgress.TRANSFERRING);
+    assertThat(transfers.lastInitiated().leader()).isEqualTo(MEMBER_1);
   }
 
   @Test
@@ -956,10 +1398,25 @@ final class SequentialRebalanceRunnerTest {
         executor,
         partitionLeaders,
         transfers,
-        new ClusterRebalanceMetrics(registry),
+        metrics,
         LEADER_WAIT_TIMEOUT,
         TEST_CONFIGURATION,
-        TEST_HEARTBEAT_INTERVAL);
+        TEST_HEARTBEAT_INTERVAL,
+        ELECTION_TIMEOUT);
+  }
+
+  private SequentialRebalanceRunner runnerWithElectionTimeout(
+      final TestConcurrencyControl control, final Duration electionTimeout) {
+    return new SequentialRebalanceRunner(
+        COORDINATOR,
+        control,
+        partitionLeaders,
+        transfers,
+        metrics,
+        LEADER_WAIT_TIMEOUT,
+        TEST_CONFIGURATION,
+        TEST_HEARTBEAT_INTERVAL,
+        electionTimeout);
   }
 
   private double partitionStateGauge(final int partitionId) {
@@ -1008,15 +1465,24 @@ final class SequentialRebalanceRunnerTest {
             executor,
             partitionLeaders,
             transfers,
-            new ClusterRebalanceMetrics(registry),
+            metrics,
             leaderWaitTimeout,
             TEST_CONFIGURATION,
-            TEST_HEARTBEAT_INTERVAL)
+            TEST_HEARTBEAT_INTERVAL,
+            ELECTION_TIMEOUT)
         .run(rebalance);
   }
 
   private PartitionState active(final int priority) {
     return PartitionState.active(priority, partitionConfig);
+  }
+
+  private static PartitionGroupConfiguration recovering(final PartitionGroupConfiguration group) {
+    var updated = group;
+    for (final var memberId : group.members().keySet()) {
+      updated = updated.updateMember(memberId, member -> member.setMode(Mode.RECOVERING));
+    }
+    return updated;
   }
 
   private CurrentClusterConfiguration groupConfiguration(
@@ -1071,6 +1537,20 @@ final class SequentialRebalanceRunnerTest {
         globalConfiguration,
         groups,
         PhasedChangeState.empty());
+  }
+
+  private static final class DelayCapturingConcurrencyControl extends TestConcurrencyControl {
+    private final List<Long> scheduledDelaysMs = new ArrayList<>();
+
+    DelayCapturingConcurrencyControl() {
+      super(true);
+    }
+
+    @Override
+    public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
+      scheduledDelaysMs.add(delayMs);
+      return super.schedule(delayMs, runnable);
+    }
   }
 
   private static final class RecordingTransfers implements LeadershipTransferProtocol {

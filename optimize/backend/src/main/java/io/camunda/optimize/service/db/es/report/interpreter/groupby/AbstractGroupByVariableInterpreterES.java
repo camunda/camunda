@@ -228,7 +228,7 @@ public abstract class AbstractGroupByVariableInterpreterES<
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final ResponseBody<?> response,
       final ExecutionContext<DATA, PLAN> context) {

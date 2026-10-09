@@ -6,38 +6,68 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useSuspenseQuery} from '@tanstack/react-query';
-import {useNavigate} from '@tanstack/react-router';
+import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
+import {useBlocker, useLocation, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
-import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
+import {Button, Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {queries} from '#/shared/http/queries';
+import {ForbiddenError} from '#/shared/errors';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
-import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
+import {ProcessesLayout, type ProcessesMode} from './ProcessesLayout';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
 import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import {TenantField} from '#/operate/shared/TenantField/TenantField';
-import {RadioButtonChecked, WarningFilled, CheckmarkOutline} from '#/operate/shared/StateIcon/styled';
+import {
+	RadioButtonChecked,
+	WarningFilled,
+	CheckmarkOutline,
+	PauseOutlineFilled,
+} from '#/operate/shared/StateIcon/styled';
 import {IndentedGroup, CanceledIcon} from './styled';
-import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
+import {
+	OptionalFiltersFormGroup,
+	type OptionalFilter,
+	type OptionalFilterValues,
+	type VariableFieldValues,
+} from './OptionalFiltersFormGroup';
 import {DiagramPanel, type ProcessDefinitionSelection} from './DiagramPanel';
+import {InstancesTable} from './InstancesTable';
+import {MigrationView} from './MigrationView';
+import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
+import {getInstanceMigration} from './instanceMigration';
+import {useDiagramXml} from './useDiagramXml';
+import {selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
+import type {BatchModificationScope} from './useBatchModificationStatistics';
+import {setVariableConditions, useVariableConditions} from './VariablesFilter/variableFilterStore';
 
-type FiltersFormValues = OptionalFilterValues & {tenantId?: string};
+type FiltersFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
 
 type Props = {
 	process?: string;
 	version?: number;
 	elementId?: string;
+	incidentErrorHashCode?: number;
 	active: boolean;
 	incidents: boolean;
 	completed: boolean;
 	canceled: boolean;
-} & FiltersFormValues;
+	suspended: boolean;
+	sort?: string;
+} & OptionalFilterValues & {tenantId?: string};
 
 type ProcessItem = {id: string; label: string};
+
+const SESSION_FILTER_FIELDS = new Set(['variableName', 'variableValues']);
+
+// The variable fields follow session storage; re-initialising on their change would discard unsubmitted URL filter edits.
+function areUrlFilterValuesEqual(previous: Record<string, unknown> = {}, next: Record<string, unknown> = {}) {
+	const keys = new Set([...Object.keys(previous), ...Object.keys(next)]);
+	return [...keys].every((key) => SESSION_FILTER_FIELDS.has(key) || previous[key] === next[key]);
+}
 
 const Processes: React.FC<Props> = ({
 	process,
@@ -47,17 +77,20 @@ const Processes: React.FC<Props> = ({
 	incidents,
 	completed,
 	canceled,
+	suspended,
 	tenantId,
 	processInstanceKey,
 	parentProcessInstanceKey,
 	businessId,
 	batchOperationKey,
 	errorMessage,
+	incidentErrorHashCode,
 	hasRetriesLeft,
 	startDateFrom,
 	startDateTo,
 	endDateFrom,
 	endDateTo,
+	sort,
 }) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
@@ -68,7 +101,50 @@ const Processes: React.FC<Props> = ({
 			filter: specificTenantId ? {tenantId: specificTenantId} : undefined,
 		}),
 	);
+	const {
+		data: selectedDefinitions,
+		error: selectedDefinitionsError,
+		isPending: isDefinitionsPending,
+		isFetching: isDefinitionsFetching,
+		isError: isDefinitionsError,
+		refetch: refetchSelectedDefinitions,
+	} = useQuery({
+		...selectedDefinitionsQuery(process ?? '', specificTenantId, {retry: false, requireComplete: true}),
+		enabled: Boolean(process),
+		retry: false,
+	});
+	const isDefinitionsLoading =
+		Boolean(process) && (isDefinitionsPending || (isDefinitionsError && isDefinitionsFetching));
+	const isDefinitionsReady =
+		Boolean(process) && selectedDefinitions !== undefined && !isDefinitionsLoading && !isDefinitionsError;
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+	const instanceMigrationState = useLocation({select: ({state}) => state.operateInstanceMigration});
+	const [migration, setMigration] = useState(() =>
+		ENABLE_PROCESS_MIGRATION ? getInstanceMigration(instanceMigrationState) : null,
+	);
+	const [mode, setMode] = useState<ProcessesMode>(migration === null ? 'list' : 'migration');
+	const [selectedTargetElementId, setSelectedTargetElementId] = useState<string>();
+	const [selectionScope, setSelectionScope] = useState<BatchModificationScope | null>(null);
+	useEffect(() => {
+		if (instanceMigrationState !== undefined) {
+			void navigate({
+				to: '.',
+				search: true,
+				hash: true,
+				state: ({operateInstanceMigration: _, ...state}) => state,
+				replace: true,
+				ignoreBlocker: true,
+			});
+		}
+	}, [instanceMigrationState, navigate]);
+	const blocker = useBlocker({
+		// Like legacy, only a change of page interrupts the mode; search-only changes, such as browser back, pass.
+		shouldBlockFn: ({current, next}) => current.pathname !== next.pathname,
+		withResolver: true,
+		disabled: mode !== 'batch-modification',
+	});
+	const variable = useVariableConditions();
+	const inlineVariableCondition = variable.length === 1 && variable[0]?.operator === 'equals' ? variable[0] : undefined;
 
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
 		() => ({
@@ -99,64 +175,131 @@ const Processes: React.FC<Props> = ({
 
 	const processItems = useMemo<ProcessItem[]>(() => {
 		const seen = new Set<string>();
-		return data.items.reduce<ProcessItem[]>((acc, def) => {
+		const items = data.items.reduce<ProcessItem[]>((acc, def) => {
 			if (!seen.has(def.processDefinitionId)) {
 				seen.add(def.processDefinitionId);
 				acc.push({id: def.processDefinitionId, label: def.name ?? def.processDefinitionId});
 			}
 			return acc;
 		}, []);
-	}, [data]);
+		const selected = isDefinitionsReady
+			? selectedDefinitions?.find(
+					(definition) =>
+						definition.processDefinitionId === process &&
+						(specificTenantId === undefined || definition.tenantId === specificTenantId),
+				)
+			: undefined;
+		if (selected !== undefined && !seen.has(selected.processDefinitionId)) {
+			items.push({id: selected.processDefinitionId, label: selected.name ?? selected.processDefinitionId});
+		}
+		return items;
+	}, [data, isDefinitionsReady, process, selectedDefinitions, specificTenantId]);
 
-	const versionNumbers = useMemo<(number | undefined)[]>(() => {
-		if (!process) {
+	const matchingDefinitions = useMemo(
+		() =>
+			isDefinitionsReady
+				? (selectedDefinitions ?? []).filter(
+						(definition) =>
+							definition.processDefinitionId === process &&
+							(specificTenantId === undefined || definition.tenantId === specificTenantId),
+					)
+				: [],
+		[isDefinitionsReady, process, selectedDefinitions, specificTenantId],
+	);
+
+	const versionNumbers = useMemo<(number | 'all')[]>(() => {
+		if (!isDefinitionsReady || matchingDefinitions.length === 0) {
 			return [];
 		}
-		const versions = data.items
-			.filter((def) => def.processDefinitionId === process)
-			.sort((a, b) => b.version - a.version)
-			.map((def) => def.version);
-		return [undefined, ...versions];
-	}, [data, process]);
+		const versions = [...new Set(matchingDefinitions.map((def) => def.version))].sort((a, b) => b - a);
+		return ['all', ...versions];
+	}, [isDefinitionsReady, matchingDefinitions]);
 
 	const selectedProcess = processItems.find((i) => i.id === process) ?? null;
-	const selectedVersion = version;
+	const selectedVersion = version ?? 'all';
 
 	const processDefinitionSelection = useMemo<ProcessDefinitionSelection>(() => {
-		if (!process) {
+		if (!isDefinitionsReady) {
 			return {kind: 'no-match'};
 		}
 
-		const matches = data.items.filter((def) => def.processDefinitionId === process);
-
+		const definition =
+			version === undefined
+				? matchingDefinitions[0]
+				: matchingDefinitions.find((candidate) => candidate.version === version);
+		if (definition === undefined) {
+			return {kind: 'no-match'};
+		}
+		const tenantCandidates =
+			version === undefined
+				? matchingDefinitions
+				: matchingDefinitions.filter((candidate) => candidate.version === version);
+		if (!specificTenantId && tenantCandidates.some((candidate) => candidate.tenantId !== definition.tenantId)) {
+			return {
+				kind: 'multiple-tenants',
+				definition: {name: definition.name, processDefinitionId: definition.processDefinitionId},
+			};
+		}
 		if (version === undefined) {
-			const first = matches[0];
-			return first === undefined
-				? {kind: 'no-match'}
-				: {kind: 'all-versions', definition: {name: first.name, processDefinitionId: first.processDefinitionId}};
+			return {
+				kind: 'all-versions',
+				definition: {name: definition.name, processDefinitionId: definition.processDefinitionId},
+			};
 		}
 
-		const definition = matches.find((def) => def.version === version);
-		return definition === undefined ? {kind: 'no-match'} : {kind: 'single-version', definition};
-	}, [data, process, version]);
+		return {kind: 'single-version', definition};
+	}, [isDefinitionsReady, matchingDefinitions, specificTenantId, version]);
+	const selectedDefinitionKey =
+		processDefinitionSelection.kind === 'single-version'
+			? processDefinitionSelection.definition.processDefinitionKey
+			: undefined;
+	const {
+		data: diagramData,
+		error: xmlError,
+		isError: isXmlError,
+		refetch: refetchDiagramXml,
+	} = useDiagramXml(selectedDefinitionKey);
+	const elementItems = useMemo(
+		() =>
+			(diagramData?.selectableElements ?? [])
+				.map((id) => ({id, label: diagramData?.businessObjects[id]?.name ?? id}))
+				.sort((a, b) => {
+					const label = a.label.toUpperCase();
+					const nextLabel = b.label.toUpperCase();
+					return label < nextLabel ? -1 : label > nextLabel ? 1 : 0;
+				}),
+		[diagramData],
+	);
+	const selectedElement = useMemo(
+		() => elementItems.find((item) => item.id === elementId) ?? (elementId ? {id: elementId, label: elementId} : null),
+		[elementItems, elementId],
+	);
+	const isElementDisabled =
+		!isDefinitionsReady || selectedDefinitionKey === undefined || isXmlError || elementItems.length === 0;
+	const notChangeableTitle = mode === 'list' ? undefined : t('operate.processes.batchModification.notChangeable');
 
-	const runningChecked = active && incidents;
-	const runningIndeterminate = !runningChecked && (active || incidents);
+	const runningChecked = active && incidents && suspended;
+	const runningIndeterminate = !runningChecked && (active || incidents || suspended);
 	const finishedChecked = completed && canceled;
 	const finishedIndeterminate = !finishedChecked && (completed || canceled);
 
 	const hasOptionalFilters =
-		tenantId !== undefined || Object.values(optionalFilterValues).some((value) => value !== undefined);
+		tenantId !== undefined ||
+		incidentErrorHashCode !== undefined ||
+		Object.values(optionalFilterValues).some((value) => value !== undefined);
+	const hasVariableFilter = variable.length > 0;
 
 	const isResetDisabled =
 		active &&
 		incidents &&
+		suspended &&
 		!completed &&
 		!canceled &&
 		!process &&
 		version === undefined &&
 		elementId === undefined &&
 		!hasOptionalFilters &&
+		!hasVariableFilter &&
 		visibleFilters.length === 0;
 
 	const handleFiltersSubmit = (values: FiltersFormValues) => {
@@ -173,6 +316,7 @@ const Processes: React.FC<Props> = ({
 				businessId: values.businessId || undefined,
 				batchOperationKey: values.batchOperationKey || undefined,
 				errorMessage: values.errorMessage || undefined,
+				incidentErrorHashCode: values.errorMessage === prev.errorMessage ? prev.incidentErrorHashCode : undefined,
 				hasRetriesLeft: values.hasRetriesLeft || undefined,
 				startDateFrom: values.startDateFrom || undefined,
 				startDateTo: values.startDateTo || undefined,
@@ -182,18 +326,45 @@ const Processes: React.FC<Props> = ({
 		});
 	};
 
+	if (mode === 'migration' && migration !== null) {
+		return (
+			<MigrationView
+				source={migration.source}
+				scope={migration.scope}
+				onExit={() => {
+					setMigration(null);
+					setMode('list');
+				}}
+			/>
+		);
+	}
+
 	return (
-		<InstancesList
+		<ProcessesLayout
 			type="process"
+			frame={{
+				isVisible: mode === 'batch-modification',
+				headerTitle: t('operate.processes.batchModification.frameTitle'),
+			}}
 			leftPanel={
-				<Form<FiltersFormValues> onSubmit={handleFiltersSubmit} initialValues={{tenantId, ...optionalFilterValues}}>
+				<Form<FiltersFormValues>
+					onSubmit={handleFiltersSubmit}
+					initialValuesEqual={areUrlFilterValuesEqual}
+					initialValues={{
+						tenantId,
+						...optionalFilterValues,
+						variableName: inlineVariableCondition?.name,
+						variableValues: inlineVariableCondition?.value,
+					}}
+				>
 					{({handleSubmit, form}) => (
 						<StyledForm onSubmit={handleSubmit}>
 							<AutoSubmit fieldsToSkipTimeout={['tenantId', 'hasRetriesLeft']} />
 							<FiltersPanel
 								localStorageKey="isProcessesFiltersCollapsed"
-								isResetButtonDisabled={isResetDisabled}
+								isResetButtonDisabled={isResetDisabled || mode !== 'list'}
 								onResetClick={() => {
+									setVariableConditions([]);
 									form.reset();
 									setVisibleFilters([]);
 									void navigate({to: '.', search: {}});
@@ -203,6 +374,7 @@ const Processes: React.FC<Props> = ({
 									{getClientConfig().deployment.isMultiTenancyEnabled && (
 										<div>
 											<Title>{t('operate.processes.filters.tenant')}</Title>
+											{/* Like legacy, the tenant filter stays usable in the mode; only process, version and element lock. */}
 											<TenantField />
 										</div>
 									)}
@@ -216,8 +388,13 @@ const Processes: React.FC<Props> = ({
 												items={processItems}
 												itemToString={(item) => item?.label ?? ''}
 												selectedItem={selectedProcess}
+												disabled={mode !== 'list'}
+												title={notChangeableTitle}
 												size="sm"
 												onChange={({selectedItem}) => {
+													if (selectedItem?.id === process) {
+														return;
+													}
 													void navigate({
 														to: '.',
 														search: (prev) => ({
@@ -230,36 +407,88 @@ const Processes: React.FC<Props> = ({
 												}}
 											/>
 											<Dropdown
+												key={process ? 'process-selected' : 'process-unselected'}
 												id="process-version-filter"
 												titleText={t('operate.processes.filters.version')}
 												label={t('operate.processes.filters.selectVersion')}
 												items={versionNumbers}
 												itemToString={(item) =>
-													item === undefined || item === null
+													item === 'all' || item === undefined || item === null
 														? t('operate.processes.filters.allVersions')
 														: String(item)
 												}
-												selectedItem={selectedVersion}
-												disabled={!process}
+												selectedItem={process ? selectedVersion : version}
+												disabled={!isDefinitionsReady || versionNumbers.length === 0 || mode !== 'list'}
 												size="sm"
 												onChange={({selectedItem}) => {
+													if (selectedItem === null || selectedItem === undefined) {
+														return;
+													}
 													void navigate({
 														to: '.',
-														search: (prev) => ({...prev, version: selectedItem ?? undefined, elementId: undefined}),
+														search: (prev) => ({
+															...prev,
+															version: selectedItem === 'all' ? undefined : selectedItem,
+															elementId: undefined,
+														}),
 													});
 												}}
 											/>
+											{isDefinitionsError && !isDefinitionsFetching && (
+												<div role="alert">
+													{selectedDefinitionsError instanceof ForbiddenError
+														? t('operate.shared.diagramShell.forbiddenMessage')
+														: t('operate.shared.errorMessage.message')}{' '}
+													{!(selectedDefinitionsError instanceof ForbiddenError) && (
+														<Button kind="ghost" size="sm" onClick={() => void refetchSelectedDefinitions()}>
+															{t('operate.processes.filters.retryElementLoad')}
+														</Button>
+													)}
+												</div>
+											)}
 											<ComboBox
 												id="process-element-filter"
 												titleText={t('operate.processes.filters.element')}
 												placeholder={t('operate.processes.filters.searchByElement')}
-												items={[]}
-												itemToString={(item: {label?: string} | null) => item?.label ?? ''}
-												selectedItem={null}
-												disabled
+												items={isXmlError ? [] : elementItems}
+												itemToString={(item) => item?.label ?? ''}
+												shouldFilterItem={({inputValue, item}) =>
+													inputValue !== null && item.label.toLowerCase().includes(inputValue.toLowerCase())
+												}
+												selectedItem={selectedElement}
+												disabled={isElementDisabled || mode !== 'list'}
+												title={notChangeableTitle}
 												size="sm"
-												onChange={() => {}}
+												onChange={({selectedItem}) => {
+													void navigate({
+														to: '.',
+														search: (prev) => ({...prev, elementId: selectedItem?.id}),
+													});
+												}}
 											/>
+											{isXmlError && selectedDefinitionKey !== undefined && (
+												<div role="alert">
+													{xmlError instanceof ForbiddenError
+														? t('operate.shared.diagramShell.forbiddenMessage')
+														: t('operate.shared.errorMessage.message')}{' '}
+													{!(xmlError instanceof ForbiddenError) && (
+														<Button kind="ghost" size="sm" onClick={() => void refetchDiagramXml()}>
+															{t('operate.processes.filters.retryElementLoad')}
+														</Button>
+													)}
+												</div>
+											)}
+											{isElementDisabled && elementId && (
+												<Button
+													kind="ghost"
+													size="sm"
+													onClick={() => {
+														void navigate({to: '.', search: (prev) => ({...prev, elementId: undefined})});
+													}}
+												>
+													{t('operate.processes.filters.clearElement')}
+												</Button>
+											)}
 										</Stack>
 									</div>
 									<div>
@@ -274,7 +503,7 @@ const Processes: React.FC<Props> = ({
 													onChange={(_, {checked}) => {
 														void navigate({
 															to: '.',
-															search: (prev) => ({...prev, active: checked, incidents: checked}),
+															search: (prev) => ({...prev, active: checked, incidents: checked, suspended: checked}),
 														});
 													}}
 												/>
@@ -303,6 +532,19 @@ const Processes: React.FC<Props> = ({
 														checked={incidents}
 														onChange={(_, {checked}) => {
 															void navigate({to: '.', search: (prev) => ({...prev, incidents: checked})});
+														}}
+													/>
+													<Checkbox
+														id="filter-suspended"
+														labelText={
+															<Stack orientation="horizontal" gap={3}>
+																<PauseOutlineFilled size={20} />
+																<div>{t('operate.processes.filters.suspended')}</div>
+															</Stack>
+														}
+														checked={suspended}
+														onChange={(_, {checked}) => {
+															void navigate({to: '.', search: (prev) => ({...prev, suspended: checked})});
 														}}
 													/>
 												</IndentedGroup>
@@ -365,7 +607,13 @@ const Processes: React.FC<Props> = ({
 			topPanel={
 				<DiagramPanel
 					processDefinitionSelection={processDefinitionSelection}
+					isDefinitionSelectionLoading={isDefinitionsLoading}
+					isDefinitionSelectionError={isDefinitionsError}
 					elementId={elementId}
+					mode={mode}
+					modificationScope={selectionScope ?? undefined}
+					selectedTargetElementId={selectedTargetElementId}
+					onTargetElementSelection={setSelectedTargetElementId}
 					onElementSelection={(selectedElementId) => {
 						void navigate({
 							to: '.',
@@ -376,9 +624,71 @@ const Processes: React.FC<Props> = ({
 					incidents={incidents}
 					completed={completed}
 					canceled={canceled}
+					suspended={suspended}
+					variable={variable}
+					otherFilters={{
+						tenantId,
+						businessId,
+						processInstanceKey,
+						parentProcessInstanceKey,
+						batchOperationKey,
+						errorMessage,
+						incidentErrorHashCode,
+						hasRetriesLeft,
+						startDateFrom,
+						startDateTo,
+						endDateFrom,
+						endDateTo,
+					}}
 				/>
 			}
-			bottomPanel={<div />}
+			bottomPanel={
+				<InstancesTable
+					mode={mode}
+					navigationBlocker={blocker}
+					processDefinitionSelection={processDefinitionSelection}
+					selectedTargetElementId={selectedTargetElementId}
+					onEnterMode={setMode}
+					onMigrationEnter={
+						ENABLE_PROCESS_MIGRATION
+							? (source, scope) => {
+									setMigration({source, scope});
+									setMode('migration');
+								}
+							: undefined
+					}
+					onSelectionScopeChange={setSelectionScope}
+					onExitMode={() => {
+						blocker.proceed?.();
+						setSelectedTargetElementId(undefined);
+						setMode('list');
+					}}
+					search={{
+						process,
+						version,
+						elementId,
+						tenantId,
+						processInstanceKey,
+						parentProcessInstanceKey,
+						businessId,
+						batchOperationKey,
+						errorMessage,
+						variable,
+						incidentErrorHashCode,
+						hasRetriesLeft,
+						startDateFrom,
+						startDateTo,
+						endDateFrom,
+						endDateTo,
+						active,
+						incidents,
+						completed,
+						canceled,
+						suspended,
+						sort,
+					}}
+				/>
+			}
 		/>
 	);
 };

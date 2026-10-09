@@ -22,11 +22,14 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 /** Coverage for the catch-up step of a coordinated leadership transfer. */
+@Category(SlowTest.class)
 public class RaftLeadershipTransferCatchUpTest {
 
   private static final Duration REPLICATION_TIMEOUT = Duration.ofSeconds(2);
@@ -50,10 +53,12 @@ public class RaftLeadershipTransferCatchUpTest {
   @Test
   public void shouldReportTransferredWhenTheDesiredLeaderCatchesUpAndTakesOver() throws Exception {
     // given
-    raftRule.appendEntries(5);
     final var leader = raftRule.getLeader().orElseThrow();
     final var driver = new CoordinatedTransferDriver(raftRule, leader);
     final var target = driver.followerOutsideCoordinator();
+    raftRule.partition(target);
+    raftRule.appendEntries(5);
+    raftRule.reconnect(target);
 
     // when
     final var ack = driver.initiate(target);

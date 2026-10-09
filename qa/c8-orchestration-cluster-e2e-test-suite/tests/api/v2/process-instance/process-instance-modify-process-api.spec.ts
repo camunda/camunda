@@ -231,9 +231,16 @@ test.describe.parallel('Process Instance Modify Process API', () => {
   });
 
   test('Modify process instance - Not Found', async ({request}) => {
+    // Zeebe allocates instance keys sequentially per partition, so a low fixed
+    // key eventually collides with a real instance created by a sibling test
+    // (the previous key '2251799813704885' resolved to a batch_suspension_process
+    // instance under full-suite load, yielding INVALID_ARGUMENT instead of
+    // NOT_FOUND). Keep this a partition-1 key with a counter offset far beyond
+    // anything a run allocates so it never collides — do not lower it.
+    const nonExistentProcessInstanceKey = '2251800813685248';
     const res = await request.post(
       buildUrl('/process-instances/{processInstanceKey}/modification', {
-        processInstanceKey: '2251799813704885',
+        processInstanceKey: nonExistentProcessInstanceKey,
       }),
       {
         headers: jsonHeaders(),
@@ -249,7 +256,7 @@ test.describe.parallel('Process Instance Modify Process API', () => {
 
     await assertNotFoundRequest(
       res,
-      "Command 'MODIFY' rejected with code 'NOT_FOUND': Expected to modify process instance but no process instance found with key '2251799813704885'",
+      `Command 'MODIFY' rejected with code 'NOT_FOUND': Expected to modify process instance but no process instance found with key '${nonExistentProcessInstanceKey}'`,
     );
   });
 });

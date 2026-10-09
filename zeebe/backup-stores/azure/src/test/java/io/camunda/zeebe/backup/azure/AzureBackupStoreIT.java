@@ -128,7 +128,7 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
         .withRootCauseInstanceOf(UnexpectedManifestState.class)
         .withMessageContaining(
             """
-                Expected to restore from completed backup with id '%s', \
+                Expected to find completed backup with id '%s', \
                 but was in state 'IN_PROGRESS'"""
                 .formatted(backup.id()));
   }

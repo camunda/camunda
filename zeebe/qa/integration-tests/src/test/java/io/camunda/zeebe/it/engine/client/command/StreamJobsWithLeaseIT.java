@@ -46,7 +46,7 @@ final class StreamJobsWithLeaseIT {
   }
 
   @Test
-  void shouldCarryLeaseTokenOnStreamedJobAndAllowCompletionWithIt() {
+  void shouldCarryJobLeaseTokenOnStreamedJobAndAllowCompletionWithIt() {
     // given
     final var jobType = Strings.newRandomValidBpmnId();
     final BpmnModelInstance process =
@@ -75,7 +75,7 @@ final class StreamJobsWithLeaseIT {
       final ActivatedJob job = receivedJobs.get(0);
 
       // then
-      assertThat(job.getLeaseToken())
+      assertThat(job.getJobLeaseToken())
           .describedAs("Expected the streamed job to carry a lease token")
           .isNotEmpty();
 
@@ -85,7 +85,7 @@ final class StreamJobsWithLeaseIT {
   }
 
   @Test
-  void shouldRejectCompletingStreamedLeasedJobWithoutMatchingLeaseToken() {
+  void shouldRejectCompletingStreamedLeasedJobWithoutMatchingJobLeaseToken() {
     // given
     final var jobType = Strings.newRandomValidBpmnId();
     final BpmnModelInstance process =
@@ -112,7 +112,7 @@ final class StreamJobsWithLeaseIT {
           .atMost(Duration.ofSeconds(10))
           .untilAsserted(() -> assertThat(receivedJobs).hasSize(1));
       final ActivatedJob job = receivedJobs.get(0);
-      assertThat(job.getLeaseToken())
+      assertThat(job.getJobLeaseToken())
           .describedAs("Expected the streamed job to carry a lease token")
           .isNotEmpty();
 

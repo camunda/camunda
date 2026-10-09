@@ -18,10 +18,10 @@ import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
@@ -448,7 +448,7 @@ public class ClusterVariableTenancyIT {
 
   private static void waitForClusterVariablesBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive cluster variables from secondary storage")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
@@ -458,7 +458,7 @@ public class ClusterVariableTenancyIT {
 
   private static void waitForBaselineClusterVariablesForUser1(final CamundaClient camundaClient) {
     Awaitility.await("should receive baseline cluster variables for USER1")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -473,7 +473,7 @@ public class ClusterVariableTenancyIT {
   private static void waitForClusterVariableToBeDeleted(
       final CamundaClient camundaClient, final String variableName, final String tenantId) {
     Awaitility.await("should have cluster variable deleted")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {

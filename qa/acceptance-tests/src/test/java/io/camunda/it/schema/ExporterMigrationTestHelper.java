@@ -25,6 +25,7 @@ import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.net.URI;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import org.awaitility.Awaitility;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
@@ -54,13 +56,24 @@ public class ExporterMigrationTestHelper {
 
   private static final Logger LOG = LoggerFactory.getLogger(ExporterMigrationTestHelper.class);
 
+  /**
+   * Matches Docker Hub's actual pre-release tag shapes for camunda/camunda: plain alpha ({@code
+   * 8.10.0-alpha4}, optionally with a sub-patch suffix like {@code -alpha4.1}), alpha plus rc
+   * ({@code 8.10.0-alpha4-rc2}), or a final rc with no alpha stage ({@code 8.10.0-rc1}).
+   * Deliberately a positive allow-list rather than "not GA and not snapshot" — Docker Hub tags are
+   * external data, and a variant/build tag we don't know about yet must not be picked up as if it
+   * were a genuine pre-release stage.
+   */
+  private static final Pattern PRE_RELEASE_PATTERN =
+      Pattern.compile("^\\d+\\.\\d+\\.\\d+-(alpha\\d+(\\.\\d+)?(-rc\\d+)?|rc\\d+)$");
+
   private static final String CONTAINER_DATA_PATH = "/usr/local/camunda/data";
   private static final String HTTP_PREFIX = "http://";
   private static final String PI_INDEX = "zeebe-record_process-instance_*";
   private static final String VARIABLE_INDEX = "zeebe-record_variable_*";
   private static final String USER_TASK_INDEX = "zeebe-record_user-task_*";
   private static final String INCIDENT_INDEX = "zeebe-record_incident_*";
-  private static final String DEPLOYMENT_INDEX = "zeebe-record_deployment_*";
+  private static final String PROCESS_INDEX = "zeebe-record_process_*";
   private static final String ZEEBE_RECORD_INDEXES = "zeebe-record*";
 
   private static final String CURRENT_MINOR_VERSION = getCurrentMinorVersion();
@@ -252,7 +265,7 @@ public class ExporterMigrationTestHelper {
       completeJobs(clientPrevious, 1);
       log.info("Completed job for instance #1");
 
-      awaitExported("deployment records should be exported to " + engineName, DEPLOYMENT_INDEX);
+      awaitExported("process records should be exported to " + engineName, PROCESS_INDEX);
       awaitExported("process instance records should be exported to " + engineName, PI_INDEX);
       awaitExported("user task records should be exported to " + engineName, USER_TASK_INDEX);
 
@@ -435,7 +448,7 @@ public class ExporterMigrationTestHelper {
             .isGreaterThanOrEqualTo(instanceKeys.size());
 
         // Verify that deployment records are in ES/OS
-        final long deploymentCount = countDocuments(DEPLOYMENT_INDEX);
+        final long deploymentCount = countDocuments(PROCESS_INDEX);
         log.info("Total deployment records in {}: {}", engineName, deploymentCount);
         assertThat(deploymentCount)
             .as("deployment records should be exported across upgrade")
@@ -541,9 +554,13 @@ public class ExporterMigrationTestHelper {
   public static List<String> fetchLatestPatchFromPreviousMinor() {
     final List<String> allVersions = fetchAllPatchesFromPreviousMinor();
     final int len = allVersions.size();
-    final String latestVersion = allVersions.get(len - 1);
-    final int latestReleaseIndex = latestVersion.endsWith("-SNAPSHOT") ? len - 2 : len - 1;
-    return List.of(allVersions.get(latestReleaseIndex));
+    String latestVersion = allVersions.getLast();
+    if (latestVersion.endsWith("-SNAPSHOT")) {
+      if (allVersions.size() > 1) {
+        latestVersion = allVersions.get(len - 2);
+      }
+    }
+    return List.of(latestVersion);
   }
 
   /**
@@ -612,31 +629,9 @@ public class ExporterMigrationTestHelper {
       throw e;
     }
 
-    final List<String> allVersions = new ArrayList<>();
-    for (final String tag : allTags) {
-      if (!tag.startsWith(PREVIOUS_MINOR_VERSION)) {
-        continue;
-      }
-
-      final String[] components = tag.split("\\.");
-      if (components.length != 3) {
-        continue;
-      }
-
-      try {
-        Integer.parseInt(components[2]);
-      } catch (final NumberFormatException ignored) {
-        continue;
-      }
-
-      allVersions.add(tag);
-    }
-
-    if (allVersions.isEmpty()) {
-      throw new NoSuchElementException("No release images found for " + PREVIOUS_MINOR_VERSION);
-    }
-
-    allVersions.sort(ExporterMigrationTestHelper::comparePatches);
+    final List<String> allPreviousVersions =
+        findAllPatchReleaseVersions(PREVIOUS_MINOR_VERSION, allTags);
+    final List<String> allVersions = new ArrayList<>(allPreviousVersions);
 
     final String snapshotVersion = PREVIOUS_MINOR_VERSION + "-SNAPSHOT";
     if (allTags.contains(snapshotVersion)) {
@@ -644,6 +639,39 @@ public class ExporterMigrationTestHelper {
     }
 
     return allVersions;
+  }
+
+  static List<String> findAllPatchReleaseVersions(
+      final String previousMinorVersion, final List<String> allTags) {
+
+    final List<SemanticVersion> allPreviousVersions = new ArrayList<>();
+    for (final String tag : allTags) {
+      if (!tag.startsWith(previousMinorVersion)) {
+        continue;
+      }
+
+      SemanticVersion.parse(tag).ifPresent(allPreviousVersions::add);
+    }
+
+    // this may include pre-release versions (as they may not be backwards compatible),
+    // but we won't actually use those we just want to sanity that there are some versions there
+    if (allPreviousVersions.isEmpty()) {
+      throw new NoSuchElementException("No images found for " + previousMinorVersion);
+    }
+
+    allPreviousVersions.sort(SemanticVersion.ALPHA_AND_RELEASE_CANDIDATE_COMPARATOR);
+
+    final List<String> releaseVersions =
+        allPreviousVersions.stream()
+            .filter(version -> !version.isPreRelease())
+            .map(SemanticVersion::toString)
+            .toList();
+
+    if (releaseVersions.isEmpty()) {
+      LOG.warn("No release versions found for {}", previousMinorVersion);
+    }
+
+    return releaseVersions;
   }
 
   private static String getCurrentMinorVersion() {

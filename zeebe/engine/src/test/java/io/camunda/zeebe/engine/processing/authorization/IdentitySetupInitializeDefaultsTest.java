@@ -393,7 +393,11 @@ public class IdentitySetupInitializeDefaultsTest {
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.DOCUMENT)
                     .hasOnlyPermissionTypes(
-                        PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE));
+                        PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.SECRET)
+                    .hasOnlyPermissionTypes(PermissionType.REVEAL));
   }
 
   @Test

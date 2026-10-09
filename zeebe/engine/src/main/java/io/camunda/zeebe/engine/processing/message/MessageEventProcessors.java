@@ -98,6 +98,7 @@ public final class MessageEventProcessors {
                 bannedInstanceState,
                 businessIdUniquenessEnabled,
                 bpmnBehaviors.variableBehavior(),
+                bpmnBehaviors.storageOrdinalProvider(),
                 metrics))
         .onCommand(
             ValueType.MESSAGE_BATCH,
@@ -175,8 +176,7 @@ public final class MessageEventProcessors {
                 businessIdUniquenessEnabled,
                 routingInfo,
                 partitionId,
-                metrics,
-                processingState.getSuspensionState()))
+                metrics))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REQUEST,
@@ -191,6 +191,7 @@ public final class MessageEventProcessors {
                 bpmnBehaviors.stateBehavior(),
                 subscriptionCommandSender,
                 keyGenerator,
+                bpmnBehaviors.storageOrdinalProvider(),
                 clock,
                 businessIdUniquenessEnabled,
                 writers,

@@ -52,7 +52,7 @@ This documentation site is automatically published to GitHub Pages:
 
 ### Requirements
 
-- Node.js v20.0 or higher
+- Node.js v26.0 or higher
 - npm
 
 ## 📝 Adding New Documentation

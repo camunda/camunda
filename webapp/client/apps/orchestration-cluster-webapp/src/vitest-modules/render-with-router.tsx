@@ -7,6 +7,7 @@
  */
 
 import {render} from 'vitest-browser-react';
+import {TooltipProvider} from '@camunda/design-system';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
 	Outlet,
@@ -15,19 +16,23 @@ import {
 	createRootRouteWithContext,
 	createRoute,
 	createRouter,
+	joinPaths,
 	type RegisteredRouter,
 } from '@tanstack/react-router';
 
-type ValidRoutes = RegisteredRouter['routeTree']['types']['fileRouteTypes']['to'];
+type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
+type ValidRoutes = FileRouteTypes['to'] | FileRouteTypes['id'];
 
 async function renderWithRouter(
 	Component: React.ComponentType,
 	{
 		path,
-		initialEntry = path,
+		basepath = '',
+		initialEntry = joinPaths([basepath, path]),
 	}: {
 		path: ValidRoutes;
 		initialEntry?: string;
+		basepath?: string;
 	},
 ) {
 	const queryClient = new QueryClient({
@@ -49,6 +54,7 @@ async function renderWithRouter(
 	const router = createRouter({
 		routeTree: rootRoute.addChildren([testRoute]),
 		history: createMemoryHistory({initialEntries: [initialEntry]}),
+		basepath,
 		defaultPendingMinMs: 0,
 		defaultNotFoundComponent: () => null,
 		context: {
@@ -59,9 +65,11 @@ async function renderWithRouter(
 	await router.load();
 
 	const screen = await render(
-		<QueryClientProvider client={queryClient}>
-			<RouterProvider router={router} />
-		</QueryClientProvider>,
+		<TooltipProvider>
+			<QueryClientProvider client={queryClient}>
+				<RouterProvider router={router} />
+			</QueryClientProvider>
+		</TooltipProvider>,
 	);
 
 	return {...screen, router, queryClient};

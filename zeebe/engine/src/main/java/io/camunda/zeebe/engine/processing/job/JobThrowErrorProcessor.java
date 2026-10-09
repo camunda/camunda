@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -215,10 +214,12 @@ public class JobThrowErrorProcessor
         // The error was caught, so the job is deleted without completing — discard all its pending
         // history items. The lease is left empty on purpose: the whole job is gone, so every
         // activation's items must be discarded regardless of the lease they were created with.
-        commandWriter.appendFollowUpCommand(
-            jobKey,
+        commandWriter.appendNewCommand(
             AgentHistoryIntent.DISCARD,
-            new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+            new AgentHistoryRecord()
+                .setJobKey(jobKey)
+                .ignoreLease()
+                .setProcessInstanceKey(job.getProcessInstanceKey()));
       }
     }
   }
@@ -250,6 +251,7 @@ public class JobThrowErrorProcessor
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(job.getProcessDefinitionKey())
         .setProcessInstanceKey(job.getProcessInstanceKey())
+        .setStorageOrdinal(job.getStorageOrdinal())
         .setElementId(getElementId(job))
         .setElementInstanceKey(job.getElementInstanceKey())
         .setTenantId(job.getTenantId())
@@ -284,7 +286,12 @@ public class JobThrowErrorProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
-    return SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
   }
 }

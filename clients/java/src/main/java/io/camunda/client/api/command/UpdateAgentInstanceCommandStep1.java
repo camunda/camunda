@@ -29,7 +29,7 @@ import java.util.List;
  *       .elementInstanceKey(elementInstanceKey)
  *       .status(AgentInstanceUpdateStatus.THINKING)
  *       .jobKey(jobKey)
- *       .jobLease(jobLease)
+ *       .jobLeaseToken(jobLeaseToken)
  *       .history(List.of(
  *           new AgentInstanceHistoryItem()
  *               .historyItemId("item-1")
@@ -83,10 +83,10 @@ public interface UpdateAgentInstanceCommandStep1 {
      * other activation of the same job: if the job is later retried, history items submitted under
      * a superseded lease are discarded rather than committed.
      *
-     * @param jobLease the lease token. Must not be null or blank.
+     * @param jobLeaseToken the lease token. Must not be null or blank.
      * @return the next step of the builder
      */
-    UpdateAgentInstanceCommandStep4 jobLease(String jobLease);
+    UpdateAgentInstanceCommandStep4 jobLeaseToken(String jobLeaseToken);
   }
 
   interface UpdateAgentInstanceCommandStep4 extends FinalCommandStep<UpdateAgentInstanceResponse> {

@@ -326,8 +326,8 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   MESSAGE_BY_BUSINESS_ID(149, PARTITION_LOCAL),
   // agent history items keyed by history item key
   AGENT_HISTORY(150, PARTITION_LOCAL),
-  // secondary index: (jobKey, jobLease, historyItemKey) → ∅; supports prefix iteration by job key
-  // or job key + lease
+  // secondary index: (jobKey, jobLeaseToken, historyItemKey) → ∅; supports prefix iteration by job
+  // key or job key + lease
   AGENT_HISTORY_BY_JOB_KEY(151, PARTITION_LOCAL),
   // secondary index: (processInstanceKey, agentInstanceKey) → ∅; supports prefix iteration by
   // process instance key to find every agent instance still associated with it
@@ -343,13 +343,11 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // means the process instance has a suspension marker (either SUSPENDED or still draining as
   // RESUMING) — the marker is only removed once resuming has fully completed
   SUSPENDED_PROCESS_INSTANCES(156, PARTITION_LOCAL),
-  // commands diverted while their target process instance is suspended, keyed by a
-  // KeyGenerator-issued bufferedCommandKey -> BufferedCommandRecord
-  BUFFERED_PROCESS_INSTANCE_COMMANDS(157, PARTITION_LOCAL),
-  // secondary index: (processInstanceKey, bufferedCommandKey) → ∅; supports FIFO prefix iteration
-  // of buffered commands for a process instance (bufferedCommandKey is KeyGenerator-issued and
-  // therefore monotonically increasing, so key order == FIFO insertion order)
-  BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL),
+  // (processInstanceKey, bufferedCommandKey) -> BufferedCommandRecord; the composite key supports
+  // FIFO prefix iteration of buffered commands for a process instance (bufferedCommandKey is
+  // KeyGenerator-issued and therefore monotonically increasing, so key order == FIFO insertion
+  // order), and also stores the record directly so a visit/drain never needs a second point lookup
+  BUFFERED_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL),
 
   // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
   // definition being deleted while it has running instances. Lives on the aggregating partition.
@@ -383,7 +381,23 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * for every currently {@code SUSPENDED} job but not an authoritative "all jobs of this instance"
    * list.
    */
-  JOBS_BY_PROCESS_INSTANCE(163, PARTITION_LOCAL);
+  JOBS_BY_PROCESS_INSTANCE(163, PARTITION_LOCAL),
+
+  // (agentInstanceKey, historyItemId) -> agentHistoryKey. Records every history item ever
+  // committed for an agent instance, so a later job resending an id that an earlier, already-
+  // completed job committed can still be recognized as a duplicate — pending state alone can't do
+  // this, since a committed item is deleted from it. Retained for the agent instance's whole
+  // lifetime and deleted in one pass when the instance completes (see
+  // AgentInstanceCompletedApplier).
+  AGENT_HISTORY_COMMITTED_IDS(164, PARTITION_LOCAL),
+
+  // (agentInstanceKey, historyItemId) -> ∅. Records every history item whose metrics were ever
+  // accumulated for an agent instance, independent of AGENT_HISTORY_COMMITTED_IDS: a discarded
+  // item leaves no trace in that store, so a later job resending the same id would otherwise
+  // re-accumulate its metrics. Written when an item is first created (see
+  // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
+  // instance completes (see AgentInstanceCompletedApplier).
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

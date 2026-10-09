@@ -24,12 +24,17 @@ public class CompatibilityTestDatabaseConfigurator {
   private final String testPrefix;
   private final DatabaseType databaseType;
   private final String databaseUrl;
+  private final boolean legacyTasklistConfigurationRequired;
 
   public CompatibilityTestDatabaseConfigurator(
-      final String testPrefix, final DatabaseType databaseType, final String databaseUrl) {
+      final String testPrefix,
+      final DatabaseType databaseType,
+      final String databaseUrl,
+      final boolean legacyTasklistConfigurationRequired) {
     this.testPrefix = testPrefix;
     this.databaseType = databaseType;
     this.databaseUrl = databaseUrl;
+    this.legacyTasklistConfigurationRequired = legacyTasklistConfigurationRequired;
   }
 
   public void configureCamundaContainer(final GenericContainer<?> camundaContainer) {
@@ -47,9 +52,6 @@ public class CompatibilityTestDatabaseConfigurator {
   private void configureElasticsearch(final Map<String, String> env) {
     final String zeebePrefix = zeebeIndexPrefix();
 
-    /* Tasklist */
-    env.put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", zeebePrefix);
-
     /* Operate */
     env.put("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX", zeebePrefix);
 
@@ -60,15 +62,19 @@ public class CompatibilityTestDatabaseConfigurator {
     env.put("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH);
     env.put("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", DB_TYPE_ELASTICSEARCH);
     env.put("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH);
-    env.put("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH);
 
     // url
     env.put("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", databaseUrl);
     env.put("CAMUNDA_DATABASE_URL", databaseUrl);
-    env.put("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", databaseUrl);
-    env.put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", databaseUrl);
     env.put("CAMUNDA_OPERATE_ELASTICSEARCH_URL", databaseUrl);
     env.put("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", databaseUrl);
+
+    if (legacyTasklistConfigurationRequired) {
+      env.put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", zeebePrefix);
+      env.put("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH);
+      env.put("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", databaseUrl);
+      env.put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", databaseUrl);
+    }
 
     /* Camunda */
     env.put("CAMUNDA_DATABASE_RETENTION_ENABLED", Boolean.toString(true));

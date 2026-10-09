@@ -46,7 +46,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
-      "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com",
+      "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com/sso-callback",
       "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
       "camunda.security.authentication.oidc.token-uri=https://token.example.com",
       "camunda.security.authentication.oidc.jwk-set-uri=https://jwks.example.com"

@@ -12,6 +12,8 @@ global:
   # ConfigMap still only renders when a key is actually set.
   extraConfig: {}
 
+  performReadBenchmarks: true
+
 # -- Name of the load test.
 name: ""
 
@@ -27,8 +29,29 @@ topologyZone: ""
 
 # -- Internal URL of the Camunda management endpoint. Used by the
 # `leader-balancer` CronJob to trigger periodic partition rebalancing via
-# `POST {{ camundaManagementUrl }}/actuator/rebalance`.
+# `POST {{ camundaManagementUrl }}/actuator/rebalance` when `leaderBalancer.endpoint`
+# is `actuator`.
 camundaManagementUrl: http://camunda:9600
+
+# -- Configuration for the `leader-balancer` CronJob, which periodically triggers
+# Zeebe partition leadership rebalancing.
+leaderBalancer:
+  # -- Which endpoint the CronJob calls to trigger a rebalance:
+  # - `v2`: the coordinated `POST {{ zeebeRestAddress }}/cluster/v2/rebalance` endpoint
+  #   (Camunda 8.10+). Authenticated with the dedicated `leaderBalancer.client.oidc` client's
+  #   cluster-admin grant, so `camunda.security.cluster-admin.oidc.clients[0]` (set via
+  #   `orchestration.extraConfiguration`'s `application.yml` in the platform values) must
+  #   include that client id.
+  # - `actuator`: the deprecated, unauthenticated `POST {{ camundaManagementUrl }}/actuator/rebalance`.
+  #   Required for Camunda versions before 8.10, which don't ship `/cluster/v2/rebalance`.
+  endpoint: v2
+
+  # -- Dedicated OIDC client for the CronJob, isolated from `loadTest.client.oidc`.
+  client:
+    oidc:
+      clientId: leader-balancer
+      secret:
+        key: identity-leader-balancer-client-secret
 
 # -- The configuration for the load test metrics exporter
 metricsExporter:
@@ -191,17 +214,6 @@ keycloak:
       # `global.identity.keycloak.auth.secret.existingSecretKey`.
       key: identity-keycloak-admin-password
 
-  # -- The namespace to host the Keycloak instance.
-  # We deploy Keycloak using the Keycloak Operator, which is currently limited
-  # to managed custom resources in a single namespace only.
-  # As such, we **have** to deploy Keycloak in the same namespace as the
-  # Keycloak Operator and we can't simply deploy Keycloak in the load test
-  # namespace.
-  # This option allows configuring in which namespace Keycloak will be
-  # managed.
-  # This probably should not be changed.
-  namespace: keycloak-operator
-
   # -- Configure the PostgreSQL cluster to be used by Keycloak.
   postgresql:
     # -- The name of the CNPG Cluster resource deployed for Keycloak.
@@ -257,11 +269,11 @@ opensearch:
   nameOverride: opensearch
   masterService: opensearch
 
-  majorVersion: "2.19.0"
+  majorVersion: "2.19.6"
 
   image:
     repository: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/opensearchproject/opensearch
-    tag: 2.19.0
+    tag: 2.19.6
 
   replicas: 3
 
@@ -460,4 +472,119 @@ postgresql:
     - key: nodepool
       operator: Equal
       value: n2-standard-4
+      effect: NoSchedule
+
+  # -- Configure a CNPG `Pooler` (PgBouncer, transaction-pooling mode) in front of
+  # this PostgreSQL cluster. Opt-in and disabled by default: existing rdbms load
+  # tests keep connecting straight to the `-rw` Service unless this is turned on.
+  #
+  # Why: each broker pod opens one connection pool per physical tenant, so client
+  # connections to Postgres scale as (broker pods x physical tenants) and quickly
+  # exceed Postgres's default `max_connections` (a 10 brokers x 10 tenants load
+  # test produces a structural floor of ~200 mostly-idle connections). A GKE
+  # benchmark trial confirmed that routing broker traffic through PgBouncer in
+  # transaction-pooling mode collapses steady-state Postgres connections by an
+  # order of magnitude, with zero client queueing and zero connection timeouts,
+  # while Postgres stays at its default `max_connections=100`.
+  #
+  # When enabling this, also point
+  # `orchestration.data.secondaryStorage.rdbms.url` (in the platform values) at
+  # this Pooler's Service (`<clusterName>-pooler`) instead of the Cluster's `-rw`
+  # Service, with `?prepareThreshold=0` appended: pgjdbc defaults to server-side
+  # prepared statements after 5 uses of the same statement, which do not survive
+  # PgBouncer's transaction-mode connection swapping. The `--use-pgbouncer` flag
+  # to `../../newLoadTest.sh` does both for you at namespace scaffold time.
+  #
+  # Reference: https://cloudnative-pg.io/docs/1.30/connection_pooling
+  pooler:
+    # -- Set to true to deploy the CNPG Pooler alongside the PostgreSQL cluster above.
+    enabled: false
+
+    # -- Number of PgBouncer pod replicas.
+    instances: 1
+
+    pgbouncer:
+      # -- PgBouncer parameters passed through to the CNPG Pooler resource.
+      # `max_client_conn` is raised well above PgBouncer's default (100): every
+      # broker pod x physical tenant combination opens its own client connection,
+      # and the default is not enough headroom for this scenario's connection count.
+      parameters:
+        max_client_conn: "1000"
+
+k6:
+  tests:
+    default:
+      enabled: true
+      script: test.default.js
+    # Reads data from secondary storage. Disabled together with `global.performReadBenchmarks`
+    # (see `common.mk` and `.github/scripts/load-test-install-camunda-platform.sh`), and for
+    # versions without the search endpoints it uses (`k6_data_read_supported` in `common.mk`).
+    data-read:
+      enabled: true
+      script: test.data-read.js
+
+  prometheus:
+    endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+
+  tags:
+    # Configure the list of "tags" (labels) automatically set on metrics by k6.
+    #
+    # We want to remove some default tags, like "name" and "url".
+    # These tags are automatically set by k6 on all the metrics, but they both
+    # contain the target URL of HTTP requests, which can create
+    # high-cardinality metrics in Prometheus, which in turns have a very
+    # negative impact on Prometheus performance.
+    #
+    # It's still possible to manually set these tags when calling the
+    # `http.XXX()` methods though ; they are just not automatically filled in
+    # by k6.
+    #
+    # See https://grafana.com/docs/k6/latest/using-k6/k6-options/reference/#system-tags
+    system:
+      - check
+      # `error` is the textual representation of the error ("dial: connection
+      # refused", "dial: connection reset by peer", "dial: i/o timeout",
+      # "lookup: no such host", etc.), when a request fails.
+      # This can be "high cardinality", adjust it if needed.
+      - error
+      - error_code
+      - expected_response
+      - group
+      - method
+      # Disable the default "name" system tag: it contains the URL being
+      # fetched, which can have a high cardinality.
+      #- name
+      - proto
+      - scenario
+      - service
+      - status
+      - subproto
+      - tls_version
+      # Disable the default "url" system tag: the URL can have a high
+      # cardinality.
+      #- url
+
+  resources:
+    # This is highly dependent on the load test scenario and the number of
+    # virtual users being simulated.
+    # Adjust these values based on your specific requirements and the expected
+    # load.
+    requests:
+      cpu: 200m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+  nodeSelector:
+    # The top-level `topologyZone` value is also applied as `topology.kubernetes.io/zone`.
+    # Keep tests on stable nodes by default to prevent losing them completely
+    # during node preemption.
+    # See: https://github.com/grafana/k6-operator/issues/898
+    component: benchmark-n2-standard-4-stable
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4-stable
       effect: NoSchedule

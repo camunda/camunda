@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -54,6 +55,7 @@ public final class EventHandle {
   private final StateWriter stateWriter;
   private final EventTriggerBehavior eventTriggerBehavior;
   private final BpmnStateBehavior stateBehavior;
+  private final StorageOrdinalProvider storageOrdinalProvider;
 
   public EventHandle(
       final KeyGenerator keyGenerator,
@@ -61,7 +63,8 @@ public final class EventHandle {
       final Writers writers,
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior,
-      final BpmnStateBehavior stateBehavior) {
+      final BpmnStateBehavior stateBehavior,
+      final StorageOrdinalProvider storageOrdinalProvider) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
     this.processState = processState;
@@ -69,6 +72,7 @@ public final class EventHandle {
     stateWriter = writers.state();
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.stateBehavior = stateBehavior;
+    this.storageOrdinalProvider = storageOrdinalProvider;
   }
 
   public boolean canTriggerElement(
@@ -103,12 +107,19 @@ public final class EventHandle {
   private long triggeringProcessEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
+      final int storageOrdinal,
       final String tenantId,
       final long eventScopeKey,
       final DirectBuffer catchEventId,
       final DirectBuffer variables) {
     return eventTriggerBehavior.triggeringProcessEvent(
-        processDefinitionKey, processInstanceKey, tenantId, eventScopeKey, catchEventId, variables);
+        processDefinitionKey,
+        processInstanceKey,
+        storageOrdinal,
+        tenantId,
+        eventScopeKey,
+        catchEventId,
+        variables);
   }
 
   public void activateElement(
@@ -128,6 +139,7 @@ public final class EventHandle {
         triggeringProcessEvent(
             elementRecord.getProcessDefinitionKey(),
             elementRecord.getProcessInstanceKey(),
+            elementRecord.getStorageOrdinal(),
             elementRecord.getTenantId(),
             eventScopeKey,
             catchEvent.getId(),
@@ -161,6 +173,7 @@ public final class EventHandle {
     triggeringProcessEvent(
         jobRecord.getProcessDefinitionKey(),
         jobRecord.getProcessInstanceKey(),
+        jobRecord.getStorageOrdinal(),
         jobRecord.getTenantId(),
         jobRecord.getElementInstanceKey(),
         jobRecord.getElementIdBuffer(),
@@ -171,6 +184,7 @@ public final class EventHandle {
     triggeringProcessEvent(
         userTaskRecord.getProcessDefinitionKey(),
         userTaskRecord.getProcessInstanceKey(),
+        userTaskRecord.getStorageOrdinal(),
         userTaskRecord.getTenantId(),
         userTaskRecord.getElementInstanceKey(),
         userTaskRecord.getElementIdBuffer(),
@@ -260,10 +274,12 @@ public final class EventHandle {
     }
 
     final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
+    final int storageOrdinal = storageOrdinalProvider.getStorageOrdinal();
 
     triggeringProcessEvent(
         processDefinitionKey,
         processInstanceKey,
+        storageOrdinal,
         tenantId,
         processDefinitionKey /* The eventScope for the start event is the process definition key */,
         targetElementId,
@@ -273,8 +289,12 @@ public final class EventHandle {
         .setBpmnProcessId(process.getBpmnProcessId())
         .setProcessDefinitionKey(process.getKey())
         .setVersion(process.getVersion())
+        // Note: both processInstanceKey and rootProcessInstanceKey are set to the same value here
+        // because this is the creation of a new root process instance which also makes it valid
+        // that the current storage ordinal is assigned to this instance.
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(processInstanceKey)
+        .setStorageOrdinal(storageOrdinal)
         .setElementId(process.getProcess().getId())
         .setBpmnElementType(process.getProcess().getElementType())
         .setTenantId(tenantId);
@@ -300,6 +320,7 @@ public final class EventHandle {
         .setVersion(process.getVersion())
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(processInstanceKey)
+        .setStorageOrdinal(storageOrdinal)
         .setTenantId(tenantId);
 
     // Mirror the businessId stamping onto the PROCESS_INSTANCE_CREATION:CREATED event so that

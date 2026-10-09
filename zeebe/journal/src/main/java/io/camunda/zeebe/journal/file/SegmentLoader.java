@@ -112,7 +112,7 @@ final class SegmentLoader {
           e);
     }
     return new UninitializedSegment(
-        new SegmentFile(segmentFile.toFile()),
+        new SegmentFile(segmentFile),
         descriptor.id(),
         descriptor.maxSegmentSize(),
         mappedSegment,
@@ -157,7 +157,7 @@ final class SegmentLoader {
       final SegmentDescriptorSerializer descriptorSerializer,
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
-    final SegmentFile segmentFile = new SegmentFile(file.toFile());
+    final SegmentFile segmentFile = new SegmentFile(file);
     return new Segment(
         segmentFile,
         descriptor,
@@ -214,16 +214,22 @@ final class SegmentLoader {
         final var channel = raf.getChannel(); ) {
       allocateSegment(maxSegmentSize, channel, raf.getFD());
       raf.setLength(maxSegmentSize);
+    }
+
+    // reopen via FileChannel.open, because RandomAccessFile on Windows opens without
+    // FILE_SHARE_DELETE (which we need for renaming segments during compaction)
+    try (final var channel =
+        FileChannel.open(segmentPath, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
       return mapSegment(channel, maxSegmentSize);
     }
   }
 
-  private void checkDiskSpace(final Path segmentPath, final int maxSegmentSize) {
+  private void checkDiskSpace(final Path segmentPath, final int maxSegmentSize) throws IOException {
     final var parent =
         requireNonNull(
             segmentPath.getParent(),
             () -> String.format("Expected file %s to have a parent but it was null", segmentPath));
-    final var available = parent.toFile().getUsableSpace();
+    final var available = Files.getFileStore(parent).getUsableSpace();
     final var required = Math.max(maxSegmentSize, minFreeDiskSpace);
     if (available < required) {
       throw new JournalException.OutOfDiskSpace(

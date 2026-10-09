@@ -58,7 +58,7 @@ describe('<CustomFiltersModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByText('Unassigned'));
 		await userEvent.click(screen.getByRole('button', {name: /^apply$/i}));
@@ -77,7 +77,7 @@ describe('<CustomFiltersModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByText('Completed'));
 		await userEvent.click(screen.getByRole('button', {name: /^save$/i}));
@@ -103,13 +103,13 @@ describe('<CustomFiltersModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: /^save$/i}));
 
 		await expect.element(screen.getByRole('textbox', {name: /filter name/i})).toBeVisible();
 
-		await userEvent.click(screen.getByRole('button', {name: /cancel/i}));
+		await userEvent.click(screen.getByRole('button', {name: /cancel/i}).last());
 
 		await expect.element(screen.getByRole('heading', {name: /apply filters/i})).toBeVisible();
 	});
@@ -138,7 +138,7 @@ describe('<CustomFiltersModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 		await expect.element(screen.getByRole('radio', {name: /completed/i})).toBeChecked();
 
 		await userEvent.click(screen.getByText('Open'));
@@ -147,6 +147,45 @@ describe('<CustomFiltersModal />', () => {
 		expect(mockOnSuccess).toHaveBeenCalledWith('filter-1');
 		expect(getStateLocally('tasklist.customFilters')).toMatchObject({
 			'filter-1': {status: 'open', name: 'My filter'},
+		});
+	});
+
+	it('should remove advanced filters from storage when the advanced toggle is turned off on edit', async ({worker}) => {
+		worker.use(...MOCKS);
+		storeStateLocally('tasklist.customFilters', {
+			'filter-1': {
+				assignee: 'all',
+				status: 'open',
+				name: 'My filter',
+				taskId: 'task-0',
+				variables: [{name: 'variable-0', value: '"value-0"'}],
+			},
+		});
+
+		const mockOnSuccess = vi.fn();
+		const screen = await renderWithRouter(
+			() => (
+				<CustomFiltersModal
+					filterId="filter-1"
+					isOpen
+					onClose={() => {}}
+					onSuccess={mockOnSuccess}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
+		await expect.element(screen.getByRole('switch', {name: 'Advanced filters'})).toBeChecked();
+
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters'}), {force: true});
+		await expect.element(screen.getByRole('switch', {name: 'Advanced filters'})).not.toBeChecked();
+		await userEvent.click(screen.getByRole('button', {name: /save and apply/i}));
+
+		expect(mockOnSuccess).toHaveBeenCalledWith('filter-1');
+		expect(getStateLocally('tasklist.customFilters')).toEqual({
+			'filter-1': {assignee: 'all', status: 'open', name: 'My filter'},
 		});
 	});
 
@@ -170,7 +209,7 @@ describe('<CustomFiltersModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: /^delete$/i}));
 
@@ -194,9 +233,9 @@ describe('<CustomFiltersModal />', () => {
 			{path: '/tasklist'},
 		);
 
-		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
 		await expect.element(screen.getByRole('radio', {name: /^me$/i})).toBeChecked();
 		await expect.element(screen.getByRole('radio', {name: /completed/i})).toBeChecked();
-		await expect.element(screen.getByRole('combobox', {name: /process/i})).toHaveValue('0');
+		await expect.element(screen.getByRole('combobox', {name: /process/i})).toHaveTextContent('Process 0 - v1');
 	});
 });

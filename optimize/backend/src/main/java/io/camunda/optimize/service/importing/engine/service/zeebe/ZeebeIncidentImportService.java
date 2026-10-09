@@ -53,7 +53,7 @@ public class ZeebeIncidentImportService
   }
 
   @Override
-  protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
+  List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
       final List<ZeebeIncidentRecordDto> zeebeRecords) {
     final List<ProcessInstanceDto> optimizeDtos =
         zeebeRecords.stream()

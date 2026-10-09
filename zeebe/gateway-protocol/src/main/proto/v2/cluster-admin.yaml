@@ -27,8 +27,9 @@
 # ClusterAdminBasicSecurityConfiguration / CLUSTER_ADMIN_API_PATTERN), a separate credential set
 # from the Orchestration Cluster API. Where an operation reuses the `bearerAuth` / `basicAuth`
 # scheme names from that API, it still resolves against different credentials — an Orchestration
-# Cluster user session cannot authenticate against it. `getClusterStatus` below is the one
-# exception: it is intentionally public (`security: []`), not cluster-admin-gated.
+# Cluster user session cannot authenticate against it. `getClusterStatus` and
+# `getClusterUpgradeStatus` below are the two exceptions: both are intentionally public
+# (`security: []`), not cluster-admin-gated.
 
 paths:
   /cluster/v2/status:
@@ -78,6 +79,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClusterStatusResponse'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
+
+  /cluster/v2/status/upgrade:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: getClusterUpgradeStatus
+      x-required-permissions: [ ]
+      # Public — declared unauthenticated at runtime via SecurityPathAdapter, same as
+      # getClusterStatus above. security: [] overrides the conditional enforcement on the
+      # global schemes for this operation.
+      security: [ ]
+      summary: Get the upgrade-readiness status of the whole cluster
+      description: >-
+        Reports one overall upgrade-readiness status for the whole cluster, folded over every
+        physical tenant and condition. `MIGRATED` only once every known condition has migrated for
+        every known physical tenant; `MIGRATION_IN_PROGRESS` when at least one is confirmed not yet
+        migrated; `UNKNOWN` otherwise (including before anything has been reported yet). No
+        per-tenant or per-condition detail is reported here; see the `upgradeReadiness` actuator
+        endpoint for that.
+      responses:
+        "200":
+          description: The cluster's upgrade-readiness status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterUpgradeStatusResponse'
+      x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/topology:
     servers:
@@ -126,6 +169,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/exporting:
     servers:
@@ -178,6 +222,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/exporting/pause:
     servers:
@@ -231,6 +276,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/exporting/resume:
     servers:
@@ -276,6 +322,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/mode:
     servers:
@@ -342,6 +389,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/restore:
     servers:
@@ -423,6 +471,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/runtime:
     servers:
@@ -562,6 +611,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     get:
       x-eventually-consistent: false
       tags:
@@ -629,6 +679,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/runtime/state:
     servers:
@@ -694,6 +745,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     delete:
       x-eventually-consistent: false
       tags:
@@ -744,6 +796,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/runtime/state/sync:
     servers:
@@ -816,6 +869,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/runtime/{backupId}:
     servers:
@@ -891,6 +945,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     delete:
       x-eventually-consistent: false
       tags:
@@ -951,6 +1006,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/history:
     servers:
@@ -1044,6 +1100,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     get:
       x-eventually-consistent: false
       tags:
@@ -1124,6 +1181,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/backups/history/{backupId}:
     servers:
@@ -1201,6 +1259,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     delete:
       x-eventually-consistent: false
       tags:
@@ -1280,6 +1339,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
   /cluster/v2/rebalance:
     servers:
@@ -1374,6 +1434,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     get:
       x-eventually-consistent: false
       tags:
@@ -1425,6 +1486,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
     delete:
       x-eventually-consistent: false
       tags:
@@ -1480,6 +1542,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
       x-added-in-version: "8.10"
+      x-scope: cluster-wide
 
 ## Schema definitions
 
@@ -1528,6 +1591,23 @@ components:
             - HEALTHY
             - DEGRADED
             - DOWN
+    ClusterUpgradeStatusResponse:
+      description: The upgrade-readiness status of the whole cluster.
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          description: >-
+            `MIGRATED` once every known upgrade-readiness condition is met for every known
+            physical tenant; `MIGRATION_IN_PROGRESS` when at least one is confirmed not yet
+            migrated; `UNKNOWN` otherwise.
+          type: string
+          example: MIGRATED
+          enum:
+            - MIGRATED
+            - MIGRATION_IN_PROGRESS
+            - UNKNOWN
     ClusterRestoreRequest:
       description: >-
         Describes a restore request issued by a cluster admin. The backup selection at the top level
@@ -2166,6 +2246,8 @@ components:
             - NO_LEADER
             - NO_RESPONSE
             - CANCELLED
+            - PHYSICAL_TENANT_DISABLED
+            - PHYSICAL_TENANT_RECOVERING
 
     ClusterCompletedRebalance:
       description: >-

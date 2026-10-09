@@ -14,18 +14,18 @@ import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 
 public class PersistentWebSessionSearchImpl implements PersistentWebSessionClient {
 
   private final DocumentBasedSearchClient readClient;
   private final DocumentBasedWriteClient writeClient;
-  private final PersistentWebSessionIndexDescriptor persistentWebSessionIndex;
+  private final PersistentWebSessionTemplate persistentWebSessionIndex;
 
   public PersistentWebSessionSearchImpl(
       final DocumentBasedSearchClient readClient,
       final DocumentBasedWriteClient writeClient,
-      final PersistentWebSessionIndexDescriptor persistentWebSessionIndex) {
+      final PersistentWebSessionTemplate persistentWebSessionIndex) {
     this.readClient = readClient;
     this.writeClient = writeClient;
     this.persistentWebSessionIndex = persistentWebSessionIndex;

@@ -21,10 +21,10 @@ import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -800,7 +800,7 @@ class ClusterVariableAuthorizationIT {
   private static void waitForClusterVariablesToBeAvailable(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should have cluster variables available")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -812,7 +812,7 @@ class ClusterVariableAuthorizationIT {
   private static void waitForClusterVariableToBeDeleted(
       final CamundaClient camundaClient, final String variableName, final String tenantId) {
     Awaitility.await("should have cluster variable deleted")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {

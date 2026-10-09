@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignmentBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -236,10 +235,12 @@ public final class JobCompleteProcessor
         command.getKey(), JobIntent.COMPLETED, job, command);
 
     if (jobBelongsToAgent) {
-      commandWriter.appendFollowUpCommand(
-          command.getKey(),
+      commandWriter.appendNewCommand(
           AgentHistoryIntent.COMMIT,
-          new AgentHistoryRecord().setJobKey(command.getKey()).setJobLease(job.getLeaseToken()));
+          new AgentHistoryRecord()
+              .setJobKey(command.getKey())
+              .setJobLeaseToken(job.getJobLeaseToken())
+              .setProcessInstanceKey(job.getProcessInstanceKey()));
     }
 
     jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());
@@ -375,7 +376,8 @@ public final class JobCompleteProcessor
         new AdHocSubProcessInstructionRecord()
             .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey())
             .setCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
-            .setCancelRemainingInstances(jobResult.isCancelRemainingInstances());
+            .setCancelRemainingInstances(jobResult.isCancelRemainingInstances())
+            .setStorageOrdinal(adHocSubProcessInstance.getValue().getStorageOrdinal());
 
     if (!jobResult.getActivateElements().isEmpty()) {
       jobResult.getActivateElements().stream()
@@ -415,6 +417,7 @@ public final class JobCompleteProcessor
           targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
           targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
           targetAdHocSubProcessInstanceValue.getRootProcessInstanceKey(),
+          targetAdHocSubProcessInstanceValue.getStorageOrdinal(),
           targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
           targetAdHocSubProcessInstanceValue.getTenantId(),
           completingJobRecord.getVariablesBuffer());
@@ -632,7 +635,12 @@ public final class JobCompleteProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
-    return SuspensionBehavior.REJECT;
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
   }
 }

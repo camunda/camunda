@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IconButton} from '@carbon/react';
-import {Add, CenterCircle, Subtract} from '@carbon/react/icons';
+import {Button, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
+import {Crosshair, ZoomIn, ZoomOut} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
-import styles from './DiagramControls.module.scss';
 
 type Props = {
 	onZoomReset: () => void;
@@ -19,42 +18,36 @@ type Props = {
 
 const DiagramControls: React.FC<Props> = ({onZoomReset, onZoomIn, onZoomOut}) => {
 	const {t} = useTranslation();
+	const resetLabel = t('tasklist.taskDetailsResetDiagramZoom');
+	const zoomInLabel = t('tasklist.taskDetailsZoomInDiagram');
+	const zoomOutLabel = t('tasklist.taskDetailsZoomOutDiagram');
 
 	return (
-		<div className={styles.container}>
-			<IconButton
-				className={styles.zoomReset}
-				size="sm"
-				kind="tertiary"
-				align="left"
-				label={t('tasklist.taskDetailsResetDiagramZoom')}
-				aria-label={t('tasklist.taskDetailsResetDiagramZoom')}
-				onClick={onZoomReset}
-			>
-				<CenterCircle />
-			</IconButton>
-			<IconButton
-				className={styles.zoomIn}
-				size="sm"
-				kind="tertiary"
-				align="left"
-				label={t('tasklist.taskDetailsZoomInDiagram')}
-				aria-label={t('tasklist.taskDetailsZoomInDiagram')}
-				onClick={onZoomIn}
-			>
-				<Add />
-			</IconButton>
-			<IconButton
-				className={styles.zoomOut}
-				size="sm"
-				kind="tertiary"
-				align="left"
-				label={t('tasklist.taskDetailsZoomOutDiagram')}
-				aria-label={t('tasklist.taskDetailsZoomOutDiagram')}
-				onClick={onZoomOut}
-			>
-				<Subtract />
-			</IconButton>
+		<div className="absolute right-4 bottom-8 z-10 flex flex-col gap-1">
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button variant="secondary" size="icon-sm" aria-label={resetLabel} onClick={onZoomReset}>
+						<Crosshair aria-hidden="true" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="left">{resetLabel}</TooltipContent>
+			</Tooltip>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button variant="secondary" size="icon-sm" aria-label={zoomInLabel} onClick={onZoomIn}>
+						<ZoomIn aria-hidden="true" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="left">{zoomInLabel}</TooltipContent>
+			</Tooltip>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button variant="secondary" size="icon-sm" aria-label={zoomOutLabel} onClick={onZoomOut}>
+						<ZoomOut aria-hidden="true" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="left">{zoomOutLabel}</TooltipContent>
+			</Tooltip>
 		</div>
 	);
 };

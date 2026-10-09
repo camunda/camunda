@@ -13,6 +13,8 @@ import {createUser} from 'modules/testUtils';
 import {mockLogin} from 'modules/mocks/api/login';
 import {mockLogout} from 'modules/mocks/api/logout';
 import * as clientConfig from 'modules/utils/getClientConfig';
+import {mockServer} from 'modules/mock-server/node';
+import {http, HttpResponse} from 'msw';
 
 const mockUserResponse = createUser();
 
@@ -38,6 +40,26 @@ describe('authentication store', () => {
     await authenticationStore.handleLogin('demo', 'demo');
 
     expect(authenticationStore.status).toBe('logged-in');
+  });
+
+  it('should send the CSRF token from the login page with the login request', async () => {
+    const csrfToken = 'csrf-token-from-login-page';
+    let tokenSentWithLogin: string | null = null;
+
+    mockServer.use(
+      http.get('/login', () =>
+        HttpResponse.text('', {headers: {'X-CSRF-TOKEN': csrfToken}}),
+      ),
+      http.post('/login', ({request}) => {
+        tokenSentWithLogin = request.headers.get('X-CSRF-TOKEN');
+        return new HttpResponse(null, {status: 204});
+      }),
+    );
+    mockMe().withSuccess(mockUserResponse);
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(tokenSentWithLogin).toBe(csrfToken);
   });
 
   it('should handle login failure', async () => {

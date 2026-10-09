@@ -53,7 +53,7 @@ public class AgentInstanceMigratedApplierTest {
     assertThat(stored.getProcessDefinitionKey()).isEqualTo(200L);
     assertThat(stored.getProcessDefinitionVersion()).isEqualTo(2);
     assertThat(stored.getBpmnProcessId()).isEqualTo("target-process");
-    assertThat(stored.getVersionTag()).isEqualTo("v2.0");
+    assertThat(stored.getProcessDefinitionVersionTag()).isEqualTo("v2.0");
     assertThat(stored.getElementId()).isEqualTo("agent2");
   }
 
@@ -78,7 +78,7 @@ public class AgentInstanceMigratedApplierTest {
         .setProcessDefinitionKey(100L)
         .setProcessDefinitionVersion(1)
         .setBpmnProcessId("source-process")
-        .setVersionTag("v1.0")
+        .setProcessDefinitionVersionTag("v1.0")
         .setElementId("agent")
         .setStatus(AgentInstanceStatus.INITIALIZING);
   }
@@ -90,7 +90,7 @@ public class AgentInstanceMigratedApplierTest {
         .setProcessDefinitionKey(200L)
         .setProcessDefinitionVersion(2)
         .setBpmnProcessId("target-process")
-        .setVersionTag("v2.0")
+        .setProcessDefinitionVersionTag("v2.0")
         .setElementId("agent2")
         .setStatus(AgentInstanceStatus.INITIALIZING);
   }

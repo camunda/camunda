@@ -12,6 +12,9 @@ import {sleep} from '../utils/sleep';
 import {checkUpdateOnVersion} from 'utils/zeebeClient';
 import {waitForAssertion} from '../utils/waitForAssertion';
 
+const ROW_ACTION_TIMEOUT = 15_000;
+const TABLE_SETTLE_TIMEOUT = 15_000;
+
 class OperateProcessesPage {
   private page: Page;
   readonly processResultCount: Locator;
@@ -35,7 +38,6 @@ class OperateProcessesPage {
   readonly continueMigrationDialogButton: Locator;
   readonly cancelProcessInstanceButton: Locator;
   readonly cancelProcessInstanceDialogButton: Locator;
-  readonly singleOperationSpinner: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
   readonly processActiveCheckbox: Locator;
   readonly processCompletedCheckbox: Locator;
@@ -49,6 +51,8 @@ class OperateProcessesPage {
   readonly migrateButton: Locator;
   readonly selectAllRowsCheckbox: Locator;
   readonly retryButton: Locator;
+  readonly suspendButton: Locator;
+  readonly resumeButton: Locator;
   readonly cancelButton: Locator;
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
@@ -63,13 +67,16 @@ class OperateProcessesPage {
     cellIndex?: number,
   ) => Locator;
   readonly deleteButton: Locator;
+  readonly drainingTag: Locator;
   readonly deleteBatchOperationConfirmButton: Locator;
   readonly batchOperationStartedMessage: (
     batchOperationType:
       | 'Resolve Incident'
       | 'Retry'
       | 'Cancel Process Instance'
-      | 'Delete Process Instance',
+      | 'Delete Process Instance'
+      | 'Suspend Process Instance'
+      | 'Resume Process Instance',
   ) => Locator;
   readonly processCouldNotBeFoundMessage: Locator;
   readonly goToOperationDetailsButton: Locator;
@@ -138,13 +145,6 @@ class OperateProcessesPage {
     this.cancelProcessInstanceDialogButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
-    // The per-row operation spinner in the instances list is a Carbon
-    // InlineLoading (no data-testid) rendered only while a single operation is
-    // in progress; scope to the list so it never matches the incidents-table
-    // spinner on the instance detail page.
-    this.singleOperationSpinner = page
-      .getByTestId('data-list')
-      .locator('.cds--inline-loading');
     this.processActiveCheckbox = page
       .locator('label')
       .filter({hasText: 'Active'});
@@ -175,6 +175,13 @@ class OperateProcessesPage {
       name: 'Select all rows',
     });
     this.retryButton = page.getByRole('button', {name: 'Retry', exact: true});
+    // Exact: row actions are named "Suspend Instance <key>", which a substring
+    // match would hit instead of the toolbar.
+    this.suspendButton = page.getByRole('button', {
+      name: 'Suspend',
+      exact: true,
+    });
+    this.resumeButton = page.getByRole('button', {name: 'Resume', exact: true});
     this.cancelButton = page.getByRole('button', {name: 'Cancel', exact: true});
     this.applyButton = page.getByRole('button', {name: 'Apply'});
     this.resultsCount = page.getByText(/\d+ results/);
@@ -199,6 +206,7 @@ class OperateProcessesPage {
         .getByRole('cell')
         .nth(cellIndex);
     this.deleteButton = page.getByTestId('delete-batch-operation');
+    this.drainingTag = page.getByTestId('draining-tag');
     this.deleteBatchOperationConfirmButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Delete'});
@@ -207,7 +215,9 @@ class OperateProcessesPage {
         | 'Resolve Incident'
         | 'Retry'
         | 'Cancel Process Instance'
-        | 'Delete Process Instance',
+        | 'Delete Process Instance'
+        | 'Suspend Process Instance'
+        | 'Resume Process Instance',
     ) =>
       page.getByText(
         `Batch operation \"${batchOperationType}\" has been started`,
@@ -310,15 +320,30 @@ class OperateProcessesPage {
   }
 
   getRetryInstanceButton(processInstanceKey: string): Locator {
-    return this.page.getByRole('button', {
-      name: `Retry Instance ${processInstanceKey}`,
-    });
+    return OperateProcessesPage.getRowByProcessInstanceKey(
+      this.page,
+      processInstanceKey,
+    ).getByTestId('retry-operation');
   }
 
   getCancelInstanceButton(processInstanceKey: string): Locator {
-    return this.page.getByRole('button', {
-      name: `Cancel Instance ${processInstanceKey}`,
-    });
+    return OperateProcessesPage.getRowByProcessInstanceKey(
+      this.page,
+      processInstanceKey,
+    ).getByTestId('cancel-operation');
+  }
+
+  // The per-row operation spinner is a Carbon InlineLoading (no data-testid)
+  // rendered while an operation on that instance is in progress. Each scheduled
+  // operation also leaves an `aria-live` announcer with the same
+  // `.cds--inline-loading` class in the data-list, so a list-wide selector
+  // matches every instance that ever had an operation and trips strict mode.
+  // Scope to the target instance's row so exactly one element is matched.
+  getSingleOperationSpinner(processInstanceKey: string): Locator {
+    return OperateProcessesPage.getRowByProcessInstanceKey(
+      this.page,
+      processInstanceKey,
+    ).locator('.cds--inline-loading');
   }
 
   async clickRetryInstanceButton(processInstanceKey: string): Promise<void> {
@@ -422,6 +447,80 @@ class OperateProcessesPage {
         'Cancel Process Instance',
       ),
     });
+  }
+
+  async suspendAllProcessInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      toolbarButton: this.suspendButton,
+      confirmButton: this.batchOperationDialogButton('Apply'),
+      startedMessage: this.batchOperationStartedMessage(
+        'Suspend Process Instance',
+      ),
+    });
+  }
+
+  async resumeAllProcessInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      toolbarButton: this.resumeButton,
+      confirmButton: this.batchOperationDialogButton('Apply'),
+      startedMessage: this.batchOperationStartedMessage(
+        'Resume Process Instance',
+      ),
+    });
+  }
+
+  processInstanceRow(processInstanceKey: string): Locator {
+    return this.page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .filter({hasText: processInstanceKey});
+  }
+
+  /**
+   * The count settles before the rows do, and Select all takes the rows — so a
+   * batch started on a settled count alone can still run against the list the
+   * filter replaced.
+   */
+  async expectInstancesTableToHoldExactly(
+    processInstanceKeys: string[],
+  ): Promise<void> {
+    await expect(this.resultsCount).toHaveText(
+      new RegExp(`\\b${processInstanceKeys.length} results$`),
+      {timeout: TABLE_SETTLE_TIMEOUT},
+    );
+    await expect(
+      this.page.getByTestId('data-list').getByRole('row'),
+    ).toHaveCount(processInstanceKeys.length, {timeout: TABLE_SETTLE_TIMEOUT});
+    for (const processInstanceKey of processInstanceKeys) {
+      await expect(this.processInstanceRow(processInstanceKey)).toBeVisible({
+        timeout: TABLE_SETTLE_TIMEOUT,
+      });
+    }
+  }
+
+  async clickSuspendRowAction(processInstanceKey: string): Promise<void> {
+    await this.clickRowAction(processInstanceKey, 'suspend-operation');
+  }
+
+  async clickResumeRowAction(processInstanceKey: string): Promise<void> {
+    await this.clickRowAction(processInstanceKey, 'resume-operation');
+  }
+
+  private async clickRowAction(
+    processInstanceKey: string,
+    testId: 'suspend-operation' | 'resume-operation',
+  ): Promise<void> {
+    const action =
+      this.processInstanceRow(processInstanceKey).getByTestId(testId);
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(action).toBeVisible({timeout: ROW_ACTION_TIMEOUT});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
+    await action.click();
   }
 
   async deleteSelectedInstancesInBatch(): Promise<void> {

@@ -45,6 +45,8 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
               - names: ['zeebe-*', 'operate-*', 'tasklist-*', 'camunda-*']
                 privileges: ['manage', 'read', 'write']
           """;
+  public static final String ROOT_SCOPE = "camunda.";
+  public static final String TENANT_EXPORTER_ID = "elasticsearch";
   private static final String ADMIN_USER = "camunda-admin";
   private static final String ADMIN_PASSWORD = "admin123";
   private static final String ADMIN_ROLE = "superuser";
@@ -156,7 +158,6 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
         .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
         .withProperty(CREATE_SCHEMA_PROPERTY, "false")
         .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
-        .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")
         .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
         .withUnifiedConfig(
             cfg -> {
@@ -258,6 +259,58 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
             q ->
                 q.name(repositoryName)
                     .repository(r -> r.fs(fs -> fs.settings(s -> s.location(repositoryName)))));
+  }
+
+  public void configurePhysicalTenant(
+      final TestStandaloneSchemaManager schemaManager,
+      final String tenantId,
+      final String tenantUrl,
+      final String indexPrefix,
+      final String exporterIndexPrefix) {
+    final String tenant = tenantScope(tenantId);
+    schemaManager
+        .withProperty(tenant + "data.secondary-storage.type", "elasticsearch")
+        .withProperty(tenant + "data.secondary-storage.elasticsearch.url", tenantUrl)
+        .withProperty(tenant + "data.secondary-storage.elasticsearch.username", ADMIN_USER)
+        .withProperty(tenant + "data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
+        .withProperty(tenant + "data.secondary-storage.elasticsearch.index-prefix", indexPrefix)
+        // A physical tenant must either declare its own security initialization or opt out of
+        // authorization; the schema manager creates indices and has no use for either.
+        .withProperty(tenant + "security.authorizations.enabled", "false");
+    // the generic exporter must use a prefix distinct from the tenant's own secondary storage
+    configureExporter(schemaManager, tenant, TENANT_EXPORTER_ID, tenantUrl, exporterIndexPrefix);
+    assignExporters(schemaManager, tenantId, TENANT_EXPORTER_ID);
+  }
+
+  public void configureExporter(
+      final TestStandaloneSchemaManager schemaManager,
+      final String scope,
+      final String exporterId,
+      final String exporterUrl,
+      final String indexPrefix) {
+    final String exporter = scope + "data.exporters." + exporterId + ".";
+    schemaManager
+        .withProperty(exporter + "class-name", ElasticsearchExporter.class.getName())
+        .withProperty(exporter + "args.url", exporterUrl)
+        .withProperty(exporter + "args.authentication.username", ADMIN_USER)
+        .withProperty(exporter + "args.authentication.password", ADMIN_PASSWORD)
+        .withProperty(exporter + "args.index.prefix", indexPrefix)
+        .withProperty(exporter + "args.index.process", "true");
+  }
+
+  /** The tenant's complete assignment manifest: declaring a generic exporter obliges it to. */
+  public void assignExporters(
+      final TestStandaloneSchemaManager schemaManager,
+      final String tenantId,
+      final String... exporterIds) {
+    final String tenant = tenantScope(tenantId);
+    for (int i = 0; i < exporterIds.length; i++) {
+      schemaManager.withProperty(tenant + "data.exporters-assigned[" + i + "]", exporterIds[i]);
+    }
+  }
+
+  public static String tenantScope(final String tenantId) {
+    return "camunda.physical-tenants." + tenantId + ".";
   }
 
   private ElasticsearchExporterConfiguration exporterAdminConfig() {

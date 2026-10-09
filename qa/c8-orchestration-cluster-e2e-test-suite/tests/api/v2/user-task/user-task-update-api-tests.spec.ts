@@ -21,7 +21,10 @@ import {
   jsonHeaders,
   assertInvalidArgument,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 
 const generateFutureDates = () => {
   const now = new Date();
@@ -354,6 +357,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),

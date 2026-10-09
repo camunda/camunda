@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import org.agrona.LangUtil;
+import org.jspecify.annotations.Nullable;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
@@ -66,7 +67,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     }
   }
 
-  public byte[] get(
+  public byte @Nullable [] get(
       final long columnFamilyHandle,
       final long readOptionsHandle,
       final byte[] key,

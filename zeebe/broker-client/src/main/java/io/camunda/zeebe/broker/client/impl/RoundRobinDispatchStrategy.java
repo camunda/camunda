@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
@@ -19,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Return the next partition using a round-robin strategy, but skips the partitions where there is
@@ -90,7 +93,7 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
 
     var currentValue = state.partitionRing().get();
     if (currentValue.version() >= expectedVersion) {
-      return currentValue.partitions();
+      return requireNonNull(currentValue.partitions());
     }
 
     final var newPartitionRing =
@@ -113,7 +116,7 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
     return newPartitionRing;
   }
 
-  record VersionedPartitionRing(long version, PartitionRing partitions) {
+  record VersionedPartitionRing(long version, @Nullable PartitionRing partitions) {
     static final long NOT_INITIALIZED = -2;
     static final long NO_ROUTING_STATE = -1;
 

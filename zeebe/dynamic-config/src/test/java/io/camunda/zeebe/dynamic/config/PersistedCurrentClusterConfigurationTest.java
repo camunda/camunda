@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.ChecksumMismatch;
+import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.MissingHeader;
+import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.UnexpectedVersion;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -85,7 +87,7 @@ final class PersistedCurrentClusterConfigurationTest {
 
   @Test
   void shouldMigrateLegacyVersion1FileOnRead() throws IOException {
-    // given — a legacy (version 1) file written by the legacy persistence class
+    // given — a legacy (version 1) file, as the legacy persistence code used to write it
     final var file = tmp.resolve("config.meta");
     final var legacy =
         ClusterConfiguration.init()
@@ -93,7 +95,7 @@ final class PersistedCurrentClusterConfigurationTest {
                 MemberId.from("0"),
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1, partitionConfig))));
-    PersistedClusterConfiguration.ofFile(file, serializer).update(legacy);
+    writeLegacyVersion1File(file, legacy);
     assertThat(Files.readAllBytes(file)[0]).isEqualTo((byte) 1);
 
     // when — read it through the new persistence class
@@ -112,7 +114,7 @@ final class PersistedCurrentClusterConfigurationTest {
     final var legacy =
         ClusterConfiguration.init()
             .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()));
-    PersistedClusterConfiguration.ofFile(file, serializer).update(legacy);
+    writeLegacyVersion1File(file, legacy);
 
     // when — read (migrate) and persist a change
     final var persisted = PersistedCurrentClusterConfiguration.ofFile(file, serializer);
@@ -135,5 +137,85 @@ final class PersistedCurrentClusterConfigurationTest {
     // then
     assertThatCode(() -> PersistedCurrentClusterConfiguration.ofFile(file, serializer))
         .isInstanceOf(ChecksumMismatch.class);
+  }
+
+  @Test
+  void shouldDetectChecksumMismatchOnSameLengthBodyCorruption() throws IOException {
+    // given — two configurations that serialize to the same length, differing in one field
+    final var file = tmp.resolve("config.meta");
+    final var initial =
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(
+                    MemberId.from("0"),
+                    MemberState.initializeAsActive(
+                        Map.of(1, PartitionState.active(2, partitionConfig)))));
+    final var changed =
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(
+                    MemberId.from("0"),
+                    MemberState.initializeAsActive(
+                        Map.of(1, PartitionState.active(3, partitionConfig)))));
+    PersistedCurrentClusterConfiguration.ofFile(file, serializer).update(initial);
+
+    // when — keep the same header but overwrite the body in place with different content of the
+    // same length
+    final var fileContent = Files.readAllBytes(file);
+    final var newBody = serializer.encodeCurrentClusterConfiguration(changed);
+    System.arraycopy(
+        newBody,
+        0,
+        fileContent,
+        PersistedClusterConfiguration.Header.HEADER_LENGTH,
+        newBody.length);
+    Files.write(file, fileContent, StandardOpenOption.WRITE);
+
+    // then — checksum mismatch is detected even though the file length is unchanged
+    assertThatCode(() -> PersistedCurrentClusterConfiguration.ofFile(file, serializer))
+        .isInstanceOf(ChecksumMismatch.class);
+  }
+
+  @Test
+  void shouldFailOnEmptyFile() throws IOException {
+    // given
+    final var file = tmp.resolve("config.meta");
+    Files.createFile(file);
+
+    // then
+    assertThatCode(() -> PersistedCurrentClusterConfiguration.ofFile(file, serializer))
+        .isInstanceOf(MissingHeader.class);
+  }
+
+  @Test
+  void shouldFailOnTooShortHeader() throws IOException {
+    // given — fewer bytes than the header (version byte + checksum long) requires
+    final var file = tmp.resolve("config.meta");
+    Files.write(file, new byte[] {1, 2}, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+
+    // then
+    assertThatCode(() -> PersistedCurrentClusterConfiguration.ofFile(file, serializer))
+        .isInstanceOf(MissingHeader.class);
+  }
+
+  @Test
+  void shouldRejectUnknownHeaderVersion() throws IOException {
+    // given — a header version that is neither the legacy (1) nor the current (2) format
+    final var file = tmp.resolve("config.meta");
+    PersistedCurrentClusterConfiguration.ofFile(file, serializer).update(sampleConfiguration());
+    Files.write(file, new byte[] {3}, StandardOpenOption.WRITE);
+
+    // then
+    assertThatCode(() -> PersistedCurrentClusterConfiguration.ofFile(file, serializer))
+        .isInstanceOf(UnexpectedVersion.class);
+  }
+
+  /**
+   * Writes {@code legacy} to {@code file} exactly as the (now removed) legacy persistence class
+   * used to: header version 1, followed by the checksummed, serialized legacy configuration.
+   */
+  private void writeLegacyVersion1File(final Path file, final ClusterConfiguration legacy)
+      throws IOException {
+    PersistedClusterConfiguration.writeToFile(serializer.encode(legacy), file);
   }
 }

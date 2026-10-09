@@ -39,6 +39,7 @@ import io.camunda.service.ClusterRuntimeBackupServices;
 import io.camunda.service.ClusterRuntimeBackupServices.PhysicalTenantBackupPort;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
+import io.camunda.service.ClusterUpgradeStatusServices;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
@@ -58,6 +59,7 @@ import io.camunda.service.ManagementServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.service.MigrationStatusAggregator;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.RecoveryServices;
@@ -158,7 +160,8 @@ public class CamundaServicesConfiguration {
       final ObjectProvider<SecondaryStorageReadiness> secondaryStorageReadiness,
       final ObjectProvider<HistoryBackupApi> historyBackupApi,
       final ApiServicesExecutorProvider executor,
-      final SecretStoreRegistries secretStoreRegistries) {
+      final SecretStoreRegistries secretStoreRegistries,
+      final MigrationStatusAggregator migrationStatusAggregator) {
 
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
@@ -586,6 +589,8 @@ public class CamundaServicesConfiguration {
         new ClusterStatusServices(
             topologyServicesByTenant,
             physicalTenantId -> secondaryStorageReadiness.getObject().isReady(physicalTenantId)));
+    builder.clusterUpgradeStatusServices(
+        new ClusterUpgradeStatusServices(migrationStatusAggregator));
     builder.clusterTopologyServices(new ClusterTopologyServices(topologyServicesByTenant));
 
     builder.clusterRecoveryServices(

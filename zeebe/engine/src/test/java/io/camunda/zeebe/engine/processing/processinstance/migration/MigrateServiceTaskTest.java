@@ -203,7 +203,7 @@ public class MigrateServiceTaskTest {
   }
 
   @Test
-  public void shouldRetainLeaseTokenWhenMigratingJob() {
+  public void shouldRetainJobLeaseTokenWhenMigratingJob() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -238,7 +238,7 @@ public class MigrateServiceTaskTest {
     // lease the job so it carries a lease token
     final var activationRecord = ENGINE.jobs().withType("A").withLease().activate().getValue();
     final int jobIndex = activationRecord.getJobKeys().indexOf(jobKey);
-    final var leaseToken = activationRecord.getJobs().get(jobIndex).getLeaseToken();
+    final var jobLeaseToken = activationRecord.getJobs().get(jobIndex).getJobLeaseToken();
 
     // when
     ENGINE
@@ -250,14 +250,14 @@ public class MigrateServiceTaskTest {
         .migrate();
 
     // then
-    Assertions.assertThat(leaseToken).describedAs("job was leased on activation").isNotEmpty();
+    Assertions.assertThat(jobLeaseToken).describedAs("job was leased on activation").isNotEmpty();
     assertThat(
             RecordingExporter.jobRecords(JobIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst()
                 .getValue())
         .describedAs("Expect that the migrated job retains its lease token")
-        .hasLeaseToken(leaseToken);
+        .hasJobLeaseToken(jobLeaseToken);
   }
 
   @Test

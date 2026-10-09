@@ -7,7 +7,7 @@ metadata:
   labels:
     app: leader-balancer
 spec:
-  concurrencyPolicy: Allow
+  concurrencyPolicy: Forbid
   jobTemplate:
     metadata:
       name: leader-balancer
@@ -19,13 +19,15 @@ spec:
         spec:
           containers:
           - name: leader-balancer
-            image: curlimages/curl:7.87.0
+            image: alpine:3.24
             command: ["/bin/sh", "-c"]
             args:
               - |-
-                curl -L -v -X POST "http://zeebe-gateway:9600/actuator/rebalance"
+                apk add --quiet --progress=no curl
+                curl -L -v --connect-timeout 10 --max-time 60 -X POST "http://zeebe-gateway:9600/actuator/rebalance"
 
           restartPolicy: OnFailure
+      activeDeadlineSeconds: 180
   schedule: '*/10 * * * *'
   failedJobsHistoryLimit: 1
   successfulJobsHistoryLimit: 3

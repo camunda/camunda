@@ -100,8 +100,7 @@ public abstract class AbstractExecutionPlanInterpreterES<
 
   protected abstract OptimizeElasticsearchClient getEsClient();
 
-  protected abstract BoolQuery.Builder getBaseQueryBuilder(
-      final ExecutionContext<DATA, PLAN> context);
+  public abstract BoolQuery.Builder getBaseQueryBuilder(final ExecutionContext<DATA, PLAN> context);
 
   protected abstract String[] getIndexNames(final ExecutionContext<DATA, PLAN> context);
 

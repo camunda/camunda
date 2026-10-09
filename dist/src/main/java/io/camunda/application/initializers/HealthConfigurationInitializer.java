@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -27,6 +28,7 @@ import org.springframework.core.env.Environment;
  * Collects and configures the readiness group depending on which applications/profiles are
  * activated.
  */
+@NullMarked
 public class HealthConfigurationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -47,6 +49,9 @@ public class HealthConfigurationInitializer
     // Enables Kubernetes health group endpoints (/actuator/health/{liveness,readiness,startup}).
     // Always enabled so that liveness and readiness endpoints are available for all profiles
     propertyMap.put("management.endpoint.health.probes.enabled", true);
+
+    propertyMap.put(
+        "management.endpoint.health.status.order", "down,out-of-service,unknown,degraded,up");
 
     final var readinessGroupHealthIndicators =
         collectReadinessGroupHealthIndicators(activeProfiles, environment);
@@ -70,9 +75,6 @@ public class HealthConfigurationInitializer
       propertyMap.put("management.health.defaults.enabled", true);
       startupGroup.add(INDICATOR_GATEWAY_STARTED);
       propertyMap.put("management.endpoint.health.group.startup.show-details", "never");
-
-      propertyMap.put(
-          "management.endpoint.health.status.order", "down,out-of-service,unknown,degraded,up");
 
       if (activeProfiles.contains(Profile.STANDALONE.getId())) {
         propertyMap.put(
@@ -157,13 +159,11 @@ public class HealthConfigurationInitializer
       if (isWebappProfile) {
         healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
       }
-      if (DatabaseTypeUtils.isRdbmsDisabled(env)) {
-        if (isAnyHttpGatewayEnabled(env)
-            && (isWebappProfile
-                || activeProfiles.contains(Profile.GATEWAY.getId())
-                || activeProfiles.contains(Profile.BROKER.getId()))) {
-          healthIndicators.add(SchemaReadinessCheck.SCHEMA_READINESS_CHECK);
-        }
+      if (isAnyHttpGatewayEnabled(env)
+          && (isWebappProfile
+              || activeProfiles.contains(Profile.GATEWAY.getId())
+              || activeProfiles.contains(Profile.BROKER.getId()))) {
+        healthIndicators.add(SchemaReadinessCheck.SCHEMA_READINESS_CHECK);
       }
     }
 

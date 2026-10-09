@@ -1,5 +1,55 @@
 # Changelog
 
+## v0.0.95
+
+### 🩹 Fixes
+
+- Add `businessId` to the 8.9, 8.10 and 8.11 process definition statistics filter schemas, matching the spec ([#64678](https://github.com/camunda/camunda/pull/64678))
+
+### ❤️ Contributors
+
+- Francesco Esposito ([@phoinixi](https://github.com/phoinixi))
+
+## v0.0.94
+
+### 🚀 Enhancements
+
+- Add the `8.11` schema version, mirroring 8.10 and adding `isTenantsApiEnabled` (deployment) and `isCamundaGroupsEnabled` (authentication) to the system configuration schema ([#63648](https://github.com/camunda/camunda/pull/63648))
+
+### 🩹 Fixes
+
+- Make `batchOperationType` nullable in the 8.10 and 8.11 batch operation schemas, for legacy Operate batches and documents without a stored type ([#63685](https://github.com/camunda/camunda/pull/63685))
+
+### ⚠️ Breaking Changes
+
+- Rename `jobLease` to `jobLeaseToken` on 8.10 and 8.11 agent instance history items, matching the REST API rename ([#63086](https://github.com/camunda/camunda/pull/63086))
+
+### ❤️ Contributors
+
+- HeleneW-dot ([@HeleneW-dot](https://github.com/HeleneW-dot))
+- Nicola Puppa ([@nicpuppa](https://github.com/nicpuppa))
+- Victor Ronnerstedt ([@Krypt0r7](https://github.com/Krypt0r7))
+
+## v0.0.93
+
+### 🩹 Fixes
+
+- Add `reasoningTokenCount`, `cacheCreationTokenCount`, and `cacheReadTokenCount` to the 8.10 agent instance metrics and history item metrics schemas [#59320](https://github.com/camunda/camunda/issues/59320)
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.92
+
+### 🚀 Enhancements
+
+- Add `state` field (`ACTIVE`, `DRAINING`, `DELETED`) to the 8.8 and 8.9 process-definition schemas, exposing and enabling filtering on the draining state ([#56988](https://github.com/camunda/camunda/issues/56988))
+
+### ❤️ Contributors
+
+- Ambrose Tan ([@tanjinyi](https://github.com/tanjinyi))
+
 ## v0.0.91
 
 ### 🚀 Enhancements

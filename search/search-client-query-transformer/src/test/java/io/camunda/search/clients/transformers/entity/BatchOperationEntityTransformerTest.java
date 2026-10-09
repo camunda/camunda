@@ -85,6 +85,49 @@ class BatchOperationEntityTransformerTest {
   }
 
   @Test
+  void shouldTransformEntityWithoutTypeToSearchEntity() {
+    // given — a document whose type was never recorded, e.g. written before the exporter fix
+    // in #49765; such documents are not repaired retroactively
+    final BatchOperationEntity entity = new BatchOperationEntity();
+    entity.setId("1");
+    entity.setType(null);
+    entity.setState(BatchOperationState.ACTIVE);
+    entity.setOperationsTotalCount(42);
+    entity.setOperationsFailedCount(1);
+    entity.setOperationsCompletedCount(41);
+
+    // when
+    final var searchEntity = transformer.apply(entity);
+
+    // then — the type is surfaced as null rather than failing the read
+    assertThat(searchEntity).isNotNull();
+    assertThat(searchEntity.operationType()).isNull();
+    assertThat(searchEntity.batchOperationKey()).isEqualTo("1");
+    assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.ACTIVE.name());
+  }
+
+  @Test
+  void shouldTransformLegacyEntityWithoutTypeToSearchEntity() {
+    // given — legacy Operate batch operations carry a UUID id and may have no type at all
+    final BatchOperationEntity entity = new BatchOperationEntity();
+    final String uuid = UUID.randomUUID().toString();
+    entity.setId(uuid);
+    entity.setType(null);
+    entity.setOperationsTotalCount(42);
+    entity.setOperationsFinishedCount(0);
+
+    // when
+    final var searchEntity = transformer.apply(entity);
+
+    // then
+    assertThat(searchEntity).isNotNull();
+    assertThat(searchEntity.operationType()).isNull();
+    assertThat(searchEntity.batchOperationKey()).isEqualTo(uuid);
+    assertThat(searchEntity.state())
+        .isEqualTo(io.camunda.search.entities.BatchOperationEntity.BatchOperationState.CREATED);
+  }
+
+  @Test
   void shouldTransformCreatedLegacyEntityToSearchEntity() {
     // given
     final BatchOperationEntity entity = new BatchOperationEntity();

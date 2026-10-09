@@ -70,6 +70,7 @@ public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
 
     final var results = mapper.getProcessDefinitionStatistics(dbQuery);
 
-    return buildSearchQueryResult(results.size(), results, convertSort(FIXED_SORT));
+    return buildSearchQueryResult(
+        results.size(), restoreDisplayOrder(dbPage, results), convertSort(FIXED_SORT));
   }
 }

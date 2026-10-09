@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.metrics;
 
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc.Statistic;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.Nullable;
 import org.rocksdb.RocksDB;
+import org.rocksdb.Statistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,10 +29,26 @@ public final class RocksDBMetricExporter {
       new EnumMap<>(RocksDbMetricsDoc.class);
   private final Map<RocksDbIoStallMetricsDoc, StatefulGauge> ioStallMetrics =
       new EnumMap<>(RocksDbIoStallMetricsDoc.class);
+  private final Map<RocksDbTickerMetricsDoc, StatefulGauge> tickerMetrics =
+      new EnumMap<>(RocksDbTickerMetricsDoc.class);
+  private final Map<RocksDbHistogramMetricsDoc, HistogramGauges> histogramMetrics =
+      new EnumMap<>(RocksDbHistogramMetricsDoc.class);
   private final MeterRegistry registry;
 
+  /**
+   * Only present when RocksDB statistics are enabled; the ticker and histogram meters are simply
+   * not registered otherwise.
+   */
+  private final @Nullable Statistics statistics;
+
   public RocksDBMetricExporter(final MeterRegistry registry) {
+    this(registry, null);
+  }
+
+  public RocksDBMetricExporter(
+      final MeterRegistry registry, final @Nullable Statistics statistics) {
     this.registry = registry;
+    this.statistics = statistics;
   }
 
   public void exportMetrics(final RocksDB database) {
@@ -37,10 +56,11 @@ public final class RocksDBMetricExporter {
 
     for (final var metric : RocksDbMetricsDoc.values()) {
       final var gauge = metrics.computeIfAbsent(metric, this::registerMetric);
-      exportMetric(database, metric.propertyName(), gauge);
+      exportMetric(database, metric, gauge);
     }
 
     exportIoStallMetrics(database);
+    exportStatistics();
 
     final long elapsedTime = System.nanoTime() - startTime;
     LOG.trace(
@@ -51,18 +71,19 @@ public final class RocksDBMetricExporter {
   private StatefulGauge registerMetric(final RocksDbMeterDoc doc) {
     return StatefulGauge.builder(doc.getName())
         .description(doc.getDescription())
+        .baseUnit(doc.getBaseUnit())
         .register(registry);
   }
 
   private void exportMetric(
-      final RocksDB database, final String propertyName, final StatefulGauge gauge) {
+      final RocksDB database, final RocksDbMeterDoc doc, final StatefulGauge gauge) {
     try {
-      final var value = database.getProperty(propertyName);
+      final var value = database.getProperty(doc.propertyName());
       if (value != null) {
-        gauge.set(Double.parseDouble(value));
+        gauge.set(doc.convertToBaseUnit(Double.parseDouble(value)));
       }
     } catch (final Exception exception) {
-      LOG.debug("Error occurred on exporting metric {}", propertyName, exception);
+      LOG.debug("Error occurred on exporting metric {}", doc.propertyName(), exception);
     }
   }
 
@@ -97,4 +118,48 @@ public final class RocksDBMetricExporter {
       }
     }
   }
+
+  private void exportStatistics() {
+    if (statistics == null) {
+      return;
+    }
+
+    for (final var metric : RocksDbTickerMetricsDoc.values()) {
+      final var gauge = tickerMetrics.computeIfAbsent(metric, this::registerMetric);
+      try {
+        gauge.set(metric.convertToBaseUnit(statistics.getTickerCount(metric.ticker())));
+      } catch (final Exception exception) {
+        LOG.debug("Error occurred on exporting ticker {}", metric.propertyName(), exception);
+      }
+    }
+
+    for (final var metric : RocksDbHistogramMetricsDoc.values()) {
+      final var gauges = histogramMetrics.computeIfAbsent(metric, this::registerHistogram);
+      try {
+        final var data = statistics.getHistogramData(metric.histogram());
+        gauges.count().set(data.getCount());
+        gauges.sum().set(metric.convertToBaseUnit(data.getSum()));
+        gauges.p99().set(metric.convertToBaseUnit(data.getPercentile99()));
+      } catch (final Exception exception) {
+        LOG.debug("Error occurred on exporting histogram {}", metric.propertyName(), exception);
+      }
+    }
+  }
+
+  private HistogramGauges registerHistogram(final RocksDbHistogramMetricsDoc doc) {
+    return new HistogramGauges(
+        registerHistogramGauge(doc, Statistic.COUNT),
+        registerHistogramGauge(doc, Statistic.SUM),
+        registerHistogramGauge(doc, Statistic.P99));
+  }
+
+  private StatefulGauge registerHistogramGauge(
+      final RocksDbHistogramMetricsDoc doc, final Statistic statistic) {
+    return StatefulGauge.builder(doc.nameFor(statistic))
+        .description(doc.descriptionFor(statistic))
+        .baseUnit(statistic == Statistic.COUNT ? null : doc.getBaseUnit())
+        .register(registry);
+  }
+
+  private record HistogramGauges(StatefulGauge count, StatefulGauge sum, StatefulGauge p99) {}
 }

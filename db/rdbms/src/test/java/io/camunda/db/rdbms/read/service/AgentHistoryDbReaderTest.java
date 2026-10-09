@@ -174,7 +174,7 @@ class AgentHistoryDbReaderTest {
         .tenantId("<default>")
         .partitionId(1)
         .jobKey(60L)
-        .jobLease("lease-" + key)
+        .jobLeaseToken("lease-" + key)
         .loopIteration(1)
         .role(AgentInstanceHistoryRole.USER)
         .commitStatus(AgentInstanceHistoryCommitStatus.PENDING)

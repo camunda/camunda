@@ -60,6 +60,9 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
+  /** The maximum number of results to return per paged query. */
+  private int queryPageLimit = CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT;
+
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 
   @NestedConfigurationProperty
@@ -282,6 +285,14 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setAssertion(final AssertionConfiguration assertion) {
     this.assertion = assertion;
+  }
+
+  public int getQueryPageLimit() {
+    return queryPageLimit;
+  }
+
+  public void setQueryPageLimit(final int queryPageLimit) {
+    this.queryPageLimit = queryPageLimit;
   }
 
   public SemanticSimilarityConfiguration getSimilarity() {

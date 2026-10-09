@@ -37,6 +37,16 @@ global:
   identity:
     auth:
       enabled: true
+      # Camunda 8.10's chart derives the public issuer URL from
+      # `keycloak.url` only when `keycloak.internal` is unset, but that
+      # fallback isn't yet in the pinned chart version. Without an explicit
+      # issuer, `authorization-uri` renders as a bare relative path and
+      # Spring's OIDC ClientRegistration fails at startup. Set it explicitly
+      # until the chart bump lands. Keycloak's hostname is `localhost` (see
+      # charts/load-test-setup/templates/keycloak/keycloak.yaml) since browser
+      # SSO redirects go through the documented `localhost:18080`
+      # port-forward, not the in-cluster service address used below.
+      publicIssuerUrl: http://localhost:18080/auth/realms/camunda-platform
 
     keycloak:
       auth:
@@ -45,13 +55,10 @@ global:
           existingSecret: camunda-credentials
           existingSecretKey: identity-keycloak-admin-password
 
-      # The address of the Keycloak deployed via the Keycloak Operator.
-      # Note that this instance of Keycloak **runs in a different namespace**
-      # than the namespace of the load test. This is on purpose, due to a
-      # limitation in how the Keycloak Operator works.
+      # The address of the Keycloak instance deployed via the Keycloak Operator.
       url:
         protocol: http
-        host: __NAMESPACE__.keycloak-operator.svc
+        host: keycloak # Keycloak Kubernetes Service
         port: '18080'
 
   security:
@@ -65,6 +72,18 @@ identity:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
+  # Dedicated M2M Keycloak client for the leader-balancer CronJob. `read:*` only gets
+  # orchestration-api onto its token; cluster-admin itself is granted below.
+  clients:
+    - id: leader-balancer
+      name: Leader Balancer
+      type: m2m
+      secret:
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-leader-balancer-client-secret
+      permissions:
+        - resourceServerId: orchestration-api
+          definition: read:*
   env:
     # https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/#google-stackdriver-json-logging
     - name: IDENTITY_LOG_APPENDER
@@ -225,14 +244,16 @@ orchestration:
         zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
         zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
 
-        # Camunda Exporter configuration
-        zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 500
-        zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
-
         # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-        zeebe.broker.flowControl.write.enabled: "true"
-        zeebe.broker.flowControl.write.limit: 10000
-        zeebe.broker.flowControl.write.throttling.enabled: "true"
+        # Uses the unified `camunda.*` property tree rather than the legacy `zeebe.broker.*` one, because otherwise only the default physical tenant
+        # receives this configuration.
+        camunda.processing.flow-control.write.enabled: "true"
+        camunda.processing.flow-control.write.limit: 10000
+        camunda.processing.flow-control.write.throttle.enabled: "true"
+        # Grant the dedicated leader-balancer client cluster-admin access, so it can call the
+        # coordinated `/cluster/v2/rebalance` endpoint. Set here, not via `orchestration.env`,
+        # which the Optimize overlays also define and would silently replace.
+        camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.
@@ -253,6 +274,10 @@ orchestration:
     minimumAge: 3d # Optimize needs time to import data before ILM cleanup (see #56443)
   # Retention for the Camunda Exporter
   history:
+    ## @param core.history.rolloverBatchSize defines the maximum number of process instances per batch during archiving.
+    rolloverBatchSize: 500
+    ## @param core.history.waitPeriodBeforeArchiving defines the grace period for processes to be excluded from archiving.
+    waitPeriodBeforeArchiving: "1m"
     retention:
       ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
       enabled: true

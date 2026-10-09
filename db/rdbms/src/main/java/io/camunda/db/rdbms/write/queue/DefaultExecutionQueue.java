@@ -329,8 +329,11 @@ public class DefaultExecutionQueue implements ExecutionQueue {
    * group is still preserved.<br>
    * <br>
    * In the second step the items inside the groups are sorted by the {@link WriteStatementType}
-   * (natural order) and {@link QueueItem#statementId()}. For some entities this step will lead to
-   * errors. Therefore, this second step can be deactivated in the {@link ContextType}.
+   * (natural order), then {@link QueueItem#order()} (default {@code 0}), then {@link
+   * QueueItem#statementId()}. The {@code order} field lets an individual item be placed before or
+   * after the others it would otherwise tie with, without changing how any other item in the group
+   * is sorted. For some entities this step will lead to errors. Therefore, this second step can be
+   * deactivated in the {@link ContextType}.
    *
    * @param items queue of items
    * @return optimized queue of items
@@ -347,7 +350,9 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       } else {
         final var contextItems = new ArrayList<>(entry.getValue());
         contextItems.sort(
-            Comparator.comparing(QueueItem::statementType).thenComparing(QueueItem::statementId));
+            Comparator.comparing(QueueItem::statementType)
+                .thenComparing(QueueItem::order)
+                .thenComparing(QueueItem::statementId));
         resultList.addAll(contextItems);
       }
     }

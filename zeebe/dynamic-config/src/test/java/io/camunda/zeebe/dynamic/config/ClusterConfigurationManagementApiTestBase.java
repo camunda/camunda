@@ -29,12 +29,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
@@ -82,11 +82,13 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
@@ -301,8 +303,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
   /**
    * Extra physical broker nodes to start alongside the coordinator, so that {@code
    * communicationService} can route requests to a member other than {@link #coordinatorId}. Used by
-   * tests where the coordinator resolved at request time (e.g. force-remove-zone routing around the
-   * removed zone) differs from the physical coordinator node.
+   * tests where the coordinator resolved at request time (e.g. forced zone-removal routing around
+   * the removed zone) differs from the physical coordinator node.
    */
   protected List<MemberId> extraPhysicalMembers() {
     return List.of();
@@ -419,7 +421,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
-        .containsExactly(new PartitionJoinOperation(memberFactory.apply(1), 1, 3));
+        .containsExactly(
+            new PartitionJoinOperation(memberFactory.apply(1), 1, 3, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 1));
   }
 
   @Test
@@ -442,7 +446,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
-        .containsExactly(new PartitionLeaveOperation(memberFactory.apply(1), 1, 1));
+        .containsExactly(
+            new PartitionDemoteOperation(memberFactory.apply(1), 1),
+            new PartitionLeaveOperation(memberFactory.apply(1), 1, 1));
   }
 
   @Test
@@ -470,7 +476,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 2),
+            new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
             new PostScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))));
@@ -498,7 +506,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
-        .hasSize(6)
+        .hasSize(8)
         .startsWith(
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))))
@@ -507,9 +515,11 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))))
         .contains(
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 2))
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 2, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 2))
         .containsSequence(
-            new PartitionJoinOperation(memberFactory.apply(1), 1, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 1, 1, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 1),
             new PartitionReconfigurePriorityOperation(memberFactory.apply(0), 1, 2));
   }
 
@@ -571,7 +581,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactlyInAnyOrder(
+            new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
+            new PartitionDemoteOperation(memberFactory.apply(1), 1),
             new PartitionLeaveOperation(memberFactory.apply(1), 1, 1),
             new PartitionReconfigurePriorityOperation(memberFactory.apply(0), 1, 1),
             new PartitionReconfigurePriorityOperation(memberFactory.apply(1), 2, 1));
@@ -655,7 +667,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 2),
+            new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
             new StartPartitionScaleUp(memberFactory.apply(0), 3),
             new PartitionBootstrapOperation(memberFactory.apply(0), 3, 1, true),
@@ -692,7 +706,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
             new MemberJoinOperation(memberFactory.apply(1)),
-            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1, true),
+            new PartitionPromoteOperation(memberFactory.apply(1), 2),
+            new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
             new StartPartitionScaleUp(memberFactory.apply(0), 3),
             new PartitionBootstrapOperation(memberFactory.apply(0), 3, 1, true),
@@ -745,10 +761,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
   @Test
   void shouldForceRemoveZone() {
     // given
-    // memberFactory.apply(0) is a bare (non-zoned) member so that the request is routed to the
-    // coordinator that the
-    // test's real communicationService actually knows about; the zone members below are the ones
-    // exercised by the force-remove-zone logic itself.
+    // memberFactory.apply(0) is a bare (non-zoned) member so that the forced request is routed to
+    // the coordinator that the test's real communicationService actually knows about; the zone
+    // members below are the ones exercised by the forced zone-removal logic itself.
     final var zoneA0 = MemberId.from("zone-a", 0);
     final var zoneA1 = MemberId.from("zone-a", 1);
     final var zoneB0 = MemberId.from("zone-b", 0);
@@ -768,10 +783,10 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 new ZoneAwareConfig(
                     List.of(new ZoneSpec("zone-a", 2, 1), new ZoneSpec("zone-b", 2, 2))));
     setCurrentTopology(currentTopology);
-    final var request = new ForceZoneRemoveRequest("zone-a", false);
+    final var request = new RemoveZoneRequest("zone-a", false, true);
 
     // when
-    final var changeStatus = clientApi.forceRemoveZone(request).join().get();
+    final var changeStatus = clientApi.removeZone(request).join().get();
 
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())

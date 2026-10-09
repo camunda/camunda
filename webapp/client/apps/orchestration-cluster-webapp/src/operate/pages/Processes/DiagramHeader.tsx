@@ -8,9 +8,10 @@
 
 import {useTranslation} from 'react-i18next';
 import {CopyButton} from '#/operate/shared/CopyButton/CopyButton';
-import {PanelHeader, Description, DescriptionTitle, DescriptionData} from './styled';
+import {PanelHeader, Description, DescriptionTitle, DescriptionData, HeaderActions} from './styled';
 import type {ProcessDefinitionSelection} from './DiagramPanel';
 import {getProcessDefinitionName} from './getProcessDefinitionName';
+import {ProcessOperations} from './ProcessOperations/ProcessOperations';
 
 type Props = {
 	processDefinitionSelection: ProcessDefinitionSelection;
@@ -34,8 +35,10 @@ const DiagramHeader: React.FC<Props> = ({processDefinitionSelection, panelHeader
 		<PanelHeader ref={panelHeaderRef}>
 			<Description>
 				<DescriptionTitle>{t('operate.processes.diagramHeader.processName')}</DescriptionTitle>
-				<DescriptionData title={name} role="heading" aria-level={2}>
-					{name}
+				<DescriptionData title={name}>
+					<span role="heading" aria-level={2}>
+						{name}
+					</span>
 				</DescriptionData>
 			</Description>
 			<Description>
@@ -51,6 +54,14 @@ const DiagramHeader: React.FC<Props> = ({processDefinitionSelection, panelHeader
 					<DescriptionData title={versionTag}>{versionTag}</DescriptionData>
 				</Description>
 			)}
+			<HeaderActions>
+				{processDefinitionSelection.kind === 'single-version' && (
+					<ProcessOperations
+						key={processDefinitionSelection.definition.processDefinitionKey}
+						definition={processDefinitionSelection.definition}
+					/>
+				)}
+			</HeaderActions>
 		</PanelHeader>
 	);
 };

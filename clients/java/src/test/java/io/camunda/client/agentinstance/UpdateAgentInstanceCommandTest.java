@@ -56,7 +56,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
   private static final long AGENT_INSTANCE_KEY = 1234L;
   private static final long ELEMENT_INSTANCE_KEY = 5678L;
   private static final long JOB_KEY = 91011L;
-  private static final String JOB_LEASE = "lease-token";
+  private static final String JOB_LEASE_TOKEN = "lease-token";
   private static final OffsetDateTime PRODUCED_AT = OffsetDateTime.parse("2025-06-01T12:00:00Z");
 
   private static AgentInstanceHistoryItem historyItem(final String historyItemId) {
@@ -81,7 +81,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .execute();
 
       // then
@@ -101,7 +101,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .status(AgentInstanceUpdateStatus.THINKING)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .execute();
 
       // then
@@ -121,7 +121,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .execute();
 
       // then
@@ -129,7 +129,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
       assertThat(body.getElementInstanceKey()).isEqualTo(String.valueOf(ELEMENT_INSTANCE_KEY));
       assertThat(body.getJobKey()).isEqualTo(String.valueOf(JOB_KEY));
-      assertThat(body.getJobLease()).isEqualTo(JOB_LEASE);
+      assertThat(body.getJobLeaseToken()).isEqualTo(JOB_LEASE_TOKEN);
       assertThat(body.getStatus()).isNull();
       assertThat(body.getHistory()).isNull();
     }
@@ -181,33 +181,33 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
   }
 
   @Nested
-  class JobLeaseValidationTest {
+  class JobLeaseTokenValidationTest {
 
     @Test
-    void shouldRejectNullJobLease() {
+    void shouldRejectNullJobLeaseToken() {
       assertThatThrownBy(
               () ->
                   client
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(null))
+                      .jobLeaseToken(null))
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessage("jobLease must not be null");
+          .hasMessage("jobLeaseToken must not be null");
     }
 
-    @ParameterizedTest(name = "jobLease=''{0}'' should be rejected")
+    @ParameterizedTest(name = "jobLeaseToken=''{0}'' should be rejected")
     @ValueSource(strings = {"", " "})
-    void shouldRejectBlankJobLease(final String jobLease) {
+    void shouldRejectBlankJobLeaseToken(final String jobLeaseToken) {
       assertThatThrownBy(
               () ->
                   client
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(jobLease))
+                      .jobLeaseToken(jobLeaseToken))
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessage("jobLease must not be blank");
+          .hasMessage("jobLeaseToken must not be blank");
     }
   }
 
@@ -224,7 +224,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(historyItem("item-1")))
           .execute();
 
@@ -265,6 +265,9 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                   new AgentInstanceHistoryMetrics()
                       .inputTokens(100L)
                       .outputTokens(50L)
+                      .reasoningTokenCount(30L)
+                      .cacheCreationTokenCount(40L)
+                      .cacheReadTokenCount(60L)
                       .durationMs(200L));
 
       // when
@@ -272,7 +275,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(item))
           .execute();
 
@@ -293,6 +296,9 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
               });
       assertThat(mappedItem.getMetrics().getInputTokens()).isEqualTo(100L);
       assertThat(mappedItem.getMetrics().getOutputTokens()).isEqualTo(50L);
+      assertThat(mappedItem.getMetrics().getReasoningTokenCount()).isEqualTo(30L);
+      assertThat(mappedItem.getMetrics().getCacheCreationTokenCount()).isEqualTo(40L);
+      assertThat(mappedItem.getMetrics().getCacheReadTokenCount()).isEqualTo(60L);
       assertThat(mappedItem.getMetrics().getDurationMs()).isEqualTo(200L);
     }
 
@@ -315,7 +321,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(item))
           .execute();
 
@@ -348,7 +354,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(
               Arrays.asList(historyItem("item-1"), historyItem("item-2"), historyItem("item-3")))
           .execute();
@@ -362,7 +368,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     }
 
     @Test
-    void shouldCombineJobKeyJobLeaseStatusAndHistoryInOneRequest() {
+    void shouldCombineJobKeyJobLeaseTokenStatusAndHistoryInOneRequest() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
 
@@ -372,7 +378,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .status(AgentInstanceUpdateStatus.THINKING)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(historyItem("item-1")))
           .execute();
 
@@ -380,7 +386,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
       final AgentInstanceUpdateRequest body =
           gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
       assertThat(body.getJobKey()).isEqualTo("91011");
-      assertThat(body.getJobLease()).isEqualTo(JOB_LEASE);
+      assertThat(body.getJobLeaseToken()).isEqualTo(JOB_LEASE_TOKEN);
       assertThat(body.getStatus()).isEqualTo(AgentInstanceUpdateStatusEnum.THINKING);
       assertThat(body.getHistory())
           .singleElement()
@@ -404,7 +410,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(item))
           .execute();
 
@@ -435,7 +441,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(item))
           .execute();
 
@@ -460,7 +466,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(item))
           .execute();
 
@@ -485,7 +491,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(item))
           .execute();
 
@@ -507,7 +513,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(
                           Collections.singletonList(
                               historyItem("item-1").limits(AgentInstanceLimits.of(-2L, 0, 0)))))
@@ -523,7 +529,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(
                           Collections.singletonList(
                               historyItem("item-1").limits(AgentInstanceLimits.of(1000L, -2, 0)))))
@@ -539,7 +545,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(
                           Collections.singletonList(
                               historyItem("item-1").limits(AgentInstanceLimits.of(1000L, 10, -2)))))
@@ -560,7 +566,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(item))
           .execute();
 
@@ -589,7 +595,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(item))
           .execute();
 
@@ -612,7 +618,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(historyItem("item-1")))
           .execute();
 
@@ -646,7 +652,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(item))
           .execute();
 
@@ -681,7 +687,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(null))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("history must not be null");
@@ -695,7 +701,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(Collections.singletonList(null)))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("history must not contain null elements");
@@ -709,7 +715,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(
                           Collections.singletonList(historyItem("item-1").historyItemId(null))))
           .isInstanceOf(IllegalArgumentException.class)
@@ -725,7 +731,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(
                           Collections.singletonList(
                               historyItem("item-1").historyItemId(historyItemId))))
@@ -742,7 +748,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(
                           Collections.singletonList(
                               historyItem("item-1").loopIteration(loopIteration))))
@@ -758,7 +764,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(Collections.singletonList(historyItem("item-1").role(null))))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("role must not be null");
@@ -772,7 +778,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(Collections.singletonList(historyItem("item-1").content(null))))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("content must not be null");
@@ -786,7 +792,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(Collections.singletonList(historyItem("item-1").producedAt(null))))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("producedAt must not be null");
@@ -800,7 +806,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(
                           Collections.singletonList(
                               historyItem("item-1")
@@ -823,7 +829,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .jobKey(JOB_KEY)
-          .jobLease(JOB_LEASE)
+          .jobLeaseToken(JOB_LEASE_TOKEN)
           .history(Collections.singletonList(item))
           .execute();
 
@@ -841,7 +847,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(
                           Collections.singletonList(
                               historyItem("item-1")
@@ -863,7 +869,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                       .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
                       .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                       .jobKey(JOB_KEY)
-                      .jobLease(JOB_LEASE)
+                      .jobLeaseToken(JOB_LEASE_TOKEN)
                       .history(
                           Collections.singletonList(
                               historyItem("item-1").tools(Collections.singletonList(null))))
@@ -903,7 +909,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
               .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .execute();
 
       // then
@@ -930,7 +936,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
               .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .jobKey(JOB_KEY)
-              .jobLease(JOB_LEASE)
+              .jobLeaseToken(JOB_LEASE_TOKEN)
               .execute();
 
       // then

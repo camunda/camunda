@@ -23,6 +23,10 @@ function formatDuration(ms: number): string {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(2)}s`;
 }
 
+function formatToken(tokens: number | null): string {
+  return tokens?.toLocaleString() ?? '---';
+}
+
 type Props = {
   metrics: AgentInstanceHistoryItemMetrics | null;
 };
@@ -41,12 +45,28 @@ const MessageMetrics: React.FC<Props> = memo(function MessageMetrics({
 
   const totalTokensMetric =
     (metrics.inputTokens ?? 0) + (metrics.outputTokens ?? 0);
-  const tokensTooltip = `Input: ${metrics.inputTokens?.toLocaleString() ?? '---'} · Output: ${metrics.outputTokens?.toLocaleString() ?? '---'}`;
+  const inputTooltip = `Input: ${formatToken(metrics.inputTokens)} ${metrics.cacheReadTokenCount !== null ? `(${formatToken(metrics.cacheReadTokenCount)} cached)` : ''}`;
+  const outputTooltip = `Output: ${formatToken(metrics.outputTokens)} ${metrics.reasoningTokenCount !== null ? `(${formatToken(metrics.reasoningTokenCount)} reasoning)` : ''}`;
+  const cacheWriteTooltip =
+    metrics.cacheCreationTokenCount !== null
+      ? `Cache write: ${formatToken(metrics.cacheCreationTokenCount)}`
+      : '';
 
   return (
     <MetricsContainer>
       {(metrics.inputTokens !== null || metrics.outputTokens !== null) && (
-        <Tooltip description={tokensTooltip} align="bottom">
+        <Tooltip
+          description={
+            <>
+              {inputTooltip}
+              <br />
+              {outputTooltip}
+              <br />
+              {cacheWriteTooltip}
+            </>
+          }
+          align="bottom"
+        >
           <Tag data-testid="message-token-metric" type="gray" size="sm">
             {totalTokensMetric.toLocaleString()}
             &nbsp;tokens

@@ -11,7 +11,7 @@ import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {StartProcessFormModal} from './StartProcessFormModal';
+import {StartProcessFormModal, StartProcessFormModalError} from './StartProcessFormModal';
 
 const FORM_SCHEMA = JSON.stringify({
 	components: [
@@ -51,7 +51,7 @@ describe('<StartProcessFormModal />', () => {
 
 		await expect.element(screen.getByRole('dialog', {name: 'Start process Invoice review'})).toBeVisible();
 		await expect.element(screen.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Share process URL'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Copy link'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Cancel'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Start process'})).toBeVisible();
 	});
@@ -104,7 +104,7 @@ describe('<StartProcessFormModal />', () => {
 			/>,
 		);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Share process URL'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Copy link'}));
 
 		expect(writeText).toHaveBeenCalledWith(window.location.href);
 	});
@@ -128,5 +128,28 @@ describe('<StartProcessFormModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Start process'}));
 
 		await expect.poll(() => onSubmit.mock.calls).toEqual([[[{name: 'customerName', value: '"Jane Doe"'}]]]);
+	});
+});
+
+describe('<StartProcessFormModalError />', () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
+	it('should explain that the referenced start form was not deployed', async () => {
+		const screen = await render(
+			<StartProcessFormModalError processDisplayName="Invoice review" variant="form-not-deployed" onClose={vi.fn()} />,
+		);
+
+		await expect
+			.element(
+				screen.getByText('The start form for this process could not be loaded. Make sure the form has been deployed.'),
+			)
+			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Try again'})).not.toBeInTheDocument();
 	});
 });

@@ -179,6 +179,7 @@ You can specify a secondary storage type as the second argument:
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
+The Makefile also disables the data availability monitoring and the k6 `data-read` test, because they read from secondary storage.
 
 #### ECK Elasticsearch
 
@@ -345,46 +346,94 @@ make template-load-test-setup-chaos
 
 In the GitHub workflow, set the `enable-chaos` input to `true`.
 
-#### Optional second physical tenant
+#### Optional PostgreSQL connection pooling (PgBouncer)
 
-A load test can exercise **two physical tenants** (`default` and `testfoo`) on a single cluster that
-share one RDBMS, isolated by table prefix (`DEFAULT_` / `TESTFOO_`). This validates physical-tenant
-isolation and independent load per tenant.
+For `secondary_storage=postgresql`, each broker pod opens one connection pool per physical
+tenant, so client connections to Postgres scale as (broker pods x physical tenants) and can
+exceed Postgres's default `max_connections` under a large fleet (e.g. 10 brokers x 10
+tenants). Enabling this option deploys a CNPG `Pooler` (PgBouncer, transaction-pooling mode)
+in front of the PostgreSQL cluster and points Camunda's JDBC URL at it instead of the
+cluster's `-rw` Service — see [Connection pooling
+(PgBouncer)](charts/load-test-setup/README.md#connection-pooling-pgbouncer) for the full
+rationale.
 
-Because physical tenants are isolated by RDBMS table prefix, this only works with an rdbms
-`secondary_storage` (`postgresql`, `mysql`, `mariadb`, `mssql`, `oracle`); any other value fails fast.
+This is opt-in and off by default; only supported with `secondary_storage=postgresql`.
+Pass `--use-pgbouncer` to `newLoadTest.sh` when scaffolding the namespace:
 
 ```sh
-make install physical_tenants=true secondary_storage=postgresql scenario=typical
+./newLoadTest.sh <namespace> postgresql 1 true --use-pgbouncer
 ```
 
-When enabled, the Makefile:
+#### Optional physical tenants (pt1..ptN)
 
-- Applies `camunda-platform-two-physical-tenants-shared-rdbms.yaml` (a copy of
-  `camunda-platform-values-rdbms.yaml` that also declares the `testfoo` tenant: its `TESTFOO_` prefix,
-  OIDC provider assignment, and orchestration-client authorizations) instead of the plain rdbms values.
-- Clones the generated `load-test-credentials` secret into `load-test-credentials-testfoo`, overriding
-  only the REST address to the tenant path `http://camunda:8080/physical-tenants/testfoo`.
+A load test can exercise **N extra physical tenants** (`pt1`, `pt2`, ..., `ptN`) alongside the
+default tenant, all sharing the namespace's `secondary_storage` and isolated from it and from each
+other:
+
+- **rdbms** (`postgresql`, `mysql`, `mariadb`, `mssql`, `oracle`): shared database, isolated by table
+  prefix (`DEFAULT_`, `PT1_`, `PT2_`, ...).
+- **elasticsearch** / **opensearch**: shared cluster, isolated by index prefix (`default-`, `pt1-`,
+  `pt2-`, ...).
+- **none**: no storage layer to isolate — this still exercises broker/engine/REST-routing-level
+  physical-tenant isolation without a storage layer to configure.
+
+This is supported starting from `stable-810` only.
+
+```sh
+make install physical_tenant_count=3 secondary_storage=postgresql scenario=typical
+```
+
+When `physical_tenant_count > 0`, the Makefile:
+
+- Generates `camunda-platform-physical-tenants.yaml` (see `generate-physical-tenant-values.sh`) —
+  the storage prefixes above, plus per-tenant orchestration-client authorizations (the same grants
+  the default tenant has: `CREATE` on `RESOURCE`, `CREATE_PROCESS_INSTANCE`/`UPDATE_PROCESS_INSTANCE`/
+  `READ_PROCESS_INSTANCE`/`READ_PROCESS_DEFINITION` on `PROCESS_DEFINITION`, `CREATE` on `MESSAGE`) and
+  OIDC provider assignment — and layers it on top of the plain storage values.
 - Renders the `starter`/`worker` from the same chart, values, scenario and **image** as the default
-  tester, renames them to `starter-testfoo`/`worker-testfoo`, and applies them. The testfoo tester uses
-  REST (`global.preferRest.enabled=true`) because gRPC only routes to the default physical tenant.
+  tester, renames them to `starter-pt<i>`/`worker-pt<i>`, and applies them — looped over `pt1..ptN`.
+  Each tester gets a `CAMUNDA_CLIENT_PHYSICAL_TENANT_ID=pt<i>` env var, which routes both gRPC and
+  REST traffic to that tenant, so no per-tenant secret or address override is needed.
 
-A second Helm release is not used because the `camunda-load-tests` subchart hardcodes the
-`starter`/`worker` resource names, which would collide in the same namespace.
+A second Helm release per tenant is not used because the `camunda-load-tests` subchart hardcodes the
+`starter`/`worker` resource names, which would collide in the same namespace. This also means each
+extra tenant gets its own starter/worker deployment set, not a shared pool that scales work across
+tenants.
 
-In the GitHub workflow, set the `physical-tenants` input to `true` (with an rdbms
-`secondary-storage-type`).
+In the GitHub workflow, set the `physical-tenant-count` input (with `secondary-storage-type` set to
+the storage you want all tenants to share).
 
-Verify both tenants receive writes:
+Verify the tenants receive writes — for rdbms, table names fold to the RDBMS's default identifier
+case (e.g. Postgres lowercases unquoted identifiers):
 
 ```sh
 kubectl exec -n <namespace> postgresql-0 -- env PGPASSWORD=camunda \
   psql -U camunda -d camunda -c "
 SELECT 'default' AS tenant, COUNT(*) FROM default_process_instance
-UNION ALL SELECT 'testfoo', COUNT(*) FROM testfoo_process_instance;"
+UNION ALL SELECT 'pt1', COUNT(*) FROM pt1_process_instance;"
 ```
 
+For elasticsearch/opensearch, check indices named `default-*`/`pt1-*` etc. instead.
+
 This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
+
+##### Sizing for extra tenants (elasticsearch/opensearch)
+
+Each extra tenant with its own index prefix adds a full set of Camunda's indices to the cluster.
+`physical_tenant_count` does not auto-scale the ES/OS node count — if you're pushing past a couple of
+tenants, watch the per-node shard limit and bump the cluster size yourself via the existing
+`load-test-setup-helm-values` workflow input (or directly on `make install`):
+
+```sh
+make install physical_tenant_count=3 secondary_storage=elasticsearch \
+  additional_load_test_setup_configuration="--set elasticsearch.count=5"
+```
+
+`elasticsearch.count` (ECK custom resource, default 3) is defined in
+`charts/load-test-setup/values.yaml`; the `opensearch` subchart has its own replica value under the
+same file. As a rough starting point, plan for one additional node per 2-3 extra tenants at the
+default shard settings — reduce further if you also raise the shard/replica counts in the platform
+values.
 
 ### Running specific scenarios
 
@@ -395,7 +444,7 @@ To run a specific workload profile, use one of the named targets:
 make latency   # 1 instance/s, 1 worker — low-throughput, useful for latency measurements
 make typical   # 50 instances/s, 6 workers, typical_process BPMN
 make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
-make max       # 300 instances/s — maximum stress, also disables consistency check overhead
+make max       # 300 instances/s (500 with secondary_storage=none) — maximum stress, also disables consistency check overhead
 make archiver  # Multi-instance archiver scenario (no workers)
 ```
 
@@ -426,13 +475,13 @@ make template-load-test scenario=max  # renders load test manifests
 
 ### Accessing Services
 
-Benchmark clusters have authentication enabled. Logging into Operate, Tasklist and Admin webapps requires both Camunda and Keycloak reachable locally so that the SSO redirect works. Keycloak itself runs in the shared `keycloak-operator` namespace, as a Service named after the load test namespace, not inside `<namespace>` (see [Keycloak in the load test setup chart README](charts/load-test-setup/README.md#keycloak)).
+Benchmark clusters have authentication enabled. Logging into Operate, Tasklist and Admin webapps requires both Camunda and Keycloak reachable locally so that the SSO redirect works.
 
 1. Port-forward both Camunda and Keycloak:
 
 ```sh
 kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
-kubectl -n keycloak-operator port-forward svc/<namespace> 18080:18080 &
+kubectl -n <namespace> port-forward svc/keycloak 18080:18080 &
 wait
 ```
 
@@ -459,7 +508,7 @@ To use [c8ctl](https://github.com/camunda/c8ctl) against the cluster, port-forwa
 ```sh
 export NAMESPACE="..."
 kubectl -n $NAMESPACE port-forward svc/camunda-gateway 8080:8080 &
-kubectl -n keycloak-operator port-forward svc/$NAMESPACE 18080:18080 &
+kubectl -n $NAMESPACE port-forward svc/keycloak 18080:18080 &
 
 export CAMUNDA_BASE_URL=http://localhost:8080
 export CAMUNDA_OAUTH_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
@@ -485,12 +534,6 @@ make clean
 ```
 
 This uninstalls the Helm releases (Camunda Platform + load test + load-test-setup, the latter including the Prometheus Elasticsearch exporter subchart when enabled), removes any secondary-storage chart/PVCs, and finally `kubectl delete namespace --ignore-not-found --wait` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
-
-`make clean` also explicitly deletes the Keycloak resources `keycloak-operator` namespace since they
-don't live in the namespace being torn down.
-If you ever delete a load test namespace by hand (`kubectl delete namespace` directly, without `make
-clean`), you must also delete those separately, or they leak forever — see [Cleanup in the load test
-setup chart README](charts/load-test-setup/README.md#cleanup).
 
 The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reinstall the load-test-setup chart, which recreates the namespace and credentials secret), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
 

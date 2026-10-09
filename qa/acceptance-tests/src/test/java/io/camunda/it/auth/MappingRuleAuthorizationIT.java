@@ -24,6 +24,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -86,6 +87,7 @@ class MappingRuleAuthorizationIT {
 
     // when / then
     Awaitility.await("until the rule is visible in the search results")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 assertThat(
@@ -227,6 +229,7 @@ class MappingRuleAuthorizationIT {
 
     // make sure it's available for get/search afterwards
     Awaitility.await("Mapping rule exists in secondary storage")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(IOException.class)
         .untilAsserted(
             () ->

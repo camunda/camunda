@@ -15,11 +15,72 @@ incidents affecting the monorepo CI.
 
 **What:** Check the following:
 
-- [Camunda CI Platform status](https://status.camunda.cloud/) (Infra team)
-- [GitHub status](https://www.githubstatus.com/) (Actions, PRs, API, Git, etc.)
+- [Camunda CI Platform status](https://status.camunda.cloud/) (Infra team; also covers Nexus, which
+  is hosted infra rather than a third party with its own public status page)
+- [GitHub status](https://www.githubstatus.com/) (Actions, PRs, API, Git, etc.; the official page
+  can be slow to acknowledge problems, so also check
+  [Downdetector for GitHub](https://downdetector.com/status/github/) for a faster user-reported
+  signal)
 - [DockerHub status](https://www.dockerstatus.com/) (Docker image push/pull)
 - [Maven Central status](https://status.maven.org/) (Maven artifact up-/downloads)
 - [Minimus status](https://docs.minimus.io/status) (Minimus Docker registry)
+- [npm registry status](https://status.npmjs.org/) (npm package up-/downloads)
+- [Snyk status](https://status.snyk.io/) (vulnerability scanning jobs)
+- [AWS status](https://health.aws.amazon.com/health/status) (Aurora/OpenSearch integration test suites)
+- [Mend (Renovate) status](https://status.mend.io/) (see [Renovate](./ci.md#renovate) for details)
+- [FOSSA status](https://status.fossa.com/) (license checks, see [Check Licenses Workflow High
+  Failure Rate](#check-licenses-workflow-high-failure-rate))
+
+### Third-Party Service Outage
+
+**When:** An external dependency (GitHub Actions, DockerHub, Maven Central, Minimus, npm registry,
+Snyk, AWS, Mend/Renovate, etc.) or Infra-hosted service (Nexus) is degraded or down, and it is
+causing CI failures across multiple jobs, workflows, or branches.
+
+**What:**
+
+1. **Confirm it's actually external.** Check the [status pages](#checking-important-status-pages)
+   for the suspected service. If the status page is green, don't assume the service is fine —
+   partial outages and regional issues often lag behind status pages — but treat a same-shape
+   failure across unrelated jobs/branches as a stronger signal than the status page itself.
+2. **Look for the shared symptom**, not the individual failures: connection timeouts/resets pulling
+   a specific image, `401`/`403`/`429`/`5xx` responses from a registry, Maven artifact resolution
+   failures, GitHub API rate-limiting, etc. Cross-reference recent alerts — if several unsuccessful
+   jobs/merge-queue/disconnect alerts fire together, check whether they share the same root cause
+   before treating them as separate incidents (see [Base Branch Unsuccessful
+   Job](#base-branch-unsuccessful-job) and [Merge Queue High Failure
+   Rate](#merge-queue-high-failure-rate)).
+3. **Stop the bleeding, don't fix the third party.** We cannot resolve someone else's outage, so
+   focus on unblocking engineers:
+   - If a specific step is affected (e.g. pulling an image from a particular registry) and there is
+     a working mirror/cache, switch to it temporarily.
+   - If retries are likely to succeed (rate-limiting, transient network blips), re-run the affected
+     jobs/workflows rather than investigating further.
+   - If the merge queue is broken because of this, do **not** bypass it outright — see [Bypassing
+     GitHub Merge Queue](#bypassing-github-merge-queue) for the proper procedure, and only use it if
+     merging is genuinely time-critical (e.g. a fix for the outage itself).
+   - If a non-essential step (e.g. a license scan, a non-blocking smoke test) is the only thing
+     failing, consider temporarily disabling it rather than blocking all merges — see [Temporarily
+     Disable Tests To Lessen Impact](#temporarily-disable-tests-to-lessen-impact).
+   - Keep workarounds in our workflows bounded in complexity and effort. Retries for network
+     errors and timeouts for network operations (e.g. `git checkout`) are fine. If a workaround
+     needs substantial or fragile logic, decide against it and accept the upstream outage, because
+     that logic has to be maintained long after the outage is gone. For example, see [why we do not
+     map GitHub API job names to workflow YAML job keys](./ci.md#github-api-job-names-vs-workflow-job-keys).
+4. **Communicate status.** Note in the incident channel/ticket which dependency is affected, a
+   link to its status page, and whether resolution is outside our control (external service) or
+   needs the Infra team (Nexus). This avoids duplicate investigation by other engineers hitting the
+   same symptom.
+5. **Wait for recovery, then verify.** Once the status page reports resolution (or failures stop
+   reproducing on retry), re-run previously failed jobs to confirm CI is healthy again before
+   closing the incident. Don't close purely on the status page turning green — confirm with an
+   actual green CI run.
+6. **Follow up if recurring.** If a particular third party causes repeated incidents, consider
+   whether we need a more resilient setup (e.g. a caching proxy/mirror, retries with backoff, or
+   pinning to a more stable alternative) and raise it as a follow-up issue rather than solving it
+   mid-incident.
+
+---
 
 ### Temporarily Disable Tests To Lessen Impact
 
@@ -63,6 +124,20 @@ other PRs e.g. from Renovate to be automatically merged even though they fail CI
 4. Ask a repository admin to temporarily change the
    [unified-ci-merges-*-branch ruleset for the desired branch](https://github.com/camunda/camunda/settings/rules)
    to remove you from the `Bypass list` and save.
+
+### Silencing While You Fix It
+
+**When:** You are medic for an incident and _are working a fix_ for a job that keeps re-alerting — typically a nightly or otherwise infrequent job that fails every few days, so each failure arrives long after incident.io's grouping window (48h) thus raising a fresh, duplicate incident.
+
+**What:**
+
+Run the [ci-silence-incident workflow](https://github.com/camunda/camunda/actions/workflows/ci-silence-incident.yml) with the `workflow_job` value copied verbatim from the alert/incident and your incident INC-???? reference.
+
+The rules it enforces:
+
+- **Unified CI can never be silenced.** It gates every merge, so muting it hides breakage for the whole repository — find a mitigation instead.
+- **Seven days maximum**, 3 by default. If the fix needs longer, run the workflow again once the silence has expired, or ask the Monorepo CI medic to expire it early so you can renew it. A silence that renews itself unnoticed is how a job quietly stops being watched.
+- **An incident reference is required**, and lands in the silence comment so an active silence can always be traced back to the work that justified it.
 
 ## Alert Runbooks
 
@@ -110,13 +185,35 @@ artifacts might not get built or uploaded to artifact repositories, and indicate
 since we expect only green builds. Unlike merge-queue failures which block PRs, base-branch failures
 affect artifact availability and release readiness.
 
-Each alert instance is grouped by workflow job name and thus spans multiple base branches, and includes:
+Each alert instance is grouped by workflow job name and thus spans multiple base branches (unless it
+is a flood, see below), and includes:
 
 - Number of unsuccessful runs in the evaluation window
 - Links to failed workflow runs in the evaluation window (useful for root cause analysis)
 - Owner of the job (assigned by default)
 - Link to the Job Trends dashboard for the job (useful to verify recovery)
 - Associated failed test cases (if any)
+
+#### Flood Instances
+
+When several Unified CI jobs fail within a short window they almost always share one cause, so they
+are grouped into a single **flood** instance named `CI: job failure flood (<timestamp>)` rather than
+one incident per job. Such an instance:
+
+- Lists the affected jobs (up to 10, plus a count of any remainder) and every affected branch
+- Is assigned to the Monorepo CI medic rather than to one of the several owning teams
+- Makes **no claim about the cause** — a flood only means "these failed together", and is as likely
+  to be one commit breaking many modules as an external outage
+
+Treat it as a single investigation: look for the shared symptom first (see [Third-Party Service
+Outage](#third-party-service-outage)) instead of triaging each listed job separately.
+
+**Single jobs alert later than you might expect.** A lone unsuccessful Unified CI job is held back
+until no further Unified CI job has failed for 20 minutes, so that a flood building up across two
+evaluation intervals is recognised as one flood instead of several separate incidents. Expect the
+alert 20–35 minutes after the job finished. Floods and all non-Unified-CI workflows are not held. A
+gap between a failure you can already see in GitHub Actions and the alert is therefore normal, not a
+sign that alerting is broken.
 
 #### Troubleshooting
 
@@ -137,7 +234,7 @@ You can leverage [incident.io MCP](https://docs.incident.io/ai/remote-mcp) toget
    - Infrastructure issues (self-hosted runner problems, disk space, etc.)
    - For `check-licenses.yml` see [find specific FOSSA instructions](#check-licenses-workflow-high-failure-rate)
 
-3. **Check for related alerts**: If multiple jobs or workflows are failing simultaneously, there may be a common root cause (e.g., external service outage, infrastructure problem). Cross-reference recent incident reports.
+3. **Check for related alerts**: If multiple jobs or workflows are failing simultaneously, there may be a common root cause (e.g., external service outage, infrastructure problem). Cross-reference recent incident reports. Simultaneous Unified CI job failures are already folded into one [flood instance](#flood-instances), so what is left to correlate manually are failures across *other* workflows in the same window.
 
 4. **Examine test failures**: If the alert includes unsuccessful test cases, use the test case names to determine whether:
    - The test is new and unstable
@@ -156,10 +253,35 @@ You can leverage [incident.io MCP](https://docs.incident.io/ai/remote-mcp) toget
 - For flaky tests, refer to the [Flaky Test Gate documentation](./flaky-test-gate.md) on how to fix or mark them.
 - For timeouts or performance issues, optimize the job (parallelization, caching, reducing scope).
 - For infrastructure issues, coordinate with the Infra team.
+- Consider [silencing](#silencing-while-you-fix-it) CI incidents for nightly jobs that take longer to fix, to avoid noise.
 
 **Validation**:
 - Monitor the [Job Trends dashboard](https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda) to confirm the fix reduces the failure rate.
 - Ensure the job remains stable across multiple successful runs before closing the incident.
+- If the job was [silenced](#silencing-while-you-fix-it), ask the Monorepo CI medic to expire the silence (medics are Grafana Viewers and cannot), or let it run out.
+
+#### Known Problems
+
+##### Duplicate push event cancels runs on the same commit
+
+**Symptom:** several workflows on one base branch show `cancelled` at the same time with
+`Error: The operation was canceled.`, a few minutes after a merge. Each has a twin run for the
+**same commit** that started later and usually succeeds.
+
+**Cause:** a known GitHub bug publishes one push event twice. Our `concurrency` group keys on
+`github.sha` for base branches, so the second set of runs cancels the first. GitHub Support
+confirmed it and is tracking a fix. They advise keeping `cancel-in-progress: true`, since it
+limits the cost of the duplicate.
+
+**How to confirm:** the branch's ref activity lists the same `before -> after` update twice:
+
+```bash
+gh api "/repos/camunda/camunda/activity?ref=refs/heads/<branch>&per_page=20" \
+  --jq '.[] | [.timestamp, .activity_type, .before[0:8], .after[0:8]] | @tsv'
+```
+
+**What to do:** check that the later same-commit runs succeeded, then close the incident as L2.
+No workflow change is needed.
 
 ---
 
@@ -287,6 +409,31 @@ issues.
 
 ---
 
+### Snapshot Artifact No Longer Published
+
+Either snapshot alert can also fire because the artifact was intentionally retired (e.g. a module
+removed from the monorepo), not because publishing broke.
+
+The artifact-metadata-exporter only tracks the highest version it has ever seen per Maven
+coordinate, so alerts effectively cover the latest minor release only. Once a module is dropped
+from `main`, that frozen version keeps alerting even though the older `stable/X.Y` branches that
+still build it are publishing fine.
+
+#### Troubleshooting
+
+- Check the alert's `tag` label. A version higher than anything an active branch builds means the
+  exporter is tracking a retired artifact.
+- Confirm the module is gone from the branch that produced that tag (grep that branch's `pom.xml`,
+  or look for the removal PR).
+
+#### Solutions
+
+Ask the Infra team to drop it from the
+artifact-metadata-exporter's watchlist — see
+[infra-core#14262](https://github.com/camunda/infra-core/pull/14262) for an example.
+
+---
+
 ### Camunda Helm Chart Integration Test Failure
 
 You may observe one or more of the following:
@@ -366,6 +513,18 @@ The [Preview Environment Smoke Test](https://github.com/camunda/camunda/actions/
 runs weekly on Mondays to verify that preview environment deployments are working correctly. A
 failure indicates a potential issue with the preview environment infrastructure that could affect
 developers using the `deploy-preview` label on their PRs.
+
+> **Note — a job for an unreleased version is skipped on purpose:** The `deploy-<version>` job for a
+> minor that hasn't been released yet is set up to run only when someone starts the workflow by hand.
+> This is because its smoke tests often don't exist yet in
+> [`camunda/c8-cross-component-e2e-tests`](https://github.com/camunda/c8-cross-component-e2e-tests).
+> If that job did run on schedule, it would fail every Monday with `No tests found` and page
+> `monorepo-ci-medic` for something no one can fix.
+>
+> **So:** don't turn on a version's job (or move the smoke tests to a new version) until that minor is
+> released and its tests exist — see the [minor-release checklist](release/release-monorepo.md). If the
+> Monday run fails only on a version that isn't released yet, that's expected. Skip that job instead of
+> treating it as a real infra failure.
 
 #### Troubleshooting
 

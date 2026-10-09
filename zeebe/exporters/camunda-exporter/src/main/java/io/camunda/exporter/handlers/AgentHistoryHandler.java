@@ -101,7 +101,7 @@ public class AgentHistoryHandler
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setTenantId(value.getTenantId())
         .setJobKey(value.getJobKey())
-        .setJobLease(value.getJobLease())
+        .setJobLeaseToken(value.getJobLeaseToken())
         .setLoopIteration(value.getLoopIteration())
         .setRole(mapRole(value.getRole()))
         .setCommitStatus(mapCommitStatusFromIntent(intent));
@@ -119,6 +119,12 @@ public class AgentHistoryHandler
                       value.getProducedAt() > 0 ? value.getProducedAt() : record.getTimestamp())))
           .setInputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getInputTokens()))
           .setOutputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
+          .setReasoningTokenCount(
+              ExporterUtil.nullIfNegative(value.getMetrics().getReasoningTokenCount()))
+          .setCacheCreationTokenCount(
+              ExporterUtil.nullIfNegative(value.getMetrics().getCacheCreationTokenCount()))
+          .setCacheReadTokenCount(
+              ExporterUtil.nullIfNegative(value.getMetrics().getCacheReadTokenCount()))
           .setDurationMs(ExporterUtil.nullIfNegative(value.getMetrics().getDurationMs()))
           .setContent(AgentContentMapper.mapContent(value.getContent()))
           .setToolCalls(mapToolCalls(value.getToolCalls()))

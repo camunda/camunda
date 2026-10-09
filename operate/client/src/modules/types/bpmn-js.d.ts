@@ -91,6 +91,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     cancelActivity?: boolean;
     triggeredByEvent?: boolean;
     $instanceOf?: (type: string) => boolean;
+    get?: (property: string) => unknown;
     isForCompensation?: boolean;
     targetRef?: BusinessObject;
   };

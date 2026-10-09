@@ -7,14 +7,19 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
+import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
+import io.camunda.application.commons.search.SchemaInitializationRecoveryCheck;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
-import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsSchemaManagers;
 import io.camunda.db.rdbms.RdbmsSchemaMigrationStatusProvider;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -25,40 +30,92 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
+@NullMarked
 public class MyBatisConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
 
   /**
    * The registry every consumer of "is this tenant's schema ready" resolves — the RDBMS exporter,
-   * the request-time rejection path and the per-tenant readiness gauge — and, on a multi-tenant
-   * node, the bean that initializes each tenant's schema in isolation.
+   * the request-time rejection path and the per-tenant readiness gauge. It reports nothing as
+   * initialized until {@link #rdbmsSchemaInitializer} binds itself to it.
    */
   @Bean
-  public RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry(
+  @Profile("!restore")
+  public LazyInitializedRdbmsSchemaRegistry rdbmsSchemaManagerRegistry() {
+    return new LazyInitializedRdbmsSchemaRegistry();
+  }
+
+  /** The bean that initializes each tenant's schema in isolation. */
+  @Bean
+  @Profile("!restore")
+  public RdbmsSchemaInitializer rdbmsSchemaInitializer(
       final RdbmsDataSources rdbmsDataSources,
-      final PhysicalTenantResolver physicalTenantResolver) {
+      final PhysicalTenantResolver physicalTenantResolver,
+      final BrokerTopologyManager brokerTopologyManager,
+      final LazyInitializedRdbmsSchemaRegistry rdbmsSchemaManagerRegistry,
+      // if present, then it will ensure that the broker is started first, so that the recovery
+      // check reads the broker's own cluster configuration
+      @Autowired(required = false) final @Nullable Broker broker) {
     // VersionUtil.getVersion() may not be a valid semantic version during local development;
     // the schema-version check is skipped in that case.
-    return new RdbmsSchemaInitializer(
-        RdbmsSchemaManagers.fromConfigs(
-            physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
-            VersionUtil.getVersion()));
+    final var initializer =
+        new RdbmsSchemaInitializer(
+            RdbmsSchemaManagers.fromConfigs(
+                physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
+                VersionUtil.getVersion()),
+            physicalTenantId -> retryConfiguration(physicalTenantResolver, physicalTenantId),
+            PerTenantSchemaInitialization.DeferralCheck.of(
+                new SchemaInitializationRecoveryCheck(brokerTopologyManager)::shouldDefer));
+    rdbmsSchemaManagerRegistry.bind(initializer);
+    return initializer;
+  }
+
+  /**
+   * Reports each physical tenant's schema initialization for operators. Like the RDBMS status
+   * indicator, it is in no probe group.
+   */
+  @Bean
+  @Profile("!restore")
+  public HealthIndicator physicalTenantSchemaInitializationHealthIndicator(
+      final RdbmsSchemaInitializer rdbmsSchemaInitializer) {
+    return new PhysicalTenantSchemaInitializationHealthIndicator(rdbmsSchemaInitializer::statuses);
+  }
+
+  private static RetryConfiguration retryConfiguration(
+      final PhysicalTenantResolver physicalTenantResolver, final String physicalTenantId) {
+    final var retry =
+        physicalTenantResolver
+            .forPhysicalTenant(physicalTenantId)
+            .getData()
+            .getSecondaryStorage()
+            .getRdbms()
+            .getRetry();
+    final var converted = new RetryConfiguration();
+    converted.setMaxRetries(retry.getMaxRetries());
+    converted.setMinRetryDelay(retry.getMinRetryDelay());
+    converted.setMaxRetryDelay(retry.getMaxRetryDelay());
+    return converted;
   }
 
   /**
    * Reports whether every physical tenant's RDBMS schema has migrated to the running application
    * version, for the upgrade-readiness endpoint (camunda/product-hub#3067). Built from the same
-   * per-tenant configs as {@link #rdbmsSchemaManagerRegistry}, but independently — this needs to
-   * read the schema version regardless of whether this application's own Liquibase run applied it
-   * or an operator's external tooling did.
+   * per-tenant configs as {@link #rdbmsSchemaInitializer}, but independently — this needs to read
+   * the schema version regardless of whether this application's own Liquibase run applied it or an
+   * operator's external tooling did.
    */
   @Bean
   public RdbmsSchemaMigrationStatusProvider rdbmsSchemaMigrationStatusProvider(

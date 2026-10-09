@@ -5,6 +5,9 @@ description: Weekly report analyzing recent CI changes for potential cost increa
 on:
   schedule: weekly on monday
   workflow_dispatch:
+engine:
+  id: copilot
+  model: sonnet
 checkout:
   fetch-depth: 0
 permissions:
@@ -70,6 +73,10 @@ safe-outputs:
   update-issue:
     max: 1
     target: "*"
+  threat-detection:
+    engine:
+      id: copilot
+      model: detection
 ---
 
 # CI Change Cost Impact Analysis

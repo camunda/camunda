@@ -18,6 +18,7 @@ import io.camunda.it.rdbms.db.fixtures.MessageSubscriptionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.MessageSubscriptionEntity;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -79,6 +80,105 @@ public class MessageSubscriptionIT {
         messageSubscriptionReader.findOne(subscription.messageSubscriptionKey()).orElse(null);
 
     compareMessageSubscriptions(instance, roleUpdate);
+  }
+
+  @TestTemplate
+  public void shouldNotFailWhenCreatedTwice(final CamundaRdbmsTestApplication testApplication) {
+    // given a subscription that has already been exported
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final MessageSubscriptionDbReader messageSubscriptionReader =
+        rdbmsService.getMessageSubscriptionReader();
+
+    final var subscription = MessageSubscriptionFixtures.createRandomized(b -> b);
+    MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, subscription);
+
+    // when a CREATED event is exported again for the same key — as the suspend/resume flow does
+    // when restoring the resume manifest and reopening the subscription
+    rdbmsWriters.getMessageSubscriptionWriter().createIfNotExists(subscription);
+    rdbmsWriters.flush();
+
+    // then the row still exists exactly once (no primary-key violation, no duplicate)
+    final var instance =
+        messageSubscriptionReader.findOne(subscription.messageSubscriptionKey()).orElse(null);
+    compareMessageSubscriptions(instance, subscription);
+  }
+
+  @TestTemplate
+  public void shouldRefreshExistingRowOnCreateIfNotExists(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given a subscription already stored in a stale CORRELATED state with stale field values —
+    // this is the state a reusable non-interrupting subscription is left in after a correlation
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final MessageSubscriptionDbReader messageSubscriptionReader =
+        rdbmsService.getMessageSubscriptionReader();
+
+    final var stale =
+        MessageSubscriptionFixtures.createRandomized(
+            b -> b.messageSubscriptionState(MessageSubscriptionState.CORRELATED));
+    MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, stale);
+
+    // when the suspend-close ack re-emits CREATED for the same key with the refreshed projection
+    // (same key/root, but transitioned back to CREATED with new correlation data)
+    final var refreshed =
+        MessageSubscriptionFixtures.createRandomized(
+            b ->
+                b.messageSubscriptionKey(stale.messageSubscriptionKey())
+                    .rootProcessInstanceKey(stale.rootProcessInstanceKey())
+                    .messageSubscriptionState(MessageSubscriptionState.CREATED));
+    rdbmsWriters.getMessageSubscriptionWriter().createIfNotExists(refreshed);
+    rdbmsWriters.flush();
+
+    // then the existing row is upserted to the new projection — state reset CORRELATED → CREATED
+    // and
+    // all other columns refreshed. This fails under a DO-NOTHING-on-conflict implementation, which
+    // would leave the stale CORRELATED row untouched.
+    final var instance =
+        messageSubscriptionReader.findOne(stale.messageSubscriptionKey()).orElse(null);
+    compareMessageSubscriptions(instance, refreshed);
+  }
+
+  @TestTemplate
+  public void shouldPreserveOrderWhenCorrelatedThenCreatedInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given a subscription already stored as CREATED
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final MessageSubscriptionDbReader messageSubscriptionReader =
+        rdbmsService.getMessageSubscriptionReader();
+
+    final var created =
+        MessageSubscriptionFixtures.createRandomized(
+            b -> b.messageSubscriptionState(MessageSubscriptionState.CREATED));
+    MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, created);
+
+    // when a CORRELATED update (a reusable non-interrupting subscription correlates) and the
+    // suspend-close restore CREATED (createIfNotExists, an INSERT-typed upsert) are queued for the
+    // same row in a single flush, with CORRELATED first. The write queue must run them in insertion
+    // order so the later CREATED wins; the INSERT-before-UPDATE sort would otherwise run the
+    // CREATED
+    // upsert first and leave the row stale as CORRELATED.
+    final var correlated =
+        MessageSubscriptionFixtures.createRandomized(
+            b ->
+                b.messageSubscriptionKey(created.messageSubscriptionKey())
+                    .rootProcessInstanceKey(created.rootProcessInstanceKey())
+                    .messageSubscriptionState(MessageSubscriptionState.CORRELATED));
+    final var restored =
+        MessageSubscriptionFixtures.createRandomized(
+            b ->
+                b.messageSubscriptionKey(created.messageSubscriptionKey())
+                    .rootProcessInstanceKey(created.rootProcessInstanceKey())
+                    .messageSubscriptionState(MessageSubscriptionState.CREATED));
+    rdbmsWriters.getMessageSubscriptionWriter().update(correlated);
+    rdbmsWriters.getMessageSubscriptionWriter().createIfNotExists(restored);
+    rdbmsWriters.flush();
+
+    // then the row reflects the last-queued event (CREATED), not the reordered CORRELATED
+    final var instance =
+        messageSubscriptionReader.findOne(created.messageSubscriptionKey()).orElse(null);
+    compareMessageSubscriptions(instance, restored);
   }
 
   @TestTemplate

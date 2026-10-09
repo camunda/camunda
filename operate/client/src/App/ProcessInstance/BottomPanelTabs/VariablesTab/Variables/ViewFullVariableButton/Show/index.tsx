@@ -52,6 +52,7 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
       {fullVariableValue !== undefined && (
         <RichTextEditorModal
           value={fullVariableValue}
+          variableName={variableName}
           isVisible={isModalVisible}
           readOnly
           allowModeToggle={canEdit}

@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.processdefinition;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromResourceIds;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
+import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinitions;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition;
@@ -21,19 +22,27 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionStatisticsDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -419,6 +428,281 @@ public class ProcessDefinitionIT {
     assertThat(statistics.tenantId()).isEqualTo(processDefinition.tenantId());
     assertThat(statistics.activeInstancesWithIncidentCount()).isEqualTo(1);
     assertThat(statistics.activeInstancesWithoutIncidentCount()).isEqualTo(1);
+  }
+
+  @TestTemplate
+  public void shouldFindElementStatisticsFilteredByBusinessId(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two instances of the same definition with distinct business ids, each with a
+    // completed element instance on the same element
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionStatisticsDbReader reader =
+        rdbmsService.getProcessDefinitionStatisticsReader();
+
+    final var processDefinition =
+        createAndSaveRandomProcessDefinition(rdbmsWriters, b -> b.version(1));
+    final var processDefinitionKey = processDefinition.processDefinitionKey();
+    final var elementId = "element-" + processDefinitionKey;
+
+    final var matchingInstance =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(processDefinition.processDefinitionId())
+                    .processDefinitionKey(processDefinitionKey)
+                    .state(ProcessInstanceState.ACTIVE)
+                    .version(1)
+                    .businessId("order-1"));
+    final var otherInstance =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(processDefinition.processDefinitionId())
+                    .processDefinitionKey(processDefinitionKey)
+                    .state(ProcessInstanceState.ACTIVE)
+                    .version(1)
+                    .businessId("order-2"));
+
+    createAndSaveRandomFlowNodeInstance(
+        rdbmsWriters,
+        b ->
+            b.processInstanceKey(matchingInstance.processInstanceKey())
+                .processDefinitionKey(processDefinitionKey)
+                .flowNodeId(elementId)
+                .state(FlowNodeState.COMPLETED)
+                .incidentKey(null)
+                .numSubprocessIncidents(0L));
+    createAndSaveRandomFlowNodeInstance(
+        rdbmsWriters,
+        b ->
+            b.processInstanceKey(otherInstance.processInstanceKey())
+                .processDefinitionKey(processDefinitionKey)
+                .flowNodeId(elementId)
+                .state(FlowNodeState.COMPLETED)
+                .incidentKey(null)
+                .numSubprocessIncidents(0L));
+
+    // when the business id filter selects only the first instance
+    final var statistics =
+        reader.aggregate(
+            new ProcessDefinitionFlowNodeStatisticsQuery(
+                FilterBuilders.processDefinitionStatisticsFilter(
+                    processDefinitionKey, f -> f.businessIds("order-1"))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then only the matching instance's element instance is counted
+    assertThat(statistics)
+        .singleElement()
+        .satisfies(
+            s -> {
+              assertThat(s.flowNodeId()).isEqualTo(elementId);
+              assertThat(s.completed()).isEqualTo(1L);
+            });
+  }
+
+  @TestTemplate
+  public void shouldCountLegacyNullStateVersions(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsDbReader =
+        rdbmsService.getProcessDefinitionInstanceStatisticsReader();
+
+    // case 1 (primary regression): a legacy NULL-state v1 predating the STATE column, alongside
+    // an ACTIVE v2 -- active instances only exist on v2, so the deployed-version count must still
+    // see both versions instead of excluding the NULL row.
+    final var nullActiveId =
+        "legacy-null-active-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var nullActiveTenant = "tenant-" + nullActiveId;
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        b -> b.processDefinitionId(nullActiveId).tenantId(nullActiveTenant).version(1).state(null));
+    final var nullActiveV2 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(nullActiveId)
+                    .tenantId(nullActiveTenant)
+                    .version(2)
+                    .state(ProcessDefinitionState.ACTIVE));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(nullActiveId)
+                .processDefinitionKey(nullActiveV2.processDefinitionKey())
+                .tenantId(nullActiveTenant)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(2));
+
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader, nullActiveId, nullActiveTenant))
+        .as("NULL v1 + ACTIVE v2, instances only on v2")
+        .isTrue();
+
+    // case 2: both deployed versions are legacy NULL-state.
+    final var nullNullId = "legacy-null-null-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var nullNullTenant = "tenant-" + nullNullId;
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        b -> b.processDefinitionId(nullNullId).tenantId(nullNullTenant).version(1).state(null));
+    final var nullNullV2 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b -> b.processDefinitionId(nullNullId).tenantId(nullNullTenant).version(2).state(null));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(nullNullId)
+                .processDefinitionKey(nullNullV2.processDefinitionKey())
+                .tenantId(nullNullTenant)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(2));
+
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader, nullNullId, nullNullTenant))
+        .as("NULL v1 + NULL v2, instances only on v2")
+        .isTrue();
+
+    // case 3: a deleted version must still be excluded even once NULL rows are treated as
+    // non-deleted -- NULL compatibility must not also start counting deleted rows.
+    final var nullDeletedId =
+        "legacy-null-deleted-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var nullDeletedTenant = "tenant-" + nullDeletedId;
+    final var nullDeletedV1 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(nullDeletedId)
+                    .tenantId(nullDeletedTenant)
+                    .version(1)
+                    .state(null));
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(nullDeletedId)
+                .tenantId(nullDeletedTenant)
+                .version(2)
+                .state(ProcessDefinitionState.DELETED));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(nullDeletedId)
+                .processDefinitionKey(nullDeletedV1.processDefinitionKey())
+                .tenantId(nullDeletedTenant)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(1));
+
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader, nullDeletedId, nullDeletedTenant))
+        .as("NULL v1 + DELETED v2, instances on v1")
+        .isFalse();
+
+    // case 4: the same process ID deployed independently in two tenants -- tenant A has two
+    // eligible versions, tenant B only one NULL-state version, and the two must not interfere.
+    final var multiTenantId =
+        "legacy-null-tenants-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var tenantA = multiTenantId + "-a";
+    final var tenantB = multiTenantId + "-b";
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        b -> b.processDefinitionId(multiTenantId).tenantId(tenantA).version(1).state(null));
+    final var tenantAV2 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(multiTenantId)
+                    .tenantId(tenantA)
+                    .version(2)
+                    .state(ProcessDefinitionState.ACTIVE));
+    final var tenantBV1 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b -> b.processDefinitionId(multiTenantId).tenantId(tenantB).version(1).state(null));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(multiTenantId)
+                .processDefinitionKey(tenantAV2.processDefinitionKey())
+                .tenantId(tenantA)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(2));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(multiTenantId)
+                .processDefinitionKey(tenantBV1.processDefinitionKey())
+                .tenantId(tenantB)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(1));
+
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader, multiTenantId, tenantA))
+        .as("tenant A: two eligible versions")
+        .isTrue();
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader, multiTenantId, tenantB))
+        .as("tenant B: a single NULL-state version")
+        .isFalse();
+
+    // case 5: two definition rows (different keys) sharing the same version must be counted once.
+    final var duplicateVersionId =
+        "legacy-null-duplicate-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var duplicateVersionTenant = "tenant-" + duplicateVersionId;
+    final var duplicateVersionV1 =
+        createAndSaveProcessDefinition(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(duplicateVersionId)
+                    .tenantId(duplicateVersionTenant)
+                    .version(1)
+                    .state(null));
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(duplicateVersionId)
+                .tenantId(duplicateVersionTenant)
+                .version(1)
+                .state(null));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(duplicateVersionId)
+                .processDefinitionKey(duplicateVersionV1.processDefinitionKey())
+                .tenantId(duplicateVersionTenant)
+                .state(ProcessInstanceState.ACTIVE)
+                .version(1));
+
+    assertThat(
+            hasMultipleVersions(
+                processDefinitionInstanceStatisticsDbReader,
+                duplicateVersionId,
+                duplicateVersionTenant))
+        .as("two definition keys sharing version 1 must count as a single version")
+        .isFalse();
+  }
+
+  private static boolean hasMultipleVersions(
+      final ProcessDefinitionInstanceStatisticsDbReader reader,
+      final String processDefinitionId,
+      final String tenantId) {
+    final var result =
+        reader.aggregate(
+            ProcessDefinitionInstanceStatisticsQuery.of(
+                b -> b.filter(f -> f.processDefinitionIds(processDefinitionId))));
+    return result.items().stream()
+        .filter(
+            i ->
+                processDefinitionId.equals(i.processDefinitionId())
+                    && tenantId.equals(i.tenantId()))
+        .findFirst()
+        .orElseThrow()
+        .hasMultipleVersions();
   }
 
   @TestTemplate

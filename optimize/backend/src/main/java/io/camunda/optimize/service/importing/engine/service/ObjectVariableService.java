@@ -324,8 +324,12 @@ public class ObjectVariableService {
        * such a String to a date, leading Optimize reports to display the value as a nonsensical
        * date. Therefore, we first check to see if the string is composed of only digits and skip
        * calling the DateParserUtils if that's the case.
+       * Additionally, purely alphabetic strings (e.g. country codes "GB", "NZ", time indicators
+       * "AM", "PM", or weekday names "Monday") can incidentally match the parser's meridiem,
+       * timezone-alias or weekday rules and get resolved to a meaningless default date. No
+       * legitimate date-like value consists solely of letters, so these are skipped entirely.
        */
-      if (isDigitOnlyString(dateAsString)) {
+      if (isDigitOnlyString(dateAsString) || isPurelyAlphabeticString(dateAsString)) {
         return Optional.empty();
       }
 
@@ -337,6 +341,10 @@ public class ObjectVariableService {
 
   private boolean isDigitOnlyString(final String dateAsString) {
     return dateAsString.matches("^\\d+$");
+  }
+
+  private boolean isPurelyAlphabeticString(final String str) {
+    return str.matches("^[a-zA-Z]+$");
   }
 
   private void parseStringOrDateVariableAndSet(

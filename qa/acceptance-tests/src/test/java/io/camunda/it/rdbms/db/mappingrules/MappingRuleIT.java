@@ -268,7 +268,7 @@ public class MappingRuleIT {
                     .mappingRuleId(randomizedMappingRule.mappingRuleId())
                     .claimName(randomizedMappingRule.claimName())
                     .claimValue(randomizedMappingRule.claimValue())
-                    .name(randomizedMappingRule.name())
+                    .names(randomizedMappingRule.name())
                     .build(),
                 MappingRuleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));

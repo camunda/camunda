@@ -7,7 +7,6 @@
  */
 package io.camunda.it.orchestration;
 
-import static io.camunda.it.util.TestHelper.activateAndCompleteJobs;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForAgentInstanceToBeIndexed;
@@ -24,11 +23,11 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -41,6 +40,13 @@ public class AgentInstanceMigrationIT {
 
   private static CamundaClient client;
 
+  private String agentJobType;
+
+  @BeforeEach
+  void setUp() {
+    agentJobType = uniqueAgentJobType();
+  }
+
   @Test
   void shouldMigrateOrphanedButActiveAgentInstanceOfServiceTask() {
     // given — the agentic job completes (and the process moves on to "nextTask") before
@@ -49,7 +55,6 @@ public class AgentInstanceMigrationIT {
     final String targetElementId = "agentTask2";
     final String sourceNextElementId = "nextTask";
     final String targetNextElementId = "nextTask2";
-    final String agentJobType = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
 
     final var sourceProcess =
         deployProcessAndWaitForIt(
@@ -80,7 +85,18 @@ public class AgentInstanceMigrationIT {
     final long sourceAgentDefinitionKey =
         client.newAgentInstanceGetRequest(agentInstanceKey).execute().getAgentDefinitionKey();
 
-    activateAndCompleteJobs(client, agentJobType, "test-worker", 1);
+    final var reactivatedJob =
+        client
+            .newActivateJobsCommand()
+            .jobType(agentJobType)
+            .maxJobsToActivate(1)
+            .timeout(Duration.ofMinutes(5))
+            .withLease(true)
+            .send()
+            .join()
+            .getJobs()
+            .getFirst();
+    client.newCompleteCommand(reactivatedJob).execute();
     waitForElementInstances(
         client, f -> f.elementId(sourceNextElementId).processInstanceKey(processInstanceKey), 1);
 
@@ -113,7 +129,7 @@ public class AgentInstanceMigrationIT {
             Bpmn.createExecutableProcess("migration-agent-ahsp_v1")
                 .startEvent()
                 .adHocSubProcess(sourceElementId, p -> p.task("agentTask"))
-                .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                .zeebeJobType(agentJobType)
                 .zeebeAiAgentSubProcessDefinition()
                 .endEvent()
                 .done(),
@@ -124,7 +140,7 @@ public class AgentInstanceMigrationIT {
             Bpmn.createExecutableProcess("migration-agent-ahsp_v2")
                 .startEvent()
                 .adHocSubProcess(targetElementId, p -> p.task("agentTask2"))
-                .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                .zeebeJobType(agentJobType)
                 .zeebeAiAgentSubProcessDefinition()
                 .endEvent()
                 .done(),
@@ -170,9 +186,10 @@ public class AgentInstanceMigrationIT {
     final var activatedJob =
         client
             .newActivateJobsCommand()
-            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .jobType(agentJobType)
             .maxJobsToActivate(1)
             .timeout(Duration.ofMinutes(5))
+            .withLease(true)
             .send()
             .join()
             .getJobs()
@@ -183,7 +200,7 @@ public class AgentInstanceMigrationIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
-            .jobLease("test-job-lease")
+            .jobLeaseToken(activatedJob.getJobLeaseToken())
             .history(
                 List.of(
                     configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))
@@ -198,6 +215,10 @@ public class AgentInstanceMigrationIT {
 
     waitForAgentInstanceToBeIndexed(client, agentInstanceKey);
     return agentInstanceKey;
+  }
+
+  private static String uniqueAgentJobType() {
+    return "agent-task-" + UUID.randomUUID();
   }
 
   private static AgentInstanceHistoryItem configurationHistoryItem(

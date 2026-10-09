@@ -43,7 +43,7 @@ public final class SupportedVersions {
       LOG.warn("Failed to load {}", PROPERTIES_FILE, e);
     }
     TEST_ELASTICSEARCH_VERSION = resolve(props, "elasticsearch.version", "8.19.16");
-    TEST_OPENSEARCH_VERSION = resolve(props, "opensearch.version", "2.19.5");
+    TEST_OPENSEARCH_VERSION = resolve(props, "opensearch.version", "2.19.6");
   }
 
   private SupportedVersions() {}

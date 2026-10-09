@@ -6,9 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IS_NAV_V2_ENABLED} from 'feature-flags';
-
-import LegacyHeader from './Header';
-import HeaderV2 from './HeaderV2';
-
-export const Header = IS_NAV_V2_ENABLED ? HeaderV2 : LegacyHeader;
+export {default as Header} from './HeaderV2';

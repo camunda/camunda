@@ -32,7 +32,7 @@ public record AgentInstanceHistoryEntity(
     String processDefinitionId,
     String tenantId,
     Long jobKey,
-    String jobLease,
+    String jobLeaseToken,
     Integer loopIteration,
     AgentInstanceHistoryRole role,
     List<ContentItem> content,
@@ -57,7 +57,7 @@ public record AgentInstanceHistoryEntity(
     Objects.requireNonNull(processDefinitionId, "processDefinitionId");
     Objects.requireNonNull(tenantId, "tenantId");
     Objects.requireNonNull(jobKey, "jobKey");
-    Objects.requireNonNull(jobLease, "jobLease");
+    Objects.requireNonNull(jobLeaseToken, "jobLeaseToken");
     Objects.requireNonNull(loopIteration, "loopIteration");
     Objects.requireNonNull(role, "role");
     Objects.requireNonNull(commitStatus, "commitStatus");
@@ -101,7 +101,12 @@ public record AgentInstanceHistoryEntity(
   /** Per-call token and latency metrics. Null when metrics were not provided at creation time. */
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Metrics(
-      @Nullable Long inputTokens, @Nullable Long outputTokens, @Nullable Long durationMs) {}
+      @Nullable Long inputTokens,
+      @Nullable Long outputTokens,
+      @Nullable Long reasoningTokenCount,
+      @Nullable Long cacheCreationTokenCount,
+      @Nullable Long cacheReadTokenCount,
+      @Nullable Long durationMs) {}
 
   /** A tool made available to the agent by a CONFIGURATION item. */
   @JsonIgnoreProperties(ignoreUnknown = true)

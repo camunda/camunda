@@ -1,2 +1,3 @@
 charts/*.tgz
 charts/*/
+k6/scripts/node_modules/

@@ -19,6 +19,9 @@ package io.camunda.client.api.command;
 public final class AgentInstanceHistoryMetrics {
   private Long inputTokens;
   private Long outputTokens;
+  private Long reasoningTokenCount;
+  private Long cacheCreationTokenCount;
+  private Long cacheReadTokenCount;
   private Long durationMs;
 
   public AgentInstanceHistoryMetrics inputTokens(final long inputTokens) {
@@ -28,6 +31,21 @@ public final class AgentInstanceHistoryMetrics {
 
   public AgentInstanceHistoryMetrics outputTokens(final long outputTokens) {
     this.outputTokens = outputTokens;
+    return this;
+  }
+
+  public AgentInstanceHistoryMetrics reasoningTokenCount(final long reasoningTokenCount) {
+    this.reasoningTokenCount = reasoningTokenCount;
+    return this;
+  }
+
+  public AgentInstanceHistoryMetrics cacheCreationTokenCount(final long cacheCreationTokenCount) {
+    this.cacheCreationTokenCount = cacheCreationTokenCount;
+    return this;
+  }
+
+  public AgentInstanceHistoryMetrics cacheReadTokenCount(final long cacheReadTokenCount) {
+    this.cacheReadTokenCount = cacheReadTokenCount;
     return this;
   }
 
@@ -42,6 +60,18 @@ public final class AgentInstanceHistoryMetrics {
 
   public Long getOutputTokens() {
     return outputTokens;
+  }
+
+  public Long getReasoningTokenCount() {
+    return reasoningTokenCount;
+  }
+
+  public Long getCacheCreationTokenCount() {
+    return cacheCreationTokenCount;
+  }
+
+  public Long getCacheReadTokenCount() {
+    return cacheReadTokenCount;
   }
 
   public Long getDurationMs() {

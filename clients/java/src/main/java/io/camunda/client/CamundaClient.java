@@ -113,6 +113,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AgentDefinitionGetRequest;
 import io.camunda.client.api.fetch.AgentInstanceGetRequest;
 import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
@@ -148,6 +149,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AgentDefinitionSearchRequest;
 import io.camunda.client.api.search.request.AgentInstanceHistorySearchRequest;
 import io.camunda.client.api.search.request.AgentInstanceSearchRequest;
 import io.camunda.client.api.search.request.AuditLogSearchRequest;
@@ -3560,7 +3562,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *       .newCreateAgentInstanceCommand()
    *       .elementInstanceKey(2251799813685248L)
    *       .jobKey(jobKey)
-   *       .jobLease(jobLease)
+   *       .jobLeaseToken(jobLeaseToken)
    *       .history(List.of(configurationHistoryItem))
    *       .send()
    *       .join();
@@ -3579,7 +3581,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *       .elementInstanceKey(elementInstanceKey)
    *       .status(AgentInstanceUpdateStatus.THINKING)
    *       .jobKey(jobKey)
-   *       .jobLease(jobLease)
+   *       .jobLeaseToken(jobLeaseToken)
    *       .send()
    *       .join();
    * </pre>
@@ -3668,6 +3670,37 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   GlobalTaskListenerSearchRequest newGlobalTaskListenerSearchRequest();
 
   /**
+   * Creates a request to fetch an agent definition by its key.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentDefinitionGetRequest(agentDefinitionKey)
+   *       .send();
+   * </pre>
+   *
+   * @param agentDefinitionKey the key of the agent definition to retrieve
+   * @return a builder for fetching an agent definition
+   */
+  AgentDefinitionGetRequest newAgentDefinitionGetRequest(long agentDefinitionKey);
+
+  /**
+   * Creates a request to search for agent definitions.
+   *
+   * <p>Agent definitions can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentDefinitionSearchRequest()
+   *       .filter(f -> f.agentType(AgentDefinitionType.AI_AGENT_SUB_PROCESS))
+   *       .sort(s -> s.processDefinitionKey().desc())
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching agent definitions
+   */
+  AgentDefinitionSearchRequest newAgentDefinitionSearchRequest();
+
+  /**
    * Creates a request to fetch an agent instance by its key.
    *
    * <pre>
@@ -3717,11 +3750,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   /**
    * Command to resolve a batch of secret references in a single round-trip.
    *
-   * <p><strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
    * <p>Each reference is authorized and resolved independently, so a reference that cannot be
    * resolved never fails the others. Such a failure is returned as data on the response, not as an
    * exception: the resolved references are available on {@link
@@ -3738,17 +3766,11 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/56661")
   ResolveSecretsCommandStep1 newResolveSecretsCommand();
 
   /**
    * Command to list the secret reference names the caller is authorized to see. It never returns
    * secret values, only the reference names.
-   *
-   * <p><strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
    *
    * <pre>
    *   camundaClient
@@ -3758,6 +3780,5 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/56661")
   ListSecretsCommandStep1 newListSecretsCommand();
 }

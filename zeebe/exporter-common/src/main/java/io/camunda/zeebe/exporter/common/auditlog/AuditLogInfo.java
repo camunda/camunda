@@ -107,7 +107,10 @@ public record AuditLogInfo(
 
           // Process
           Map.entry(ProcessIntent.CREATED, AuditLogOperationType.CREATE),
-          Map.entry(ProcessIntent.DELETED, AuditLogOperationType.DELETE),
+          // A deletion is audited on DRAINING, not DELETED. DRAINING is written synchronously under
+          // the deleter's command; DELETED is deferred until the definition finishes draining and
+          // would otherwise be attributed to whoever finished the last instance.
+          Map.entry(ProcessIntent.DRAINING, AuditLogOperationType.DELETE),
 
           // ProcessInstanceCreation
           Map.entry(ProcessInstanceCreationIntent.CREATED, AuditLogOperationType.CREATE),
@@ -223,15 +226,16 @@ public record AuditLogInfo(
 
   public static AuditLogInfo of(final Record<?> record) {
     return new AuditLogInfo(
-        getOperationCategory(record.getValueType()),
+        getOperationCategory(record),
         getEntityType(record),
         getOperationType(record),
         AuditLogActor.of(record),
         AuditLogTenant.of(record));
   }
 
-  private static AuditLogOperationCategory getOperationCategory(final ValueType valueType) {
-    return OPERATION_CATEGORY_MAP.getOrDefault(valueType, AuditLogOperationCategory.UNKNOWN);
+  private static AuditLogOperationCategory getOperationCategory(final Record<?> record) {
+    return OPERATION_CATEGORY_MAP.getOrDefault(
+        record.getValueType(), AuditLogOperationCategory.UNKNOWN);
   }
 
   static AuditLogEntityType getEntityType(final Record<?> record) {

@@ -21,3 +21,7 @@
 .idea/
 *.tmproj
 .vscode/
+# k6 helpers
+k6/package*.json
+k6/Makefile
+k6/node_modules/

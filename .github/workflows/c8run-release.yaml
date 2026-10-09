@@ -141,12 +141,12 @@ jobs:
           cache: false # disabling since not working anyways without a cache-dependency-path specified
 
       - name: Setup Java 21
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: "temurin"
           java-version: "21"
 
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: "temurin"
           java-version: "25"
@@ -238,7 +238,7 @@ jobs:
 
       - name: Camunda Download Center - Upload artifact in own release
         if: inputs.publishToCamundaDownloadCenter
-        uses: camunda/infra-global-github-actions/download-center-upload@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # download-center-upload: v1.0.0
+        uses: camunda/infra-global-github-actions/download-center-upload@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # download-center-upload-1.0.2
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
           version: ${{ inputs.camundaVersion }}
@@ -247,7 +247,7 @@ jobs:
 
       - name: Camunda Download Center - Upload artifact in Camunda apps version
         if: inputs.publishToCamundaDownloadCenter
-        uses: camunda/infra-global-github-actions/download-center-upload@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # download-center-upload: v1.0.0
+        uses: camunda/infra-global-github-actions/download-center-upload@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # download-center-upload-1.0.2
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
           version: ${{ inputs.camundaAppsRelease }}

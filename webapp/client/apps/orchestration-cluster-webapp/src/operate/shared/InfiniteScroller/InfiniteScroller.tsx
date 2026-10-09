@@ -10,7 +10,9 @@ import {
 	cloneElement,
 	isValidElement,
 	useCallback,
+	useLayoutEffect,
 	useRef,
+	useState,
 	type FC,
 	type ReactElement,
 	type Ref,
@@ -34,6 +36,7 @@ const InfiniteScroller: FC<Props> = ({
 	onVerticalScrollEndReach,
 	scrollableContainerRef,
 }) => {
+	const [node, setNode] = useState<HTMLElement | null>(null);
 	const intersectionObserver = useRef<IntersectionObserver | null>(null);
 	const mutationObserver = useRef<MutationObserver | null>(null);
 
@@ -85,6 +88,16 @@ const InfiniteScroller: FC<Props> = ({
 				}
 
 				const scrollTop = scrollableContainerRef.current.scrollTop || 0;
+				if (scrollTop === prevScrollTop) {
+					// A DOM mutation (e.g. rows appended) can make the observer re-measure a
+					// sentinel without any actual scrolling having happened, firing a callback
+					// whose `isIntersecting` flips don't correspond to a real edge crossing.
+					// Skip these: scrollTop is unchanged, so no direction can be determined, and
+					// reacting to them (or even just updating `prevScrollTop`) risks swallowing
+					// the next genuine crossing at that same position.
+					return;
+				}
+
 				entries
 					.filter((entry) => entry.isIntersecting)
 					.forEach(({target}) => {
@@ -96,26 +109,39 @@ const InfiniteScroller: FC<Props> = ({
 					});
 				prevScrollTop = scrollTop;
 			},
-			{root: scrollableContainerRef.current, threshold: 0.5},
+			// rootMargin tolerates sub-pixel layout rounding: a zero-height sentinel can end up a
+			// fraction of a pixel outside the root's bounds even when scrolled to the true edge,
+			// which would otherwise permanently prevent it from ever being reported as intersecting.
+			{root: scrollableContainerRef.current, threshold: 0.5, rootMargin: '1px'},
 		);
 	}, [scrollableContainerRef]);
 
-	const observedContainerRef = useCallback(
-		(node: HTMLElement) => {
-			if (node === null) {
-				return;
-			}
-			if (intersectionObserver.current === null) {
-				createIntersectionObserver();
-				createMutationObserver(node);
-				observeIntersections(node);
-			}
-		},
-		[createIntersectionObserver, createMutationObserver],
-	);
+	const observedContainerRef = useCallback((candidate: HTMLElement | null) => {
+		setNode(candidate);
+	}, []);
+
+	// Runs as a layout effect (not inside the ref callback above) because React attaches refs
+	// bottom-up: this component's ref can fire before the parent has attached
+	// `scrollableContainerRef` to its own DOM node in the same commit. Constructing the
+	// IntersectionObserver at that point would capture a stale `null` root and silently fall back
+	// to the viewport. Layout effects only run once every ref in the commit has been attached, so
+	// `scrollableContainerRef.current` is guaranteed to be set here.
+	useLayoutEffect(() => {
+		if (node === null) {
+			return;
+		}
+
+		createIntersectionObserver();
+		createMutationObserver(node);
+		observeIntersections(node);
+
+		return () => {
+			intersectionObserver.current?.disconnect();
+			mutationObserver.current?.disconnect();
+		};
+	}, [node, createIntersectionObserver, createMutationObserver]);
 
 	if (isValidElement(children)) {
-		// eslint-disable-next-line react-hooks/refs
 		return cloneElement(children, {ref: observedContainerRef});
 	}
 

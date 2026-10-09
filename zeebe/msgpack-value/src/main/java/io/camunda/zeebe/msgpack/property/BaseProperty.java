@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.msgpack.property;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.Recyclable;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
@@ -14,11 +16,12 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
   protected final StringValue key;
   protected final T value;
-  protected final T defaultValue;
+  protected final @Nullable T defaultValue;
   protected boolean isSet;
   protected boolean isSanitized;
 
@@ -30,7 +33,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     this(keyString, value, null);
   }
 
-  public BaseProperty(final String keyString, final T value, final T defaultValue) {
+  public BaseProperty(final String keyString, final T value, final @Nullable T defaultValue) {
     this(new StringValue(keyString), value, defaultValue);
   }
 
@@ -38,9 +41,9 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     this(keyString, value, null);
   }
 
-  public BaseProperty(final StringValue keyString, final T value, final T defaultValue) {
-    Objects.requireNonNull(keyString);
-    Objects.requireNonNull(value);
+  public BaseProperty(final StringValue keyString, final T value, final @Nullable T defaultValue) {
+    requireNonNull(keyString);
+    requireNonNull(value);
     key = keyString;
     this.value = value;
     this.defaultValue = defaultValue;
@@ -85,7 +88,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
   }
 
   public int write(final MsgPackWriter writer) {
-    T valueToWrite = value;
+    var valueToWrite = value;
     if (!isSet) {
       valueToWrite = defaultValue;
     }

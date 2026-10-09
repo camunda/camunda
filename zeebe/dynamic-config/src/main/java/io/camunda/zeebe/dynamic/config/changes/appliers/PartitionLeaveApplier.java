@@ -19,12 +19,12 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code
- * PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation}, operating on a single
- * named {@link PartitionGroupConfiguration}. Mirrors the legacy {@code PartitionLeaveApplier} in
- * {@code changes/}, which this does not replace or modify. A partition leave operation is executed
- * when a member wants to stop replicating a partition; this is allowed only when the member is
- * already replicating the partition.
+ * Applier for {@code PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation},
+ * operating on a single named {@link PartitionGroupConfiguration}. A partition leave operation is
+ * executed when a member wants to stop replicating a partition; this is allowed only when the
+ * member is already replicating the partition. In the two-phase leave flow a demote operation
+ * precedes this one and has already marked the partition {@code LEAVING}, which the re-entry branch
+ * below accepts.
  */
 public final class PartitionLeaveApplier implements PartitionGroupConfigurationChangeApplier {
 
@@ -71,15 +71,25 @@ public final class PartitionLeaveApplier implements PartitionGroupConfigurationC
       return Either.right(UnaryOperator.identity());
     }
 
-    final var partitionReplicaCount =
-        currentPartitionGroupConfiguration.members().values().stream()
-            .filter(broker -> broker.hasPartition(partitionId))
+    // The number of active replicas that would remain once this member leaves - counting only
+    // members that durably participate in the quorum right now (see
+    // PartitionState.State#isActiveReplica): a learner catching up, or another member already on
+    // its way out, provides no redundancy and must not be counted toward the floor. Excluding the
+    // local member by identity, rather than subtracting one from a count that includes it, keeps
+    // this correct even when the leaving member is itself not an active replica (e.g. a stuck
+    // learner being removed directly) - removing a non-voting member never changes how many
+    // voting replicas remain, so that is always safe regardless of the minimum.
+    final var remainingActiveReplicas =
+        currentPartitionGroupConfiguration.members().entrySet().stream()
+            .filter(entry -> !entry.getKey().equals(localMemberId))
+            .map(entry -> entry.getValue().getPartition(partitionId))
+            .filter(partition -> partition != null && partition.state().isActiveReplica())
             .count();
-    if (partitionReplicaCount <= minimumAllowedReplicas) {
+    if (remainingActiveReplicas < minimumAllowedReplicas) {
       return Either.left(
           new IllegalStateException(
-              "Expected to leave partition, but the partition %d has %d replicas but minimum allowed replicas is %d"
-                  .formatted(partitionId, partitionReplicaCount, minimumAllowedReplicas)));
+              "Expected to leave partition, but the partition %d would have %d active replicas left but minimum allowed replicas is %d"
+                  .formatted(partitionId, remainingActiveReplicas, minimumAllowedReplicas)));
     }
 
     return Either.right(

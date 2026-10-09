@@ -7,29 +7,25 @@
  */
 package io.camunda.zeebe.restore;
 
-import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreFactory;
+import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 @Component
+@NullMarked
 final class BackupStoreComponent {
 
-  private final BrokerCfg brokerCfg;
+  private final PhysicalTenantBrokerConfigurations physicalTenantConfigurations;
 
   @Autowired
-  BackupStoreComponent(final BrokerCfg brokerCfg) {
-    this.brokerCfg = brokerCfg;
+  BackupStoreComponent(final PhysicalTenantBrokerConfigurations physicalTenantConfigurations) {
+    this.physicalTenantConfigurations = physicalTenantConfigurations;
   }
 
-  @Bean(destroyMethod = "closeAsync")
-  BackupStore backupStore() {
-    final var backupStore = BackupStoreFactory.createStore(brokerCfg.getData().getBackup());
-    if (backupStore == null) {
-      throw new IllegalArgumentException("No backup store configured, cannot restore from backup.");
-    }
-    return backupStore;
+  @Bean(destroyMethod = "close")
+  PhysicalTenantBackupStores backupStores() {
+    return new PhysicalTenantBackupStores(physicalTenantConfigurations.configurations());
   }
 }

@@ -149,6 +149,67 @@ describe('<RichTextEditorModal />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should copy key-value JSON when variableName is set', async () => {
+    const mockValue = '{"foo": "bar"}';
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: mockWriteText},
+      writable: true,
+    });
+
+    const {user} = render(
+      <RichTextEditorModal
+        isVisible
+        readOnly
+        value={mockValue}
+        variableName="myVariable"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /^copy$/i}));
+
+    expect(mockWriteText).toHaveBeenCalledWith('{"myVariable":{"foo":"bar"}}');
+  });
+
+  it('should fall back to the raw value when it is not valid JSON', async () => {
+    const mockValue = 'not valid json';
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: mockWriteText},
+      writable: true,
+    });
+
+    const {user} = render(
+      <RichTextEditorModal
+        isVisible
+        readOnly
+        value={mockValue}
+        variableName="myVariable"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /^copy$/i}));
+
+    expect(mockWriteText).toHaveBeenCalledWith(mockValue);
+  });
+
+  it('should not wrap the value when variableName is not set (e.g. incident errors)', async () => {
+    const mockValue = 'some incident error message';
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: mockWriteText},
+      writable: true,
+    });
+
+    const {user} = render(
+      <RichTextEditorModal isVisible readOnly value={mockValue} />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /^copy$/i}));
+
+    expect(mockWriteText).toHaveBeenCalledWith(mockValue);
+  });
+
   it('should not show mode toggle button when allowModeToggle is not set', () => {
     const mockValue = '"i am a value"';
 

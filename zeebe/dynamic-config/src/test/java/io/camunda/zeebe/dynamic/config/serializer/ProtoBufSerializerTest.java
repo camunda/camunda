@@ -25,12 +25,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
@@ -63,6 +63,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
@@ -169,15 +170,15 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
-  void shouldEncodeAndDecodeForceRemoveZoneRequest() {
+  void shouldEncodeAndDecodeRemoveZoneRequest() {
     // given
-    final var request = new ForceZoneRemoveRequest("us-west-1", true);
+    final var request = new RemoveZoneRequest("us-west-1", true, true);
 
     // when
-    final var encodedRequest = protoBufSerializer.encodeForceRemoveZoneRequest(request);
+    final var encodedRequest = protoBufSerializer.encodeRemoveZoneRequest(request);
 
     // then
-    final var decodedRequest = protoBufSerializer.decodeForceRemoveZoneRequest(encodedRequest);
+    final var decodedRequest = protoBufSerializer.decodeRemoveZoneRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(request);
   }
 
@@ -558,9 +559,10 @@ final class ProtoBufSerializerTest {
     final List<ClusterConfigurationChangeOperation> plannedChanges =
         List.of(
             new MemberLeaveOperation(MemberId.from("1")),
-            new PartitionJoinOperation(MemberId.from("2"), 1, 2),
+            new PartitionJoinOperation(MemberId.from("2"), 1, 2, true),
             new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
             new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+            new SchemaInitializationOperation(MemberId.from("1")),
             new PartitionPreRestoreOperation(MemberId.from("1"), 1),
             new PartitionRestoreOperation(MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L))));
     final List<Phase> phases =
@@ -570,11 +572,12 @@ final class ProtoBufSerializerTest {
                 Map.of(
                     "default",
                     List.of(
-                        new PartitionJoinOperation(MemberId.from("2"), 1, 2),
+                        new PartitionJoinOperation(MemberId.from("2"), 1, 2, true),
                         new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
                         new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING)),
                     "anothertenant",
                     List.of(
+                        new SchemaInitializationOperation(MemberId.from("1")),
                         new PartitionPreRestoreOperation(MemberId.from("1"), 1),
                         new PartitionRestoreOperation(
                             MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L)))))));
@@ -707,6 +710,61 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
+  void shouldDecodeAJoinFromBeforeTwoPhaseJoinsAsAJoinOfAVotingMember() throws Exception {
+    // given — a pending join as a version before two-phase joins serialized it: the same message
+    // without the asLearner field. Derived from a current encoding by clearing that field, so the
+    // test follows the message layout instead of pinning bytes.
+    final var groupId = "default";
+    final var startedAt = Instant.ofEpochSecond(1_700_000_000);
+    final var encodedByCurrentVersion =
+        protoBufSerializer.encodeCurrentClusterConfiguration(
+            configurationWithPendingJoin(groupId, startedAt, true));
+    final var proto =
+        Topology.CurrentClusterConfiguration.parseFrom(encodedByCurrentVersion).toBuilder();
+    final var graphPhase =
+        proto
+            .getPhasedChangeStateBuilder()
+            .getPendingBuilder(0)
+            .getPhasesBuilder(0)
+            .getPartitionGroupGraphPhaseBuilder();
+    final var graph = graphPhase.getGroupGraphsOrThrow(groupId).toBuilder();
+    graph
+        .getOperationsBuilder(0)
+        .getPartitionGroupOperationBuilder()
+        .getPartitionJoinBuilder()
+        .clearAsLearner();
+    graphPhase.putGroupGraphs(groupId, graph.build());
+    final var encodedByPreviousVersion = proto.build().toByteArray();
+
+    // when
+    final var decoded =
+        protoBufSerializer.decodeCurrentClusterConfiguration(encodedByPreviousVersion);
+
+    // then — the operation keeps its original meaning of a complete, single-step join: nothing in a
+    // plan from that version would promote a learner
+    assertThat(decoded).isEqualTo(configurationWithPendingJoin(groupId, startedAt, false));
+  }
+
+  private static CurrentClusterConfiguration configurationWithPendingJoin(
+      final String groupId, final Instant startedAt, final boolean asLearner) {
+    final var plan =
+        new PhasedChangePlan(
+            1,
+            0,
+            List.of(
+                PartitionGroupPhase.sequential(
+                    Map.of(
+                        groupId,
+                        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1, asLearner))))),
+            startedAt);
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        GlobalConfiguration.init(),
+        Map.of(),
+        new PhasedChangeState(2L, Map.of(plan.id(), plan), List.of()));
+  }
+
+  @Test
   void shouldEncodeAndDecodeARemovedPhysicalTenant() {
     // given — a tombstoned tenant, built from a group that had a member before removal cleared it
     final var group =
@@ -822,8 +880,8 @@ final class ProtoBufSerializerTest {
     // partition group produces, with one operation already completed
     final var startedAt = Instant.ofEpochSecond(1_700_000_000);
     final var builder = OperationGraph.builder();
-    final var first = builder.add(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
-    builder.add(new PartitionJoinOperation(MemberId.from("2"), 1, 1));
+    final var first = builder.add(new PartitionJoinOperation(MemberId.from("1"), 1, 1, true));
+    builder.add(new PartitionJoinOperation(MemberId.from("2"), 1, 1, true));
     final var graph =
         new DependencyChangePlan(
             7,
@@ -1018,18 +1076,19 @@ final class ProtoBufSerializerTest {
     // given
     final var partitionConfig = DynamicPartitionConfig.init();
     final var clusterConfiguration =
-        ClusterConfiguration.init()
-            .addMember(
-                MemberId.from("1"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, partitionConfig).toRecovering())));
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(
+                    MemberId.from("1"),
+                    MemberState.initializeAsActive(
+                        Map.of(1, PartitionState.active(1, partitionConfig).toRecovering()))));
     final var gossipState = new ClusterConfigurationGossipState();
-    gossipState.setClusterConfiguration(clusterConfiguration);
+    gossipState.setCurrentClusterConfiguration(clusterConfiguration);
 
     // when
     final var decoded = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
 
     // then
-    assertThat(decoded.getClusterConfiguration()).isEqualTo(clusterConfiguration);
+    assertThat(decoded.getCurrentClusterConfiguration()).isEqualTo(clusterConfiguration);
   }
 }

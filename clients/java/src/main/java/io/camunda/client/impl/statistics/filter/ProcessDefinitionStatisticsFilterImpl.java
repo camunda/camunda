@@ -300,6 +300,20 @@ public class ProcessDefinitionStatisticsFilterImpl
   }
 
   @Override
+  public ProcessDefinitionStatisticsFilter businessId(final String businessId) {
+    businessId(b -> b.eq(businessId));
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionStatisticsFilter businessId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBusinessId(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public ProcessDefinitionStatisticsFilter orFilters(
       final List<Consumer<ProcessDefinitionStatisticsFilterBase>> fns) {
     for (final Consumer<ProcessDefinitionStatisticsFilterBase> fn : fns) {

@@ -23,7 +23,7 @@ class ForbiddenPage extends View {
 	}
 
 	get description() {
-		return this.page.getByText('Please contact the owner to get access.');
+		return this.page.getByText('Contact the owner to get access.');
 	}
 }
 

@@ -51,6 +51,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,6 +61,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -77,21 +80,26 @@ public class Starter implements CommandLineRunner {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final CamundaClient client;
+  private final ApplicationContext applicationContext;
   private final LoadTesterProperties properties;
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
   private final ConnectionMonitor connectionMonitor;
+  private final StarterLivenessIndicator livenessIndicator;
   private final WebClient.Builder webClientBuilder;
   private final ObjectMapper objectMapper;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
+  private final AtomicReference<Error> fatalError = new AtomicReference<>();
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
 
   private Timer responseLatencyTimer;
-  private Counter processInstancesStartedCounter;
+  private Counter processInstancesSubmittedCounter;
+  private Counter processInstancesSkippedCounter;
+  private StarterResultMetrics resultMetrics;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
@@ -103,14 +111,18 @@ public class Starter implements CommandLineRunner {
       final MeterRegistry registry,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
+      final StarterLivenessIndicator livenessIndicator,
       final WebClient.Builder webClientBuilder,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final ApplicationContext applicationContext) {
     this.client = client;
+    this.applicationContext = applicationContext;
     this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
+    this.livenessIndicator = livenessIndicator;
     this.webClientBuilder = webClientBuilder;
     this.objectMapper = objectMapper;
 
@@ -129,14 +141,14 @@ public class Starter implements CommandLineRunner {
   @Override
   public void run(final String... args) {
     connectionMonitor.awaitAndPrintTopology();
+    livenessIndicator.recordStarted();
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
 
-    processInstancesStartedCounter =
-        Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName())
-            .description(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getDescription())
-            .register(registry);
+    processInstancesSubmittedCounter = registerSubmissionCounter("submitted");
+    processInstancesSkippedCounter = registerSubmissionCounter("skipped");
+    resultMetrics = new StarterResultMetrics(registry);
 
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
@@ -175,10 +187,18 @@ public class Starter implements CommandLineRunner {
       LOG.error("Awaiting of count down latch was interrupted.", e);
     }
 
+    if (fatalError.get() != null) {
+      scheduledTask.cancel(true);
+      System.exit(SpringApplication.exit(applicationContext, () -> 1));
+    }
+
     runFinished.set(1);
+    livenessIndicator.recordFinished();
     LOG.info(
         "Starter finished. Total process instance start requests submitted: {}",
-        processInstancesStartedCounter == null ? 0 : (long) processInstancesStartedCounter.count());
+        processInstancesSubmittedCounter == null
+            ? 0
+            : (long) processInstancesSubmittedCounter.count());
     scheduledTask.cancel(true);
     shutdown();
   }
@@ -202,6 +222,13 @@ public class Starter implements CommandLineRunner {
     if (optimizeReportEvaluator != null) {
       optimizeReportEvaluator.close();
     }
+  }
+
+  private Counter registerSubmissionCounter(final String outcome) {
+    return Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getName())
+        .description(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getDescription())
+        .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
+        .register(registry);
   }
 
   private void setupDataAvailabilityMeter() {
@@ -268,6 +295,12 @@ public class Starter implements CommandLineRunner {
         Collections.unmodifiableMap(deserializeVariables(variablesString));
 
     final BooleanSupplier shouldContinue = createContinuationCondition();
+    final Semaphore inFlight = new Semaphore(starterCfg.getMaxInFlightRequests());
+    Gauge.builder(
+            StarterMetricsDoc.PROCESS_INSTANCES_IN_FLIGHT.getName(),
+            () -> starterCfg.getMaxInFlightRequests() - inFlight.availablePermits())
+        .description(StarterMetricsDoc.PROCESS_INSTANCES_IN_FLIGHT.getDescription())
+        .register(registry);
 
     return executorService.scheduleAtFixedRate(
         () -> {
@@ -276,13 +309,20 @@ public class Starter implements CommandLineRunner {
             return;
           }
 
+          if (!inFlight.tryAcquire()) {
+            processInstancesSkippedCounter.increment();
+            THROTTLED_LOGGER.debug(
+                "Skipping process instance creation, {} requests are already in flight",
+                starterCfg.getMaxInFlightRequests());
+            return;
+          }
+
+          final var startTime = System.nanoTime();
+          final CompletionStage<?> requestFuture;
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
-            processInstancesStartedCounter.increment();
 
-            final var startTime = System.nanoTime();
-            final CompletionStage<?> requestFuture;
             if (starterCfg.isStartViaMessage()) {
               requestFuture = startInstanceByMessagePublishing(vars);
             } else if (starterCfg.isWithResults()) {
@@ -290,22 +330,36 @@ public class Starter implements CommandLineRunner {
             } else {
               requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
             }
-            requestFuture.whenComplete(
-                (noop, error) -> {
-                  final long durationNanos = System.nanoTime() - startTime;
-                  responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
-                  if (error instanceof final StatusRuntimeException statusRuntimeException) {
-                    if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
-                      THROTTLED_LOGGER.warn(
-                          "Error on creating new process instance with business key {}",
-                          businessKey.get(),
-                          error);
-                    }
-                  }
-                });
+            processInstancesSubmittedCounter.increment();
           } catch (final Exception e) {
+            inFlight.release();
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
+            return;
+          } catch (final Error e) {
+            // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
+            // stop the starter and fail the application instead.
+            LOG.error("Fatal error on creating new process instance, stopping the starter", e);
+            fatalError.set(e);
+            countDownLatch.countDown();
+            return;
           }
+
+          requestFuture.whenComplete(
+              (noop, error) -> {
+                inFlight.release();
+                livenessIndicator.recordResult(error);
+                final long durationNanos = System.nanoTime() - startTime;
+                responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+                resultMetrics.record(error);
+                if (error instanceof final StatusRuntimeException statusRuntimeException) {
+                  if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
+                    THROTTLED_LOGGER.warn(
+                        "Error on creating new process instance with business key {}",
+                        businessKey.get(),
+                        error);
+                  }
+                }
+              });
         },
         0,
         intervalNanos,

@@ -105,4 +105,28 @@ public interface ProcessMessageSubscriptionRecordValue
    * @since 8.10
    */
   BpmnElementType getElementType();
+
+  /**
+   * Returns the generation key of the message-side subscription, assigned when the subscription is
+   * created on the message partition and echoed back to the process instance partition in the open
+   * acknowledgement. Used to guard delete/correlate commands against stale races.
+   *
+   * <p>This is a per-generation key, not a stable identity across suspend/resume: {@code
+   * reopenFromManifest} resets it to {@code -1} when a suspended subscription is reopened, until
+   * the replacement's open acknowledgement assigns the new key. {@code -1} therefore means "unset"
+   * — a subscription created before this field was introduced, or one currently being reopened —
+   * and must not be cached or interpreted as legacy-only across generations.
+   *
+   * @return the subscription key, or {@code -1} if unset
+   * @since 8.10
+   */
+  long getSubscriptionKey();
+
+  /**
+   * @return {@code true} if this subscription was closed by the suspend flow, meaning the delete
+   *     acknowledgement must restore this row as a resume manifest instead of deleting it; {@code
+   *     false} for a normal close (unsubscribe, cancellation, migration) or a legacy record
+   * @since 8.11
+   */
+  boolean isClosedForSuspend();
 }

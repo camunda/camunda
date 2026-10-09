@@ -19,6 +19,7 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MappingRuleFilter.Builder;
 import io.camunda.search.filter.MappingRuleFilter.Claim;
+import io.camunda.search.filter.Operation;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationCheck;
 import io.camunda.security.core.authz.ResourceAccessChecks;
@@ -62,8 +63,12 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
             (Function<Builder, ObjectBuilder<MappingRuleFilter>>) f -> f.claimValue("foobar"),
             SearchQuery.of(q -> q.term(t -> t.field("claimValue").value("foobar")))),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<MappingRuleFilter>>) f -> f.name("foobar"),
+            (Function<Builder, ObjectBuilder<MappingRuleFilter>>) f -> f.names("foobar"),
             SearchQuery.of(q -> q.term(t -> t.field("name").value("foobar")))),
+        Arguments.of(
+            (Function<Builder, ObjectBuilder<MappingRuleFilter>>)
+                f -> f.nameOperations(Operation.like("*foobar*")),
+            SearchQuery.of(q -> q.wildcard(w -> w.field("name").value("*foobar*")))),
         Arguments.of(
             (Function<Builder, ObjectBuilder<MappingRuleFilter>>)
                 f -> f.mappingRuleIds(Set.of("id1", "id2")),

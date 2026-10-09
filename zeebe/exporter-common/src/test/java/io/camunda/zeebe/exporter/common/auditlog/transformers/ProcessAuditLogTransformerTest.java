@@ -54,4 +54,27 @@ class ProcessAuditLogTransformerTest {
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
     assertThat(entity.getEntityDescription()).isEqualTo("processResource");
   }
+
+  @Test
+  void shouldAuditDeletionOnDrainingIntent() {
+    // given
+    final Process recordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(Process.class))
+            .withResourceName("processResource")
+            .withProcessDefinitionKey(456L)
+            .build();
+
+    final Record<Process> record =
+        factory.generateRecord(
+            ValueType.PROCESS, r -> r.withIntent(ProcessIntent.DRAINING).withValue(recordValue));
+
+    // when
+    final var entity = AuditLogEntry.of(record);
+    transformer.transform(record, entity);
+
+    // then
+    assertThat(entity.getEntityKey()).isEqualTo("456");
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.DELETE);
+  }
 }

@@ -8,7 +8,7 @@
 
 import {useCallback, useContext} from 'react';
 import {useSelector} from '@xstate/react';
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {StartProcessContext} from './startProcessContext';
 import {deriveStartProcessStatus} from './startProcessMachine';
 

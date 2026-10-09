@@ -58,89 +58,6 @@ If you deploy Elasticsearch or OpenSearch, you most likely want to enable the ex
 
 Keycloak is deployed using the [Keycloak Operator](https://www.keycloak.org/guides#operator) and the [`Keycloak` resource](https://www.keycloak.org/operator/advanced-configuration).
 
-#### Keycloak deployment specifics
-
-> [!IMPORTANT]
-> The Keycloak Operator works differently from most of the other Kubernetes operators: it only
-> watches and manages the resources deployed in its own namespace, instead of watching resources in
-> all the namespaces and deploying them in the same namespace as the original custom resource.
-
-This Helm Chart has to do additional work to support multiple namespaces:
-1. the namespace in which the load test is created
-2. the `keycloak-operator` namespace, in which the Keycloak Operator is deployed, and manages Keycloak resources.
-
-As such, the resources it creates are a bit different from the rest of the resources.
-
-> [!NOTE]
-> The Keycloak Operator is evolving towards a cluster-wide model and a future
-> upgrade may render the mitigations explained below not necessary anymore.
->
-> Once the Keycloak Operator has an official release for cluster-wide
-> operations, we can consider removing the duplication of all these resources.
-
-##### Duplicated Secrets
-
-> [!IMPORTANT]
-> Caveats #1: Kubernetes Secrets used by Keycloak (PostgreSQL credentials and Keycloak admin user)
-> are duplicated between the load test namespace and the `keycloak-operator` namespaces.
-
-Keycloak requires:
-1. PostgreSQL credentials, which are also used by the CNPG Operator (see below)
-to create the Keycloak PostgreSQL user inside the database.
-2. Its own "admin" credentials, which are also used by Identity to provision Keycloak.
-
-Each of these Secrets are duplicated into the load test namespace and the `keycloak-operator`
-namespaces.
-
-##### Naming Collisions
-
-> [!IMPORTANT]
-> Caveats #2: To prevent name collision between different load tests, resources deployed in the
-> `keycloak-operator` namespace are prefixed by the name of the load test.
-
-Also, since the `keycloak-operator` namespace may contain many Keycloak instances (one per load
-test instance), the name of the resources deployed in that namespace **must** be different from each
-other.
-
-To support this, this Helm Chart prefixes the name of the load test to all the resources deployed
-into the `keycloak-operator` namespace.
-
-As such, the duplicated resources mentioned previously don't have the exact same name between the
-resource in the load test namespace, and the resource in the `keycloak-operator` namespace.
-
-##### Cleanup
-
-> [!IMPORTANT]
-> Caveats #3: Deleting the load test namespace alone does **not** delete the Keycloak resources —
-> they live in the `keycloak-operator` namespace and must be deleted separately.
-
-Since the `Keycloak` custom resource and the duplicated Secrets live in the `keycloak-operator`
-namespace rather than the load test's own namespace, a plain `kubectl delete namespace
-<load-test-namespace>` leaves them behind.
-
-All these resources carry a `camunda.io/load-test-namespace: <load-test-namespace>` label
-specifically so they can be found and deleted together.
-
-Either use:
-
-* A load-test `make clean` command: this explicitly deletes the Keycloak CR and Secrets from the
-  `keycloak-operator` namespace before tearing down the load test namespace (see the `clean` target
-  in `common.mk`).
-* Delete the resources from the `keycloak-operator` namespace by targeting the specific `namespace`
-  label with:
-
-  ```shell
-  kubectl delete keycloak,secret -n keycloak-operator -l camunda.io/load-test-namespace=<load-test-namespace>
-  ```
-
-> [!NOTE]
-> These `keycloak-operator` namespace resources are also cleaned up by the various cleanup scripts
-> from this repository.
-
-If you add a new raw (non-Helm) namespace-deletion path, remember to add the same
-`kubectl delete keycloak,secret -l camunda.io/load-test-namespace=...` step, or the Keycloak
-resources for that load test will leak into `keycloak-operator` forever.
-
 ### PostgreSQL cluster
 
 Keycloak is backed by PostgreSQL (PG). The PG cluster is deployed using the [CloudNativePG Operator (CNPG)](https://cloudnative-pg.io/), which manages:
@@ -171,4 +88,154 @@ described above.
 > Unlike Keycloak's cluster, this one is entirely self-contained in the load
 > test namespace and doesn't deploy or require resources outside of that
 > namespace (except for the CNPG Operator, indirectly).
+
+### Connection pooling (PgBouncer)
+
+Each broker pod opens one connection pool per physical tenant, so client connections to
+Postgres scale as (broker pods x physical tenants) — a 10-broker, 10-tenant load test
+produces a structural floor of ~200 mostly-idle connections, which exceeds Postgres's
+default `max_connections=100` under load.
+
+Setting `postgresql.pooler.enabled=true` deploys a CNPG [`Pooler`
+resource](https://cloudnative-pg.io/docs/1.30/connection_pooling) (PgBouncer, transaction
+pooling mode) in front of the Cluster above. A GKE benchmark trial confirmed this collapses
+steady-state Postgres connections by roughly an order of magnitude, with zero client
+queueing and zero connection timeouts, without raising `max_connections` — including through a
+full simultaneous restart of all broker pods.
+
+This is opt-in and off by default. Enabling it also requires switching
+`orchestration.data.secondaryStorage.rdbms.url` (in the platform values) to the Pooler's
+Service and appending `?prepareThreshold=0` — see `--use-pgbouncer` in
+[`../../newLoadTest.sh`](../../newLoadTest.sh), which does both at namespace scaffold time.
+Setting `postgresql.pooler.enabled` directly (e.g. via
+`additional_load_test_setup_configuration`) without the matching JDBC URL change leaves
+Camunda connected straight to the Cluster's `-rw` Service — the Pooler deploys but nothing
+routes through it.
+
+### Connection monitoring
+
+`PodMonitor`s are wired automatically for the Cluster's and (when enabled) the Pooler's own connection metrics — no separate toggle.
+
+## k6 tests
+
+In addition to [the "load tester" application](../../../load-tester), it's possible to run tests
+using [k6](https://grafana.com/docs/k6/latest/) against the deployed Camunda cluster.
+
+### In which case to use k6 tests?
+
+* This is an experimental, unofficial, partially supported, way to run load tests against Camunda cluster
+* Feedback welcome on [#oc-reliability-testing](https://camunda.slack.com/archives/C0807665N8G)
+* Use it for ad-hoc REST API tests, and if it's simpler to use than patching the load-tester app
+
+Use the [`load-tester` subchart](../../../load-tester/README.md) instead for:
+
+* Process instance creation and job worker load. k6 has no official Zeebe client.
+* Load that needs backpressure or step-down-on-error behavior. Not built into k6.
+* Using the official Camunda SDK (Java, node.js, etc.)
+* Requests that depend on eventually-consistent data (e.g. reading data right after writing it).
+  k6 has no built-in way to share state between VUs or scenarios — this scaffold has no
+  cross-executor/scenario communication.
+
+#### What to expect
+
+* Write tests using Javascript. No access to the Camunda node.js SDK though
+* Automatic metrics: http, etc.
+* Can be distributed across many pods, if needed
+* "as code" configuration for adjusting load
+
+See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/bfx7qui8e1bswa/k6)
+
+### Which tests are deployed?
+
+* `default`: checks the cluster topology. Runs for every storage type and version.
+* `data-read`: reads data through the search APIs, so it needs a secondary
+  storage. It is disabled when read benchmarks are off (for
+  `secondary_storage=none` and when the `perform-read-benchmarks` workflow
+  input is false). Also disabled for 8.7, which does not have the
+  `/v2/process-definitions/search` endpoint (`k6_data_read_supported=false` in
+  `stable-87/Makefile`).
+
+### How to add a new test?
+
+1. Add the script under [`k6/scripts/`](k6/scripts) (e.g. `test.mytest.js`).
+2. Register it in `k6.tests` in [`values.yaml`](values.yaml):
+
+   ```yaml
+   k6:
+     tests:
+       my-test:
+         enabled: true
+         script: test.mytest.js
+   ```
+
+   This creates a separate `TestRun` named `k6-my-test` that you can interact with using:
+
+   ```
+   kubectl get testrun k6-my-test
+   ```
+
+> [!WARNING]
+> k6 will ignore [the `thresholds` options](https://grafana.com/docs/k6/latest/using-k6/thresholds/) due
+> to [the `K6_NO_THRESHOLDS` environment variable in `testrun.yaml`](templates/k6/testrun.yaml).
+> This keeps k6 from using more and more memory as the test runs.
+>
+> To read the results, take a look at the Grafana dashboards.
+
+#### How to run the k6 tests locally?
+
+It's possible to run a k6 test locally, it needs:
+
+* The environment variables to authenticate and access the Camunda API.
+* Direct access to the Camunda services: you can use `kubectl port-forward`.
+
+```shell
+kubectl port-forward -n <load-test-namespace> svc/keycloak 18080:18080
+kubectl port-forward -n <load-test-namespace> svc/camunda 8080:8080
+
+# Export the credentials from the secret as environment variables in the current shell.
+eval "$(kubectl get secret load-test-credentials -n <load-test-namespace> -o json \
+  | jq -r '.data | map_values(@base64d) | @sh "
+      export CAMUNDA_CLIENT_ID=\(.clientId)
+      export CAMUNDA_CLIENT_SECRET=\(.clientSecret)
+      export CAMUNDA_OAUTH_URL=\(.authServer | sub("^https?://[^/]+"; "http://localhost:18080"))
+      export CAMUNDA_TOKEN_AUDIENCE=\(.authorizationAudience)"')"
+
+CAMUNDA_BASE_URL=http://localhost:8080 k6 run k6/scripts/test.mytest.js
+```
+
+> [!NOTE]
+> The OAuth host is rewritten to use the `keycloak` port-forward locally,
+> instead of the default in-cluster URL.
+
+### Reusing common helpers
+
+[`k6/scripts/lib.camunda.js`](k6/scripts/lib.camunda.js) provides the shared Camunda client:
+
+```js
+import { Client } from './lib.camunda.js';
+```
+
+* `new Client()` — create it at module level in the test script, so that each VU has its own
+  client. It checks the environment variables, fetches and renews the token by itself, and has one
+  method per endpoint (e.g. `topology()`), plus `get()` and `post()` to add new ones.
+* `client.waitUntilReady()` — call in `setup()` to wait for Camunda to be ready.
+
+## Caveats
+
+Known issues and limitations of the k6 tests:
+
+1. [k6 worker pods are not automatically restarted if they fail](https://github.com/grafana/k6-operator/issues/898): this can skew tests results.
+2. Not possible to use the Camunda node.js SDK: k6 is not node.js and the SDK
+   depends on [node.js APIs which are not available in k6](https://grafana.com/docs/k6/latest/using-k6/modules/#use-nodejs-modules).
+3. When calling HTTP methods, don't set tags with high cardinality values: high
+   cardinality labels have a **severe** impact on Prometheus and can render it
+   completely unusable.
+4. Use `console.xxx()` logging calls carefully: it's easy to create many
+   clients with k6, but a logger inside a tight loop can produce massive logs,
+   costing a lot of money.
+5. `setup()` result is copied into each VU: this `context` is not shared between VUs.
+6. k6 [thresholds](https://grafana.com/docs/k6/latest/using-k6/thresholds/) are
+   [not reported into Prometheus](https://github.com/grafana/k6/issues/4587).
+   Thresholds support is anyway disabled by default as it increases k6 memory
+   usage drastically.
 

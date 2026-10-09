@@ -19,7 +19,6 @@ paths:
     - monorepo-docs-site
     - optimize
     - qa/c8-orchestration-cluster-e2e-test-suite
-    - tasklist/qa/backup-restore-tests
     - testing/camunda-process-test-coverage
 
 maven:
@@ -45,34 +44,6 @@ targets:
     - type: maven
       path: bom/
       target: io.camunda:camunda-process-test-spring
-    # tasklist
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-parent
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-test-fixture-810
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-test-fixture-820
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-test-fixture-830
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-test-fixture-840
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-test-fixture-850
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-test-coverage
     # zeebe
     - type: maven
       path: bom/

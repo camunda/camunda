@@ -22,6 +22,7 @@ import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterRuntimeBackupServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
+import io.camunda.service.ClusterUpgradeStatusServices;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
@@ -161,6 +162,8 @@ public interface ServiceRegistry {
   ClusterRuntimeBackupServices clusterRuntimeBackupServices();
 
   ClusterStatusServices clusterStatusServices();
+
+  ClusterUpgradeStatusServices clusterUpgradeStatusServices();
 
   ClusterTopologyServices clusterTopologyServices();
 

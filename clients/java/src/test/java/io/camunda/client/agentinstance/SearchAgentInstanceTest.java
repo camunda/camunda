@@ -227,6 +227,9 @@ class SearchAgentInstanceTest extends ClientRestTest {
                 new AgentInstanceMetrics()
                     .inputTokens(50L)
                     .outputTokens(100L)
+                    .reasoningTokenCount(30L)
+                    .cacheCreationTokenCount(40L)
+                    .cacheReadTokenCount(60L)
                     .modelCalls(2)
                     .toolCalls(1))
             .limits(new AgentInstanceLimits().maxTokens(1000L).maxModelCalls(5).maxToolCalls(10))
@@ -302,6 +305,18 @@ class SearchAgentInstanceTest extends ClientRestTest {
           final AgentInstance.Metrics metrics = item.getMetrics();
           softly.assertThat(metrics.getInputTokens()).as("inputTokens").isEqualTo(50L);
           softly.assertThat(metrics.getOutputTokens()).as("outputTokens").isEqualTo(100L);
+          softly
+              .assertThat(metrics.getReasoningTokenCount())
+              .as("reasoningTokenCount")
+              .isEqualTo(30L);
+          softly
+              .assertThat(metrics.getCacheCreationTokenCount())
+              .as("cacheCreationTokenCount")
+              .isEqualTo(40L);
+          softly
+              .assertThat(metrics.getCacheReadTokenCount())
+              .as("cacheReadTokenCount")
+              .isEqualTo(60L);
           softly.assertThat(metrics.getModelCalls()).as("modelCalls").isEqualTo(2);
           softly.assertThat(metrics.getToolCalls()).as("toolCalls").isEqualTo(1);
 

@@ -408,7 +408,7 @@
           "processDefinitionVersion": {
             "type": "integer",
             "format": "int32",
-            "description": "The version of the process. By default, the latest version of the process is used. "
+            "description": "The version of the process. If omitted, the latest active version is used. "
           },
           "requestTimeout": {
             "type": "integer",

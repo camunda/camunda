@@ -104,7 +104,7 @@ public class DecisionGroupByEvaluationDateTimeInterpreterES
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult result,
       final ResponseBody<?> response,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {

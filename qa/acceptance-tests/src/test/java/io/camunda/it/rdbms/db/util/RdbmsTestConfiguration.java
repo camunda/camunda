@@ -12,6 +12,7 @@ import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import javax.sql.DataSource;
@@ -43,5 +44,10 @@ public class RdbmsTestConfiguration {
   @Bean
   public MeterRegistry meterRegistry() {
     return new SimpleMeterRegistry();
+  }
+
+  @Bean
+  public BrokerTopologyManager brokerTopologyManager() {
+    return RdbmsTestTopology.processingTopologyManager();
   }
 }

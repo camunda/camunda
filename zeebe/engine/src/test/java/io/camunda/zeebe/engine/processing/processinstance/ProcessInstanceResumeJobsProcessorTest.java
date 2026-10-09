@@ -17,6 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -66,6 +67,7 @@ public final class ProcessInstanceResumeJobsProcessorTest {
   private TypedCommandWriter commandWriter;
   private TypedRejectionWriter rejectionWriter;
   private BpmnJobActivationBehavior jobActivationBehavior;
+  private SuspensionMetrics suspensionMetrics;
   private ProcessInstanceResumeJobsProcessor processor;
 
   @BeforeEach
@@ -77,6 +79,7 @@ public final class ProcessInstanceResumeJobsProcessorTest {
     commandWriter = mock(TypedCommandWriter.class);
     rejectionWriter = mock(TypedRejectionWriter.class);
     jobActivationBehavior = mock(BpmnJobActivationBehavior.class);
+    suspensionMetrics = mock(SuspensionMetrics.class);
     // a hand-out that takes the job, unless a test overrides it to prove the chain still advances
     // when it doesn't
     when(jobActivationBehavior.publishWork(anyLong(), any(), any())).thenReturn(true);
@@ -87,7 +90,8 @@ public final class ProcessInstanceResumeJobsProcessorTest {
     when(writers.rejection()).thenReturn(rejectionWriter);
 
     processor =
-        new ProcessInstanceResumeJobsProcessor(processingState, writers, jobActivationBehavior);
+        new ProcessInstanceResumeJobsProcessor(
+            processingState, writers, jobActivationBehavior, suspensionMetrics);
 
     // the cycle owns the resume by default: marker still RESUMING, as it is throughout a resume
     // that nothing else interferes with

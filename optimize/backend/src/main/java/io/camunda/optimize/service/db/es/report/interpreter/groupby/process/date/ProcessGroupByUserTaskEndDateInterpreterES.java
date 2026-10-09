@@ -52,12 +52,12 @@ public class ProcessGroupByUserTaskEndDateInterpreterES
   }
 
   @Override
-  public DateAggregationServiceES getDateAggregationService() {
+  protected DateAggregationServiceES getDateAggregationService() {
     return dateAggregationService;
   }
 
   @Override
-  public MinMaxStatsServiceES getMinMaxStatsService() {
+  protected MinMaxStatsServiceES getMinMaxStatsService() {
     return minMaxStatsService;
   }
 
@@ -67,7 +67,7 @@ public class ProcessGroupByUserTaskEndDateInterpreterES
   }
 
   @Override
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return definitionService;
   }
 

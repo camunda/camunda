@@ -302,8 +302,7 @@ public class OpensearchBackupRepository implements BackupRepository {
                         + "(backup id [{}]) to complete. The snapshot is likely still running in "
                         + "OpenSearch. Polling will continue until completion. "
                         + "If socket timeouts occur repeatedly, consider increasing the socket timeout via "
-                        + "CAMUNDA_OPERATE_OPENSEARCH_SOCKETTIMEOUT or "
-                        + "CAMUNDA_TASKLIST_OPENSEARCH_SOCKETTIMEOUT "
+                        + "CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SOCKETTIMEOUT "
                         + "and consider doubling or tripling the current value.",
                     snapshotRequest.snapshotName(),
                     backupId);

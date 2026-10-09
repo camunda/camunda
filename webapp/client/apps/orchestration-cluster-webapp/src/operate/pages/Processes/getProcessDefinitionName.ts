@@ -6,10 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
-
-function getProcessDefinitionName(definition: Pick<ProcessDefinition, 'name' | 'processDefinitionId'>) {
-	return definition.name ?? definition.processDefinitionId;
-}
-
-export {getProcessDefinitionName};
+export {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';

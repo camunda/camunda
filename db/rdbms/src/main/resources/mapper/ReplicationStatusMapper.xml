@@ -20,6 +20,7 @@
     </constructor>
   </resultMap>
 
+  <!-- PostgreSQL -->
   <select id="getCurrentLogStatus" resultType="java.lang.Long" databaseId="postgresql">
     SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), '0/0')::bigint last_lsn
   </select>
@@ -90,6 +91,35 @@
                   AND pri.database_id = DB_ID()
     WHERE secondary.is_local = 0
       AND secondary.last_commit_time IS NOT NULL
+  </select>
+
+  <!-- Oracle -->
+  <select id="getCurrentLogStatus" resultType="java.lang.Long" databaseId="oracle">
+    SELECT current_scn FROM v$database
+  </select>
+
+  <!--
+    APPLIED_SCN is the SCN of the last redo applied by the physical or logical standby. It is an
+    exact acknowledgement watermark, unlike the exclusive NEXT_CHANGE# boundary of an archived
+    log. TARGET covers both primary-side remote destinations (STANDBY) and cascading standby
+    destinations (REMOTE); TYPE excludes local, snapshot, and far-sync destinations.
+
+    Destinations without applied progress are excluded instead of being reported as caught up.
+    Oracle time-lag monitoring is unsupported, so this query intentionally reports only the exact
+    acknowledgement watermark.
+  -->
+  <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap" databaseId="oracle">
+    SELECT ad.applied_scn       AS logStatus,
+           TO_CHAR(ad.dest_id)  AS replicaId,
+           CAST(NULL AS NUMBER) AS replicationLagMs,
+           CAST(NULL AS NUMBER) AS replicatedUntilMs
+    FROM v$archive_dest ad
+    JOIN v$archive_dest_status ads ON ads.dest_id = ad.dest_id
+    WHERE ads.type IN ('PHYSICAL', 'LOGICAL')
+      AND ads.status = 'VALID'
+      AND ad.status = 'VALID'
+      AND ad.target IN ('STANDBY', 'REMOTE')
+      AND ad.applied_scn > 0
   </select>
 
   <!--
@@ -227,4 +257,3 @@
   </select>
 
 </mapper>
-

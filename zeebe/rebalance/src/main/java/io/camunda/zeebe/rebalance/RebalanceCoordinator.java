@@ -10,7 +10,6 @@ package io.camunda.zeebe.rebalance;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationChangeInProgressException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinatorException;
@@ -20,7 +19,9 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Nulls;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.LongSupplier;
 import org.jspecify.annotations.Nullable;
@@ -41,6 +42,14 @@ public final class RebalanceCoordinator
     implements RebalanceApi, ClusterConfigurationUpdateListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(RebalanceCoordinator.class);
+
+  private static final Set<PartitionRebalanceOutcome> SUCCESSFUL_PARTITION_OUTCOMES =
+      EnumSet.of(
+          PartitionRebalanceOutcome.TRANSFERRED,
+          PartitionRebalanceOutcome.ALREADY_LEADER,
+          PartitionRebalanceOutcome.CANCELLED,
+          PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED,
+          PartitionRebalanceOutcome.PHYSICAL_TENANT_RECOVERING);
 
   private final MemberId localMemberId;
   private final ConcurrencyControl executor;
@@ -74,11 +83,6 @@ public final class RebalanceCoordinator
     this.rebalanceIdGenerator = rebalanceIdGenerator;
     this.clock = clock;
     this.metrics = metrics;
-  }
-
-  @Override
-  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
-    onClusterConfigurationUpdated(CurrentClusterConfiguration.fromLegacy(clusterConfiguration));
   }
 
   @Override
@@ -247,11 +251,7 @@ public final class RebalanceCoordinator
         rebalance.partitions().stream()
             .filter(partition -> partition.progress() == PartitionRebalanceProgress.COMPLETED)
             .map(PartitionRebalance::outcome)
-            .anyMatch(
-                outcome ->
-                    outcome != PartitionRebalanceOutcome.TRANSFERRED
-                        && outcome != PartitionRebalanceOutcome.ALREADY_LEADER
-                        && outcome != PartitionRebalanceOutcome.CANCELLED);
+            .anyMatch(outcome -> !SUCCESSFUL_PARTITION_OUTCOMES.contains(outcome));
     if (anyUnsuccessful) {
       return RebalanceOutcome.FAILED;
     }
@@ -276,6 +276,10 @@ public final class RebalanceCoordinator
       }
     }
     configuration = nowCoordinating ? clusterConfiguration : null;
+    final var inFlight = running;
+    if (inFlight != null) {
+      inFlight.observeConfiguration(clusterConfiguration);
+    }
   }
 
   private void discardState() {

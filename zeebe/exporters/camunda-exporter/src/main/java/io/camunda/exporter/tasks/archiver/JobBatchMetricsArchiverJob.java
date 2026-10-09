@@ -38,17 +38,17 @@ public class JobBatchMetricsArchiverJob extends ArchiverJob<BasicArchiveBatch> {
   }
 
   @Override
-  public String getJobName() {
+  String getJobName() {
     return JobMetricsBatchTemplate.INDEX_NAME;
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getNextBatch() {
+  CompletableFuture<BasicArchiveBatch> getNextBatch() {
     return getArchiverRepository().getJobBatchMetricsNextBatch();
   }
 
   @Override
-  public JobMetricsBatchTemplate getTemplateDescriptor() {
+  JobMetricsBatchTemplate getTemplateDescriptor() {
     return jobMetricsBatchTemplate;
   }
 

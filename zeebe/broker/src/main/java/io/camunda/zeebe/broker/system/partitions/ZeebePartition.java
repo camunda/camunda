@@ -138,7 +138,7 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
-  public void onActorStarting() {
+  protected void onActorStarting() {
     startupProcess
         .startup(actor, startupContext)
         .onComplete(
@@ -162,29 +162,6 @@ public final class ZeebePartition extends Actor
 
               installLeadershipTransferHooks();
             });
-  }
-
-  /**
-   * Installs the leadership-transfer write barrier and coordinator check on the Raft thread before
-   * registering as a role-change listener, so a transfer request can never observe this partition
-   * without its coordinator check in place.
-   */
-  private void installLeadershipTransferHooks() {
-    final var server = context.getRaftPartition().getServer();
-    server.setLeadershipTransferWriteBarrier(writeBarrier);
-    server
-        .setLeadershipTransferCoordinatorCheck(coordinatorCheck)
-        .whenCompleteAsync(
-            (ignored, error) -> {
-              if (error != null) {
-                LOG.error("Failed to install leadership-transfer coordinator check", error);
-                handleUnrecoverableFailure(error);
-                close();
-                return;
-              }
-              registerListeners();
-            },
-            actor);
   }
 
   @Override
@@ -245,6 +222,29 @@ public final class ZeebePartition extends Actor
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
     onInstallFailure(failure);
+  }
+
+  /**
+   * Installs the leadership-transfer write barrier and coordinator check on the Raft thread before
+   * registering as a role-change listener, so a transfer request can never observe this partition
+   * without its coordinator check in place.
+   */
+  private void installLeadershipTransferHooks() {
+    final var server = context.getRaftPartition().getServer();
+    server.setLeadershipTransferWriteBarrier(writeBarrier);
+    server
+        .setLeadershipTransferCoordinatorCheck(coordinatorCheck)
+        .whenCompleteAsync(
+            (ignored, error) -> {
+              if (error != null) {
+                LOG.error("Failed to install leadership-transfer coordinator check", error);
+                handleUnrecoverableFailure(error);
+                close();
+                return;
+              }
+              registerListeners();
+            },
+            actor);
   }
 
   private static <T> CompletableFuture<T> toCompletableFuture(final ActorFuture<T> actorFuture) {

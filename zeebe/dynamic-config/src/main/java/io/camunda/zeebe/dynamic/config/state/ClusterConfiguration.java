@@ -38,10 +38,9 @@ import java.util.stream.Stream;
  *     sub-configuration carries the {@link DependencyChangePlan} that sub-configuration is running,
  *     so a consumer reading it in-process sees the real change — including that several of its
  *     operations may be running at once. It is flattened to a {@link ClusterChangePlan} only where
- *     the wire demands one, when {@code ProtoBufSerializer} encodes the legacy {@code
- *     ClusterTopology} message a broker without the graph model reads (see {@link
- *     ClusterChangePlan#flatten(ChangePlan)}), which is therefore also the only shape a
- *     configuration decoded from that message can hold.
+ *     the persisted legacy format demands one, when {@code ProtoBufSerializer} encodes the {@code
+ *     ClusterTopology} message (see {@link ClusterChangePlan#flatten(ChangePlan)}), which is
+ *     therefore also the only shape a configuration decoded from that format can hold.
  * @param incarnationNumber - represents the incarnation number of the cluster configuration
  *     <p>This class is immutable. Each mutable methods returns a new instance with the updated
  *     state.
@@ -418,11 +417,15 @@ public record ClusterConfiguration(
   }
 
   /**
-   * Returns the member with the highest priority for a given partition.
+   * Returns the highest-priority member currently eligible to lead a given partition: one whose
+   * member lifecycle is neither {@link State#LEFT} nor {@link State#UNINITIALIZED}, and whose
+   * partition state durably participates in the Raft quorum right now (see {@link
+   * PartitionState.State#isActiveReplica()}) - a learner catching up, or a member on its way out,
+   * cannot become leader and must not be returned as the primary.
    *
    * @param partitionId the partition ID
-   * @return Optional containing the MemberId of the member with highest priority, or empty if
-   *     partition not found
+   * @return Optional containing the MemberId of the member with highest priority, or empty if no
+   *     eligible member replicates the partition
    */
   public Optional<MemberId> getPrimaryMemberForPartition(final int partitionId) {
     return members.entrySet().stream()
@@ -430,6 +433,7 @@ public record ClusterConfiguration(
         .filter(entry -> entry.getValue().state() != State.LEFT)
         .filter(entry -> entry.getValue().state() != State.UNINITIALIZED)
         .filter(entry -> entry.getValue().getPartition(partitionId) != null)
+        .filter(entry -> entry.getValue().getPartition(partitionId).state().isActiveReplica())
         .max(
             (e1, e2) ->
                 Integer.compare(
