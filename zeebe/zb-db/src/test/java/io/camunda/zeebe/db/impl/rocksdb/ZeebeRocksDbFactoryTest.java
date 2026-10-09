@@ -101,7 +101,7 @@ final class ZeebeRocksDbFactoryTest {
   void shouldMergeUserOptionsWithDefaultsInsteadOfOverwriting() {
     // given
     final var customProperties = new Properties();
-    customProperties.put("write_buffer_size", String.valueOf(ByteValue.ofMegabytes(16)));
+    customProperties.put("write_buffer_size", String.valueOf(ByteValue.ofMegabytes(32)));
     customProperties.put("compaction_pri", "kByCompensatedSize");
 
     final var factoryWithDefaults =
@@ -124,7 +124,10 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::writeBufferSize,
             ColumnFamilyOptions::compactionPriority,
             ColumnFamilyOptions::numLevels)
-        .containsExactly(16_901_492L, CompactionPriority.OldestLargestSeqFirst, 4);
+        .containsExactly(
+            RocksDbConfiguration.DEFAULT_MAX_WRITE_BUFFER_SIZE,
+            CompactionPriority.OldestLargestSeqFirst,
+            4);
 
     // then - user options should override defaults
     assertThat(customOptions)
@@ -133,7 +136,7 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::compactionPriority,
             ColumnFamilyOptions::numLevels)
         // numLevels is not overridden, so the default of 4 should remain
-        .containsExactly(ByteValue.ofMegabytes(16), CompactionPriority.ByCompensatedSize, 4);
+        .containsExactly(ByteValue.ofMegabytes(32), CompactionPriority.ByCompensatedSize, 4);
   }
 
   @Test
@@ -303,29 +306,64 @@ final class ZeebeRocksDbFactoryTest {
     // given - configuring with per-broker memory allocation strategy
     final var customRocksDbConfiguration = new RocksDbConfiguration();
     customRocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
-    final var runtimeInfo = new RuntimeInfo(1024 * 1024 * 1024, 3);
+    final var runtimeInfo = new RuntimeInfo(1024 * 1024 * 1024, 4);
 
     // when
     final var customColumnFamilyOptions =
         createColumnFamilyOptions(customRocksDbConfiguration, runtimeInfo);
 
-    // then
-    assertThat(customColumnFamilyOptions.writeBufferSize()).isEqualTo(16_901_492L);
+    // then - 2/3 of 512MB split over 4 partitions and 6 write buffers, minus the prefix filter
+    assertThat(customColumnFamilyOptions.writeBufferSize()).isEqualTo(12_676_119L);
   }
 
   @Test
   void shouldHaveDefaultsWithPerPartitionMemoryAllocationStrategy() {
-    // given - configuring with per-broker memory allocation strategy
+    // given - configuring with per-partition memory allocation strategy
     final var customRocksDbConfiguration = new RocksDbConfiguration();
-    customRocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    customRocksDbConfiguration
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION)
+        .setMemoryLimit(128 * 1024 * 1024L);
 
     // when
     final var customColumnFamilyOptions =
         createColumnFamilyOptions(
             customRocksDbConfiguration, new RuntimeInfo(128 * 1024 * 1024, 3));
 
+    // then - 2/3 of 128MB split over 6 write buffers, minus the prefix filter
+    assertThat(customColumnFamilyOptions.writeBufferSize()).isEqualTo(12_676_119L);
+  }
+
+  @Test
+  void shouldCapWriteBufferSize() {
+    // given - the default 512MB per partition would allow ~48MB per write buffer
+    final var configuration =
+        new RocksDbConfiguration().setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+
+    // when
+    final var columnFamilyOptions =
+        createColumnFamilyOptions(configuration, new RuntimeInfo(1024 * 1024 * 1024, 3));
+
     // then
-    assertThat(customColumnFamilyOptions.writeBufferSize()).isEqualTo(50_704_475L);
+    assertThat(columnFamilyOptions.writeBufferSize())
+        .isEqualTo(RocksDbConfiguration.DEFAULT_MAX_WRITE_BUFFER_SIZE);
+  }
+
+  @Test
+  void shouldAllowWriteBufferSizeAboveCapWhenSetExplicitly() {
+    // given
+    final var columnFamilyOptions = new Properties();
+    columnFamilyOptions.put("write_buffer_size", String.valueOf(64 * 1024 * 1024L));
+    final var configuration =
+        new RocksDbConfiguration()
+            .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION)
+            .setColumnFamilyOptions(columnFamilyOptions);
+
+    // when
+    final var options =
+        createColumnFamilyOptions(configuration, new RuntimeInfo(1024 * 1024 * 1024, 3));
+
+    // then
+    assertThat(options.writeBufferSize()).isEqualTo(64 * 1024 * 1024L);
   }
 
   @Test

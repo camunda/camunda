@@ -17,6 +17,14 @@ public final class RocksDbConfiguration {
   public static final int DEFAULT_UNLIMITED_MAX_OPEN_FILES = -1;
   public static final int DEFAULT_MAX_WRITE_BUFFER_NUMBER = 6;
   public static final int DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE = 3;
+
+  /**
+   * Upper bound for the size of a single write buffer, regardless of the memory budget. Small write
+   * buffers are flushed sooner, which moves tombstones out of memory into SST files where they can
+   * be compacted away. Can be overridden with the {@code write_buffer_size} column family option.
+   */
+  public static final long DEFAULT_MAX_WRITE_BUFFER_SIZE = 16 * 1024 * 1024L;
+
   public static final boolean DEFAULT_STATISTICS_ENABLED = false;
 
   /**
