@@ -48,6 +48,52 @@ public class ZeebeLinkedResourcesValidationTest {
   }
 
   @Test
+  void testScriptTaskWithLinkedResourceIsValid() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .scriptTask(
+                "my_script_task",
+                s ->
+                    s.zeebeLinkedResources(
+                            l ->
+                                l.resourceId("sum.js")
+                                    .resourceType("ManagedScript")
+                                    .bindingType(ZeebeBindingType.deployment)
+                                    .linkName("script"))
+                        .zeebeJobType("io.camunda:managed-script:1"))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void testScriptTaskLinkedResourceIdNotDefined() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .scriptTask(
+                "my_script_task",
+                s ->
+                    s.zeebeLinkedResources(
+                            l ->
+                                l.bindingType(ZeebeBindingType.deployment)
+                                    .resourceType("ManagedScript"))
+                        .zeebeJobType("io.camunda:managed-script:1"))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(ZeebeLinkedResource.class, "Attribute 'resourceId' must be present and not empty"));
+  }
+
+  @Test
   void testEventSuccessful() {
     // given
     final BpmnModelInstance process =

@@ -208,4 +208,79 @@ public class LinkedResourceDeploymentBindingTest {
     assertThat(rejection.getRejectionReason())
         .contains("Expected to find resource with id '2' in current deployment, but not found.");
   }
+
+  @Test
+  public void shouldRejectDeploymentIfScriptTaskLinkedResourceNotIncluded() {
+    // given - a job worker script task linking a generic script resource that is not deployed
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .scriptTask(
+                "scriptTask",
+                builder ->
+                    builder
+                        .zeebeLinkedResources(
+                            l ->
+                                l.resourceId("sum.js")
+                                    .resourceType("ManagedScript")
+                                    .bindingType(ZeebeBindingType.deployment)
+                                    .linkName("script"))
+                        .zeebeJobType("io.camunda:managed-script:1"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        engine.deployment().withXmlResource("process.bpmn", process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .isEqualTo(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.bpmn':
+            - Element: scriptTask > extensionElements > linkedResources > linkedResource
+                - ERROR: Expected to find resource with id 'sum.js' in current deployment, but not found.
+            """);
+  }
+
+  @Test
+  public void shouldDeploySuccessfullyIfScriptTaskLinkedResourceIncluded() {
+    // given - the generic script resource uses its file name as resource id
+    final var process =
+        Bpmn.createExecutableProcess("process-script-linked-resource-success")
+            .startEvent()
+            .scriptTask(
+                "scriptTask",
+                builder ->
+                    builder
+                        .zeebeLinkedResources(
+                            l ->
+                                l.resourceId("sum.js")
+                                    .resourceType("ManagedScript")
+                                    .bindingType(ZeebeBindingType.deployment)
+                                    .linkName("script"))
+                        .zeebeJobType("io.camunda:managed-script:1"))
+            .endEvent()
+            .done();
+
+    // when
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource("process.bpmn", process)
+            .withJsonResource("return a + b;".getBytes(UTF_8), "sum.js")
+            .deploy();
+
+    // then
+    Assertions.assertThat(deployment)
+        .hasRecordType(RecordType.EVENT)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasIntent(DeploymentIntent.CREATED);
+  }
 }
