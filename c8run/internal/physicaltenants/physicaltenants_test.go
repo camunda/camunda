@@ -238,6 +238,8 @@ func TestPrintSummary(t *testing.T) {
 	assert.Contains(t, out, "NOT READY")
 	assert.Contains(t, out, "hr did not become ready: HTTP 404")
 	assert.Contains(t, out, "Camunda-Physical-Tenant: sales")
+	assert.Contains(t, out, "Java:            camunda.client.physicalTenantId=sales")
+	assert.Contains(t, out, "Spring:          camunda.client.physical-tenant-id=sales")
 	assert.Contains(t, out, "secrets --physical-tenant sales")
 
 	buf.Reset()
