@@ -196,6 +196,21 @@ public class IncidentHandlerTest {
   }
 
   @Test
+  void shouldSetStorageOrdinalFromRecord() {
+    // given
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED));
+
+    // when
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getStorageOrdinal())
+        .isEqualTo(incidentRecord.getValue().getStorageOrdinal());
+  }
+
+  @Test
   void shouldNotSetRootProcessInstanceKeyWhenDefault() {
     // given
     final IncidentRecordValue incidentRecordValue =
