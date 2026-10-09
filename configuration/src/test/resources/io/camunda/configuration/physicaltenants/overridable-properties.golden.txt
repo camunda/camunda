@@ -70,6 +70,10 @@ data.primary-storage.log-stream.log-index-density
 data.primary-storage.log-stream.log-segment-size
 data.primary-storage.rocks-db.access-metrics
 data.primary-storage.rocks-db.column-family-options
+data.primary-storage.rocks-db.compact-on-deletion.deletion-ratio
+data.primary-storage.rocks-db.compact-on-deletion.deletion-trigger
+data.primary-storage.rocks-db.compact-on-deletion.enabled
+data.primary-storage.rocks-db.compact-on-deletion.window-size
 data.primary-storage.rocks-db.io-rate-bytes-per-second
 data.primary-storage.rocks-db.max-open-files
 data.primary-storage.rocks-db.max-write-buffer-number
