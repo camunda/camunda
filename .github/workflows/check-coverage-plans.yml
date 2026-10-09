@@ -77,7 +77,12 @@ jobs:
 
       - name: Report result in summary
         if: always()
+        env:
+          VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
         run: |
+          # The markdown this writes contains backticks inside single quotes —
+          # a code fence and an inline path — which is what SC2016 flags.
+          # shellcheck disable=SC2016
           {
             echo '## Coverage plans'
             echo ''
@@ -85,7 +90,7 @@ jobs:
             cat "$RUNNER_TEMP/coverage-plans.txt" 2>/dev/null || echo '(no output)'
             echo '```'
             echo ''
-            if [[ '${{ steps.validate.outcome }}' == 'failure' ]]; then
+            if [[ "$VALIDATE_OUTCOME" == 'failure' ]]; then
               echo 'A plan under `qa/coverage/` no longer matches the suite. Either the'
               echo 'case was not written, its test does not carry the case id, or the test'
               echo 'moved and the plan was not updated. The coverage gate reports these'
