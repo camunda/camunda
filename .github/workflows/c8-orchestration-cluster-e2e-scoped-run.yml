@@ -20,7 +20,15 @@ name: C8 Orchestration Cluster - Scoped E2E Run
 # teardown project in full whatever --grep says — selecting one case by pattern
 # alone pulls in five browser projects and an unrelated spec. Use
 # `scripts/camunda-suite-run.mjs` in the cross-component repository to resolve
-# the right project for a spec; it carries the table and the reasoning.
+# the right project for a spec; it carries the table and the reasoning,
+# including which specs a project testIgnores — `tasklist-e2e` matches
+# tests/tasklist/*.spec.ts but ignores task-panel.spec.ts, so pairing them
+# selects nothing and exits 0.
+#
+# The v2-stateless projects (request-validation-tests and the rest) are not
+# offered: playwright.config.ts swaps its whole project list on
+# V2_STATELESS_TESTS=true, which this workflow does not set, so naming one here
+# would fail with "Project(s) not found".
 
 on:
   workflow_dispatch:
@@ -42,7 +50,6 @@ on:
           - identity-e2e
           - tasklist-e2e
           - api-tests
-          - request-validation-tests
       branch:
         description: "Branch to test"
         required: false
