@@ -174,6 +174,11 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
    kubectl get testrun k6-my-test
    ```
 
+> [!NOTE]
+> Upgrading a deployed k6 test is not supported. The k6 operator does not restart a `TestRun`
+> when it is updated, so the running test keeps the old script and configuration. To apply a
+> change, delete the `TestRun` (or the namespace) and deploy again.
+>
 > [!WARNING]
 > k6 will ignore [the `thresholds` options](https://grafana.com/docs/k6/latest/using-k6/thresholds/) due
 > to [the `K6_NO_THRESHOLDS` environment variable in `testrun.yaml`](templates/k6/testrun.yaml).
@@ -206,6 +211,19 @@ CAMUNDA_BASE_URL=http://localhost:8080 k6 run k6/scripts/test.mytest.js
 > [!NOTE]
 > The OAuth host is rewritten to use the `keycloak` port-forward locally,
 > instead of the default in-cluster URL.
+
+#### How to run the k6 unit tests?
+
+The scripts in [`k6/scripts/`](k6/scripts) have unit tests in [`k6/tests/`](k6/tests). They run with
+the node.js built-in test runner (node 24 or later) and replace the `k6` and `k6/http` modules with
+mocks. Run them from this directory:
+
+```shell
+make -C k6 test
+```
+
+It prints the coverage of each script and fails below 95% lines, branches or functions.
+The CI job `Load Test / k6` runs them on changes under `load-tests/setup/charts/load-test-setup/k6/`.
 
 ### Reusing common helpers
 

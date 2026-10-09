@@ -1,4 +1,5 @@
-# description: Verifies a load test deployment is healthy.
+# description: Verifies a load test deployment is healthy: pods are ready and the client is connected
+#              to the gateway, and the k6 TestRuns (if any) are healthy.
 # called-by: camunda-scheduled-release-load-tests.yml, camunda-verify-and-cleanup-load-test.yml
 # type: CI
 # owner: @camunda/reliability-testing
@@ -23,7 +24,8 @@ jobs:
   verify:
     name: Verify
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # Worst case of verify-test.sh (~115 min with 2 k6 TestRuns), plus setup and final steps.
+    timeout-minutes: 130
     permissions:
       contents: read
       id-token: write # Teleport cluster auth
@@ -40,8 +42,23 @@ jobs:
           proxy: camunda.teleport.sh:443
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER }}
+
+      # Prometheus credentials are required in the verify-test.sh script below.
+      - name: Import Prometheus credentials
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/qa/ci/common LDAP_QA_USER | PROMETHEUS_USER;
+            secret/data/products/qa/ci/common LDAP_QA_PASSWORD | PROMETHEUS_PASSWORD;
+
       - name: Verify Load test
         run: load-tests/docs/scripts/verify-test.sh "${NAMESPACE}"
+
       - name: Observe build status
         if: always()
         continue-on-error: true
