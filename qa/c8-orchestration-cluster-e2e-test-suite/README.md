@@ -227,14 +227,10 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ### Automated Nightly Test Runs
 
-- `c8-orchestration-cluster-e2e-tests-nightly.yml`: Runs nightly across all monorepo versions
-  Nightly tests ensure continuous stability
-
-- All nightly test runs can be accessed from [C8 Orchestration Cluster E2E Tests Nightly](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)
-
+- `c8-orchestration-cluster-nightly-<version>-<type>.yml`: Runs nightly for `main` and each supported `stable/*` branch, as UI (`e2e`) and API (`api-es`, `api-rdbms`) runs
 - Results posted to Slack channel `#c8-orchestration-cluster-e2e-test-results`
-
-- Failures are reviewed by the `qa-automated-release-manager`
+- Failures are triaged every weekday by `C8 Orchestration Cluster Nightly Triage`, which dispatches a fix agent per failing version
+- See the [nightly runbook](docs/nightly-runbook.md) for the schedule, test ownership, and how to fix, skip, or escalate a failure
 
 ---
 
