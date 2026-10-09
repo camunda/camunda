@@ -32,6 +32,13 @@ management:
         prometheus: metrics
       exposure:
         include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: connectionReady
 
 # Camunda client configuration (auto-configured by camunda-spring-boot-starter)
 camunda:
@@ -88,6 +95,19 @@ load-tester:
     # A value <= 0 (the default) means run indefinitely; a positive value stops creation
     # after that many seconds have elapsed, which is useful for time-boxed load test scenarios.
     duration-limit: ${LOAD_TESTER_STARTER_DURATION_LIMIT:0}
+<<<<<<< HEAD
+=======
+    # Bounds the start requests awaiting a response; further scheduled requests are skipped (see
+    # starter.process.instances.submissions{outcome="skipped"}).
+    # open (default): requests are sent at the rate, even while earlier ones wait for a response,
+    #   up to 10 * the rate per second waiting requests.
+    # closed: at most 1 * the rate per second requests wait for a response, so a slow cluster
+    #   lowers the achieved rate.
+    workload-model: ${LOAD_TESTER_STARTER_WORKLOAD_MODEL:open}
+    # Liveness fails when no start request succeeded for this long. Backpressure answers count
+    # as success; every other failure does not. Keep it above the interval between two requests.
+    liveness-max-no-success-age: ${LOAD_TESTER_STARTER_LIVENESS_MAX_NO_SUCCESS_AGE:2m}
+>>>>>>> fc86507b8 (feat: add readiness and liveness probes to the load tester)
     msg-name: msg
     start-via-message: false
   # Worker-specific properties consumed by Worker.java.
@@ -101,6 +121,33 @@ load-tester:
     message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}
     correlation-key-variable-name: ${LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME:correlationKey-var}
 
+<<<<<<< HEAD
+=======
+  # Optional Optimize report-evaluation meter (starter-only); requires api.jwtAuthForApiEnabled=true.
+  optimize:
+    report-evaluation-enabled: ${LOAD_TESTER_OPTIMIZE_ENABLED:false}
+    base-url: ${OPTIMIZE_BASE_URL:http://optimize}
+    keycloak-url: ${OPTIMIZE_KEYCLOAK_URL:http://keycloak}
+    realm: ${OPTIMIZE_REALM:camunda-platform}
+    client-id: ${OPTIMIZE_CLIENT_ID:optimize-loadtest}
+    client-secret: ${OPTIMIZE_LOADTEST_CLIENT_SECRET:demo-client-secret}
+    audience: ${OPTIMIZE_AUDIENCE:optimize-api}
+    process-definition-key: ${OPTIMIZE_PROCESS_DEFINITION_KEY:}
+    evaluation-interval: ${OPTIMIZE_EVALUATION_INTERVAL:60s}
+    initial-delay: ${OPTIMIZE_INITIAL_DELAY:10s}
+    request-timeout: ${OPTIMIZE_REQUEST_TIMEOUT:30s}
+
+# Starter-profile override: only the starter has a liveness indicator.
+---
+spring.config.activate.on-profile: starter
+management:
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: starterLiveness
+
+>>>>>>> fc86507b8 (feat: add readiness and liveness probes to the load tester)
 # Worker-profile override: worker pods actually handle jobs, so they need a real
 # thread pool. Matches the old HOCON app.worker.threads=10 default.
 ---
