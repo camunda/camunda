@@ -35,6 +35,10 @@ class OperatePreviewDecisionsPage extends BasePage {
 	get instancesTablePlaceholder() {
 		return this.page.getByText('Instances table placeholder');
 	}
+
+	get panelResizeHandle() {
+		return this.page.locator('.__dbk__dragger');
+	}
 }
 
 export {OperatePreviewDecisionsPage};
