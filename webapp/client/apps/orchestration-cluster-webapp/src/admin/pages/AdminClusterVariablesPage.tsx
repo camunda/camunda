@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
+import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import {useTranslation} from 'react-i18next';
 import {Eye, Pencil, Plus, Trash2} from '@camunda/design-system/icons';
 import {
@@ -38,7 +39,6 @@ type ModalState =
 	| {type: 'edit'; clusterVariable: ClusterVariable}
 	| {type: 'delete'; clusterVariable: ClusterVariable};
 
-const SEARCH_DEBOUNCE = 500;
 const CLUSTER_VARIABLES_GUIDE_URL =
 	'https://docs.camunda.io/docs/next/components/modeler/feel/cluster-variable/cluster-variable-overview/';
 
@@ -60,29 +60,9 @@ const AdminClusterVariablesPage: React.FC<AdminClusterVariablesPageProps> = ({
 	const {t} = useTranslation();
 	const [modal, setModal] = useState<ModalState | null>(null);
 	const appliedSearchTerm = search.search ?? '';
-	const [searchDraft, setSearchDraft] = useState(appliedSearchTerm);
-	const [lastAppliedSearchTerm, setLastAppliedSearchTerm] = useState(appliedSearchTerm);
-
-	// Back/forward navigation changes the applied term without touching the draft, which
-	// would otherwise leave the input showing a term the table is no longer filtered by. Only
-	// sync the draft in that case (draft still matches what was last applied) — otherwise a
-	// slow round-trip for an earlier debounce would clobber input typed in the meantime.
-	if (lastAppliedSearchTerm !== appliedSearchTerm) {
-		if (searchDraft === lastAppliedSearchTerm) {
-			setSearchDraft(appliedSearchTerm);
-		}
-		setLastAppliedSearchTerm(appliedSearchTerm);
-	}
-
-	useEffect(() => {
-		if (searchDraft === appliedSearchTerm) {
-			return;
-		}
-		const timeoutId = setTimeout(() => {
-			onSearchChange({search: searchDraft === '' ? undefined : searchDraft, page: undefined});
-		}, SEARCH_DEBOUNCE);
-		return () => clearTimeout(timeoutId);
-	}, [appliedSearchTerm, onSearchChange, searchDraft]);
+	const [searchDraft, setSearchDraft] = useDebouncedUrlFilter(appliedSearchTerm, (search) =>
+		onSearchChange({search, page: undefined}),
+	);
 
 	const columns = useMemo<DataTableColumn<ClusterVariable>[]>(
 		() => [

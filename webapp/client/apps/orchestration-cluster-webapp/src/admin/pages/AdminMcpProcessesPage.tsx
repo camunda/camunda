@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo} from 'react';
+import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import {useTranslation} from 'react-i18next';
 import {
 	Button,
@@ -24,7 +25,6 @@ import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type McpProcessesSearch} from '#/admin/mo
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
 
-const SEARCH_DEBOUNCE = 500;
 const EMPTY_CELL = '-';
 const SORTED_COLUMN_ID = 'toolName';
 const MCP_PROCESSES_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/mcp-processes/';
@@ -46,27 +46,9 @@ const AdminMcpProcessesPage: React.FC<AdminMcpProcessesPageProps> = ({
 }) => {
 	const {t} = useTranslation();
 	const appliedSearchTerm = search.search ?? '';
-	const [searchDraft, setSearchDraft] = useState(appliedSearchTerm);
-	const [lastAppliedSearchTerm, setLastAppliedSearchTerm] = useState(appliedSearchTerm);
-
-	// Back/forward navigation changes the applied term without touching the draft, which
-	// would otherwise leave the input showing a term the table is no longer filtered by.
-	if (lastAppliedSearchTerm !== appliedSearchTerm) {
-		setLastAppliedSearchTerm(appliedSearchTerm);
-		setSearchDraft(appliedSearchTerm);
-	}
-
-	useEffect(() => {
-		if (searchDraft === appliedSearchTerm) {
-			return;
-		}
-
-		const timeoutId = setTimeout(() => {
-			onSearchChange({search: searchDraft === '' ? undefined : searchDraft, page: undefined});
-		}, SEARCH_DEBOUNCE);
-
-		return () => clearTimeout(timeoutId);
-	}, [appliedSearchTerm, onSearchChange, searchDraft]);
+	const [searchDraft, setSearchDraft] = useDebouncedUrlFilter(appliedSearchTerm, (search) =>
+		onSearchChange({search, page: undefined}),
+	);
 
 	const columns = useMemo<DataTableColumn<McpProcessTool>[]>(() => {
 		const visibleColumns: DataTableColumn<McpProcessTool>[] = [

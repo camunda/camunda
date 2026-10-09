@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {keepPreviousData, useQuery} from '@tanstack/react-query';
 import {Combobox, Input, Label, type ComboboxOption} from '@camunda/design-system';
 import type {OwnerType} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
+import {useDebouncedValue} from '#/shared/hooks/useDebouncedValue';
 
 const LOOKUP_DEBOUNCE = 300;
 const LOOKUP_LIMIT = 50;
@@ -82,13 +83,9 @@ function useOwnerOptions(ownerType: OwnerType, term: string): ComboboxOption[] {
 const EntityCombobox: React.FC<OwnerSelectionProps> = ({ownerType, value, onChange, onBlur, error}) => {
 	const {t} = useTranslation();
 	const [inputValue, setInputValue] = useState('');
-	const [lookupTerm, setLookupTerm] = useState('');
 	const [selected, setSelected] = useState<ComboboxOption | null>(null);
 
-	useEffect(() => {
-		const timeoutId = setTimeout(() => setLookupTerm(inputValue.trim()), LOOKUP_DEBOUNCE);
-		return () => clearTimeout(timeoutId);
-	}, [inputValue]);
+	const lookupTerm = useDebouncedValue(inputValue.trim(), LOOKUP_DEBOUNCE);
 
 	const fetched = useOwnerOptions(ownerType, lookupTerm);
 	// A selected owner can drop out of the fetched page once the user types a new search term.

@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo} from 'react';
+import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import {useTranslation} from 'react-i18next';
 import type {TFunction} from 'i18next';
 import {endOfDay} from 'date-fns';
@@ -50,7 +51,6 @@ const DOCS_URL = 'https://docs.camunda.io/docs/next/components/admin/audit-opera
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
 
-const FILTER_DEBOUNCE = 500;
 const EMPTY_CELL = '-';
 const ALL_OPTION = 'all';
 
@@ -71,35 +71,6 @@ type AdminOperationsLogPageProps = {
 	search: OperationsLogSearch;
 	onSearchChange: (next: Partial<OperationsLogSearch>) => void;
 };
-
-/**
- * Debounces a text filter so the URL/query only updates once the reader stops typing.
- * Back/forward navigation changes the applied value without touching the draft, which
- * would otherwise leave the input showing a value the table is no longer filtered by.
- */
-function useDebouncedTextFilter(appliedValue: string, onCommit: (value: string | undefined) => void) {
-	const [draft, setDraft] = useState(appliedValue);
-	const [lastAppliedValue, setLastAppliedValue] = useState(appliedValue);
-
-	if (lastAppliedValue !== appliedValue) {
-		setLastAppliedValue(appliedValue);
-		setDraft(appliedValue);
-	}
-
-	useEffect(() => {
-		if (draft === appliedValue) {
-			return;
-		}
-
-		const timeoutId = setTimeout(() => {
-			onCommit(draft === '' ? undefined : draft);
-		}, FILTER_DEBOUNCE);
-
-		return () => clearTimeout(timeoutId);
-	}, [appliedValue, draft, onCommit]);
-
-	return [draft, setDraft] as const;
-}
 
 function getPropertyCell(log: AuditLog, t: TFunction): React.ReactNode {
 	if (log.result === 'FAIL') {
@@ -144,17 +115,12 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 	const {t} = useTranslation();
 	const isAuthorizationEntity = search.entityType === 'AUTHORIZATION';
 
-	const handleActorCommit = useCallback(
-		(value: string | undefined) => onSearchChange({actor: value, page: undefined}),
-		[onSearchChange],
+	const [actorDraft, setActorDraft] = useDebouncedUrlFilter(search.actor ?? '', (actor) =>
+		onSearchChange({actor, page: undefined}),
 	);
-	const [actorDraft, setActorDraft] = useDebouncedTextFilter(search.actor ?? '', handleActorCommit);
-
-	const handleOwnerKeyCommit = useCallback(
-		(value: string | undefined) => onSearchChange({relatedEntityKey: value, page: undefined}),
-		[onSearchChange],
+	const [ownerKeyDraft, setOwnerKeyDraft] = useDebouncedUrlFilter(search.relatedEntityKey ?? '', (relatedEntityKey) =>
+		onSearchChange({relatedEntityKey, page: undefined}),
 	);
-	const [ownerKeyDraft, setOwnerKeyDraft] = useDebouncedTextFilter(search.relatedEntityKey ?? '', handleOwnerKeyCommit);
 
 	const handleEntityTypeChange = useCallback(
 		(value: string) => {
