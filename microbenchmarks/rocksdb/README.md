@@ -47,6 +47,7 @@ measurement starts with the accumulated tombstones of a long-lived partition.
 | `readMode=UPPER_BOUND` | sets `iterate_upper_bound` to the successor of the scanned prefix | no, code change in `TransactionalColumnFamily` |
 | `deleteMode=SINGLE_DELETE` | removes write-once index entries (activatable, deadline) with `SingleDelete` | no, code change in the engine state classes |
 | `seekHint=true` | seeks from an in-memory low watermark instead of the head of a queue-like range | no, code change in `DbJobState` |
+| `compactOnDeletion=1000:500:0` | `windowSize:deletionTrigger:deletionRatio` of RocksDB's compact-on-deletion collector | via `RocksDbConfiguration`, not wired to the broker yet |
 | `cf.<option>=<value>` | any RocksDB column family option, passed like the broker's `columnFamilyOptions` | yes |
 | `memoryLimit`, `memoryStrategy`, `partitions` | memory budget and `PARTITION` / `BROKER` / `FRACTION` allocation | yes |
 | `sstPartitioning=false` | disables the per-prefix SST partitioner | yes |

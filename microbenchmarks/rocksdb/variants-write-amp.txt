@@ -1,0 +1,8 @@
+# Write side of the configs: run with a large ageJobs and a short measurement, compare the
+# "aged ..." log line (aging throughput, flush/compaction bytes, stall time).
+baseline               |
+wb8+merge1             | cf.write_buffer_size=8388608 cf.min_write_buffer_number_to_merge=1
+wb8+merge1+cod         | cf.write_buffer_size=8388608 cf.min_write_buffer_number_to_merge=1 compactOnDeletion=1000:500:0
+wb16+merge1+cod        | cf.write_buffer_size=16777216 cf.min_write_buffer_number_to_merge=1 compactOnDeletion=1000:500:0
+cod                    | compactOnDeletion=1000:500:0
+sd+wb8+merge1          | deleteMode=SINGLE_DELETE cf.write_buffer_size=8388608 cf.min_write_buffer_number_to_merge=1

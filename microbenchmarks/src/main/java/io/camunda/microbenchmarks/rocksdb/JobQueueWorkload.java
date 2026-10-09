@@ -354,18 +354,33 @@ public final class JobQueueWorkload implements AutoCloseable {
    * the tombstones (in memtables and SST files) that a long-lived partition has accumulated.
    */
   private void age() throws RocksDBException {
+    if (statistics != null) {
+      // only attribute the aging phase's flushes and compactions, not the preload's
+      statistics.reset();
+    }
     final long started = System.nanoTime();
     for (long i = 0; i < config.ageJobs(); i++) {
       jobStep();
     }
     // the latencies of the aging phase are not part of the measurement
     writeLatency.snapshotAndReset();
+    final double seconds = (System.nanoTime() - started) / 1e9;
     log(
-        "aged %d jobs in %d ms (memtables=%s, L0=%s, sstDeletes so far are reported per window)",
+        "aged %d jobs in %.1f s (%.0f jobs/s): flushWrite=%.1fMB compactRead=%.1fMB"
+            + " compactWrite=%.1fMB stall=%.1fs memtables=%sB L0=%s",
         config.ageJobs(),
-        (System.nanoTime() - started) / 1_000_000,
+        seconds,
+        config.ageJobs() / seconds,
+        tickerMb(TickerType.FLUSH_WRITE_BYTES),
+        tickerMb(TickerType.COMPACT_READ_BYTES),
+        tickerMb(TickerType.COMPACT_WRITE_BYTES),
+        statistics == null ? 0 : statistics.getTickerCount(TickerType.STALL_MICROS) / 1e6,
         db.getProperty(handle, "rocksdb.cur-size-all-mem-tables"),
         db.getProperty(handle, "rocksdb.num-files-at-level0"));
+  }
+
+  private double tickerMb(final TickerType ticker) {
+    return statistics == null ? 0 : statistics.getTickerCount(ticker) / 1e6;
   }
 
   private void jobStep() throws RocksDBException {

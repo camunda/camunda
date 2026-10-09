@@ -1,0 +1,10 @@
+# Round 2: what is deployable today (config only), what needs the factory (compact-on-deletion),
+# and what needs engine changes (upper bound, single delete, seek hint).
+wb8+merge1             | cf.write_buffer_size=8388608 cf.min_write_buffer_number_to_merge=1
+wb8+merge1+cod         | cf.write_buffer_size=8388608 cf.min_write_buffer_number_to_merge=1 compactOnDeletion=1000:500:0
+ub+cod                 | readMode=UPPER_BOUND compactOnDeletion=1000:500:0
+ub+wb8+merge1          | readMode=UPPER_BOUND cf.write_buffer_size=8388608 cf.min_write_buffer_number_to_merge=1
+ub+wb8+merge1+cod      | readMode=UPPER_BOUND cf.write_buffer_size=8388608 cf.min_write_buffer_number_to_merge=1 compactOnDeletion=1000:500:0
+ub+sd+wb8+merge1       | readMode=UPPER_BOUND deleteMode=SINGLE_DELETE cf.write_buffer_size=8388608 cf.min_write_buffer_number_to_merge=1
+ub+seekhint            | readMode=UPPER_BOUND seekHint=true
+ub+sd+wb8+merge1+hint  | readMode=UPPER_BOUND deleteMode=SINGLE_DELETE cf.write_buffer_size=8388608 cf.min_write_buffer_number_to_merge=1 seekHint=true
