@@ -10,14 +10,19 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetDecisionDefinitionXmlEndpoint,
 	mockLicenseEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
-import {createQueryDecisionDefinitionsResponse} from '#/shared-test-modules/api-mocks/decision-definitions';
+import {
+	createDecisionDefinition,
+	createQueryDecisionDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/decision-definitions';
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 
@@ -72,6 +77,32 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		await expect(page).not.toHaveURL(/decisionDefinitionId/);
 		await expect(page.getByText("Couldn't find the decision", {exact: true})).toBeVisible();
 		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no Decision selected')).toBeVisible();
+	});
+
+	test('should offer deleting the selected decision definition version', async ({
+		network,
+		operatePreviewDecisionsPage,
+	}) => {
+		network.use(
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
+			}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+			mockQueryDecisionDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [
+							createDecisionDefinition({name: 'Invoice Classification', decisionDefinitionId: 'invoice', version: 1}),
+						],
+					}),
+				),
+			}),
+		);
+		await operatePreviewDecisionsPage.goto('?decisionDefinitionId=invoice&decisionDefinitionVersion=1');
+
+		await expect(
+			operatePreviewDecisionsPage.decisionPanel.getByRole('button', {name: /Delete Decision Definition/}),
+		).toBeVisible();
 	});
 
 	test('should keep the Carbon Decisions route working', async ({network, operateDecisionsPage, page}) => {
