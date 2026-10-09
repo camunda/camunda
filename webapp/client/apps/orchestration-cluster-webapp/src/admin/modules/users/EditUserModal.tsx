@@ -24,8 +24,8 @@ import {
 	Text,
 } from '@camunda/design-system';
 import type {User} from '@camunda/camunda-api-zod-schemas/8.11';
-import {isValidEmail} from '#/admin/modules/users/userValidation';
-import {useUserMutations} from '#/admin/modules/users/useUserMutations';
+import {isValidEmail} from './userValidation';
+import {useUserMutations} from './useUserMutations';
 
 type FormValues = {
 	name: string;

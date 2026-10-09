@@ -23,7 +23,7 @@ import {drainingProcessDefinitionsQuery} from '#/operate/pages/Dashboard/Instanc
 import {request, type RequestError} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {getProcessDefinitionName} from '../getProcessDefinitionName';
+import {getProcessDefinitionName} from '#/operate/pages/Processes/getProcessDefinitionName';
 import {useDefinitionRunningInstancesCount} from './useDefinitionRunningInstancesCount';
 
 type Props = {

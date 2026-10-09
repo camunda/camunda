@@ -33,8 +33,8 @@ import type {AuditLog, AuditLogEntityType} from '@camunda/camunda-api-zod-schema
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {cn} from '#/shared/cn';
-import {AiAgentIcon} from '../AiAgentIcon';
-import {McpIcon} from '../McpIcon';
+import {AiAgentIcon} from '#/operate/shared/OperationsLogDetailsModal/AiAgentIcon';
+import {McpIcon} from '#/operate/shared/OperationsLogDetailsModal/McpIcon';
 import {
 	formatBatchTitle,
 	formatModalHeading,
@@ -42,7 +42,7 @@ import {
 	isValidProcessInstanceKey,
 	mapToCellDetailsData,
 	mapToCellEntityKeyData,
-} from '../operationsLogUtils';
+} from '#/operate/shared/OperationsLogDetailsModal/operationsLogUtils';
 import {ActorIcon} from './ActorIcon';
 import {OperationsLogResultIcon} from './OperationsLogResultIcon';
 

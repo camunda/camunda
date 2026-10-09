@@ -10,8 +10,11 @@ import {useState} from 'react';
 import {Button, DataTable, useC4Dictionary, type DataTableColumn} from '@camunda/design-system';
 import {ChevronDown, ChevronRight} from '@camunda/design-system/icons';
 import {cn} from '#/shared/cn';
-import {ExpandableListSkeletonRow} from '../ExpandableListSkeletonRow';
-import type {ExpandableListRow, ExpandableListVariantProps} from '../ExpandableList.types';
+import {ExpandableListSkeletonRow} from '#/operate/pages/Dashboard/shadcn.components/ExpandableListSkeletonRow';
+import type {
+	ExpandableListRow,
+	ExpandableListVariantProps,
+} from '#/operate/pages/Dashboard/shadcn.components/ExpandableList.types';
 
 type DisplayRow =
 	| {kind: 'row'; row: ExpandableListRow}

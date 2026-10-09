@@ -29,8 +29,8 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {Notifications} from '#/shared/notifications/components/Notifications';
-import {ProcessInstanceContext} from '../useProcessInstancePage';
-import {processInstanceQuery} from '../processInstance.queries';
+import {ProcessInstanceContext} from '#/operate/pages/ProcessInstance/useProcessInstancePage';
+import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 
 const ACTIONS = [

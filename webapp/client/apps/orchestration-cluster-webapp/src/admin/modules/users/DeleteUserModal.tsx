@@ -19,7 +19,7 @@ import {
 	AlertDialogTitle,
 	buttonVariants,
 } from '@camunda/design-system';
-import {useUserMutations} from '#/admin/modules/users/useUserMutations';
+import {useUserMutations} from './useUserMutations';
 
 type Props = {
 	isOpen: boolean;

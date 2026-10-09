@@ -9,7 +9,7 @@
 import {forwardRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Panel, Header, Collapsable, ExpandIcon, CollapseIcon, IconButton, Content} from './styled';
-import {Title as PanelTitle} from '../PanelTitle/styled';
+import {Title as PanelTitle} from '#/operate/shared/PanelTitle/styled';
 import {Layer} from '@carbon/react';
 
 type Props = {

@@ -13,11 +13,15 @@ import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ErrorBoundary} from 'react-error-boundary';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
-import {ExpandableList} from '../ExpandableList';
-import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
-import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
-import {dashboardTenantId, runningOrAllInstancesFilter, useDashboardTenants} from '../processesLinkFilters';
-import {LinkWrapper, LoadingRow} from '../styled';
+import {ExpandableList} from '#/operate/pages/Dashboard/ExpandableList';
+import {ExpandedRowErrorFallback} from '#/operate/pages/Dashboard/ExpandedRowErrorFallback';
+import {useDashboardScrollPagination} from '#/operate/pages/Dashboard/useDashboardScrollPagination';
+import {
+	dashboardTenantId,
+	runningOrAllInstancesFilter,
+	useDashboardTenants,
+} from '#/operate/pages/Dashboard/processesLinkFilters';
+import {LinkWrapper, LoadingRow} from '#/operate/pages/Dashboard/styled';
 import {
 	drainingByIdKey,
 	drainingProcessDefinitionsQuery,

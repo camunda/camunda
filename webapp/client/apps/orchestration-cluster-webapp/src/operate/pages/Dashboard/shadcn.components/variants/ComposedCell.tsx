@@ -8,8 +8,11 @@
 
 import {DataTable, type DataTableColumn} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
-import {ExpandableListSkeletonRow} from '../ExpandableListSkeletonRow';
-import type {ExpandableListRow, ExpandableListVariantProps} from '../ExpandableList.types';
+import {ExpandableListSkeletonRow} from '#/operate/pages/Dashboard/shadcn.components/ExpandableListSkeletonRow';
+import type {
+	ExpandableListRow,
+	ExpandableListVariantProps,
+} from '#/operate/pages/Dashboard/shadcn.components/ExpandableList.types';
 
 type DisplayRow = {kind: 'row'; row: ExpandableListRow} | {kind: 'skeleton'; id: string; testId: string; label: string};
 

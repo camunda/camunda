@@ -9,7 +9,7 @@
 import {forwardRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
-import {PanelTitle} from '../../PanelTitle/shadcn.components/PanelTitle';
+import {PanelTitle} from '#/operate/shared/PanelTitle/shadcn.components/PanelTitle';
 
 type Props = {
 	title?: string;

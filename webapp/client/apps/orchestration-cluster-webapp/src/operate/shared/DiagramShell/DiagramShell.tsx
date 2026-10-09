@@ -9,7 +9,7 @@
 import {useTranslation} from 'react-i18next';
 import {Loading} from '@carbon/react';
 import {Container, LoadingContainer, EmptyMessage, ErrorMessage} from './styled';
-import {EmptyMessage as BaseEmptyMessage} from '../EmptyMessage/EmptyMessage';
+import {EmptyMessage as BaseEmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
 
 type DefaultProps = {
 	children: React.ReactNode;
