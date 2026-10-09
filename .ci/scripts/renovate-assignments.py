@@ -156,20 +156,25 @@ def post_dri_comment(pr_number, assignee):
     print(f"Posted DRI comment on PR #{pr_number} mentioning @{assignee}")
 
 def dismiss_renovate_approval(pr_number):
-    url = f"https://api.github.com/repos/{REPO}/pulls/{pr_number}/reviews?per_page=100"
-    resp = requests.get(url, headers=headers)
-    resp.raise_for_status()
-    for review in resp.json():
-        if review['user']['login'] != RENOVATE_APPROVE_BOT or review['state'] != "APPROVED":
-            continue
-        review_id = review['id']
-        if DRY_RUN:
-            print(f"[DRY-RUN] Would dismiss review {review_id} by {RENOVATE_APPROVE_BOT} on PR #{pr_number}")
-            continue
-        dismiss_url = f"https://api.github.com/repos/{REPO}/pulls/{pr_number}/reviews/{review_id}/dismissals"
-        dismiss_resp = requests.put(dismiss_url, headers=headers, json={"message": DISMISS_APPROVAL_MESSAGE})
-        dismiss_resp.raise_for_status()
-        print(f"Dismissed review {review_id} by {RENOVATE_APPROVE_BOT} on PR #{pr_number}")
+    try:
+        url = f"https://api.github.com/repos/{REPO}/pulls/{pr_number}/reviews?per_page=100"
+        resp = requests.get(url, headers=headers)
+        resp.raise_for_status()
+        for review in resp.json():
+            # user is null for deleted (ghost) accounts
+            login = (review.get('user') or {}).get('login')
+            if login != RENOVATE_APPROVE_BOT or review['state'] != "APPROVED":
+                continue
+            review_id = review['id']
+            if DRY_RUN:
+                print(f"[DRY-RUN] Would dismiss review {review_id} by {RENOVATE_APPROVE_BOT} on PR #{pr_number}")
+                continue
+            dismiss_url = f"https://api.github.com/repos/{REPO}/pulls/{pr_number}/reviews/{review_id}/dismissals"
+            dismiss_resp = requests.put(dismiss_url, headers=headers, json={"message": DISMISS_APPROVAL_MESSAGE})
+            dismiss_resp.raise_for_status()
+            print(f"Dismissed review {review_id} by {RENOVATE_APPROVE_BOT} on PR #{pr_number}")
+    except Exception as e:
+        print(f"Error dismissing {RENOVATE_APPROVE_BOT} approval on PR #{pr_number}: {e}")
 
 def add_label_to_pr(pr_number, label):
     if DRY_RUN:
