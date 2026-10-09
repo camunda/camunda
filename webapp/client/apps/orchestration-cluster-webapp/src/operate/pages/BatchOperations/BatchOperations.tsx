@@ -34,7 +34,8 @@ const BatchOperationLink = createLink(OperationLink);
 const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 	const navigate = useNavigate();
 	const {t, i18n} = useTranslation();
-	const query = useQuery({...batchOperationsOptions({page, pageSize, sort}), placeholderData: keepPreviousData});
+	const options = useMemo(() => batchOperationsOptions({page, pageSize, sort}), [page, pageSize, sort]);
+	const query = useQuery({...options, placeholderData: keepPreviousData});
 
 	useEffect(() => {
 		const updateTitle = () => {

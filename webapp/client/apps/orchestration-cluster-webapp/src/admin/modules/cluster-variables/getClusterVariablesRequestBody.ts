@@ -14,7 +14,7 @@ function getClusterVariablesRequestBody(search: ClusterVariablesSearch): QueryCl
 	const searchTerm = search.search?.trim();
 
 	return {
-		sort: [{field: 'name', order: search.sortOrder ?? 'asc'}],
+		sort: [{field: 'name', order: search.sortOrder ?? 'ASC'}],
 		filter: searchTerm === undefined || searchTerm === '' ? undefined : {name: {$like: `*${searchTerm}*`}},
 		page: {from: ((search.page ?? 1) - 1) * pageSize, limit: pageSize},
 	};

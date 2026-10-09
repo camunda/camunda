@@ -53,9 +53,9 @@ function compareUsersBySort(a: User, b: User, queryKey: QueryKey): number {
 		return 0;
 	}
 
-	const valueA = a[sort.field];
-	const valueB = b[sort.field];
-	const direction = sort.order === 'desc' ? -1 : 1;
+	const valueA = a[sort.field] ?? '';
+	const valueB = b[sort.field] ?? '';
+	const direction = sort.order === 'DESC' ? -1 : 1;
 	return direction * (valueA < valueB ? -1 : valueA > valueB ? 1 : 0);
 }
 

@@ -116,7 +116,7 @@ const AdminGlobalTaskListenersPage: React.FC<AdminGlobalTaskListenersPageProps> 
 	);
 
 	const sortState = useMemo<SortingState>(
-		() => [{id: search.sortField ?? 'id', desc: search.sortOrder === 'desc'}],
+		() => [{id: search.sortField ?? 'id', desc: search.sortOrder === 'DESC'}],
 		[search.sortField, search.sortOrder],
 	);
 
@@ -125,7 +125,7 @@ const AdminGlobalTaskListenersPage: React.FC<AdminGlobalTaskListenersPageProps> 
 			const [sorted] = state;
 			onSearchChange({
 				sortField: sorted?.id as GlobalTaskListenersSearch['sortField'],
-				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'desc' : 'asc',
+				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'DESC' : 'ASC',
 				page: undefined,
 			});
 		},

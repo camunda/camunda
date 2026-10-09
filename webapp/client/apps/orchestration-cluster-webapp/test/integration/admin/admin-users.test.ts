@@ -71,7 +71,7 @@ test.describe('Admin users', () => {
 
 		await adminUsersPage.usernameSortButton.click();
 
-		await expect(page).toHaveURL(/sortOrder=desc/);
+		await expect(page).toHaveURL(/sortOrder=DESC/);
 	});
 
 	test('should sort by name or email when those columns are sorted', async ({adminUsersPage, page}) => {
@@ -181,7 +181,7 @@ test.describe('Admin users', () => {
 				successResponse: HttpResponse.json(createQueryUsersResponse({items: [...USERS].reverse()})),
 			}),
 		);
-		await page.goto('/admin/users?sortOrder=desc');
+		await page.goto('/admin/users?sortOrder=DESC');
 		await expect(adminUsersPage.usernameCells).toHaveText(['john.smith', 'jane.doe']);
 
 		network.use(

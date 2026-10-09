@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import type {QueryDecisionInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
@@ -22,7 +23,7 @@ const PAGE_LIMIT = 50;
  */
 function useDecisionInstancesSearch(search: DecisionsSearch) {
 	const filter = mapDecisionInstancesFilter(search);
-	const sort = mapDecisionInstancesSort(search.sort);
+	const sort = useMemo(() => mapDecisionInstancesSort(search.sort), [search.sort]);
 
 	const query = useInfiniteQuery({
 		queryKey: ['decisionInstances', filter, sort] as const,

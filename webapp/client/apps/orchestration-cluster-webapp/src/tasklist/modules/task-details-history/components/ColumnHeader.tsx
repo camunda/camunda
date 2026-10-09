@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {Button, TableHead} from '@camunda/design-system';
 import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ArrowDown, ArrowUp, ArrowUpDown} from '@camunda/design-system/icons';
@@ -39,7 +40,7 @@ type Props = {
 
 const ColumnHeader: React.FC<Props> = ({sortKey, label, search, isDisabled, children}) => {
 	const navigate = useNavigate();
-	const sort = getSortParams(search);
+	const sort = useMemo(() => getSortParams(search), [search]);
 
 	if (sortKey === undefined || isDisabled) {
 		return <TableHead>{children || <span className="sr-only">{label}</span>}</TableHead>;

@@ -95,17 +95,17 @@ describe('<AdminUsersPage />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Username'}));
 
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'username', sortOrder: 'desc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'username', sortOrder: 'DESC', page: undefined});
 	});
 
 	it('should sort by name or email when the reader sorts those columns', async () => {
 		const {screen, onSearchChange} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Name'}));
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'name', sortOrder: 'asc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'name', sortOrder: 'ASC', page: undefined});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Email'}));
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'email', sortOrder: 'asc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'email', sortOrder: 'ASC', page: undefined});
 	});
 
 	it('should return to the first page when the page size changes', async () => {

@@ -43,14 +43,10 @@ import {
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {createQueryDecisionDefinitionsResponse} from '#/shared-test-modules/api-mocks/decision-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {isCursorForwardPagination} from '#/shared-test-modules/api-mocks/shared';
 import {logger} from '#/operate/shared/utils/logger';
 import {OperationsLog} from './OperationsLog';
 import {operationsLogSearchSchema, stripLegacyFilters} from './operationsLog.schema';
-
-type PageWith<T, K extends string> = T extends unknown ? (K extends keyof T ? T : never) : never;
-function isCursorForwardPagination<T extends object>(page: T | undefined): page is PageWith<T, 'after'> {
-	return page !== undefined && 'after' in page;
-}
 
 const TENANT_A = '<tenant-A>';
 const TENANT_B = '<tenant-B>';

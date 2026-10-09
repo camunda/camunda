@@ -336,7 +336,7 @@ describe('<BatchOperations />', () => {
 			}),
 		);
 
-		const screen = await renderRoute('/operate/batch-operations?sort=unknown%2Basc');
+		const screen = await renderRoute('/operate/batch-operations?sort=unknown%2BASC');
 		await expect.element(screen.getByRole('link', {name: 'Cancel Process Instance'})).toBeVisible();
 	});
 

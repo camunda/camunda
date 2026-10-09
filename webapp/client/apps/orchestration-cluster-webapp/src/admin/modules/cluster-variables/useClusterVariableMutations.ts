@@ -41,7 +41,7 @@ function compareClusterVariablesByName(
 	queryKey: QueryKey,
 ): number {
 	const body = queryKey[1] as QueryClusterVariablesRequestBody | undefined;
-	const direction = body?.sort?.[0]?.order === 'desc' ? -1 : 1;
+	const direction = body?.sort?.[0]?.order === 'DESC' ? -1 : 1;
 	return direction * (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
 }
 

@@ -109,16 +109,16 @@ describe('<AdminGlobalTaskListenersPage />', () => {
 		const {screen, onSearchChange} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Listener ID'}));
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'id', sortOrder: 'desc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'id', sortOrder: 'DESC', page: undefined});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Listener type'}));
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'type', sortOrder: 'asc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'type', sortOrder: 'ASC', page: undefined});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Execution order'}));
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'afterNonGlobal', sortOrder: 'desc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'afterNonGlobal', sortOrder: 'DESC', page: undefined});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Priority'}));
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'priority', sortOrder: 'desc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'priority', sortOrder: 'DESC', page: undefined});
 	});
 
 	it('should return to the first page when the page size changes', async () => {

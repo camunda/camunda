@@ -12,7 +12,7 @@ import {Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue} fr
 import type {QueryTenantsRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 
-const TENANTS_REQUEST_BODY: QueryTenantsRequestBody = {sort: [{field: 'name', order: 'asc'}], page: {limit: 100}};
+const TENANTS_REQUEST_BODY: QueryTenantsRequestBody = {sort: [{field: 'name', order: 'ASC'}], page: {limit: 100}};
 
 type Props = {
 	value: string | undefined;

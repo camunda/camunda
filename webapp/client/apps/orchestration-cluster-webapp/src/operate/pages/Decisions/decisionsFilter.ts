@@ -11,7 +11,9 @@ import type {
 	QueryDecisionInstancesRequestBody,
 	QuerySortOrder,
 } from '@camunda/camunda-api-zod-schemas/8.11';
+import {z} from 'zod';
 import {parseIds} from '#/operate/shared/utils/parseIds';
+import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 import {decodeAdvancedStringFilter} from '#/operate/shared/utils/advancedStringFilter';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {buildInstanceKeyCriterion} from '#/operate/shared/utils/buildInstanceKeyCriterion';
@@ -73,7 +75,8 @@ type ResolvedDecisionInstancesSort = [{field: DecisionInstancesSortField; order:
 const DEFAULT_SORT: ResolvedDecisionInstancesSort = [{field: 'evaluationDate', order: 'DESC'}];
 // The only two sortable columns InstancesTable actually wires up — the app itself never produces
 // a `sort` value outside this set, so anything else can only come from a hand-edited URL.
-const SORTABLE_FIELDS: DecisionInstancesSortField[] = ['evaluationDate', 'businessId'];
+const SORTABLE_FIELDS = ['evaluationDate', 'businessId'] as const satisfies readonly DecisionInstancesSortField[];
+const decisionInstancesSortSchema = createSortSearchParamSchema(z.enum(SORTABLE_FIELDS));
 
 /**
  * Parses the `sort` search param (`"field+order"`) into the API sort shape, falling back to
@@ -81,16 +84,9 @@ const SORTABLE_FIELDS: DecisionInstancesSortField[] = ['evaluationDate', 'busine
  * legacy's `parseSortParamsV2`, which validates both parts rather than trusting the URL.
  */
 function mapDecisionInstancesSort(sort: string | undefined): ResolvedDecisionInstancesSort {
-	if (sort === undefined) {
-		return DEFAULT_SORT;
-	}
+	const result = decisionInstancesSortSchema.safeParse(sort);
 
-	const [field, order] = sort.split('+');
-	if (!SORTABLE_FIELDS.includes(field as DecisionInstancesSortField) || (order !== 'ASC' && order !== 'DESC')) {
-		return DEFAULT_SORT;
-	}
-
-	return [{field: field as DecisionInstancesSortField, order}];
+	return result.success ? [result.data] : DEFAULT_SORT;
 }
 
 export {mapDecisionInstancesFilter, mapDecisionInstancesSort, buildInstanceKeyCriterion};

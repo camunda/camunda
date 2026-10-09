@@ -19,7 +19,7 @@ const authorizationsSearchSchema = z.object({
 	resourceType: resourceTypeSchema.optional().catch(undefined),
 	ownerId: z.coerce.string().optional(),
 	sortField: z.enum(SORTABLE_FIELDS).optional(),
-	sortOrder: z.enum(['asc', 'desc']).optional(),
+	sortOrder: z.enum(['ASC', 'DESC']).optional(),
 	page: z.number().int().positive().optional(),
 	pageSize: z.literal(PAGE_SIZES).optional(),
 });
@@ -37,13 +37,13 @@ function resolveResourceType(requested: ResourceType | undefined, available: Res
 function getEffectiveSort(
 	search: Pick<AuthorizationsSearch, 'sortField' | 'sortOrder'>,
 	resourceType: ResourceType,
-): {field: (typeof SORTABLE_FIELDS)[number]; order: 'asc' | 'desc'} {
+): {field: (typeof SORTABLE_FIELDS)[number]; order: 'ASC' | 'DESC'} {
 	// USER_TASK authorizations have no resourceId, so that sort would be meaningless.
 	if (search.sortField === undefined || (resourceType === 'USER_TASK' && search.sortField === 'resourceId')) {
-		return {field: DEFAULT_SORT_FIELD, order: 'asc'};
+		return {field: DEFAULT_SORT_FIELD, order: 'ASC'};
 	}
 
-	return {field: search.sortField, order: search.sortOrder ?? 'asc'};
+	return {field: search.sortField, order: search.sortOrder ?? 'ASC'};
 }
 
 export {

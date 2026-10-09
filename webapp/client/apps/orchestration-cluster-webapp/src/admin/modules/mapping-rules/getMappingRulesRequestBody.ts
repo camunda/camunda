@@ -14,7 +14,7 @@ function getMappingRulesRequestBody(search: MappingRulesSearch): QueryMappingRul
 	const searchTerm = search.search?.trim();
 
 	return {
-		sort: [{field: search.sortField ?? 'mappingRuleId', order: search.sortOrder ?? 'asc'}],
+		sort: [{field: search.sortField ?? 'mappingRuleId', order: search.sortOrder ?? 'ASC'}],
 		filter: searchTerm === undefined || searchTerm === '' ? undefined : {mappingRuleId: {$like: `*${searchTerm}*`}},
 		page: {from: ((search.page ?? 1) - 1) * pageSize, limit: pageSize},
 	};

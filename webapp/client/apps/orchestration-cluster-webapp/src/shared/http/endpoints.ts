@@ -39,7 +39,7 @@ import {
 	type ResumeProcessInstancesBatchOperationRequestBody,
 	type AssignTaskRequestBody,
 	type CompleteTaskRequestBody,
-	type CreateProcessInstanceRequestBody as ApiCreateProcessInstanceRequestBody,
+	type CreateProcessInstanceRequestBody,
 	type QueryUserTaskAuditLogsRequestBody,
 	type QueryAuditLogsRequestBody,
 	type QueryMessageSubscriptionsRequestBody,
@@ -68,7 +68,7 @@ import {
 	type UpdateGlobalTaskListenerRequestBody,
 	type QueryGlobalTaskListenersRequestBody,
 	type Authorization,
-	type CreateAuthorizationRequestBody as ApiCreateAuthorizationRequestBody,
+	type CreateAuthorizationRequestBody,
 	type QueryAuthorizationsRequestBody,
 	type QueryRolesRequestBody,
 	type QueryGroupsRequestBody,
@@ -83,17 +83,6 @@ const BASE_REQUEST_OPTIONS: RequestInit = {
 
 type CreateDocumentMetadata = {
 	customProperties?: Record<string, unknown>;
-};
-
-type CreateProcessInstanceRequestBody = Omit<ApiCreateProcessInstanceRequestBody, 'variables'> & {
-	variables?: Record<string, unknown>;
-};
-
-// The generated create body predates `resourcePropertyName`, which USER_TASK authorizations send
-// instead of a resource ID, and types permissions more strictly than the server's permission map.
-type CreateAuthorizationRequestBody = Omit<ApiCreateAuthorizationRequestBody, 'permissionTypes'> & {
-	permissionTypes: string[];
-	resourcePropertyName?: string | null;
 };
 
 type CreateDocumentsFileEntry = {
@@ -919,4 +908,3 @@ const endpoints = {
 };
 
 export {endpoints};
-export type {CreateAuthorizationRequestBody};

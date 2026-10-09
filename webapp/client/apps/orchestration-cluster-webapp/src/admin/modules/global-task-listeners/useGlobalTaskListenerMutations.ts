@@ -44,7 +44,7 @@ function compareGlobalTaskListenersBySort(a: GlobalTaskListener, b: GlobalTaskLi
 		return 0;
 	}
 
-	return (sort.order === 'desc' ? -1 : 1) * compareValues(a[sort.field] ?? null, b[sort.field] ?? null);
+	return (sort.order === 'DESC' ? -1 : 1) * compareValues(a[sort.field] ?? null, b[sort.field] ?? null);
 }
 
 function globalTaskListenerMatchesFilter(

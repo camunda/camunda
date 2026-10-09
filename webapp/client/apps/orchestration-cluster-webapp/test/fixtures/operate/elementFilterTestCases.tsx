@@ -35,6 +35,7 @@ import {BPMN_XML} from '../../../shared-test-modules/api-mocks/process-definitio
 import {createQueryProcessInstancesResponse} from '../../../shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '../../../shared-test-modules/api-mocks/system-configuration';
 import {createCurrentUser} from '../../../shared-test-modules/api-mocks/current-user';
+import {isCursorForwardPagination} from '../../../shared-test-modules/api-mocks/shared';
 import {ProcessesHarness} from '#/operate/pages/Processes/ProcessesHarness';
 
 const DEFINITIONS = HttpResponse.json(
@@ -451,7 +452,7 @@ function registerElementFilterTests() {
 					const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
 					const processFilter = body.filter?.processDefinitionId;
 					if ((typeof processFilter === 'string' ? processFilter : processFilter?.$eq) === 'orders') {
-						if (body.page?.after === 'orders-next') {
+						if (isCursorForwardPagination(body.page) && body.page.after === 'orders-next') {
 							await delay(1500);
 							return HttpResponse.json(
 								createQueryProcessDefinitionsResponse({
@@ -632,7 +633,7 @@ function registerElementFilterTests() {
 						const processFilter = body.filter?.processDefinitionId;
 						return HttpResponse.json(
 							(typeof processFilter === 'string' ? processFilter : processFilter?.$eq) === 'orders'
-								? body.page?.after
+								? isCursorForwardPagination(body.page) && body.page.after
 									? createQueryProcessDefinitionsResponse({
 											items: [],
 											page: {totalItems: hasMoreTotalItems ? 10000 : 2, hasMoreTotalItems},

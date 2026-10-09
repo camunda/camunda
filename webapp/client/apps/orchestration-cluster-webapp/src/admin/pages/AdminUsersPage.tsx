@@ -98,7 +98,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, searc
 	);
 
 	const sortState = useMemo<SortingState>(
-		() => [{id: search.sortField ?? 'username', desc: search.sortOrder === 'desc'}],
+		() => [{id: search.sortField ?? 'username', desc: search.sortOrder === 'DESC'}],
 		[search.sortField, search.sortOrder],
 	);
 
@@ -108,7 +108,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, searc
 
 			onSearchChange({
 				sortField: sorted?.id as UsersSearch['sortField'],
-				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'desc' : 'asc',
+				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'DESC' : 'ASC',
 				page: undefined,
 			});
 		},
