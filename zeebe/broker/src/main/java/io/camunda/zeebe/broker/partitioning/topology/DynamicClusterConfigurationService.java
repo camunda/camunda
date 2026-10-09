@@ -55,12 +55,6 @@ public class DynamicClusterConfigurationService
   }
 
   @Override
-  public PartitionDistribution getPartitionDistribution(final String physicalTenantId) {
-    return partitionDistributionPerPhysicalTenant.getOrDefault(
-        physicalTenantId, new PartitionDistribution(Set.of()));
-  }
-
-  @Override
   public Map<String, PartitionDistribution> getPartitionDistribution() {
     return partitionDistributionPerPhysicalTenant;
   }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.qa.util.actuator.ClusterActuator.of;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,12 +42,17 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/** Verifies that an in-process primary restore reruns secondary-storage schema initialization. */
+/**
+ * Verifies that an in-process primary restore with Elasticsearch as secondary storage reruns
+ * secondary-storage schema initialization, and restores the backup's partitions after a scale-up.
+ */
 @Testcontainers
 @ZeebeIntegration
 final class InProcessRestoreSchemaInitializationIT {
 
   private static final int PARTITIONS_COUNT = 2;
+  private static final int BACKUP_PARTITIONS_COUNT = 3;
+  private static final int SCALED_PARTITIONS_COUNT = 5;
   private static final long BACKUP_ID = 7;
   private static final String PROCESS_ID = "restore-schema-init-process";
   private static final String JOB_TYPE = "restore-schema-init-job";
@@ -111,6 +117,78 @@ final class InProcessRestoreSchemaInitializationIT {
 
       assertThat(indices()).containsAll(indicesBeforeRestore);
       assertThat(templateExists(TASK_TEMPLATE)).isTrue();
+    }
+  }
+
+  @Test
+  void shouldRestoreTheBackupsPartitionsAfterAScaleUp() {
+    // given - a cluster with 3 partitions, backed up, then scaled up to 5
+    final var backupPath = tempDir.resolve(UUID.randomUUID().toString());
+    try (final var cluster =
+            TestCluster.builder()
+                .withBrokersCount(2)
+                .withPartitionsCount(BACKUP_PARTITIONS_COUNT)
+                .withReplicationFactor(2)
+                .withEmbeddedGateway(true)
+                .withBrokerConfig(
+                    broker ->
+                        broker
+                            .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
+                            .withCreateSchema(true)
+                            .withUnifiedConfig(
+                                cfg -> {
+                                  cfg.getData()
+                                      .getSecondaryStorage()
+                                      .getElasticsearch()
+                                      .setUrl(elasticsearchUrl());
+                                  final var backup = cfg.getData().getPrimaryStorage().getBackup();
+                                  backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+                                  backup.getFilesystem().setBasePath(backupPath.toString());
+                                }))
+                .build()
+                .start()
+                .awaitCompleteTopology();
+        final var client = cluster.newClientBuilder().build()) {
+
+      final var backedUpInstanceKeys =
+          InProcessRestoreTestUtil.deployAndCreateInstancesOnEveryPartition(
+              client, PROCESS_ID, JOB_TYPE, BACKUP_PARTITIONS_COUNT);
+      cluster.brokers().values().forEach(broker -> takeSnapshot(broker));
+      takeBackup(BackupActuator.of(cluster.availableGateway()), BACKUP_ID);
+
+      final var clusterActuator = of(cluster.anyGateway());
+      InProcessRestoreTestUtil.scaleUpPartitions(clusterActuator, SCALED_PARTITIONS_COUNT, 2);
+
+      final var toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
+      awaitChangeCompleted(cluster, clusterActuator, toRecovering);
+
+      // when - the 3-partition backup is restored by id
+      final var restore = InProcessRestoreTestUtil.triggerRestore(client, BACKUP_ID);
+      awaitChangeCompleted(cluster, clusterActuator, restore);
+
+      // then - the group routes over the backup's partitions again, on every broker
+      InProcessRestoreTestUtil.assertRoutesOverPartitions(clusterActuator, BACKUP_PARTITIONS_COUNT);
+      cluster
+          .brokers()
+          .values()
+          .forEach(
+              broker ->
+                  InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+                      broker.getWorkingDirectory(),
+                      DEFAULT_PHYSICAL_TENANT_ID,
+                      BACKUP_PARTITIONS_COUNT,
+                      SCALED_PARTITIONS_COUNT));
+      cluster
+          .brokers()
+          .values()
+          .forEach(
+              broker ->
+                  InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+                      broker, PROCESS_ID, BACKUP_PARTITIONS_COUNT));
+
+      // and - the backup's partitions are restored and processing
+      InProcessRestoreTestUtil.awaitJobsOfInstancesActivatable(
+          client, JOB_TYPE, backedUpInstanceKeys);
     }
   }
 

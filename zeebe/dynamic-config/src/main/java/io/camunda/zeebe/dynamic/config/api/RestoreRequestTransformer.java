@@ -27,8 +27,11 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.util.Either;
 import java.util.HashSet;
@@ -36,11 +39,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * Validates a {@link RestoreRequest} against the current cluster configuration and produces the
@@ -92,7 +97,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
                   .formatted(request.physicalTenantId())));
     }
     final var members = recoveringMembers(partitionGroup);
-    return restorePlan(members);
+    return restorePlan(members, partitionGroup.routingState());
   }
 
   /**
@@ -101,7 +106,8 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    * validator did not resolve a selection for, is mapped to a request failure.
    */
   private Either<Exception, OperationGraph> restorePlan(
-      final SortedMap<MemberId, Set<Integer>> partitionsPerMember) {
+      final SortedMap<MemberId, Set<Integer>> partitionsPerMember,
+      final Optional<RoutingState> currentRoutingState) {
     final var validator = registry.getValidator(request.physicalTenantId(), RestoreRequest.class);
     if (validator.isEmpty()) {
       return Either.left(new InternalError("A validator is required but not present"));
@@ -112,7 +118,8 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     }
     try {
       return Either.right(
-          restoreGraph(partitionsPerMember, (RestoreResolvedRequest) resolved.get()));
+          restoreGraph(
+              partitionsPerMember, (RestoreResolvedRequest) resolved.get(), currentRoutingState));
     } catch (final Exception e) {
       return Either.left(mapFailure(e));
     }
@@ -160,8 +167,10 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    *       is still wiping its own copy of {@code k}. What makes leaving these unordered safe is
    *       that neither step writes the group configuration — see {@code PartitionPreRestoreApplier}
    *       and {@code PartitionRestoreApplier}, which both apply {@code UnaryOperator.identity()}.
-   *   <li>{@code modeChange(m)} — the restores of the partitions {@code m} holds. Partitions {@code
-   *       m} does not hold cannot block it leaving recovery.
+   *   <li>{@code updateRoutingState} — every wipe and every restore. Routes the group's requests
+   *       over the partition count of the backup, so a partition the backup does not hold is only
+   *       wiped, and keeps its message correlation.
+   *   <li>{@code modeChange(m)} — {@code updateRoutingState}.
    *   <li>{@code awaitModeChange(m)} — every mode change and <em>every</em> restore. This one is
    *       deliberately a cluster-wide barrier: awaiting the transition observes the group as a
    *       whole, so no broker may start observing while any partition anywhere is still reloading.
@@ -171,22 +180,20 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    *
    * <p>Scoping the edges is only safe because no two operations that may run concurrently write the
    * same part of the group configuration: the wipes and reloads write nothing at all, a mode change
-   * and its await write only broker {@code m}'s own mode and partition states, and the one
-   * whole-group write, the incarnation number, is ordered after every await. An applier that starts
-   * writing something wider has to be paired with edges here that order it against the operations
-   * it now shares a field with.
+   * and its await write only broker {@code m}'s own mode and partition states, and the whole-group
+   * writes, the routing state and the incarnation number, are ordered after every restore. An
+   * applier that starts writing something wider has to be paired with edges here that order it
+   * against the operations it now shares a field with.
    *
    * <p>There are two intentional barriers: schema initialization before any restore I/O, and the
    * cluster-wide awaits after all restores. Between them, the {@code N·P} wipes and reloads become
-   * {@code N·P} independent chains rather than another cluster-wide barrier, and a broker leaves
-   * recovery as soon as the partitions it holds are back rather than waiting on partitions it does
-   * not hold. On a tenant where every broker replicates every partition the mode-change edges
-   * collapse to cluster-wide anyway, since there every broker holds everything; the wipe/reload
-   * chains do not, and that is where the I/O is.
+   * {@code N·P} independent chains rather than another cluster-wide barrier, and that is where the
+   * I/O is.
    */
   private static OperationGraph restoreGraph(
       final SortedMap<MemberId, Set<Integer>> partitionsPerMember,
-      final RestoreResolvedRequest resolved) {
+      final RestoreResolvedRequest resolved,
+      final Optional<RoutingState> currentRoutingState) {
     final var builder = OperationGraph.builder();
     final var schemaInitialization =
         builder.add(new SchemaInitializationOperation(partitionsPerMember.firstKey()));
@@ -205,7 +212,8 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
                                 Set.of(schemaInitialization)))));
 
     final Map<Integer, Set<OperationId>> restoresOf = new TreeMap<>();
-    partitionsPerMember.forEach(
+    final var restored = restoredPartitions(partitionsPerMember, resolved.backups().keySet());
+    restored.forEach(
         (memberId, partitions) ->
             partitions.forEach(
                 partitionId ->
@@ -221,6 +229,16 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
                                     Objects.requireNonNull(
                                         preRestoreOf.get(memberId).get(partitionId)))))));
 
+    final Set<OperationId> restoreIo = new HashSet<>();
+    preRestoreOf.values().forEach(preRestores -> restoreIo.addAll(preRestores.values()));
+    restoresOf.values().forEach(restoreIo::addAll);
+    final var updateRoutingState =
+        builder.add(
+            new UpdateRoutingState(
+                partitionsPerMember.firstKey(),
+                Optional.of(restoredRoutingState(currentRoutingState, resolved.backups().size()))),
+            restoreIo);
+
     final SortedMap<MemberId, OperationId> modeChanges = new TreeMap<>();
     partitionsPerMember.forEach(
         (memberId, partitions) ->
@@ -228,7 +246,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
                 memberId,
                 builder.add(
                     new ModeChangeOperation(memberId, Mode.PROCESSING),
-                    operationsFor(partitions, restoresOf))));
+                    Set.of(updateRoutingState))));
 
     // Every await waits for every restore, cluster-wide, not only for the ones on its own broker or
     // its own partitions' replicas. Awaiting the transition observes the group as a whole, so a
@@ -249,13 +267,26 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     return builder.build();
   }
 
-  /** The union of the operations recorded for each of {@code partitions}. */
-  private static Set<OperationId> operationsFor(
-      final Set<Integer> partitions, final Map<Integer, Set<OperationId>> operationsPerPartition) {
-    final Set<OperationId> union = new HashSet<>();
-    partitions.forEach(
-        partitionId -> union.addAll(operationsPerPartition.getOrDefault(partitionId, Set.of())));
-    return union;
+  private static RoutingState restoredRoutingState(
+      final Optional<RoutingState> currentRoutingState, final int partitionCount) {
+    return currentRoutingState
+        .map(current -> current.withRequestHandling(ignored -> new AllPartitions(partitionCount)))
+        .orElseGet(() -> RoutingState.initializeWithPartitionCount(partitionCount));
+  }
+
+  /** The partitions each member holds that the backup holds too, i.e. those to restore. */
+  private static SortedMap<MemberId, Set<Integer>> restoredPartitions(
+      final SortedMap<MemberId, Set<Integer>> partitionsPerMember,
+      final Set<Integer> backupPartitions) {
+    final SortedMap<MemberId, Set<Integer>> restored = new TreeMap<>();
+    partitionsPerMember.forEach(
+        (memberId, partitions) ->
+            restored.put(
+                memberId,
+                partitions.stream()
+                    .filter(backupPartitions::contains)
+                    .collect(Collectors.toSet())));
+    return restored;
   }
 
   /**

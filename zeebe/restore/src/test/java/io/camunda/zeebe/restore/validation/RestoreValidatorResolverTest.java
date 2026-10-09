@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore.validation;
 
 import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupMetadata;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.Arrays;
@@ -109,17 +112,38 @@ final class RestoreValidatorResolverTest {
         .thenReturn(CompletableFuture.completedFuture(Optional.of(serialize(metadata))));
   }
 
-  private void stubBackupExists(final long backupId) {
-    final var status =
-        new BackupStatusImpl(
-            new BackupIdentifierImpl(1, 1, backupId),
-            Optional.empty(),
-            BackupStatusCode.COMPLETED,
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty());
+  private void stubBackupExists(final long backupId, final int partitionCount) {
     when(backupStore.list(any(BackupIdentifierWildcard.class)))
-        .thenReturn(CompletableFuture.completedFuture(List.of(status)));
+        .thenReturn(
+            CompletableFuture.completedFuture(List.of(completedBackup(backupId, partitionCount))));
+  }
+
+  /** Stubs the backup the validator reads the partition count to restore from. */
+  private void stubBackupPartitionCount(final long backupId, final int partitionCount) {
+    final var anyPartition =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), CheckpointPattern.of(backupId));
+    when(backupStore.list(anyPartition))
+        .thenReturn(
+            CompletableFuture.completedFuture(List.of(completedBackup(backupId, partitionCount))));
+  }
+
+  private static BackupStatusImpl completedBackup(final long backupId, final int partitionCount) {
+    return new BackupStatusImpl(
+        new BackupIdentifierImpl(1, 1, backupId),
+        Optional.of(
+            new BackupDescriptorImpl(
+                Optional.empty(),
+                OptionalLong.empty(),
+                100L,
+                partitionCount,
+                "8.10.0",
+                CHECKPOINT_TIMESTAMP,
+                CheckpointType.SCHEDULED_BACKUP)),
+        BackupStatusCode.COMPLETED,
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
   }
 
   private void stubNoBackupExists() {
@@ -201,6 +225,7 @@ final class RestoreValidatorResolverTest {
     void shouldValidateWhenSinglePartitionHasBackup() {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
+      stubBackupPartitionCount(1L, 1);
       final var validator = new RestoreValidator(1, backupStore, EXPORTED_POSITIONS);
       final var request = rdbmsRequest();
 
@@ -217,6 +242,7 @@ final class RestoreValidatorResolverTest {
       stubMetadata(1, singleCheckpointMetadata(1));
       stubMetadata(2, singleCheckpointMetadata(2));
       stubMetadata(3, singleCheckpointMetadata(3));
+      stubBackupPartitionCount(1L, 3);
       final var validator = new RestoreValidator(3, backupStore, EXPORTED_POSITIONS);
       final var request = rdbmsRequest();
 
@@ -235,6 +261,7 @@ final class RestoreValidatorResolverTest {
       // by `from` requires it not be before
       stubMetadata(1, singleCheckpointMetadata(1));
       final IntFunction<Long> exportedPositionSupplier = partitionId -> 100L;
+      stubBackupPartitionCount(1L, 1);
       final var validator = new RestoreValidator(1, backupStore, exportedPositionSupplier);
       final var request =
           new RestoreRequest(
@@ -257,6 +284,7 @@ final class RestoreValidatorResolverTest {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
       final IntFunction<Long> exportedPositionSupplier = partitionId -> 100L;
+      stubBackupPartitionCount(1L, 1);
       final var validator = new RestoreValidator(1, backupStore, exportedPositionSupplier);
       final var request =
           new RestoreRequest(
@@ -279,6 +307,7 @@ final class RestoreValidatorResolverTest {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
       final IntFunction<Long> exportedPositionSupplier = partitionId -> 100L;
+      stubBackupPartitionCount(1L, 1);
       final var validator = new RestoreValidator(1, backupStore, exportedPositionSupplier);
       final var request =
           new RestoreRequest(
@@ -303,6 +332,7 @@ final class RestoreValidatorResolverTest {
     void shouldValidateForNoneDatabaseType() {
       // given - "none" storage still tracks exported positions in this scenario
       stubMetadata(1, singleCheckpointMetadata(1));
+      stubBackupPartitionCount(1L, 1);
       final var validator = new RestoreValidator(1, backupStore, EXPORTED_POSITIONS);
       final var request = rdbmsRequest("none");
 
@@ -335,6 +365,7 @@ final class RestoreValidatorResolverTest {
     void shouldPropagateDryRunFlagToResolvedRequest() {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
+      stubBackupPartitionCount(1L, 1);
       final var validator = new RestoreValidator(1, backupStore, EXPORTED_POSITIONS);
       final var request = rdbmsRequest("rdbms", true);
 
@@ -350,6 +381,7 @@ final class RestoreValidatorResolverTest {
       // given - partition 2 only has a checkpoint that partition 1 does not have
       stubMetadata(1, singleCheckpointMetadata(1, 1L));
       stubMetadata(2, singleCheckpointMetadata(2, 2L));
+      stubBackupPartitionCount(1L, 2);
       final var validator = new RestoreValidator(2, backupStore, EXPORTED_POSITIONS);
 
       // when
@@ -366,6 +398,7 @@ final class RestoreValidatorResolverTest {
       // given
       when(backupStore.loadBackupMetadata(1))
           .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+      stubBackupPartitionCount(1L, 1);
       final var validator = new RestoreValidator(1, backupStore, EXPORTED_POSITIONS);
 
       // when / then
@@ -384,6 +417,7 @@ final class RestoreValidatorResolverTest {
       stubMetadata(2, singleCheckpointMetadata(2));
       when(backupStore.loadBackupMetadata(3))
           .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+      stubBackupPartitionCount(1L, 3);
       final var validator = new RestoreValidator(3, backupStore, EXPORTED_POSITIONS);
 
       // when
@@ -400,6 +434,7 @@ final class RestoreValidatorResolverTest {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
       final IntFunction<Long> exportedPositionSupplier = partitionId -> null;
+      stubBackupPartitionCount(1L, 1);
       final var validator = new RestoreValidator(1, backupStore, exportedPositionSupplier);
 
       // when
@@ -416,6 +451,7 @@ final class RestoreValidatorResolverTest {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
       final IntFunction<Long> exportedPositionSupplier = partitionId -> 50L;
+      stubBackupPartitionCount(1L, 1);
       final var validator = new RestoreValidator(1, backupStore, exportedPositionSupplier);
       final var request = rdbmsRequest();
 
@@ -429,7 +465,7 @@ final class RestoreValidatorResolverTest {
     @Test
     void shouldResolveSameBackupIdsForEveryPartitionWhenBackupIdsAreExplicit() {
       // given - no range metadata (e.g. continuous backups disabled), only an ad-hoc backup taken
-      stubBackupExists(42L);
+      stubBackupExists(42L, 3);
       final var validator = new RestoreValidator(3, backupStore, null);
       final var request =
           new RestoreRequest(
@@ -471,6 +507,7 @@ final class RestoreValidatorResolverTest {
     @ValueSource(strings = {"elasticsearch", "opensearch"})
     void shouldBroadcastExplicitBackupIdToAllPartitions(final String databaseType) {
       // given
+      stubBackupPartitionCount(1L, 2);
       stubBackupExists(1, 1L);
       stubBackupExists(2, 1L);
       final var validator = new RestoreValidator(2, backupStore, null);
@@ -512,6 +549,7 @@ final class RestoreValidatorResolverTest {
     @Test
     void shouldRejectWhenBackupIsMissingForAPartition() {
       // given - partition 2 has no completed backup for the requested id
+      stubBackupPartitionCount(1L, 2);
       stubBackupExists(1, 1L);
       stubBackupMissing(2, 1L);
       final var validator = new RestoreValidator(2, backupStore, null);
@@ -528,6 +566,222 @@ final class RestoreValidatorResolverTest {
       // then
       assertThat(assertInvalid(result))
           .hasMessage("No completed backup found for partition 2 with backup id 1");
+    }
+  }
+
+  @Nested
+  final class PartitionCountFromBackup {
+
+    @Test
+    void shouldRestoreOnlyThePartitionsOfTheBackupWhenTheBackupIdIsExplicit() {
+      // given - the group holds 3 partitions, but the backup was taken with 2
+      stubBackupPartitionCount(7L, 2);
+      stubBackupExists(1, 7L);
+      stubBackupExists(2, 7L);
+      final var validator = new RestoreValidator(3, backupStore, null);
+
+      // when
+      final var result = validator.validate(elasticsearchRequest(7L));
+
+      // then
+      assertValid(result, Map.of(1, new long[] {7L}, 2, new long[] {7L}), false);
+    }
+
+    @Test
+    void shouldRejectABackupWithMorePartitionsThanTheGroup() {
+      // given - no broker holds partition 3, so nothing could restore it
+      stubBackupPartitionCount(7L, 3);
+      final var validator = new RestoreValidator(2, backupStore, null);
+
+      // when
+      final var result = validator.validate(elasticsearchRequest(7L));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("it has 3 partitions, but the partition group only has 2");
+    }
+
+    @Test
+    void shouldRestoreOnlyThePartitionsTheRdbmsHoldsForATimeRange() {
+      // given - the group holds 3 partitions, but the RDBMS only holds exported positions for 2,
+      // the partitions of the backup to restore. Partition 3's metadata is not stubbed, so the
+      // validator must not look it up.
+      stubMetadata(1, singleCheckpointMetadata(1));
+      stubMetadata(2, singleCheckpointMetadata(2));
+      stubBackupPartitionCount(1L, 2);
+      final IntFunction<Long> exportedPositionSupplier =
+          partitionId -> partitionId <= 2 ? 50L : null;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequest());
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
+    @Test
+    void shouldRejectBackupsWithAnotherPartitionCountThanTheExportedPositions() {
+      // given - the RDBMS holds exported positions for 2 partitions, but the backups were taken
+      // with 3: the database was not restored to the point of the backups
+      stubMetadata(1, singleCheckpointMetadata(1));
+      stubMetadata(2, singleCheckpointMetadata(2));
+      stubBackupPartitionCount(1L, 3);
+      final IntFunction<Long> exportedPositionSupplier =
+          partitionId -> partitionId <= 2 ? 50L : null;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequest());
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Cannot restore: backup 1 was taken with 3 partitions, but the RDBMS holds exported "
+                  + "positions for 2");
+    }
+
+    @Test
+    void shouldRejectBackupIdsWithAnotherPartitionCountThanTheExportedPositions() {
+      // given - the RDBMS holds exported positions for 3 partitions, but the backup was taken with
+      // 2: the database was not rolled back to the backup
+      stubBackupPartitionCount(1L, 2);
+      final IntFunction<Long> exportedPositionSupplier = partitionId -> 50L;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Cannot restore: backup 1 was taken with 2 partitions, but the RDBMS holds exported "
+                  + "positions for 3");
+    }
+
+    @Test
+    void shouldRestoreTheBackupIdsPartitionsWhenTheExportedPositionsAgree() {
+      // given - a rollback of a scale up from 3 to 2 partitions, with the RDBMS rolled back too
+      stubBackupPartitionCount(1L, 2);
+      stubBackupExists(1, 1L);
+      stubBackupExists(2, 1L);
+      final IntFunction<Long> exportedPositionSupplier =
+          partitionId -> partitionId <= 2 ? 50L : null;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
+    @Test
+    void shouldRestoreTheBackupIdsPartitionsIntoADatabaseWithoutExportedPositions() {
+      // given - an empty RDBMS: nothing to agree with, so the backup alone decides
+      stubBackupPartitionCount(1L, 2);
+      stubBackupExists(1, 1L);
+      stubBackupExists(2, 1L);
+      final IntFunction<Long> exportedPositionSupplier = partitionId -> null;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
+    @Test
+    void shouldRestoreTheBackupIdsPartitionsWhenTheExportedPositionsCannotBeRead() {
+      // given - an RDBMS without its schema yet, which only the restore creates
+      stubBackupPartitionCount(1L, 2);
+      stubBackupExists(1, 1L);
+      stubBackupExists(2, 1L);
+      final IntFunction<Long> exportedPositionSupplier =
+          partitionId -> {
+            throw new IllegalArgumentException("Table EXPORTER_POSITION not found");
+          };
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
+    @Test
+    void shouldCheckTheLastBackupOfEveryPartitionAgainstTheExportedPositions() {
+      // given - partitions whose last backups differ, one of them taken with another partition
+      // count than the exported positions
+      stubBackupPartitionCount(5L, 2);
+      stubBackupPartitionCount(6L, 3);
+      final var restorableBackups =
+          new RestorableBackups(
+              5L,
+              Map.of(
+                  1,
+                      List.of(
+                          new CheckpointEntry(
+                              5L,
+                              100L,
+                              CHECKPOINT_TIMESTAMP,
+                              CheckpointType.SCHEDULED_BACKUP,
+                              OptionalLong.of(1L))),
+                  2,
+                      List.of(
+                          new CheckpointEntry(
+                              6L,
+                              100L,
+                              CHECKPOINT_TIMESTAMP,
+                              CheckpointType.SCHEDULED_BACKUP,
+                              OptionalLong.of(1L)))));
+      final var validator = new RestoreValidator(3, backupStore, null);
+
+      // when / then
+      assertThatThrownBy(() -> validator.verifyLastBackupsHoldThePartitions(restorableBackups, 2))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Cannot restore: backup 6 was taken with 3 partitions, but the RDBMS holds exported "
+                  + "positions for 2");
+    }
+
+    private static RestoreRequest rdbmsRequestWithBackupIds(final long backupId) {
+      return new RestoreRequest(
+          "default",
+          new TenantRestoreArguments(
+              new RestoreParameters(List.of(backupId), null, null), "rdbms", false),
+          false);
+    }
+
+    @Test
+    void shouldRejectExportedPositionsWithAGap() {
+      // given - positions for partitions 1 and 3 but not 2: the database is inconsistent, unlike
+      // missing positions after the last partition it holds
+      final IntFunction<Long> exportedPositionSupplier =
+          partitionId -> partitionId == 2 ? null : 50L;
+      final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequest());
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "The RDBMS holds an exported position for partition 3 but none for partition 2");
+    }
+
+    private static RestoreRequest elasticsearchRequest(final long backupId) {
+      return new RestoreRequest(
+          "default",
+          new TenantRestoreArguments(
+              new RestoreParameters(List.of(backupId), null, null), "elasticsearch", false),
+          false);
     }
   }
 }
