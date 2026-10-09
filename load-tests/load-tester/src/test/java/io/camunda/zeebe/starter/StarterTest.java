@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -76,6 +77,7 @@ class StarterTest {
   }
 
   @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldSeparateLoadGenerationFromDataAvailabilityQueries() {
     // given
     final var loaderClient = mock(CamundaClient.class, RETURNS_DEEP_STUBS);
