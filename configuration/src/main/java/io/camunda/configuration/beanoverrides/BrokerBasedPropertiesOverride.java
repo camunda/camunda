@@ -906,13 +906,13 @@ public class BrokerBasedPropertiesOverride {
     brokerRocksDb.setEnableSstPartitioning(unifiedRocksDb.isSstPartitioningEnabled());
 
     final var compactOnDeletion = unifiedRocksDb.getCompactOnDeletion();
-    if (compactOnDeletion.isEnabled()) {
-      brokerRocksDb.setCompactOnDeletion(
-          new RocksDbConfiguration.CompactOnDeletion(
-              compactOnDeletion.getWindowSize(),
-              compactOnDeletion.getDeletionTrigger(),
-              compactOnDeletion.getDeletionRatio()));
-    }
+    brokerRocksDb.setCompactOnDeletion(
+        compactOnDeletion.isEnabled()
+            ? new RocksDbConfiguration.CompactOnDeletion(
+                compactOnDeletion.getWindowSize(),
+                compactOnDeletion.getDeletionTrigger(),
+                compactOnDeletion.getDeletionRatio())
+            : null);
   }
 
   private static void populateFromS3(final BrokerBasedProperties override, final Camunda camunda) {

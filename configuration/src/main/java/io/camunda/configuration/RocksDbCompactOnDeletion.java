@@ -11,12 +11,12 @@ package io.camunda.configuration;
  * Configures RocksDB's compact-on-deletion collector, which marks an SST file for compaction as
  * soon as it is written if it contains a high density of deletions. This removes tombstones of
  * queue-like state (e.g. activatable jobs, job deadlines, timers) early, which keeps seeks over
- * those ranges cheap, at the cost of additional compaction I/O. Disabled by default.
+ * those ranges cheap, at the cost of additional compaction I/O. Enabled by default.
  */
 public class RocksDbCompactOnDeletion {
 
   /** Enables the compact-on-deletion collector. */
-  private boolean enabled = false;
+  private boolean enabled = true;
 
   /** Size of the sliding window of consecutive entries in which deletions are counted. */
   private long windowSize = 1000;

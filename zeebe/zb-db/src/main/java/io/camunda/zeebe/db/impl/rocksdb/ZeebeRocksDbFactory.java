@@ -218,8 +218,8 @@ public final class ZeebeRocksDbFactory<
     // Overwrite with user-provided options
     options.putAll(rocksDbConfiguration.getColumnFamilyOptions());
 
-    final var columnFamilyOptions = ColumnFamilyOptions.getColumnFamilyOptionsFromProps(options);
-    if (columnFamilyOptions == null) {
+    final var optionsFromProps = ColumnFamilyOptions.getColumnFamilyOptionsFromProps(options);
+    if (optionsFromProps == null) {
       throw new IllegalStateException(
           String.format(
               "Expected to create column family options for RocksDB, "
@@ -230,20 +230,21 @@ public final class ZeebeRocksDbFactory<
     }
 
     // Apply configuration that cannot be set via Properties
+    final var compactOnDeletion = rocksDbConfiguration.getCompactOnDeletion();
+    final var columnFamilyOptions =
+        compactOnDeletion == null
+            ? optionsFromProps
+            : withCompactOnDeletion(optionsFromProps, compactOnDeletion, closeables);
     final var tableConfig = createTableFormatConfig(closeables, rocksDbResources);
     columnFamilyOptions.setTableFormatConfig(tableConfig);
-
-    final var compactOnDeletion = rocksDbConfiguration.getCompactOnDeletion();
-    if (compactOnDeletion != null) {
-      return withCompactOnDeletion(columnFamilyOptions, compactOnDeletion, closeables);
-    }
     return columnFamilyOptions;
   }
 
   /**
    * RocksJava only exposes table properties collectors on the combined {@link Options}, so the
-   * collector is set there and the column family part is copied back out; the native copy shares
-   * every other already configured component (table factory, prefix extractor, partitioner).
+   * collector is set there and the column family part is copied back out. The native copy keeps
+   * every option set so far, but RocksJava does not carry over its Java-side references (e.g. the
+   * table format config), so this has to run before those are set.
    */
   private static ColumnFamilyOptions withCompactOnDeletion(
       final ColumnFamilyOptions columnFamilyOptions,
@@ -294,10 +295,13 @@ public final class ZeebeRocksDbFactory<
     final var maxWriteBuffers = rocksDbConfiguration.getMaxWriteBufferNumber();
     props.setProperty("max_write_buffer_number", RocksDbOptionsFormatter.format(maxWriteBuffers));
 
+    // the budget is an upper bound: large write buffers keep tombstones in memory for long
     final var writeBufferSize =
-        Math.round(
-            ((double) memory.writeBufferBudgetPerPartition() / maxWriteBuffers)
-                * (1 - memtablePrefixFilterMemory));
+        Math.min(
+            RocksDbConfiguration.DEFAULT_MAX_WRITE_BUFFER_SIZE,
+            Math.round(
+                ((double) memory.writeBufferBudgetPerPartition() / maxWriteBuffers)
+                    * (1 - memtablePrefixFilterMemory)));
 
     props.setProperty("write_buffer_size", RocksDbOptionsFormatter.format(writeBufferSize));
 

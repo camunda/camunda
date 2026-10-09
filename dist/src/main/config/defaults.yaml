@@ -584,6 +584,18 @@ camunda: # Type: io.camunda.configuration.Camunda
         # and values are derived from RocksDB's C implementation, and are not limited to the provided examples
         # below. Please look in RocksDB's SCM repo for the files: `cf_options.h` and `options_helper.cc`.
         column-family-options: null # Type: Properties, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_COLUMNFAMILYOPTIONS
+        compact-on-deletion: # Type: io.camunda.configuration.RocksDbCompactOnDeletion  
+          # A file is also marked for compaction if the share of deletions among all its entries is at least
+          # this ratio. Must be in [0, 1]; 0 disables this check.
+          deletion-ratio: 0 # Type: Double, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_COMPACTONDELETION_DELETIONRATIO
+          # A file is marked for compaction if any sliding window of windowSize entries contains at least this
+          # many deletions. Must be greater than 0 and at most windowSize.
+          deletion-trigger: 500 # Type: Long, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_COMPACTONDELETION_DELETIONTRIGGER
+          # Enables the compact-on-deletion collector.
+          enabled: true # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_COMPACTONDELETION_ENABLED
+          # Size of the sliding window of consecutive entries in which deletions are counted.
+          window-size: 1000 # Type: Long, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_COMPACTONDELETION_WINDOWSIZE
+        
         # Configures a rate limit for write I/O of RocksDB. Setting any value less than or equal to 0 will
         # disable this, which is the default setting. Setting a rate limit on the write I/O can help achieve
         # more stable performance by avoiding write spikes consuming all available IOPS, leading to more
@@ -625,8 +637,10 @@ camunda: # Type: io.camunda.configuration.Camunda
         memory-limit: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT
         # Configures how many write buffers should be full before they are merged and flushed to disk. Having
         # a higher number here means you may flush less often, but will flush more data at once. Have a lower
-        # one means flushing more often, but flushing less data at once.
-        min-write-buffer-number-to-merge: 3 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MINWRITEBUFFERNUMBERTOMERGE
+        # one means flushing more often, but flushing less data at once. Flushing each write buffer on its own
+        # keeps deleted entries (tombstones) from piling up in memory, where every iteration has to step over
+        # them.
+        min-write-buffer-number-to-merge: 1 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MINWRITEBUFFERNUMBERTOMERGE
         # Configures if the RocksDB SST files should be partitioned based on some virtual column families. By
         # default, RocksDB will not partition the SST files, which might have influence on the compacting of
         # certain key ranges. Enabling this option gives RocksDB some good hints how to improve compaction and

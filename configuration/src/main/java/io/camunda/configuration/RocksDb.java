@@ -116,9 +116,11 @@ public class RocksDb {
   /**
    * Configures how many write buffers should be full before they are merged and flushed to disk.
    * Having a higher number here means you may flush less often, but will flush more data at once.
-   * Have a lower one means flushing more often, but flushing less data at once.
+   * Have a lower one means flushing more often, but flushing less data at once. Flushing each write
+   * buffer on its own keeps deleted entries (tombstones) from piling up in memory, where every
+   * iteration has to step over them.
    */
-  private int minWriteBufferNumberToMerge = 3;
+  private int minWriteBufferNumberToMerge = 1;
 
   /**
    * Configures a rate limit for write I/O of RocksDB. Setting any value less than or equal to 0
@@ -150,7 +152,7 @@ public class RocksDb {
 
   /**
    * Configures RocksDB's compact-on-deletion collector, which compacts SST files with a high
-   * density of deletions early. Disabled by default.
+   * density of deletions early. Enabled by default.
    */
   @NestedConfigurationProperty
   private RocksDbCompactOnDeletion compactOnDeletion = new RocksDbCompactOnDeletion();

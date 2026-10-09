@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.CompactOnDeletion;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import java.util.Properties;
@@ -170,8 +171,9 @@ public class RocksDbPropertiesTest {
     }
 
     @Test
-    void shouldNotEnableCompactOnDeletionByDefault() {
-      assertThat(brokerCfg.getExperimental().getRocksdb().getCompactOnDeletion()).isNull();
+    void shouldEnableCompactOnDeletionByDefault() {
+      assertThat(brokerCfg.getExperimental().getRocksdb().getCompactOnDeletion())
+          .isEqualTo(RocksDbConfiguration.DEFAULT_COMPACT_ON_DELETION);
     }
 
     @Test
@@ -253,6 +255,7 @@ public class RocksDbPropertiesTest {
         "camunda.data.primary-storage.rocks-db.io-rate-bytes-per-second=20971520",
         "camunda.data.primary-storage.rocks-db.wal-disabled=false",
         "camunda.data.primary-storage.rocks-db.sst-partitioning-enabled=false",
+        "camunda.data.primary-storage.rocks-db.compact-on-deletion.enabled=false",
         "camunda.data.primary-storage.rocks-db.column-family-options.compaction_pri=kOldestLargestSeqFirst",
         "camunda.data.primary-storage.rocks-db.memory-fraction=0.6",
         "camunda.data.primary-storage.rocks-db.max-memory-fraction=0.7",
@@ -275,6 +278,11 @@ public class RocksDbPropertiesTest {
 
     WithNewAndLegacySet(@Autowired final BrokerBasedProperties brokerCfg) {
       this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldDisableCompactOnDeletion() {
+      assertThat(brokerCfg.getExperimental().getRocksdb().getCompactOnDeletion()).isNull();
     }
 
     @Test

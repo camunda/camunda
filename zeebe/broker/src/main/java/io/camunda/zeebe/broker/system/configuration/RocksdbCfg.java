@@ -59,7 +59,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
       DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
   private double memoryFraction = 0.1;
   private double maxMemoryFraction = -1;
-  private @Nullable CompactOnDeletion compactOnDeletion;
+  private @Nullable CompactOnDeletion compactOnDeletion =
+      RocksDbConfiguration.DEFAULT_COMPACT_ON_DELETION;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
