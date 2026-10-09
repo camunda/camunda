@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.worker.JobWorker;
 import java.io.IOException;
@@ -90,6 +91,8 @@ class SilentHttp2ServerRequestTimeoutTest {
   private final AtomicInteger connectedSessions = new AtomicInteger();
   private final AtomicInteger disconnectedSessions = new AtomicInteger();
   private HttpAsyncServer server;
+  private int port;
+  private Path certificatePath;
   private CamundaClient client;
 
   /** Keeps a system-configured proxy from intercepting the requests to the local server. */
@@ -117,7 +120,7 @@ class SilentHttp2ServerRequestTimeoutTest {
   @BeforeEach
   void setUp() throws Exception {
     final Path keyStorePath = tempDir.resolve("server.p12");
-    final Path certificatePath = tempDir.resolve("server.pem");
+    certificatePath = tempDir.resolve("server.pem");
     generateSelfSignedCertificate(keyStorePath, certificatePath);
 
     server =
@@ -130,16 +133,18 @@ class SilentHttp2ServerRequestTimeoutTest {
     server.start();
     final ListenerEndpoint endpoint =
         server.listen(new InetSocketAddress("localhost", 0), URIScheme.HTTPS).get();
-    final int port = ((InetSocketAddress) endpoint.getAddress()).getPort();
+    port = ((InetSocketAddress) endpoint.getAddress()).getPort();
 
-    client =
-        CamundaClient.newClientBuilder()
-            .applyEnvironmentVariableOverrides(false)
-            .preferRestOverGrpc(true)
-            .restAddress(new URI("https://localhost:" + port))
-            .caCertificatePath(certificatePath.toString())
-            .responseDeadlineMargin(RESPONSE_DEADLINE_MARGIN)
-            .build();
+    client = clientBuilder().build();
+  }
+
+  private CamundaClientBuilder clientBuilder() throws Exception {
+    return CamundaClient.newClientBuilder()
+        .applyEnvironmentVariableOverrides(false)
+        .preferRestOverGrpc(true)
+        .restAddress(new URI("https://localhost:" + port))
+        .caCertificatePath(certificatePath.toString())
+        .responseDeadlineMargin(RESPONSE_DEADLINE_MARGIN);
   }
 
   @AfterEach
@@ -170,6 +175,36 @@ class SilentHttp2ServerRequestTimeoutTest {
     assertThat(receivedRequests.get()).isPositive();
     // the connection is closed, not just the future failed, so its lease is released
     await().untilAsserted(() -> assertThat(disconnectedSessions.get()).isPositive());
+  }
+
+  @Test
+  void shouldNotCountWaitForConnectionTowardsDeadlineOfRequestWithoutBody() throws Exception {
+    // given the only pooled connection is occupied by a request that never gets an answer
+    try (final CamundaClient singleConnectionClient =
+        clientBuilder()
+            .maxHttpConnections(1)
+            .defaultRequestTimeout(Duration.ofSeconds(1))
+            .build()) {
+      singleConnectionClient
+          .newActivateJobsCommand()
+          .jobType("silent")
+          .maxJobsToActivate(1)
+          .requestTimeout(Duration.ofSeconds(1))
+          .send();
+      await().until(() -> receivedRequests.get() == 1);
+
+      // when a request without a body has to wait for that connection for longer than its own
+      // response timeout plus margin (2s), because the first request only fails after 3s
+      final Future<?> waiting = singleConnectionClient.newTopologyRequest().send();
+
+      // then its deadline only starts once it has the connection, so it is sent after all
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(() -> assertThat(receivedRequests.get()).isEqualTo(2));
+      assertThatThrownBy(() -> waiting.get(30, TimeUnit.SECONDS))
+          .isNotInstanceOf(TimeoutException.class)
+          .isInstanceOf(ExecutionException.class);
+    }
   }
 
   @Test
