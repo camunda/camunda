@@ -19,6 +19,7 @@ class WebappsConfigurationInitializerTest {
 
   private static final String CAMUNDA_WEBAPPS_ENABLED = "camunda.webapps.enabled";
   private static final String STATIC_LOCATIONS = "spring.web.resources.static-locations";
+  private static final String OPERATE_TASKLIST_URL = "camunda.operate.tasklist-url";
   private static final String DEFAULT_APP = "camunda.webapps.default-app";
   private static final String WEBAPP_LOCATION = "classpath:/META-INF/resources/webapp/";
 
@@ -68,6 +69,56 @@ class WebappsConfigurationInitializerTest {
     // then
     assertThat(context.getEnvironment().getProperty(DEFAULT_APP))
         .isEqualTo(Profile.OPERATE.getId());
+  }
+
+  @Test
+  void shouldDefaultOperateTasklistUrlWhenOperateAndTasklistUisAreServed() {
+    // given
+    final GenericApplicationContext context = new GenericApplicationContext();
+    context.getEnvironment().setActiveProfiles(Profile.OPERATE.getId(), Profile.TASKLIST.getId());
+    context
+        .getEnvironment()
+        .getPropertySources()
+        .addFirst(new MapPropertySource("test", Map.of("server.servlet.context-path", "/ctx")));
+
+    // when
+    new WebappsConfigurationInitializer().initialize(context);
+
+    // then
+    assertThat(context.getEnvironment().getProperty(OPERATE_TASKLIST_URL))
+        .isEqualTo("/ctx/tasklist");
+  }
+
+  @Test
+  void shouldKeepExplicitOperateTasklistUrl() {
+    // given
+    final GenericApplicationContext context = new GenericApplicationContext();
+    context.getEnvironment().setActiveProfiles(Profile.OPERATE.getId(), Profile.TASKLIST.getId());
+    context
+        .getEnvironment()
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource("test", Map.of(OPERATE_TASKLIST_URL, "https://tasklist.test")));
+
+    // when
+    new WebappsConfigurationInitializer().initialize(context);
+
+    // then
+    assertThat(context.getEnvironment().getProperty(OPERATE_TASKLIST_URL))
+        .isEqualTo("https://tasklist.test");
+  }
+
+  @Test
+  void shouldNotDefaultOperateTasklistUrlWithoutTasklist() {
+    // given
+    final GenericApplicationContext context = new GenericApplicationContext();
+    context.getEnvironment().setActiveProfiles(Profile.OPERATE.getId());
+
+    // when
+    new WebappsConfigurationInitializer().initialize(context);
+
+    // then
+    assertThat(context.getEnvironment().getProperty(OPERATE_TASKLIST_URL)).isNull();
   }
 
   @Test
