@@ -47,6 +47,7 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import java.time.InstantSource;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
@@ -134,7 +135,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             expressionLanguage,
             config.getExpressionEvaluationTimeout(),
             processingState.getVariableState(),
-            referencedSecretCollector);
+            referencedSecretCollector,
+            config.getSensitiveVariablePatterns().stream().map(Pattern::compile).toList());
 
     conditionalBehavior =
         new BpmnConditionalBehavior(
@@ -145,7 +147,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getVariableState(),
             writers.state(),
             conditionalBehavior,
-            processingState.getKeyGenerator());
+            processingState.getKeyGenerator(),
+            config.getSensitiveVariablePatterns().stream().map(Pattern::compile).toList(),
+            config.getProtectionModes());
 
     catchEventBehavior =
         new CatchEventBehavior(
@@ -201,7 +205,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     incidentBehavior =
         new BpmnIncidentBehavior(
-            processingState, processingState.getKeyGenerator(), writers.state(), incidentMetrics);
+            processingState,
+            processingState.getKeyGenerator(),
+            writers.state(),
+            incidentMetrics,
+            variableBehavior);
 
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(

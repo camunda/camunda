@@ -71,6 +71,7 @@ import io.camunda.gateway.protocol.model.Partition.RoleEnum;
 import io.camunda.gateway.protocol.model.Partition.StateEnum;
 import io.camunda.gateway.protocol.model.PhysicalTenantBrokerTopology;
 import io.camunda.gateway.protocol.model.ProcessInstanceReference;
+import io.camunda.gateway.protocol.model.ProtectionModeEnum;
 import io.camunda.gateway.protocol.model.ResolvedSecret;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.RoleCreateResult;
@@ -894,6 +895,11 @@ public final class ResponseMapper {
                     .inputId(evaluatedInputValue.getInputId())
                     .inputName(evaluatedInputValue.getInputName())
                     .inputValue(evaluatedInputValue.getInputValue())
+                    .protectionModes(
+                        evaluatedInputValue.getProtectionModes().stream()
+                            .map(mode -> ProtectionModeEnum.fromValue(mode.name()))
+                            .sorted()
+                            .toList())
                     .build())
         .toList();
   }

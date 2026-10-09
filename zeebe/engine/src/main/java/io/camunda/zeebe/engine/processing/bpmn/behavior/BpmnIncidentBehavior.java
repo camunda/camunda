@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -35,18 +36,21 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final IncidentMetrics incidentMetrics;
+  private final VariableBehavior variableBehavior;
 
   public BpmnIncidentBehavior(
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final VariableBehavior variableBehavior) {
     incidentState = processingState.getIncidentState();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.incidentMetrics = incidentMetrics;
+    this.variableBehavior = variableBehavior;
   }
 
   public void resolveJobIncident(final long jobKey) {
@@ -109,6 +113,7 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
             .setElementInstancePath(treePathProperties.elementInstancePath())
             .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
             .setCallingElementPath(treePathProperties.callingElementPath());
+    variableBehavior.protectErrorMessage(jobIncidentRecord, job.getElementInstanceKey());
 
     stateWriter.appendFollowUpEvent(
         keyGenerator.nextKey(), IncidentIntent.CREATED, jobIncidentRecord);
@@ -143,6 +148,7 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
         .setElementInstancePath(treePathProperties.elementInstancePath())
         .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
         .setCallingElementPath(treePathProperties.callingElementPath());
+    variableBehavior.protectErrorMessage(incidentRecord, variableScopeKey);
 
     final var key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);

@@ -109,6 +109,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                     "scopeKey":"1",
                     "processInstanceKey":"2",
                     "rootProcessInstanceKey":"3",
+                    "protectionModes":[],
                     "tenantId":"<default>",
                     "isTruncated":false
                 },
@@ -119,6 +120,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                     "scopeKey":"1",
                     "processInstanceKey":"2",
                     "rootProcessInstanceKey":"3",
+                    "protectionModes":[],
                     "tenantId":"<default>",
                     "isTruncated":true
                 }
@@ -143,6 +145,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "scopeKey":"1",
               "processInstanceKey":"2",
               "rootProcessInstanceKey":"3",
+              "protectionModes":[],
               "tenantId":"<default>",
               "isTruncated":false
           },
@@ -153,6 +156,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "scopeKey":"1",
               "processInstanceKey":"2",
               "rootProcessInstanceKey":"3",
+              "protectionModes":[],
               "tenantId":"<default>",
               "isTruncated":false
           }
@@ -177,6 +181,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "scopeKey":"1",
               "processInstanceKey":"2",
               "rootProcessInstanceKey":"3",
+              "protectionModes":[],
               "tenantId":"<default>",
               "isTruncated":false
           },
@@ -187,6 +192,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "scopeKey":"1",
               "processInstanceKey":"2",
               "rootProcessInstanceKey":"3",
+              "protectionModes":[],
               "tenantId":"<default>",
               "isTruncated":true
           }

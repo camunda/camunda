@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -46,7 +47,11 @@ final class BpmnIncidentBehaviorTest {
     when(keyGenerator.nextKey()).thenReturn(999L);
     incidentBehavior =
         new BpmnIncidentBehavior(
-            processingState, keyGenerator, stateWriter, mock(IncidentMetrics.class));
+            processingState,
+            keyGenerator,
+            stateWriter,
+            mock(IncidentMetrics.class),
+            mock(VariableBehavior.class));
   }
 
   @Test

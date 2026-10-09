@@ -26,6 +26,7 @@ public class VariableEntityTransformer
         source.getProcessInstanceKey(),
         source.getRootProcessInstanceKey(),
         source.getBpmnProcessId(),
-        source.getTenantId());
+        source.getTenantId(),
+        source.getProtectionModes());
   }
 }

@@ -45,6 +45,9 @@
       },
       "rootProcessInstanceKey": {
         "type": "long"
+      },
+      "protectionModes": {
+        "type": "keyword"
       }
 		}
 	}

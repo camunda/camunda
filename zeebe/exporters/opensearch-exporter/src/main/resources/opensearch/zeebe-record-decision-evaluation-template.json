@@ -109,6 +109,9 @@
                     },
                     "inputValue": {
                       "enabled": false
+                    },
+                    "protectionModes": {
+                      "type": "keyword"
                     }
                   }
                 },

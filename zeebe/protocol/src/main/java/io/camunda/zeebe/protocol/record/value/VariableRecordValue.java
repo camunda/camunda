@@ -18,6 +18,8 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import java.util.Collections;
+import java.util.Set;
 import org.immutables.value.Value;
 
 /**
@@ -89,4 +91,31 @@ public interface VariableRecordValue
    *     VariableOperationType.UNKNOWN} if the source is unknown.
    */
   VariableSourceValue getSource();
+
+  /**
+   * Declares which data-protection treatments apply to this variable's exported value (product-hub
+   * #3805 and siblings), per the composition rule on {@link ProtectionMode} (redact is exclusive;
+   * mask and encrypt compose freely). Computed once, when the variable is created or updated -- see
+   * {@code io.camunda.zeebe.engine.processing.variable.VariableBehavior} -- and carried on the
+   * record so every downstream consumer (redaction today; future masking/encryption) reads a
+   * declared set instead of re-deriving it.
+   *
+   * @return the set of protection modes declared for this variable; empty if none.
+   */
+  @Value.Default
+  default Set<ProtectionMode> getProtectionModes() {
+    return Collections.emptySet();
+  }
+
+  /**
+   * Convenience for callers that only care about redaction. Derived from {@link
+   * #getProtectionModes()}, so implementations should annotate this override with
+   * {@code @JsonIgnore} to avoid duplicating that field in JSON (this module has no Jackson
+   * dependency, so the annotation cannot be applied here).
+   *
+   * @return {@code true} if {@link ProtectionMode#REDACT} is among the declared protection modes.
+   */
+  default boolean shouldBeRedacted() {
+    return getProtectionModes().contains(ProtectionMode.REDACT);
+  }
 }

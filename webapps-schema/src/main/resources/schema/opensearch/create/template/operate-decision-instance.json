@@ -95,6 +95,9 @@
           "value": {
             "type": "object",
             "enabled": false
+          },
+          "protectionModes": {
+            "type": "keyword"
           }
         }
       },

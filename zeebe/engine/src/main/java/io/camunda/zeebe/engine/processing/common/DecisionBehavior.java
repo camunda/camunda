@@ -17,6 +17,7 @@ import io.camunda.zeebe.dmn.EvaluatedOutput;
 import io.camunda.zeebe.dmn.MatchedRule;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.VariablesContext;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
@@ -27,9 +28,13 @@ import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRe
 import io.camunda.zeebe.protocol.impl.record.value.decision.EvaluatedDecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.MatchedRuleRecord;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.apache.commons.lang3.StringUtils;
@@ -45,15 +50,21 @@ public class DecisionBehavior {
   private final DecisionEngine decisionEngine;
   private final DecisionState decisionState;
   private final ProcessEngineMetrics metrics;
+  private final List<Pattern> sensitiveVariablePatterns;
+  private final Set<ProtectionMode> configuredProtectionModes;
 
   public DecisionBehavior(
       final DecisionEngine decisionEngine,
       final ProcessingState processingState,
-      final ProcessEngineMetrics metrics) {
+      final ProcessEngineMetrics metrics,
+      final EngineConfiguration config) {
 
     decisionState = processingState.getDecisionState();
     this.decisionEngine = decisionEngine;
     this.metrics = metrics;
+    sensitiveVariablePatterns =
+        config.getSensitiveVariablePatterns().stream().map(Pattern::compile).toList();
+    configuredProtectionModes = config.getProtectionModes();
   }
 
   public Either<Failure, PersistedDecision> findLatestDecisionByIdAndTenant(
@@ -285,11 +296,24 @@ public class DecisionBehavior {
             .evaluatedInputs()
             .add()
             .setInputId(evaluatedInput.inputId())
-            .setInputValue(evaluatedInput.inputValue());
+            .setInputValue(evaluatedInput.inputValue())
+            .setProtectionModes(resolveProtectionModes(evaluatedInput));
 
     if (evaluatedInput.inputName() != null) {
       inputRecord.setInputName(evaluatedInput.inputName());
     }
+  }
+
+  // Any reference counts, not only a bare one: an input like `sensitive_salary > 100000` is
+  // protected too, since its value can still reveal the sensitive variable.
+  private Set<ProtectionMode> resolveProtectionModes(final EvaluatedInput evaluatedInput) {
+    final boolean referencesSensitiveVariable =
+        evaluatedInput.referencedVariableNames().stream()
+            .anyMatch(
+                name ->
+                    sensitiveVariablePatterns.stream()
+                        .anyMatch(pattern -> pattern.matcher(name).matches()));
+    return referencesSensitiveVariable ? configuredProtectionModes : Set.of();
   }
 
   private void addOutputToEvaluationEvent(

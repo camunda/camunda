@@ -37,6 +37,7 @@ import {
 	createNewVariableFieldName,
 	createVariableFieldName,
 } from '#/tasklist/modules/task-details-variables/variableFieldNames';
+import {isRedactedVariable, REDACTED_VALUE_LABEL} from '#/tasklist/modules/task-details-variables/redactedVariable';
 import {DelayedErrorField} from './DelayedErrorField';
 import {LoadingTextarea} from './LoadingTextarea';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
@@ -151,7 +152,9 @@ const VariableEditor: React.FC<Props> = ({
 								<TableRow key={variable.variableKey}>
 									<TableCell className={NAME_CELL_CLASS}>{variable.name}</TableCell>
 									<TableCell className={VALUE_CELL_CLASS}>
-										<div className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap">{variable.value}</div>
+										<div className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+											{isRedactedVariable(variable) ? REDACTED_VALUE_LABEL : variable.value}
+										</div>
 									</TableCell>
 									<TableCell className={CONTROLS_CELL_CLASS}>
 										<div className="flex justify-end pr-2">
@@ -165,7 +168,10 @@ const VariableEditor: React.FC<Props> = ({
 													if (variable.isTruncated) {
 														fetchFullVariable(variable.variableKey);
 													}
-													onMaximizeClick(createVariableFieldName(variable.name), variable.value);
+													onMaximizeClick(
+														createVariableFieldName(variable.name),
+														isRedactedVariable(variable) ? REDACTED_VALUE_LABEL : variable.value,
+													);
 												}}
 											>
 												<Maximize2 aria-hidden />
@@ -185,34 +191,41 @@ const VariableEditor: React.FC<Props> = ({
 					<>
 						{variables.map((variable) => {
 							const fieldName = createVariableFieldName(variable.name);
+							const isRedacted = isRedactedVariable(variable);
 							return (
 								<TableRow key={variable.name}>
 									<TableCell className={NAME_CELL_CLASS}>{variable.name}</TableCell>
 									<TableCell className={VALUE_CELL_CLASS}>
-										<Field<string>
-											name={fieldName}
-											validate={variable.isTruncated ? () => undefined : validateValueJSON}
-										>
-											{({input, meta}) => (
-												<LoadingTextarea
-													{...input}
-													id={input.name}
-													invalidText={meta.error}
-													isLoading={variablesLoadingFullValue.includes(variable.variableKey)}
-													onFocus={(event) => {
-														if (variable.isTruncated) {
-															fetchFullVariable(variable.variableKey);
-														}
-														input.onFocus(event);
-													}}
-													isActive={meta.active}
-													type="text"
-													labelText={`${variable.name} ${t('tasklist.taskVariablesValueLabel')}`}
-													placeholder={`${variable.name} ${t('tasklist.taskVariablesValueLabel')}`}
-													disabled={isDisabled}
-												/>
-											)}
-										</Field>
+										{isRedacted ? (
+											<div className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+												{REDACTED_VALUE_LABEL}
+											</div>
+										) : (
+											<Field<string>
+												name={fieldName}
+												validate={variable.isTruncated ? () => undefined : validateValueJSON}
+											>
+												{({input, meta}) => (
+													<LoadingTextarea
+														{...input}
+														id={input.name}
+														invalidText={meta.error}
+														isLoading={variablesLoadingFullValue.includes(variable.variableKey)}
+														onFocus={(event) => {
+															if (variable.isTruncated) {
+																fetchFullVariable(variable.variableKey);
+															}
+															input.onFocus(event);
+														}}
+														isActive={meta.active}
+														type="text"
+														labelText={`${variable.name} ${t('tasklist.taskVariablesValueLabel')}`}
+														placeholder={`${variable.name} ${t('tasklist.taskVariablesValueLabel')}`}
+														disabled={isDisabled}
+													/>
+												)}
+											</Field>
+										)}
 									</TableCell>
 									<TableCell className={CONTROLS_CELL_CLASS}>
 										<div className="flex justify-end pr-2">
@@ -222,7 +235,7 @@ const VariableEditor: React.FC<Props> = ({
 												size="icon-sm"
 												aria-label={t('tasklist.variableEditorOpenJsonLabel')}
 												title={t('tasklist.variableEditorOpenJsonLabel')}
-												disabled={isDisabled}
+												disabled={isDisabled || isRedacted}
 												onClick={() => {
 													if (variable.isTruncated) {
 														fetchFullVariable(variable.variableKey);

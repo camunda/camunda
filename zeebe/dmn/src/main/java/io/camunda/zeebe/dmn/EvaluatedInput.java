@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dmn;
 
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 /**
@@ -36,4 +37,12 @@ public interface EvaluatedInput {
    * @return the value of the evaluated input expression
    */
   DirectBuffer inputValue();
+
+  /**
+   * Returns the top-level variable names the input expression references, taken from its parsed
+   * FEEL AST. For a path expression like {@code customer.card}, only {@code customer} is returned.
+   *
+   * @return the referenced variable names, or an empty set if the input has no FEEL expression
+   */
+  Set<String> referencedVariableNames();
 }

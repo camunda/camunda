@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 public class VariableEntity
@@ -38,6 +39,10 @@ public class VariableEntity
   /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.11.0. */
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private List<String> protectionModes;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -181,6 +186,15 @@ public class VariableEntity
     return this;
   }
 
+  public List<String> getProtectionModes() {
+    return protectionModes;
+  }
+
+  public VariableEntity setProtectionModes(final List<String> protectionModes) {
+    this.protectionModes = protectionModes;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     int result =
@@ -198,7 +212,8 @@ public class VariableEntity
             bpmnProcessId,
             tenantId,
             position,
-            rootProcessInstanceKey);
+            rootProcessInstanceKey,
+            protectionModes);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
@@ -226,7 +241,8 @@ public class VariableEntity
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(position, that.position)
         && Arrays.equals(sortValues, that.sortValues)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
+        && Objects.equals(protectionModes, that.protectionModes);
   }
 
   @Override
@@ -253,6 +269,8 @@ public class VariableEntity
         + position
         + ", rootProcessInstanceKey="
         + rootProcessInstanceKey
+        + ", protectionModes="
+        + protectionModes
         + "} "
         + super.toString();
   }

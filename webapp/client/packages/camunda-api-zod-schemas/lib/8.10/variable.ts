@@ -24,6 +24,7 @@ const variableSchema = z.object({
 	scopeKey: z.string(),
 	processInstanceKey: z.string(),
 	rootProcessInstanceKey: z.string().nullable(),
+	protectionModes: z.array(z.enum(['REDACT', 'MASK', 'ENCRYPT'])).optional(),
 });
 
 type Variable = z.infer<typeof variableSchema>;

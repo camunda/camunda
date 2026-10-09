@@ -146,6 +146,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQueryResult
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsResult;
+import io.camunda.gateway.protocol.model.ProtectionModeEnum;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
@@ -1529,8 +1530,13 @@ public final class SearchQueryResponseMapper {
                     .inputId(requireNonNull(input.inputId(), "inputId"))
                     .inputName(requireNonNull(input.inputName(), "inputName"))
                     .inputValue(requireNonNull(input.inputValue(), "inputValue"))
+                    .protectionModes(toProtectionModes(input.protectionModes()))
                     .build())
         .toList();
+  }
+
+  private static List<ProtectionModeEnum> toProtectionModes(final List<String> protectionModes) {
+    return protectionModes.stream().map(ProtectionModeEnum::fromValue).toList();
   }
 
   private static @Nullable List<MatchedDecisionRuleItem> toMatchedRules(
@@ -1615,6 +1621,7 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
+        .protectionModes(toProtectionModes(variableEntity.protectionModes()))
         .isTruncated(truncateValues && variableEntity.isPreview())
         .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .build();
@@ -1646,6 +1653,7 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
+        .protectionModes(toProtectionModes(variableEntity.protectionModes()))
         .value(getFullValueIfPresent(variableEntity))
         .build();
   }

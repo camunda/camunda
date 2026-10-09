@@ -241,7 +241,27 @@ public record DecisionInstanceEntity(
   }
 
   public record DecisionInstanceInputEntity(
-      @Nullable String inputId, @Nullable String inputName, @Nullable String inputValue) {}
+      @Nullable String inputId,
+      @Nullable String inputName,
+      @Nullable String inputValue,
+      // data protection modes declared for this input; empty for data exported before 8.11.
+      List<String> protectionModes) {
+
+    public DecisionInstanceInputEntity {
+      protectionModes = protectionModes == null ? List.of() : List.copyOf(protectionModes);
+    }
+
+    /**
+     * For stores that don't persist protection modes (RDBMS), which the MyBatis result map binds to
+     * by argument count.
+     */
+    public DecisionInstanceInputEntity(
+        final @Nullable String inputId,
+        final @Nullable String inputName,
+        final @Nullable String inputValue) {
+      this(inputId, inputName, inputValue, List.of());
+    }
+  }
 
   public record DecisionInstanceOutputEntity(
       @Nullable String outputId,

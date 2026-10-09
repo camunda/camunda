@@ -7,6 +7,10 @@
  */
 
 import {useMemo, useRef, useState} from 'react';
+import {
+  isRedactedVariable,
+  REDACTED_VALUE_LABEL,
+} from 'modules/utils/redactedVariable';
 import {useForm, useFormState} from 'react-final-form';
 import {Button, Search} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
@@ -86,16 +90,22 @@ const VariablesTable: React.FC<Props> = ({
       variablesData?.pages.flatMap((page) => page.items) ?? [];
 
     return allVariables
-      .map((variable) => ({
-        name: variable.name,
-        value: variable.value,
-        variableKey: variable.variableKey,
-        isTruncated: Boolean(variable.isTruncated),
-        documentResult: parseDocumentVariable(
-          variable.value,
-          Boolean(variable.isTruncated),
-        ),
-      }))
+      .map((variable) => {
+        const isRedacted = isRedactedVariable(variable);
+        return {
+          name: variable.name,
+          value: isRedacted ? REDACTED_VALUE_LABEL : variable.value,
+          variableKey: variable.variableKey,
+          isRedacted,
+          isTruncated: Boolean(variable.isTruncated),
+          documentResult: isRedacted
+            ? null
+            : parseDocumentVariable(
+                variable.value,
+                Boolean(variable.isTruncated),
+              ),
+        };
+      })
       .filter((variable) =>
         showDocumentsOnly ? variable.documentResult !== null : true,
       );
@@ -106,7 +116,7 @@ const VariablesTable: React.FC<Props> = ({
     isVariableModificationAllowed;
 
   const rows = processedVariables.map(
-    ({name, value, variableKey, isTruncated, documentResult}) => ({
+    ({name, value, variableKey, isRedacted, isTruncated, documentResult}) => ({
       key: name,
       dataTestId: `variable-${name}`,
       columns: [
@@ -119,25 +129,26 @@ const VariablesTable: React.FC<Props> = ({
           width: '35%',
         },
         {
-          cellContent: isEditMode(name) ? (
-            <ExistingVariableValue
-              id={variableKey}
-              variableName={name}
-              variableValue={value}
-              // TODO #46571: Verify if it's really optional
-              isPreview={Boolean(isTruncated)}
-            />
-          ) : (
-            <VariableValueCell
-              variableKey={variableKey}
-              variableName={name}
-              value={value}
-              documentResult={documentResult}
-              isTruncated={isTruncated}
-              isModificationModeEnabled={isModificationModeEnabled}
-              canEditVariables={canEditVariables}
-            />
-          ),
+          cellContent:
+            isEditMode(name) && !isRedacted ? (
+              <ExistingVariableValue
+                id={variableKey}
+                variableName={name}
+                variableValue={value}
+                // TODO #46571: Verify if it's really optional
+                isPreview={Boolean(isTruncated)}
+              />
+            ) : (
+              <VariableValueCell
+                variableKey={variableKey}
+                variableName={name}
+                value={value}
+                documentResult={documentResult}
+                isTruncated={isTruncated}
+                isModificationModeEnabled={isModificationModeEnabled}
+                canEditVariables={canEditVariables}
+              />
+            ),
           width: 'auto',
         },
         {
@@ -147,8 +158,12 @@ const VariablesTable: React.FC<Props> = ({
                 variableName={name}
                 variableKey={variableKey}
                 variableValue={value}
-                mode={isEditMode(name) ? 'edit' : 'show'}
-                canEdit={!isModificationModeEnabled && !!canEditVariables}
+                mode={isEditMode(name) && !isRedacted ? 'edit' : 'show'}
+                canEdit={
+                  !isRedacted &&
+                  !isModificationModeEnabled &&
+                  !!canEditVariables
+                }
               />
               {(() => {
                 if (documentResult !== null) {
