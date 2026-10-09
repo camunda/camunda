@@ -288,5 +288,8 @@ data:
     # coordinated `/cluster/v2/rebalance` endpoint. Set here, not via `orchestration.env`,
     # which the Optimize overlays also define and would silently replace.
     camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
+    
+    # enable detailed statistics for rocksDB operations
+    camunda.data.primary-storage.rocks-db.statistics-enabled: "true"
   application-override.yml: |
     # no overrides
