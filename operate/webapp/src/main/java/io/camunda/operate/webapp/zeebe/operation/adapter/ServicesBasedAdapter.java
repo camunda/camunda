@@ -209,6 +209,17 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
     };
   }
 
+  @Override
+  public boolean isOutcomeUnknown(final Throwable error) {
+    return switch (error) {
+      case null -> false;
+      case final CompletionException ce -> isOutcomeUnknown(ce.getCause());
+      case final ExecutionException ee -> isOutcomeUnknown(ee.getCause());
+      case final ServiceException cse -> cse.getStatus() == DEADLINE_EXCEEDED;
+      default -> false;
+    };
+  }
+
   private boolean isServiceExceptionRetriable(final ServiceException error) {
     return switch (error.getStatus()) {
       case RESOURCE_EXHAUSTED, UNAVAILABLE, DEADLINE_EXCEEDED -> true;

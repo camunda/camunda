@@ -63,6 +63,11 @@ public class ModifyProcessInstanceHandler extends AbstractOperationHandler
   }
 
   @Override
+  protected boolean isRetriable(final Exception ex) {
+    return super.isRetriable(ex) && !operationServicesAdapter.isOutcomeUnknown(ex);
+  }
+
+  @Override
   public Set<OperationType> getTypes() {
     return Set.of(OperationType.MODIFY_PROCESS_INSTANCE);
   }
