@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -22,6 +23,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -35,6 +38,8 @@ import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
@@ -1362,6 +1367,133 @@ public final class StorageOrdinalAssignmentTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     assertThat(batchActivate.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToAgentInstanceAndHistoryRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("agent-ordinal-process")
+                .startEvent()
+                .serviceTask(
+                    "agent-task", t -> t.zeebeJobType("agent-ordinal").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("agent-ordinal-process").create();
+    final long elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst()
+            .getKey();
+    final var jobBatch = engine.jobs().withType("agent-ordinal").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent-ordinal")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+
+    // and: history items for CREATE
+    final var configItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    configItem.setModel("gpt-4o").setProvider("openai");
+    configItem.setChangedAttributes(List.of("model", "provider"));
+    final var userItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-user")
+            .setRole(AgentHistoryRole.USER)
+            .setLoopIteration(1);
+
+    // when
+    final var created =
+        engine
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withHistory(List.of(configItem, userItem))
+            .create();
+    final var agentInstanceKey = created.getValue().getAgentInstanceKey();
+
+    final var secondUserItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-user-2")
+            .setRole(AgentHistoryRole.USER)
+            .setLoopIteration(2);
+    engine
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
+        .withJobLeaseToken(jobLeaseToken)
+        .withStatus(AgentInstanceStatus.THINKING)
+        .withChangedAttributes(List.of("status"))
+        .withHistory(List.of(secondUserItem))
+        .update();
+
+    // completing the job drives both engine-produced AGENT_INSTANCE:COMPLETE commands: the BPMN
+    // side emits the first one when the process instance ends, and the processor's own re-chain
+    // emits the second, which is rejected NOT_FOUND once no agent instances remain
+    engine.job().withKey(jobKey).withJobLeaseToken(jobLeaseToken).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then: every AGENT_INSTANCE event of the instance carries the ordinal
+    assertThat(
+            RecordingExporter.agentInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntents(
+                    AgentInstanceIntent.CREATED,
+                    AgentInstanceIntent.UPDATED,
+                    AgentInstanceIntent.COMPLETED)
+                .limit(3))
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL)
+        .hasSize(3);
+
+    // then: both engine-produced AGENT_INSTANCE:COMPLETE commands carry the ordinal too - the one
+    // appended by AgentInstanceBehavior from the BPMN side, and the one re-chained by
+    // AgentInstanceCompleteProcessor itself
+    assertThat(
+            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETE)
+                .valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey)
+                .limit(2))
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .hasSize(2)
+        .containsOnly(FIXED_ORDINAL);
+
+    // then: every AGENT_HISTORY event carries it. CREATED covers item-config/item-user/item-user-2;
+    // COMMITTED covers item-config (committed immediately by the CREATE processor from the stored
+    // row, proving the v2 applier persisted the ordinal) and item-user/item-user-2 (committed by
+    // AgentHistoryCommitProcessor once the job completes)
+    assertThat(
+            RecordingExporter.agentHistoryRecords()
+                .valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey)
+                .withIntents(AgentHistoryIntent.CREATED, AgentHistoryIntent.COMMITTED)
+                .limit(6))
+        .extracting(Record::getIntent, record -> record.getValue().getStorageOrdinal())
+        .containsExactlyInAnyOrder(
+            tuple(AgentHistoryIntent.CREATED, FIXED_ORDINAL),
+            tuple(AgentHistoryIntent.CREATED, FIXED_ORDINAL),
+            tuple(AgentHistoryIntent.CREATED, FIXED_ORDINAL),
+            tuple(AgentHistoryIntent.COMMITTED, FIXED_ORDINAL),
+            tuple(AgentHistoryIntent.COMMITTED, FIXED_ORDINAL),
+            tuple(AgentHistoryIntent.COMMITTED, FIXED_ORDINAL));
   }
 
   @Test
