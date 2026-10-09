@@ -22,9 +22,9 @@ const parser_1 = __nccwpck_require__(883);
 exports.STICKY_MARKER = '<!-- release-notes-pr-gate -->';
 /** Where the comment sends authors for the full list of causes and fixes. */
 exports.GATE_DOCS_URL = 'https://camunda.github.io/camunda/ci/#release-notes-pr-gate';
-/** The template's opt-out line. The parser matches it lower-cased, so a test
- *  pins this to OPT_OUT_PHRASE. */
-exports.OPT_OUT_LINE = '- [ ] This PR does not need a linked issue';
+/** The template's opt-out line. The parser matches OPT_OUT_PHRASE anywhere
+ *  after the ticked box, so the label may extend it; a test pins that. */
+exports.OPT_OUT_LINE = '- [ ] This PR does not need a linked issue (no tracked issue, or it is tracked in another repository)';
 /** What a failing link check should look like, shown only when that check
  *  fails. The placeholder is deliberately not a number: pasted unchanged it
  *  matches nothing, whereas `#1234` would link a real, unrelated issue. */
