@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -66,7 +65,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 
@@ -77,7 +76,6 @@ public class ResourceDeletionDeleteProcessor
       List.of(ResourceType.PROCESS_DEFINITION, ResourceType.DECISION_REQUIREMENTS);
 
   private final StateWriter stateWriter;
-  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
@@ -111,7 +109,6 @@ public class ResourceDeletionDeleteProcessor
       final ProcessDefinitionMetrics processDefinitionMetrics,
       final RoutingInfo routingInfo) {
     stateWriter = writers.state();
-    commandWriter = writers.command();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
@@ -143,13 +140,16 @@ public class ResourceDeletionDeleteProcessor
     final var value = command.getValue();
     final long eventKey = keyGenerator.nextKey();
 
-    final var distributionPartitions = tryDeleteResources(command, eventKey);
+    final var result = tryDeleteResources(command, eventKey);
 
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
     commandDistributionBehavior
         .withKey(eventKey)
         .inQueue(DistributionQueue.DEPLOYMENT)
-        .forPartitions(distributionPartitions)
+        .forPartitions(
+            result.distributionPartitions.isEmpty()
+                ? routingInfo.desiredPartitions()
+                : result.distributionPartitions())
         .distribute(command);
     responseWriter.writeAcceptedResponseOnCommand(
         eventKey, ResourceDeletionIntent.DELETED, value, command);
@@ -200,55 +200,34 @@ public class ResourceDeletionDeleteProcessor
     }
   }
 
-  /** Returns the partitions the deletion is distributed to. */
-  private Set<Integer> tryDeleteResources(
+  private DeletionResult tryDeleteResources(
       final TypedRecord<ResourceDeletionRecord> command, final long eventKey) {
     final var value = command.getValue();
 
-    final var drainingDeletionInFlight = new AtomicBoolean(false);
-    final var resourceDeleted =
-        untilResourceDeleted(
-            command,
-            tenantId -> tryDeleteResource(command, tenantId, eventKey, drainingDeletionInFlight));
-    if (resourceDeleted) {
-      return routingInfo.desiredPartitions();
-    }
-    if (drainingDeletionInFlight.get()) {
-      throw new ResourceDeletionInProgressException(value.getResourceKey());
-    }
-
-    final var pendingPartitions = processState.getPendingDeletionPartitions(value.getResourceKey());
-    if (!pendingPartitions.isEmpty()) {
-      // Gone here but other partitions still owe a drain report: re-distribute to those
-      // partitions so they retry their delete, unless this is already a distributed copy. A
-      // still-draining partition keeps its original deleteHistory flag, so a history deletion
-      // could not be honored.
-      if (command.isCommandDistributed() || value.isDeleteHistory()) {
-        throw new ResourceDeletionInProgressException(value.getResourceKey());
-      }
-      pendingPartitions.retainAll(routingInfo.desiredPartitions());
-      return pendingPartitions;
+    final var result =
+        untilResourceDeleted(command, tenantId -> tryDeleteResource(command, tenantId, eventKey));
+    if (result.resourceDeleted()) {
+      return result;
     }
 
     // Delete-time history purge is only for a resource already fully gone from primary storage.
     if (value.isDeleteHistory()
         && SUPPORTED_HISTORY_DELETION_TYPES.contains(value.getResourceType())) {
       deleteHistory(command);
-      return routingInfo.desiredPartitions();
+      return DeletionResult.DELETED;
     }
     throw new NoSuchResourceException(value.getResourceKey());
   }
 
-  private boolean tryDeleteResource(
+  private DeletionResult tryDeleteResource(
       final TypedRecord<ResourceDeletionRecord> command,
       final String tenantId,
-      final long eventKey,
-      final AtomicBoolean drainingDeletionInFlight) {
+      final long eventKey) {
     final var value = command.getValue();
 
-    final var process = processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId);
-    if (process != null) {
-      return tryDeleteProcessDefinition(command, eventKey, process, drainingDeletionInFlight);
+    final var processDeletion = tryDeleteProcessDefinition(command, tenantId, eventKey);
+    if (processDeletion.resourceDeleted()) {
+      return processDeletion;
     }
 
     final var drgOptional =
@@ -303,10 +282,10 @@ public class ResourceDeletionDeleteProcessor
           () -> deleteResource(resource));
     }
 
-    return false;
+    return DeletionResult.NOT_DELETED;
   }
 
-  private boolean authorizeAndDelete(
+  private DeletionResult authorizeAndDelete(
       final TypedRecord<ResourceDeletionRecord> command,
       final long eventKey,
       final PermissionType permissionType,
@@ -318,7 +297,7 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, command.getValue());
     setTenantId(command, tenantId);
     deletionAction.run();
-    return true;
+    return DeletionResult.DELETED;
   }
 
   private void deleteDecisionRequirements(
@@ -365,11 +344,35 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
-  private boolean tryDeleteProcessDefinition(
+  private DeletionResult tryDeleteProcessDefinition(
+      final TypedRecord<ResourceDeletionRecord> command,
+      final String tenantId,
+      final long eventKey) {
+    final var processDefinitionKey = command.getValue().getResourceKey();
+    final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
+    if (process != null) {
+      return tryDeleteDeployedProcess(command, eventKey, process);
+    }
+
+    // Recovers definitions orphaned before #62820: gone here, but other partitions still owe a
+    // drain report, so their delete is retried. See
+    // https://github.com/camunda/camunda/issues/64586
+    final var pendingPartitions = processState.getPendingDeletionPartitions(processDefinitionKey);
+    if (pendingPartitions.isEmpty()) {
+      return DeletionResult.NOT_DELETED;
+    }
+    // A still-draining partition keeps its original deleteHistory flag, so a history deletion
+    // could not be honored.
+    if (command.isCommandDistributed() || command.getValue().isDeleteHistory()) {
+      throw new ResourceDeletionInProgressException(processDefinitionKey);
+    }
+    return DeletionResult.deletedOn(pendingPartitions);
+  }
+
+  private DeletionResult tryDeleteDeployedProcess(
       final TypedRecord<ResourceDeletionRecord> command,
       final long eventKey,
-      final DeployedProcess process,
-      final AtomicBoolean drainingDeletionInFlight) {
+      final DeployedProcess process) {
     // Stamp metadata before the not-ACTIVE bail-out so a repeat-delete rejection carries the
     // resolved type/id/tenant, not whatever the client sent.
     command
@@ -378,8 +381,7 @@ public class ResourceDeletionDeleteProcessor
         .setResourceId(process.getBpmnProcessId())
         .setTenantId(process.getTenantId());
     if (!process.isActive()) {
-      drainingDeletionInFlight.set(true);
-      return false;
+      throw new ResourceDeletionInProgressException(process.getKey());
     }
     return authorizeAndDelete(
         command,
@@ -575,47 +577,43 @@ public class ResourceDeletionDeleteProcessor
     return TenantAccess.allowed(List.of(tenantId));
   }
 
-  private boolean untilResourceDeleted(
+  private DeletionResult untilResourceDeleted(
       final TypedRecord<ResourceDeletionRecord> command,
-      final Function<String, Boolean> resourceDeletionCallback) {
+      final Function<String, DeletionResult> resourceDeletionCallback) {
     final var authorizedTenants = getAuthorizedTenants(command);
 
     if (authorizedTenants.wildcard()) {
-      return Optional.of(tryToDeleteResourceAssignedToDefaultTenant(resourceDeletionCallback))
-          .filter(Boolean::booleanValue)
-          .orElseGet(() -> forEachTenantUntilResourceDeleted(resourceDeletionCallback));
+      final var result = tryToDeleteResourceAssignedToDefaultTenant(resourceDeletionCallback);
+      return result.resourceDeleted()
+          ? result
+          : forEachTenantUntilResourceDeleted(resourceDeletionCallback);
     } else {
       for (final var tenant : authorizedTenants.tenantIds()) {
-        if (resourceDeletionCallback.apply(tenant)) {
-          return true;
+        final var result = resourceDeletionCallback.apply(tenant);
+        if (result.resourceDeleted()) {
+          return result;
         }
       }
     }
-    return false;
+    return DeletionResult.NOT_DELETED;
   }
 
-  /**
-   * Tries to delete the resource, iff it is assigned to the default tenant. If the resource was
-   * deleted, it returns true, otherwise false.
-   */
-  private boolean tryToDeleteResourceAssignedToDefaultTenant(
-      final Function<String, Boolean> resourceDeletionCallback) {
+  /** Tries to delete the resource, iff it is assigned to the default tenant. */
+  private DeletionResult tryToDeleteResourceAssignedToDefaultTenant(
+      final Function<String, DeletionResult> resourceDeletionCallback) {
     return resourceDeletionCallback.apply(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
-  /**
-   * Loops over the existing tenants to find the resource to delete. If found and deleted, it
-   * returns true, otherwise false.
-   */
-  private boolean forEachTenantUntilResourceDeleted(
-      final Function<String, Boolean> resourceDeletionCallback) {
-    final var resourceDeleted = new AtomicBoolean(false);
+  /** Loops over the existing tenants to find the resource to delete. */
+  private DeletionResult forEachTenantUntilResourceDeleted(
+      final Function<String, DeletionResult> resourceDeletionCallback) {
+    final var result = new AtomicReference<>(DeletionResult.NOT_DELETED);
     tenantState.forEachTenant(
         tenant -> {
-          resourceDeleted.set(resourceDeletionCallback.apply(tenant));
-          return !resourceDeleted.get();
+          result.set(resourceDeletionCallback.apply(tenant));
+          return !result.get().resourceDeleted();
         });
-    return resourceDeleted.get();
+    return result.get();
   }
 
   private void setTenantId(
@@ -634,6 +632,19 @@ public class ResourceDeletionDeleteProcessor
             command, resourceType, permissionType, resourceId);
     if (isAuthorized.isLeft()) {
       throw new ForbiddenException(isAuthorized.getLeft());
+    }
+  }
+
+  /**
+   * Whether the resource was deleted, and the partitions to distribute the deletion to; empty
+   * partitions distribute to all.
+   */
+  private record DeletionResult(boolean resourceDeleted, Set<Integer> distributionPartitions) {
+    private static final DeletionResult DELETED = new DeletionResult(true, Set.of());
+    private static final DeletionResult NOT_DELETED = new DeletionResult(false, Set.of());
+
+    private static DeletionResult deletedOn(final Set<Integer> distributionPartitions) {
+      return new DeletionResult(true, distributionPartitions);
     }
   }
 
