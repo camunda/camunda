@@ -333,9 +333,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          # Pinned to 24: the e2e repo's Playwright 1.49 hangs unpacking
-          # Chromium on Node 26. Bump once that repo upgrades Playwright.
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: ${{ env.E2E_DIR }}/package-lock.json
 
@@ -345,8 +343,6 @@ jobs:
           directory: ${{ env.E2E_DIR }}
 
       - name: Install Playwright Browsers
-        # Normally under a minute. Fail fast on a hang instead of burning the job budget.
-        timeout-minutes: 5
         working-directory: ${{ env.E2E_DIR }}
         run: npx playwright install chromium --with-deps
 
