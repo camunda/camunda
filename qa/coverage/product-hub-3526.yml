@@ -131,23 +131,23 @@ specs:
           returning 409 naming the suspension
         surface: api
         count: 14
-        status: planned
+        status: automated
       - id: SR-API-02
         traces_to: >
           Message correlation answers 404 rather than 409, because the
           suspension closed the subscription
         surface: api
-        status: planned
+        status: automated
         notes: The documented asymmetry; assert it as designed, not as a bug.
       - id: SR-API-03
         traces_to: Variables remain writable as the documented exception
         surface: api
-        status: planned
+        status: automated
       - id: SR-API-04
         traces_to: state and suspendedDate filter, range and sort over the v2 API
         surface: api
         count: 5
-        status: planned
+        status: automated
         notes: >
           Deliberately not excluded against SR-I-02. That IT asserts the search
           behaviour through the Java client; what is untested here is the HTTP
@@ -162,7 +162,7 @@ specs:
           counters, empty filter, 400s, and cancelling a suspended instance
         surface: api
         count: 5
-        status: planned
+        status: automated
 
   - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/process-instance/process-instance-suspend-resume-timer-api.spec.ts
     framework: playwright
@@ -173,7 +173,7 @@ specs:
           and a conditional boundary raised mid-suspension
         surface: api
         count: 4
-        status: planned
+        status: automated
 
   - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/process-instance/process-instance-suspend-resume-continuation-api.spec.ts
     framework: playwright
@@ -187,7 +187,7 @@ specs:
         traces_to: Suspension and resume across the continuation models
         surface: api
         count: 10
-        status: planned
+        status: automated
         notes: Blocked on the model port — see prerequisites below.
 
 # ---------------------------------------------------------------------------
@@ -203,14 +203,14 @@ specs:
           from the instances table
         surface: ui
         count: 2
-        status: planned
+        status: automated
 
       - id: SR-UI-02
         traces_to: >
           Suspend and Resume are offered on a call-activity child instance's
           detail view
         surface: ui
-        status: planned
+        status: automated
         notes: Regression guard for camunda/camunda#60657, where a guard hid them.
 
       - id: SR-UI-03
@@ -219,7 +219,7 @@ specs:
           Incident is disabled
         surface: ui
         count: 2
-        status: planned
+        status: automated
 
       - id: SR-UI-04
         traces_to: The suspended indicator and the Suspended filter render correctly
@@ -248,7 +248,7 @@ specs:
           Editing an existing variable while suspended applies the edit after
           the resume
         surface: ui
-        status: planned
+        status: automated
         notes: >
           The per-scope split from camunda/camunda#62745 is not observable in
           the UI, so that half is asserted over the API.
@@ -256,7 +256,7 @@ specs:
       - id: SR-UI-06
         traces_to: The operations log records the suspend and the resume
         surface: ui
-        status: planned
+        status: automated
 
       - id: SR-UI-07
         traces_to: Engine mechanics of suspension — no element advances, no job is handed out
@@ -325,7 +325,13 @@ prerequisites:
       No existing model has a timeCycle, an event-based gateway racing a timer
       against a signal, or per-element subscriptions on a multi-instance body.
     blocks: [SR-API-06, SR-API-07]
-    status: not started
+    status: done
+    notes: >
+      All seven are in qa/c8-orchestration-cluster-e2e-test-suite/resources/ —
+      repeating_boundary_timer_process, event_based_gateway_timer_signal_process,
+      order_process_with_message_events, multi_instance_sub_process,
+      suspend_resume_parallel_join_process, signal_and_message_parallel_wait_process
+      and signal_catch_with_job_process.
 
 lifecycle:
   isolation: >
