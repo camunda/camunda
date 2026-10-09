@@ -37,22 +37,22 @@ uv run loadtestctl report <namespace> [options]
 
 Common options:
 
-- `--duration-seconds <sec>`: query window duration. Default: `600`.
-- `--rate-interval <dur>`: short Prometheus rate interval for dashboard-style rollups.
+- `-d`, `--duration-seconds`, `--duration <sec>`: query window duration. Default: `600`.
+- `-r`, `--rate-interval`, `--rate <dur>`: short Prometheus rate interval for dashboard-style rollups.
   Default: `5m`.
-- `--sample-step <dur>`: sample resolution for window summaries. Default: `1m`.
-- `--queries <path>`: YAML query file path. Default: packaged
+- `-s`, `--sample-step`, `--step <dur>`: sample resolution for window summaries. Default: `1m`.
+- `-q`, `--queries <path>`: YAML query file path. Default: packaged
   `report-queries.yaml`.
 - `--start <time>`: start of the reporting window as an RFC3339 or Unix timestamp. The
   duration is added to it to derive the end time, which must not be in the future.
   Default: now minus `--duration-seconds`, so the window ends now.
-- `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
-- `--user <user> --password <password>`: basic auth credentials for Prometheus.
-- `--format json|csv|tsv`: output format. Default: `json`.
+- `-e`, `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
+- `-u`, `--user <user>` and `-p`, `--password <password>`: basic auth credentials for Prometheus.
+- `-f`, `--format json|csv|tsv`: output format. Default: `json`.
 - `--no-header`: omit the CSV or TSV header row for direct spreadsheet row pasting.
 - `--missing-value <value>`: placeholder for missing CSV or TSV metrics. Default:
   `NaN`.
-- `--output <path>`: write the report to a file.
+- `-o`, `--output <path>`: write the report to a file.
 
 #### Examples
 

@@ -227,3 +227,41 @@ def test_should_pass_output_path(tmp_path: Path) -> None:
     options = parse_args(["c8-ck-test", "--output", str(output_file)])
 
     assert options.output_file == output_file
+
+
+def test_should_accept_short_and_alias_options(tmp_path: Path) -> None:
+    output_file = tmp_path / "report.json"
+
+    options = parse_args(
+        ["c8-ck-test", "-d", "60", "-r", "1m", "-s", "30s", "-e", "http://prom:9090", "-u", "user", "-p", "pass"]
+        + ["-f", "tsv", "-o", str(output_file)]
+    )
+
+    assert options.duration_seconds == 60
+    assert options.rate_interval == "1m"
+    assert options.sample_step == "30s"
+    assert options.endpoint == "http://prom:9090"
+    assert options.basic_auth_user == "user"
+    assert options.basic_auth_password == "pass"
+    assert options.output_format == "tsv"
+    assert options.output_file == output_file
+    assert parse_args(["c8-ck-test", "--duration", "60"]).duration_seconds == 60
+    assert parse_args(["c8-ck-test", "--rate", "1m"]).rate_interval == "1m"
+    assert parse_args(["c8-ck-test", "--step", "30s"]).sample_step == "30s"
+
+
+def test_should_accept_short_queries_alias(tmp_path: Path) -> None:
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("queries: []", encoding="utf-8")
+
+    options = parse_args(["c8-ck-test", "-q", str(queries_file)])
+
+    assert options.queries_file == queries_file
+
+
+@pytest.mark.parametrize("args", [[""], ["--", "-abc"]])
+def test_should_reject_invalid_namespace_forms(args: list[str], capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(args)
+
+    assert exit_code == 2
+    assert "must be a valid Kubernetes DNS label" in capsys.readouterr().err

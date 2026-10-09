@@ -201,27 +201,34 @@ def run_report(options: Options) -> None:
 @click.command("report", help=REPORT_HELP, epilog=REPORT_EPILOG)
 @click.argument("namespace", type=NamespaceType())
 @click.option(
+    "-d",
     "--duration-seconds",
+    "--duration",
     type=click.IntRange(min=1),
     default=600,
     show_default=True,
     help="Query window duration in seconds.",
 )
 @click.option(
+    "-r",
     "--rate-interval",
+    "--rate",
     type=DurationType(),
     default="5m",
     show_default=True,
     help="Short rate interval for dashboard-style rollups.",
 )
 @click.option(
+    "-s",
     "--sample-step",
+    "--step",
     type=DurationType(),
     default="1m",
     show_default=True,
     help="Subquery sample resolution for window summaries.",
 )
 @click.option(
+    "-q",
     "--queries",
     type=QueriesFileType(),
     default=DEFAULT_QUERIES_FILE,
@@ -235,10 +242,11 @@ def run_report(options: Options) -> None:
     show_default="now minus --duration-seconds",
     help="Start of the reporting window, RFC3339 or Unix timestamp. The window ends at start plus --duration-seconds.",
 )
-@click.option("--endpoint", default="http://localhost:9090", show_default=True, help="Prometheus base URL.")
-@click.option("--user", default="", help="Basic auth user for Prometheus.")
-@click.option("--password", default="", help="Basic auth password for Prometheus.")
+@click.option("-e", "--endpoint", default="http://localhost:9090", show_default=True, help="Prometheus base URL.")
+@click.option("-u", "--user", default="", help="Basic auth user for Prometheus.")
+@click.option("-p", "--password", default="", help="Basic auth password for Prometheus.")
 @click.option(
+    "-f",
     "--format",
     "output_format",
     type=click.Choice(["json", "csv", "tsv"]),
@@ -248,7 +256,7 @@ def run_report(options: Options) -> None:
 )
 @click.option("--no-header", is_flag=True, help="Omit the CSV/TSV header row.")
 @click.option("--missing-value", default="NaN", show_default=True, help="CSV/TSV placeholder for missing metrics.")
-@click.option("--output", default=None, help="Write output to a file instead of stdout.")
+@click.option("-o", "--output", default=None, help="Write output to a file instead of stdout.")
 def report(
     namespace: str,
     duration_seconds: int,
