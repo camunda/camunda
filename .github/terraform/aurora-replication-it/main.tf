@@ -141,8 +141,10 @@ module "aurora" {
   secondary_num_instances = var.secondary_num_instances
 
   tags = {
-    Purpose = "aurora-async-replication-it"
-    Name    = var.name_prefix
+    Purpose   = "aurora-async-replication-it"
+    Name      = var.name_prefix
+    RunId     = var.name_prefix
+    ManagedBy = "camunda-aurora-async-replication-test"
   }
 }
 
@@ -175,8 +177,10 @@ resource "aws_iam_role" "bastion" {
   })
 
   tags = {
-    Name    = "${var.name_prefix}-bastion"
-    Purpose = "aurora-async-replication-it"
+    Name      = "${var.name_prefix}-bastion"
+    Purpose   = "aurora-async-replication-it"
+    RunId     = var.name_prefix
+    ManagedBy = "camunda-aurora-async-replication-test"
   }
 }
 
@@ -192,8 +196,10 @@ resource "aws_iam_instance_profile" "bastion" {
   role     = aws_iam_role.bastion.name
 
   tags = {
-    Name    = "${var.name_prefix}-bastion"
-    Purpose = "aurora-async-replication-it"
+    Name      = "${var.name_prefix}-bastion"
+    Purpose   = "aurora-async-replication-it"
+    RunId     = var.name_prefix
+    ManagedBy = "camunda-aurora-async-replication-test"
   }
 }
 
@@ -204,8 +210,10 @@ resource "aws_security_group" "bastion" {
   vpc_id      = data.aws_vpc.primary.id
 
   tags = {
-    Name    = "${var.name_prefix}-bastion"
-    Purpose = "aurora-async-replication-it"
+    Name      = "${var.name_prefix}-bastion"
+    Purpose   = "aurora-async-replication-it"
+    RunId     = var.name_prefix
+    ManagedBy = "camunda-aurora-async-replication-test"
   }
 
   # outbound only: 443 for the SSM agent, module.aurora.db_port towards Aurora
@@ -246,8 +254,10 @@ resource "aws_instance" "bastion" {
   }
 
   tags = {
-    Name    = "${var.name_prefix}-bastion"
-    Purpose = "aurora-async-replication-it"
+    Name      = "${var.name_prefix}-bastion"
+    Purpose   = "aurora-async-replication-it"
+    RunId     = var.name_prefix
+    ManagedBy = "camunda-aurora-async-replication-test"
   }
 }
 
