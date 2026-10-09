@@ -40,17 +40,18 @@ describe('<PriorityLabel />', () => {
 		await expect.element(screen.getByText('Low', {exact: true})).toBeVisible();
 	});
 
-	it('should show "Priority: Critical" as the title attribute for critical priority', async () => {
+	it('should expose "Priority: Critical" to assistive technology for critical priority', async () => {
 		const screen = await render(<PriorityLabel priority={80} />, {wrapper: Wrapper});
 
-		await expect.element(screen.getByTitle('Priority: Critical')).toBeVisible();
+		await expect.element(screen.getByText('Priority: Critical')).toBeInTheDocument();
+		await expect.element(screen.getByTitle('Priority: Critical')).not.toBeInTheDocument();
 	});
 
 	it('should show the long "Priority: High" label as tooltip content on hover', async () => {
 		const screen = await render(<PriorityLabel priority={60} />, {wrapper: Wrapper});
 
-		await userEvent.hover(screen.getByTitle('Priority: High'));
+		await userEvent.hover(screen.getByText('High', {exact: true}));
 
-		await expect.element(screen.getByText('Priority: High')).toBeVisible();
+		await expect.element(screen.getByRole('tooltip', {name: 'Priority: High'})).toBeVisible();
 	});
 });

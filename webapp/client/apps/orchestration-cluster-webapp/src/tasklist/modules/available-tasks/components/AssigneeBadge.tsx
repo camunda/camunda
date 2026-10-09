@@ -41,9 +41,9 @@ const AssigneeBadge: React.FC<Props> = ({currentUser, assignee, isShortFormat = 
 	}
 
 	return (
-		<Badge title={t('tasklist.assigneeTagAssignedToXAria', {assignee})}>
+		<Badge className="min-w-0 shrink [&>svg]:shrink-0" title={t('tasklist.assigneeTagAssignedToXAria', {assignee})}>
 			<UserRound aria-hidden />
-			{isShortFormat ? assignee : t('tasklist.assigneeTagAssignedToX', {assignee})}
+			<span className="truncate">{isShortFormat ? assignee : t('tasklist.assigneeTagAssignedToX', {assignee})}</span>
 		</Badge>
 	);
 };

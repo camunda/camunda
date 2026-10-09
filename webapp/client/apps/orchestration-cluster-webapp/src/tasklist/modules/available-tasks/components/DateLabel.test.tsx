@@ -49,23 +49,27 @@ describe('<DateLabel />', () => {
 	});
 
 	it.for([
-		{name: 'week', fixture: weekDate, expectedTitle: 'Created on Monday'},
-		{name: 'months', fixture: monthsDate, expectedTitle: 'Created on 6th of January'},
-		{name: 'years', fixture: yearsDate, expectedTitle: 'Created on 31st of December, 2023'},
-	])('should use absoluteLabel + speech as the title for "$name" resolution', async ({fixture, expectedTitle}) => {
-		const screen = await render(<DateLabel date={fixture} relativeLabel="Created" absoluteLabel="Created on" />, {
-			wrapper: Wrapper,
-		});
+		{name: 'week', fixture: weekDate, expectedLabel: 'Created on Monday'},
+		{name: 'months', fixture: monthsDate, expectedLabel: 'Created on 6th of January'},
+		{name: 'years', fixture: yearsDate, expectedLabel: 'Created on 31st of December, 2023'},
+	])(
+		'should use absoluteLabel + speech as the screen reader label for "$name" resolution',
+		async ({fixture, expectedLabel}) => {
+			const screen = await render(<DateLabel date={fixture} relativeLabel="Created" absoluteLabel="Created on" />, {
+				wrapper: Wrapper,
+			});
 
-		await expect.element(screen.getByTitle(expectedTitle)).toBeVisible();
-	});
+			await expect.element(screen.getByText(expectedLabel)).toBeInTheDocument();
+			await expect.element(screen.getByTitle(expectedLabel)).not.toBeInTheDocument();
+		},
+	);
 
-	it('should use relativeLabel + speech as the title for non-week/month/year resolutions', async () => {
+	it('should use relativeLabel + speech as the screen reader label for non-week/month/year resolutions', async () => {
 		const screen = await render(<DateLabel date={todayDate} relativeLabel="Created" absoluteLabel="Created on" />, {
 			wrapper: Wrapper,
 		});
 
-		await expect.element(screen.getByTitle('Created today at 10:30')).toBeVisible();
+		await expect.element(screen.getByText('Created today at 10:30')).toBeInTheDocument();
 	});
 
 	it('should show tooltip with absolute date on hover and hide it on unhover', async () => {
@@ -75,15 +79,17 @@ describe('<DateLabel />', () => {
 
 		await expect.element(screen.getByRole('tooltip')).not.toBeInTheDocument();
 
-		await userEvent.hover(screen.getByTitle('Created on 6th of January'));
+		await userEvent.hover(screen.getByText('6 Jan', {exact: true}));
 
 		await expect.element(screen.getByRole('tooltip')).toMatchTextContent('Created on');
 		await expect.element(screen.getByRole('tooltip')).toMatchTextContent('6 Jan 2024');
 
-		await userEvent.unhover(screen.getByTitle('Created on 6th of January'));
+		await userEvent.unhover(screen.getByText('6 Jan', {exact: true}));
 		await userEvent.hover(document.body);
 
-		await expect.element(screen.getByTitle('Created on 6th of January')).toHaveAttribute('data-state', 'closed');
+		await expect
+			.poll(() => screen.getByText('Created on 6th of January').element().parentElement?.getAttribute('data-state'))
+			.toBe('closed');
 	});
 
 	it('should render an icon alongside the relative date text when provided', async () => {
@@ -98,6 +104,6 @@ describe('<DateLabel />', () => {
 		);
 
 		await expect.element(screen.getByTestId('calendar-icon')).toBeVisible();
-		await expect.element(screen.getByTitle('Created on 6th of January')).toBeVisible();
+		await expect.element(screen.getByText('Created on 6th of January')).toBeInTheDocument();
 	});
 });

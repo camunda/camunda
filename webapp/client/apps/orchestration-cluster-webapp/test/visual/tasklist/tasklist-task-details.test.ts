@@ -26,6 +26,62 @@ import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-t
 
 const USER_TASK_KEY = '2251799813685281';
 
+const LONG_TASK_NAME =
+	'Review and approve the quarterly procurement request for the northern European logistics hub including all attached invoices';
+const LONG_PROCESS_NAME =
+	'Enterprise Procurement Approval Process for International Subsidiaries and Strategic Supplier Onboarding';
+const LONG_BUSINESS_ID = 'ORDER-2024-EMEA-DE-BER-PROCUREMENT-REQUEST-0000123456789-SUPPLIER-ONBOARDING-STRATEGIC-0042';
+const LONG_ASSIGNEE =
+	'maximilian.alexander.von.hohenzollern-sigmaringen.external.contractor@very-long-company-domain.example.com';
+const LONG_CANDIDATE_GROUP = 'procurement-approvers-for-international-subsidiaries-and-strategic-suppliers';
+const UNBROKEN_WORD =
+	'ThisIsAVeryLongSingleWordWithoutAnySpacesThatCannotWrapAnywhereAtAllAndMustBeClippedWithAnEllipsis';
+
+const LONG_VALUES_TASK = createUserTask({
+	userTaskKey: USER_TASK_KEY,
+	state: 'CREATED',
+	name: LONG_TASK_NAME,
+	processName: LONG_PROCESS_NAME,
+	businessId: LONG_BUSINESS_ID,
+	assignee: LONG_ASSIGNEE,
+	candidateUsers: [LONG_ASSIGNEE, `user${UNBROKEN_WORD}`, 'demo'],
+	candidateGroups: [LONG_CANDIDATE_GROUP, 'managers'],
+	priority: 90,
+	dueDate: '2024-06-15T17:00:00.000Z',
+	creationDate: '2024-01-10T09:30:00.000Z',
+});
+
+const LONG_VALUES_AVAILABLE_TASKS = [
+	LONG_VALUES_TASK,
+	createUserTask({
+		userTaskKey: '2251799813685282',
+		name: `Task${UNBROKEN_WORD}`,
+		processName: `Process${UNBROKEN_WORD}`,
+		businessId: `BusinessId${UNBROKEN_WORD}`,
+		assignee: `user${UNBROKEN_WORD}`,
+		priority: 10,
+		followUpDate: '2024-06-20T17:00:00.000Z',
+		creationDate: '2024-01-11T09:30:00.000Z',
+	}),
+	createUserTask({
+		userTaskKey: '2251799813685283',
+		name: 'Check invoice',
+		processName: 'Invoice process',
+		assignee: LONG_ASSIGNEE,
+		priority: 75,
+		creationDate: '2024-01-12T09:30:00.000Z',
+	}),
+	createUserTask({
+		userTaskKey: '2251799813685284',
+		name: 'Approve onboarding of the strategic supplier for the northern European logistics hub',
+		processName: LONG_PROCESS_NAME,
+		businessId: LONG_BUSINESS_ID,
+		assignee: 'demo',
+		priority: 60,
+		creationDate: '2024-01-13T09:30:00.000Z',
+	}),
+];
+
 test.beforeEach(({network}) => {
 	network.use(
 		mockCurrentUserEndpoint({
@@ -133,6 +189,64 @@ test('should match the task details sheet snapshot', {tag: '@tablet'}, async ({n
 
 	await expect(page).toHaveScreenshot();
 });
+
+test(
+	'should match the task details snapshot with long values',
+	{tag: '@desktop'},
+	async ({network, taskDetailPage, tasklistIndexPage, page}) => {
+		network.use(
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTasksResponse({items: LONG_VALUES_AVAILABLE_TASKS})),
+			}),
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(LONG_VALUES_TASK),
+			}),
+		);
+
+		await taskDetailPage.seedHideNotificationBanner();
+		await taskDetailPage.goto(USER_TASK_KEY);
+		await expect(taskDetailPage.detailsInfo).toBeVisible();
+		await expect(taskDetailPage.taskName(LONG_TASK_NAME)).toBeVisible();
+		await expect(taskDetailPage.aside.getByText(LONG_BUSINESS_ID)).toBeVisible();
+		await expect(taskDetailPage.aside.getByText(LONG_CANDIDATE_GROUP)).toBeVisible();
+		await expect(tasklistIndexPage.taskCard(`Task${UNBROKEN_WORD}`)).toBeVisible();
+		await expect(tasklistIndexPage.taskCard('Check invoice').getByText('High', {exact: true})).toBeVisible();
+		await taskDetailPage.assignmentButton.focus();
+
+		await expect(page).toHaveScreenshot();
+	},
+);
+
+test(
+	'should match the task details sheet snapshot with long values',
+	{tag: '@tablet'},
+	async ({network, taskDetailPage, tasklistIndexPage, page}) => {
+		network.use(
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTasksResponse({items: LONG_VALUES_AVAILABLE_TASKS})),
+			}),
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(LONG_VALUES_TASK),
+			}),
+		);
+
+		await taskDetailPage.seedHideNotificationBanner();
+		await taskDetailPage.goto(USER_TASK_KEY);
+		await expect(taskDetailPage.taskName(LONG_TASK_NAME)).toBeVisible();
+		await expect(taskDetailPage.detailsButton).toBeVisible();
+		await expect(tasklistIndexPage.taskCard('Check invoice').getByText('High', {exact: true})).toBeVisible();
+		await taskDetailPage.assignmentButton.focus();
+
+		await expect(page).toHaveScreenshot();
+
+		await taskDetailPage.detailsButton.click();
+		await expect(taskDetailPage.detailsSheet).toBeVisible();
+		await expect(taskDetailPage.aside.getByText(LONG_BUSINESS_ID)).toBeVisible();
+		await expect(taskDetailPage.aside.getByText(LONG_CANDIDATE_GROUP)).toBeVisible();
+
+		await expect(page).toHaveScreenshot();
+	},
+);
 
 test('should match the new variable row snapshot', async ({network, taskDetailPage, page}) => {
 	network.use(
@@ -355,6 +469,25 @@ test('should match the completed task details snapshot', async ({network, taskDe
 	await expect(taskDetailPage.completeTaskButton).not.toBeVisible();
 	await expect(taskDetailPage.variablesTable.getByText('approvedAmount', {exact: true})).toBeVisible();
 	await expect(taskDetailPage.variablesTable.getByText('approvalStatus', {exact: true})).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the completed task details snapshot with long values', async ({network, taskDetailPage, page}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json({
+				...LONG_VALUES_TASK,
+				state: 'COMPLETED',
+				completionDate: '2024-02-20T16:45:00.000Z',
+			}),
+		}),
+	);
+
+	await taskDetailPage.seedHideNotificationBanner();
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(taskDetailPage.taskName(LONG_TASK_NAME)).toBeVisible();
+	await expect(taskDetailPage.completionLabel).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

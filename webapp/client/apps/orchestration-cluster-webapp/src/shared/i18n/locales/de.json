@@ -236,7 +236,6 @@
 			"taskHeaderUnassigning": "Zuweisung aufheben...",
 			"taskHeaderAssignmentSuccessful": "Zuweisung erfolgreich",
 			"taskHeaderUnassignmentSuccessful": "Zuweisung erfolgreich aufgehoben",
-			"availableTasksTitle": "Verfügbare Aufgaben",
 			"availableTasksNoTasksFoundInfo": "Keine Aufgaben gefunden",
 			"availableTasksNoTasksMatchingCriteriaInfo": "Es gibt keine Aufgaben, die Ihren Filterkriterien entsprechen.",
 			"availableTasksCreatedRelativeLabel": "Erstellt",
