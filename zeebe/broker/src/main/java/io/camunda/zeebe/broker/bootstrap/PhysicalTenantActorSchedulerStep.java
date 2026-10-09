@@ -9,7 +9,9 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -22,6 +24,7 @@ import java.util.concurrent.CompletionException;
 final class PhysicalTenantActorSchedulerStep extends AbstractBrokerStartupStep {
 
   private final String physicalTenantId;
+  private MeterRegistry meterRegistry;
 
   PhysicalTenantActorSchedulerStep(final String physicalTenantId) {
     this.physicalTenantId = physicalTenantId;
@@ -47,14 +50,20 @@ final class PhysicalTenantActorSchedulerStep extends AbstractBrokerStartupStep {
                     .getThreads();
             if (threads.isPhysicalTenantActorPoolEnabled()) {
               final var builder = brokerStartupContext.newActorSchedulerBuilder();
+              // tags every actor metric of the pool; null when actor metrics are disabled
+              if (builder.getMeterRegistry() != null) {
+                meterRegistry =
+                    MicrometerUtil.wrap(
+                        builder.getMeterRegistry(),
+                        Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId));
+                builder.setMeterRegistry(meterRegistry);
+              }
               final var scheduler =
                   builder
                       .setSchedulerName(builder.getSchedulerName() + "-" + physicalTenantId)
                       .setThreadNamePrefix(physicalTenantId + "-")
                       .setCpuBoundActorThreadCount(threads.getPhysicalTenantCpuThreadCount())
                       .setIoBoundActorThreadCount(threads.getPhysicalTenantIoThreadCount())
-                      .setMetricsTags(
-                          Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId))
                       .build();
               scheduler.start();
               brokerStartupContext.addPhysicalTenantActorScheduler(physicalTenantId, scheduler);
@@ -92,6 +101,7 @@ final class PhysicalTenantActorSchedulerStep extends AbstractBrokerStartupStep {
             (ok, error) ->
                 concurrencyControl.run(
                     () -> {
+                      MicrometerUtil.close(meterRegistry);
                       if (error != null) {
                         shutdownFuture.completeExceptionally(error);
                       } else {
