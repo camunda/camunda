@@ -878,8 +878,32 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Exclusive gateway incident migration', async () => {
-      await operateDiagramPage.clickFlowNode('ExclusiveGateway2');
-      await expect(operateDiagramPage.popoverIncidentHeading).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateDiagramPage.getIncidentsOverlay('ExclusiveGateway2'),
+          ).toBeVisible({timeout: 60000});
+        },
+        onFailure: async () => {
+          await sleep(5000);
+          await page.reload();
+          await operateDiagramPage.resetDiagramZoomButton.click();
+        },
+        maxRetries: 2,
+      });
+
+      await waitForAssertion({
+        assertion: async () => {
+          await operateDiagramPage.clickFlowNode('ExclusiveGateway2');
+          await expect(operateDiagramPage.popoverIncidentHeading).toBeVisible();
+        },
+        onFailure: async () => {
+          await sleep(5000);
+          await page.reload();
+          await operateDiagramPage.resetDiagramZoomButton.click();
+        },
+        maxRetries: 2,
+      });
     });
   });
 
