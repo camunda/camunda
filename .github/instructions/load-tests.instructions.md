@@ -63,6 +63,15 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
    `@Qualifier("queryCamundaClient")` client, not the default `CamundaClient`, which is only for
    generating load. Flag a change that sends a read query through the default client.
 
+## k6 scripts
+
+After every change under `load-tests/setup/charts/load-test-setup/k6/scripts/`, run the unit tests
+in that chart directory and update `k6/tests/` when behavior changes:
+
+```sh
+make -C load-tests/setup/charts/load-test-setup/k6 test
+```
+
 ## Choosing a language for new tooling
 
 When adding or extending a load-test script (metrics, reporting, profiling, ops helpers), follow

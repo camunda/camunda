@@ -25,3 +25,4 @@
 k6/package*.json
 k6/Makefile
 k6/node_modules/
+k6/tests/

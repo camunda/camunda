@@ -300,11 +300,13 @@ jobs:
 
   load-test-k6-prettier:
     if: needs.detect-changes.outputs.load-test-k6-changes == 'true'
-    name: "Load Test / Lint k6 Scripts"
+    name: "Load Test / k6"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions: {}
+    env:
+      TEST_OWNER: '@camunda/reliability-testing'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -322,6 +324,11 @@ jobs:
           timeout_minutes: "3"
       - name: Check formatting
         run: make -C load-tests/setup/charts/load-test-setup/k6 check
+      - name: Run k6 script unit tests
+        env:
+          # The node.js test runner only colors its output on a TTY.
+          FORCE_COLOR: 1
+        run: make -C load-tests/setup/charts/load-test-setup/k6 test
       - name: Observe build status
         if: always()
         continue-on-error: true

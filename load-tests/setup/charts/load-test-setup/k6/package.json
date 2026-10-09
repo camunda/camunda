@@ -1,4 +1,14 @@
 {
+  "name": "k6-scripts-tests",
+  "private": true,
+  "type": "module",
+  "description": "Unit tests of the k6 scripts.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --disable-warning=ExperimentalWarning --experimental-test-module-mocks --import ./tests/register-k6-stubs.js --experimental-test-coverage --test-coverage-include='scripts/*.js' --test-coverage-lines=95 --test-coverage-branches=95 --test-coverage-functions=95 --test 'tests/*.test.js'"
+  },
   "devDependencies": {
     "prettier": "3.9.9"
   }
