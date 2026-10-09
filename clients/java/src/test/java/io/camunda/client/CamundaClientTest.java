@@ -120,6 +120,7 @@ public final class CamundaClientTest {
       assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(DEFAULT_MESSAGE_TTL);
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
       assertThat(configuration.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofSeconds(1));
+      assertThat(configuration.getResponseDeadlineMargin()).isEqualTo(Duration.ofSeconds(5));
       assertThat(configuration.getMaxMessageSize()).isEqualTo(5 * 1024 * 1024);
       assertThat(configuration.getMaxMetadataSize()).isEqualTo(16 * 1024);
       assertThat(configuration.getOverrideAuthority()).isNull();
@@ -1338,6 +1339,53 @@ public final class CamundaClientTest {
   }
 
   @Test
+  public void shouldSetResponseDeadlineMargin() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.responseDeadlineMargin(Duration.ofSeconds(2));
+
+    // then
+    assertThat(builder.getResponseDeadlineMargin()).isEqualTo(Duration.ofSeconds(2));
+  }
+
+  @Test
+  public void shouldSetResponseDeadlineMarginViaProperty() {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    properties.setProperty(ClientProperties.RESPONSE_DEADLINE_MARGIN, "100");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getResponseDeadlineMargin()).isEqualTo(Duration.ofMillis(100));
+  }
+
+  @Test
+  public void shouldInheritDefaultResponseDeadlineMarginInExistingConfigurations() {
+    // given a configuration that predates the margin and so does not implement its getter
+    final CamundaClientConfiguration existingConfiguration =
+        mock(CamundaClientConfiguration.class, org.mockito.Mockito.CALLS_REAL_METHODS);
+
+    // when / then
+    assertThat(existingConfiguration.getResponseDeadlineMargin()).isEqualTo(Duration.ofSeconds(5));
+  }
+
+  @Test
+  public void shouldRejectNegativeResponseDeadlineMargin() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when / then
+    assertThatThrownBy(() -> builder.responseDeadlineMargin(Duration.ofSeconds(-1)))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   public void shouldSetMaxHttpConnections() {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -1528,6 +1576,11 @@ public final class CamundaClientTest {
             }
 
             @Override
+            public Duration getResponseDeadlineMargin() {
+              return Duration.ofSeconds(7);
+            }
+
+            @Override
             public String getCaCertificatePath() {
               return "/custom/ca.pem";
             }
@@ -1660,6 +1713,7 @@ public final class CamundaClientTest {
       assertThat(builder.getDefaultRequestTimeout()).isEqualTo(source.getDefaultRequestTimeout());
       assertThat(builder.getDefaultRequestTimeoutOffset())
           .isEqualTo(source.getDefaultRequestTimeoutOffset());
+      assertThat(builder.getResponseDeadlineMargin()).isEqualTo(source.getResponseDeadlineMargin());
       assertThat(builder.getCaCertificatePath()).isEqualTo(source.getCaCertificatePath());
       assertThat(builder.getKeepAlive()).isEqualTo(source.getKeepAlive());
       assertThat(builder.getOverrideAuthority()).isEqualTo(source.getOverrideAuthority());
