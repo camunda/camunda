@@ -31,10 +31,12 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
@@ -68,7 +70,7 @@ final class ClusterRestoreRequestTransformerTest {
     assertThat(schemaOperationsOf(result.get()))
         .containsExactly(new SchemaInitializationOperation(MEMBER));
     assertThat(groupOperationsOf(result.get()))
-        .isEqualTo(Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L))));
+        .isEqualTo(Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L), 3)));
   }
 
   @Test
@@ -93,9 +95,9 @@ final class ClusterRestoreRequestTransformerTest {
     assertThat(groupOperationsOf(result.get()))
         .isEqualTo(
             Map.of(
-                DEFAULT_GROUP, defaultRestoreOperations(List.of(100L)),
-                TENANT_B, tenantBRestoreOperations(List.of(55L)),
-                TENANT_C, tenantCRestoreOperations(List.of(77L))));
+                DEFAULT_GROUP, defaultRestoreOperations(List.of(100L), 3),
+                TENANT_B, tenantBRestoreOperations(List.of(55L), 3),
+                TENANT_C, tenantCRestoreOperations(List.of(77L), 3)));
   }
 
   @Test
@@ -113,7 +115,7 @@ final class ClusterRestoreRequestTransformerTest {
     // then — the restore is planned rather than refused as a cluster that is not recovering
     EitherAssert.assertThat(result).isRight();
     assertThat(groupOperationsOf(result.get()))
-        .isEqualTo(Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L))));
+        .isEqualTo(Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L), 1)));
   }
 
   @Test
@@ -143,30 +145,36 @@ final class ClusterRestoreRequestTransformerTest {
   }
 
   private static List<PartitionGroupOperation> defaultRestoreOperations(
-      final List<Long> backupIds) {
+      final List<Long> backupIds, final int partitionCount) {
     return List.of(
         new PartitionPreRestoreOperation(MEMBER, 1),
         new PartitionRestoreOperation(MEMBER, 1, new TreeSet<>(backupIds)),
+        new UpdateRoutingState(
+            MEMBER, Optional.of(RoutingState.initializeWithPartitionCount(partitionCount))),
         new ModeChangeOperation(MEMBER, Mode.PROCESSING),
         new AwaitModeChangeOperation(MEMBER, Mode.PROCESSING),
         new UpdateIncarnationNumberOperation(MEMBER));
   }
 
   private static List<PartitionGroupOperation> tenantBRestoreOperations(
-      final List<Long> backupIds) {
+      final List<Long> backupIds, final int partitionCount) {
     return List.of(
         new PartitionPreRestoreOperation(MEMBER, 2),
         new PartitionRestoreOperation(MEMBER, 2, new TreeSet<>(backupIds)),
+        new UpdateRoutingState(
+            MEMBER, Optional.of(RoutingState.initializeWithPartitionCount(partitionCount))),
         new ModeChangeOperation(MEMBER, Mode.PROCESSING),
         new AwaitModeChangeOperation(MEMBER, Mode.PROCESSING),
         new UpdateIncarnationNumberOperation(MEMBER));
   }
 
   private static List<PartitionGroupOperation> tenantCRestoreOperations(
-      final List<Long> backupIds) {
+      final List<Long> backupIds, final int partitionCount) {
     return List.of(
         new PartitionPreRestoreOperation(MEMBER, 3),
         new PartitionRestoreOperation(MEMBER, 3, new TreeSet<>(backupIds)),
+        new UpdateRoutingState(
+            MEMBER, Optional.of(RoutingState.initializeWithPartitionCount(partitionCount))),
         new ModeChangeOperation(MEMBER, Mode.PROCESSING),
         new AwaitModeChangeOperation(MEMBER, Mode.PROCESSING),
         new UpdateIncarnationNumberOperation(MEMBER));

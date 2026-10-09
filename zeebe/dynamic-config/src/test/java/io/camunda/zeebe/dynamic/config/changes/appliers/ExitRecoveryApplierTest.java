@@ -17,14 +17,23 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -148,6 +157,101 @@ final class ExitRecoveryApplierTest {
     assertThat(result).isRight();
     final var resultingGroup = result.get().apply(group);
     Assertions.assertThat(resultingGroup.getMember(memberId).mode()).isEqualTo(Mode.RECOVERING);
+  }
+
+  @Test
+  void shouldDropThePartitionsAboveTheStableRoutingOnInit() {
+    // given - a restore from a backup with 2 partitions routes the group over 2, while the member
+    // still holds the 3rd partition of an earlier scale up
+    final var group = groupWithRouting(new AllPartitions(2), Mode.RECOVERING, 1, 2, 3);
+
+    // when
+    final var result =
+        new ExitRecoveryApplier(memberId, modeChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, group);
+
+    // then
+    assertThat(result).isRight();
+    final var resultingGroup = result.get().apply(group);
+    Assertions.assertThat(resultingGroup.getMember(memberId).partitions().keySet())
+        .containsExactly(1, 2);
+    Assertions.assertThat(resultingGroup.getMember(memberId).mode()).isEqualTo(Mode.RECOVERING);
+  }
+
+  @Test
+  void shouldKeepEveryPartitionWhileTheRoutingIsUnstable() {
+    // given - a scale up is adding partition 3, which is bootstrapped but not routed to yet
+    final var group =
+        groupWithRouting(new ActivePartitions(2, Set.of(), Set.of(3)), Mode.PROCESSING, 1, 2, 3);
+
+    // when
+    final var result =
+        new ExitRecoveryApplier(memberId, modeChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, group);
+
+    // then
+    assertThat(result).isRight();
+    Assertions.assertThat(result.get().apply(group).getMember(memberId).partitions().keySet())
+        .containsExactly(1, 2, 3);
+  }
+
+  @Test
+  void shouldKeepEveryPartitionTheGroupRoutesOver() {
+    // given
+    final var group = groupWithRouting(new AllPartitions(3), Mode.RECOVERING, 1, 2, 3);
+
+    // when
+    final var result =
+        new ExitRecoveryApplier(memberId, modeChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, group);
+
+    // then
+    assertThat(result).isRight();
+    Assertions.assertThat(result.get().apply(group).getMember(memberId).partitions().keySet())
+        .containsExactly(1, 2, 3);
+  }
+
+  @Test
+  void shouldKeepEveryPartitionWithoutARoutingState() {
+    // given
+    final var group =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(memberId, memberWithPartitions(Mode.RECOVERING, 1, 2, 3)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+
+    // when
+    final var result =
+        new ExitRecoveryApplier(memberId, modeChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, group);
+
+    // then
+    assertThat(result).isRight();
+    Assertions.assertThat(result.get().apply(group).getMember(memberId).partitions().keySet())
+        .containsExactly(1, 2, 3);
+  }
+
+  private PartitionGroupConfiguration groupWithRouting(
+      final RequestHandling requestHandling, final Mode mode, final int... partitionIds) {
+    return new PartitionGroupConfiguration(
+        1,
+        0,
+        Map.of(memberId, memberWithPartitions(mode, partitionIds)),
+        Optional.of(new RoutingState(2, requestHandling, new HashMod(2))),
+        Optional.empty(),
+        Optional.empty());
+  }
+
+  private static BrokerPartitionState memberWithPartitions(
+      final Mode mode, final int... partitionIds) {
+    final var partitions = new TreeMap<Integer, PartitionState>();
+    for (final var partitionId : partitionIds) {
+      partitions.put(partitionId, PartitionState.active(1, DynamicPartitionConfig.init()));
+    }
+    return new BrokerPartitionState(1, Instant.EPOCH, partitions, mode);
   }
 
   @Test

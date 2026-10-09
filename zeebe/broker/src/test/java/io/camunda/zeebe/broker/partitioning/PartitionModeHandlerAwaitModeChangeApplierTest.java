@@ -105,8 +105,8 @@ final class PartitionModeHandlerAwaitModeChangeApplierTest {
                         1,
                         LOCAL_MEMBER))
             .collect(Collectors.toSet());
-    when(clusterConfigurationService.getPartitionDistribution(any()))
-        .thenReturn(new PartitionDistribution(metadata));
+    when(clusterConfigurationService.getLatestPartitionDistribution(any()))
+        .thenReturn(CompletableActorFuture.completed(new PartitionDistribution(metadata)));
   }
 
   private void givenPartitionRoles(final Map<Integer, PartitionRole> roles) {

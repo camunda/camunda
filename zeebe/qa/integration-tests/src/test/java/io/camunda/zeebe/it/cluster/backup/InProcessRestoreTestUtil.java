@@ -19,12 +19,18 @@ import io.camunda.client.protocol.rest.RestoreRequest;
 import io.camunda.client.protocol.rest.RestoreStatusResponse;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
+import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
+import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -569,6 +575,30 @@ public final class InProcessRestoreTestUtil {
   }
 
   /**
+   * Asserts the broker keeps the partitions {@code 1..restoredPartitionCount} that were restored,
+   * and no directory at all for the ones above, up to {@code configuredPartitionCount}: the backup
+   * does not hold them, so their data is deleted rather than left behind as empty directories.
+   */
+  static void assertOnlyRestoredPartitionDirectories(
+      final Path workingDirectory,
+      final String partitionGroup,
+      final int restoredPartitionCount,
+      final int configuredPartitionCount) {
+    for (int partitionId = 1; partitionId <= configuredPartitionCount; partitionId++) {
+      final var directory = partitionDirectory(workingDirectory, partitionGroup, partitionId);
+      if (partitionId <= restoredPartitionCount) {
+        assertThat(directory)
+            .describedAs("restored partition %d", partitionId)
+            .isNotEmptyDirectory();
+      } else {
+        assertThat(directory)
+            .describedAs("partition %d, which the backup does not hold", partitionId)
+            .doesNotExist();
+      }
+    }
+  }
+
+  /**
    * Truncates every {@code .sst} file in the given node's completed backup snapshot for the given
    * partition on disk, overwriting it with garbage bytes so a later restore's RocksDB sanity check
    * fails with a checksum/corruption error. Returns the original file contents so they can be
@@ -612,5 +642,115 @@ public final class InProcessRestoreTestUtil {
     for (final var entry : originalContents.entrySet()) {
       Files.write(entry.getKey(), entry.getValue(), StandardOpenOption.TRUNCATE_EXISTING);
     }
+  }
+
+  /**
+   * Scales the cluster's partitions up to {@code partitionCount} and waits for the scale-up to
+   * complete. Scale-up only widens request handling; message correlation keeps hashing over the
+   * original partitions so existing subscriptions stay where they are.
+   */
+  static void scaleUpPartitions(
+      final ClusterActuator clusterActuator,
+      final int partitionCount,
+      final int replicationFactor) {
+    final var scaleUp =
+        clusterActuator.patchCluster(
+            new ClusterConfigPatchRequest()
+                .partitions(
+                    new ClusterConfigPatchRequestPartitions()
+                        .count(partitionCount)
+                        .replicationFactor(replicationFactor)),
+            false,
+            false);
+    Awaitility.await("cluster is scaled up to %d partitions".formatted(partitionCount))
+        .timeout(Duration.ofMinutes(3))
+        .untilAsserted(
+            () -> {
+              ClusterActuatorAssert.assertThat(clusterActuator)
+                  .hasCompletedChanges(scaleUp)
+                  .doesNotHavePendingChanges();
+              assertThat(clusterActuator.getTopology().getRouting().getRequestHandling())
+                  .isEqualTo(requestHandlingOver(partitionCount));
+            });
+  }
+
+  /** Asserts the cluster routes requests and correlates messages over {@code partitionCount}. */
+  static void assertRoutesOverPartitions(
+      final ClusterActuator clusterActuator, final int partitionCount) {
+    assertRoutesOverPartitions(clusterActuator, partitionCount, partitionCount);
+  }
+
+  /**
+   * Asserts the cluster routes requests over {@code requestPartitionCount} and correlates messages
+   * over {@code messageCorrelationPartitionCount}, as it does after a scale up.
+   */
+  static void assertRoutesOverPartitions(
+      final ClusterActuator clusterActuator,
+      final int requestPartitionCount,
+      final int messageCorrelationPartitionCount) {
+    final var routing = clusterActuator.getTopology().getRouting();
+    assertThat(routing).isNotNull();
+    assertThat(routing.getRequestHandling()).isEqualTo(requestHandlingOver(requestPartitionCount));
+    assertThat(routing.getMessageCorrelation())
+        .isEqualTo(new MessageCorrelationHashMod("HashMod", messageCorrelationPartitionCount));
+  }
+
+  /**
+   * Asserts that new process instances created through the given gateway land on exactly the
+   * partitions {@code 1..partitionCount}. A broker's embedded gateway routes with that broker's own
+   * copy of the routing state, so this checks the routing state reached that broker.
+   */
+  static void assertNewInstancesLandOnPartitions(
+      final TestGateway<?> gateway, final String processId, final int partitionCount) {
+    try (final var client = gateway.newClientBuilder().build()) {
+      Awaitility.await("new instances land on partitions 1..%d".formatted(partitionCount))
+          .timeout(Duration.ofSeconds(60))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> {
+                final var partitions =
+                    IntStream.range(0, partitionCount * 5)
+                        .mapToLong(
+                            ignored ->
+                                client
+                                    .newCreateInstanceCommand()
+                                    .bpmnProcessId(processId)
+                                    .latestVersion()
+                                    .send()
+                                    .join()
+                                    .getProcessInstanceKey())
+                        .mapToInt(Protocol::decodePartitionId)
+                        .boxed()
+                        .toList();
+                assertThat(partitions)
+                    .describedAs("partitions of the instances created through %s", gateway)
+                    .containsOnly(
+                        IntStream.rangeClosed(1, partitionCount).boxed().toArray(Integer[]::new));
+              });
+    }
+  }
+
+  /** Waits until the jobs of the given process instances can be activated again. */
+  static void awaitJobsOfInstancesActivatable(
+      final CamundaClient client, final String jobType, final List<Long> processInstanceKeys) {
+    Awaitility.await("the jobs of the restored instances can be activated")
+        .timeout(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        client
+                            .newActivateJobsCommand()
+                            .jobType(jobType)
+                            .maxJobsToActivate(1000)
+                            .send()
+                            .join()
+                            .getJobs())
+                    .extracting(ActivatedJob::getProcessInstanceKey)
+                    .containsAll(processInstanceKeys));
+  }
+
+  private static RequestHandlingAllPartitions requestHandlingOver(final int partitionCount) {
+    return new RequestHandlingAllPartitions(partitionCount).strategy("AllPartitions");
   }
 }
