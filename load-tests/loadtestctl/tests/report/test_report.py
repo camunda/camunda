@@ -124,6 +124,19 @@ def test_should_report_output_file_error(tmp_path: Path, capsys: pytest.CaptureF
     assert f"Could not write output file '{output_file}'" in capsys.readouterr().err
 
 
+def test_should_report_directory_as_output_file_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    queries_file = write_single_query_file(tmp_path)
+
+    with (
+        mock.patch("loadtestctl.report.cli.PrometheusClient", return_value=successful_client()),
+        mock.patch("loadtestctl.report.cli.check_endpoint"),
+    ):
+        exit_code = run(["c8-ck-test", "--queries", str(queries_file), "--output", str(tmp_path)])
+
+    assert exit_code == 1
+    assert f"Could not write output file '{tmp_path}'" in capsys.readouterr().err
+
+
 def test_should_report_invalid_query_document(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     queries_file = tmp_path / "queries.yaml"
     queries_file.write_text("{}", encoding="utf-8")
