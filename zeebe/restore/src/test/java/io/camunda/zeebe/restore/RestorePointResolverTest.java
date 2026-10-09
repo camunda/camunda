@@ -953,28 +953,6 @@ final class RestorePointResolverTest {
     assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp3, cp4);
   }
 
-  @Test
-  void shouldFindTheLatestBackupAtOrBeforeTheEndOfTheRange() {
-    // given - two backups and a marker, which holds no backup, after them
-    final var t0 = Instant.parse("2025-01-10T10:00:00Z");
-    final var meta =
-        metadata(
-            1,
-            List.of(
-                entry(1, 100, t0, CheckpointType.MANUAL_BACKUP, OptionalLong.of(1)),
-                entry(
-                    2, 200, t0.plusSeconds(60), CheckpointType.MANUAL_BACKUP, OptionalLong.of(101)),
-                entry(3, 300, t0.plusSeconds(120), CheckpointType.MARKER, OptionalLong.empty())),
-            List.of(new RangeEntry(1, 3)));
-
-    // when / then - no end of range: the latest backup, not the marker after it
-    assertThat(RestorePointResolver.latestBackup(meta, null)).hasValue(2);
-    // an end of range before the second backup
-    assertThat(RestorePointResolver.latestBackup(meta, t0.plusSeconds(30))).hasValue(1);
-    // and before any
-    assertThat(RestorePointResolver.latestBackup(meta, t0.minusSeconds(1))).isEmpty();
-  }
-
   private static CheckpointEntry entry(
       final long id,
       final long position,

@@ -109,8 +109,6 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.addJobStreamService(
           PHYSICAL_TENANT_ID, mock(JobStreamService.class));
       clusterConfigurationService = mock(ClusterConfigurationService.class);
-      when(clusterConfigurationService.getPartitionDistribution(any()))
-          .thenReturn(PartitionDistribution.NO_PARTITIONS);
       when(clusterConfigurationService.getLatestPartitionDistribution(any()))
           .thenReturn(CompletableActorFuture.completed(PartitionDistribution.NO_PARTITIONS));
       mockClusterConfiguration = mock(CurrentClusterConfiguration.class);

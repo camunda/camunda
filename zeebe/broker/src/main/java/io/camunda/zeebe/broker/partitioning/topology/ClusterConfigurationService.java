@@ -31,8 +31,6 @@ import org.jspecify.annotations.Nullable;
 
 public interface ClusterConfigurationService extends AsyncClosable {
 
-  PartitionDistribution getPartitionDistribution(String physicalTenantId);
-
   Map<String, PartitionDistribution> getPartitionDistribution();
 
   default void registerPartitionChangeExecutors(
