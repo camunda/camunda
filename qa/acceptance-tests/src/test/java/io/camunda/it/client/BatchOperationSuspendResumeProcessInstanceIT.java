@@ -24,6 +24,10 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.Strings;
 import org.junit.jupiter.api.Test;
 
+// Coverage plan SR-I-04: batch suspension and resumption target the right instances.
+// This file is the whole case in
+// qa/coverage/product-hub-3526.yml; if it moves or is renamed, update that plan —
+// CI fails when the plan claims a case the suite no longer carries.
 @MultiDbTest
 public class BatchOperationSuspendResumeProcessInstanceIT {
 

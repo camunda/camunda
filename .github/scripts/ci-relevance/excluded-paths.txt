@@ -18,3 +18,8 @@
 
 # ── Load test actions ────────────────────────────────────────────────────────
 .github/actions/await-load-test/**
+
+# ── Coverage plan validation ─────────────────────────────────────────────────
+# Reads qa/coverage/ and the test files those plans point at; compiles nothing.
+.github/workflows/check-coverage-plans.yml
+.github/scripts/coverage-plan-check/**

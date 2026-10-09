@@ -25,6 +25,10 @@ import java.util.Objects;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+// Coverage plan SR-I-02: state and suspendedDate are searchable, filterable and
+// sortable. This file is the whole case in
+// qa/coverage/product-hub-3526.yml; if it moves or is renamed, update that plan —
+// CI fails when the plan claims a case the suite no longer carries.
 @MultiDbTest
 public class ProcessInstanceSuspendedSearchIT {
 

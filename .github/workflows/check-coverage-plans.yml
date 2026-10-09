@@ -1,0 +1,104 @@
+name: Check coverage plans
+
+# A coverage plan under qa/coverage/ is a reviewed, machine-readable list of the
+# automated cases an epic needs. The coverage gate in
+# camunda/c8-cross-component-e2e-tests reads these plans and reports their
+# statuses onto product PRs, so a case still marked `automated` after its test
+# was deleted or renamed is reported as coverage that does not exist.
+#
+# Nothing wrote that status back, and nothing checked it. This job does: it runs
+# the plan validator with its spec-file checks on, which is only possible in this
+# repository, because here the plan and the suite it points at are in one
+# checkout.
+#
+# See camunda/camunda#65183 and camunda/team-test-automation#83.
+
+on:
+  pull_request:
+    paths:
+      - 'qa/**'
+      - 'service/src/test/**'
+      - 'webapp/client/**'
+      - '.github/scripts/coverage-plan-check/**'
+      - '.github/workflows/check-coverage-plans.yml'
+  # The PR filter above covers every path the current plans point at, with
+  # headroom. It still has to be widened by hand when a plan starts pointing
+  # somewhere new, so a PR that moves a test outside it would slip through. The
+  # unfiltered push and schedule runs below are the backstop: a stale filter then
+  # costs one merge of delay rather than silence.
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 6 * * 1-5'  # weekdays at 06:00 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CHECK_DIR: .github/scripts/coverage-plan-check
+
+jobs:
+  validate:
+    name: Validate qa/coverage plans
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '26'
+
+      - name: Install validator dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CHECK_DIR }}
+
+      - name: Validate coverage plans
+        id: validate
+        run: |
+          # Run from the repository root: the validator resolves every spec
+          # `path` in a plan against the working directory, so this is what lets
+          # it check the plan against the suite rather than only against itself.
+          #
+          # `shell: bash` runs with `pipefail`, so a validation failure still
+          # fails this step through the tee.
+          node "$CHECK_DIR/coverage-plan.mjs" validate qa/coverage \
+            2>&1 | tee "$RUNNER_TEMP/coverage-plans.txt"
+
+      - name: Report result in summary
+        if: always()
+        run: |
+          {
+            echo '## Coverage plans'
+            echo ''
+            echo '```'
+            cat "$RUNNER_TEMP/coverage-plans.txt" 2>/dev/null || echo '(no output)'
+            echo '```'
+            echo ''
+            if [[ '${{ steps.validate.outcome }}' == 'failure' ]]; then
+              echo 'A plan under `qa/coverage/` no longer matches the suite. Either the'
+              echo 'case was not written, its test does not carry the case id, or the test'
+              echo 'moved and the plan was not updated. The coverage gate reports these'
+              echo 'statuses onto product PRs, so a wrong one is read as fact.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

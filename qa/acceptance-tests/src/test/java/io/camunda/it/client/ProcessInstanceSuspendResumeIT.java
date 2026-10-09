@@ -41,6 +41,10 @@ import java.util.Set;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 
+// Coverage plan SR-I-01: a suspended instance advances no element, hands out no job, and
+// rejects the requests that would move it. This file is the whole case in
+// qa/coverage/product-hub-3526.yml; if it moves or is renamed, update that plan —
+// CI fails when the plan claims a case the suite no longer carries.
 @MultiDbTest
 public class ProcessInstanceSuspendResumeIT {
 

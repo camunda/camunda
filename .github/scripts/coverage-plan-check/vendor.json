@@ -1,0 +1,7 @@
+{
+  "source_repo": "camunda/c8-cross-component-e2e-tests",
+  "source_path": "scripts/coverage-plan.mjs",
+  "source_ref": "c737d6abcbeed6d3724e3261f5a494ca7e1aedaf",
+  "vendored_path": ".github/scripts/coverage-plan-check/coverage-plan.mjs",
+  "note": "Machine-readable so the source repository can check this copy for drift. Keep source_ref in step with the vendored file."
+}

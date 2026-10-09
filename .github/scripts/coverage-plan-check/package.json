@@ -1,0 +1,10 @@
+{
+  "name": "coverage-plan-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Validates the coverage plans under qa/coverage/ against this repository's test suite. Run from the repository root: node .github/scripts/coverage-plan-check/coverage-plan.mjs validate qa/coverage",
+  "type": "module",
+  "dependencies": {
+    "yaml": "^2.4.0"
+  }
+}
