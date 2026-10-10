@@ -28,6 +28,9 @@ import org.slf4j.Logger;
  * #close()}.
  */
 public final class BackgroundTaskManager implements CloseableSilently {
+  private static final long START_DELAY_MS =
+      Long.getLong("zeebe.experimental.exporterTaskStartDelayMs", 0);
+  private static final long START_STAGGER_MS = 1000;
   private final int partitionId;
   private final Logger logger;
   private final ScheduledThreadPoolExecutor executor;
@@ -66,7 +69,12 @@ public final class BackgroundTaskManager implements CloseableSilently {
         tasks.size());
     for (; submittedTasks < tasks.size(); submittedTasks++) {
       final var task = tasks.get(submittedTasks);
-      executor.submit(task);
+      if (START_DELAY_MS == 0) {
+        executor.submit(task);
+      } else {
+        executor.schedule(
+            task, START_DELAY_MS + submittedTasks * START_STAGGER_MS, TimeUnit.MILLISECONDS);
+      }
     }
   }
 
