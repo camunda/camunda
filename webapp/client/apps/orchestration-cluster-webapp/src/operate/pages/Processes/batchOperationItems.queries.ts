@@ -50,7 +50,7 @@ function batchOperationItemsForInstancesQueryOptions(body: QueryBatchOperationIt
 				const page = await fetchBatchOperationItems(
 					{
 						...body,
-						sort: [{field: 'itemKey', order: 'asc'}],
+						sort: [{field: 'itemKey', order: 'ASC'}],
 						page: {after, limit: PAGE_LIMIT},
 					},
 					signal,

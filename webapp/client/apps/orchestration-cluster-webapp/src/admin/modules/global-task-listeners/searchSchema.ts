@@ -16,7 +16,7 @@ const SORTABLE_FIELDS = ['id', 'type', 'afterNonGlobal', 'priority'] as const;
 const globalTaskListenersSearchSchema = z.object({
 	search: z.coerce.string().optional(),
 	sortField: z.enum(SORTABLE_FIELDS).optional(),
-	sortOrder: z.enum(['asc', 'desc']).optional(),
+	sortOrder: z.enum(['ASC', 'DESC']).optional(),
 	page: z.number().int().positive().optional(),
 	pageSize: z.literal(PAGE_SIZES).optional(),
 });

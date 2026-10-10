@@ -90,7 +90,7 @@ const AuthorizationsTable: React.FC<AuthorizationsTableProps> = ({
 
 	const sortState = useMemo<SortingState>(() => {
 		const {field, order} = getEffectiveSort(search, resourceType);
-		return [{id: field, desc: order === 'desc'}];
+		return [{id: field, desc: order === 'DESC'}];
 	}, [resourceType, search]);
 
 	const handleSortingChange = useCallback(
@@ -99,7 +99,7 @@ const AuthorizationsTable: React.FC<AuthorizationsTableProps> = ({
 
 			onSearchChange({
 				sortField: sorted?.id as AuthorizationsSearch['sortField'],
-				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'desc' : 'asc',
+				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'DESC' : 'ASC',
 				page: undefined,
 			});
 		},

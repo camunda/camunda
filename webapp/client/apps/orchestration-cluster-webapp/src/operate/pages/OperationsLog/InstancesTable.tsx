@@ -17,6 +17,7 @@ import {
 	type QueryAuditLogsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
+import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 import {logger} from '#/operate/shared/utils/logger';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
@@ -40,7 +41,8 @@ import {TableContainer} from './styled';
 import {formatToISO} from './utils';
 import type {OperationsLogSearch} from './operationsLog.schema';
 
-const DEFAULT_SORT = 'timestamp+desc';
+const DEFAULT_SORT = {field: 'timestamp', order: 'DESC'} as const;
+const sortSearchParamSchema = createSortSearchParamSchema(auditLogSortFieldEnum);
 
 const combineDefinitionResults = (results: UseQueryResult<GetProcessDefinitionResponseBody>[]) => ({
 	names: Object.fromEntries(
@@ -72,10 +74,10 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 		[decisionDefinitions],
 	);
 
-	const [rawSortField, rawSortOrder] = (search.sort ?? DEFAULT_SORT).split('+');
-	const parsedSortField = auditLogSortFieldEnum.safeParse(rawSortField);
-	const sortField = parsedSortField.success ? parsedSortField.data : 'timestamp';
-	const sortOrder = rawSortOrder === 'asc' ? 'asc' : 'desc';
+	const {field: sortField, order: sortOrder} = useMemo(
+		() => sortSearchParamSchema.safeParse(search.sort).data ?? DEFAULT_SORT,
+		[search.sort],
+	);
 
 	const requestFilter: NonNullable<QueryAuditLogsRequestBody['filter']> = {
 		category: {$neq: 'ADMIN'},
@@ -231,7 +233,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 			label: t('operate.operationsLog.table.date'),
 			sortKey: 'timestamp',
 			isDefault: true,
-			defaultOrder: 'desc' as const,
+			defaultOrder: 'DESC' as const,
 			render: (row: AuditLog) => formatTimestamp(row.timestamp),
 		},
 		{

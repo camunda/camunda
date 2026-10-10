@@ -8,12 +8,16 @@
 
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate, useSearch} from '@tanstack/react-router';
+import {z} from 'zod';
 import {Checkbox, DataTable, type DataTableColumn, type SortingConfig} from '@camunda/design-system';
+import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
 import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
 import {cn} from '#/shared/cn';
+import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
-type SortOrder = 'asc' | 'desc';
+
+const sortSearchParamSchema = createSortSearchParamSchema(z.string());
 type TableSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 type Column<TRow> = {
@@ -21,7 +25,7 @@ type Column<TRow> = {
 	label: string;
 	sortKey?: string;
 	isDefault?: boolean;
-	defaultOrder?: SortOrder;
+	defaultOrder?: QuerySortOrder;
 	render: (row: TRow) => React.ReactNode;
 };
 
@@ -73,7 +77,7 @@ type BaseProps<TRow> = {
 	loadingNextPageLabel: string;
 	emptyState?: React.ReactNode;
 	hideHeaderWhenEmpty?: boolean;
-	onSort?: (sortKey: string, order: SortOrder) => void;
+	onSort?: (sortKey: string, order: QuerySortOrder) => void;
 	onVerticalScrollStartReach?: () => void;
 	onVerticalScrollEndReach?: () => void;
 	'data-testid'?: string;
@@ -540,17 +544,18 @@ function SortableTable<TRow>(props: Props<TRow>) {
 
 	const navigate = useNavigate();
 	const search = useSearch({strict: false}) as {sort?: string};
-	const [currentSortKey, currentSortOrderRaw] = (search.sort ?? '').split('+') as [string, SortOrder | undefined];
+	const {field: currentSortKey, order: currentSortOrder} = useMemo(
+		() => sortSearchParamSchema.safeParse(search.sort).data ?? {field: '', order: undefined},
+		[search.sort],
+	);
 
 	const defaultColumn = columns.find((column) => column.isDefault);
 	const activeColumn =
 		currentSortKey === '' ? defaultColumn : columns.find((column) => column.sortKey === currentSortKey);
-	const activeOrder: SortOrder =
-		(currentSortKey === activeColumn?.sortKey ? currentSortOrderRaw : undefined) ??
-		activeColumn?.defaultOrder ??
-		'desc';
+	const activeOrder: QuerySortOrder =
+		(currentSortKey === activeColumn?.sortKey ? currentSortOrder : undefined) ?? activeColumn?.defaultOrder ?? 'DESC';
 	const sortState: SortingState =
-		activeColumn?.sortKey !== undefined ? [{id: activeColumn.sortKey, desc: activeOrder === 'desc'}] : [];
+		activeColumn?.sortKey !== undefined ? [{id: activeColumn.sortKey, desc: activeOrder === 'DESC'}] : [];
 	const hasSortableColumns = columns.some((column) => column.sortKey !== undefined);
 
 	const handleSortingChange = (next: SortingState) => {
@@ -562,11 +567,11 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		}
 
 		const isActive = clickedColumn.sortKey === activeColumn?.sortKey;
-		const order: SortOrder = isActive
-			? activeOrder === 'asc'
-				? 'desc'
-				: 'asc'
-			: (clickedColumn.defaultOrder ?? 'desc');
+		const order: QuerySortOrder = isActive
+			? activeOrder === 'ASC'
+				? 'DESC'
+				: 'ASC'
+			: (clickedColumn.defaultOrder ?? 'DESC');
 
 		onSort?.(clickedColumn.sortKey, order);
 		void navigate({to: '.', search: (prev) => ({...prev, sort: `${clickedColumn.sortKey}+${order}`})});

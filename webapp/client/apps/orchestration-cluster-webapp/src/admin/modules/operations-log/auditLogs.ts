@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryAuditLogsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {QueryAuditLogsRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DEFAULT_PAGE_SIZE, type OperationsLogSearch} from './searchSchema';
 
-const DEFAULT_SORT: QueryAuditLogsRequestBody['sort'] = [{field: 'timestamp', order: 'desc'}];
+const DEFAULT_SORT: QueryAuditLogsRequestBody['sort'] = [{field: 'timestamp', order: 'DESC'}];
 
 // This page only ever shows admin-category audit logs — hardcoded, not user-facing.
 const ADMIN_CATEGORY_FILTER = {$eq: 'ADMIN'} as const;
@@ -19,7 +19,7 @@ function getAuditLogsRequestBody(search: OperationsLogSearch): QueryAuditLogsReq
 	const isAuthorizationEntity = search.entityType === 'AUTHORIZATION';
 
 	return {
-		sort: search.sortField === undefined ? DEFAULT_SORT : [{field: search.sortField, order: search.sortOrder ?? 'asc'}],
+		sort: search.sortField === undefined ? DEFAULT_SORT : [{field: search.sortField, order: search.sortOrder ?? 'ASC'}],
 		filter: {
 			category: ADMIN_CATEGORY_FILTER,
 			operationType: search.operationType,

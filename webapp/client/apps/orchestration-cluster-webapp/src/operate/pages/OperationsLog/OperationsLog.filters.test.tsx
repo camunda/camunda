@@ -43,6 +43,7 @@ import {
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {createQueryDecisionDefinitionsResponse} from '#/shared-test-modules/api-mocks/decision-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {isCursorForwardPagination} from '#/shared-test-modules/api-mocks/shared';
 import {logger} from '#/operate/shared/utils/logger';
 import {OperationsLog} from './OperationsLog';
 import {operationsLogSearchSchema, stripLegacyFilters} from './operationsLog.schema';
@@ -275,7 +276,7 @@ describe('Operations Log saved filters', () => {
 				if (body.filter?.isLatestVersion) {
 					return HttpResponse.json(
 						createQueryProcessDefinitionsResponse(
-							body.page?.after
+							isCursorForwardPagination(body.page) && body.page.after
 								? {items: [B_VERSION_2]}
 								: {
 										items: [otherProcessInTenant],
@@ -299,7 +300,7 @@ describe('Operations Log saved filters', () => {
 				}
 				return HttpResponse.json(
 					createQueryProcessDefinitionsResponse(
-						body.page?.after
+						isCursorForwardPagination(body.page) && body.page.after
 							? {items: [B_VERSION_2]}
 							: {items: [], page: {totalItems: 1, hasMoreTotalItems: false, endCursor: 'page-2'}},
 					),
@@ -454,7 +455,7 @@ describe('Operations Log saved filters', () => {
 				if (body.filter?.processDefinitionId) {
 					return HttpResponse.json(
 						createQueryProcessDefinitionsResponse(
-							body.page?.after
+							isCursorForwardPagination(body.page) && body.page.after
 								? {items: [], page: {totalItems: 10000, hasMoreTotalItems: true}}
 								: {items: [A_VERSION_1], page: {totalItems: 10000, hasMoreTotalItems: true, endCursor: 'end'}},
 						),
@@ -681,7 +682,7 @@ describe('Operations Log saved filters', () => {
 					lookupRequests.push(body);
 					return HttpResponse.json(
 						createQueryProcessDefinitionsResponse(
-							body.page?.after
+							isCursorForwardPagination(body.page) && body.page.after
 								? {items: [B_VERSION_2]}
 								: {
 										items: [createProcessDefinition({...A_VERSION_1, version: 2})],

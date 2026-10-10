@@ -34,7 +34,8 @@ const BatchOperationLink = createLink(OperationLink);
 const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 	const navigate = useNavigate();
 	const {t, i18n} = useTranslation();
-	const query = useQuery({...batchOperationsOptions({page, pageSize, sort}), placeholderData: keepPreviousData});
+	const options = useMemo(() => batchOperationsOptions({page, pageSize, sort}), [page, pageSize, sort]);
+	const query = useQuery({...options, placeholderData: keepPreviousData});
 
 	useEffect(() => {
 		const updateTitle = () => {
@@ -53,7 +54,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 				key: 'operationType',
 				label: t('operate.batchOperations.operation'),
 				sortKey: 'operationType',
-				defaultOrder: 'desc' as const,
+				defaultOrder: 'DESC' as const,
 				render: (row: BatchOperation) => (
 					<BatchOperationLink
 						to="/operate/batch-operations/$batchOperationKey"
@@ -67,7 +68,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 				key: 'state',
 				label: t('operate.batchOperations.state'),
 				sortKey: 'state',
-				defaultOrder: 'desc' as const,
+				defaultOrder: 'DESC' as const,
 				render: (row: BatchOperation) => <BatchStateIndicator state={row.state} />,
 			},
 			{
@@ -85,14 +86,14 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 				key: 'actor',
 				label: t('operate.batchOperations.actor'),
 				sortKey: 'actorId',
-				defaultOrder: 'desc' as const,
+				defaultOrder: 'DESC' as const,
 				render: (row: BatchOperation) => row.actorId ?? '--',
 			},
 			{
 				key: 'startDate',
 				label: t('operate.batchOperations.startDate'),
 				sortKey: 'startDate',
-				defaultOrder: 'desc' as const,
+				defaultOrder: 'DESC' as const,
 				render: (row: BatchOperation) => formatStartDate(row.startDate),
 			},
 		],

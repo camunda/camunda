@@ -23,7 +23,7 @@ const ROWS: Row[] = [
 ];
 
 const COLUMNS: React.ComponentProps<typeof SortableTable<Row>>['columns'] = [
-	{key: 'name', label: 'Name', sortKey: 'name', isDefault: true, defaultOrder: 'asc', render: (row) => row.name},
+	{key: 'name', label: 'Name', sortKey: 'name', isDefault: true, defaultOrder: 'ASC', render: (row) => row.name},
 	{key: 'id', label: 'Id', render: (row) => row.id},
 ];
 
@@ -317,14 +317,14 @@ describe('<SortableTable />', () => {
 
 		// then
 		await expect.element(screen.getByRole('cell', {name: 'Name'})).toHaveAttribute('aria-sort', 'descending');
-		expect(screen.router.state.location.search).toEqual({sort: 'name+desc'});
+		expect(screen.router.state.location.search).toEqual({sort: 'name+DESC'});
 
 		// when
 		await userEvent.click(nameSortButton);
 
 		// then
 		await expect.element(screen.getByRole('cell', {name: 'Name'})).toHaveAttribute('aria-sort', 'ascending');
-		expect(screen.router.state.location.search).toEqual({sort: 'name+asc'});
+		expect(screen.router.state.location.search).toEqual({sort: 'name+ASC'});
 	});
 
 	it('should call onSort with the resolved key and order when a column header is clicked', async () => {
@@ -336,15 +336,15 @@ describe('<SortableTable />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Name'}));
 
 		// then
-		expect(onSort).toHaveBeenCalledWith('name', 'desc');
+		expect(onSort).toHaveBeenCalledWith('name', 'DESC');
 	});
 
 	it('should start a non-default sortable column at its own default order on first click', async () => {
 		// given
 		const onSort = vi.fn();
 		const columns: RenderOverrides['columns'] = [
-			{key: 'name', label: 'Name', sortKey: 'name', isDefault: true, defaultOrder: 'asc', render: (row) => row.name},
-			{key: 'id', label: 'Id', sortKey: 'id', defaultOrder: 'desc', render: (row) => row.id},
+			{key: 'name', label: 'Name', sortKey: 'name', isDefault: true, defaultOrder: 'ASC', render: (row) => row.name},
+			{key: 'id', label: 'Id', sortKey: 'id', defaultOrder: 'DESC', render: (row) => row.id},
 		];
 		const screen = await renderTable({columns, onSort});
 
@@ -352,7 +352,7 @@ describe('<SortableTable />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Id'}));
 
 		// then
-		expect(onSort).toHaveBeenCalledWith('id', 'desc');
+		expect(onSort).toHaveBeenCalledWith('id', 'DESC');
 	});
 
 	it('should not render a sort button for a column without a sortKey', async () => {
@@ -369,7 +369,7 @@ describe('<SortableTable />', () => {
 			{key: 'name', label: 'Name', sortKey: 'name', isDefault: true, render: (row) => row.name},
 			{key: 'id', label: 'Id', sortKey: 'id', render: (row) => row.id},
 		];
-		const screen = await renderTable({columns}, {initialEntry: '/?sort=id%2Basc'});
+		const screen = await renderTable({columns}, {initialEntry: '/?sort=id%2BASC'});
 
 		// then
 		await expect.element(screen.getByRole('cell', {name: 'Id'})).toHaveAttribute('aria-sort', 'ascending');

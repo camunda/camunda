@@ -8,12 +8,19 @@
 
 import i18n from 'i18next';
 import {z} from 'zod';
-import {processInstanceVariableFilterSchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {smartTransformValue, type VariableCondition} from './variableConditions';
 
-const jsonConditionSchema = processInstanceVariableFilterSchema.extend({
+const jsonConditionSchema = z.strictObject({
 	name: z.string().min(1, {error: () => i18n.t('operate.processes.variableFilter.nameRequired')}),
-	value: z.union([processInstanceVariableFilterSchema.shape.value, z.object({$in: z.array(z.unknown())}).strict()]),
+	value: z.union([
+		z.string(),
+		z.strictObject({$eq: z.string()}),
+		z.strictObject({$neq: z.string()}),
+		z.strictObject({$like: z.string()}),
+		z.strictObject({$in: z.array(z.unknown())}),
+		z.strictObject({$notIn: z.array(z.string())}),
+		z.strictObject({$exists: z.boolean()}),
+	]),
 });
 const jsonConditionsSchema = z.array(jsonConditionSchema);
 const jsonConditionsEditorSchema = z.toJSONSchema(jsonConditionsSchema);

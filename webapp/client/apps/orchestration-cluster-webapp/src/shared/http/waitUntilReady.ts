@@ -7,7 +7,7 @@
  */
 
 import type {QueryClient, QueryFunction, QueryKey} from '@tanstack/react-query';
-import {requestErrorSchema} from '#/shared/http/request';
+import {requestErrorSchema} from './request';
 
 type WaitUntilReadyOptions<TData> = {
 	isReady?: (data: TData) => boolean;

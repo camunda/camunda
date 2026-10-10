@@ -7,12 +7,13 @@
  */
 
 import {z} from 'zod';
+import {permissionTypeSchema} from '@camunda/camunda-api-zod-schemas/8.11';
 
 const CONFIG_PREFIX = /^\s*window\.clientConfig\s*=\s*/;
 
 const adminClientConfigSchema = z.object({
 	idPattern: z.string().nullish(),
-	resourcePermissions: z.record(z.string(), z.array(z.string())).default({}),
+	resourcePermissions: z.record(z.string(), z.array(permissionTypeSchema)).default({}),
 	defaultRoleIds: z.array(z.string()).default([]),
 });
 

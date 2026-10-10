@@ -10,7 +10,7 @@ import {useContext, useLayoutEffect, useRef} from 'react';
 import {createPortal} from 'react-dom';
 import styled, {keyframes} from 'styled-components';
 import {useTranslation} from 'react-i18next';
-import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DiagramOverlayContext} from '#/operate/shared/Diagram/DiagramOverlayContext';
 import type {OverlayEntry} from '#/operate/shared/Diagram/overlayTypes';
 import {StateOverlay, type ElementState} from '#/operate/shared/StateOverlay/StateOverlay';

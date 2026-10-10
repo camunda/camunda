@@ -16,7 +16,7 @@ describe('getAuthorizationsRequestBody', () => {
 
 		// then
 		expect(body).toEqual({
-			sort: [{field: 'ownerId', order: 'asc'}],
+			sort: [{field: 'ownerId', order: 'ASC'}],
 			filter: {resourceType: 'PROCESS_DEFINITION'},
 			page: {from: 0, limit: 20},
 		});
@@ -46,24 +46,24 @@ describe('getAuthorizationsRequestBody', () => {
 
 	it('should translate sorting and pagination from the search', () => {
 		// given
-		const search = {sortField: 'resourceId', sortOrder: 'desc', page: 3, pageSize: 50} as const;
+		const search = {sortField: 'resourceId', sortOrder: 'DESC', page: 3, pageSize: 50} as const;
 
 		// when
 		const body = getAuthorizationsRequestBody(search, 'AUTHORIZATION');
 
 		// then
-		expect(body.sort).toEqual([{field: 'resourceId', order: 'desc'}]);
+		expect(body.sort).toEqual([{field: 'resourceId', order: 'DESC'}]);
 		expect(body.page).toEqual({from: 100, limit: 50});
 	});
 
 	it('should fall back to the default sort when sorting USER_TASK by resource ID', () => {
 		// given
-		const search = {sortField: 'resourceId', sortOrder: 'desc'} as const;
+		const search = {sortField: 'resourceId', sortOrder: 'DESC'} as const;
 
 		// when
 		const body = getAuthorizationsRequestBody(search, 'USER_TASK');
 
 		// then
-		expect(body.sort).toEqual([{field: 'ownerId', order: 'asc'}]);
+		expect(body.sort).toEqual([{field: 'ownerId', order: 'ASC'}]);
 	});
 });

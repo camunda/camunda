@@ -6,110 +6,46 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	advancedStringFilterSchema,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from './common';
-import {elementInstanceTypeSchema} from './element-instance';
-import {jobKindSchema, listenerEventTypeSchema} from './job';
+import {API_VERSION, type Endpoint} from './common';
+import {conditionWaitStateDetailsSchema} from './gen/zod/conditionWaitStateDetailsSchema';
+import {elementInstanceWaitStateQueryResultSchema} from './gen/zod/elementInstanceWaitStateQueryResultSchema';
+import {elementInstanceWaitStateQuerySchema} from './gen/zod/elementInstanceWaitStateQuerySchema';
+import {elementInstanceWaitStateResultSchema} from './gen/zod/elementInstanceWaitStateResultSchema';
+import {jobWaitStateDetailsSchema} from './gen/zod/jobWaitStateDetailsSchema';
+import {messageWaitStateDetailsSchema} from './gen/zod/messageWaitStateDetailsSchema';
+import {signalWaitStateDetailsSchema} from './gen/zod/signalWaitStateDetailsSchema';
+import {timerWaitStateDetailsSchema} from './gen/zod/timerWaitStateDetailsSchema';
+import {userTaskWaitStateDetailsSchema} from './gen/zod/userTaskWaitStateDetailsSchema';
+import {waitStateDetailsSchema} from './gen/zod/waitStateDetailsSchema';
+import {waitStateElementTypeEnumSchema} from './gen/zod/waitStateElementTypeEnumSchema';
+import {waitStateTypeEnumSchema} from './gen/zod/waitStateTypeEnumSchema';
+import type {ConditionWaitStateDetails} from './gen/types/ConditionWaitStateDetails';
+import type {ElementInstanceWaitStateQuery} from './gen/types/ElementInstanceWaitStateQuery';
+import type {ElementInstanceWaitStateQueryResult} from './gen/types/ElementInstanceWaitStateQueryResult';
+import type {ElementInstanceWaitStateResult} from './gen/types/ElementInstanceWaitStateResult';
+import type {JobWaitStateDetails} from './gen/types/JobWaitStateDetails';
+import type {MessageWaitStateDetails} from './gen/types/MessageWaitStateDetails';
+import type {SignalWaitStateDetails} from './gen/types/SignalWaitStateDetails';
+import type {TimerWaitStateDetails} from './gen/types/TimerWaitStateDetails';
+import type {UserTaskWaitStateDetails} from './gen/types/UserTaskWaitStateDetails';
+import type {WaitStateDetails} from './gen/types/WaitStateDetails';
+import type {WaitStateElementTypeEnumKey} from './gen/types/WaitStateElementTypeEnum';
+import type {WaitStateTypeEnumKey} from './gen/types/WaitStateTypeEnum';
 
-const waitStateTypeSchema = z.enum(['JOB', 'MESSAGE', 'USER_TASK', 'TIMER', 'SIGNAL', 'CONDITION']);
-type WaitStateType = z.infer<typeof waitStateTypeSchema>;
+const waitStateTypeSchema = waitStateTypeEnumSchema;
+type WaitStateType = WaitStateTypeEnumKey;
 
-const waitStateElementTypeSchema = elementInstanceTypeSchema;
-type WaitStateElementType = z.infer<typeof waitStateElementTypeSchema>;
+const waitStateElementTypeSchema = waitStateElementTypeEnumSchema;
+type WaitStateElementType = WaitStateElementTypeEnumKey;
 
-const jobWaitStateDetailsSchema = z.object({
-	waitStateType: z.literal('JOB'),
-	jobKey: z.string(),
-	jobType: z.string(),
-	jobKind: jobKindSchema,
-	listenerEventType: listenerEventTypeSchema.nullable(),
-	retries: z.number().int().nullable(),
-});
-type JobWaitStateDetails = z.infer<typeof jobWaitStateDetailsSchema>;
+const elementInstanceInspectionSchema = elementInstanceWaitStateResultSchema;
+type ElementInstanceInspection = ElementInstanceWaitStateResult;
 
-const messageWaitStateDetailsSchema = z.object({
-	waitStateType: z.literal('MESSAGE'),
-	messageName: z.string(),
-	correlationKey: z.string().nullable(),
-});
-type MessageWaitStateDetails = z.infer<typeof messageWaitStateDetailsSchema>;
+const queryElementInstanceInspectionRequestBodySchema = elementInstanceWaitStateQuerySchema;
+type QueryElementInstanceInspectionRequestBody = ElementInstanceWaitStateQuery;
 
-const userTaskWaitStateDetailsSchema = z.object({
-	waitStateType: z.literal('USER_TASK'),
-	taskKey: z.string(),
-	dueDate: z.string().nullable(),
-});
-type UserTaskWaitStateDetails = z.infer<typeof userTaskWaitStateDetailsSchema>;
-
-const timerWaitStateDetailsSchema = z.object({
-	waitStateType: z.literal('TIMER'),
-	// UNIX epoch timestamp in milliseconds.
-	dueDate: z.number().int().nullable(),
-	repetitions: z.number().int().nullable(),
-});
-type TimerWaitStateDetails = z.infer<typeof timerWaitStateDetailsSchema>;
-
-const signalWaitStateDetailsSchema = z.object({
-	waitStateType: z.literal('SIGNAL'),
-	signalName: z.string(),
-});
-type SignalWaitStateDetails = z.infer<typeof signalWaitStateDetailsSchema>;
-
-const conditionWaitStateDetailsSchema = z.object({
-	waitStateType: z.literal('CONDITION'),
-	expression: z.string(),
-	events: z.array(z.string()),
-});
-type ConditionWaitStateDetails = z.infer<typeof conditionWaitStateDetailsSchema>;
-
-const waitStateDetailsSchema = z.discriminatedUnion('waitStateType', [
-	jobWaitStateDetailsSchema,
-	messageWaitStateDetailsSchema,
-	userTaskWaitStateDetailsSchema,
-	timerWaitStateDetailsSchema,
-	signalWaitStateDetailsSchema,
-	conditionWaitStateDetailsSchema,
-]);
-type WaitStateDetails = z.infer<typeof waitStateDetailsSchema>;
-
-const elementInstanceInspectionSchema = z.object({
-	rootProcessInstanceKey: z.string().nullable(),
-	processInstanceKey: z.string(),
-	elementInstanceKey: z.string(),
-	elementId: z.string(),
-	elementType: waitStateElementTypeSchema,
-	tenantId: z.string(),
-	bpmnProcessId: z.string(),
-	details: waitStateDetailsSchema,
-});
-type ElementInstanceInspection = z.infer<typeof elementInstanceInspectionSchema>;
-
-const queryElementInstanceInspectionFilterSchema = z
-	.object({
-		processInstanceKey: advancedStringFilterSchema,
-		rootProcessInstanceKey: advancedStringFilterSchema,
-		elementInstanceKey: advancedStringFilterSchema,
-		elementId: advancedStringFilterSchema,
-		elementType: z.union([waitStateElementTypeSchema, getEnumFilterSchema(waitStateElementTypeSchema)]),
-		waitStateType: z.union([waitStateTypeSchema, getEnumFilterSchema(waitStateTypeSchema)]),
-	})
-	.partial();
-
-const queryElementInstanceInspectionRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['elementInstanceKey', 'processInstanceKey', 'rootProcessInstanceKey', 'elementId'] as const,
-	filter: queryElementInstanceInspectionFilterSchema,
-});
-type QueryElementInstanceInspectionRequestBody = z.infer<typeof queryElementInstanceInspectionRequestBodySchema>;
-
-const queryElementInstanceInspectionResponseBodySchema = getQueryResponseBodySchema(elementInstanceInspectionSchema);
-type QueryElementInstanceInspectionResponseBody = z.infer<typeof queryElementInstanceInspectionResponseBodySchema>;
+const queryElementInstanceInspectionResponseBodySchema = elementInstanceWaitStateQueryResultSchema;
+type QueryElementInstanceInspectionResponseBody = ElementInstanceWaitStateQueryResult;
 
 const queryElementInstanceInspection = {
 	method: 'POST',

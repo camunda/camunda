@@ -38,7 +38,7 @@ function formatModalHeading(auditLog: AuditLog): string {
 	return `${spaceAndCapitalize(auditLog.operationType)} ${spaceAndCapitalize(auditLog.entityType)}`;
 }
 
-function hasActorIcon(auditLog: AuditLog): boolean {
+function hasActorIcon(auditLog: AuditLog): auditLog is AuditLog & {actorType: 'USER' | 'CLIENT'} {
 	return auditLog.actorType === 'USER' || auditLog.actorType === 'CLIENT';
 }
 

@@ -24,8 +24,8 @@ import {
 	Text,
 } from '@camunda/design-system';
 import type {User} from '@camunda/camunda-api-zod-schemas/8.11';
-import {isValidEmail} from '#/admin/modules/users/userValidation';
-import {useUserMutations} from '#/admin/modules/users/useUserMutations';
+import {isValidEmail} from './userValidation';
+import {useUserMutations} from './useUserMutations';
 
 type FormValues = {
 	name: string;
@@ -74,7 +74,7 @@ const EditUserModal: React.FC<Props> = ({isOpen, user, onClose}) => {
 			>
 				{isOpen ? (
 					<Form<FormValues>
-						initialValues={{name: user.name, email: user.email, password: '', confirmPassword: ''}}
+						initialValues={{name: user.name ?? '', email: user.email ?? '', password: '', confirmPassword: ''}}
 						onSubmit={handleSubmit}
 						validate={(values) => {
 							const errors: Partial<Record<keyof FormValues, string>> = {};

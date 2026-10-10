@@ -20,8 +20,8 @@ import {
 	Input,
 	Label,
 } from '@camunda/design-system';
-import {isValidEmail, isValidUsername} from '#/admin/modules/users/userValidation';
-import {useUserMutations} from '#/admin/modules/users/useUserMutations';
+import {isValidEmail, isValidUsername} from './userValidation';
+import {useUserMutations} from './useUserMutations';
 
 type FormValues = {
 	username: string;

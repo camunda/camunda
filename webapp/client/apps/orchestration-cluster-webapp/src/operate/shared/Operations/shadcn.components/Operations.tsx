@@ -10,7 +10,7 @@ import {OperationItems} from '#/operate/shared/OperationItems/shadcn.components/
 import {LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {OperationRenderer} from './OperationRenderer';
-import type {OperationConfig} from '../types';
+import type {OperationConfig} from '#/operate/shared/Operations/types';
 
 type Props = {
 	operations: OperationConfig[];

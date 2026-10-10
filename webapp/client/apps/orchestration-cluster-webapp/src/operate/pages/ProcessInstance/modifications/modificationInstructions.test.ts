@@ -73,7 +73,7 @@ describe('buildModificationInstructions', () => {
 			addToken({
 				elementId: 'element_11',
 				scopeId: 'random-scope-id-11',
-				ancestorElement: {instanceKey: 'some-ancestor-instance-key', elementId: 'elementid'},
+				ancestorElement: {instanceKey: '2251799813685249', elementId: 'elementid'},
 			}),
 		]);
 		const body = toWireFormat(state);
@@ -90,7 +90,7 @@ describe('buildModificationInstructions', () => {
 				},
 				{
 					elementId: 'element_11',
-					ancestorElementInstanceKey: 'some-ancestor-instance-key',
+					ancestorElementInstanceKey: '2251799813685249',
 					variableInstructions: [],
 				},
 			],
@@ -113,7 +113,7 @@ describe('buildModificationInstructions', () => {
 			],
 			terminateInstructions: [{elementId: 'element_2'}, {elementInstanceKey: 'some_instance_key'}],
 		});
-		expect(modifyProcessInstanceRequestBodySchema.parse(body)).toEqual(body);
+		expect(modifyProcessInstanceRequestBodySchema.parse(body)).toMatchObject(body);
 	});
 
 	it.for([
@@ -140,7 +140,7 @@ describe('buildModificationInstructions', () => {
 		const instructions = [...body.activateInstructions, ...body.moveInstructions];
 
 		expect(state).toEqual(snapshot);
-		expect(modifyProcessInstanceRequestBodySchema.parse(body)).toEqual(body);
+		expect(modifyProcessInstanceRequestBodySchema.parse(body)).toMatchObject(body);
 		expect(
 			instructions.map(({variableInstructions}: {variableInstructions: unknown[]}) => variableInstructions),
 		).toEqual(

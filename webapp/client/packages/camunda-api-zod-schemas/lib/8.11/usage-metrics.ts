@@ -6,29 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
+import {usageMetricsResponseSchema} from './gen/zod/usageMetricsResponseSchema';
+import type {GetUsageMetricsQuery} from './gen/types/GetUsageMetrics';
+import type {UsageMetricsResponse} from './gen/types/UsageMetricsResponse';
 
-const usageMetricsItemSchema = z.object({
-	assignees: z.number().int(),
-	processInstances: z.number().int(),
-	decisionInstances: z.number().int(),
-});
-const usageMetricsSchema = usageMetricsItemSchema.extend({
-	activeTenants: z.number().int(),
-	tenants: z.record(z.string(), usageMetricsItemSchema),
-});
-type UsageMetrics = z.infer<typeof usageMetricsSchema>;
+const usageMetricsSchema = usageMetricsResponseSchema;
+type UsageMetrics = UsageMetricsResponse;
 
 const getUsageMetricsResponseBodySchema = usageMetricsSchema;
-type GetUsageMetricsResponseBody = z.infer<typeof getUsageMetricsResponseBodySchema>;
+type GetUsageMetricsResponseBody = UsageMetricsResponse;
 
-type GetUsageMetricsParams = {
-	startTime: string;
-	endTime: string;
-	tenantId?: string;
-	withTenants?: boolean;
-};
+type GetUsageMetricsParams = GetUsageMetricsQuery;
 
 const getUsageMetrics = {
 	method: 'GET',

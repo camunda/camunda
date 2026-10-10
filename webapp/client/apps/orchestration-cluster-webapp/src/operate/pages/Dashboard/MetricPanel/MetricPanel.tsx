@@ -11,8 +11,8 @@ import {SkeletonText} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
-import {runningInstancesCountQuery} from '../useRunningInstancesCount';
-import {runningOrAllInstancesFilter} from '../processesLinkFilters';
+import {runningInstancesCountQuery} from '#/operate/pages/Dashboard/useRunningInstancesCount';
+import {runningOrAllInstancesFilter} from '#/operate/pages/Dashboard/processesLinkFilters';
 import {Title, PendingTitle, LabelContainer, Label, ErrorContainer} from './styled';
 
 const MetricPanel: React.FC = () => {

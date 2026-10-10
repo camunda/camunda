@@ -52,7 +52,11 @@ import {
 	createBatchOperation,
 	createQueryBatchOperationItemsResponse,
 } from '#/shared-test-modules/api-mocks/batch-operations';
-import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {
+	createPaginatedResponse,
+	createProblemDetails,
+	isCursorForwardPagination,
+} from '#/shared-test-modules/api-mocks/shared';
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {
 	createGetProcessDefinitionStatisticsResponse,
@@ -519,7 +523,7 @@ test.describe('Operate processes page', () => {
 				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
 				const filter = body.filter?.processDefinitionId;
 				if ((typeof filter === 'string' ? filter : filter?.$eq) === 'orders') {
-					if (body.page?.after === 'orders-next') {
+					if (isCursorForwardPagination(body.page) && body.page.after === 'orders-next') {
 						await delay(1500);
 						return HttpResponse.json(
 							createQueryProcessDefinitionsResponse({

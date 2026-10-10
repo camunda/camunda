@@ -21,7 +21,7 @@ import {StructuredList} from '#/operate/shared/StructuredList/StructuredList';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {request, type RequestError} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
-import {getDecisionDefinitionName} from '../getDecisionDefinitionName';
+import {getDecisionDefinitionName} from '#/operate/pages/Decisions/getDecisionDefinitionName';
 import {handleOperationError} from '#/operate/shared/utils/handleOperationError';
 
 type Props = {
@@ -126,7 +126,7 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 						rows={[
 							{
 								key: definition.decisionRequirementsKey,
-								columns: [{cellContent: definition.decisionRequirementsName ?? definition.decisionRequirementsId}],
+								columns: [{cellContent: definition.decisionRequirementsName || definition.decisionRequirementsId}],
 							},
 						]}
 					/>

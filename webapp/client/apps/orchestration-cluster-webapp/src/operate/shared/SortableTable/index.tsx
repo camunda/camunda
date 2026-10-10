@@ -7,6 +7,7 @@
  */
 
 import {Fragment, useId, useRef, useState} from 'react';
+import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
 import {
 	Table,
 	TableBody,
@@ -29,7 +30,7 @@ import {
 	FailureDetailRow,
 } from './styled';
 import {ColumnHeader} from './ColumnHeader';
-import {InfiniteScroller} from '../InfiniteScroller/InfiniteScroller';
+import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
 
 type TableSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -38,7 +39,7 @@ type Column<TRow> = {
 	label: string;
 	sortKey?: string;
 	isDefault?: boolean;
-	defaultOrder?: 'asc' | 'desc';
+	defaultOrder?: QuerySortOrder;
 	render: (row: TRow) => React.ReactNode;
 };
 
@@ -52,7 +53,7 @@ type BaseProps<TRow> = {
 	// Renders the empty state on its own, without the table/column headers, instead of inside a
 	// full-width table row. Opt-in because most tables keep their headers visible when empty.
 	hideHeaderWhenEmpty?: boolean;
-	onSort?: (sortKey: string, order: 'asc' | 'desc') => void;
+	onSort?: (sortKey: string, order: QuerySortOrder) => void;
 	onVerticalScrollStartReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollStartReach'];
 	onVerticalScrollEndReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollEndReach'];
 	rowOperationError?: (row: TRow) => {message: string; expandLabel: string} | null;

@@ -112,7 +112,7 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 						operationType: 'MIGRATE_PROCESS_INSTANCE',
 						state: 'COMPLETED',
 					},
-					sort: [{field: 'processedDate', order: 'desc'}],
+					sort: [{field: 'processedDate', order: 'DESC'}],
 					page: {from: 0, limit: 1},
 				}),
 				signal,
@@ -132,7 +132,7 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 	const root: ElementInstance = {
 		...processInstance,
 		elementId: processInstance.processDefinitionId,
-		elementName: processInstance.processDefinitionName,
+		elementName: processInstance.processDefinitionName ?? processInstance.processDefinitionId,
 		elementInstanceKey: processInstanceId,
 		type: 'PROCESS',
 		state: processInstance.state === 'SUSPENDED' ? 'ACTIVE' : processInstance.state,

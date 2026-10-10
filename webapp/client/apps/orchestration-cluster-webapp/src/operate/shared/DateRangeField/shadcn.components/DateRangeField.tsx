@@ -9,7 +9,7 @@
 import {Field, useField, useForm} from 'react-final-form';
 import {Calendar} from '@camunda/design-system/icons';
 import {IconTextInput} from '#/operate/shared/IconInput/shadcn.components/IconTextInput';
-import {formatDate, formatISODate, formatTime} from '../formatDate';
+import {formatDate, formatISODate, formatTime} from '#/operate/shared/DateRangeField/formatDate';
 import {DateRangeModal} from './DateRangeModal/DateRangeModal';
 
 type Props = {

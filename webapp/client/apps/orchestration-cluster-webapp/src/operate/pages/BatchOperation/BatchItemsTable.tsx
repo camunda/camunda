@@ -29,7 +29,8 @@ type Props = {
 const ProcessInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(ItemLink);
 
 type ProcessInstanceKeyCellProps = {
-	processInstanceKey: string;
+	/** `null` for items that do not target a process instance (e.g. decision or definition items). */
+	processInstanceKey: string | null;
 	fallbackText: string;
 	label: string;
 	disableLink?: boolean;
@@ -40,20 +41,23 @@ const ProcessInstanceKeyCell: React.FC<ProcessInstanceKeyCellProps> = ({
 	fallbackText,
 	label,
 	disableLink = false,
-}) => (
-	<ItemKeyCell itemKey={processInstanceKey} fallbackText={fallbackText}>
-		{disableLink ? undefined : (
-			<ProcessInstanceLink
-				to="/operate/processes/$processInstanceId"
-				params={{processInstanceId: processInstanceKey}}
-				title={label}
-				aria-label={label}
-			>
-				{processInstanceKey}
-			</ProcessInstanceLink>
-		)}
-	</ItemKeyCell>
-);
+}) =>
+	processInstanceKey === null ? (
+		<>{fallbackText}</>
+	) : (
+		<ItemKeyCell itemKey={processInstanceKey} fallbackText={fallbackText}>
+			{disableLink ? undefined : (
+				<ProcessInstanceLink
+					to="/operate/processes/$processInstanceId"
+					params={{processInstanceId: processInstanceKey}}
+					title={label}
+					aria-label={label}
+				>
+					{processInstanceKey}
+				</ProcessInstanceLink>
+			)}
+		</ItemKeyCell>
+	);
 
 const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType}) => {
 	const {t} = useTranslation();

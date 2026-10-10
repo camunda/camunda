@@ -14,7 +14,7 @@ function getGlobalTaskListenersRequestBody(search: GlobalTaskListenersSearch): Q
 	const searchTerm = search.search?.trim();
 
 	return {
-		sort: [{field: search.sortField ?? 'id', order: search.sortOrder ?? 'asc'}],
+		sort: [{field: search.sortField ?? 'id', order: search.sortOrder ?? 'ASC'}],
 		filter: searchTerm === undefined || searchTerm === '' ? undefined : {id: {$like: `*${searchTerm}*`}},
 		page: {from: ((search.page ?? 1) - 1) * pageSize, limit: pageSize},
 	};

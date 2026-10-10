@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ComponentAccessDeniedError, ComponentNotAvailableError, type CamundaComponent} from '#/shared/errors';
+import {ComponentAccessDeniedError, ComponentNotAvailableError, type CamundaComponent} from './errors';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 
 function hasComponentAccess(component: CamundaComponent, authorizedComponents: string[]): boolean {

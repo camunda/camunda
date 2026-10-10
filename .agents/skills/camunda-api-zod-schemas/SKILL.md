@@ -1,278 +1,111 @@
 ---
 name: camunda-api-zod-schemas
-description: Use when you add, change, or remove schemas, fields, enums, filters, sort fields, or endpoints in @camunda/camunda-api-zod-schemas (webapp/client/packages/camunda-api-zod-schemas/); when you align the package with the OpenAPI spec in zeebe/gateway-protocol/src/main/proto/v2/; when you add a module or a release-line version tree; or when you increase the package version and prepare a release.
+description: Use when you change the OpenAPI spec in zeebe/gateway-protocol/src/main/proto/v2/, or schemas, types, or endpoints in @camunda/camunda-api-zod-schemas (webapp/client/packages/camunda-api-zod-schemas/); when a spec change breaks the webapp types; when you add a module or a version tree; or when you prepare a release of the package.
 ---
 
 # Camunda API Zod schemas
 
-This skill tells you how to change the package `@camunda/camunda-api-zod-schemas`.
-The package is in `webapp/client/packages/camunda-api-zod-schemas/`. This skill calls this folder `PKG`.
+`PKG` is `webapp/client/packages/camunda-api-zod-schemas/`. The spec is `zeebe/gateway-protocol/src/main/proto/v2/`.
 
-The package contains Zod schemas, TypeScript types, and endpoint objects for the Camunda 8 REST API (v2).
-People write the package manually. No tool generates the package from the OpenAPI spec.
+The package has two types of version tree in `PKG/lib/<version>/`:
 
-NOTE: The manual schemas are temporary. Issue [#39752](https://github.com/camunda/camunda/issues/39752) will add automatic generation from the OpenAPI spec. Before you start, read the status of the issue. If the issue is closed, examine the package for a generation script before you change the schemas manually.
+- **Generated tree** (8.11). Scripts generate `lib/8.11/gen/` from the spec. The modules give public names to the gen schemas.
+- **Manual trees** (8.8, 8.9, 8.10). People write the Zod schemas manually.
 
-For the mapping tables, the names, and the changelog template, refer to [reference.md](reference.md).
-
-## Terms
-
-| Term         | Meaning                                                                        |
-| ------------ | ------------------------------------------------------------------------------ |
-| Spec         | The OpenAPI files in `zeebe/gateway-protocol/src/main/proto/v2/`               |
-| Version tree | A folder `PKG/lib/<version>/` for one release line, for example `8.10`         |
-| Module       | One file in a version tree, for example `agent-instance.ts`                    |
-| Consumer     | A package that uses this package, for example the orchestration cluster webapp |
+For the rules, the pods, and the changelog template, refer to [reference.md](reference.md).
 
 ## Rules
 
-- The spec is the reference. Do not add a field, enum value, or endpoint that is not in the spec.
-- Each version tree is a full copy. A change in one tree does not go into the other trees.
-- Keep the Camunda license header at the top of each file.
-- Put `type X = z.infer<typeof xSchema>;` immediately after each schema.
-- Use one `export {…}` block and one `export type {…}` block at the end of each file. Do not use inline `export`.
-- Use the helpers in `common.ts`. Do not write a new filter or query helper if a helper can do the work.
-- Do not change the `common.ts` imports of a module. Tree 8.8 and some other modules import `lib/common.ts`. The other modules import `./common`.
-- Consumers read `PKG/dist/`, not `PKG/lib/`. After you change `lib/`, build the package again.
-- If a different task (for example, a UI feature) causes the schema change, tell the user before you change the package.
+- The spec is the reference. If the gen output does not agree with the backend, correct the spec.
+- Do not change `gen/` or `specs/`. Git ignores them, and the scripts write them again.
+- Keep the public names that `lib/<version>/index.ts` exports.
+- A change in one version tree does not go into the other trees.
+- If a spec change causes type errors in the webapp, correct the webapp in the same PR. Ask the pod that owns the changed code to review the PR.
 
-## Procedure 1: Find the spec
+## Procedure 1: Change the spec
 
-1. Find the API path in `zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml`.
-2. Find the domain file in the `$ref` of the path, for example `agent-instances.yaml`.
-3. In the domain file, find the schemas of the entity:
-   - `<Entity>Result`: the response item.
-   - `<Entity>Filter`: the search filter.
-   - `<Entity>SearchQuerySortRequest`: the sort fields.
-   - `<Entity>...Enum`: the enum values.
-4. Find the version markers. Operations use `x-added-in-version`. Properties use `x-properties-added-in-version`.
+1. Change the YAML files of the spec.
+2. In `webapp/client/`, generate the schemas and build the package:
 
-NOTE: Do not use the spec copies in `target/` or `dist/` folders. These copies can be old.
+   ```bash
+   npm run prepare -w @camunda/camunda-api-zod-schemas
+   ```
 
-```bash
-grep -n "agent-instances" zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml
-grep -n "AgentInstanceMetrics:" -A40 zeebe/gateway-protocol/src/main/proto/v2/agent-instances.yaml
-```
+3. Do Procedure 5.
+4. If the webapp has type errors, correct the webapp code and the MSW mocks. Do not use `@ts-expect-error` or casts.
+5. Tell the user which pods must review the PR. Refer to "Pods" in [reference.md](reference.md).
+6. Do Procedure 4.
 
-## Procedure 2: Select the version trees
+NOTE: The CI job "Check / C8 REST OpenAPI / Webapp Client types" does steps 2 and 3 for each spec change. If the job fails, the PR cannot merge.
 
-1. Find the release line of the change. Use the version markers from Procedure 1.
-2. If the spec has no version marker, use the release line of `main`. The `<version>` in the root `pom.xml` shows it. For example, `8.11.0-SNAPSHOT` is release line 8.11.
-3. Change the version tree of that release line.
-4. Also change all version trees that have a higher version.
-5. Do not change version trees that have a lower version. Change them only if the task tells you to do this.
-6. If no version tree exists for the release line, do Procedure 6 first.
-7. Tell the user which version trees you selected, and why.
+## Procedure 2: Change a module
 
-Example: the agent instance API has `x-added-in-version: "8.10"`.
-A new 8.10 property goes into `lib/8.10/agent-instance.ts` and `lib/8.11/agent-instance.ts`.
-
-```bash
-grep -m1 -n "<version>" pom.xml
-ls webapp/client/packages/camunda-api-zod-schemas/lib
-```
-
-## Procedure 3: Change a field or an enum
-
-1. Do Procedure 1 and Procedure 2.
-2. In each selected version tree, open `lib/<version>/<module>.ts`.
-3. Change the schema. Use the table "Spec to Zod" in [reference.md](reference.md).
-4. If the spec changes the filter, also change the filter schema.
-5. If the spec changes the sort fields, also change the `sortFields` array.
-6. If you remove a field or an enum value, find the consumer code that uses it. Change that code.
-7. Compare the module in all selected trees. Make sure that the change is the same in each tree.
-8. Do Procedure 7 and Procedure 8.
-
-Example (PR #62253):
-
-```diff
- const agentInstanceMetricsSchema = z.object({
- 	inputTokens: z.number(),
- 	outputTokens: z.number(),
-+	reasoningTokenCount: z.number(),
-+	cacheCreationTokenCount: z.number(),
-+	cacheReadTokenCount: z.number(),
- 	modelCalls: z.number(),
- 	toolCalls: z.number(),
- });
-```
-
-```bash
-diff PKG/lib/8.10/agent-instance.ts PKG/lib/8.11/agent-instance.ts
-```
-
-## Procedure 4: Add a schema or an endpoint to a module
-
-1. Do Procedure 1 and Procedure 2.
-2. In each selected version tree, open `lib/<version>/<module>.ts`.
-3. Add the schemas and the types. Use the table "Names" in [reference.md](reference.md).
-4. Add the endpoint object. If the URL has parameters, give them to `Endpoint<...>`:
+1. Find the version trees:
+   - The generated tree gets all spec changes. Change its module only to add or remove a public name.
+   - Change a manual tree only if the spec marks the change with its release line (`x-added-in-version`). Also change the higher manual trees.
+2. In a generated tree, use the rules in "Generated trees" in [reference.md](reference.md).
+3. In a manual tree, use the rules in "Manual trees" in [reference.md](reference.md).
+4. For a new endpoint, write the endpoint object manually:
 
    ```ts
    const getAgentInstance = {
    	method: 'GET',
    	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}` as const,
    } as const satisfies Endpoint<{agentInstanceKey: string}>;
-
-   const queryAgentInstances = {
-   	method: 'POST',
-   	getUrl: () => `/${API_VERSION}/agent-instances/search` as const,
-   } as const satisfies Endpoint;
    ```
 
-5. Add the new values to the `export {…}` block. Add the new types to the `export type {…}` block.
-6. Open `lib/<version>/index.ts`. Change it in three locations:
-   1. Add the endpoint to the import list of the module.
-   2. Add the endpoint to the `endpoints` object.
-   3. Add the new schemas and types to the `export {…} from './<module>';` block.
-7. Do not export the endpoint by name from `index.ts`. Consumers use `endpoints.<name>`.
-8. Do Procedure 7 and Procedure 8.
+5. Add the new names to the `export {…}` and `export type {…}` blocks of the module.
+6. In `lib/<version>/index.ts`, add the endpoint to the `endpoints` object. Export the new schemas and types.
+7. For a new module, also add an entry to `build.lib.entry` in `PKG/vite.config.ts` and to `exports` in `PKG/package.json`.
+8. Do Procedure 5 and Procedure 4.
 
-## Procedure 5: Add a module
+CAUTION: The build stops if it finds a circular import. Move shared schemas to a helper module, for example `processes.ts`.
 
-1. Make the file `lib/<version>/<module>.ts`. Copy the license header from a different module.
-2. Do Procedure 4 for the new file.
-3. In `PKG/vite.config.ts`, add an entry to `build.lib.entry`:
+## Procedure 3: Add a version tree
 
-   ```ts
-   '8.11/<module>': resolve(__dirname, 'lib/8.11/<module>.ts'),
-   ```
+Do this procedure when `webapp/client/package.json` shows a new release line, for example `8.12.0-SNAPSHOT`.
 
-4. In `PKG/package.json`, add an entry to `exports`:
-
-   ```json
-   "./8.11/<module>": {
-   	"import": {
-   		"types": "./dist/8.11/<module>.d.ts",
-   		"default": "./dist/8.11/<module>.js"
-   	}
-   },
-   ```
-
-5. Do steps 1 to 4 for each selected version tree.
-6. If two modules import schemas from each other, move the shared schemas to a helper module. Examples are `processes.ts` and `group-role.ts`.
-7. Do not add helper modules to `exports`.
-8. Do Procedure 7 and Procedure 8.
-
-CAUTION: The build stops if it finds a circular import. The plugin `vite-plugin-circular-dependency` does this check.
-
-## Procedure 6: Add a version tree
-
-Use this procedure when the spec adds a change for a release line that has no version tree.
-Commit `b923833bf06` is an example.
-
-1. Copy the highest version tree to a new folder:
+1. In `PKG/scripts/supported-versions.js`:
+   - For 8.11, set `branch` to `'stable/8.11'` and `input` to `'spec-snapshots/8.11/rest-api.yaml'`.
+   - Add 8.12 with `branch: 'main'`, `input: 'specs/8.12/rest-api.yaml'`, and `output: 'lib/8.12/gen'`.
+2. In `PKG`, copy the spec of 8.11 into the package. Then the build does not need the network:
 
    ```bash
-   cp -R PKG/lib/8.11 PKG/lib/8.12
+   npm run download-specs -- -v 8.11
+   mkdir -p spec-snapshots && cp -R specs/8.11 spec-snapshots/8.11
    ```
 
-2. In `PKG/vite.config.ts`, copy the entries of the highest tree. Change the version in the copies.
-3. In `PKG/package.json`, copy the `exports` entries of the highest tree. Change the version in the copies.
-4. Put the new change only in the new tree.
-5. If a lower tree has the change, remove the change from the lower tree.
-6. In the consumers that need the change, change the import to the new sub-path, for example `/8.12`.
-7. Add the new version to the version lists in these files:
-   - `docs/monorepo-docs/frontend/camunda-api-zod-schemas.md`
-   - `docs/monorepo-docs/frontend/project-outline.md`
-8. Do Procedure 7 and Procedure 8.
+3. In the `prepare` script of `PKG/package.json`, change `generate-schemas -- -v current` to `generate-schemas -- -v 8.11 -v current`.
+4. Add `packages/camunda-api-zod-schemas/spec-snapshots/` to `webapp/client/.prettierignore`.
+5. Copy `lib/8.11` to `lib/8.12`. Copy the 8.11 entries in `vite.config.ts` and in `exports` of `PKG/package.json`, and change the version.
+6. Add the new version to `docs/monorepo-docs/frontend/camunda-api-zod-schemas.md`.
+7. Do Procedure 5 and Procedure 4.
 
-## Procedure 7: Increase the version
+NOTE: If the spec in `stable/8.11` changes, do step 2 again.
 
-Do this procedure in the same PR as the schema change.
+## Procedure 4: Increase the version
 
-1. Find the current version in `PKG/package.json`.
-2. Find the versions on npm:
+1. If `npm view @camunda/camunda-api-zod-schemas versions --json` shows the version in `PKG/package.json`, increase the last number by one.
+2. Write the new version in `PKG/package.json`, `apps/orchestration-cluster-webapp/package.json`, and `packages/c8-mocks/package.json`.
+3. In `webapp/client/`, do `npm i`. Do not change `package-lock.json` manually.
+4. Add a section at the top of `PKG/CHANGELOG.md`. Use the template in [reference.md](reference.md).
 
-   ```bash
-   npm view @camunda/camunda-api-zod-schemas versions --json
-   ```
+## Procedure 5: Examine the change
 
-3. If the current version is not on npm and `CHANGELOG.md` has a section for it, add your change to that section. Then go to step 7.
-4. If the current version is on npm, increase the last number by one. For example, `0.0.93` becomes `0.0.94`.
-5. Write the new version in these files:
-   - `PKG/package.json` (`version`).
-   - `webapp/client/apps/orchestration-cluster-webapp/package.json` (`dependencies`).
-   - `webapp/client/packages/c8-mocks/package.json` (`devDependencies`).
-6. In `webapp/client/`, use this command to change `package-lock.json`. Do not change the lockfile manually.
+Do these commands in `webapp/client/`. If a command shows errors, correct the cause.
 
-   ```bash
-   npm i
-   ```
+```bash
+npm run prepare -w @camunda/camunda-api-zod-schemas   # if the spec or the scripts changed
+npm run typecheck                                     # all workspaces, also the consumers
+npm run lint
+npm run test:unit -w @camunda/orchestration-cluster-webapp -- --run src/<changed folder>
+```
 
-7. Add a section at the top of `PKG/CHANGELOG.md`, below `# Changelog`. Use the changelog template in [reference.md](reference.md).
-8. Do not change `operate/client` or `identity/client` in this PR. Refer to Procedure 9.
+## Procedure 6: Publish
 
-## Procedure 8: Examine the change
+CAUTION: A publish to npm is permanent. Do not start the workflow yourself.
 
-Do these steps in `webapp/client/`:
+1. After the merge, tell the user to start the workflow "Publish Zod Schemas to npm" from `main` with `dry_run` set to false.
+2. Offer PRs that set the new version in `operate/client` and `identity/client`. In each folder, do `npm i` and `npm run lint`.
 
-1. Build the package:
-
-   ```bash
-   npm run build -w @camunda/camunda-api-zod-schemas
-   ```
-
-2. Do the type check of the package:
-
-   ```bash
-   npm run typecheck -w @camunda/camunda-api-zod-schemas
-   ```
-
-3. Do the type check of all workspaces. This step examines the consumers:
-
-   ```bash
-   npm run typecheck
-   ```
-
-4. Format the package:
-
-   ```bash
-   npm run format -w @camunda/camunda-api-zod-schemas
-   ```
-
-5. Do the lint:
-
-   ```bash
-   npm run lint
-   ```
-
-6. If a command shows errors, find the cause and remove it.
-7. If a consumer type error occurs, change the consumer code or the MSW mocks in the consumer.
-
-NOTE: The package has no unit tests. The build, the type checks, and the lint are the only automatic checks.
-
-## Procedure 9: Publish and change the legacy consumers
-
-Do this procedure after the PR merges into `main`.
-
-CAUTION: The publish workflow sends the package to the public npm registry. You cannot undo a publish. Do not start the workflow yourself.
-
-1. Tell the user to start the workflow "Publish Zod Schemas to npm" (`.github/workflows/publish-zod-schemas.yml`).
-2. Tell the user to start it from `main` and to set `dry_run` to false. The user can use this command:
-
-   ```bash
-   gh workflow run publish-zod-schemas.yml --repo camunda/camunda --ref main -f dry_run=false
-   ```
-
-3. After the workflow completes, make sure that the new version is on npm:
-
-   ```bash
-   npm view @camunda/camunda-api-zod-schemas version
-   ```
-
-4. Offer to make the follow-up PRs for `operate/client` and `identity/client`.
-5. If the user agrees, do these steps in each folder:
-   1. In `package.json`, change `@camunda/camunda-api-zod-schemas` to the new version.
-   2. Use `npm i` to change the `package-lock.json` of that folder.
-   3. Use `npm run lint` to do the type check and the lint.
-
-NOTE: The `.npmrc` files contain `min-release-age=1`. If `npm i` cannot find the new version, wait one day. Then do the step again.
-
-## Examples
-
-| Change                   | Reference     | Files                                                                                                                  |
-| ------------------------ | ------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Field change and version | PR #62253     | `lib/8.10/agent-instance.ts`, `PKG/package.json`, `CHANGELOG.md`, 2 consumer `package.json` files, `package-lock.json` |
-| New version tree         | `b923833bf06` | `lib/8.11/*`, `vite.config.ts`, `PKG/package.json` exports, consumer imports                                           |
-| Version increase only    | `6b40fcd592f` | `PKG/package.json`, `CHANGELOG.md`, 2 consumer `package.json` files, `package-lock.json`                               |
+NOTE: `min-release-age=1` in `.npmrc` can stop `npm i` for one day.

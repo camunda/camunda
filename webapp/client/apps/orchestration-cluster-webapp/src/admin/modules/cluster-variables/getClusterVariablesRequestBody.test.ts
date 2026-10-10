@@ -19,7 +19,7 @@ describe('getClusterVariablesRequestBody', () => {
 
 		// then
 		expect(body).toEqual({
-			sort: [{field: 'name', order: 'asc'}],
+			sort: [{field: 'name', order: 'ASC'}],
 			filter: undefined,
 			page: {from: 0, limit: 20},
 		});
@@ -49,13 +49,13 @@ describe('getClusterVariablesRequestBody', () => {
 
 	it('should translate the page and page size into an offset', () => {
 		// given
-		const search = {page: 3, pageSize: 50 as const, sortOrder: 'desc' as const};
+		const search = {page: 3, pageSize: 50 as const, sortOrder: 'DESC' as const};
 
 		// when
 		const body = getClusterVariablesRequestBody(search);
 
 		// then
 		expect(body.page).toEqual({from: 100, limit: 50});
-		expect(body.sort).toEqual([{field: 'name', order: 'desc'}]);
+		expect(body.sort).toEqual([{field: 'name', order: 'DESC'}]);
 	});
 });

@@ -6,39 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
+import {messageCorrelationRequestSchema} from './gen/zod/messageCorrelationRequestSchema';
+import {messageCorrelationResultSchema} from './gen/zod/messageCorrelationResultSchema';
+import {messagePublicationRequestSchema} from './gen/zod/messagePublicationRequestSchema';
+import {messagePublicationResultSchema} from './gen/zod/messagePublicationResultSchema';
+import type {MessageCorrelationRequest} from './gen/types/MessageCorrelationRequest';
+import type {MessageCorrelationResult} from './gen/types/MessageCorrelationResult';
+import type {MessagePublicationRequest} from './gen/types/MessagePublicationRequest';
+import type {MessagePublicationResult} from './gen/types/MessagePublicationResult';
 
-const publishMessageRequestBodySchema = z.object({
-	name: z.string(),
-	correlationKey: z.string(),
-	timeToLive: z.number().int().optional(),
-	messageId: z.string().optional(),
-	variables: z.record(z.string(), z.unknown()).optional(),
-	tenantId: z.string().optional(),
-});
-type PublishMessageRequestBody = z.infer<typeof publishMessageRequestBodySchema>;
+const publishMessageRequestBodySchema = messagePublicationRequestSchema;
+type PublishMessageRequestBody = MessagePublicationRequest;
 
-const publishMessageResponseBodySchema = z.object({
-	tenantId: z.string(),
-	messageKey: z.string(),
-});
-type PublishMessageResponseBody = z.infer<typeof publishMessageResponseBodySchema>;
+const publishMessageResponseBodySchema = messagePublicationResultSchema;
+type PublishMessageResponseBody = MessagePublicationResult;
 
-const correlateMessageRequestBodySchema = z.object({
-	name: z.string(),
-	correlationKey: z.string(),
-	variables: z.record(z.string(), z.unknown()).optional(),
-	tenantId: z.string().optional(),
-});
-type CorrelateMessageRequestBody = z.infer<typeof correlateMessageRequestBodySchema>;
+const correlateMessageRequestBodySchema = messageCorrelationRequestSchema;
+type CorrelateMessageRequestBody = MessageCorrelationRequest;
 
-const correlateMessageResponseBodySchema = z.object({
-	tenantId: z.string(),
-	messageKey: z.string(),
-	processInstanceKey: z.string(),
-});
-type CorrelateMessageResponseBody = z.infer<typeof correlateMessageResponseBodySchema>;
+const correlateMessageResponseBodySchema = messageCorrelationResultSchema;
+type CorrelateMessageResponseBody = MessageCorrelationResult;
 
 const publishMessage = {
 	method: 'POST',

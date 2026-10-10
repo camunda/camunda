@@ -11,6 +11,9 @@ import type {CreateCancellationBatchOperationRequestBody} from '@camunda/camunda
 type SelectionFilter = CreateCancellationBatchOperationRequestBody['filter'];
 
 function canMatchActive(state: NonNullable<SelectionFilter['state']>) {
+	if (typeof state === 'string') {
+		return state === 'ACTIVE';
+	}
 	return (
 		(state.$eq === undefined || state.$eq === 'ACTIVE') &&
 		state.$neq !== 'ACTIVE' &&

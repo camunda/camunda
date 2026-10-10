@@ -34,4 +34,14 @@ function createProblemDetails(overrides?: Partial<ProblemDetails>): ProblemDetai
 	};
 }
 
-export {createPaginatedResponse, createProblemDetails};
+type PageWith<T, K extends string> = T extends unknown ? (K extends keyof T ? T : never) : never;
+
+function isOffsetPagination<T extends object>(page: T | undefined): page is PageWith<T, 'from'> {
+	return page !== undefined && 'from' in page;
+}
+
+function isCursorForwardPagination<T extends object>(page: T | undefined): page is PageWith<T, 'after'> {
+	return page !== undefined && 'after' in page;
+}
+
+export {createPaginatedResponse, createProblemDetails, isOffsetPagination, isCursorForwardPagination};

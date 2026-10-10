@@ -33,8 +33,9 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks/$userTaskKe
 	component: function HistoryRoute() {
 		const {userTaskKey} = Route.useParams();
 		const search = Route.useSearch();
+		const auditLogSort = useMemo(() => getAuditLogSort(search), [search]);
 		const {data, fetchNextPage, hasNextPage, isFetchingNextPage} = useSuspenseInfiniteQuery({
-			...queries.queryUserTaskAuditLogs(userTaskKey, getAuditLogsRequestBody(getAuditLogSort(search))),
+			...queries.queryUserTaskAuditLogs(userTaskKey, getAuditLogsRequestBody(auditLogSort)),
 			refetchInterval: 5000,
 		});
 		const auditLogs = useMemo(() => data.pages.flatMap((page) => page.items), [data]);
