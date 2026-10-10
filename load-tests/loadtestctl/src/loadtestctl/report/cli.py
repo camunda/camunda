@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import UTC
 from datetime import datetime
 from datetime import timedelta
+from functools import partial
 from pathlib import Path
 
 import click
@@ -22,6 +23,8 @@ DEFAULT_QUERIES_FILE = HERE / "report-queries.yaml"
 NAMESPACE_PATTERN = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
 DURATION_COMPONENT_PATTERN = re.compile(r"[1-9][0-9]*(ms|[ywdhms])")
 DURATION_UNIT_ORDER = ("y", "w", "d", "h", "m", "s", "ms")
+
+option = partial(click.option, show_envvar=True)
 
 
 @dataclass(frozen=True)
@@ -148,11 +151,10 @@ Examples:
 
 \b
   # CI monitor ingress with basic auth:
-  loadtestctl report c8-ck-baseline-20260814 \\
+  LOADTESTCTL_REPORT_PASSWORD="$PROM_PASS" loadtestctl report c8-ck-baseline-20260814 \\
     --duration-seconds 1800 \\
     --endpoint https://ci-monitor.benchmark.camunda.cloud \\
     --user "$PROM_USER" \\
-    --password "$PROM_PASS" \\
     --format csv > /tmp/load-test-report.csv"""
 
 
@@ -200,7 +202,7 @@ def run_report(options: Options) -> None:
 
 @click.command("report", help=REPORT_HELP, epilog=REPORT_EPILOG)
 @click.argument("namespace", type=NamespaceType())
-@click.option(
+@option(
     "-d",
     "--duration-seconds",
     "--duration",
@@ -209,7 +211,7 @@ def run_report(options: Options) -> None:
     show_default=True,
     help="Query window duration in seconds.",
 )
-@click.option(
+@option(
     "-r",
     "--rate-interval",
     "--rate",
@@ -218,7 +220,7 @@ def run_report(options: Options) -> None:
     show_default=True,
     help="Short rate interval for dashboard-style rollups.",
 )
-@click.option(
+@option(
     "-s",
     "--sample-step",
     "--step",
@@ -227,7 +229,7 @@ def run_report(options: Options) -> None:
     show_default=True,
     help="Subquery sample resolution for window summaries.",
 )
-@click.option(
+@option(
     "-q",
     "--queries",
     type=QueriesFileType(),
@@ -235,28 +237,27 @@ def run_report(options: Options) -> None:
     show_default=f"packaged {DEFAULT_QUERIES_FILE.name}",
     help="YAML query file path.",
 )
-@click.option(
+@option(
     "--start",
     type=EpochType(),
     default=None,
     show_default="now minus --duration-seconds",
     help="Start of the reporting window, RFC3339 or Unix timestamp. The window ends at start plus --duration-seconds.",
 )
-@click.option("-e", "--endpoint", default="http://localhost:9090", show_default=True, help="Prometheus base URL.")
-@click.option("-u", "--user", default="", help="Basic auth user for Prometheus.")
-@click.option("-p", "--password", default="", help="Basic auth password for Prometheus.")
-@click.option(
+@option("-e", "--endpoint", default="http://localhost:9090", show_default=True, help="Prometheus base URL.")
+@option("-u", "--user", default="", help="Basic auth user for Prometheus.")
+@option("-p", "--password", default="", help="Basic auth password for Prometheus.")
+@option(
     "-f",
     "--format",
-    "output_format",
     type=click.Choice(["json", "csv", "tsv"]),
     default="json",
     show_default=True,
     help="Output format.",
 )
-@click.option("--no-header", is_flag=True, help="Omit the CSV/TSV header row.")
-@click.option("--missing-value", default="NaN", show_default=True, help="CSV/TSV placeholder for missing metrics.")
-@click.option("-o", "--output", default=None, help="Write output to a file instead of stdout.")
+@option("--no-header", is_flag=True, help="Omit the CSV/TSV header row.")
+@option("--missing-value", default="NaN", show_default=True, help="CSV/TSV placeholder for missing metrics.")
+@option("-o", "--output", default=None, help="Write output to a file instead of stdout.")
 def report(
     namespace: str,
     duration_seconds: int,
@@ -267,7 +268,7 @@ def report(
     endpoint: str,
     user: str,
     password: str,
-    output_format: str,
+    format: str,
     no_header: bool,
     missing_value: str,
     output: str | None,
@@ -286,7 +287,7 @@ def report(
                 time_anchor=end_label,
                 start_label=start_label,
                 end_label=end_label,
-                output_format=output_format,
+                output_format=format,
                 include_header=not no_header,
                 missing_value=missing_value,
                 queries_file=queries,

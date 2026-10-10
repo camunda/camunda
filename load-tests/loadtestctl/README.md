@@ -54,6 +54,16 @@ Common options:
   `NaN`.
 - `-o`, `--output <path>`: write the report to a file.
 
+#### Environment variables
+
+Every option can also be set through an environment variable named
+`LOADTESTCTL_REPORT_<OPTION>`, for example `LOADTESTCTL_REPORT_DURATION_SECONDS`,
+`LOADTESTCTL_REPORT_ENDPOINT`, `LOADTESTCTL_REPORT_USER` and
+`LOADTESTCTL_REPORT_PASSWORD`. A flag on the command line overrides
+the variable, and an empty variable counts as unset. Prefer `LOADTESTCTL_REPORT_PASSWORD` over `--password`, because command line
+arguments are visible in the process list and the shell history. `uv run loadtestctl report
+--help` lists the variable next to each option.
+
 #### Examples
 
 Port-forwarded Prometheus, JSON:
@@ -89,11 +99,10 @@ uv run loadtestctl report c8-ck-base-8736-endurance \
 CI monitor ingress with basic auth:
 
 ```bash
-uv run loadtestctl report c8-ck-baseline-20260814 \
+LOADTESTCTL_REPORT_PASSWORD="$PROM_PASS" uv run loadtestctl report c8-ck-baseline-20260814 \
   --duration-seconds 1800 \
   --endpoint https://ci-monitor.benchmark.camunda.cloud \
   --user "$PROM_USER" \
-  --password "$PROM_PASS" \
   --format csv > /tmp/load-test-report.csv
 ```
 
