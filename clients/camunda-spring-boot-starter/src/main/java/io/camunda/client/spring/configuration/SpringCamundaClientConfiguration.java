@@ -15,6 +15,8 @@
  */
 package io.camunda.client.spring.configuration;
 
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
+
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
@@ -99,7 +101,8 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
 
   @Override
   public int getNumJobWorkerExecutionThreads() {
-    return camundaClientProperties.getExecutionThreads();
+    final Integer executionThreads = camundaClientProperties.getExecutionThreads();
+    return executionThreads != null ? executionThreads : DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
   }
 
   @Override
