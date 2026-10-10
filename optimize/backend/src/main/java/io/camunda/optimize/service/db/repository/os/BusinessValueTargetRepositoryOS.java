@@ -9,7 +9,9 @@ package io.camunda.optimize.service.db.repository.os;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_VALUE_TARGET_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.or;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.stringTerms;
 import static java.lang.String.format;
 
@@ -25,6 +27,11 @@ import java.util.List;
 import java.util.Optional;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
+<<<<<<< HEAD
+=======
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.BulkRequest;
+>>>>>>> 2a19ecdb (fix: measure every targeted definition regardless of target count)
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
@@ -101,8 +108,9 @@ public class BusinessValueTargetRepositoryOS implements BusinessValueTargetRepos
             .index(indexNameService.getOptimizeIndexAliasForIndex(BUSINESS_VALUE_TARGET_INDEX_NAME))
             .query(
                 tenantIds == null
-                    ? matchAll()
-                    : stringTerms(BusinessValueTargetIndex.TENANT_ID, tenantIds))
+                    ? hasAnyTarget()
+                    : and(
+                        stringTerms(BusinessValueTargetIndex.TENANT_ID, tenantIds), hasAnyTarget()))
             .size(LIST_FETCH_LIMIT);
     final List<BusinessValueTargetDto> targets =
         osClient.searchValues(requestBuilder, BusinessValueTargetDto.class);
@@ -122,9 +130,19 @@ public class BusinessValueTargetRepositoryOS implements BusinessValueTargetRepos
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(indexNameService.getOptimizeIndexAliasForIndex(BUSINESS_VALUE_TARGET_INDEX_NAME))
-            .query(matchAll())
+            .query(hasAnyTarget())
             .size(LIST_FETCH_LIMIT);
+    return osClient.scrollValues(requestBuilder, BusinessValueTargetDto.class);
+  }
 
-    return osClient.searchValues(requestBuilder, BusinessValueTargetDto.class);
+  /**
+   * Matches documents that still carry a target. Clearing a target rewrites its document with every
+   * target field null rather than deleting it, and null fields are not indexed, so this leaves
+   * cleared documents out of both the scan and the per-tenant read limit.
+   */
+  private static Query hasAnyTarget() {
+    return or(
+        exists(BusinessValueTargetIndex.CYCLE_TIME_TARGET_MILLIS),
+        exists(BusinessValueTargetIndex.AUTOMATION_RATE_TARGET_PCT));
   }
 }

@@ -13,6 +13,12 @@ import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Result;
+<<<<<<< HEAD
+=======
+import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+>>>>>>> 2a19ecdb (fix: measure every targeted definition regardless of target count)
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -26,6 +32,7 @@ import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import io.camunda.optimize.service.db.schema.index.BusinessValueTargetIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
 import java.util.Collection;
@@ -44,11 +51,15 @@ public class BusinessValueTargetRepositoryES implements BusinessValueTargetRepos
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private final ConfigurationService configurationService;
 
   public BusinessValueTargetRepositoryES(
-      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -106,20 +117,29 @@ public class BusinessValueTargetRepositoryES implements BusinessValueTargetRepos
     if (tenantIds != null && tenantIds.isEmpty()) {
       return List.of();
     }
-    final List<FieldValue> tenantFieldValues =
-        tenantIds == null ? null : tenantIds.stream().map(FieldValue::of).toList();
+    final Query query;
+    if (tenantIds == null) {
+      query = hasAnyTarget();
+    } else {
+      final List<FieldValue> tenantFieldValues = tenantIds.stream().map(FieldValue::of).toList();
+      query =
+          Query.of(
+              q ->
+                  q.bool(
+                      b ->
+                          b.filter(
+                                  f ->
+                                      f.terms(
+                                          t ->
+                                              t.field(BusinessValueTargetIndex.TENANT_ID)
+                                                  .terms(tt -> tt.value(tenantFieldValues))))
+                              .filter(hasAnyTarget())));
+    }
     final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, BUSINESS_VALUE_TARGET_INDEX_NAME)
-                    .query(
-                        q ->
-                            tenantFieldValues == null
-                                ? q.matchAll(m -> m)
-                                : q.terms(
-                                    t ->
-                                        t.field(BusinessValueTargetIndex.TENANT_ID)
-                                            .terms(tt -> tt.value(tenantFieldValues))))
+                    .query(query)
                     .size(LIST_FETCH_LIMIT));
     final SearchResponse<BusinessValueTargetDto> response;
     try {
@@ -145,12 +165,15 @@ public class BusinessValueTargetRepositoryES implements BusinessValueTargetRepos
 
   @Override
   public List<BusinessValueTargetDto> scanAll() {
+    final int scrollTimeout =
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds();
     final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, BUSINESS_VALUE_TARGET_INDEX_NAME)
-                    .query(q -> q.matchAll(m -> m))
-                    .size(LIST_FETCH_LIMIT));
+                    .query(hasAnyTarget())
+                    .size(LIST_FETCH_LIMIT)
+                    .scroll(Time.of(t -> t.time(scrollTimeout + "s"))));
     final SearchResponse<BusinessValueTargetDto> response;
     try {
       response = esClient.search(searchRequest, BusinessValueTargetDto.class);
@@ -159,7 +182,31 @@ public class BusinessValueTargetRepositoryES implements BusinessValueTargetRepos
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-    return ElasticsearchReaderUtil.mapHits(
-        response.hits(), BusinessValueTargetDto.class, objectMapper);
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
+        response, BusinessValueTargetDto.class, objectMapper, esClient, scrollTimeout);
+  }
+
+  /**
+   * Matches documents that still carry a target. Clearing a target rewrites its document with every
+   * target field null rather than deleting it, and null fields are not indexed, so this leaves
+   * cleared documents out of both the scan and the per-tenant read limit.
+   */
+  private static Query hasAnyTarget() {
+    return Query.of(
+        q ->
+            q.bool(
+                b ->
+                    b.should(
+                            s ->
+                                s.exists(
+                                    e ->
+                                        e.field(BusinessValueTargetIndex.CYCLE_TIME_TARGET_MILLIS)))
+                        .should(
+                            s ->
+                                s.exists(
+                                    e ->
+                                        e.field(
+                                            BusinessValueTargetIndex.AUTOMATION_RATE_TARGET_PCT)))
+                        .minimumShouldMatch("1")));
   }
 }
