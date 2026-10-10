@@ -48,6 +48,8 @@ public final class ProcessInstanceResumeProcessor
       MESSAGE_PREFIX + "no such process was found";
   private static final String PROCESS_NOT_SUSPENDED_MESSAGE =
       MESSAGE_PREFIX + "it is not currently suspended";
+  private static final String PROCESS_SUSPENDING_MESSAGE =
+      MESSAGE_PREFIX + "it is still suspending; retry once it is suspended";
   private static final String PROCESS_TERMINATING_MESSAGE =
       MESSAGE_PREFIX + "it is already being terminated";
 
@@ -93,6 +95,13 @@ public final class ProcessInstanceResumeProcessor
               responseWriter.writeRejectedResponseOnCommand(
                   command, rejection.type(), rejection.reason());
             });
+  }
+
+  @Override
+  public SuspensionAction onSuspending(final TypedRecord<ProcessInstanceRecord> record) {
+    // process instead of rejecting at the gate: validateSuspensionState rejects it, but only after
+    // the authorization check, so unauthorized callers can't observe the suspension state
+    return SuspensionAction.PROCESS;
   }
 
   @Override
@@ -154,6 +163,11 @@ public final class ProcessInstanceResumeProcessor
   private Either<Rejection, ElementInstance> validateSuspensionState(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
     final var marker = suspensionState.getSuspensionState(command.getKey());
+    if (marker == SuspensionState.State.SUSPENDING) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE, PROCESS_SUSPENDING_MESSAGE.formatted(command.getKey())));
+    }
     if (marker != SuspensionState.State.SUSPENDED && marker != SuspensionState.State.RESUMING) {
       return Either.left(
           new Rejection(
