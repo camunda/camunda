@@ -91,7 +91,7 @@ go version
 
 ### Markdown Formatting (Spotless / Flexmark)
 
-Most `*.md` files in this repo are checked by Spotless using the Flexmark formatter, including all files under `c8run/`. (Excluded paths include `**/node_modules/**`, `.github/instructions/**`, `.claude/skills/**`, and others defined in the root `pom.xml`.) CI will reject PRs with formatting violations. Key rules:
+Most `*.md` files in this repo are checked by Spotless using the Flexmark formatter, including all files under `c8run/`. (Excluded paths include `**/node_modules/**`, `.github/instructions/**`, `.agents/skills/**`, and others defined in the root `pom.xml`.) CI will reject PRs with formatting violations. Key rules:
 
 **Tables:**
 

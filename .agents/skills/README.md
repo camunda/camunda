@@ -1,13 +1,13 @@
-# .claude/skills/
+# .agents/skills/
 
-Repo-specific Claude Code skills for the Camunda monorepo. Skills are loaded automatically by
+Repo-specific agent skills for the Camunda monorepo. Skills are loaded automatically by
 the harness from this directory.
 
 Each skill lives in its own subdirectory and must contain a `SKILL.md` with a
 frontmatter `name` and `description` that the harness uses to load it:
 
 ```
-.claude/skills/
+.agents/skills/
   my-skill/
     SKILL.md        ← required: frontmatter + instructions
     reference.md    ← optional: supporting reference material
@@ -57,6 +57,6 @@ When a skill exists for a recurring operation, use it rather than improvising st
 
 ## Adding a new skill
 
-1. Create a new directory under `.claude/skills/` matching the skill name (lowercase, hyphens only).
+1. Create a new directory under `.agents/skills/` matching the skill name (lowercase, hyphens only).
 2. Add a `SKILL.md` with the required frontmatter (`name`, `description`) and instructions.
 3. Update the table above.
