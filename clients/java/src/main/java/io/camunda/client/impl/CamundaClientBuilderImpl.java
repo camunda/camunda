@@ -100,6 +100,7 @@ public final class CamundaClientBuilderImpl
   public static final Duration DEFAULT_KEEP_ALIVE = Duration.ofSeconds(45);
   public static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration DEFAULT_REQUEST_TIMEOUT_OFFSET = Duration.ofSeconds(1);
+  public static final Duration DEFAULT_RESPONSE_DEADLINE_MARGIN = Duration.ofSeconds(5);
   public static final List<String> DEFAULT_JOB_WORKER_TENANT_IDS =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   public static final TenantFilter DEFAULT_JOB_WORKER_TENANT_FILTER = TenantFilter.PROVIDED;
@@ -133,6 +134,7 @@ public final class CamundaClientBuilderImpl
   private Duration defaultMessageTimeToLive = DEFAULT_MESSAGE_TTL;
   private Duration defaultRequestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration defaultRequestTimeoutOffset = DEFAULT_REQUEST_TIMEOUT_OFFSET;
+  private Duration responseDeadlineMargin = DEFAULT_RESPONSE_DEADLINE_MARGIN;
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = DEFAULT_KEEP_ALIVE;
@@ -223,6 +225,11 @@ public final class CamundaClientBuilderImpl
   @Override
   public Duration getDefaultRequestTimeoutOffset() {
     return defaultRequestTimeoutOffset;
+  }
+
+  @Override
+  public Duration getResponseDeadlineMargin() {
+    return responseDeadlineMargin;
   }
 
   @Override
@@ -415,6 +422,11 @@ public final class CamundaClientBuilderImpl
         io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET);
 
     BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> responseDeadlineMargin(Duration.ofMillis(Long.parseLong(value))),
+        io.camunda.client.ClientProperties.RESPONSE_DEADLINE_MARGIN);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
         properties, this::caCertificatePath, CA_CERTIFICATE_PATH);
 
     BuilderUtils.applyPropertyValueIfNotNull(properties, this::keepAlive, KEEP_ALIVE);
@@ -604,6 +616,15 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder responseDeadlineMargin(final Duration margin) {
+    if (margin == null || margin.isNegative()) {
+      throw new IllegalArgumentException("The response deadline margin must not be negative");
+    }
+    responseDeadlineMargin = margin;
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder caCertificatePath(final String certificatePath) {
     this.certificatePath = certificatePath;
     return this;
@@ -768,6 +789,7 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
     BuilderUtils.appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
     BuilderUtils.appendProperty(sb, "defaultRequestTimeoutOffset", defaultRequestTimeoutOffset);
+    BuilderUtils.appendProperty(sb, "responseDeadlineMargin", responseDeadlineMargin);
     BuilderUtils.appendProperty(sb, "overrideAuthority", overrideAuthority);
     BuilderUtils.appendProperty(sb, "maxMessageSize", maxMessageSize);
     BuilderUtils.appendProperty(sb, "maxMetadataSize", maxMetadataSize);
@@ -845,6 +867,10 @@ public final class CamundaClientBuilderImpl
         properties,
         ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET,
         configuration.getDefaultRequestTimeoutOffset());
+    setDurationMillis(
+        properties,
+        ClientProperties.RESPONSE_DEADLINE_MARGIN,
+        configuration.getResponseDeadlineMargin());
     setIfNotNull(properties, CA_CERTIFICATE_PATH, configuration.getCaCertificatePath());
     setDurationMillis(properties, KEEP_ALIVE, configuration.getKeepAlive());
     setIfNotNull(properties, OVERRIDE_AUTHORITY, configuration.getOverrideAuthority());

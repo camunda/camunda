@@ -243,6 +243,19 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder defaultRequestTimeoutOffset(Duration requestTimeoutOffset);
 
   /**
+   * The extra time on top of a request's timeout after which the client gives up on a request that
+   * received no response at all, closes its connection and fails the request.
+   *
+   * <p>This is a safety net for requests that would otherwise wait forever, for example because the
+   * HTTP client does not enforce the request timeout on HTTP/2 connections. It never shortens the
+   * request timeout, so it only needs to be changed when responses are known to arrive later than 5
+   * seconds after the request timeout.
+   *
+   * <p>Default is 5 seconds.
+   */
+  CamundaClientBuilder responseDeadlineMargin(Duration margin);
+
+  /**
    * Path to a root CA certificate to be used instead of the certificate in the default default
    * store.
    */

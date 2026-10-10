@@ -18,6 +18,7 @@ package io.camunda.client;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobExceptionHandler;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.time.Duration;
@@ -102,6 +103,16 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#defaultRequestTimeoutOffset(Duration)
    */
   Duration getDefaultRequestTimeoutOffset();
+
+  /**
+   * A default method, unlike the other getters, so that implementations compiled against an earlier
+   * version keep working: they inherit the default margin of 5 seconds.
+   *
+   * @see CamundaClientBuilder#responseDeadlineMargin(Duration)
+   */
+  default Duration getResponseDeadlineMargin() {
+    return CamundaClientBuilderImpl.DEFAULT_RESPONSE_DEADLINE_MARGIN;
+  }
 
   /**
    * @see CamundaClientBuilder#caCertificatePath(String)

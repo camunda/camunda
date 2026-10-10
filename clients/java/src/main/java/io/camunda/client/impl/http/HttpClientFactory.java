@@ -49,6 +49,7 @@ import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.RequestConfig.Builder;
+import org.apache.hc.client5.http.impl.ChainElement;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -235,6 +236,17 @@ public class HttpClientFactory {
             i -> {
               builder.addExecInterceptorLast("handler-" + i, chainHandlers.get(i));
             });
+
+    // httpclient5 5.6.1+ no longer applies the response timeout on HTTP/2 connections, so bound
+    // every exchange client-side to avoid requests (and e.g. job workers) hanging forever.
+    // The handler goes directly in front of the transport, behind the configured handlers. That
+    // way the deadline only starts once the connection has been leased and connected, like the
+    // response timeout it backs up, and the retry executor in front of it runs it for every
+    // attempt and sees its failure.
+    builder.addExecInterceptorBefore(
+        ChainElement.MAIN_TRANSPORT.name(),
+        ResponseDeadlineChainHandler.NAME,
+        new ResponseDeadlineChainHandler(config.getResponseDeadlineMargin()));
 
     return builder;
   }
