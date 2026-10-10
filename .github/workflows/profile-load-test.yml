@@ -146,15 +146,15 @@ jobs:
           for event in cpu wall alloc; do
             ./load-tests/docs/scripts/executeProfiling.sh "${POD}" "${event}" "${PROFILER_OPTIONS}" "${TEST_TYPE}"
           done
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: flamegraph-${{ inputs.test-type }}-cpu-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
           path: ${{ matrix.pod }}-flamegraph*-cpu-*.html
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: flamegraph-${{ inputs.test-type }}-wall-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
           path: ${{ matrix.pod }}-flamegraph*-wall-*.html
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: flamegraph-${{ inputs.test-type }}-alloc-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
           path: ${{ matrix.pod }}-flamegraph*-alloc-*.html
@@ -218,7 +218,7 @@ jobs:
       - name: Execute profiling
         run: >
           ./load-tests/docs/scripts/executeProfiling.sh "${POD}" cpu "${PROFILER_OPTIONS}" "${TEST_TYPE}"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: flamegraph-${{ inputs.test-type }}-cpu-${{ inputs.pod }}-${{ steps.run-date.outputs.date }}
           path: ${{ inputs.pod }}*
