@@ -54,6 +54,16 @@ Common options:
   `NaN`.
 - `-o`, `--output <path>`: write the report to a file.
 
+#### Environment variables
+
+Every option can also be set through an environment variable named
+`LOADTESTCTL_REPORT_<OPTION>`, for example `LOADTESTCTL_REPORT_DURATION_SECONDS`,
+`LOADTESTCTL_REPORT_ENDPOINT`, `LOADTESTCTL_REPORT_USER` and
+`LOADTESTCTL_REPORT_PASSWORD`. A flag on the command line overrides
+the variable, and an empty variable counts as unset. Prefer `LOADTESTCTL_REPORT_PASSWORD` over `--password`, because command line
+arguments are visible in the process list and the shell history. `uv run loadtestctl report
+--help` lists the variable next to each option.
+
 #### Examples
 
 Port-forwarded Prometheus, JSON:
