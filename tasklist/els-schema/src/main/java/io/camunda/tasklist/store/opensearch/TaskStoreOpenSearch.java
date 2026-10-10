@@ -453,10 +453,13 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   private List<String> getTasksContainsVarNameAndValue(
       final TaskByVariables[] taskVariablesFilter) {
-    final List<String> varNames =
-        Arrays.stream(taskVariablesFilter).map(TaskByVariables::getName).collect(toList());
-    final List<String> varValues =
-        Arrays.stream(taskVariablesFilter).map(TaskByVariables::getValue).collect(toList());
+    // Deduplicate the filter once (keeping the first value per name) and reuse the same
+    // varNames/varValues for every query path below, so active-task matching, completed-task
+    // matching and retrieveTaskIdByProcessInstanceId all agree on which filter actually applies.
+    // See https://github.com/camunda/camunda/issues/63182.
+    final var variablesMap = toVariablesMap(taskVariablesFilter);
+    final List<String> varNames = new ArrayList<>(variablesMap.keySet());
+    final List<String> varValues = varNames.stream().map(variablesMap::get).collect(toList());
 
     final List<String> processIdsCreatedFiltered =
         variableStoreOpensearch.getProcessInstanceKeysWithMatchingVars(varNames, varValues).stream()
@@ -464,7 +467,7 @@ public class TaskStoreOpenSearch implements TaskStore {
             .toList();
 
     final List<String> tasksIdsCreatedFiltered =
-        retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, taskVariablesFilter);
+        retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, variablesMap);
 
     final List<String> taskIdsCompletedFiltered =
         getTasksIdsCompletedWithMatchingVars(varNames, varValues);
@@ -1008,10 +1011,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   }
 
   private List<String> retrieveTaskIdByProcessInstanceId(
-      final List<String> processIds, final TaskByVariables[] taskVariablesFilter) {
-    final var variablesMap =
-        Arrays.stream(taskVariablesFilter)
-            .collect(Collectors.toMap(TaskByVariables::getName, TaskByVariables::getValue));
+      final List<String> processIds, final Map<String, String> variablesMap) {
     final var tasks = getActiveTasksByProcessInstanceIds(processIds);
     final var request =
         tasks.stream()
@@ -1021,6 +1021,29 @@ public class TaskStoreOpenSearch implements TaskStore {
                         .setVarNames(variablesMap.keySet().stream().toList()))
             .toList();
     return taskVariableSearchUtil.getTaskIdsContainingVariables(request, variablesMap);
+  }
+
+  /**
+   * Converts a {@link TaskByVariables} filter array into a variable-name-to-value map. Filter
+   * entries that repeat the same variable name (e.g. two filters on {@code businessKey}) are
+   * tolerated by keeping the first occurrence's value instead of throwing, which is what an
+   * unguarded {@link Collectors#toMap(java.util.function.Function, java.util.function.Function)}
+   * would otherwise do. See https://github.com/camunda/camunda/issues/63182.
+   */
+  static Map<String, String> toVariablesMap(final TaskByVariables[] taskVariablesFilter) {
+    return Arrays.stream(taskVariablesFilter)
+        .collect(
+            Collectors.toMap(
+                TaskByVariables::getName,
+                TaskByVariables::getValue,
+                (firstValue, duplicateValue) -> {
+                  LOGGER.warn(
+                      "Duplicate task variable filter name encountered; keeping the first "
+                          + "value \"{}\" and ignoring \"{}\"",
+                      firstValue,
+                      duplicateValue);
+                  return firstValue;
+                }));
   }
 
   private Query.Builder buildPriorityQuery(final TaskQuery query) {
