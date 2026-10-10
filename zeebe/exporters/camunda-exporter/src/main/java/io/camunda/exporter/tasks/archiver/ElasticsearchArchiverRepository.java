@@ -555,7 +555,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .map(
                 d ->
                     new BulkOperation.Builder()
-                        .delete(del -> del.id(d.id()).routing(d.routing()))
+                        .delete(del -> del.index(sourceIndexName).id(d.id()).routing(d.routing()))
                         .build())
             .toList();
 
