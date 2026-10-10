@@ -22,7 +22,6 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -31,6 +30,7 @@ import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.opensearch.OpenSearchQueryHelper;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.reader.VersionedOperation;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
@@ -55,13 +55,17 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
@@ -78,6 +82,8 @@ public class OpensearchBatchOperationWriter
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchBatchOperationWriter.class);
+
+  private static final int HTTP_CONFLICT = 409;
 
   @Autowired private IncidentReader incidentReader;
 
@@ -124,26 +130,44 @@ public class OpensearchBatchOperationWriter
     final long lockTimeout = operateProperties.getOperationExecutor().getLockTimeout();
     final int batchSize = operateProperties.getOperationExecutor().getBatchSize();
 
-    // select process instances, which has scheduled operations, or locked with expired
-    // lockExpirationTime
-    final List<OperationEntity> operationEntities = operationReader.acquireOperations(batchSize);
+    final List<VersionedOperation> candidates = operationReader.acquireOperations(batchSize);
+    if (candidates.isEmpty()) {
+      return List.of();
+    }
 
-    final BatchRequest batchRequest = operationStore.newBatchRequest();
-
-    // lock the operations
-    for (final OperationEntity operation : operationEntities) {
-      // lock operation: update workerId, state, lockExpirationTime
+    final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
+    for (final VersionedOperation candidate : candidates) {
+      final OperationEntity operation = candidate.operation();
       operation.setState(OperationState.LOCKED);
       operation.setLockOwner(workerId);
       operation.setLockExpirationTime(OffsetDateTime.now().plus(lockTimeout, ChronoUnit.MILLIS));
-
-      // TODO decide with index refresh
-      batchRequest.update(operationTemplate.getFullQualifiedName(), operation.getId(), operation);
+      bulkRequestBuilder.operations(
+          op ->
+              op.update(
+                  upd ->
+                      upd.index(operationTemplate.getFullQualifiedName())
+                          .id(operation.getId())
+                          .document(operation)
+                          .ifSeqNo(candidate.seqNo())
+                          .ifPrimaryTerm(candidate.primaryTerm())));
     }
-    // TODO decide with index refresh
-    batchRequest.executeWithRefresh();
-    LOGGER.debug("{} operations locked", operationEntities.size());
-    return operationEntities;
+    bulkRequestBuilder.refresh(Refresh.True);
+
+    final List<BulkResponseItem> items =
+        richOpenSearchClient.batch().bulkWithResponse(bulkRequestBuilder.build()).items();
+    final List<OperationEntity> lockedOperations = new ArrayList<>();
+    for (int i = 0; i < items.size(); i++) {
+      final BulkResponseItem item = items.get(i);
+      if (item.error() == null) {
+        lockedOperations.add(candidates.get(i).operation());
+      } else if (item.status() != HTTP_CONFLICT) {
+        throw new PersistenceException(
+            String.format(
+                "Error while locking operation [%s]: %s", item.id(), item.error().reason()));
+      }
+    }
+    LOGGER.debug("{} of {} operations locked", lockedOperations.size(), candidates.size());
+    return lockedOperations;
   }
 
   @Override
