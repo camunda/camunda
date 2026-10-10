@@ -14,7 +14,7 @@
     "@carbon/react": "1.112.0",
     "@codemirror/autocomplete": "6.20.3",
     "@codemirror/lang-json": "6.0.2",
-    "@codemirror/language": "6.12.4",
+    "@codemirror/language": "6.13.1",
     "@codemirror/state": "6.7.1",
     "@codemirror/view": "6.43.6",
     "@devbookhq/splitter": "1.4.2",
