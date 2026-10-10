@@ -37,15 +37,20 @@ uv run loadtestctl report <namespace> [options]
 
 Common options:
 
-- `-d`, `--duration-seconds`, `--duration <sec>`: query window duration. Default: `600`.
+- `-d`, `--duration-seconds`, `--duration <sec>`: query window duration. Default: `600`, or derived
+  from `--start` and `--end` when both are given.
 - `-r`, `--rate-interval`, `--rate <dur>`: short Prometheus rate interval for dashboard-style rollups.
   Default: `5m`.
 - `-s`, `--sample-step`, `--step <dur>`: sample resolution for window summaries. Default: `1m`.
 - `-q`, `--queries <path>`: YAML query file path. Default: packaged
   `report-queries.yaml`.
-- `--start <time>`: start of the reporting window as an RFC3339 or Unix timestamp. The
-  duration is added to it to derive the end time, which must not be in the future.
-  Default: now minus `--duration-seconds`, so the window ends now.
+- `--start <time>` and `--end <time>`: start and end of the reporting window as an RFC3339 or
+  Unix timestamp. The end must not be in the future. Any two of start, end and duration determine
+  the window:
+  - neither: the window ends now and starts `--duration-seconds` earlier.
+  - `--start` only: the end is the start plus `--duration-seconds`.
+  - `--end` only: the start is the end minus `--duration-seconds`.
+  - both: the duration is derived, and `--duration-seconds` cannot be combined with them.
 - `-e`, `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
 - `-u`, `--user <user>` and `-p`, `--password <password>`: basic auth credentials for Prometheus.
 - `-f`, `--format json|csv|tsv`: output format. Default: `json`.
