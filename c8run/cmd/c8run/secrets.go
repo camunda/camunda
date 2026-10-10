@@ -116,7 +116,7 @@ func (c *secretsCommand) run(baseDir string, args []string) error {
 	}
 }
 
-// extractTenantArgument removes `--tenant <id>` / `--tenant=<id>` from anywhere in args.
+// extractTenantArgument removes the physical-tenant selector from args.
 func extractTenantArgument(args []string) ([]string, string, error) {
 	rest := make([]string, 0, len(args))
 	tenant := ""
@@ -124,21 +124,21 @@ func extractTenantArgument(args []string) ([]string, string, error) {
 		arg := args[i]
 		value, isTenant := "", false
 		switch {
-		case arg == "--tenant":
+		case arg == "--physical-tenant":
 			if i+1 >= len(args) {
-				return nil, "", errors.New("--tenant requires a physical tenant ID")
+				return nil, "", errors.New("--physical-tenant requires a physical tenant ID")
 			}
 			i++
 			value, isTenant = args[i], true
-		case strings.HasPrefix(arg, "--tenant="):
-			value, isTenant = strings.TrimPrefix(arg, "--tenant="), true
+		case strings.HasPrefix(arg, "--physical-tenant="):
+			value, isTenant = strings.TrimPrefix(arg, "--physical-tenant="), true
 		}
 		if !isTenant {
 			rest = append(rest, arg)
 			continue
 		}
 		if tenant != "" {
-			return nil, "", errors.New("--tenant may only be specified once")
+			return nil, "", errors.New("--physical-tenant may only be specified once")
 		}
 		if err := physicaltenants.ValidateID(value); err != nil {
 			return nil, "", err
@@ -449,15 +449,15 @@ const secretsHelp = `Usage:
   c8run secrets path
   c8run secrets delete (<name>|--all) [--yes]
   c8run secrets import [dotenv-file]
-  c8run secrets --tenant <id> <set|list|path|delete|import> ...
+  c8run secrets --physical-tenant <id> <set|list|path|delete|import> ...
 
 Secret names may contain letters, numbers, underscores, and dashes.
 Use backticks around names containing dashes in FEEL expressions.
 Import reads dotenv input from stdin when no file is specified.
 The default directory is shared across c8run versions and projects for the current OS user.
 C8RUN_SECRETS_DIR selects another directory; relative paths use the current working directory.
-Each physical tenant has its own secrets; use --tenant <id> to manage them. A tenant never
-sees the default tenant's secrets or another tenant's.
+Each physical tenant has its own secrets; use --physical-tenant <id> (or --physical-tenant=<id>)
+to manage them. A physical tenant never sees another physical tenant's secrets, including default.
 C8RUN_SECRETS_MODE defaults to local; external disables local secret commands.
 Overwrites and deletions may remain cached until c8run restarts or the cache expires.
 Local secret commands do not manage stores configured explicitly through --config, such as AWS or GCP.

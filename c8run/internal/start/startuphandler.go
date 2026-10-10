@@ -591,8 +591,8 @@ func (s *StartupHandler) startTenantConnectors(ctx context.Context, stop context
 	failed := func() {
 		log.Warn().Str("tenant", tenant.ID).Msg(cliname.Rewrite(
 			"Connectors for this physical tenant did not start; Camunda keeps running. " +
-				"See log/connectors-" + tenant.ID + ".log, or disable them with `c8run tenants remove " + tenant.ID +
-				"` followed by `c8run tenants add " + tenant.ID + " --no-connectors`."))
+				"See log/connectors-" + tenant.ID + ".log, or disable them with `c8run physical-tenants remove " + tenant.ID +
+				"` followed by `c8run physical-tenants add " + tenant.ID + " --no-connectors`."))
 	}
 	s.ProcessHandler.AttemptToStartProcess(pidPath, name, func() {
 		cmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, state.ProcessInfo.Connectors.Version, state.Settings.Port)

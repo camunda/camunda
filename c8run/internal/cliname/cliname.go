@@ -21,10 +21,8 @@ import (
 const Env = "C8RUN_CLI_NAME"
 
 // commandPattern matches c8run invocations in user-facing text: the launcher
-// form (`./c8run stop`) and subcommand references (`c8run tenants list`).
-// The pt/physical-tenants aliases are not rewritten because wrappers only
-// delegate the canonical subcommands.
-var commandPattern = regexp.MustCompile(`(?:\./)?c8run (start|stop|help|tenants|secrets)\b`)
+// form (`./c8run stop`) and subcommand references (`c8run physical-tenants list`).
+var commandPattern = regexp.MustCompile(`(?:\./)?c8run (start|stop|help|physical-tenants|secrets)\b`)
 
 // Name returns the configured wrapper name, or "" when c8run runs directly.
 func Name() string {

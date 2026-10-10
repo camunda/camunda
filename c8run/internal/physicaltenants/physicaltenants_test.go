@@ -238,13 +238,15 @@ func TestPrintSummary(t *testing.T) {
 	assert.Contains(t, out, "NOT READY")
 	assert.Contains(t, out, "hr did not become ready: HTTP 404")
 	assert.Contains(t, out, "Camunda-Physical-Tenant: sales")
-	assert.Contains(t, out, "secrets --tenant sales")
+	assert.Contains(t, out, "Java:            camunda.client.physicalTenantId=sales")
+	assert.Contains(t, out, "Spring:          camunda.client.physical-tenant-id=sales")
+	assert.Contains(t, out, "secrets --physical-tenant sales")
 
 	buf.Reset()
 	t.Setenv(cliname.Env, "c8ctl cluster")
 	PrintSummary(cliname.Writer(&buf), settings, nil, 8086)
-	assert.Contains(t, buf.String(), "`c8ctl cluster secrets --tenant sales set <NAME>`")
-	assert.Contains(t, buf.String(), "`c8ctl cluster tenants list|add|remove`")
+	assert.Contains(t, buf.String(), "`c8ctl cluster secrets --physical-tenant sales set <NAME>`")
+	assert.Contains(t, buf.String(), "`c8ctl cluster physical-tenants list|add|remove`")
 	assert.NotContains(t, buf.String(), "c8run secrets")
 
 	buf.Reset()
