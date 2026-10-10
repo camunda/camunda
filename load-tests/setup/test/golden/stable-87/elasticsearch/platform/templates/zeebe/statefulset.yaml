@@ -52,7 +52,7 @@ spec:
         []
       containers:
         - name: zeebe
-          image: docker.io/camunda/zeebe:8.7.42
+          image: docker.io/camunda/zeebe:8.7.43
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: true
