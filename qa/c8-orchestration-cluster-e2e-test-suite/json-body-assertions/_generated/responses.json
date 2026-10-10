@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "c2df7a5f797dc8ce2abe7076c15d293a4bd58695",
-    "generatedAt": "2026-09-27T12:12:29.492Z",
+    "commit": "05065a16f901fefaea5a7bdd0bcb1c70d03d94aa",
+    "generatedAt": "2026-10-10T08:47:26.632Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "45766daa7736fb018107793a167261fe068ef55c318fe28e090c1dd2eb7e3c46"
+    "specSha256": "0b50405d9aaa6f21828cc3a2632b32aaa4bff86045d8b940435b6282749d47e6"
   },
   "responses": [
     {
@@ -11578,6 +11578,10 @@
                   "nullable": true
                 },
                 {
+                  "name": "isSuspended",
+                  "type": "boolean"
+                },
+                {
                   "name": "name",
                   "type": "string",
                   "nullable": true
@@ -11742,6 +11746,10 @@
             "name": "formKey",
             "type": "string",
             "nullable": true
+          },
+          {
+            "name": "isSuspended",
+            "type": "boolean"
           },
           {
             "name": "name",
