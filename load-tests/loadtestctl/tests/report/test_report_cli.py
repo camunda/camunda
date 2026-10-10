@@ -1,15 +1,11 @@
-import io
-import sys
 from datetime import UTC
 from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
-from unittest import mock
 
 import pytest
 
 import loadtestctl.report
-from loadtestctl.cli import build_parser
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.prometheus import auth_headers
 
@@ -19,25 +15,21 @@ from .helpers import run
 PROJECT_DIR = Path(loadtestctl.report.__file__).resolve().parent
 
 
-def test_should_register_report_subcommand() -> None:
-    args = build_parser().parse_args(["report", "c8-ck-test"])
+def test_should_parse_namespace_argument() -> None:
+    options = parse_args(["c8-ck-test"])
 
-    assert args.command == "report"
-    assert args.namespace == "c8-ck-test"
+    assert options.namespace == "c8-ck-test"
 
 
-def test_should_return_argparse_exit_code_for_help() -> None:
+def test_should_return_zero_exit_code_for_help() -> None:
     assert run(["--help"]) == 0
 
 
-def test_should_return_error_for_missing_namespace() -> None:
-    stderr = io.StringIO()
-
-    with mock.patch.object(sys, "stderr", stderr):
-        exit_code = run([])
+def test_should_return_error_for_missing_namespace(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run([])
 
     assert exit_code == 2
-    assert "the following arguments are required: namespace" in stderr.getvalue()
+    assert "Missing argument 'NAMESPACE'" in capsys.readouterr().err
 
 
 def test_should_parse_auth_flags(tmp_path: Path) -> None:
@@ -97,9 +89,11 @@ def test_should_default_to_window_ending_now() -> None:
     assert options.time_anchor == options.end_label
 
 
-def test_should_reject_window_ending_in_the_future() -> None:
-    with pytest.raises(ReportError, match="must not end in the future"):
-        parse_args(["c8-ck-test", "--start", "2999-01-01T00:00:00Z"])
+def test_should_reject_window_ending_in_the_future(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-test", "--start", "2999-01-01T00:00:00Z"])
+
+    assert exit_code == 1
+    assert "must not end in the future" in capsys.readouterr().err
 
 
 def test_should_normalize_timezone_less_time_window() -> None:
@@ -186,70 +180,125 @@ def test_should_reject_incomplete_basic_auth() -> None:
         auth_headers("user", "")
 
 
-def test_should_reject_unrepresentable_reporting_window_with_no_start() -> None:
-    with pytest.raises(ReportError, match="reporting window is outside the supported timestamp range"):
-        parse_args(
-            [
-                "c8-ck-test",
-                "--duration-seconds",
-                "999999999999999999999",
-            ]
-        )
+def test_should_reject_unrepresentable_reporting_window_with_no_start(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-test", "--duration-seconds", "999999999999999999999"])
+
+    assert exit_code == 1
+    assert "reporting window is outside the supported timestamp range" in capsys.readouterr().err
 
 
-def test_should_reject_unrepresentable_reporting_window() -> None:
-    with pytest.raises(ReportError, match="reporting window is outside the supported timestamp range"):
-        parse_args(
-            [
-                "c8-ck-test",
-                "--start",
-                "0",
-                "--duration-seconds",
-                "999999999999999999999",
-            ]
-        )
+def test_should_reject_unrepresentable_reporting_window(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-test", "--start", "0", "--duration-seconds", "999999999999999999999"])
+
+    assert exit_code == 1
+    assert "reporting window is outside the supported timestamp range" in capsys.readouterr().err
 
 
 def test_should_reject_negative_duration(capsys: pytest.CaptureFixture[str]) -> None:
-    with pytest.raises(SystemExit):
-        parse_args(
-            [
-                "c8-ck-test",
-                "--start",
-                "2026-08-14T10:00:00",
-                "--duration-seconds",
-                "-1",
-            ]
-        )
+    exit_code = run(["c8-ck-test", "--duration-seconds", "-1"])
 
-    assert "'-1' must be a positive integer" in capsys.readouterr().err
+    assert exit_code == 2
+    assert "-1 is not in the range x>=1" in capsys.readouterr().err
 
 
 def test_should_reject_too_long_namespace(capsys: pytest.CaptureFixture[str]) -> None:
-    with pytest.raises(SystemExit):
-        parse_args(
-            [
-                "a" * 64,
-                "--start",
-                "2026-08-14T10:00:00",
-                "--duration-seconds",
-                "123",
-            ]
-        )
+    exit_code = run(["a" * 64])
 
-    assert "(max 63 characters; lowercase alphanumeric or '-', and must start and end " in capsys.readouterr().err
+    assert exit_code == 2
+    assert "max 63 characters; lowercase alphanumeric or '-', and must start and end" in capsys.readouterr().err
 
 
 def test_should_reject_invalid_namespace(capsys: pytest.CaptureFixture[str]) -> None:
-    with pytest.raises(SystemExit):
-        parse_args(
-            [
-                "Invalid_Namespace",
-                "--start",
-                "2026-08-14T10:00:00",
-                "--duration-seconds",
-                "123",
-            ]
-        )
+    exit_code = run(["Invalid_Namespace"])
 
-    assert "(max 63 characters; lowercase alphanumeric or '-', and must start and end " in capsys.readouterr().err
+    assert exit_code == 2
+    assert "max 63 characters; lowercase alphanumeric or '-', and must start and end" in capsys.readouterr().err
+
+
+def test_should_write_to_stdout_for_empty_output_path() -> None:
+    options = parse_args(["c8-ck-test", "--output", ""])
+
+    assert options.output_file is None
+
+
+def test_should_pass_output_path(tmp_path: Path) -> None:
+    output_file = tmp_path / "report.json"
+
+    options = parse_args(["c8-ck-test", "--output", str(output_file)])
+
+    assert options.output_file == output_file
+
+
+def test_should_accept_short_and_alias_options(tmp_path: Path) -> None:
+    output_file = tmp_path / "report.json"
+
+    options = parse_args(
+        ["c8-ck-test", "-d", "60", "-r", "1m", "-s", "30s", "-e", "http://prom:9090", "-u", "user", "-p", "pass"]
+        + ["-f", "tsv", "-o", str(output_file)]
+    )
+
+    assert options.duration_seconds == 60
+    assert options.rate_interval == "1m"
+    assert options.sample_step == "30s"
+    assert options.endpoint == "http://prom:9090"
+    assert options.basic_auth_user == "user"
+    assert options.basic_auth_password == "pass"
+    assert options.output_format == "tsv"
+    assert options.output_file == output_file
+    assert parse_args(["c8-ck-test", "--duration", "60"]).duration_seconds == 60
+    assert parse_args(["c8-ck-test", "--rate", "1m"]).rate_interval == "1m"
+    assert parse_args(["c8-ck-test", "--step", "30s"]).sample_step == "30s"
+
+
+def test_should_accept_short_queries_alias(tmp_path: Path) -> None:
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("queries: []", encoding="utf-8")
+
+    options = parse_args(["c8-ck-test", "-q", str(queries_file)])
+
+    assert options.queries_file == queries_file
+
+
+@pytest.mark.parametrize("args", [[""], ["--", "-abc"]])
+def test_should_reject_invalid_namespace_forms(args: list[str], capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(args)
+
+    assert exit_code == 2
+    assert "must be a valid Kubernetes DNS label" in capsys.readouterr().err
+
+
+def test_should_read_options_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LOADTESTCTL_REPORT_DURATION_SECONDS", "90")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_USER", "env-user")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_PASSWORD", "env-pass")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_FORMAT", "csv")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_NO_HEADER", "true")
+
+    options = parse_args(["c8-ck-test"])
+
+    assert options.duration_seconds == 90
+    assert options.basic_auth_user == "env-user"
+    assert options.basic_auth_password == "env-pass"
+    assert options.output_format == "csv"
+    assert options.include_header is False
+
+
+def test_should_prefer_command_line_over_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LOADTESTCTL_REPORT_DURATION_SECONDS", "90")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_PASSWORD", "env-pass")
+
+    options = parse_args(["c8-ck-test", "-d", "30", "-u", "cli-user", "-p", "cli-pass"])
+
+    assert options.duration_seconds == 30
+    assert options.basic_auth_password == "cli-pass"
+
+
+def test_should_reject_invalid_environment_value(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("LOADTESTCTL_REPORT_DURATION_SECONDS", "0")
+
+    exit_code = run(["c8-ck-test"])
+
+    assert exit_code == 2
+    assert "--duration-seconds" in capsys.readouterr().err
