@@ -10,10 +10,13 @@ package io.camunda.zeebe.engine.processing.storageordinals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -22,12 +25,14 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
@@ -35,6 +40,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
@@ -43,6 +49,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -54,6 +61,7 @@ import org.junit.Test;
 public final class StorageOrdinalAssignmentTest {
 
   private static final int FIXED_ORDINAL = 1234;
+  private static final String AGENT_ERROR_CODE = "agent-ordinal-error";
 
   /**
    * Runs with a single command per batch so every follow-up command reaches the log before it is
@@ -324,6 +332,225 @@ public final class StorageOrdinalAssignmentTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     assertThat(jobCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToJobLifecycleRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("job-lifecycle-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("job-lifecycle"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("job-lifecycle-process").create();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    final var firstBatch = engine.jobs().withType("job-lifecycle").activate();
+    engine.job().withKey(jobKey).withType("job-lifecycle").yield();
+    engine.jobs().withType("job-lifecycle").activate();
+    engine.job().withKey(jobKey).withRetries(5).updateRetries();
+    engine.job().withKey(jobKey).withTimeout(60_000L).updateTimeout();
+    engine.job().withKey(jobKey).withPriority(7).withChangeset(Set.of("priority")).update();
+    engine.job().withKey(jobKey).withRetries(1).fail();
+    engine.jobs().withType("job-lifecycle").activate();
+    engine.job().withKey(jobKey).complete();
+
+    // then
+    final int jobIndex = firstBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    assertThat(firstBatch.getValue().getJobs().get(jobIndex).getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntents(
+                    JobIntent.YIELDED,
+                    JobIntent.RETRIES_UPDATED,
+                    JobIntent.TIMEOUT_UPDATED,
+                    JobIntent.UPDATED,
+                    JobIntent.FAILED,
+                    JobIntent.COMPLETED)
+                .limit(6))
+        .extracting(Record::getIntent, record -> record.getValue().getStorageOrdinal())
+        .containsExactly(
+            tuple(JobIntent.YIELDED, FIXED_ORDINAL),
+            tuple(JobIntent.RETRIES_UPDATED, FIXED_ORDINAL),
+            tuple(JobIntent.TIMEOUT_UPDATED, FIXED_ORDINAL),
+            tuple(JobIntent.UPDATED, FIXED_ORDINAL),
+            tuple(JobIntent.FAILED, FIXED_ORDINAL),
+            tuple(JobIntent.COMPLETED, FIXED_ORDINAL));
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToJobTimeOutRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("job-timeout-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("job-timeout"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("job-timeout-process").create();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+    final long timeout = 10L;
+    engine.jobs().withType("job-timeout").withTimeout(timeout).activate();
+
+    // when
+    engine.increaseTime(
+        Duration.ofMillis(timeout).plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
+
+    // then
+    final var timeOutCommand =
+        RecordingExporter.jobRecords(JobIntent.TIME_OUT)
+            .onlyCommands()
+            .withRecordKey(jobKey)
+            .getFirst();
+    final var timedOut =
+        RecordingExporter.jobRecords(JobIntent.TIMED_OUT)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(timeOutCommand.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    assertThat(timedOut.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToJobBackoffRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("job-backoff-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("job-backoff"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("job-backoff-process").create();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+    final Duration backoff = Duration.ofMinutes(1);
+    engine.jobs().withType("job-backoff").activate();
+    engine.job().withKey(jobKey).withRetries(1).withBackOff(backoff).fail();
+
+    // when
+    engine.increaseTime(backoff.plus(Duration.ofSeconds(1)));
+
+    // then
+    final var failed =
+        RecordingExporter.jobRecords(JobIntent.FAILED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var recurCommand =
+        RecordingExporter.jobRecords(JobIntent.RECUR_AFTER_BACKOFF)
+            .onlyCommands()
+            .withRecordKey(jobKey)
+            .getFirst();
+    final var recurred =
+        RecordingExporter.jobRecords(JobIntent.RECURRED_AFTER_BACKOFF)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(failed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    assertThat(recurCommand.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    assertThat(recurred.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToJobErrorThrownAndCanceledRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("job-error-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("job-error"))
+                .boundaryEvent("error-boundary", b -> b.error("ordinal-error"))
+                .endEvent()
+                .moveToActivity("service-task")
+                .endEvent()
+                .done())
+        .deploy();
+    final long errorInstanceKey =
+        engine.processInstance().ofBpmnProcessId("job-error-process").create();
+    final long canceledInstanceKey =
+        engine.processInstance().ofBpmnProcessId("job-error-process").create();
+    engine.jobs().withType("job-error").activate();
+
+    // when
+    engine
+        .job()
+        .ofInstance(errorInstanceKey)
+        .withType("job-error")
+        .withErrorCode("ordinal-error")
+        .throwError();
+    engine.processInstance().withInstanceKey(canceledInstanceKey).cancel();
+
+    // then
+    final var errorThrown =
+        RecordingExporter.jobRecords(JobIntent.ERROR_THROWN)
+            .withProcessInstanceKey(errorInstanceKey)
+            .getFirst();
+    final var canceled =
+        RecordingExporter.jobRecords(JobIntent.CANCELED)
+            .withProcessInstanceKey(canceledInstanceKey)
+            .getFirst();
+    assertThat(errorThrown.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    assertThat(canceled.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToBusinessIdAssignedByJobCompletion() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("job-business-id-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("job-business-id"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("job-business-id-process").create();
+
+    // when
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("job-business-id")
+        .withBusinessId("ordinal-business-id")
+        .complete();
+
+    // then
+    final var assigned =
+        RecordingExporter.processInstanceBusinessIdRecords(ProcessInstanceBusinessIdIntent.ASSIGNED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(assigned.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
   }
 
   @Test
@@ -1365,6 +1592,100 @@ public final class StorageOrdinalAssignmentTest {
   }
 
   @Test
+  public void shouldAssignConfiguredOrdinalToAgentHistoryDiscardCommandOnJobCancel() {
+    // given
+    final var agentJob = createAgentInstanceWithPendingHistoryItem("agent-job-cancel-ordinal");
+
+    // when
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(agentJob.jobKey())
+            .job(JobIntent.CANCEL, new JobRecord().setType("agent-job-cancel-ordinal")));
+    RecordingExporter.jobRecords(JobIntent.CANCELED).withRecordKey(agentJob.jobKey()).await();
+
+    // then: the engine-produced AGENT_HISTORY:DISCARD command appended by JobCancelProcessor
+    // carries the ordinal
+    assertThat(
+            RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARD)
+                .onlyCommands()
+                .withJobKey(agentJob.jobKey())
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToAgentHistoryDiscardCommandOnCaughtError() {
+    // given
+    final var agentJob = createAgentInstanceWithPendingHistoryItem("agent-error-ordinal", true);
+
+    // when
+    engine
+        .job()
+        .withKey(agentJob.jobKey())
+        .withJobLeaseToken(agentJob.jobLeaseToken())
+        .withErrorCode(AGENT_ERROR_CODE)
+        .throwError();
+    RecordingExporter.jobRecords(JobIntent.ERROR_THROWN).withRecordKey(agentJob.jobKey()).await();
+
+    // then: the engine-produced AGENT_HISTORY:DISCARD command appended by JobThrowErrorProcessor
+    // carries the ordinal
+    assertThat(
+            RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARD)
+                .onlyCommands()
+                .withJobKey(agentJob.jobKey())
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToAgentHistoryDiscardCommandOnProcessInstanceCancel() {
+    // given
+    final var agentJob = createAgentInstanceWithPendingHistoryItem("agent-discard-ordinal");
+
+    // when
+    engine.processInstance().withInstanceKey(agentJob.processInstanceKey()).cancel();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(agentJob.processInstanceKey())
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then: the engine-produced AGENT_HISTORY:DISCARD command appended by
+    // BpmnJobBehavior#writeJobCanceled carries the ordinal
+    assertThat(
+            RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARD)
+                .onlyCommands()
+                .withJobKey(agentJob.jobKey())
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToAgentHistoryCommitCommand() {
+    // given
+    final var agentJob = createAgentInstanceWithPendingHistoryItem("agent-commit-ordinal");
+
+    // when
+    engine.job().withKey(agentJob.jobKey()).withJobLeaseToken(agentJob.jobLeaseToken()).complete();
+
+    // then: the engine-produced AGENT_HISTORY:COMMIT command appended by JobCompleteProcessor
+    // carries the ordinal
+    assertThat(
+            RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMIT)
+                .onlyCommands()
+                .withJobKey(agentJob.jobKey())
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
   public void shouldAssignConfiguredOrdinalToDecisionEvaluationRecords() {
     // given
     engine
@@ -1708,5 +2029,75 @@ public final class StorageOrdinalAssignmentTest {
             .setActivateElements(List.of(activateElements))
             .setCompletionConditionFulfilled(completionConditionFulfilled);
     engine.job().withKey(jobKey).withResult(jobResult).complete();
+  }
+
+  private record AgentJob(long processInstanceKey, long jobKey, String jobLeaseToken) {}
+
+  /**
+   * Deploys an AI agent service task, starts an instance, activates its job with a lease and
+   * creates the agent instance with one pending USER history item, so the first COMMIT or DISCARD
+   * command for the job has an item to act on. When {@code withErrorBoundary} is set, the task also
+   * has an error boundary event catching {@code AGENT_ERROR_CODE}. The stored history row does not
+   * persist the ordinal yet, so the COMMITTED and DISCARDED events re-emitted from it still carry
+   * the record default here. The row persistence and the event assertions are added together with
+   * the agent instance ordinal change.
+   */
+  private AgentJob createAgentInstanceWithPendingHistoryItem(final String id) {
+    return createAgentInstanceWithPendingHistoryItem(id, false);
+  }
+
+  private AgentJob createAgentInstanceWithPendingHistoryItem(
+      final String id, final boolean withErrorBoundary) {
+    final String processId = id + "-process";
+    final String taskId = id + "-task";
+    final var agentTask =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask(taskId, t -> t.zeebeJobType(id).zeebeAiAgentTaskDefinition());
+    engine
+        .deployment()
+        .withXmlResource(
+            withErrorBoundary
+                ? agentTask
+                    .boundaryEvent("error-boundary", b -> b.error(AGENT_ERROR_CODE))
+                    .endEvent()
+                    .moveToActivity(taskId)
+                    .endEvent()
+                    .done()
+                : agentTask.endEvent().done())
+        .deploy();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final long elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst()
+            .getKey();
+    final var jobBatch = engine.jobs().withType(id).withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(id)
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+
+    final var userItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId(id + "-item")
+            .setRole(AgentHistoryRole.USER)
+            .setLoopIteration(1);
+    engine
+        .agentInstances()
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
+        .withJobLeaseToken(jobLeaseToken)
+        .withHistory(List.of(userItem))
+        .create();
+    return new AgentJob(processInstanceKey, jobKey, jobLeaseToken);
   }
 }
