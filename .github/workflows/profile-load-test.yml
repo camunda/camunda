@@ -145,7 +145,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Teleport
-        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        uses: teleport-actions/setup@10b5e9f760190f027a1e04e342178d8d6e7eae30 # v2.0.0
         with:
           proxy: camunda.teleport.sh:443
           version: auto
