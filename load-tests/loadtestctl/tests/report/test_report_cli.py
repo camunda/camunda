@@ -96,6 +96,62 @@ def test_should_reject_window_ending_in_the_future(capsys: pytest.CaptureFixture
     assert "must not end in the future" in capsys.readouterr().err
 
 
+def test_should_derive_start_from_end_and_duration() -> None:
+    options = parse_args(["c8-ck-test", "--end", "2026-08-14T10:30:00Z", "--duration-seconds", "1800"])
+
+    assert options.duration_seconds == 1800
+    assert options.start_label == "2026-08-14T10:00:00Z"
+    assert options.end_label == "2026-08-14T10:30:00Z"
+    assert options.time_anchor == "2026-08-14T10:30:00Z"
+
+
+def test_should_accept_unix_end_with_the_default_duration() -> None:
+    options = parse_args(["c8-ck-test", "--end", "1791438000"])
+
+    assert options.duration_seconds == 600
+    assert options.start_label == "2026-10-08T05:30:00Z"
+    assert options.end_label == "2026-10-08T05:40:00Z"
+
+
+def test_should_derive_duration_from_start_and_end() -> None:
+    options = parse_args(["c8-ck-test", "--start", "2026-08-14T10:00:00Z", "--end", "2026-08-14T13:00:00Z"])
+
+    assert options.duration_seconds == 10800
+    assert options.start_label == "2026-08-14T10:00:00Z"
+    assert options.end_label == "2026-08-14T13:00:00Z"
+
+
+def test_should_reject_duration_with_both_start_and_end(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(
+        [
+            "c8-ck-test",
+            "--start",
+            "2026-08-14T10:00:00Z",
+            "--end",
+            "2026-08-14T10:30:00Z",
+            "--duration-seconds",
+            "1800",
+        ]
+    )
+
+    assert exit_code == 1
+    assert "cannot be combined with both --start and --end" in capsys.readouterr().err
+
+
+def test_should_reject_end_not_after_start(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-test", "--start", "2026-08-14T10:30:00Z", "--end", "2026-08-14T10:00:00Z"])
+
+    assert exit_code == 1
+    assert "must end after it starts" in capsys.readouterr().err
+
+
+def test_should_reject_end_in_the_future(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-test", "--end", "2999-01-01T00:00:00Z"])
+
+    assert exit_code == 1
+    assert "must not end in the future" in capsys.readouterr().err
+
+
 def test_should_normalize_timezone_less_time_window() -> None:
     options = parse_args(
         [
