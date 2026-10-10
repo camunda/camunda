@@ -159,17 +159,34 @@ Examples:
     --format csv > /tmp/load-test-report.csv"""
 
 
-def resolve_window(start: datetime | None, duration_seconds: int) -> tuple[str, str]:
+DEFAULT_DURATION_SECONDS = 600
+
+
+def resolve_window(start: datetime | None, end: datetime | None, duration_seconds: int | None) -> tuple[str, str, int]:
+    """Resolve the reporting window as (start label, end label, duration in seconds).
+
+    Any two of start, end and duration determine the window; a missing end defaults to now and a
+    missing duration to DEFAULT_DURATION_SECONDS.
+    """
+    if start is not None and end is not None and duration_seconds is not None:
+        raise ReportError("--duration-seconds cannot be combined with both --start and --end.")
     now = datetime.now(UTC).replace(microsecond=0)
     try:
+        duration = timedelta(seconds=duration_seconds if duration_seconds is not None else DEFAULT_DURATION_SECONDS)
         if start is None:
-            start = now - timedelta(seconds=duration_seconds)
-        end = start + timedelta(seconds=duration_seconds)
+            end = end or now
+            start = end - duration
+        elif end is None:
+            end = start + duration
     except OverflowError as error:
         raise ReportError("reporting window is outside the supported timestamp range") from error
+    if end <= start:
+        raise ReportError("reporting window must end after it starts; use a later --end or an earlier --start.")
     if end > now:
-        raise ReportError("reporting window must not end in the future; use an earlier --start or a shorter duration.")
-    return format_epoch(start), format_epoch(end)
+        raise ReportError(
+            "reporting window must not end in the future; use an earlier --start or --end, or a shorter duration."
+        )
+    return format_epoch(start), format_epoch(end), int((end - start).total_seconds())
 
 
 def query_substitutions(options: Options) -> Mapping[str, str]:
@@ -208,9 +225,9 @@ def run_report(options: Options) -> None:
     "--duration-seconds",
     "--duration",
     type=click.IntRange(min=1),
-    default=600,
-    show_default=True,
-    help="Query window duration in seconds.",
+    default=None,
+    show_default=str(DEFAULT_DURATION_SECONDS),
+    help="Query window duration in seconds. Derived from --start and --end when both are given.",
 )
 @option(
     "-r",
@@ -242,8 +259,16 @@ def run_report(options: Options) -> None:
     "--start",
     type=EpochType(),
     default=None,
-    show_default="now minus --duration-seconds",
-    help="Start of the reporting window, RFC3339 or Unix timestamp. The window ends at start plus --duration-seconds.",
+    show_default="--end minus --duration-seconds",
+    help="Start of the reporting window, RFC3339 or Unix timestamp. Without --end the window ends at start plus "
+    "--duration-seconds.",
+)
+@option(
+    "--end",
+    type=EpochType(),
+    default=None,
+    show_default="now",
+    help="End of the reporting window, RFC3339 or Unix timestamp. Must not be in the future.",
 )
 @option("-e", "--endpoint", default="http://localhost:9090", show_default=True, help="Prometheus base URL.")
 @option("-u", "--user", default="", help="Basic auth user for Prometheus.")
@@ -261,11 +286,12 @@ def run_report(options: Options) -> None:
 @option("-o", "--output", default=None, help="Write output to a file instead of stdout.")
 def report(
     namespace: str,
-    duration_seconds: int,
+    duration_seconds: int | None,
     rate_interval: str,
     sample_step: str,
     queries: Path,
     start: datetime | None,
+    end: datetime | None,
     endpoint: str,
     user: str,
     password: str,
@@ -275,11 +301,11 @@ def report(
     output: str | None,
 ) -> None:
     try:
-        start_label, end_label = resolve_window(start, duration_seconds)
+        start_label, end_label, window_seconds = resolve_window(start, end, duration_seconds)
         run_report(
             Options(
                 namespace=namespace,
-                duration_seconds=duration_seconds,
+                duration_seconds=window_seconds,
                 rate_interval=rate_interval,
                 sample_step=sample_step,
                 endpoint=endpoint,

@@ -5,9 +5,9 @@ Renders a side-by-side metrics table — one column per variant — from the end
 snapshots and posts it to the reliability-testing Slack channel via an incoming webhook. Invoked
 by the `notify-results` job of `.github/workflows/camunda-daily-load-tests.yml`.
 
-Metric names, descriptions, and display formats are sourced from `queries.yaml` (the single
-source of truth shared with `loadTestMetrics.sh`), so adding a metric there automatically adds a
-row here. Metrics tied to secondary storage (e.g. importer/exporter lag) naturally render as n/a
+Metric names, descriptions, and display formats are sourced from `queries.yaml`, which holds the
+display metadata of the metrics that `loadtestctl report` collects with
+`report-queries-comparison.yaml`. Adding a metric needs an entry in both files. Metrics tied to secondary storage (e.g. importer/exporter lag) naturally render as n/a
 for a no-secondary-storage variant.
 
 The table has one column per entry in the variants manifest (VARIANTS_JSON_FILE, or VARIANTS_JSON
