@@ -8,6 +8,7 @@
 package io.atomix.raft.cluster.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -819,6 +820,125 @@ final class RaftClusterContextTest {
                 false));
   }
 
+  @Test
+  void shouldRollBackToStoredConfigurationAndPruneMembersWhenConfigurationEntryIsTruncated() {
+    // given -- a committed stored configuration and an uncommitted one that adds member 4
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var member2 = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var member4 = new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now());
+    final var stored =
+        new Configuration(1, 1, Instant.now().toEpochMilli(), List.of(localMember, member2));
+    final var raft = raftWithStoredConfiguration(stored);
+    when(raft.getCommitIndex()).thenReturn(1L);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+    context.configure(
+        new Configuration(
+            2, 2, Instant.now().toEpochMilli(), List.of(localMember, member2, member4)));
+    assertThat(context.getMemberContext(member4.memberId())).isNotNull();
+
+    // when -- the log entry of the uncommitted configuration is truncated
+    context.rollbackConfigurationAfterTruncation(1);
+
+    // then -- the stored configuration is back and the member it introduced is gone
+    assertThat(context.getConfiguration()).isEqualTo(stored);
+    assertThat(context.isMember(member4.memberId())).isFalse();
+    assertThat(context.getMemberContext(member4.memberId())).isNull();
+    assertThat(
+            context.getReplicationTargets().stream()
+                .map(RaftMemberContext::getMember)
+                .map(RaftMember.class::cast))
+        .containsExactly(member2);
+  }
+
+  @Test
+  void shouldRollBackToNewestRetainedConfigurationEntry() {
+    // given -- a stored configuration and two configuration entries in the log, the newer one is
+    // applied
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var member2 = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var member3 = new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now());
+    final var stored =
+        new Configuration(
+            1, 1, Instant.now().toEpochMilli(), List.of(localMember, member2, member3));
+    final var retainedEntry =
+        new ConfigurationEntry(
+            Instant.now().toEpochMilli(),
+            List.of(localMember, member2),
+            List.of(localMember, member2, member3));
+    final var truncatedEntry =
+        new ConfigurationEntry(
+            Instant.now().toEpochMilli(), List.of(localMember), List.of(localMember, member2));
+    final var raft =
+        raftWithStoredConfiguration(
+            stored, logEntry(2, 1, retainedEntry), logEntry(3, 2, truncatedEntry));
+    when(raft.getCommitIndex()).thenReturn(1L);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+    assertThat(context.getConfiguration().index()).isEqualTo(3);
+
+    // when -- only the newer entry is truncated
+    context.rollbackConfigurationAfterTruncation(2);
+
+    // then -- the older entry is still backed by the log and wins over the stored configuration
+    assertThat(context.getConfiguration())
+        .isEqualTo(
+            new Configuration(
+                2,
+                1,
+                retainedEntry.timestamp(),
+                retainedEntry.newMembers(),
+                retainedEntry.oldMembers(),
+                false));
+  }
+
+  @Test
+  void shouldKeepConfigurationWhenItsEntryIsRetained() {
+    // given -- an uncommitted configuration at index 2
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var member2 = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var raft =
+        raftWithStoredConfiguration(
+            new Configuration(1, 1, Instant.now().toEpochMilli(), List.of(localMember, member2)));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+    final var uncommitted =
+        new Configuration(2, 2, Instant.now().toEpochMilli(), List.of(localMember));
+    context.configure(uncommitted);
+
+    // when -- the log is truncated after the configuration's entry
+    context.rollbackConfigurationAfterTruncation(2);
+
+    // then
+    assertThat(context.getConfiguration()).isEqualTo(uncommitted);
+  }
+
+  @Test
+  void shouldApplyLocalMemberTypeWhenRollbackRevertsAPromotion() {
+    // given -- the local member is passive in the stored configuration and promoted by an
+    // uncommitted configuration, which takes effect at append
+    final var passiveLocal = new DefaultRaftMember(new MemberId("1"), Type.PASSIVE, Instant.now());
+    final var activeLocal = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var member2 = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var raft =
+        raftWithStoredConfiguration(
+            new Configuration(1, 1, Instant.now().toEpochMilli(), List.of(passiveLocal, member2)));
+    when(raft.getCommitIndex()).thenReturn(1L);
+    final var context = new RaftClusterContext(passiveLocal.memberId(), raft);
+    context.bootstrap(List.of()).join();
+    context.configure(
+        new Configuration(2, 2, Instant.now().toEpochMilli(), List.of(activeLocal, member2)));
+    assertThat(context.getLocalMember().getType()).isEqualTo(Type.ACTIVE);
+    clearInvocations(raft);
+
+    // when -- the promotion's log entry is truncated
+    context.rollbackConfigurationAfterTruncation(1);
+
+    // then -- the local member is passive again and the server follows
+    assertThat(context.getLocalMember().getType()).isEqualTo(Type.PASSIVE);
+    verify(raft).transition(Type.PASSIVE);
+  }
+
   private static IndexedRaftLogEntry logEntry(
       final long index, final long term, final ConfigurationEntry entry) {
     final var logEntry = mock(IndexedRaftLogEntry.class, withSettings().stubOnly());
@@ -849,18 +969,22 @@ final class RaftClusterContextTest {
             command.run();
           }
         };
-    final var raft = mock(RaftContext.class, withSettings().stubOnly());
+    final var raft = mock(RaftContext.class);
     final var metaStore = mock(MetaStore.class, withSettings().stubOnly());
     final var log = mock(RaftLog.class, withSettings().stubOnly());
-    final var reader = mock(RaftLogUncommittedReader.class, withSettings().stubOnly());
-    final var entries = List.of(logEntries).iterator();
     when(raft.getThreadContext()).thenReturn(threadContext);
     when(metaStore.loadConfiguration()).thenReturn(configuration);
     when(raft.getMetaStore()).thenReturn(metaStore);
     when(raft.getLog()).thenReturn(log);
-    when(log.openUncommittedReader()).thenReturn(reader);
-    when(reader.hasNext()).thenAnswer(invocation -> entries.hasNext());
-    when(reader.next()).thenAnswer(invocation -> entries.next());
+    when(log.openUncommittedReader())
+        .thenAnswer(
+            invocation -> {
+              final var reader = mock(RaftLogUncommittedReader.class, withSettings().stubOnly());
+              final var entries = List.of(logEntries).iterator();
+              when(reader.hasNext()).thenAnswer(i -> entries.hasNext());
+              when(reader.next()).thenAnswer(i -> entries.next());
+              return reader;
+            });
     return raft;
   }
 }

@@ -88,6 +88,7 @@ public class PassiveRoleTest {
     when(ctx.getReplicationMetrics()).thenReturn(mock(RaftReplicationMetrics.class));
     when(ctx.getMeterRegistry()).thenReturn(meterRegistry);
     when(ctx.getName()).thenReturn("partition-1");
+    when(ctx.getCluster()).thenReturn(mock(RaftClusterContext.class));
 
     role = new PassiveRole(ctx);
   }
