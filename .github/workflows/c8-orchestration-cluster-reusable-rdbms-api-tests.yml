@@ -69,7 +69,7 @@ jobs:
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
       - name: Upload distribution artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: camunda-dist-${{ steps.sanitize.outputs.safe_branch }}
           path: dev-dist/
@@ -419,7 +419,7 @@ jobs:
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: json-report-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
@@ -430,7 +430,7 @@ jobs:
       # nightly triage needs it to tell a request-shape/test bug from a product bug.
       - name: Upload HTML report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: html-report-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report/**
@@ -438,7 +438,7 @@ jobs:
 
       - name: Upload Playwright traces to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/test-results/**

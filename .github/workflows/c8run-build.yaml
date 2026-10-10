@@ -139,13 +139,13 @@ jobs:
           echo "distzip=dist/target/${ARTIFACT}.zip" >> "$GITHUB_OUTPUT"
 
       - name: Upload camunda-dist
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: camunda-platform-dist
           path: ${{ steps.build-dist.outputs.distball }}
 
       - name: Upload camunda-dist-zip
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: camunda-platform-dist-zip
           path: ${{ steps.build-dist.outputs.distzip }}
@@ -216,7 +216,7 @@ jobs:
           C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
         working-directory: ./c8run/e2e_tests
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: c8run-logs-${{ matrix.os }}
@@ -398,13 +398,13 @@ jobs:
           C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
         working-directory: .\c8run\e2e_tests
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: camunda8-run-build-windows
           path: .\c8run\camunda8-run*
           retention-days: 1
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: c8run-logs

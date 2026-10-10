@@ -389,7 +389,7 @@ jobs:
 
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E API Test Result Release v${{ needs.validate-release.outputs.release_version }}
@@ -398,7 +398,7 @@ jobs:
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: json-report-release-api
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
@@ -474,7 +474,7 @@ jobs:
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
       - name: Upload distribution artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: camunda-dist-${{ steps.sanitize.outputs.safe_branch }}
           path: dev-dist/
@@ -1126,7 +1126,7 @@ jobs:
           npm run test -- "${TEST_ARGS[@]}"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }}${{ matrix.tasklist_mode && format(' (Tasklist {0} mode)', matrix.tasklist_mode) || '' }}
@@ -1135,7 +1135,7 @@ jobs:
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: json-report-release-e2e-${{ needs.validate-release.outputs.release_version }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
