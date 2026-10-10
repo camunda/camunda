@@ -5,9 +5,11 @@ from dataclasses import dataclass
 from datetime import UTC
 from datetime import datetime
 from datetime import timedelta
+from functools import partial
 from pathlib import Path
 
 import click
+from click.core import ParameterSource
 from pydantic import ValidationError
 
 from .errors import ReportError
@@ -22,6 +24,8 @@ DEFAULT_QUERIES_FILE = HERE / "report-queries.yaml"
 NAMESPACE_PATTERN = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
 DURATION_COMPONENT_PATTERN = re.compile(r"[1-9][0-9]*(ms|[ywdhms])")
 DURATION_UNIT_ORDER = ("y", "w", "d", "h", "m", "s", "ms")
+
+option = partial(click.option, show_envvar=True)
 
 
 @dataclass(frozen=True)
@@ -200,15 +204,14 @@ def run_report(options: Options) -> None:
 
 @click.command("report", help=REPORT_HELP, epilog=REPORT_EPILOG)
 @click.argument("namespace_argument", metavar="[NAMESPACE]", required=False, type=NamespaceType())
-@click.option(
+@option(
     "-n",
     "--namespace",
     "--ns",
-    "namespace_option",
     type=NamespaceType(),
     help="Exact load-test namespace, as alternative to the NAMESPACE argument.",
 )
-@click.option(
+@option(
     "-d",
     "--duration-seconds",
     "--duration",
@@ -217,7 +220,7 @@ def run_report(options: Options) -> None:
     show_default=True,
     help="Query window duration in seconds.",
 )
-@click.option(
+@option(
     "-r",
     "--rate-interval",
     "--rate",
@@ -226,7 +229,7 @@ def run_report(options: Options) -> None:
     show_default=True,
     help="Short rate interval for dashboard-style rollups.",
 )
-@click.option(
+@option(
     "-s",
     "--sample-step",
     "--step",
@@ -235,7 +238,7 @@ def run_report(options: Options) -> None:
     show_default=True,
     help="Subquery sample resolution for window summaries.",
 )
-@click.option(
+@option(
     "-q",
     "--queries",
     type=QueriesFileType(),
@@ -243,31 +246,30 @@ def run_report(options: Options) -> None:
     show_default=f"packaged {DEFAULT_QUERIES_FILE.name}",
     help="YAML query file path.",
 )
-@click.option(
+@option(
     "--start",
     type=EpochType(),
     default=None,
     show_default="now minus --duration-seconds",
     help="Start of the reporting window, RFC3339 or Unix timestamp. The window ends at start plus --duration-seconds.",
 )
-@click.option("-e", "--endpoint", default="http://localhost:9090", show_default=True, help="Prometheus base URL.")
-@click.option("-u", "--user", default="", help="Basic auth user for Prometheus.")
-@click.option("-p", "--password", default="", help="Basic auth password for Prometheus.")
-@click.option(
+@option("-e", "--endpoint", default="http://localhost:9090", show_default=True, help="Prometheus base URL.")
+@option("-u", "--user", default="", help="Basic auth user for Prometheus.")
+@option("-p", "--password", default="", help="Basic auth password for Prometheus.")
+@option(
     "-f",
     "--format",
-    "output_format",
     type=click.Choice(["json", "csv", "tsv"]),
     default="json",
     show_default=True,
     help="Output format.",
 )
-@click.option("--no-header", is_flag=True, help="Omit the CSV/TSV header row.")
-@click.option("--missing-value", default="NaN", show_default=True, help="CSV/TSV placeholder for missing metrics.")
-@click.option("-o", "--output", default=None, help="Write output to a file instead of stdout.")
+@option("--no-header", is_flag=True, help="Omit the CSV/TSV header row.")
+@option("--missing-value", default="NaN", show_default=True, help="CSV/TSV placeholder for missing metrics.")
+@option("-o", "--output", default=None, help="Write output to a file instead of stdout.")
 def report(
     namespace_argument: str | None,
-    namespace_option: str | None,
+    namespace: str | None,
     duration_seconds: int,
     rate_interval: str,
     sample_step: str,
@@ -276,21 +278,23 @@ def report(
     endpoint: str,
     user: str,
     password: str,
-    output_format: str,
+    format: str,
     no_header: bool,
     missing_value: str,
     output: str | None,
 ) -> None:
-    if namespace_argument and namespace_option and namespace_argument != namespace_option:
-        raise click.UsageError(f"conflicting namespaces '{namespace_argument}' and '{namespace_option}'.")
-    namespace = namespace_argument or namespace_option
-    if namespace is None:
+    if click.get_current_context().get_parameter_source("namespace") is ParameterSource.ENVIRONMENT:
+        namespace = None if namespace_argument else namespace
+    if namespace_argument and namespace and namespace_argument != namespace:
+        raise click.UsageError(f"conflicting namespaces '{namespace_argument}' and '{namespace}'.")
+    resolved_namespace = namespace_argument or namespace
+    if resolved_namespace is None:
         raise click.MissingParameter(param_type="argument", param_hint="'NAMESPACE'")
     try:
         start_label, end_label = resolve_window(start, duration_seconds)
         run_report(
             Options(
-                namespace=namespace,
+                namespace=resolved_namespace,
                 duration_seconds=duration_seconds,
                 rate_interval=rate_interval,
                 sample_step=sample_step,
@@ -300,7 +304,7 @@ def report(
                 time_anchor=end_label,
                 start_label=start_label,
                 end_label=end_label,
-                output_format=output_format,
+                output_format=format,
                 include_header=not no_header,
                 missing_value=missing_value,
                 queries_file=queries,

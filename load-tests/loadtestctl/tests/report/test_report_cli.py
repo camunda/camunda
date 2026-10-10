@@ -286,3 +286,61 @@ def test_should_reject_invalid_namespace_forms(args: list[str], capsys: pytest.C
 
     assert exit_code == 2
     assert "must be a valid Kubernetes DNS label" in capsys.readouterr().err
+
+
+def test_should_read_options_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LOADTESTCTL_REPORT_NAMESPACE", "c8-ck-env")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_DURATION_SECONDS", "90")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_USER", "env-user")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_PASSWORD", "env-pass")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_FORMAT", "csv")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_NO_HEADER", "true")
+
+    options = parse_args([])
+
+    assert options.namespace == "c8-ck-env"
+    assert options.duration_seconds == 90
+    assert options.basic_auth_user == "env-user"
+    assert options.basic_auth_password == "env-pass"
+    assert options.output_format == "csv"
+    assert options.include_header is False
+
+
+def test_should_prefer_command_line_over_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LOADTESTCTL_REPORT_DURATION_SECONDS", "90")
+    monkeypatch.setenv("LOADTESTCTL_REPORT_PASSWORD", "env-pass")
+
+    options = parse_args(["c8-ck-test", "-d", "30", "-u", "cli-user", "-p", "cli-pass"])
+
+    assert options.duration_seconds == 30
+    assert options.basic_auth_password == "cli-pass"
+
+
+def test_should_reject_invalid_environment_value(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("LOADTESTCTL_REPORT_DURATION_SECONDS", "0")
+
+    exit_code = run(["c8-ck-test"])
+
+    assert exit_code == 2
+    assert "--duration-seconds" in capsys.readouterr().err
+
+
+def test_should_prefer_namespace_argument_over_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LOADTESTCTL_REPORT_NAMESPACE", "c8-ck-env")
+
+    options = parse_args(["c8-ck-arg"])
+
+    assert options.namespace == "c8-ck-arg"
+
+
+def test_should_reject_namespace_option_conflicting_with_argument_despite_environment(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("LOADTESTCTL_REPORT_NAMESPACE", "c8-ck-env")
+
+    exit_code = run(["c8-ck-arg", "-n", "c8-ck-other"])
+
+    assert exit_code == 2
+    assert "conflicting namespaces" in capsys.readouterr().err
