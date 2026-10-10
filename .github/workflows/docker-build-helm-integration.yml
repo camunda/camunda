@@ -97,7 +97,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload AlwaysGreen failure context artifact
         if: ${{ always() && (failure() || cancelled()) }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
@@ -251,7 +251,7 @@ jobs:
           directory: ./operate/client
           package-manager: "npm"
       - name: Upload Operate frontend artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: operate-frontend
           path: operate/client/build
@@ -286,7 +286,7 @@ jobs:
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
         if: ${{ always() && (failure() || cancelled()) }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
@@ -307,7 +307,7 @@ jobs:
           directory: ./webapp/client
           package-manager: "npm"
       - name: Upload unified webapp frontend artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unified-webapp-frontend
           path: webapp/client/apps/orchestration-cluster-webapp/dist
@@ -343,7 +343,7 @@ jobs:
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
         if: ${{ always() && (failure() || cancelled()) }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
@@ -364,7 +364,7 @@ jobs:
           directory: ./identity/client
           package-manager: "npm"
       - name: Upload Identity frontend artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: identity-frontend
           path: identity/client/dist
@@ -399,7 +399,7 @@ jobs:
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
         if: ${{ always() && (failure() || cancelled()) }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
@@ -549,7 +549,7 @@ jobs:
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
         if: ${{ always() && (failure() || cancelled()) }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
@@ -598,7 +598,7 @@ jobs:
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
         if: ${{ always() && (failure() || cancelled()) }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
@@ -778,7 +778,7 @@ jobs:
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,upstream_result:$upstream_result}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
         if: ${{ always() && (needs.helm-deploy.result == 'failure' || needs.helm-deploy.result == 'cancelled') }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
@@ -1129,7 +1129,7 @@ jobs:
 
       - name: Upload downstream SaaS E2E category artifact
         if: ${{ always() && steps.downstream-category.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: alwaysgreen-saas-category
           path: ${{ runner.temp }}/alwaysgreen-saas-category.json
@@ -1260,7 +1260,7 @@ jobs:
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,downstream_conclusion:$downstream_conclusion}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
         if: ${{ always() && (failure() || cancelled()) }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json

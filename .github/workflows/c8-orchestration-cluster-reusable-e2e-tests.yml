@@ -368,7 +368,7 @@ jobs:
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: json-report-nightly-e2e-${{ steps.sanitize.outputs.safe_branch }}${{ inputs.tasklist_mode && format('-{0}', inputs.tasklist_mode) || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
@@ -376,7 +376,7 @@ jobs:
 
       - name: Upload HTML report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: html-report-nightly-e2e-${{ steps.sanitize.outputs.safe_branch }}${{ inputs.tasklist_mode && format('-{0}', inputs.tasklist_mode) || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report/**
