@@ -49,7 +49,18 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
   private final FeelToMessagePackTransformer outputConverter = new FeelToMessagePackTransformer();
 
   public DmnScalaDecisionEngine() {
-    dmnEngine = new DmnEngine.Builder().build();
+    dmnEngine =
+        Boolean.getBoolean("zeebe.experimental.keepEngineAcrossTransitions")
+            ? SharedDmnEngine.INSTANCE
+            : new DmnEngine.Builder().build();
+  }
+
+  /**
+   * One DMN engine per broker. Every engine rebuild on a role change creates several decision
+   * engines, and building one is costly; the DMN engine keeps no per-evaluation state.
+   */
+  private static final class SharedDmnEngine {
+    private static final DmnEngine INSTANCE = new DmnEngine.Builder().build();
   }
 
   @Override

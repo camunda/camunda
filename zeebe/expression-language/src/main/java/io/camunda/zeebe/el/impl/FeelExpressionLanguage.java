@@ -19,6 +19,7 @@ import io.camunda.zeebe.feel.impl.FeelFunctionProvider;
 import io.camunda.zeebe.feel.impl.FeelToMessagePackTransformer;
 import io.camunda.zeebe.feel.impl.MessagePackValueMapper;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -27,8 +28,12 @@ import java.util.regex.Pattern;
 import org.camunda.feel.FeelEngine;
 import org.camunda.feel.FeelEngine.Failure;
 import org.camunda.feel.FeelEngineClock;
+import org.camunda.feel.impl.JavaValueMapper;
 import org.camunda.feel.syntaxtree.ParsedExpression;
 import org.camunda.feel.syntaxtree.Val;
+import org.camunda.feel.valuemapper.CustomValueMapper;
+import scala.Function1;
+import scala.Option;
 import scala.util.Either;
 
 /**
@@ -42,10 +47,17 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
 
   private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\=(.+)", Pattern.DOTALL);
 
+  private static final boolean SHARE_ENGINE =
+      Boolean.getBoolean("zeebe.experimental.keepEngineAcrossTransitions");
+
+  /** The clock of the expression language evaluating on this thread, for the shared engine. */
+  private static final ThreadLocal<FeelEngineClock> EVALUATION_CLOCK = new ThreadLocal<>();
+
   private final FeelToMessagePackTransformer messagePackTransformer =
       new FeelToMessagePackTransformer();
 
   private final FeelEngine feelEngine;
+  private final FeelEngineClock clock;
   private final ExpressionLanguageMetrics metrics;
 
   public FeelExpressionLanguage(final FeelEngineClock clock) {
@@ -58,13 +70,22 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
 
   public FeelExpressionLanguage(
       final FeelEngineClock clock, final ExpressionLanguageMetrics metrics) {
-    feelEngine =
-        new FeelEngine.Builder()
-            .customValueMapper(new MessagePackValueMapper())
-            .functionProvider(new FeelFunctionProvider())
-            .clock(clock)
-            .build();
+    this.clock = clock;
+    feelEngine = SHARE_ENGINE ? SharedFeelEngine.INSTANCE : buildEngine(clock);
     this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
+  }
+
+  private static FeelEngine buildEngine(final FeelEngineClock clock) {
+    return buildEngine(clock, new MessagePackValueMapper());
+  }
+
+  private static FeelEngine buildEngine(
+      final FeelEngineClock clock, final CustomValueMapper valueMapper) {
+    return new FeelEngine.Builder()
+        .customValueMapper(valueMapper)
+        .functionProvider(new FeelFunctionProvider())
+        .clock(clock)
+        .build();
   }
 
   @Override
@@ -140,7 +161,7 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
 
     final long startNanos = System.nanoTime();
     try {
-      final var evaluationResult = feelEngine.evaluate(parsedExpression, feelContext);
+      final var evaluationResult = evaluate(parsedExpression, feelContext);
       final long durationNanos = System.nanoTime() - startNanos;
 
       logSlowEvaluationIfNeeded(expression, durationNanos);
@@ -170,6 +191,20 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
     }
   }
 
+  private org.camunda.feel.api.EvaluationResult evaluate(
+      final ParsedExpression parsedExpression, final FeelVariableContext feelContext) {
+    if (!SHARE_ENGINE) {
+      return feelEngine.evaluate(parsedExpression, feelContext);
+    }
+    final var previousClock = EVALUATION_CLOCK.get();
+    EVALUATION_CLOCK.set(clock);
+    try {
+      return feelEngine.evaluate(parsedExpression, feelContext);
+    } finally {
+      EVALUATION_CLOCK.set(previousClock);
+    }
+  }
+
   private void logSlowEvaluationIfNeeded(final Expression expression, final long durationNanos) {
     if (metrics.isSlowEvaluation(durationNanos)) {
       Loggers.LOGGER.warn(
@@ -194,5 +229,39 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
               return warnings.add(warning);
             });
     return warnings;
+  }
+
+  /**
+   * One FEEL engine per broker. Every engine rebuild on a role change creates several expression
+   * languages, and building a FEEL engine is costly; the engine reads the evaluating expression
+   * language's clock instead of holding one, and a value mapper per thread, since the mapper reads
+   * variables through a reader of its own.
+   */
+  private static final class SharedFeelEngine {
+    private static final ThreadLocal<MessagePackValueMapper> VALUE_MAPPER =
+        ThreadLocal.withInitial(MessagePackValueMapper::new);
+
+    private static final FeelEngine INSTANCE =
+        buildEngine(
+            new FeelEngineClock() {
+              @Override
+              public ZonedDateTime getCurrentTime() {
+                final var clock = EVALUATION_CLOCK.get();
+                return clock != null ? clock.getCurrentTime() : ZonedDateTime.now();
+              }
+            },
+            new JavaValueMapper() {
+              @Override
+              public Option<Val> toVal(
+                  final Object x, final Function1<Object, Val> innerValueMapper) {
+                return VALUE_MAPPER.get().toVal(x, innerValueMapper);
+              }
+
+              @Override
+              public Option<Object> unpackVal(
+                  final Val value, final Function1<Val, Object> innerValueMapper) {
+                return VALUE_MAPPER.get().unpackVal(value, innerValueMapper);
+              }
+            });
   }
 }
