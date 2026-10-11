@@ -235,7 +235,6 @@ data:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:
-                type: "elasticsearch"
                 url: "http://elasticsearch-es-http:9200"
                 awsEnabled: false
               history:
