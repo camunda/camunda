@@ -338,7 +338,7 @@ public class ProcessInstanceController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceIncidentResolutionBatchOperationRequest request) {
     return processInstanceMapper
-        .toRequiredProcessInstanceFilter(request.getFilter())
+        .toProcessInstanceIncidentResolutionFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             filter -> batchOperationResolveIncidents(physicalTenantId, filter));

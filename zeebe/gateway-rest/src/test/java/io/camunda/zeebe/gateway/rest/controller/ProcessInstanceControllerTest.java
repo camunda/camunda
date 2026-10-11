@@ -2760,6 +2760,151 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldAcceptModifyProcessInstanceBatchOperationWithNonActiveStateInOrFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+
+    when(processInstanceServices.modifyProcessInstancesBatchOperation(
+            any(ProcessInstanceModifyBatchOperationRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter": {
+                "$or": [
+                  {"state": "SUSPENDED"},
+                  {"state": "COMPLETED", "hasIncident": true}
+                ]
+              },
+              "moveInstructions": [
+                {
+                  "sourceElementId": "source1",
+                  "targetElementId": "target1"
+                }
+              ]
+            }
+            """;
+
+    // when / then - states in $or branches are narrowed, not validated
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .modifyProcessInstancesBatchOperation(
+            any(ProcessInstanceModifyBatchOperationRequest.class), any());
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceBatchOperationWithNonActiveState() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "state": "COMPLETED"
+              },
+              "moveInstructions": [
+                {
+                  "sourceElementId": "source1",
+                  "targetElementId": "target1"
+                }
+              ]
+            }
+            """;
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'COMPLETED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .modifyProcessInstancesBatchOperation(
+            any(ProcessInstanceModifyBatchOperationRequest.class), any());
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceBatchOperationWithNonActiveStateInListButNotInOrFilter() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "state": {"$in": ["ACTIVE", "TERMINATED"]},
+                "$or": [
+                  {"state": "SUSPENDED"},
+                  {"state": "COMPLETED", "hasIncident": true}
+                ]
+              },
+              "moveInstructions": [
+                {
+                  "sourceElementId": "source1",
+                  "targetElementId": "target1"
+                }
+              ]
+            }
+            """;
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'TERMINATED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .modifyProcessInstancesBatchOperation(
+            any(ProcessInstanceModifyBatchOperationRequest.class), any());
+  }
+
+  @Test
   public void shouldGetElementStatistics() {
     // given
     final long processInstanceKey = 1L;
@@ -2840,6 +2985,83 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldAcceptResolveIncidentsBatchOperationWithNonActiveStateInOrFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+
+    when(processInstanceServices.resolveIncidentsBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter": {
+                "$or": [
+                  {"state": "COMPLETED"},
+                  {"state": "SUSPENDED", "hasIncident": true}
+                ]
+              }
+            }""";
+
+    // when / then - states in $or branches are narrowed, not validated
+    webClient
+        .post()
+        .uri("/v2/process-instances/incident-resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .resolveIncidentsBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldRejectResolveIncidentsBatchOperationWithNonActiveState() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "state": {"$in": ["ACTIVE", "COMPLETED"]}
+              }
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'COMPLETED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/incident-resolution"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/incident-resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .resolveIncidentsBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
   void shouldMigrateProcessInstancesBatchOperation() {
     // given
     final var record = new BatchOperationCreationRecord();
@@ -2887,6 +3109,157 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
+        .migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any());
+  }
+
+  @Test
+  void shouldAcceptMigrateProcessInstancesBatchOperationWithNonActiveStateInOrFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+
+    when(processInstanceServices.migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+           {
+            "filter": {
+              "$or": [
+                {"state": "SUSPENDED"},
+                {"state": "COMPLETED", "hasIncident": true}
+              ]
+            },
+            "migrationPlan": {
+                "targetProcessDefinitionKey": "123",
+                "mappingInstructions": [
+                  {
+                    "sourceElementId": "a",
+                    "targetElementId": "b"
+                  }
+                ]
+              }
+           }""";
+
+    // when / then - states in $or branches are narrowed, not validated
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any());
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstancesBatchOperationWithNonActiveState() {
+    // given
+    final var request =
+        """
+           {
+            "filter": {
+              "state": "COMPLETED"
+            },
+            "migrationPlan": {
+                "targetProcessDefinitionKey": "123",
+                "mappingInstructions": [
+                  {
+                    "sourceElementId": "a",
+                    "targetElementId": "b"
+                  }
+                ]
+              }
+           }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'COMPLETED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/migration"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any());
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstancesBatchOperationWithNonActiveStateInListButNotInOrFilter() {
+    // given
+    final var request =
+        """
+           {
+            "filter": {
+              "state": {"$in": ["ACTIVE", "TERMINATED"]},
+              "$or": [
+                {"state": "SUSPENDED"},
+                {"state": "COMPLETED", "hasIncident": true}
+              ]
+            },
+            "migrationPlan": {
+                "targetProcessDefinitionKey": "123",
+                "mappingInstructions": [
+                  {
+                    "sourceElementId": "a",
+                    "targetElementId": "b"
+                  }
+                ]
+              }
+           }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'TERMINATED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/migration"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
         .migrateProcessInstancesBatchOperation(
             any(ProcessInstanceMigrateBatchOperationRequest.class), any());
   }

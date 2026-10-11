@@ -17,15 +17,18 @@ import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.CreateBatchOperationCommandStep3;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.ProcessInstanceModificationStep;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
@@ -202,6 +205,26 @@ public class BatchOperationModifyProcessInstanceIT {
     processInstanceHasActiveUserTasks(
         camundaClient, processInstanceKey1, Map.of("userTaskD", 1L, "userTaskF", 2L));
     processInstanceHasActiveUserTasks(camundaClient, processInstanceKey2, Map.of("userTaskF", 2L));
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceWithNonActiveStateFilter() {
+    // given
+    final var processInstanceKey = processInstancesPath1.get(0);
+
+    // when / then - only ACTIVE is a valid state filter for modification; a conflicting state is
+    // rejected up front instead of silently narrowing the batch to zero items
+    assertThatThrownBy(
+            () ->
+                modifyProcessInstance(
+                    b ->
+                        b.addMoveInstruction("userTaskE", "userTaskF")
+                            .filter(
+                                f ->
+                                    f.processInstanceKey(processInstanceKey)
+                                        .state(ProcessInstanceState.COMPLETED))))
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("The value for state is 'COMPLETED' but must be one of");
   }
 
   @Test

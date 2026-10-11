@@ -21,6 +21,7 @@ import {handleOperationError} from 'modules/utils/notifications';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
+import {FINISHED_STATE_SEARCH_PARAMS} from 'modules/hooks/useBatchOperationMutationRequestBody';
 
 const Footer: React.FC = observer(() => {
   const [searchParams] = useSearchParams();
@@ -161,8 +162,14 @@ const Footer: React.FC = observer(() => {
                       ? batchOperationQuery.conditions
                       : undefined;
 
+                  // The migration endpoint rejects finished states, so they are left out of the filter.
+                  const requestSearchParams = new URLSearchParams(searchParams);
+                  FINISHED_STATE_SEARCH_PARAMS.forEach((param) =>
+                    requestSearchParams.delete(param),
+                  );
+
                   const requestBody = buildMutationRequestBody({
-                    searchParams,
+                    searchParams: requestSearchParams,
                     includeIds,
                     excludeIds,
                     conditions,
