@@ -37,9 +37,12 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.WeakHashMap;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableBoolean;
@@ -49,6 +52,18 @@ import org.agrona.io.DirectBufferInputStream;
 public final class DbProcessState implements MutableProcessState {
 
   private static final int DEFAULT_VERSION_VALUE = 0;
+
+  private static final boolean KEEP_CACHE_ACROSS_TRANSITIONS =
+      Boolean.getBoolean("zeebe.experimental.keepEngineAcrossTransitions");
+
+  /**
+   * Process caches per state database. The engine, and with it this state, is rebuilt on every role
+   * change, while the database stays; a follower fills its cache while replaying, so keeping the
+   * cache with the database spares a new leader re-reading every process it runs. A new database
+   * (recovery, snapshot install) starts with an empty cache.
+   */
+  private static final Map<ZeebeDb<?>, ProcessCaches> CACHES_BY_DB =
+      Collections.synchronizedMap(new WeakHashMap<>());
 
   private final BpmnTransformer transformer;
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
@@ -197,12 +212,27 @@ public final class DbProcessState implements MutableProcessState {
             pendingDeletionKey,
             DbNil.INSTANCE);
 
-    processByTenantAndKeyCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
-    processesByTenantAndProcessIdAndVersionCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
-    processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+    final var caches =
+        KEEP_CACHE_ACROSS_TRANSITIONS
+            ? CACHES_BY_DB.computeIfAbsent(
+                zeebeDb, db -> new ProcessCaches(config.getProcessCacheCapacity()))
+            : new ProcessCaches(config.getProcessCacheCapacity());
+    processByTenantAndKeyCache = caches.byKey();
+    processesByTenantAndProcessIdAndVersionCache = caches.byIdAndVersion();
+    processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache = caches.keyByDeployment();
+  }
+
+  private record ProcessCaches(
+      Cache<TenantIdAndProcessDefinitionKey, DeployedProcess> byKey,
+      Cache<TenantIdAndProcessIdAndVersion, DeployedProcess> byIdAndVersion,
+      Cache<TenantIdAndProcessIdAndDeploymentKey, Long> keyByDeployment) {
+
+    private ProcessCaches(final long capacity) {
+      this(
+          CacheBuilder.newBuilder().maximumSize(capacity).build(),
+          CacheBuilder.newBuilder().maximumSize(capacity).build(),
+          CacheBuilder.newBuilder().maximumSize(capacity).build());
+    }
   }
 
   @Override
