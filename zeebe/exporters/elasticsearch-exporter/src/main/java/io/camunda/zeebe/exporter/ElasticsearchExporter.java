@@ -17,13 +17,17 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.exporter.filter.DefaultRecordFilter;
 import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -39,6 +43,8 @@ public class ElasticsearchExporter implements Exporter {
    * https://www.elastic.co/guide/en/elasticsearch/reference/current/api-conventions.html#time-units
    */
   private static final String PATTERN_MIN_AGE_FORMAT = "^[0-9]+[dhms]$";
+
+  private static final Set<String> SCHEMA_CREATED_ON_CONFIGURE = ConcurrentHashMap.newKeySet();
 
   private static final Predicate<String> CHECKER_MIN_AGE =
       Pattern.compile(PATTERN_MIN_AGE_FORMAT).asPredicate();
@@ -73,6 +79,32 @@ public class ElasticsearchExporter implements Exporter {
 
     context.setFilter(new DefaultRecordFilter(configuration));
     registry = context.getMeterRegistry();
+
+    if (ElasticsearchExporterSchemaManager.ONCE_PER_BROKER
+        && context.getPartitionId() >= Protocol.START_PARTITION_ID
+        && SCHEMA_CREATED_ON_CONFIGURE.add(configuration.url + "|" + configuration.index.prefix)) {
+      createSchemaOnConfigure();
+    }
+  }
+
+  /**
+   * Followers configure their exporters when the broker starts, so creating the schema here moves
+   * it off a restarted broker's first leader change. It is tried once per broker; on failure the
+   * first exported record creates it as before.
+   */
+  private void createSchemaOnConfigure() {
+    final var version =
+        SemanticVersion.parse(VersionUtil.getVersion())
+            .map(v -> v.major() + "." + v.minor() + "." + v.patch())
+            .orElse(null);
+    if (version == null) {
+      return;
+    }
+    try (final var schemaClient = createClient()) {
+      new ElasticsearchExporterSchemaManager(schemaClient, configuration).createSchema(version);
+    } catch (final Exception e) {
+      log.debug("Failed to create the schema while configuring; will create it on export", e);
+    }
   }
 
   @Override

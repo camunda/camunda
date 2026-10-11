@@ -12,13 +12,25 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchExporterSchemaManager {
 
+  static final boolean ONCE_PER_BROKER =
+      Boolean.getBoolean("zeebe.experimental.esSchemaOncePerBroker");
+
   private static final Logger LOG =
       LoggerFactory.getLogger(ElasticsearchExporterSchemaManager.class.getPackageName());
+
+  /**
+   * Schemas (cluster, prefix and broker version) that an exporter in this broker has created. An
+   * exporter is created anew on every leader change, so without this every new leader re-puts all
+   * templates on its first record.
+   */
+  private static final Set<String> CREATED_IN_BROKER = ConcurrentHashMap.newKeySet();
+
   private final ElasticsearchExporterClient client;
   private final ElasticsearchExporterConfiguration configuration;
   private final Set<String> indexTemplatesCreated = new HashSet<>();
@@ -48,10 +60,21 @@ public class ElasticsearchExporterSchemaManager {
   }
 
   public void createSchema(final String brokerVersion) {
-    if (!indexTemplatesCreated.contains(brokerVersion)) {
-      createIndexTemplates(brokerVersion);
-      updateRetentionPolicyForExistingIndices();
+    if (indexTemplatesCreated.contains(brokerVersion)) {
+      return;
     }
+    final var brokerKey = brokerKey(brokerVersion);
+    if (ONCE_PER_BROKER && CREATED_IN_BROKER.contains(brokerKey)) {
+      indexTemplatesCreated.add(brokerVersion);
+      return;
+    }
+    createIndexTemplates(brokerVersion);
+    updateRetentionPolicyForExistingIndices();
+    CREATED_IN_BROKER.add(brokerKey);
+  }
+
+  private String brokerKey(final String brokerVersion) {
+    return configuration.url + "|" + configuration.index.prefix + "|" + brokerVersion;
   }
 
   private void updateRetentionPolicyForExistingIndices() {
