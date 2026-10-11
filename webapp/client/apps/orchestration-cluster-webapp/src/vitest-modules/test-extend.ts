@@ -9,6 +9,7 @@
 import {inject, it as itBase} from 'vitest';
 import {http, HttpResponse, isCommonAssetRequest} from 'msw';
 import {setupWorker} from 'msw/browser';
+import {HttpNetworkFrame} from 'msw/experimental';
 import {cleanup} from 'vitest-browser-react';
 
 const worker = setupWorker();
@@ -22,12 +23,13 @@ const it = itBase.extend<{
 			const unhandledRequests = new Set<string>();
 
 			await worker.start({
-				onUnhandledRequest(request, print) {
-					if (isCommonAssetRequest(request)) {
+				onUnhandledFrame({frame, defaults}) {
+					if (!(frame instanceof HttpNetworkFrame) || isCommonAssetRequest(frame.data.request)) {
 						return;
 					}
+					const {request} = frame.data;
 					unhandledRequests.add(`${request.method} ${new URL(request.url).pathname}`);
-					print.error();
+					defaults.error();
 				},
 				quiet: true,
 			});
@@ -41,7 +43,7 @@ const it = itBase.extend<{
 			worker.use(http.get('/__msw-flush', () => new HttpResponse(null, {status: 204})));
 			await fetch('/__msw-flush');
 			worker.resetHandlers();
-			worker.stop();
+			await worker.stop();
 
 			if (inject('failOnUnhandledRequests') && unhandledRequests.size > 0) {
 				throw new Error(
