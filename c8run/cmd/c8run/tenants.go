@@ -37,7 +37,7 @@ type tenantsCommand struct {
 	port int
 	// storageType resolves the secondary storage type `c8run start` would use, so `add`
 	// rejects ids that storage cannot hold.
-	storageType func(baseDir string) (string, error)
+	storageType func(baseDir string) string
 }
 
 func newTenantsCommand() *tenantsCommand {
@@ -59,10 +59,10 @@ func newTenantsCommand() *tenantsCommand {
 
 // defaultStorageType resolves the storage type from the default configuration and the
 // environment, the same way startup does without --config.
-func defaultStorageType(baseDir string) (string, error) {
+func defaultStorageType(baseDir string) string {
 	var settings types.C8RunSettings
-	applySecondaryStorageDefaults(baseDir, &settings)
-	return effectiveStorageType(settings.SecondaryStorageType)
+	applyConfigSettings(baseDir, &settings)
+	return settings.SecondaryStorageType
 }
 
 func (c *tenantsCommand) run(baseDir string, args []string) error {
@@ -184,10 +184,7 @@ func (c *tenantsCommand) add(baseDir string, store *pt.Store, args []string) err
 	if err != nil {
 		return err
 	}
-	storageType, err := c.storageType(baseDir)
-	if err != nil {
-		return err
-	}
+	storageType := c.storageType(baseDir)
 	for _, id := range opts.ids {
 		if err := pt.ValidateIDForStorage(id, storageType); err != nil {
 			return err

@@ -13,9 +13,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"gopkg.in/yaml.v3"
@@ -24,8 +24,6 @@ import (
 // GeneratedConfigName is written into the c8run configuration directory. Spring only
 // auto-loads application.yaml from that directory, so c8run adds this file explicitly.
 const GeneratedConfigName = "physical-tenants.generated.yaml"
-
-func isWindows() bool { return runtime.GOOS == "windows" }
 
 // StoragePrefix returns the secondary-storage namespace a tenant gets for a storage type,
 // and the camunda.data.secondary-storage sub-key it lives under.
@@ -147,79 +145,24 @@ func ApplyGeneratedConfig(baseDir string, content []byte) error {
 		}
 		return nil
 	}
-	if err := atomicWrite(path, content, 0o644); err != nil {
+	if err := localsecrets.WriteOwnerOnlyFile(path, content); err != nil {
 		return fmt.Errorf("failed to write %s: %w", path, err)
 	}
 	return nil
 }
 
-// WriteGeneratedConfig writes (or, with no tenants, removes) the generated config file.
-func WriteGeneratedConfig(baseDir string, tenants []types.PhysicalTenant, storageType string) (string, error) {
-	return WriteGeneratedConfigForPort(baseDir, tenants, storageType, 0)
-}
-
 // portMarker records the port c8run was started on so `c8run tenants` prints matching URLs.
 const portMarker = "# c8run-port: "
 
-// WriteGeneratedConfigForPort is WriteGeneratedConfig that also records the Camunda port.
-func WriteGeneratedConfigForPort(baseDir string, tenants []types.PhysicalTenant, storageType string, port int) (string, error) {
-	path := filepath.Join(baseDir, "configuration", GeneratedConfigName)
-	if len(tenants) == 0 {
-		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return "", err
-		}
-		return "", nil
-	}
-	content, err := Render(tenants, storageType)
-	if err != nil {
-		return "", err
-	}
-	if port > 0 {
-		content = append([]byte(fmt.Sprintf("%s%d\n", portMarker, port)), content...)
-	}
-	if err := atomicWrite(path, content, 0o644); err != nil {
-		return "", fmt.Errorf("failed to write %s: %w", path, err)
-	}
-	return path, nil
-}
-
 // ConfigDeclaresTenants reports whether a Spring YAML file declares camunda.physical-tenants.
 func ConfigDeclaresTenants(path string) bool {
-	if root, ok := springconfig.Load(path); ok {
-		if _, ok := springconfig.Lookup(root, "camunda", "physical-tenants"); ok {
-			return true
-		}
-		if _, ok := springconfig.Lookup(root, "camunda", "physicalTenants"); ok {
-			return true
-		}
-		return false
-	}
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	if strings.HasSuffix(path, ".properties") {
-		return strings.Contains(string(content), "camunda.physical-tenants.") ||
-			strings.Contains(string(content), "camunda.physicalTenants.")
-	}
-	var root map[string]any
-	if yaml.Unmarshal(content, &root) != nil {
+	root, ok := springconfig.Load(path)
+	if !ok {
+		content, _ := os.ReadFile(path)
 		return strings.Contains(string(content), "physical-tenants")
 	}
-	if camunda, ok := root["camunda"].(map[string]any); ok {
-		if _, ok := camunda["physical-tenants"]; ok {
-			return true
-		}
-		if _, ok := camunda["physicalTenants"]; ok {
-			return true
-		}
-	}
-	for key := range root {
-		if strings.HasPrefix(key, "camunda.physical-tenants.") {
-			return true
-		}
-	}
-	return false
+	_, ok = springconfig.Lookup(root, "camunda", "physical-tenants")
+	return ok
 }
 
 // ResolveInput is everything Resolve needs; it keeps the function free of globals for tests.

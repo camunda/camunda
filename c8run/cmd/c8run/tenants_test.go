@@ -18,6 +18,7 @@ import (
 	"github.com/camunda/camunda/c8run/internal/overrides"
 	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +39,7 @@ func testTenantsCommand(t *testing.T, input string, terminal bool, passwords ...
 			return []byte(pw), nil
 		},
 		port:        8080,
-		storageType: func(string) (string, error) { return "rdbms", nil },
+		storageType: func(string) string { return "rdbms" },
 	}, out, errOut
 }
 
@@ -89,10 +90,9 @@ func TestTenantsAddWithUserPromptsAndConfirms(t *testing.T) {
 	assert.Contains(t, errOut.String(), "Passwords do not match")
 	assert.NotContains(t, out.String()+errOut.String(), "good")
 	path, _ := pt.ResolvePath(base)
-	pw, ok, err := pt.NewStore(path).Password("hr")
+	_, passwords, err := pt.NewStore(path).Snapshot()
 	require.NoError(t, err)
-	assert.True(t, ok)
-	assert.Equal(t, "good", pw)
+	assert.Equal(t, "good", passwords["hr"])
 }
 
 func TestTenantsAddPasswordStdin(t *testing.T) {
@@ -100,8 +100,8 @@ func TestTenantsAddPasswordStdin(t *testing.T) {
 	cmd, _, _ := testTenantsCommand(t, "fromstdin\n", false, "")
 	require.NoError(t, cmd.run(base, []string{"add", "hr", "--username", "alice", "--password-stdin"}))
 	path, _ := pt.ResolvePath(base)
-	pw, _, _ := pt.NewStore(path).Password("hr")
-	assert.Equal(t, "fromstdin", pw)
+	_, passwords, _ := pt.NewStore(path).Snapshot()
+	assert.Equal(t, "fromstdin", passwords["hr"])
 
 	assert.ErrorContains(t, cmd.run(base, []string{"add", "x", "--username", "bob"}), "requires a terminal")
 }
@@ -191,29 +191,16 @@ func TestConfigureTenantSecretStores(t *testing.T) {
 	assert.NotEqual(t, filepath.Join(baseDir, "secrets"), a)
 }
 
-func TestEffectiveStorageTypePrecedence(t *testing.T) {
-	t.Setenv("JAVA_OPTS", "")
-	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "")
-	t.Setenv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "")
-	got, _ := effectiveStorageType("rdbms")
-	assert.Equal(t, "rdbms", got)
-	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
-	got, _ = effectiveStorageType("rdbms")
-	assert.Equal(t, "elasticsearch", got)
-	t.Setenv("JDK_JAVA_OPTIONS", "-Dcamunda.data.secondary-storage.type=elasticsearch -Dcamunda.data.secondary-storage.type=opensearch")
-	got, _ = effectiveStorageType("rdbms")
-	assert.Equal(t, "opensearch", got, "JDK_JAVA_OPTIONS beats env vars; the last -D wins")
-	t.Setenv("JAVA_OPTS", "-Xmx1g -Dcamunda.data.secondary-storage.type=rdbms")
-	got, _ = effectiveStorageType("elasticsearch")
-	assert.Equal(t, "rdbms", got, "JAVA_OPTS is on the command line and beats JDK_JAVA_OPTIONS")
-}
-
 func TestApplyPhysicalTenantsUsesEffectiveStorageType(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
 	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
-	settings := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"a"}, SecondaryStorageType: "rdbms"}
-	require.NoError(t, applyEffectiveRuntimeSettings(&settings))
+	require.NoError(t, os.MkdirAll(filepath.Join(base, "configuration"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(base, "configuration", "application.yaml"), []byte("camunda.data.secondary-storage.type: rdbms\n"), 0o644))
+	settings := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"a"}}
+	applyConfigSettings(base, &settings)
 	assert.Equal(t, "elasticsearch", settings.SecondaryStorageType, "driver checks and cleanup see the effective type too")
 	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
 	content := settings.PhysicalTenantsConfig
@@ -235,16 +222,22 @@ func TestReservedPortsIncludeCamundaPort(t *testing.T) {
 	assert.True(t, reserved[26500])
 }
 
-func TestAuthenticationIsOIDC(t *testing.T) {
+func TestApplyConfigSettingsDetectsOIDC(t *testing.T) {
 	t.Setenv("JAVA_OPTS", "")
 	t.Setenv("JDK_JAVA_OPTIONS", "")
 	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "")
-	cfg := filepath.Join(t.TempDir(), "app.yaml")
-	require.NoError(t, os.WriteFile(cfg, []byte("camunda:\n  security:\n    authentication:\n      method: oidc\n"), 0o644))
-	assert.True(t, authenticationIsOIDC([]string{cfg}))
-	assert.False(t, authenticationIsOIDC(nil))
+	base := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(base, "app.yaml"), []byte("camunda:\n  security:\n    authentication:\n      method: oidc\n"), 0o644))
+	settings := types.C8RunSettings{Config: "app.yaml"}
+	applyConfigSettings(base, &settings)
+	assert.True(t, settings.OIDC)
+	settings = types.C8RunSettings{}
+	applyConfigSettings(base, &settings)
+	assert.False(t, settings.OIDC)
 	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "basic")
-	assert.False(t, authenticationIsOIDC([]string{cfg}), "the environment beats config files")
+	settings = types.C8RunSettings{Config: "app.yaml"}
+	applyConfigSettings(base, &settings)
+	assert.False(t, settings.OIDC, "the environment beats config files")
 }
 
 func TestApplyPhysicalTenantsFailsWhenSavedTenantsCannotBeFound(t *testing.T) {
@@ -270,7 +263,7 @@ func TestResolveConfigPathsIncludesEveryStandardFileInADirectory(t *testing.T) {
 	require.NoError(t, os.MkdirAll(dir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.yml"), []byte("camunda:\n  physical-tenants:\n    x: {}\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.properties"), []byte("camunda.physical-tenants.y.foo=1\n"), 0o644))
-	paths := resolveConfigPaths(base, "cfg")
+	paths := springconfig.Paths(base, "cfg")
 	assert.Contains(t, paths, filepath.Join(dir, "application.yml"))
 	assert.Contains(t, paths, filepath.Join(dir, "application.properties"))
 	assert.True(t, pt.ConfigDeclaresTenants(filepath.Join(dir, "application.yml")))
@@ -301,12 +294,12 @@ func TestConfigDirectoryFollowsSpringPrecedence(t *testing.T) {
 		t.Setenv(key, "")
 	}
 
-	paths := resolveConfigPaths(base, "cfg")
+	paths := springconfig.Paths(base, "cfg")
 	assert.Equal(t, filepath.Join(dir, "application.properties"), paths[0], ".properties wins over YAML in one location")
 	assert.True(t, overrides.ConnectorsAuthRequired(paths), "the protecting .properties value must win, so connectors get credentials")
 
 	settings := types.C8RunSettings{Config: "cfg"}
-	applySecondaryStorageDefaults(base, &settings)
+	applyConfigSettings(base, &settings)
 	assert.Equal(t, "elasticsearch", settings.SecondaryStorageType, "tenant isolation must follow the .properties storage type")
 }
 
@@ -339,7 +332,7 @@ func TestTenantsAddRejectsIDsTooLongForRDBMS(t *testing.T) {
 	assert.Empty(t, tenants, "a rejected id must not be saved")
 	require.NoError(t, cmd.run(base, []string{"add", "saleseme"}))
 
-	cmd.storageType = func(string) (string, error) { return "elasticsearch", nil }
+	cmd.storageType = func(string) string { return "elasticsearch" }
 	require.NoError(t, cmd.run(base, []string{"add", "salesemea1"}))
 }
 
@@ -353,47 +346,18 @@ func TestApplyPhysicalTenantsRejectsIDsTooLongForRDBMS(t *testing.T) {
 	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &es))
 }
 
-func TestDetectSecondaryStorageTypeUsesSpringConfigLoader(t *testing.T) {
-	dir := t.TempDir()
-	write := func(name, content string) string {
-		path := filepath.Join(dir, name)
-		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
-		return path
-	}
-	cases := map[string]struct{ file, content, want string }{
-		"flat dotted YAML key":    {"flat.yaml", "camunda.data.secondary-storage.type: elasticsearch\n", "elasticsearch"},
-		"placeholder default":     {"placeholder.yaml", "camunda:\n  data:\n    secondary-storage:\n      type: ${C8RUN_TEST_STORAGE:elasticsearch}\n", "elasticsearch"},
-		"camelCase YAML":          {"camel.yaml", "camunda:\n  data:\n    secondaryStorage:\n      type: opensearch\n", "opensearch"},
-		"camelCase properties":    {"camel.properties", "camunda.data.secondaryStorage.type=elasticsearch\n", "elasticsearch"},
-		"kebab-case properties":   {"kebab.properties", "camunda.data.secondary-storage.type=rdbms\n", "rdbms"},
-		"no storage type present": {"empty.yaml", "camunda:\n  data: {}\n", ""},
-	}
-	for name, tc := range cases {
-		got, err := detectSecondaryStorageType(write(tc.file, tc.content))
-		require.NoError(t, err, name)
-		assert.Equal(t, tc.want, got, name)
-	}
-
-	t.Setenv("C8RUN_TEST_STORAGE", "opensearch")
-	got, err := detectSecondaryStorageType(filepath.Join(dir, "placeholder.yaml"))
-	require.NoError(t, err)
-	assert.Equal(t, "opensearch", got, "the environment overrides the placeholder default")
-}
-
 func TestFlatYAMLStorageTypeIsolatesTenantsByIndexPrefix(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
 	t.Setenv("JAVA_OPTS", "")
 	t.Setenv("JDK_JAVA_OPTIONS", "")
-	for _, key := range storageTypeEnv {
-		t.Setenv(key, "")
-	}
+	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "")
+	t.Setenv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "")
 	cfg := filepath.Join(base, "user.yaml")
 	require.NoError(t, os.WriteFile(cfg, []byte("camunda.data.secondary-storage.type: elasticsearch\n"), 0o644))
 
 	settings := types.C8RunSettings{Config: "user.yaml", DisableConnectors: true, PhysicalTenantsFlag: []string{"sales"}}
-	applySecondaryStorageDefaults(base, &settings)
-	require.NoError(t, applyEffectiveRuntimeSettings(&settings))
+	applyConfigSettings(base, &settings)
 	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
 
 	content := string(settings.PhysicalTenantsConfig)

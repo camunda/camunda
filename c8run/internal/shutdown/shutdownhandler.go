@@ -12,7 +12,6 @@ import (
 	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 type ShutdownHandler struct {
@@ -82,7 +81,7 @@ func (s *ShutdownHandler) stopCommand(settings types.C8RunSettings, processes ty
 		log.Info().Msg("Camunda is stopped.")
 	}
 
-	if shouldDeleteDataDir(settings, processes) {
+	if shouldDeleteDataDir(settings) {
 		deleteDataDir(processes)
 	}
 }
@@ -131,25 +130,14 @@ func (s *ShutdownHandler) stopProcess(pidPath string) error {
 	return nil
 }
 
-func shouldDeleteDataDir(settings types.C8RunSettings, processes types.Processes) bool {
+func shouldDeleteDataDir(settings types.C8RunSettings) bool {
 	// Only consider deletion when using H2 (default) secondary storage.
-	if settings.SecondaryStorageType == "" || strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+	if !strings.EqualFold(settings.SecondaryStorageType, "rdbms") {
 		return false
 	}
 
-	// Highest precedence: explicit env override.
-	if url, ok := os.LookupEnv("CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL"); ok {
-		return isInMemoryH2(url)
-	}
-
-	baseDir := filepath.Dir(processes.Camunda.PidPath)
-	for _, cfg := range resolveConfigPaths(baseDir, settings.Config) {
-		if url, err := detectRdbmsURL(cfg); err == nil && isInMemoryH2(url) {
-			return true
-		}
-	}
-
-	return false
+	url, _ := springconfig.Value(settings.ConfigPaths, "camunda.data.secondary-storage.rdbms.url")
+	return isInMemoryH2(url)
 }
 
 func deleteDataDir(processes types.Processes) {
@@ -181,77 +169,4 @@ func deleteDataDir(processes types.Processes) {
 func isInMemoryH2(url string) bool {
 	u := strings.ToLower(strings.TrimSpace(url))
 	return strings.HasPrefix(u, "jdbc:h2:mem")
-}
-
-func resolveConfigPaths(baseDir string, userConfig string) []string {
-	var paths []string
-	if userConfig != "" {
-		candidate := filepath.Join(baseDir, userConfig)
-		if _, err := os.Stat(candidate); err == nil {
-			// Same files and precedence as startup, so stop agrees with what start ran.
-			paths = append(paths, springconfig.FilesIn(candidate)...)
-		}
-	}
-	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
-	paths = append(paths, defaultConfig)
-	return paths
-}
-
-func detectRdbmsURL(path string) (string, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", nil
-		}
-		return "", err
-	}
-	if info.IsDir() {
-		return detectRdbmsURL(springconfig.FilesIn(path)[0])
-	}
-	if strings.EqualFold(filepath.Ext(path), ".properties") {
-		root, _ := springconfig.Load(path)
-		url, _ := springconfig.Lookup(root, "camunda", "data", "secondary-storage", "rdbms", "url")
-		value, _ := url.(string)
-		return strings.TrimSpace(springconfig.ResolvePlaceholders(value)), nil
-	}
-
-	content, err := os.ReadFile(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", nil
-		}
-		return "", err
-	}
-
-	if len(strings.TrimSpace(string(content))) == 0 {
-		return "", nil
-	}
-
-	var root map[string]any
-	if err := yaml.Unmarshal(content, &root); err != nil {
-		log.Warn().Err(err).Str("path", path).
-			Msg("failed to parse YAML configuration while detecting RDBMS URL; ignoring and proceeding without secondary storage URL")
-		return "", err
-	}
-
-	camundaNode, ok := root["camunda"].(map[string]any)
-	if !ok {
-		return "", nil
-	}
-	dataNode, ok := camundaNode["data"].(map[string]any)
-	if !ok {
-		return "", nil
-	}
-	secondaryNode, ok := dataNode["secondary-storage"].(map[string]any)
-	if !ok {
-		return "", nil
-	}
-	rdbmsNode, ok := secondaryNode["rdbms"].(map[string]any)
-	if !ok {
-		return "", nil
-	}
-	if url, ok := rdbmsNode["url"].(string); ok {
-		return strings.TrimSpace(springconfig.ResolvePlaceholders(url)), nil
-	}
-	return "", nil
 }

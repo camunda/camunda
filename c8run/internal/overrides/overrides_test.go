@@ -215,3 +215,20 @@ func TestConnectorsAuthRequiredHonoursEnvironmentAndJVMOverrides(t *testing.T) {
 		t.Fatal("a JVM option enabling authorizations must require credentials")
 	}
 }
+
+func TestConnectorsAuthRequiredAcceptsSpringBooleanSpellings(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "off")
+	assert.True(t, ConnectorsAuthRequired(nil), "off protects the API")
+
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "")
+	authorizations := writeConfig(t, "application.yaml", "camunda.security.authorizations.enabled: yes\n")
+	assert.True(t, ConnectorsAuthRequired([]string{authorizations}), "yes enables authorizations")
+
+	t.Setenv("JAVA_OPTS", "-Dcamunda.security.authentication.unprotected-api=No")
+	unprotected := writeConfig(t, "application.yaml", "camunda.security.authentication.unprotected-api: true\n")
+	assert.True(t, ConnectorsAuthRequired([]string{unprotected}), "No in JAVA_OPTS protects the API over the config file")
+}
