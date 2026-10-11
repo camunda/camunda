@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.search.clients.aggregator.SearchAggregatorBuilders;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.Arguments;
@@ -44,7 +45,24 @@ public class SearchTopHitsAggregatorTransformerTest
                 .size(20)
                 .aggregations(SearchAggregatorBuilders.terms("termsAgg", "field"))
                 .build(),
-            "{'aggregations':{'termsAgg':{'terms':{'field':'field','min_doc_count':1,'size':10}}},'top_hits':{'size':20,'_source':{'includes':['status']}}}"));
+            "{'aggregations':{'termsAgg':{'terms':{'field':'field','min_doc_count':1,'size':10}}},'top_hits':{'size':20,'_source':{'includes':['status']}}}"),
+        Arguments.arguments(
+            SearchAggregatorBuilders.topHits()
+                .name("name")
+                .excludes(List.of("bpmnXml"))
+                .documentClass(Object.class)
+                .size(1)
+                .build(),
+            "{'top_hits':{'size':1,'_source':{'excludes':['bpmnXml'],'includes':[]}}}"),
+        Arguments.arguments(
+            SearchAggregatorBuilders.topHits()
+                .name("name")
+                .field("status")
+                .excludes(List.of("bpmnXml"))
+                .documentClass(Object.class)
+                .size(1)
+                .build(),
+            "{'top_hits':{'size':1,'_source':{'excludes':['bpmnXml'],'includes':['status']}}}"));
   }
 
   @Test
