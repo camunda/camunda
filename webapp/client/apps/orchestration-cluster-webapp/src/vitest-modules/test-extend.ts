@@ -43,7 +43,9 @@ const it = itBase.extend<{
 			worker.use(http.get('/__msw-flush', () => new HttpResponse(null, {status: 204})));
 			await fetch('/__msw-flush');
 			worker.resetHandlers();
-			await worker.stop();
+			// Not awaited: stop() waits for in-flight requests, so tests mocking a pending state with `delay('infinite')` would
+			// never finish.
+			void worker.stop();
 
 			if (inject('failOnUnhandledRequests') && unhandledRequests.size > 0) {
 				throw new Error(
