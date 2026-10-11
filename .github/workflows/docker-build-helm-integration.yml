@@ -649,7 +649,7 @@ jobs:
           exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
       # Standardised AlwaysGreen feedback → also post a Verdict/Evidence/Next-steps
       # comment on the PR (resolved from the merge_group head_ref). Best-effort.
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: failure()
         with:
           node-version: "26"
@@ -1180,7 +1180,7 @@ jobs:
       # Verdict/Evidence/Next-steps to the job summary, the PR (upserted) and Slack.
       # Until this ran, a SaaS failure reached the author only as a check-run on the
       # tested commit -- which on a push run is the merge commit, not part of the PR.
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: failure()
         with:
           node-version: "26"
