@@ -9,6 +9,7 @@
 import {expect, test as base} from '@playwright/test';
 import {defineNetworkFixture, type NetworkFixture} from '@msw/playwright';
 import type {AnyHandler} from 'msw';
+import {HttpNetworkFrame} from 'msw/experimental';
 import AxeBuilder from '@axe-core/playwright';
 import {LoginPage} from '#/pages/Login.page';
 import {TasklistIndexPage} from '#/pages/tasklist/TasklistIndex.page';
@@ -165,7 +166,11 @@ const test = base.extend<Fixtures>({
 			const network = defineNetworkFixture({
 				context,
 				handlers,
-				onUnhandledRequest(request, print) {
+				onUnhandledFrame({frame, defaults}) {
+					if (!(frame instanceof HttpNetworkFrame)) {
+						return;
+					}
+					const {request} = frame.data;
 					const url = new URL(request.url);
 					if (
 						request.method === 'GET' &&
@@ -174,7 +179,7 @@ const test = base.extend<Fixtures>({
 					) {
 						return;
 					}
-					print.error();
+					defaults.error();
 				},
 			});
 

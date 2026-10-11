@@ -74,7 +74,7 @@
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "4.13.0",
-		"@msw/playwright": "0.6.7",
+		"@msw/playwright": "0.7.0",
 		"@playwright/test": "1.63.0",
 		"@svgr/cli": "8.1.0",
 		"@tanstack/devtools-vite": "0.8.5",
@@ -89,7 +89,7 @@
 		"@vitest/ui": "5.0.3",
 		"cross-env": "10.1.0",
 		"knip": "6.40.0",
-		"msw": "2.15.0",
+		"msw": "3.0.2",
 		"rollup-plugin-sbom": "4.0.1",
 		"typescript": "7.0.2",
 		"vite": "8.3.3",
