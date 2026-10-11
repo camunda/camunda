@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import static io.camunda.zeebe.engine.processing.resource.OrphanedProcessDefinitions.assertFullyDeleted;
+import static io.camunda.zeebe.engine.processing.resource.OrphanedProcessDefinitions.orphanOnPartitions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -30,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -378,6 +382,120 @@ public class ResourceDeletionMultiPartitionTest {
   }
 
   @Test
+  public void shouldRetryOnlyOnStillDrainingPartitionWhenDeletingAgain() {
+    // given - the deployment partition finalized locally while the instance's partition drains
+    final var processId = Strings.newRandomValidBpmnId();
+    final long processDefinitionKey = deployServiceTaskProcess(processId);
+    final long instanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .onPartition(INSTANCE_PARTITION)
+            .create();
+    awaitJobCreated(instanceKey);
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    // wait until all partitions but the draining one completed their deletion
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DELETE_COMPLETED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .withPartitionId(1)
+        .limit(PARTITION_COUNT - 1)
+        .toList();
+
+    // when - the definition is deleted again
+    final var retry = engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then - the deployment partition cannot tell a slow drain from a stuck one and accepts it,
+    // with the same lifecycle as a regular deletion
+    assertThat(
+            RecordingExporter.resourceDeletionRecords()
+                .withPartitionId(1)
+                .withRecordKey(retry.getKey())
+                .limit(2)
+                .map(Record::getIntent))
+        .containsExactly(ResourceDeletionIntent.DELETING, ResourceDeletionIntent.DELETED);
+
+    // and - the retry is distributed only to the partition that still owes a drain report
+    assertThat(
+            RecordingExporter.commandDistributionRecords()
+                .withRecordKey(retry.getKey())
+                .limit(r -> r.getIntent() == CommandDistributionIntent.FINISHED)
+                .withIntent(CommandDistributionIntent.DISTRIBUTING)
+                .map(r -> r.getValue().getPartitionId()))
+        .containsExactly(INSTANCE_PARTITION);
+
+    // and - which rejects it, as it is still draining
+    Assertions.assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETE)
+                .onlyCommandRejections()
+                .withResourceKey(processDefinitionKey)
+                .withPartitionId(INSTANCE_PARTITION)
+                .getFirst())
+        .hasRejectionType(RejectionType.INVALID_STATE);
+
+    // when - the instance completes
+    engine.job().ofInstance(instanceKey).withType(JOB_TYPE).complete();
+
+    // then - the original deletion finishes and the instance was never terminated
+    assertFullyDeleted(processDefinitionKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(instanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("the instance must run to completion, not be terminated by the retry")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldRecoverOrphanedDeletionOnPendingPartitions() {
+    // given - deleted on the deployment partition, but stuck in PENDING_DELETION on the others
+    final var metadata = deployOnAllPartitions(Strings.newRandomValidBpmnId());
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+    orphanOnPartitions(engine, metadata, PARTITION_COUNT, 2, 3);
+
+    // when
+    final var retry = engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then - accepted, but the definition is already gone here, so the event only carries what
+    // the request sent
+    Assertions.assertThat(retry.getValue())
+        .hasResourceKey(processDefinitionKey)
+        .hasResourceType(ResourceType.UNKNOWN)
+        .hasResourceId("")
+        .hasTenantId("")
+        .isNotDeleteHistory();
+
+    // and - both stuck partitions delete their copy and report back, as FULLY_DELETED is only
+    // written once no partition owes a drain report
+    assertFullyDeleted(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldRejectHistoryDeletionForOrphanedPendingPartitions() {
+    // given
+    final var metadata = deployOnAllPartitions(Strings.newRandomValidBpmnId());
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+    orphanOnPartitions(engine, metadata, PARTITION_COUNT, 2, 3);
+
+    // when - the retry also asks for the history, which a still-draining partition cannot honor
+    final var rejection =
+        engine
+            .resourceDeletion()
+            .withResourceKey(processDefinitionKey)
+            .withDeleteHistory(true)
+            .expectRejection()
+            .delete();
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+
+    // and - a plain retry still recovers the definition
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    assertFullyDeleted(processDefinitionKey);
+  }
+
+  @Test
   public void shouldFullyDeleteAfterActiveInstanceCompletesOnAnotherPartition() {
     // given - a process draining with an active instance on a non-deployment partition
     final var processId = Strings.newRandomValidBpmnId();
@@ -575,6 +693,26 @@ public class ResourceDeletionMultiPartitionTest {
         .getProcessesMetadata()
         .getFirst()
         .getProcessDefinitionKey();
+  }
+
+  private ProcessMetadataValue deployOnAllPartitions(final String processId) {
+    final var metadata =
+        engine
+            .deployment()
+            .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
+    IntStream.rangeClosed(2, PARTITION_COUNT)
+        .forEach(
+            partitionId ->
+                RecordingExporter.processRecords()
+                    .withIntent(ProcessIntent.CREATED)
+                    .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+                    .withPartitionId(partitionId)
+                    .await());
+    return metadata;
   }
 
   private void awaitJobCreated(final long processInstanceKey) {
