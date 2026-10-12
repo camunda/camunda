@@ -84,6 +84,7 @@ public class Starter implements CommandLineRunner {
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
   private final ConnectionMonitor connectionMonitor;
+  private final StarterLivenessIndicator livenessIndicator;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
@@ -105,6 +106,7 @@ public class Starter implements CommandLineRunner {
       final MeterRegistry registry,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
+      final StarterLivenessIndicator livenessIndicator,
       final ApplicationContext applicationContext) {
     this.client = client;
     this.applicationContext = applicationContext;
@@ -113,6 +115,7 @@ public class Starter implements CommandLineRunner {
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
+    this.livenessIndicator = livenessIndicator;
 
     // Expose the client information early: these are only static values which are not supposed to
     // be affected by the current state of the client (whether it successfully connects to the
@@ -129,6 +132,7 @@ public class Starter implements CommandLineRunner {
   @Override
   public void run(final String... args) {
     connectionMonitor.awaitAndPrintTopology();
+    livenessIndicator.recordStarted();
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
@@ -172,6 +176,7 @@ public class Starter implements CommandLineRunner {
     }
 
     runFinished.set(1);
+    livenessIndicator.recordFinished();
     LOG.info(
         "Starter finished. Total process instance start requests submitted: {}",
         processInstancesSubmittedCounter == null
@@ -315,6 +320,7 @@ public class Starter implements CommandLineRunner {
           requestFuture.whenComplete(
               (noop, error) -> {
                 inFlight.release();
+                livenessIndicator.recordResult(error);
                 final long durationNanos = System.nanoTime() - startTime;
                 responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                 resultMetrics.record(error);
