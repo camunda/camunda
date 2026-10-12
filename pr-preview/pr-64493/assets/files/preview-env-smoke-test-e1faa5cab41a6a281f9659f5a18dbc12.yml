@@ -241,7 +241,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Teleport
-        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        uses: teleport-actions/setup@10b5e9f760190f027a1e04e342178d8d6e7eae30 # v2.0.0
         with:
           proxy: camunda.teleport.sh:443
           version: auto
@@ -331,7 +331,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # Pinned to 24: the e2e repo's Playwright 1.49 hangs unpacking
           # Chromium on Node 26. Bump once that repo upgrades Playwright.
@@ -385,7 +385,7 @@ jobs:
 
       - name: Upload Test Artifacts
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report-${{ matrix.deployment.version }}-${{ github.run_number }}
           path: |
@@ -398,7 +398,7 @@ jobs:
       # discover.py globs for, per matrix leg.
       - name: Upload Playwright JSON Report
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-results-json-${{ matrix.deployment.version }}-${{ github.run_number }}
           path: e2e-tests/playwright-results.json
