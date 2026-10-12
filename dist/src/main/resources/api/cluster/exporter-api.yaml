@@ -140,7 +140,7 @@ components:
     ExporterOperationResponse:
       description: Request to disable, enable, or delete exporter is accepted.
       content:
-        application.json:
+        application/json:
           schema:
             $ref: "components.yaml#/schemas/PlannedOperationsResponse"
 
