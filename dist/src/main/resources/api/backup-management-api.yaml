@@ -93,8 +93,9 @@ paths:
     get:
       summary: Get information of a runtime backup
       description: |
-        A detailed information of the backup with the give backup id. Covers every physical tenant
-        unless `physicalTenant` narrows it to one.
+        Detailed information of the backup with the given backup id, or a list of the backups whose
+        ids match a prefix ending with '*'. Covers every physical tenant unless `physicalTenant`
+        narrows it to one.
       parameters:
         - $ref: '#/components/parameters/BackupIdOrPrefix'
         - $ref: '#/components/parameters/PhysicalTenant'
@@ -122,7 +123,7 @@ paths:
         Delete a backup with the given id. Deletes it in every physical tenant unless
         `physicalTenant` narrows the operation to one.
       parameters:
-        - $ref: '#/components/parameters/BackupId'
+        - $ref: '#/components/parameters/BackupIdToDelete'
         - $ref: '#/components/parameters/PhysicalTenant'
       responses:
         '204':
@@ -140,9 +141,9 @@ paths:
     get:
       summary: Get information about the current checkpoint and backup state of the cluster
       description: |
-        A detailed information of the backup with the give backup id. Covers every physical tenant
-        unless `physicalTenant` narrows it to one. Every partition entry names the physical tenant
-        it belongs to, as partition ids restart at 1 in each tenant.
+        Returns, for every partition, the latest checkpoint, the latest backup, and the backup
+        ranges. Covers every physical tenant unless `physicalTenant` narrows it to one. Every partition entry names the physical tenant it belongs to, as
+        partition ids restart at 1 in each tenant.
       parameters:
         - $ref: '#/components/parameters/PhysicalTenant'
       responses:
@@ -337,6 +338,13 @@ components:
         oneOf:
           - $ref: '#/components/schemas/BackupId'
           - $ref: '#/components/schemas/BackupIdPrefix'
+    BackupIdToDelete:
+      name: backupIdOrPrefix
+      required: true
+      in: path
+      description: Id of the backup to delete. Prefixes are not supported.
+      schema:
+        $ref: '#/components/schemas/BackupId'
     PhysicalTenant:
       name: physicalTenant
       required: false
