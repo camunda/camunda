@@ -3,7 +3,7 @@
 // VENDORED FILE — do not edit here.
 //
 // Source of truth: camunda/c8-cross-component-e2e-tests, scripts/coverage-plan.mjs
-// Vendored at:     c29d4046bf8bc33dd2145d00870efb172b4c5acc
+// Vendored at:     7ae9517c17e8246ff786aa51571791ca1d2f6835
 //
 // The schema this enforces is owned by that repository, which also holds the
 // validator's tests. Editing the copy here makes this repository enforce a

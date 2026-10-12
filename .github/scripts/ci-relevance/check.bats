@@ -72,6 +72,14 @@ check() {
   [ "$status" -eq 1 ]
 }
 
+@test "should not be CI-relevant when only the coverage write-back workflow changed" {
+  # given a PR that only changes the coverage plan write-back workflow
+  # when checking CI relevance
+  run check ".github/workflows/coverage-writeback.yml"
+  # then CI should not be triggered
+  [ "$status" -eq 1 ]
+}
+
 @test "should not be CI-relevant when only a nested coverage-plan-check file changed" {
   # given a PR that only changes a file nested under the validator directory
   # when checking CI relevance

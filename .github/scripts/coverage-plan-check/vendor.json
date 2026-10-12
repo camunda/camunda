@@ -1,7 +1,15 @@
 {
   "source_repo": "camunda/c8-cross-component-e2e-tests",
-  "source_path": "scripts/coverage-plan.mjs",
-  "source_ref": "c29d4046bf8bc33dd2145d00870efb172b4c5acc",
-  "vendored_path": ".github/scripts/coverage-plan-check/coverage-plan.mjs",
-  "note": "Machine-readable so the source repository can check this copy for drift. Keep source_ref in step with the vendored file."
+  "source_ref": "7ae9517c17e8246ff786aa51571791ca1d2f6835",
+  "files": [
+    {
+      "source_path": "scripts/coverage-plan.mjs",
+      "vendored_path": ".github/scripts/coverage-plan-check/coverage-plan.mjs"
+    },
+    {
+      "source_path": "scripts/coverage-writeback.mjs",
+      "vendored_path": ".github/scripts/coverage-plan-check/coverage-writeback.mjs"
+    }
+  ],
+  "note": "Machine-readable so the source repository can check these copies for drift. Keep source_ref in step with the vendored files."
 }
