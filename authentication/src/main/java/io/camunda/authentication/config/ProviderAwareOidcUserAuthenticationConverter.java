@@ -40,18 +40,6 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
   private static final Logger LOG =
       LoggerFactory.getLogger(ProviderAwareOidcUserAuthenticationConverter.class);
 
-  /**
-   * OIDC settings of one non-default physical tenant, resolved from the tenant's own providers: the
-   * access-token validators, and per registration id the additional JWKS URIs, claim preference and
-   * claim mapping.
-   */
-  record PhysicalTenantOidcSettings(
-      TokenValidatorFactory validatorFactory,
-      AdditionalJwkSetUrisByRegistrationId additionalJwkSetUris,
-      Map<String, Boolean> preferIdTokenClaimsByRegistrationId,
-      Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId,
-      Map<String, List<String>> identityClaimsByRegistrationId) {}
-
   private final OidcAccessTokenDecoderFactory accessTokenDecoderFactory;
   private final LazyTokenClaimsConverter defaultTokenClaimsConverter;
   private final Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId;
@@ -186,4 +174,16 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
       claims.put(claimName, value.toString());
     }
   }
+
+  /**
+   * OIDC settings of one non-default physical tenant, resolved from the tenant's own providers: the
+   * access-token validators, and per registration id the additional JWKS URIs, claim preference and
+   * claim mapping.
+   */
+  record PhysicalTenantOidcSettings(
+      TokenValidatorFactory validatorFactory,
+      AdditionalJwkSetUrisByRegistrationId additionalJwkSetUris,
+      Map<String, Boolean> preferIdTokenClaimsByRegistrationId,
+      Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId,
+      Map<String, List<String>> identityClaimsByRegistrationId) {}
 }
