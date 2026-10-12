@@ -111,7 +111,7 @@ jobs:
     - name: Deploy to Artifactory
       uses: ./.github/actions/run-maven
       with:
-        parameters: deploy -f optimize -Dskip.fe.build -DskipTests -Dskip.docker -PrunAssembly
+        parameters: deploy -f optimize -Dskip.fe.build -DskipTests -Dskip.docker -PrunAssembly -Doptimize.distro.attach=false
         threads: 4C
     - name: Docker log dump
       uses: ./.github/actions/docker-logs
