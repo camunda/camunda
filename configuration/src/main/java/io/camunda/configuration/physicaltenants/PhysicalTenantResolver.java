@@ -115,9 +115,12 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     PhysicalTenantExporterAssignedValidation.validate(
         environment, resolvedPhysicalTenants, physicalTenantIds);
     resolvedPhysicalTenants.forEach(
-        (physicalTenantId, physicalTenantCfg) ->
-            PhysicalTenantExporterConfigurations.narrowToAssigned(
-                physicalTenantCfg, physicalTenantId, environment));
+        (physicalTenantId, physicalTenantCfg) -> {
+          PhysicalTenantExporterConfigurations.narrowToAssigned(
+              physicalTenantCfg, physicalTenantId, environment);
+          PhysicalTenantAuthenticationProviderConfigurations.narrowToAssigned(
+              physicalTenantCfg, physicalTenantId, environment);
+        });
 
     // must stay below the narrowing above: GenericExporterIsolationValidation compares the tenants'
     // narrowed exporter maps

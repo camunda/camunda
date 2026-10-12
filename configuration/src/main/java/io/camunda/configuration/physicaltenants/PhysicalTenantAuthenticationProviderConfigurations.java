@@ -7,11 +7,17 @@
  */
 package io.camunda.configuration.physicaltenants;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.MapOverlaySpec.MapDescriptor;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
 
 /**
@@ -54,5 +60,41 @@ public final class PhysicalTenantAuthenticationProviderConfigurations {
   public static OidcProvidersConfiguration forPhysicalTenant(
       final String tenantId, final Environment environment) {
     return PhysicalTenantMapOverlay.overlay(SPEC, tenantId, environment);
+  }
+
+  /**
+   * Narrows a tenant's providers to its {@code providers.assigned} selection (#54730), mirroring
+   * {@code PhysicalTenantAuthConfigurations#narrowToAssigned} in the authentication module. CSL's
+   * {@link OidcProvidersConfiguration} has no {@code assigned} field, so the list is read from the
+   * environment: the reserved id {@link OidcConfiguration#DEFAULT_REGISTRATION_ID} keeps the
+   * default slot, every other id keeps the like-named provider. A tenant without a selection keeps
+   * every provider.
+   */
+  static void narrowToAssigned(
+      final Camunda physicalTenant, final String tenantId, final Environment environment) {
+    final List<String> assigned =
+        Binder.get(environment)
+            .bind(
+                PhysicalTenantResolver.PHYSICAL_TENANTS_PREFIX
+                    + "."
+                    + tenantId
+                    + ".security.authentication.providers.assigned",
+                Bindable.listOf(String.class))
+            .orElse(null);
+    if (assigned == null || assigned.isEmpty()) {
+      return;
+    }
+    final Set<String> keep = new LinkedHashSet<>();
+    assigned.stream().filter(id -> id != null && !id.isBlank()).forEach(keep::add);
+
+    final AuthenticationConfiguration authentication =
+        physicalTenant.getSecurity().getAuthentication();
+    if (!keep.contains(OidcConfiguration.DEFAULT_REGISTRATION_ID)) {
+      authentication.setOidc(new OidcConfiguration());
+    }
+    final OidcProvidersConfiguration providers = authentication.getProviders();
+    if (providers != null && providers.getOidc() != null) {
+      providers.getOidc().keySet().removeIf(id -> !keep.contains(id));
+    }
   }
 }
