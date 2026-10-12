@@ -450,7 +450,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "1 - kube_pod_container_status_ready{pod=~\"$pod\", cluster=~\"$cluster\", container!~\"curator|curl|leader.*\", namespace=~\"$namespace\"}",
+              "expr": "1 - kube_pod_container_status_ready{pod=~\"$pod\", cluster=~\"$cluster\", container!~\"curator|curl|leader.*|k6.*\", namespace=~\"$namespace\"}",
               "format": "time_series",
               "instant": false,
               "interval": "",
