@@ -80,6 +80,23 @@ final class PhysicalTenantOidcClientSecretIT {
   }
 
   @Test
+  void shouldFailToStartWhenTenantIssuerHasBlankClientSecret() {
+    // given — for example an unset environment variable: '${TENANT_SECRET:}'
+    final var broker = brokerWithTenantOverride("");
+
+    // when/then
+    try {
+      assertThatThrownBy(broker::start)
+          .rootCause()
+          .isInstanceOf(UnifiedConfigurationException.class)
+          .hasMessageContaining("physical tenant '" + TENANT_ID + "'")
+          .hasMessageContaining("client-secret");
+    } finally {
+      broker.close();
+    }
+  }
+
+  @Test
   void shouldStartWhenTenantIssuerHasItsOwnClientSecret() {
     // given — the tenant sets its own secret for the other IdP
     final var broker = brokerWithTenantOverride("tenant-secret");
