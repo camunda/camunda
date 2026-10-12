@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
@@ -802,6 +803,53 @@ public final class StorageOrdinalAssignmentTest {
     assertThat(
             RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
                 .withRecordKey(legacyKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkDeploymentScopedMessageStartEventSubscriptionsAsNotOrdinalControlled() {
+    // given: a definition with a message start event
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("message-start-subscription-process")
+                    .startEvent("message-start")
+                    .message("ordinal-definition-message")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // then: the start-event subscription belongs to the definition, not to an instance
+    final var created =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+    assertThat(created.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(created.getStorageOrdinal()).isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+
+    // when: a new version replaces the definition, the old subscription is closed
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("message-start-subscription-process")
+                .startEvent()
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then: the DELETED event, appended from the stored subscription, is not ordinal controlled
+    assertThat(
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                    MessageStartEventSubscriptionIntent.DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .getFirst()
                 .getValue()
                 .getStorageOrdinal())
