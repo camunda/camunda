@@ -17,9 +17,14 @@ servers:
       schema:
         default: http
         description: Management server schema
+tags:
+  - name: Upgrade readiness
+
 paths:
   /:
     get:
+      tags:
+        - Upgrade readiness
       summary: Get the upgrade-readiness status of this cluster
       description: >
         Reports the state of every registered upgrade-readiness condition (e.g. RDBMS schema

@@ -14,9 +14,14 @@ servers:
      schema:
        default: http
        description: Management server schema
+tags:
+  - name: Exporter
+
 paths:
   /{exporterId}/disable:
     post:
+      tags:
+        - Exporter
       summary: Disable an exporter
       description: >
         Disable the exporter with the given exporterId. After the exporter is disabled, the records are not exported to this exporter anymore.
@@ -42,6 +47,8 @@ paths:
 
   /{exporterId}/enable:
     post:
+      tags:
+        - Exporter
       summary: Enable an exporter
       description: >
         Enable the exporter with the given exporterId. After the exporter is enabled, the records are exported to this exporter.
@@ -73,6 +80,8 @@ paths:
 
   /{exporterId}:
     delete:
+      tags:
+        - Exporter
       summary: Delete an exporter
       description: >
         Delete the exporter with the given exporterId. This will remove the exporter configuration and stop all export operations for this exporter.
@@ -98,6 +107,8 @@ paths:
 
   /:
     get:
+      tags:
+        - Exporter
       summary: List all exporters
       description: >
         List all exporters and their status whether they are enabled or disabled.
