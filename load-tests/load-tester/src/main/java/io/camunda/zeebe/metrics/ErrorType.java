@@ -19,6 +19,14 @@ public final class ErrorType {
 
   private ErrorType() {}
 
+  /** Returns whether the cluster rejected the request because it is under backpressure. */
+  public static boolean isBackpressure(final Throwable error) {
+    return switch (of(error)) {
+      case "grpc_resource_exhausted", "http_429" -> true;
+      default -> false;
+    };
+  }
+
   /**
    * Returns the gRPC status code, the HTTP status code or the exception class of the failure,
    * looking through {@link CompletionException} and {@link ExecutionException} wrappers.
