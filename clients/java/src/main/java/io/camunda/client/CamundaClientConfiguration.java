@@ -19,6 +19,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.grpc.ClientInterceptor;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -127,6 +128,13 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#withChainHandlers(AsyncExecChainHandler...)
    */
   List<AsyncExecChainHandler> getChainHandlers();
+
+  /**
+   * @see CamundaClientBuilder#withMeterRegistry(MeterRegistry)
+   */
+  default MeterRegistry getMeterRegistry() {
+    return null;
+  }
 
   /**
    * @see CamundaClientBuilder#withJsonMapper(JsonMapper)

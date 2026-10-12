@@ -72,6 +72,7 @@ import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.DataSizeUtil;
 import io.camunda.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -116,6 +117,7 @@ public final class CamundaClientBuilderImpl
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private final List<AsyncExecChainHandler> chainHandlers = new ArrayList<>();
+  private MeterRegistry meterRegistry;
   private URI restAddress = DEFAULT_REST_ADDRESS;
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
   private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
@@ -248,6 +250,11 @@ public final class CamundaClientBuilderImpl
   @Override
   public List<AsyncExecChainHandler> getChainHandlers() {
     return chainHandlers;
+  }
+
+  @Override
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 
   @Override
@@ -465,6 +472,9 @@ public final class CamundaClientBuilderImpl
     if (configuration.getChainHandlers() != null) {
       configuration.getChainHandlers().forEach(this::withChainHandlers);
     }
+    if (configuration.getMeterRegistry() != null) {
+      withMeterRegistry(configuration.getMeterRegistry());
+    }
     if (configuration.jobWorkerSchedulingExecutor() != null) {
       jobWorkerSchedulingExecutor(
           configuration.jobWorkerSchedulingExecutor(),
@@ -634,6 +644,12 @@ public final class CamundaClientBuilderImpl
   @Override
   public CamundaClientBuilder withChainHandlers(final AsyncExecChainHandler... chainHandler) {
     chainHandlers.addAll(Arrays.asList(chainHandler));
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
     return this;
   }
 

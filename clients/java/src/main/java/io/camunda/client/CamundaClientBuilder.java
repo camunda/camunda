@@ -22,6 +22,7 @@ import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -269,6 +270,20 @@ public interface CamundaClientBuilder {
    * The middleware implementations will be called on every REST API call that the client makes.
    */
   CamundaClientBuilder withChainHandlers(AsyncExecChainHandler... chainHandler);
+
+  /**
+   * Registers the Micrometer {@link MeterRegistry} that receives the metrics of the REST HTTP
+   * client: request timings and connection pool state. All meters are named with the prefix {@code
+   * camunda.client.http}.
+   *
+   * <p>This is an optional feature which requires <a href="https://micrometer.io">Micrometer</a>
+   * and the {@code org.apache.httpcomponents.client5:httpclient5-observation} module on the
+   * classpath. Without a registry the client registers no metrics.
+   *
+   * @param meterRegistry the registry to register the HTTP client metrics with
+   * @return this builder for chaining
+   */
+  CamundaClientBuilder withMeterRegistry(MeterRegistry meterRegistry);
 
   CamundaClientBuilder withJsonMapper(JsonMapper jsonMapper);
 
