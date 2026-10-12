@@ -12,6 +12,7 @@ import static io.camunda.zeebe.restore.ClusterRestore.TargetDataPolicy.REQUIRE_E
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
@@ -166,6 +167,33 @@ final class ClusterRestoreTest {
                   clusterRestore.restore(
                       selection("default"), REQUIRE_EMPTY, false, List.of("lost+found")))
           .isInstanceOf(DirectoryNotEmptyException.class);
+    }
+
+    @Test
+    void shouldDeleteTheRestoredDataWhenTheTopologyCannotBeWritten(@TempDir final Path dir)
+        throws IOException {
+      // given - a topology file that can be read but not written. It is ignored in the target, so
+      // the check that the directory is empty passes.
+      final var clusterRestore = clusterRestore(dir, Map.of("default", 1));
+      clusterRestore.restoreTopologyFile();
+      final var topologyFile = dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+      assertThat(topologyFile.toFile().setReadOnly()).isTrue();
+      // a user that can write to read-only files, such as root, cannot make this fail
+      assumeThat(Files.isWritable(topologyFile)).isFalse();
+
+      // when - there are no partitions to restore, so the only thing that can fail is the topology
+      // file, written after the data of the tenants is in place
+      assertThatThrownBy(
+              () ->
+                  clusterRestore.restore(
+                      Map.of("default", Map.<Integer, long[]>of()),
+                      REQUIRE_EMPTY,
+                      false,
+                      List.of(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)))
+          .isInstanceOf(IOException.class);
+
+      // then - the data of the run is deleted, as it is for any other failure of the restore
+      assertThat(topologyFile).doesNotExist();
     }
   }
 
