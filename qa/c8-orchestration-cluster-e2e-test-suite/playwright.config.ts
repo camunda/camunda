@@ -78,6 +78,7 @@ const normalProjects = [
       'tests/api/v2/usage-metrics/*.spec.ts',
       'tests/api/v2/audit-log/*.spec.ts',
       'tests/api/v2/job/job-statistics-*.spec.ts',
+      'tests/api/v2/global-task-listener/*.spec.ts',
     ],
     use: devices['Desktop Chrome'],
     teardown: 'api-tests-subset',
@@ -89,6 +90,10 @@ const normalProjects = [
       'tests/api/v2/usage-metrics/*.spec.ts',
       'tests/api/v2/audit-log/*.spec.ts',
       'tests/api/v2/job/job-statistics-*.spec.ts',
+      // A global task listener applies to every user task in the cluster. With
+      // no worker for its jobs, it blocks the user tasks of any spec that runs
+      // at the same time.
+      'tests/api/v2/global-task-listener/*.spec.ts',
     ],
     use: devices['Desktop Chrome'],
     workers: 1,
