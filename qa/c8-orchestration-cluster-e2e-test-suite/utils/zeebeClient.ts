@@ -43,12 +43,6 @@ const zeebe = c8.getCamundaRestClient();
 const zeebeGrpc = c8.getZeebeGrpcApiClient();
 const deploy = async (processFilePaths: string[]) => {
   try {
-    // Name each resource by its basename rather than the path passed in. The
-    // SDK's deployResourcesFromFiles stores the literal path (e.g.
-    // "./resources/foo.bpmn") as the resourceName, which leaks the test's
-    // on-disk layout into the engine and breaks resourceName assertions and
-    // filters. basename matches the suite's resource-deploy convention and the
-    // realistic name a user would deploy under.
     const resources = processFilePaths.map((filePath) => ({
       content: readFileSync(filePath, 'utf-8'),
       name: basename(filePath),
