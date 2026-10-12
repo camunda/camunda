@@ -5,7 +5,8 @@ import { GithubLabelApi, syncNoIssueLabel } from './labels';
 import { GithubResolver } from './resolver';
 
 /**
- * PR-gate lint entrypoint (warn-only rollout).
+ * PR-gate lint entrypoint. Enforcing in the workflow (`enforce: 'true'`);
+ * `enforce=false` remains available as a warn-only mode.
  *
  * Security: runs on `pull_request`, resolving from the PR head — no
  * privileged token anywhere here. A fork PR gets a read-only GITHUB_TOKEN
@@ -15,8 +16,7 @@ import { GithubResolver } from './resolver';
  * Body/title are fetched fresh from the API rather than the event payload,
  * so a PR edited twice in quick succession is judged on the current body.
  *
- * ponytail: warn-only for now. `enforce=true` flips a fail into a non-zero
- * exit; enforce mode ships in a follow-up PR.
+ * `enforce=true` turns a fail into a non-zero exit; `enforce=false` only warns.
  */
 async function run(): Promise<void> {
   const token = core.getInput('token', { required: true });
@@ -33,7 +33,7 @@ async function run(): Promise<void> {
   const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
   const resolver = new GithubResolver(token, owner ?? '', repo ?? '');
 
-  let gate; // a transient API error respects `enforce` too — warn-only means a blip can't turn a green check red
+  let gate; // a transient API error respects `enforce` too — in warn-only mode a blip can't turn a green check red
   try {
     const pull = await resolver.fetchPull(prNumber);
     if (!pull) {
