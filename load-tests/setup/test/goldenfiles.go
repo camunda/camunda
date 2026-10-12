@@ -47,6 +47,11 @@ func normalize(input string) string {
 	return strings.TrimSpace(result) + "\n"
 }
 
+// k6Path holds the rendered k6 manifests. They are large and rarely change, so
+// they are excluded from every scenario except the ones whose pathFilter
+// selects them explicitly.
+const k6Path = "templates/k6"
+
 // collectManifests walks a helm --output-dir tree and returns each matching
 // file's normalized content keyed by its path relative to the tree root.
 func collectManifests(t *testing.T, root string, pathFilter []string) map[string]string {
@@ -64,6 +69,9 @@ func collectManifests(t *testing.T, root string, pathFilter []string) map[string
 		if !matchesPathFilter(rel, pathFilter) {
 			return nil
 		}
+		if matchesPathFilter(rel, []string{k6Path}) && !selectsK6(pathFilter) {
+			return nil
+		}
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
@@ -72,6 +80,16 @@ func collectManifests(t *testing.T, root string, pathFilter []string) map[string
 		return nil
 	}))
 	return manifests
+}
+
+// selectsK6 returns true when one of prefixes is the k6 manifests path or sits under it.
+func selectsK6(prefixes []string) bool {
+	for _, prefix := range prefixes {
+		if matchesPathFilter(path.Clean(filepath.ToSlash(prefix)), []string{k6Path}) {
+			return true
+		}
+	}
+	return false
 }
 
 // matchesPathFilter returns true when rel equals one of prefixes, or sits under

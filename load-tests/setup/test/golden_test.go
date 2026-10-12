@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -35,6 +36,9 @@ var update = flag.Bool("update-golden", false,
 // template target. Only supported on versions with physical-tenant config support
 // (main, stable-810).
 //
+// Rendered k6 manifests (templates/k6) are left out of every scenario unless
+// its PathFilter selects them, as in the "k6" scenario.
+//
 // PlatformOnly, when true, renders only the platform chart. Use it for
 // scenarios whose assertions are scoped to platform-only templates.
 //
@@ -59,6 +63,7 @@ type scenario struct {
 	PlatformOnly        bool
 	PathFilter          []string
 	ExtraArgs           []string // extra newLoadTest.sh flags, e.g. "--use-pgbouncer"
+	OnlyVersions        []string // when set, the scenario runs on these versions only
 }
 
 // versionedScenario defines a scenario with a specific version
@@ -106,6 +111,9 @@ var defaultScenarios = []scenario{
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.
 	{Name: "chaos-killer", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup-chaos"},
+	// The only scenario that snapshots the k6 manifests (templates/k6). It runs on main only to
+	// limit the size of the golden files; remove OnlyVersions to cover other versions.
+	{Name: "k6", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup", PathFilter: []string{"templates/k6"}, OnlyVersions: []string{"main"}},
 	// The CNPG Pooler (PgBouncer) is baked in at scaffold time via
 	// newLoadTest.sh --use-pgbouncer (see ExtraArgs below), and only applies
 	// to postgresql, unlike chaos-killer above, so this scaffolds with
@@ -147,6 +155,10 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 
 	for _, v := range versions {
 		for _, s := range scenarios {
+
+			if len(s.OnlyVersions) > 0 && !slices.Contains(s.OnlyVersions, v) {
+				continue
+			}
 
 			// Filter out known invalid scenarios.
 			if v == "stable-88" {
@@ -333,6 +345,17 @@ func TestShouldCollectOnlyPathFilterMatches(t *testing.T) {
 
 	// then
 	require.Equal(t, []string{"templates/orchestration/deployment.yaml"}, sortedKeys(manifests))
+}
+
+func TestShouldExcludeK6ManifestsUnlessPathFilterSelectsThem(t *testing.T) {
+	// given
+	root := t.TempDir()
+	writeTestManifest(t, root, "templates/k6/testrun.yaml", "kind: TestRun\n")
+	writeTestManifest(t, root, "templates/namespace.yaml", "kind: Namespace\n")
+
+	// when / then
+	require.Equal(t, []string{"templates/namespace.yaml"}, sortedKeys(collectManifests(t, root, nil)))
+	require.Equal(t, []string{"templates/k6/testrun.yaml"}, sortedKeys(collectManifests(t, root, []string{"templates/k6"})))
 }
 
 func TestShouldReturnNoManifestsWhenPathFilterMatchesNothing(t *testing.T) {
