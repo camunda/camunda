@@ -83,6 +83,7 @@ import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -96,7 +97,8 @@ public final class EndpointManager {
   private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
-  private final BrokerRequestAuthorizationConverter authorizationConverter;
+  private final Map<String, BrokerRequestAuthorizationConverter>
+      authorizationConvertersByPhysicalTenant;
 
   public EndpointManager(
       final BrokerClient brokerClient,
@@ -117,6 +119,27 @@ public final class EndpointManager {
       final StreamJobsHandler streamJobsHandler,
       final EngineSecurityConfig securityConfiguration,
       final int maxVariableNameLength) {
+    this(
+        brokerClient,
+        activateJobsHandler,
+        streamJobsHandler,
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, securityConfiguration),
+        maxVariableNameLength);
+  }
+
+  /**
+   * @param securityConfigurationsByPhysicalTenant security config of every physical tenant,
+   *     including {@code default}; a request is converted with the config of the tenant it targets,
+   *     or with the {@code default} config when that tenant has none
+   */
+  public EndpointManager(
+      final BrokerClient brokerClient,
+      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
+      final StreamJobsHandler streamJobsHandler,
+      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
+      final int maxVariableNameLength) {
+    final EngineSecurityConfig securityConfiguration =
+        securityConfigurationsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
     this.streamJobsHandler = streamJobsHandler;
@@ -124,7 +147,11 @@ public final class EndpointManager {
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
     RequestMapper.setMultiTenancyEnabled(securityConfiguration.isMultiTenancyChecksEnabled());
     RequestMapper.setMaxVariableNameLength(maxVariableNameLength);
-    authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    authorizationConvertersByPhysicalTenant = new HashMap<>();
+    securityConfigurationsByPhysicalTenant.forEach(
+        (physicalTenantId, config) ->
+            authorizationConvertersByPhysicalTenant.put(
+                physicalTenantId, new BrokerRequestAuthorizationConverter(config)));
   }
 
   private void addBrokerInfo(
@@ -592,11 +619,20 @@ public final class EndpointManager {
   private Map<String, Object> getClaims() throws Exception {
     final String username = Context.current().call(AuthenticationHandler.USERNAME::get);
     final String clientId = Context.current().call(AuthenticationHandler.CLIENT_ID::get);
+    final BrokerRequestAuthorizationConverter authorizationConverter =
+        authorizationConvertersByPhysicalTenant.getOrDefault(
+            Objects.requireNonNullElse(
+                getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID),
+            authorizationConvertersByPhysicalTenant.get(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
 
-    List<String> groups = null;
+    List<String> groups = List.of();
     Map<String, Object> tokenClaims = null;
     if (authorizationConverter.shouldIncludeAuthorizationClaims()) {
-      groups = Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
+      // the handler only sets groups when the issuing provider configures a groups claim
+      groups =
+          Objects.requireNonNullElse(
+              Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get), List.of());
       tokenClaims = Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
     }
 
