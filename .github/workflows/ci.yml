@@ -65,7 +65,6 @@ jobs:
       process-test-coverage-frontend-changes: ${{ steps.filter.outputs.process-test-coverage-frontend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
       openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
-      openapi-webapp-client-typecheck: ${{ steps.filter.outputs.openapi-webapp-client-typecheck }}
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
       rdbms-integration-tests: ${{steps.filter.outputs.rdbms-integration-tests}}
       async-replication-tests: ${{ steps.filter.outputs.async-replication-tests }}
@@ -2716,7 +2715,7 @@ jobs:
     # Zod schemas and types from the spec in this checkout, then the whole npm workspace is type-checked.
     # Changes to webapp/client itself are covered by the blocking "Webapp Client / Type check" job.
     name: "Check / C8 REST OpenAPI / Webapp Client types"
-    if: needs.detect-changes.outputs.openapi-webapp-client-typecheck == 'true'
+    if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
