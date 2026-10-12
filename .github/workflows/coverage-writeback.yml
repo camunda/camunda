@@ -37,6 +37,14 @@ on:
 
 permissions: {}
 
+# Both triggers rewrite ONE fixed branch and open ONE PR on it, so two runs at
+# once race: whichever pushes second loses its lease, and both can reach
+# `gh pr create`. Queue them instead of cancelling -- a cancelled run could
+# leave the branch pushed with no PR opened for it.
+concurrency:
+  group: coverage-writeback
+  cancel-in-progress: false
+
 defaults:
   run:
     shell: bash
@@ -159,7 +167,11 @@ jobs:
 
           ## Related issues
 
-          - [ ] This PR does not need a linked issue
+          <!-- Ticked, not blank: the release-notes gate accepts only `[x]`
+               (.github/actions/release-notes/src/parser isOptOutTicked), and
+               these PRs have no tracked issue by design, so a blank box fails
+               the gate on every one of them. -->
+          - [x] This PR does not need a linked issue
 
           Review what the diff claims, not just that it is green: this changes
           what the gate tells other teams about an epic's coverage.
