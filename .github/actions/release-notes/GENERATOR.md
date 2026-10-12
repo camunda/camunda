@@ -33,6 +33,7 @@ The PR-gate (`lint` entrypoint) is a different thing living in the same package;
 - [Edge cases](#edge-cases)
 - [Troubleshooting by symptom](#troubleshooting-by-symptom)
 - [Divergences from zcl](#divergences-from-zcl)
+- [The apply dry run](#the-apply-dry-run)
 - [Known limits](#known-limits)
 - [Running it locally](#running-it-locally)
 - [File map](#file-map)
@@ -631,6 +632,43 @@ Consequences, measured against the shipped assets for four releases:
 
 ---
 
+## The apply dry run
+
+Nothing consumes `labels.json` and `comments.json` yet: zcl still applies `version:<tag>` and a
+weekly script still comments on closed issues. The `apply` action (`apply/action.yml`) rehearses
+the replacement. It plans the writes a real apply would make, compares that plan with what zcl
+labelled, and reports the difference. It **never writes to GitHub**, and `dry-run=false` fails
+closed until a real executor exists (#57714).
+
+It runs in the shadow job right after the generate step, with the same read-only token.
+
+**What it compares.** The generator's issue set (`labels.json`) against every issue carrying
+`version:<version>`, read in one paginated listing. Issues land in three buckets: both agree,
+generator only, zcl only. Pull requests are reported as counts only: zcl labels a small fraction
+of them (about 132 of 5,587 on 8.10.0), so a per-PR list would be noise.
+
+**Hints state facts.** For a divergent issue the report quotes the delivering PRs, the relation
+kind, the PR's `attributionSource` and `deliveryPath`, and the issue's state. It does not guess at
+a cause. Each bucket lists the first 20; `apply-divergence.json` (uploaded as a run artifact) holds
+the full plan.
+
+**What it would do.** Labels not already present, and one comment per issue, using the legacy
+weekly script's rule: closed issues only, never ones closed as not planned or as a duplicate.
+Skipped issues are counted by reason, so the effect of "closed only" is visible. An issue whose
+state could not be read is skipped, never commented on.
+
+**A dry run must not look green when it compared nothing:**
+
+|                   Situation                    |                     Result                     |
+|------------------------------------------------|------------------------------------------------|
+| Generate step did not succeed                  | Skipped, warning names the outcome             |
+| `labels.json` / `comments.json` missing or bad | Skipped, warning names the file                |
+| Unknown `schemaVersion` major                  | Skipped (refused, not guessed at)              |
+| No issue carries the label                     | Warning, generator's plan shown, no comparison |
+| API failure (permission, retries exhausted)    | The step fails                                 |
+
+---
+
 ## Known limits
 
 Recorded so they are not mistaken for bugs, and not re-investigated.
@@ -697,6 +735,8 @@ fresh build.
 ```
 src/
   generate.ts        entrypoint: wires every stage, owns the worker pool and batching
+  apply-main.ts      entrypoint of the apply dry run (apply/index.ts is its pure planner)
+  apply/             planner + report (index.ts), zcl-label reader (reader.ts), orchestration (run.ts)
   range/index.ts     baseline strategy, commit→PR dedupe, merge-back and range-membership rules
   range/walk.ts      the only git calls: merge-base and the first-parent log
   resolve/index.ts   batched GraphQL: commit→PR, PR metadata, ref classification, issue close events
@@ -717,6 +757,8 @@ src/
 test/                one file per module; the pure modules need no network at all
 generate/action.yml  the generator's inputs and outputs
 generate/dist/       committed ncc bundle — rebuild with `npm run build`
+apply/action.yml     the apply dry run's inputs
+apply/dist/          committed ncc bundle — rebuild with `npm run build`
 ```
 
 **Security notes.** Every identifier — owner, repo, SHA, pull request number, cursor — travels as a
