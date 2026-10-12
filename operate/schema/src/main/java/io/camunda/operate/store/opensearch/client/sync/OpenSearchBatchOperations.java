@@ -74,6 +74,14 @@ public class OpenSearchBatchOperations extends OpenSearchSyncOperation {
         });
   }
 
+  /**
+   * Executes the bulk request and returns its response. Unlike {@link #bulk(BulkRequest)}, failed
+   * items do not raise an exception and must be inspected by the caller.
+   */
+  public BulkResponse bulkWithResponse(final BulkRequest bulkRequest) {
+    return withOperateRuntimeException(() -> openSearchClient.bulk(bulkRequest));
+  }
+
   public BatchRequest newBatchRequest() {
     return beanFactory.getBean(BatchRequest.class);
   }

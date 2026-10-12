@@ -45,6 +45,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,7 @@ public class OperationReader extends AbstractReader
    * @return
    */
   @Override
-  public List<OperationEntity> acquireOperations(final int batchSize) {
+  public List<VersionedOperation> acquireOperations(final int batchSize) {
     // filter for operations that are legacy (i.e. do not have the property ITEM_KEY)
     final QueryBuilder legacyOperationsQuery =
         QueryBuilders.boolQuery().mustNot(existsQuery(ITEM_KEY));
@@ -117,13 +118,21 @@ public class OperationReader extends AbstractReader
             .source(
                 new SearchSourceBuilder()
                     .query(constantScoreQuery)
+                    .seqNoAndPrimaryTerm(true)
                     .sort(BATCH_OPERATION_ID, SortOrder.ASC)
                     .from(0)
                     .size(batchSize));
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return ElasticsearchUtil.mapSearchHits(
-          searchResponse.getHits().getHits(), objectMapper, OperationEntity.class);
+      return Arrays.stream(searchResponse.getHits().getHits())
+          .map(
+              hit ->
+                  new VersionedOperation(
+                      ElasticsearchUtil.fromSearchHit(
+                          hit.getSourceAsString(), objectMapper, OperationEntity.class),
+                      hit.getSeqNo(),
+                      hit.getPrimaryTerm()))
+          .toList();
     } catch (final IOException e) {
       final String message =
           String.format(
