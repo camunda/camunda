@@ -25,6 +25,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExporterId'
         - $ref: '#/components/parameters/PhysicalTenantParameter'
+        - $ref: '#/components/parameters/DryRunParameter'
       responses:
         '202':
           $ref: "#/components/responses/ExporterOperationResponse"
@@ -49,6 +50,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExporterId'
         - $ref: '#/components/parameters/PhysicalTenantParameter'
+        - $ref: '#/components/parameters/DryRunParameter'
       requestBody:
         required: false
         content:
@@ -79,6 +81,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExporterId'
         - $ref: '#/components/parameters/PhysicalTenantParameter'
+        - $ref: '#/components/parameters/DryRunParameter'
       responses:
         '202':
           $ref: "#/components/responses/ExporterOperationResponse"
@@ -135,6 +138,16 @@ components:
       required: false
       schema:
         $ref: 'components.yaml#/schemas/PhysicalTenantId'
+
+    DryRunParameter:
+      name: dryRun
+      description: If true, requested changes are only simulated and not actually applied.
+      in: query
+      style: form
+      required: false
+      schema:
+        type: boolean
+        default: false
 
   responses:
     ExporterOperationResponse:
