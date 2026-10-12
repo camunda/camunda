@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -140,7 +142,11 @@ public final class ClusterRestore {
         final var physicalTenantId = entry.getKey();
         // non-null: every key was checked against targets above
         final var target = requireNonNull(targets.get(physicalTenantId));
-        LOG.info("Restoring physical tenant '{}'", physicalTenantId);
+        LOG.info(
+            "Restoring physical tenant '{}' with partitions 1..{} (configured: {})",
+            physicalTenantId,
+            entry.getValue().size(),
+            configuredPartitionCounts().get(physicalTenantId));
         try (final var manager =
             new RestoreManager(
                 configuration,
@@ -161,9 +167,16 @@ public final class ClusterRestore {
       }
 
       if (!recreateTopology) {
+        LOG.info("Topology file will be updated in place for {}", restoredPartitionCounts);
         updateTopologyFile(restoredPartitionCounts);
       } else if (configuration.getCluster().getNodeId() == 0) {
+        LOG.info(
+            "Topology file will be recreated with partition counts {}", restoredPartitionCounts);
         restoreTopologyFile(restoredPartitionCounts);
+      } else {
+        LOG.info(
+            "Topology file will be left unchanged: it is recreated by node {} only",
+            COORDINATOR_ID.id());
       }
     } catch (final ExecutionException | InterruptedException | IOException | RuntimeException e) {
       LOG.error(
@@ -299,6 +312,14 @@ public final class ClusterRestore {
         StaticConfigurationGenerator.getStaticConfiguration(
                 configuration, physicalTenantConfigurations(), partitionCounts, COORDINATOR_ID)
             .generateCurrentClusterConfiguration();
+    generated
+        .partitionGroups()
+        .forEach(
+            (group, config) ->
+                LOG.info(
+                    "Generated routing state of physical tenant '{}': {}",
+                    group,
+                    config.routingState()));
     final var restored = withRestorePlan(generated, generated.partitionGroups().keySet());
 
     PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer()).update(restored);
@@ -383,11 +404,15 @@ public final class ClusterRestore {
             withRoutingOver(current, restoredPartitionCounts),
             restoredPartitionCounts.keySet(),
             localMember);
-    if (!updated.equals(current)) {
-      persisted.update(updated);
+    if (updated.equals(current)) {
       LOG.info(
-          "Updated the topology file to the restored partition counts {}", restoredPartitionCounts);
+          "Topology file {} left unchanged: it already matches the restored partition counts {}",
+          file,
+          restoredPartitionCounts);
+      return;
     }
+    reportRestoredPartitionGroup(restoredPartitionCounts, current, updated, localMember);
+    persisted.update(updated);
   }
 
   /**
@@ -527,6 +552,44 @@ public final class ClusterRestore {
         .collect(
             Collectors.toMap(
                 Map.Entry::getKey, entry -> entry.getValue().getCluster().getPartitionsCount()));
+  }
+
+  private static void reportRestoredPartitionGroup(
+      final Map<String, Integer> restoredPartitionCounts,
+      final CurrentClusterConfiguration current,
+      final CurrentClusterConfiguration updated,
+      final MemberId localMember) {
+    for (final var physicalTenantId : restoredPartitionCounts.keySet()) {
+      final var before = current.partitionGroup(physicalTenantId);
+      final var after = updated.partitionGroup(physicalTenantId);
+      if (before == null || after == null) {
+        continue;
+      }
+      LOG.info(
+          "Routing state of physical tenant '{}' changes from {} to {}; partitions removed from"
+              + " the local member {}: {}",
+          physicalTenantId,
+          before.routingState(),
+          after.routingState(),
+          localMember.id(),
+          removedPartitions(before, after, localMember));
+    }
+  }
+
+  private static Set<Integer> removedPartitions(
+      final PartitionGroupConfiguration before,
+      final PartitionGroupConfiguration after,
+      final MemberId member) {
+    final Set<Integer> removed = new TreeSet<>();
+    final var previous = before.members().get(member);
+    if (previous != null) {
+      removed.addAll(previous.partitions().keySet());
+    }
+    final var remaining = after.members().get(member);
+    if (remaining != null) {
+      removed.removeAll(remaining.partitions().keySet());
+    }
+    return removed;
   }
 
   private Map<String, BrokerCfg> physicalTenantConfigurations() {
