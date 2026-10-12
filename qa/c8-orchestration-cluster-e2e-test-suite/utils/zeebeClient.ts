@@ -42,8 +42,16 @@ const zeebe = c8.getCamundaRestClient();
 const zeebeGrpc = c8.getZeebeGrpcApiClient();
 const deploy = async (processFilePaths: string[]) => {
   try {
-    const results = await zeebe.deployResourcesFromFiles(processFilePaths);
-    return results;
+    // Deploy with the file's basename as the resource name rather than the
+    // path passed in (e.g. "./resources/foo.bpmn"), so the stored resourceName
+    // matches what a user uploading "foo.bpmn" would get. This mirrors
+    // deployWithSubstitutions and the REST deploy helper, which both use the
+    // basename, and keeps resourceName assertions/filters stable across the suite.
+    const resources = processFilePaths.map((filePath) => ({
+      content: readFileSync(filePath, 'utf-8'),
+      name: basename(filePath),
+    }));
+    return await zeebe.deployResources(resources);
   } catch (error) {
     console.error('Deployment failed:', error);
     throw error;
