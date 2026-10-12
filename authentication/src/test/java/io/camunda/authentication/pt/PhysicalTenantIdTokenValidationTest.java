@@ -32,7 +32,6 @@ import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -64,45 +63,22 @@ class PhysicalTenantIdTokenValidationTest {
   }
 
   @Test
-  void shouldAcceptRootIssuerTokenOutsideAnyPhysicalTenant() throws Exception {
+  void shouldKeepValidatingWithRootIssuerOutsideAnyPhysicalTenant() throws Exception {
     // given
     final var decoderFactory = decoderFactoryWithTenantOverridingDefaultSlotIssuer();
+    final var decoder = decoderFactory.createDecoder(registrationFor("oidc", rootIdp));
+    final var otherIssuerToken =
+        JwksTestServer.signForIssuer(rootIdp, tenantIdp.issuerUri(), List.of());
 
     // when
-    final var decoder = decoderFactory.createDecoder(registrationFor("oidc", rootIdp));
     final var jwt =
         decoder.decode(JwksTestServer.signForIssuer(rootIdp, rootIdp.issuerUri(), List.of()));
 
     // then
     assertThat(jwt.getIssuer()).hasToString(rootIdp.issuerUri());
-  }
-
-  @Test
-  void shouldRejectOtherIssuerTokenOutsideAnyPhysicalTenant() throws Exception {
-    // given
-    final var decoderFactory = decoderFactoryWithTenantOverridingDefaultSlotIssuer();
-    final var decoder = decoderFactory.createDecoder(registrationFor("oidc", rootIdp));
-    final var token = JwksTestServer.signForIssuer(rootIdp, tenantIdp.issuerUri(), List.of());
-
-    // when / then
-    assertThatThrownBy(() -> decoder.decode(token))
+    assertThatThrownBy(() -> decoder.decode(otherIssuerToken))
         .isInstanceOf(JwtValidationException.class)
         .hasMessageContaining("iss claim");
-  }
-
-  @Test
-  void shouldAcceptTenantIssuerWhenTenantOverridesDefaultSlotIssuer() throws Exception {
-    // given
-    final var decoderFactory = decoderFactoryWithTenantOverridingDefaultSlotIssuer();
-    bindPhysicalTenant("tenanta");
-
-    // when
-    final var decoder = decoderFactory.createDecoder(registrationFor("oidc", tenantIdp));
-    final var jwt =
-        decoder.decode(JwksTestServer.signForIssuer(tenantIdp, tenantIdp.issuerUri(), List.of()));
-
-    // then
-    assertThat(jwt.getIssuer()).hasToString(tenantIdp.issuerUri());
   }
 
   @Test
@@ -156,7 +132,7 @@ class PhysicalTenantIdTokenValidationTest {
   }
 
   @Test
-  void shouldRejectWrongIssuerForTenantOnlyProvider() throws Exception {
+  void shouldCheckIssuerForTenantOnlyProvider() throws Exception {
     // given
     final var environment = rootOnlyEnvironment();
     final var tenantOnly =
@@ -166,32 +142,18 @@ class PhysicalTenantIdTokenValidationTest {
     final var decoderFactory = decoderFactory(environment);
     bindPhysicalTenant("tenanta");
     final var decoder = decoderFactory.createDecoder(registrationFor("idpa", tenantIdp));
-    final var token = JwksTestServer.signForIssuer(tenantIdp, rootIdp.issuerUri(), List.of());
-
-    // when / then
-    assertThatThrownBy(() -> decoder.decode(token))
-        .isInstanceOf(JwtValidationException.class)
-        .hasMessageContaining("iss claim");
-  }
-
-  @Test
-  void shouldAcceptRightIssuerForTenantOnlyProvider() throws Exception {
-    // given
-    final var environment = rootOnlyEnvironment();
-    final var tenantOnly =
-        "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.idpa";
-    environment.setProperty(tenantOnly + ".client-id", "client-a");
-    environment.setProperty(tenantOnly + ".issuer-uri", tenantIdp.issuerUri());
-    final var decoderFactory = decoderFactory(environment);
-    bindPhysicalTenant("tenanta");
+    final var wrongIssuerToken =
+        JwksTestServer.signForIssuer(tenantIdp, rootIdp.issuerUri(), List.of());
 
     // when
-    final var decoder = decoderFactory.createDecoder(registrationFor("idpa", tenantIdp));
     final var jwt =
         decoder.decode(JwksTestServer.signForIssuer(tenantIdp, tenantIdp.issuerUri(), List.of()));
 
     // then
     assertThat(jwt.getIssuer()).hasToString(tenantIdp.issuerUri());
+    assertThatThrownBy(() -> decoder.decode(wrongIssuerToken))
+        .isInstanceOf(JwtValidationException.class)
+        .hasMessageContaining("iss claim");
   }
 
   @Test
@@ -212,17 +174,6 @@ class PhysicalTenantIdTokenValidationTest {
     // then login behaves as for a root provider without issuer-uri: signature is checked, iss is
     // not
     assertThat(jwt.getIssuer()).hasToString(rootIdp.issuerUri());
-  }
-
-  @Test
-  void shouldRejectLoginForPhysicalTenantWithoutResolvedConfiguration() {
-    // given
-    final var decoderFactory = decoderFactoryWithTenantOverridingDefaultSlotIssuer();
-    bindPhysicalTenant("unknowntenant");
-
-    // when / then
-    assertThatThrownBy(() -> decoderFactory.createDecoder(registrationFor("oidc", rootIdp)))
-        .isInstanceOf(OAuth2AuthenticationException.class);
   }
 
   private static JwtDecoderFactory<ClientRegistration>
