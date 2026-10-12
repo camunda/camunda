@@ -456,6 +456,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .allowPartialSearchResults(false)
             .query(query)
             .size(size)
+            // need to ensure we have these for deletes so we are not deleting stale data
+            .seqNoPrimaryTerm(true)
             .source(s -> s.fetch(false))
             .sort(sort -> sort.field(field -> field.field("id").order(SortOrder.Asc)));
 
@@ -474,7 +476,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                 return ArchiveDocIdsBatch.empty();
               }
               return ArchiveDocIdsBatch.from(
-                  hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
+                  hits.stream()
+                      .map(h -> new IdWithRouting(h.id(), h.routing(), h.seqNo(), h.primaryTerm()))
+                      .toList(),
                   hits.getLast().sortVals());
             });
   }
@@ -539,7 +543,16 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final var operations =
         docs.stream()
-            .map(d -> BulkOperation.of(b -> b.delete(del -> del.id(d.id()).routing(d.routing()))))
+            .map(
+                d ->
+                    BulkOperation.of(
+                        b ->
+                            b.delete(
+                                del ->
+                                    del.id(d.id())
+                                        .routing(d.routing())
+                                        .ifSeqNo(d.seqNo())
+                                        .ifPrimaryTerm(d.primaryTerm()))))
             .toList();
 
     final BulkRequest request =
@@ -554,6 +567,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   private long getDeletedDocCount(final String sourceIndex, final BulkResponse response) {
     if (response.errors()) {
+      checkIfErrorsAreAllVersionConflicts(sourceIndex, response);
+
       final long errorCount =
           response.items().stream().filter(item -> item.error() != null).count();
       throw new IllegalStateException(
@@ -563,6 +578,23 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     // only count DELETE bulk operation where result was `deleted`
     return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
+  }
+
+  private void checkIfErrorsAreAllVersionConflicts(
+      final String sourceIndex, final BulkResponse response) {
+    var totalConflicts = 0;
+    for (final var item : response.items()) {
+      final var error = item.error();
+      if (error != null) {
+        if (!"version_conflict_engine_exception".equals(error.type())) {
+          return;
+        }
+        totalConflicts++;
+      }
+    }
+    throw new VersionConflictOnArchiveDeleteException(
+        "Deleting reindexed documents from %s index completed with %d version conflicts"
+            .formatted(sourceIndex, totalConflicts));
   }
 
   private SearchRequest createUsageMetricSearchRequest(
