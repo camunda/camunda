@@ -17,8 +17,8 @@ import {
 type TokensUsedMetricProps = {
   inputTokens: number;
   outputTokens: number;
-  cacheReadTokenCount: number;
-  cacheCreationTokenCount: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
   reasoningTokens: number;
   maxTokens: number;
 };
@@ -26,16 +26,16 @@ type TokensUsedMetricProps = {
 const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
   inputTokens,
   outputTokens,
-  cacheReadTokenCount,
-  cacheCreationTokenCount,
+  cacheReadTokens,
+  cacheCreationTokens,
   reasoningTokens,
   maxTokens,
 }) => {
   const totalTokens = getTotalTokens({
     inputTokens,
     outputTokens,
-    cacheReadTokenCount,
-    cacheCreationTokenCount,
+    cacheReadTokens,
+    cacheCreationTokens,
   });
 
   return (
@@ -62,15 +62,15 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
             </TokenBreakdown>
           )}
         </TokenBreakdownColumn>
-        {(cacheReadTokenCount > 0 || cacheCreationTokenCount > 0) && (
+        {(cacheReadTokens > 0 || cacheCreationTokens > 0) && (
           <TokenBreakdownColumn>
             <TokenBreakdown $dotColor="var(--cds-status-gray)">
               <span>Cache read</span>
-              <span>{cacheReadTokenCount.toLocaleString()}</span>
+              <span>{cacheReadTokens.toLocaleString()}</span>
             </TokenBreakdown>
             <TokenBreakdown $dotColor="var(--cds-status-gray)">
               <span>Cache write</span>
-              <span>{cacheCreationTokenCount.toLocaleString()}</span>
+              <span>{cacheCreationTokens.toLocaleString()}</span>
             </TokenBreakdown>
           </TokenBreakdownColumn>
         )}
