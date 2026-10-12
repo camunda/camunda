@@ -10,10 +10,14 @@ package io.camunda.search.aggregation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AggregationPaginated;
+import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.search.sort.ProcessDefinitionSort;
 
 public record ProcessDefinitionLatestVersionAggregation(
-    ProcessDefinitionFilter filter, ProcessDefinitionSort sort, SearchQueryPage page)
+    ProcessDefinitionFilter filter,
+    ProcessDefinitionSort sort,
+    SearchQueryPage page,
+    ProcessDefinitionQueryResultConfig resultConfig)
     implements AggregationBase, AggregationPaginated {
   public static final int AGGREGATION_TERMS_SIZE = 10000;
 
