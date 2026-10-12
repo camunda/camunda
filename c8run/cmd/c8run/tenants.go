@@ -67,11 +67,7 @@ func defaultStorageType(baseDir string) string {
 
 func (c *tenantsCommand) run(baseDir string, args []string) error {
 	if len(args) == 0 || args[0] == "help" || args[0] == "-h" || args[0] == "--help" {
-		help := tenantsHelp
-		if cliName() == "" {
-			help += tenantsHelpAliases
-		}
-		_, _ = fmt.Fprint(c.output, help+tenantsHelpFooter)
+		_, _ = fmt.Fprint(c.output, tenantsHelp+tenantsHelpFooter)
 		return nil
 	}
 	if len(args) == 2 && (args[1] == "help" || args[1] == "-h" || args[1] == "--help") {
@@ -81,7 +77,7 @@ func (c *tenantsCommand) run(baseDir string, args []string) error {
 		}
 	}
 	if _, ok := tenantsCommandHelp[args[0]]; !ok {
-		return fmt.Errorf("unsupported tenants operation: %s (run `c8run tenants help`)", args[0])
+		return fmt.Errorf("unsupported physical-tenants operation: %s (run `c8run physical-tenants help`)", args[0])
 	}
 
 	mode, err := pt.Mode()
@@ -94,13 +90,13 @@ func (c *tenantsCommand) run(baseDir string, args []string) error {
 	}
 	if args[0] == "path" {
 		if len(args) != 1 {
-			return errors.New("usage: c8run tenants path")
+			return errors.New("usage: c8run physical-tenants path")
 		}
 		_, _ = fmt.Fprintln(c.plain(), path)
 		return nil
 	}
 	if mode == "external" {
-		return fmt.Errorf("c8run tenants commands are disabled because %s=external; declare camunda.physical-tenants in your --config file instead", pt.ModeEnv)
+		return fmt.Errorf("c8run physical-tenants commands are disabled because %s=external; declare camunda.physical-tenants in your --config file instead", pt.ModeEnv)
 	}
 	if v := os.Getenv("CAMUNDA_VERSION"); v != "" && !pt.SupportsVersion(v) {
 		return fmt.Errorf("physical tenants require Camunda 8.%d or newer; this c8run bundles Camunda %s", pt.MinCamundaMinor, v)
@@ -115,7 +111,7 @@ func (c *tenantsCommand) run(baseDir string, args []string) error {
 		return c.add(baseDir, store, args[1:])
 	case "list", "ls":
 		if len(args) != 1 {
-			return errors.New("usage: c8run tenants list")
+			return errors.New("usage: c8run physical-tenants list")
 		}
 		return c.list(baseDir, store)
 	case "remove", "rm":
@@ -160,7 +156,7 @@ func parseAddArguments(args []string) (addOptions, error) {
 		}
 	}
 	if len(raw) == 0 {
-		return opts, errors.New("usage: c8run tenants add <id> [id...] [--username <name>] [--password-stdin] [--no-connectors]")
+		return opts, errors.New("usage: c8run physical-tenants add <id> [id...] [--username <name>] [--password-stdin] [--no-connectors]")
 	}
 	ids, err := pt.ParseIDList(raw)
 	if err != nil {
@@ -174,7 +170,7 @@ func parseAddArguments(args []string) (addOptions, error) {
 		return opts, errors.New("--password-stdin requires --username")
 	}
 	if opts.passwordStdin && len(ids) > 1 {
-		return opts, errors.New("--password-stdin accepts exactly one tenant")
+		return opts, errors.New("--password-stdin accepts exactly one physical tenant")
 	}
 	return opts, nil
 }
@@ -215,7 +211,7 @@ func (c *tenantsCommand) add(baseDir string, store *pt.Store, args []string) err
 		}
 		_, _ = fmt.Fprintf(c.output, "Physical tenant %s added.\n  Login:     %s\n  Operate:   %s\n  API:       %s\n", t.ID, login, e.Operate, e.REST)
 		if t.NoConnectors {
-			_, _ = fmt.Fprintln(c.output, "  Connectors: disabled for this tenant")
+			_, _ = fmt.Fprintln(c.output, "  Connectors: disabled for this physical tenant")
 		}
 	}
 	c.printRestartHint(baseDir, "start", len(tenants))
@@ -238,7 +234,7 @@ func (c *tenantsCommand) readTenantPassword(id string, opts addOptions) (string,
 		return "", errors.New("interactive password input requires a terminal; use --password-stdin for automation")
 	}
 	for attempt := 0; attempt < 3; attempt++ {
-		_, _ = fmt.Fprintf(c.errorOutput, "Password for %s in tenant %s: ", opts.username, id)
+		_, _ = fmt.Fprintf(c.errorOutput, "Password for %s in physical tenant %s: ", opts.username, id)
 		first, err := c.readPassword()
 		_, _ = fmt.Fprintln(c.errorOutput)
 		if err != nil {
@@ -271,7 +267,7 @@ func (c *tenantsCommand) list(baseDir string, store *pt.Store) error {
 	running := camundaRunning(baseDir)
 	active := activeTenantIDs(baseDir)
 	tw := tabwriter.NewWriter(c.output, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "TENANT\tSTATUS\tLOGIN\tCONNECTORS\tOPERATE\tORCHESTRATION API")
+	_, _ = fmt.Fprintln(tw, "PHYSICAL TENANT\tSTATUS\tLOGIN\tCONNECTORS\tOPERATE\tORCHESTRATION API")
 	d := pt.EndpointsFor(pt.DefaultID, "http", c.port)
 	_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", pt.DefaultID, statusLabel(running, true), "start login", "yes", d.Operate, d.REST)
 	listed := map[string]bool{}
@@ -302,7 +298,7 @@ func (c *tenantsCommand) list(baseDir string, store *pt.Store) error {
 		return err
 	}
 	if len(tenants) == 0 {
-		_, _ = fmt.Fprintln(c.output, "\nNo extra physical tenants yet. Add one with `c8run tenants add <id>`.")
+		_, _ = fmt.Fprintln(c.output, "\nNo extra physical tenants yet. Add one with `c8run physical-tenants add <id>`.")
 	}
 	return nil
 }
@@ -332,7 +328,7 @@ func (c *tenantsCommand) remove(baseDir string, store *pt.Store, args []string) 
 		}
 	}
 	if len(ids) == 0 {
-		return errors.New("usage: c8run tenants remove <id> [id...] [--yes]")
+		return errors.New("usage: c8run physical-tenants remove <id> [id...] [--yes]")
 	}
 	for _, id := range ids {
 		if id == pt.DefaultID {
@@ -344,14 +340,14 @@ func (c *tenantsCommand) remove(baseDir string, store *pt.Store, args []string) 
 		return err
 	}
 	if !ok {
-		_, _ = fmt.Fprintln(c.output, "No tenants removed.")
+		_, _ = fmt.Fprintln(c.output, "No physical tenants removed.")
 		return nil
 	}
 	if err := withoutInterrupts(func() error { return store.Remove(ids) }); err != nil {
 		return err
 	}
 	_, _ = fmt.Fprintf(c.output, "Removed physical tenant(s): %s.\n", strings.Join(ids, ", "))
-	_, _ = fmt.Fprintln(c.output, "Their data is kept in secondary storage under the tenant's prefix. Adding the same ID again restores it, including the users created in that tenant.")
+	_, _ = fmt.Fprintln(c.output, "Their data is kept in secondary storage under the physical tenant's prefix. Adding the same ID again restores it, including the users created in that physical tenant.")
 	c.printRestartHint(baseDir, "stop", 0)
 	return nil
 }
@@ -359,20 +355,20 @@ func (c *tenantsCommand) remove(baseDir string, store *pt.Store, args []string) 
 func (c *tenantsCommand) reset(baseDir string, store *pt.Store, args []string) error {
 	confirmed := len(args) == 1 && (args[0] == "--yes" || args[0] == "-y")
 	if len(args) > 0 && !confirmed {
-		return errors.New("usage: c8run tenants reset [--yes]")
+		return errors.New("usage: c8run physical-tenants reset [--yes]")
 	}
 	ok, err := c.confirm(confirmed, "Remove all physical tenants and their stored logins?")
 	if err != nil {
 		return err
 	}
 	if !ok {
-		_, _ = fmt.Fprintln(c.output, "No tenants removed.")
+		_, _ = fmt.Fprintln(c.output, "No physical tenants removed.")
 		return nil
 	}
 	if err := store.Reset(); err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintln(c.output, "All physical tenants removed. Only the default tenant will start.")
+	_, _ = fmt.Fprintln(c.output, "All physical tenants removed. Only the default physical tenant will start.")
 	c.printRestartHint(baseDir, "stop", 0)
 	return nil
 }
@@ -401,9 +397,9 @@ func (c *tenantsCommand) printRestartHint(baseDir, verb string, count int) {
 		return
 	}
 	if verb == "start" {
-		subject := "this tenant"
+		subject := "this physical tenant"
 		if count > 1 {
-			subject = "these tenants"
+			subject = "these physical tenants"
 		}
 		_, _ = fmt.Fprintf(c.output, "Run `./c8run start` to start Camunda with %s.\n", subject)
 	}
@@ -435,41 +431,38 @@ func activeTenantIDs(baseDir string) map[string]bool {
 }
 
 const tenantsHelp = `Usage:
-  c8run tenants add <id> [id...] [--username <name>] [--password-stdin] [--no-connectors]
-  c8run tenants list
-  c8run tenants remove <id> [id...] [--yes]
-  c8run tenants reset [--yes]
-  c8run tenants path
+  c8run physical-tenants add <id> [id...] [--username <name>] [--password-stdin] [--no-connectors]
+  c8run physical-tenants list
+  c8run physical-tenants remove <id> [id...] [--yes]
+  c8run physical-tenants reset [--yes]
+  c8run physical-tenants path
 
 Physical tenants are fully isolated engines inside one c8run: each has its own partitions,
 its own data in secondary storage, its own users, and its own Operate, Tasklist and API at
-http://localhost:8080/physical-tenants/<id>/. The "default" tenant always exists and is
+http://localhost:8080/physical-tenants/<id>/. The "default" physical tenant always exists and is
 served at the unprefixed URLs.
 
-Tenant IDs use lowercase letters and digits only (max 64; max 8 with RDBMS/H2 storage),
+Physical tenant IDs use lowercase letters and digits only (max 64; max 8 with RDBMS/H2 storage),
 e.g. "sales" or "team2".
-Tenants are saved for the current OS user and applied on every ` + "`c8run start`" + `.
-Use ` + "`c8run start --physical-tenants a,b`" + ` to run with tenants for one run without saving them.
+Physical tenants are saved for the current OS user and applied on every ` + "`c8run start`" + `.
+Use ` + "`c8run start --physical-tenants a,b`" + ` to run with physical tenants for one run without saving them.
 
 `
 
-// tenantsHelpAliases is omitted under a wrapper, which delegates only `tenants`.
-const tenantsHelpAliases = "Aliases: c8run pt, c8run physical-tenants.\n"
-
-const tenantsHelpFooter = `C8RUN_TENANTS_FILE selects another tenants file; relative paths use the current directory.
+const tenantsHelpFooter = `C8RUN_TENANTS_FILE selects another physical tenants file; relative paths use the current directory.
 C8RUN_TENANTS_MODE defaults to local; external disables these commands so camunda.physical-tenants
 in your --config file is the only source.
 Requires Camunda 8.10 or newer.
 `
 
 var tenantsCommandHelp = map[string]string{
-	"add":    "Usage: c8run tenants add <id> [id...] [--username <name>] [--password-stdin] [--no-connectors]\nAdds physical tenants for the next start. Without --username, each tenant gets the same login as `c8run start`.\nWith --username, you are prompted for a password (or pass it on stdin with --password-stdin).\nEach tenant gets its own connectors runtime unless --no-connectors is set.\n",
-	"list":   "Usage: c8run tenants list\nShows every physical tenant with its status, login, connectors and URLs.\n",
-	"ls":     "Usage: c8run tenants list\n",
-	"remove": "Usage: c8run tenants remove <id> [id...] [--yes]\nRemoves tenants from the next start. Data stays in secondary storage; adding the ID again restores it.\n",
-	"rm":     "Usage: c8run tenants remove <id> [id...] [--yes]\n",
-	"reset":  "Usage: c8run tenants reset [--yes]\nRemoves all physical tenants and stored tenant logins.\n",
-	"path":   "Usage: c8run tenants path\nShows where physical tenants are saved.\n",
+	"add":    "Usage: c8run physical-tenants add <id> [id...] [--username <name>] [--password-stdin] [--no-connectors]\nAdds physical tenants for the next start. Without --username, each physical tenant gets the same login as `c8run start`.\nWith --username, you are prompted for a password (or pass it on stdin with --password-stdin).\nEach physical tenant gets its own connectors runtime unless --no-connectors is set.\n",
+	"list":   "Usage: c8run physical-tenants list\nShows every physical tenant with its status, login, connectors and URLs.\n",
+	"ls":     "Usage: c8run physical-tenants list\n",
+	"remove": "Usage: c8run physical-tenants remove <id> [id...] [--yes]\nRemoves physical tenants from the next start. Data stays in secondary storage; adding the ID again restores it.\n",
+	"rm":     "Usage: c8run physical-tenants remove <id> [id...] [--yes]\n",
+	"reset":  "Usage: c8run physical-tenants reset [--yes]\nRemoves all physical tenants and stored physical tenant logins.\n",
+	"path":   "Usage: c8run physical-tenants path\nShows where physical tenants are saved.\n",
 }
 
 func (c *tenantsCommand) plain() io.Writer {
