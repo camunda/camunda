@@ -77,7 +77,7 @@ class PhysicalTenantOidcClientSecretValidationTest {
 
   @Test
   void shouldAcceptOtherIssuerWithOwnSecret() {
-    // given — also a secret equal to the root secret, because the operator set it explicitly
+    // given — the secret is equal to the root secret, but the tenant sets it explicitly
     final var environment =
         environmentWith(
             Map.of(
@@ -111,7 +111,7 @@ class PhysicalTenantOidcClientSecretValidationTest {
 
   @Test
   void shouldAcceptProviderNotAssignedToTenant() {
-    // given — the tenant overrides the default slot but does not use it
+    // given — the tenant changes the default slot but does not assign it
     final var environment =
         environmentWith(
             Map.of(
@@ -128,7 +128,7 @@ class PhysicalTenantOidcClientSecretValidationTest {
 
   @Test
   void shouldAcceptPrivateKeyJwtProvider() {
-    // given — private_key_jwt sends no client secret
+    // given — private_key_jwt does not send the secret
     final var environment =
         environmentWith(
             Map.of(
