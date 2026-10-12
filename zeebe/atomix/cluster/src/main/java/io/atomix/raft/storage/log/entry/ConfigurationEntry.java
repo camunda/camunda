@@ -24,6 +24,7 @@ import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWri
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 
 /**
  * Stores a cluster configuration.
@@ -57,9 +58,10 @@ public record ConfigurationEntry(
   }
 
   @Override
-  public BufferWriter toSerializable(final long term, final RaftEntrySerializer serializer) {
+  public BufferWriter toSerializable(
+      final long term, final UUID epoch, final RaftEntrySerializer serializer) {
     return new SerializedBufferWriterAdapter(
         () -> serializer.getConfigurationEntrySerializedLength(this),
-        (buffer, offset) -> serializer.writeConfigurationEntry(term, this, buffer, offset));
+        (buffer, offset) -> serializer.writeConfigurationEntry(term, epoch, this, buffer, offset));
   }
 }

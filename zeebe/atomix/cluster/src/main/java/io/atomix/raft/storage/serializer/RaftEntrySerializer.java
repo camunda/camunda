@@ -20,6 +20,7 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
@@ -51,42 +52,47 @@ public interface RaftEntrySerializer {
   int getConfigurationEntrySerializedLength(ConfigurationEntry entry);
 
   /**
-   * Writes the term and entry into given buffer at the given offset
+   * Writes the term, epoch and entry into given buffer at the given offset
    *
    * @param term the term of the entry
+   * @param epoch the epoch of the leader that appends the entry
    * @param entry the ApplicationEntry to write
    * @param buffer the buffer to write to
-   * @param offset the offset in the buffer at which the term and entry will be written
+   * @param offset the offset in the buffer at which the term, epoch and entry will be written
    * @return the number of bytes written
    */
   int writeApplicationEntry(
-      long term, ApplicationEntry entry, MutableDirectBuffer buffer, int offset);
+      long term, UUID epoch, ApplicationEntry entry, MutableDirectBuffer buffer, int offset);
 
   /**
-   * Writes the term and entry into given buffer at the given offset
+   * Writes the term, epoch and entry into given buffer at the given offset
    *
    * @param term the term of the entry
+   * @param epoch the epoch of the leader that appends the entry
    * @param entry the InitialEntry to write
    * @param buffer the buffer to write to
-   * @param offset the offset in the buffer at which the term and entry will be written
+   * @param offset the offset in the buffer at which the term, epoch and entry will be written
    * @return the number of bytes written
    */
-  int writeInitialEntry(long term, InitialEntry entry, MutableDirectBuffer buffer, int offset);
+  int writeInitialEntry(
+      long term, UUID epoch, InitialEntry entry, MutableDirectBuffer buffer, int offset);
 
   /**
-   * Writes the term and entry into given buffer at the given offset
+   * Writes the term, epoch and entry into given buffer at the given offset
    *
    * @param term the term of the entry
+   * @param epoch the epoch of the leader that appends the entry
    * @param entry the ConfigurationEntry to write
    * @param buffer the buffer to write to
-   * @param offset the offset in the buffer at which the term and entry will be written
+   * @param offset the offset in the buffer at which the term, epoch and entry will be written
    * @return the number of bytes written
    */
   int writeConfigurationEntry(
-      long term, ConfigurationEntry entry, MutableDirectBuffer buffer, int offset);
+      long term, UUID epoch, ConfigurationEntry entry, MutableDirectBuffer buffer, int offset);
 
   /**
-   * Read the raft log entry from the buffer
+   * Read the raft log entry from the buffer. An entry written before epochs existed gets {@code new
+   * UUID(0, term)} as its epoch, which no random UUID equals.
    *
    * @param buffer to read the raft log entry from
    * @return RaftLogEntry

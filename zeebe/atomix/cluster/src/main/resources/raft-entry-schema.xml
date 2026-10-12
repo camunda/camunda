@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude"
-  package="io.atomix.raft.storage.serializer" id="8" version="4"
+  package="io.atomix.raft.storage.serializer" id="8" version="5"
   semanticVersion="0.1.0" description="Raft Entry" byteOrder="littleEndian"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://fixprotocol.io/2016/sbe http://fixprotocol.io/2016/sbe/sbe.xsd">
@@ -27,6 +27,11 @@
   </types>
 
   <types>
+    <!-- a UUID's 16 bytes, most significant first, as in its canonical form -->
+    <type name="UUID" primitiveType="uint8" length="16"/>
+  </types>
+
+  <types>
     <!-- binary data -->
     <composite name="blob">
       <type name="length" primitiveType="uint32" maxValue="2147483647"/>
@@ -38,6 +43,8 @@
   <sbe:message name="RaftLogEntry" id="1">
     <field name="term" id="0" type="uint64"/>
     <field name="type" id="1" type="EntryType"/>
+    <!-- the epoch of the leader that appended the entry: a random UUID it minted for its term -->
+    <field name="epoch" id="2" type="UUID" sinceVersion="5"/>
   </sbe:message>
 
   <sbe:message name="ApplicationEntry" id="2">

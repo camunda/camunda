@@ -49,7 +49,7 @@ public class RaftLogUncommittedReader implements RaftLogReader {
     final JournalRecord journalRecord = journalReader.next();
     final RaftLogEntry entry = serializer.readRaftLogEntry(journalRecord.data());
 
-    return new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
+    return new IndexedRaftLogEntryImpl(entry.term(), entry.epoch(), entry.entry(), journalRecord);
   }
 
   @Override

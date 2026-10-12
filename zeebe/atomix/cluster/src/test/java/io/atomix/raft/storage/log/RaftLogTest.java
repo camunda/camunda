@@ -45,6 +45,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.Set;
+import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -54,6 +55,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class RaftLogTest {
+
+  private static final UUID EPOCH = UUID.randomUUID();
   private static final long DEFAULT_APPLICATION_ENTRY_LENGTH = 2L;
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
@@ -91,7 +94,7 @@ class RaftLogTest {
   @Test
   void shouldAppendInitialEntry() {
     // given
-    final RaftLogEntry entry = new RaftLogEntry(1, initialEntry);
+    final RaftLogEntry entry = new RaftLogEntry(1, EPOCH, initialEntry);
     // when
     final var appended = raftlog.append(entry);
 
@@ -106,7 +109,7 @@ class RaftLogTest {
   @Test
   void shouldAppendConfigurationEntry() {
     // given
-    final RaftLogEntry entry = new RaftLogEntry(1, configurationEntry);
+    final RaftLogEntry entry = new RaftLogEntry(1, EPOCH, configurationEntry);
     // when
     raftlog.append(entry);
 
@@ -124,7 +127,7 @@ class RaftLogTest {
   @Test
   void shouldAppendApplicationEntry() {
     // given
-    final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
+    final RaftLogEntry entry = new RaftLogEntry(1, EPOCH, firstApplicationEntry);
     // when
     final var appended = raftlog.append(entry);
 
@@ -143,7 +146,7 @@ class RaftLogTest {
   @Test
   void shouldUpdateLastAppendedEntry() {
     // given
-    final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
+    final RaftLogEntry entry = new RaftLogEntry(1, EPOCH, firstApplicationEntry);
     // when
     final var appended = raftlog.append(entry);
 
@@ -154,7 +157,7 @@ class RaftLogTest {
   @Test
   void shouldAppendReplicatableJournalRecord(@TempDir final File directory) {
     // given
-    final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
+    final RaftLogEntry entry = new RaftLogEntry(1, EPOCH, firstApplicationEntry);
     final var persistedRaftRecord = raftlog.append(entry).getReplicatableJournalRecord();
     final var raftlogFollower =
         RaftLog.builder(meterRegistry)
@@ -179,11 +182,12 @@ class RaftLogTest {
   @Test
   void shouldDeleteAfter() throws CheckedJournalException {
     // given
-    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    raftlog.append(new RaftLogEntry(1, EPOCH, firstApplicationEntry));
     final var secondEntry =
-        raftlog.append(new RaftLogEntry(1, createApplicationEntryAfter(firstApplicationEntry)));
+        raftlog.append(
+            new RaftLogEntry(1, EPOCH, createApplicationEntryAfter(firstApplicationEntry)));
     raftlog.append(
-        new RaftLogEntry(1, createApplicationEntryAfter(secondEntry.getApplicationEntry())));
+        new RaftLogEntry(1, EPOCH, createApplicationEntryAfter(secondEntry.getApplicationEntry())));
 
     // when
     raftlog.deleteAfter(secondEntry.index());
@@ -197,13 +201,14 @@ class RaftLogTest {
   @Test
   void shouldNotDeleteCommittedEntries() {
     // given
-    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    raftlog.append(new RaftLogEntry(1, EPOCH, firstApplicationEntry));
     final ApplicationEntry secondApplicationEntry =
         createApplicationEntryAfter(firstApplicationEntry);
-    final var deleteIndex = raftlog.append(new RaftLogEntry(1, secondApplicationEntry)).index();
+    final var deleteIndex =
+        raftlog.append(new RaftLogEntry(1, EPOCH, secondApplicationEntry)).index();
     final var commitIndex =
         raftlog
-            .append(new RaftLogEntry(1, createApplicationEntryAfter(secondApplicationEntry)))
+            .append(new RaftLogEntry(1, EPOCH, createApplicationEntryAfter(secondApplicationEntry)))
             .index();
 
     // when
@@ -217,11 +222,12 @@ class RaftLogTest {
   @Test
   void shouldReset() {
     // given
-    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    raftlog.append(new RaftLogEntry(1, EPOCH, firstApplicationEntry));
     final IndexedRaftLogEntry secondEntry =
-        raftlog.append(new RaftLogEntry(1, createApplicationEntryAfter(firstApplicationEntry)));
+        raftlog.append(
+            new RaftLogEntry(1, EPOCH, createApplicationEntryAfter(firstApplicationEntry)));
     raftlog.append(
-        new RaftLogEntry(1, createApplicationEntryAfter(secondEntry.getApplicationEntry())));
+        new RaftLogEntry(1, EPOCH, createApplicationEntryAfter(secondEntry.getApplicationEntry())));
 
     // when
     raftlog.reset(10);

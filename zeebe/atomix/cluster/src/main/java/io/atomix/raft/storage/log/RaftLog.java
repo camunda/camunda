@@ -147,9 +147,10 @@ public final class RaftLog implements Closeable {
     final JournalRecord journalRecord =
         journal.append(
             entry.getLowestAsqn().orElse(ASQN_IGNORE),
-            entry.entry().toSerializable(entry.term(), serializer));
+            entry.entry().toSerializable(entry.term(), entry.epoch(), serializer));
 
-    lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
+    lastAppendedEntry =
+        new IndexedRaftLogEntryImpl(entry.term(), entry.epoch(), entry.entry(), journalRecord);
     return lastAppendedEntry;
   }
 
@@ -157,7 +158,8 @@ public final class RaftLog implements Closeable {
     journal.append(entry);
 
     final RaftLogEntry raftEntry = serializer.readRaftLogEntry(entry.data());
-    lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), raftEntry.entry(), entry);
+    lastAppendedEntry =
+        new IndexedRaftLogEntryImpl(entry.term(), raftEntry.epoch(), raftEntry.entry(), entry);
     return lastAppendedEntry;
   }
 
@@ -165,7 +167,9 @@ public final class RaftLog implements Closeable {
     final var writtenRecord = journal.append(entry.checksum(), entry.serializedJournalRecord());
 
     final RaftLogEntry raftEntry = serializer.readRaftLogEntry(writtenRecord.data());
-    lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), raftEntry.entry(), writtenRecord);
+    lastAppendedEntry =
+        new IndexedRaftLogEntryImpl(
+            entry.term(), raftEntry.epoch(), raftEntry.entry(), writtenRecord);
     return lastAppendedEntry;
   }
 

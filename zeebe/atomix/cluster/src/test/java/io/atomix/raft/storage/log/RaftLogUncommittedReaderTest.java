@@ -27,6 +27,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class RaftLogUncommittedReaderTest {
+
+  private static final UUID EPOCH = UUID.randomUUID();
 
   private RaftLog raftlog;
   private RaftLogReader uncommittedReader;
@@ -150,7 +153,7 @@ class RaftLogUncommittedReaderTest {
   private void appendEntries(final int count) {
     for (int i = 0; i < count; i++) {
       final ApplicationEntry applicationEntry = new SerializedApplicationEntry(i + 1, i + 1, data);
-      final RaftLogEntry entry = new RaftLogEntry(1, applicationEntry);
+      final RaftLogEntry entry = new RaftLogEntry(1, EPOCH, applicationEntry);
       raftlog.append(entry);
     }
   }

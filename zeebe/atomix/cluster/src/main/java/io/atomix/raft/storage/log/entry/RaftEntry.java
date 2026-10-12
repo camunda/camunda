@@ -17,7 +17,8 @@ package io.atomix.raft.storage.log.entry;
 
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.UUID;
 
 public interface RaftEntry {
-  BufferWriter toSerializable(long term, RaftEntrySerializer serializer);
+  BufferWriter toSerializable(long term, UUID epoch, RaftEntrySerializer serializer);
 }

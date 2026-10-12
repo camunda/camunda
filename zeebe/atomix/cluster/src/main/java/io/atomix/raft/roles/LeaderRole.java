@@ -70,6 +70,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
@@ -78,6 +79,9 @@ import java.util.stream.Collectors;
 public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   private static final int MAX_APPEND_ATTEMPTS = 5;
+  // Stamped on every entry this leader appends. Unlike the term, it is never reused: after a
+  // restore from a backup, a partition's leaders reuse the terms that followed the backup.
+  private final UUID epoch = UUID.randomUUID();
   private final LeaderAppender appender;
   private final LeadershipTransferRunner leadershipTransferRunner;
   private Scheduled appendTimer;
@@ -652,7 +656,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   /** Appends initial entries to the log to take leadership. */
   private void appendInitialEntries() {
     final long term = raft.getTerm();
-    appendEntry(new RaftLogEntry(term, new InitialEntry()));
+    log.debug("Appending entries of term {} with epoch {}", term, epoch);
+    appendEntry(new RaftLogEntry(term, epoch, new InitialEntry()));
   }
 
   /** Commits a no-op entry to the log, ensuring any entries from a previous term are committed. */
@@ -753,7 +758,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         new ConfigurationEntry(System.currentTimeMillis(), newMembers, oldMembers);
     final IndexedRaftLogEntry entry;
     try {
-      entry = appendEntry(new RaftLogEntry(term, configurationEntry));
+      entry = appendEntry(new RaftLogEntry(term, epoch, configurationEntry));
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
@@ -1018,7 +1023,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     final IndexedRaftLogEntry indexed;
     try {
-      indexed = appendEntry(new RaftLogEntry(raft.getTerm(), entry));
+      indexed = appendEntry(new RaftLogEntry(raft.getTerm(), epoch, entry));
     } catch (final Exception e) {
       appendListener.onWriteError(Throwables.getRootCause(e));
       return;
