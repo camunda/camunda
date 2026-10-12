@@ -424,7 +424,7 @@
       "id": 6,
       "type": "stat",
       "title": "Configured vs Zeebe partitions",
-      "description": "Zeebe partitions minus the partitions Optimize is configured to import (zeebe.partitionCount, default 1). Below 0 means some partitions are never imported. Needs the Zeebe broker metrics in the same Prometheus.",
+      "description": "Partitions Optimize is configured to import (zeebe.partitionCount, default 1) minus Zeebe partitions, per namespace. Below 0 means some partitions are never imported. Needs the Zeebe broker metrics in the same Prometheus.",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -468,8 +468,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max(optimize_import_configuredPartitions{namespace=~\"$namespace\", pod=~\"$pod\"}) - count(count by (partition) (atomix_role{namespace=~\"$namespace\"}))",
-          "legendFormat": "missing partitions",
+          "expr": "max by (namespace) (optimize_import_configuredPartitions{namespace=~\"$namespace\", pod=~\"$pod\"}) - on (namespace) count by (namespace) (count by (namespace, partition) (atomix_role{namespace=~\"$namespace\"}))",
+          "legendFormat": "{{namespace}}",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -859,7 +859,7 @@
         },
         {
           "refId": "B",
-          "expr": "sum by (valueType) (rate(zeebe_exporter_events_total{namespace=~\"$namespace\", action=\"exported\", valueType=~\"$record_type\"}[$__rate_interval]))",
+          "expr": "sum by (valueType) (rate(zeebe_exporter_events_total{namespace=~\"$namespace\", action=\"exported\", valueType=~\"$record_type\", partition=~\"$partition\"}[$__rate_interval]))",
           "legendFormat": "zeebe {{valueType}}",
           "datasource": {
             "type": "prometheus",
@@ -1439,7 +1439,24 @@
             }
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
