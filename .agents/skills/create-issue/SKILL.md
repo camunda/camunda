@@ -111,7 +111,7 @@ Map path prefixes to component labels:
 | `testing/`               | `component/camunda-process-test` |
 | `qa/`                    | `component/qa`                   |
 | `load-tests/`            | `component/load-tests`           |
-| `.github/` or `.claude/` | `component/build-pipeline`       |
+| `.github/` or `.agents/` | `component/build-pipeline`       |
 
 **Zeebe label split — use the conceptual layer, not the path:**
 

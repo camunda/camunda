@@ -33,10 +33,10 @@ Then summarizes the concerning failing and flaky workflows by owner.
 ## How to run
 
 ```bash
-python3 .claude/skills/ci-scheduled-workflow-health/scripts/scheduled-workflow-report.py
+python3 .agents/skills/ci-scheduled-workflow-health/scripts/scheduled-workflow-report.py
 ```
 
-The script is at: `.claude/skills/ci-scheduled-workflow-health/scripts/scheduled-workflow-report.py`.
+The script is at: `.agents/skills/ci-scheduled-workflow-health/scripts/scheduled-workflow-report.py`.
 
 Output: `scheduled-workflow-report.html` in the current directory. Open with a browser.
 

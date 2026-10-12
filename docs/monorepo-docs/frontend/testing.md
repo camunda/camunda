@@ -164,7 +164,7 @@ image (Docker required), with the light theme and a Full HD viewport.
   don't appear.
 
 For the full procedure and the helper reference, see the
-`frontend-docs-screenshots` skill in `.claude/skills/`.
+`frontend-docs-screenshots` skill in `.agents/skills/`.
 
 ```ts
 import { test } from "#/pw-modules/test-extend";

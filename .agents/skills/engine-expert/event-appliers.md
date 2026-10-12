@@ -15,11 +15,11 @@ Before editing any applier file or any method reachable from an applier, run the
 
 ```bash
 # Applier
-.claude/skills/engine-expert/scripts/check-released-applier.sh \
+.agents/skills/engine-expert/scripts/check-released-applier.sh \
   zeebe/engine/src/main/java/io/camunda/zeebe/engine/state/appliers/UserCreatedApplier.java
 
 # State class implementation reachable from an applier
-.claude/skills/engine-expert/scripts/check-released-applier.sh \
+.agents/skills/engine-expert/scripts/check-released-applier.sh \
   zeebe/engine/src/main/java/io/camunda/zeebe/engine/state/user/DbUserState.java
 ```
 
