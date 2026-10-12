@@ -185,7 +185,12 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
                 {metrics.modelCalls.toLocaleString()} model calls
               </Tag>
               <Tag type="gray" size="sm">
-                {getTotalTokens(metrics).toLocaleString()}
+                {getTotalTokens({
+                  inputTokens: metrics.inputTokens,
+                  outputTokens: metrics.outputTokens,
+                  cacheReadTokens: metrics.cacheReadTokenCount,
+                  cacheCreationTokens: metrics.cacheCreationTokenCount,
+                }).toLocaleString()}
                 &nbsp;tokens
               </Tag>
             </SectionTitle>
@@ -199,8 +204,8 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             <TokensUsedMetric
               inputTokens={metrics.inputTokens}
               outputTokens={metrics.outputTokens}
-              cacheReadTokenCount={metrics.cacheReadTokenCount}
-              cacheCreationTokenCount={metrics.cacheCreationTokenCount}
+              cacheReadTokens={metrics.cacheReadTokenCount}
+              cacheCreationTokens={metrics.cacheCreationTokenCount}
               reasoningTokens={metrics.reasoningTokenCount}
               maxTokens={limits.maxTokens}
             />

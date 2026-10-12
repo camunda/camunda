@@ -49,7 +49,12 @@ const MessageMetrics: React.FC<Props> = memo(function MessageMetrics({
     return null;
   }
 
-  const totalTokensMetric = getTotalTokens(metrics);
+  const totalTokensMetric = getTotalTokens({
+    inputTokens: metrics.inputTokens,
+    outputTokens: metrics.outputTokens,
+    cacheReadTokens: metrics.cacheReadTokenCount,
+    cacheCreationTokens: metrics.cacheCreationTokenCount,
+  });
   const inputTooltip = `Input: ${formatToken(metrics.inputTokens)}`;
   const cacheReadTooltip =
     metrics.cacheReadTokenCount !== null
