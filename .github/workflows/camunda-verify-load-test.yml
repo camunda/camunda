@@ -43,7 +43,7 @@ jobs:
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER }}
 
-      # Prometheus credentials are required in the verify-test.sh script below.
+      # Prometheus credentials are required by `loadtestctl verify` below.
       - name: Import Prometheus credentials
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -55,6 +55,8 @@ jobs:
           secrets: |
             secret/data/products/qa/ci/common LDAP_QA_USER | PROMETHEUS_USER;
             secret/data/products/qa/ci/common LDAP_QA_PASSWORD | PROMETHEUS_PASSWORD;
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       - name: Verify Load test
         run: load-tests/docs/scripts/verify-test.sh "${NAMESPACE}"
