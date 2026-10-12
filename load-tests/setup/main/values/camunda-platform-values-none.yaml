@@ -54,6 +54,10 @@ orchestration:
         # Grant the dedicated leader-balancer client (declared via `identity.clients`) cluster-admin
         # access, so it can call the coordinated `/cluster/v2/rebalance` endpoint.
         camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
+        # Spike: dedicated actor pool per physical tenant, 1 CPU + 1 IO thread each.
+        camunda.system.physical-tenant-actor-pool.enabled: "true"
+        camunda.system.physical-tenant-actor-pool.cpu-thread-count: 1
+        camunda.system.physical-tenant-actor-pool.io-thread-count: 1
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.
