@@ -73,13 +73,15 @@ public class ProcessInstanceIT {
                     .parentProcessInstanceKey(-1L)
                     .parentElementInstanceKey(-1L)
                     .version(1)
-                    .businessId("test-business-id")));
+                    .businessId("test-business-id")
+                    .storageOrdinal(3)));
 
     final var instance = processInstanceReader.findOne(processInstanceKey).orElse(null);
 
     assertThat(instance).isNotNull();
     assertThat(instance.processInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(instance.rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    assertThat(instance.storageOrdinal()).isEqualTo(3);
     assertThat(instance.processDefinitionId()).isEqualTo("test-process");
     assertThat(instance.processDefinitionKey()).isEqualTo(1337L);
     assertThat(instance.state()).isEqualTo(ProcessInstanceState.ACTIVE);
