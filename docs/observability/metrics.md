@@ -341,6 +341,9 @@ Access metrics at: http://localhost:9600/actuator/prometheus
 
 Optimize serves its metrics separately, on its management port: http://localhost:8092/actuator/prometheus
 
+The Optimize import dashboard (`monitor/grafana/dashboards/optimize.json`) needs Optimize 8.9 or
+later. Optimize 8.8 lacks most of the import metrics it queries.
+
 #### Local Dashboard Development
 
 > [!WARNING]
