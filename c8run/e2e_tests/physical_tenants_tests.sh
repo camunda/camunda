@@ -5,7 +5,7 @@
 # Set CHECK_CONNECTORS=1 (with C8RUN_DIR pointing at the c8run directory) to also verify that the
 # tenant's own connectors runtime serves its jobs and no other runtime does.
 # Set TENANT_SECRET_VALUE to the value of C8RUN_E2E_SECRET stored with
-# `c8run secrets --tenant <id> set` to verify the tenant resolves its own secret, not the default one.
+# `c8run secrets --physical-tenant <id> set` to verify the physical tenant resolves its own secret, not the default one.
 # Use C8RUN_AUTH for the tenant login and C8RUN_DEFAULT_AUTH for the default tenant login.
 set -euo pipefail
 
