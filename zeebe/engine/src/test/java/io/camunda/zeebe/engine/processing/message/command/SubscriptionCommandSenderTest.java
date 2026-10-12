@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -127,7 +128,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_VARIABLES,
         DEFAULT_CORRELATION_KEY,
         DEFAULT_TENANT,
-        1L);
+        1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -149,7 +151,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_VARIABLES,
         DEFAULT_CORRELATION_KEY,
         DEFAULT_TENANT,
-        1L);
+        1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -363,6 +366,52 @@ public class SubscriptionCommandSenderTest {
   }
 
   @Test
+  public void shouldSetStorageOrdinalOnOpenProcessMessageSubscriptionRecord() {
+    // given
+
+    // when
+    subscriptionCommandSender.openProcessMessageSubscription(
+        SAME_RECEIVER_PARTITION_KEY,
+        DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_MESSAGE_NAME,
+        true,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID,
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
+
+    // then
+    final var recordCaptor = ArgumentCaptor.forClass(ProcessMessageSubscriptionRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal()).isEqualTo(DEFAULT_STORAGE_ORDINAL);
+  }
+
+  @Test
+  public void shouldSetStorageOrdinalOnCorrelateProcessMessageSubscriptionRecord() {
+    // given
+
+    // when
+    subscriptionCommandSender.correlateProcessMessageSubscription(
+        SAME_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_MESSAGE_KEY,
+        DEFAULT_VARIABLES,
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_TENANT,
+        1L,
+        DEFAULT_STORAGE_ORDINAL);
+
+    // then
+    final var recordCaptor = ArgumentCaptor.forClass(ProcessMessageSubscriptionRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal()).isEqualTo(DEFAULT_STORAGE_ORDINAL);
+  }
+
+  @Test
   public void shouldSendDirectOpenMessageSubscription() {
     // given
 
@@ -407,7 +456,8 @@ public class SubscriptionCommandSenderTest {
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
-        -1L);
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -427,7 +477,8 @@ public class SubscriptionCommandSenderTest {
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
-        -1L);
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
