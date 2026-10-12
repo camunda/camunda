@@ -1,31 +1,19 @@
-import argparse
-import sys
-from collections.abc import Sequence
-from pathlib import Path
+import click
 
-from .report import cli as report_cli
-
-HERE = Path(__file__).resolve().parent
+from .report.cli import report
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="loadtestctl",
-        description="A helper CLI for controlling and operating on load tests",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""Examples: 
-        loadtestctl report c8-ck-baseline-20260814 --duration-seconds 1800
-        """,
-    )
-    subparsers = parser.add_subparsers(dest="command", required=True, metavar="<command>")
-    report_cli.add_parser(subparsers)
-    return parser
+@click.group(
+    context_settings={"auto_envvar_prefix": "LOADTESTCTL"},
+    help="A helper CLI for controlling and operating on load tests",
+    epilog="\b\nExamples:\n  loadtestctl report c8-ck-baseline-20260814 --duration-seconds 1800",
+)
+def cli() -> None:
+    pass
 
 
-def run(argv: Sequence[str]) -> int:
-    args = build_parser().parse_args(argv)
-    return int(args.handler(args))
+cli.add_command(report)
 
 
 def main() -> None:
-    sys.exit(run(sys.argv[1:]))
+    cli()
