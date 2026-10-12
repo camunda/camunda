@@ -41,7 +41,7 @@ import java.util.List;
  * Shared by {@link PhysicalTenantApiChainIsolationIT} and {@link PhysicalTenantDefaultAliasChainIT}
  * — package-private rather than nested in either, since neither owns it.
  */
-final class JwksTestServer {
+public final class JwksTestServer {
 
   private final HttpServer server;
   private final String kid;
@@ -53,7 +53,7 @@ final class JwksTestServer {
     this.signer = signer;
   }
 
-  static JwksTestServer start(final String kid) throws Exception {
+  public static JwksTestServer start(final String kid) throws Exception {
     final var generator = KeyPairGenerator.getInstance("RSA");
     generator.initialize(2048);
     final var pair = generator.generateKeyPair();
@@ -119,7 +119,7 @@ final class JwksTestServer {
     return signer;
   }
 
-  String issuerUri() {
+  public String issuerUri() {
     return "http://127.0.0.1:" + server.getAddress().getPort();
   }
 
@@ -131,12 +131,12 @@ final class JwksTestServer {
     return issuerUri() + "/unreachable";
   }
 
-  void stop() {
+  public void stop() {
     server.stop(0);
   }
 
   /** Signs a JWT for {@code issuer}, with {@code audiences} included only when non-empty. */
-  static String signForIssuer(
+  public static String signForIssuer(
       final JwksTestServer server, final String issuer, final List<String> audiences)
       throws Exception {
     final var header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(server.kid()).build();
