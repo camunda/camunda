@@ -2,6 +2,10 @@
 
 ## v0.0.95
 
+### 🚀 Enhancements
+
+- Add the nullable `storageOrdinal` property to the 8.11 process instance schemas, matching the spec
+
 ### 🩹 Fixes
 
 - Add `businessId` to the 8.9, 8.10 and 8.11 process definition statistics filter schemas, matching the spec ([#64678](https://github.com/camunda/camunda/pull/64678))
