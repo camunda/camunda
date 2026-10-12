@@ -81,7 +81,8 @@ class ProviderAwareOidcUserAuthenticationConverterTest {
         AdditionalJwkSetUrisByRegistrationId.empty(),
         Map.of("okta", true),
         providerConverters,
-        Map.of("okta", List.of("iss", "https://camunda.com/claims/client_id")));
+        Map.of("okta", List.of("iss", "https://camunda.com/claims/client_id")),
+        Map.of());
   }
 
   private static OAuth2AuthenticationToken authentication(

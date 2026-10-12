@@ -66,8 +66,12 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
 
   @Test
   void shouldSelectScopedConverterAndNormalizeUriClaimForScopedRegistration() {
-    // given — root Keycloak uses preferred_username, scoped Auth0 uses iss (a URI-valued claim)
+    // given — root Keycloak uses preferred_username, scoped Auth0 uses iss (a URI-valued claim),
+    // and the login happens on the tenant that owns the Auth0 registration
     final var converter = converter("preferred_username", "iss");
+    final var loginRequest = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(loginRequest, "tenanta");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(loginRequest));
     final var authentication = login("auth0", Map.of("iss", URI.create("https://scoped-idp")));
 
     // when
