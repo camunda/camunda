@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryReco
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
@@ -1032,6 +1034,119 @@ public final class StorageOrdinalAssignmentTest {
     // then: the DELETED event derives -1 instead of the persisted 0
     assertThat(
             RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+                .withRecordKey(legacyKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkDeploymentScopedMessageStartEventSubscriptionsAsNotOrdinalControlled() {
+    // given: a definition with a message start event
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("message-start-subscription-process")
+                    .startEvent("message-start")
+                    .message("ordinal-definition-message")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // then: the start-event subscription belongs to the definition, not to an instance
+    final var created =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+    assertThat(created.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(created.getStorageOrdinal()).isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+
+    // when: a new version replaces the definition, the old subscription is closed
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("message-start-subscription-process")
+                .startEvent()
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then: the DELETED event, appended from the stored subscription, is not ordinal controlled
+    assertThat(
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                    MessageStartEventSubscriptionIntent.DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkLegacyMessageStartEventSubscriptionAsNotOrdinalControlledWhenClosed() {
+    // given: a definition with a message start event
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("legacy-message-start-process")
+                    .startEvent("message-start")
+                    .message("legacy-definition-message")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    final var created =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+
+    // and: a start subscription row as it was persisted before the ordinal existed, with the
+    // default ordinal 0 persisted
+    final var legacyKey = created.getKey() + 100_000L;
+    final var legacySubscription =
+        new MessageStartEventSubscriptionRecord()
+            .setProcessDefinitionKey(created.getValue().getProcessDefinitionKey())
+            .setBpmnProcessId(BufferUtil.wrapString(created.getValue().getBpmnProcessId()))
+            .setStartEventId(BufferUtil.wrapString(created.getValue().getStartEventId()))
+            .setMessageName(BufferUtil.wrapString(created.getValue().getMessageName()))
+            .setTenantId(created.getValue().getTenantId())
+            .setProcessInstanceKey(-1L)
+            .setStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX);
+    // the engine only applies a written event to state on replay, so stop and restart it around
+    // the write, as the neighbouring legacy subscription test does
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .messageStartEventSubscription(
+                MessageStartEventSubscriptionIntent.CREATED, legacySubscription)
+            .key(legacyKey));
+    // starting the engine re-exports the whole partition log, so clear the previously seen records
+    RecordingExporter.reset();
+    engine.start();
+
+    // when: a new version replaces the definition, closing the legacy subscription
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("legacy-message-start-process")
+                .startEvent()
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then: the DELETED event derives -1 instead of the persisted 0
+    assertThat(
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                    MessageStartEventSubscriptionIntent.DELETED)
                 .withRecordKey(legacyKey)
                 .getFirst()
                 .getValue()
