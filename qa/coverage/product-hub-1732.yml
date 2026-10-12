@@ -1,0 +1,355 @@
+# Coverage plan — User Operations Audit Log
+#
+# Seeded from the M1 QA issue's scope (camunda/product-hub#3317), then scored
+# against every audit-log test that exists. The epic spans six milestones and
+# the tests already span all of them, so this plan covers the epic rather than
+# M1 alone; the later milestones have their own QA issues (#3318 to #3322).
+#
+# Two counting notes, because both would otherwise be got wrong later:
+#
+#   The search API spec has THIRTEEN `test(` call sites and runs FORTY-FOUR
+#   tests. Two of the thirteen are `test(description, ...)` inside a loop over
+#   a table — 24 sort cases and 9 filter cases. Counting call sites, which is
+#   the obvious way, understates it by 31.
+#
+#   `AuditLogAuthenticationIT` and `AuditLogWithoutAuthorizationsIT` have no
+#   `@Test` at all; each is a single `@ParameterizedTest`. The three RDBMS
+#   suites have none either — they are `@TestTemplate`, run once per database
+#   by an invocation-context extension, so each counted case is several runs.
+#   And `grep -c '@Test'` over-counts anywhere `@TestPropertySource` appears,
+#   which is how AL-CFG-01 was first written as nine instead of seven.
+#
+# For camunda/team-test-automation#83.
+
+epic: camunda/product-hub#1732
+qa_issue: camunda/product-hub#3317
+target_repo: camunda/camunda
+target_versions: ["8.9", "8.10"]
+
+preconditions:
+  - what: Audit logging is enabled
+    why: >
+      It is on by default (`AuditLogTest.shouldBeEnabledByDefault`), so no case
+      below turns it on. The cases that would exercise it turned OFF are
+      planned rather than automated — see AL-CFG-02.
+
+specs:
+  # ---------------------------------------------------------------------------
+  # API — the v2 REST contract
+  # ---------------------------------------------------------------------------
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/audit-log/audit-log-search-api-tests.spec.ts
+    framework: playwright
+    covers: >
+      POST /v2/audit-logs/search — filtering, sorting, pagination, invalid
+      input, and the unauthorized and no-permission paths.
+    cases:
+      - id: AL-API-01
+        traces_to: >
+          Search returns audit log entries, and filtering by actorId,
+          operationType, actorType, category and result narrows them
+        surface: api
+        count: 14
+        status: automated
+        notes: >
+          Five named tests plus the nine-case filter table. The table is why
+          this count is 14 and not 5.
+
+      - id: AL-API-02
+        traces_to: Search sorts by every sortable field, ascending and descending
+        surface: api
+        count: 24
+        status: automated
+        notes: >
+          The twenty-four-case sort table, which walks every field the API
+          accepts. This is the contract check that a new sort field cannot be
+          added without a case. The named tests that also sort are counted
+          under AL-API-01, where their filtering is the point.
+
+      - id: AL-API-03
+        traces_to: >
+          Search rejects an invalid or null sort field, an invalid filter field
+          and a negative page limit, with the documented status code
+        surface: api
+        count: 4
+        status: automated
+
+      - id: AL-API-04
+        traces_to: Search refuses an unauthenticated caller and one with no granted permission
+        surface: api
+        count: 2
+        status: automated
+
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/audit-log/audit-log-get-api-tests.spec.ts
+    framework: playwright
+    covers: GET /v2/audit-logs/{operationKey} — success, not found, unauthorized, forbidden.
+    cases:
+      - id: AL-API-05
+        traces_to: >
+          Get returns one audit log entry by operation key, and answers
+          not-found, unauthorized and forbidden with the documented codes
+        surface: api
+        count: 4
+        status: automated
+
+  # ---------------------------------------------------------------------------
+  # UI — the two surfaces that render audit entries
+  # ---------------------------------------------------------------------------
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/auditLog.spec.ts
+    framework: playwright
+    covers: Operate's Operations Log — reachability, entries, filtering, empty state.
+    cases:
+      - id: AL-UI-01
+        traces_to: >
+          Operate's Operations Log is reachable, titled correctly, lists entries
+          after an instance is created, filters by process instance key, and
+          shows an empty state when nothing matches
+        surface: ui
+        count: 5
+        status: automated
+
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/identity/audit-log.spec.ts
+    framework: playwright
+    covers: Identity's audit log page — navigation, entries, filtering by actor.
+    cases:
+      - id: AL-UI-02
+        traces_to: >
+          Identity's audit log is reachable from its navigation, shows table
+          headers and entries, and filters by actor
+        surface: ui
+        count: 4
+        status: automated
+
+  # ---------------------------------------------------------------------------
+  # Integration — the engine-to-storage path, per operation domain
+  #
+  # These are what make most of the API and UI coverage above sufficient: they
+  # assert that an operation produces an entry with the right fields. The API
+  # cases then assert the contract over those entries, and the UI cases that
+  # they render.
+  # ---------------------------------------------------------------------------
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogProcessOperationsIT.java
+    framework: junit
+    covers: >
+      Process operations — including the process instance modification that
+      milestone 1 is about — produce audit entries with the mandatory fields.
+    cases:
+      - id: AL-I-01
+        traces_to: >
+          A process operation, succeeding or failing, is captured as an audit
+          entry carrying operationKey, entityKey, entityType, operationType,
+          timestamp, actor, status and tenant
+        surface: integration
+        count: 24
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogIdentityOperationsIT.java
+    framework: junit
+    covers: Identity operations produce audit entries (milestone 3).
+    cases:
+      - id: AL-I-02
+        traces_to: Identity operations are captured as audit entries
+        surface: integration
+        count: 24
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogResourceOperationsIT.java
+    framework: junit
+    covers: Resource operations produce audit entries (milestone 5).
+    cases:
+      - id: AL-I-03
+        traces_to: Resource operations are captured as audit entries
+        surface: integration
+        count: 12
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogUserTaskOperationsIT.java
+    framework: junit
+    covers: User task operations produce audit entries (milestone 4).
+    cases:
+      - id: AL-I-04
+        traces_to: User task operations are captured as audit entries
+        surface: integration
+        count: 5
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogUserTaskCompletionVariablesIT.java
+    framework: junit
+    covers: Variables supplied on user task completion appear in the entry's details.
+    cases:
+      - id: AL-I-05
+        traces_to: >
+          Variables given when a user task is completed are carried into the
+          audit entry's operation details
+        surface: integration
+        count: 2
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogAuthorizationsIT.java
+    framework: junit
+    covers: The audit log's own authorization model — who may read which entries.
+    cases:
+      - id: AL-I-06
+        traces_to: >
+          Reading audit entries is restricted by the audit-log read permission,
+          and a caller sees only what their permission allows
+        surface: integration
+        count: 16
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogWithoutAuthorizationsIT.java
+    framework: junit
+    covers: The audit log with authorization disabled.
+    cases:
+      - id: AL-I-07
+        traces_to: Audit entries are readable when authorization is disabled
+        surface: integration
+        status: automated
+        notes: One `@ParameterizedTest`, no `@Test` — see the header.
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogAuthenticationIT.java
+    framework: junit
+    covers: The authentication data carried on an audit entry.
+    cases:
+      - id: AL-I-08
+        traces_to: An audit entry records the authentication of the actor that caused it
+        surface: integration
+        status: automated
+        notes: One `@ParameterizedTest`, no `@Test` — see the header.
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogSearchClientIT.java
+    framework: junit
+    covers: The search client beneath the REST layer.
+    cases:
+      - id: AL-I-09
+        traces_to: >
+          The audit log search client filters, sorts and paginates against
+          secondary storage
+        surface: integration
+        count: 24
+        status: automated
+        notes: >
+          The QA issue says the Java client search command is the engineering
+          team's to cover. It is covered here; recorded so the plan does not
+          report a gap that does not exist.
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogAgentIT.java
+    framework: junit
+    covers: Agent-initiated operations produce audit entries.
+    cases:
+      - id: AL-I-10
+        traces_to: An operation initiated by an agent records the agent as its actor
+        surface: integration
+        count: 4
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/auditlog/AuditLogIT.java
+    framework: junit
+    covers: The RDBMS exporter and reader for audit entries.
+    cases:
+      - id: AL-I-11
+        traces_to: Audit entries are written to and read back from RDBMS storage
+        surface: integration
+        count: 24
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/auditlog/AuditLogSortIT.java
+    framework: junit
+    covers: Sorting audit entries in RDBMS storage.
+    cases:
+      - id: AL-I-12
+        traces_to: Audit entries sort correctly in RDBMS storage
+        surface: integration
+        count: 10
+        status: automated
+
+  - path: qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/auditlog/AuditLogHistoryCleanupIT.java
+    framework: junit
+    covers: Retention — expired audit entries are removed from RDBMS storage.
+    cases:
+      - id: AL-I-13
+        traces_to: Expired audit entries are cleaned up from RDBMS storage
+        surface: integration
+        count: 2
+        status: automated
+        notes: >
+          Covers the RDBMS half of the QA plan's "data lifecycle management"
+          area. The ES/OS half (ILM) is AL-CFG-03.
+
+  # ---------------------------------------------------------------------------
+  # Unit — configuration
+  # ---------------------------------------------------------------------------
+  - path: configuration/src/test/java/io/camunda/configuration/AuditLogTest.java
+    framework: junit
+    covers: >
+      Audit log configuration parsing and defaults — plus, as planned cases,
+      the two configuration areas the QA plan names that nothing asserts yet.
+    cases:
+      - id: AL-CFG-01
+        traces_to: >
+          Audit logging is enabled by default, and its client, user and unknown
+          actor-type defaults parse into the expected configuration
+        surface: unit
+        count: 7
+        status: automated
+        notes: >
+          Seven: five at the top level and one in each of two @Nested classes.
+          Counting with `grep -c '@Test'` gives nine, because @TestPropertySource
+          contains the word.
+
+      - id: AL-CFG-02
+        traces_to: >
+          With audit logging disabled, the API and the UI say so rather than
+          returning an empty list
+        surface: unit
+        status: planned
+        notes: >
+          QA plan section D. `shouldBeEnabledByDefault` proves the default; no
+          test turns it off and asserts what callers then see. An empty result
+          and a disabled feature are indistinguishable to a caller today.
+
+      - id: AL-CFG-03
+        traces_to: >
+          `includeVariableChanges` and `operationCategories` change what is
+          recorded, per actor type
+        surface: unit
+        count: 2
+        status: planned
+        notes: >
+          QA plan section D names both toggles. Neither identifier appears in
+          any test file in the repository.
+
+# ---------------------------------------------------------------------------
+
+out_of_scope:
+  - what: ILM cleanup in Elasticsearch and OpenSearch
+    why: >
+      The RDBMS half is covered by AL-I-13. The ES/OS half is index lifecycle
+      configuration, asserted where the schema manager is tested rather than
+      against the audit log.
+  - what: Audit Log concept and API documentation accuracy
+    why: >
+      QA plan section E is a review activity. A test can assert the API matches
+      its OpenAPI document — AL-API-03 does — but not that the prose is right.
+  - what: Benchmark and acceptance tests for baseline performance
+    why: The QA issue assigns these to the engineering team.
+  - what: The TestRail suite linked from the QA issue
+    why: >
+      Functional QA's own flow, deliberately not a dependency in either
+      direction — see camunda/team-test-automation#83.
+
+prerequisites:
+  - what: Confirm which milestone each integration suite belongs to
+    why: >
+      This plan is keyed to the epic, which spans M1 to M6, so the milestone
+      mapping in each case's notes is inferred from the suite name rather than
+      from a statement anybody made. If the gate is ever asked to report per
+      milestone, that inference has to be replaced by something checkable.
+    status: not started
+
+lifecycle:
+  isolation: >
+    The API specs create the entries they then search for, so they tolerate a
+    shared cluster. The integration suites bring their own broker.
+  notes: >
+    `AuditLogSearchClientIT` and the RDBMS suites are the slow ones; the API
+    specs are fast and are the right place to add a contract case.
