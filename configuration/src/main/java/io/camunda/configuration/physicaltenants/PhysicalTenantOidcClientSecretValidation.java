@@ -102,7 +102,11 @@ final class PhysicalTenantOidcClientSecretValidation {
     if (root.getClientSecret() == null || root.getClientSecret().isBlank()) {
       return false;
     }
-    if (binder.bind(tenantPath + ".client-secret", Bindable.of(String.class)).isBound()) {
+    // A blank value, for example from an unset environment variable, is not a decision.
+    if (binder
+        .bind(tenantPath + ".client-secret", Bindable.of(String.class))
+        .map(secret -> !secret.isBlank())
+        .orElse(false)) {
       return false;
     }
     // Bind in the same order as the runtime merge, so that the check sees the same values.

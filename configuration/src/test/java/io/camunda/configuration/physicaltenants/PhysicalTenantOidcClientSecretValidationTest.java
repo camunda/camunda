@@ -76,6 +76,24 @@ class PhysicalTenantOidcClientSecretValidationTest {
   }
 
   @Test
+  void shouldRejectOtherIssuerWithBlankSecret() {
+    // given — for example an unset environment variable: '${TENANT_SECRET:}'
+    final var environment =
+        environmentWith(
+            Map.of(
+                ROOT + "oidc.issuer-uri", "https://root-idp",
+                ROOT + "oidc.client-secret", "root-secret",
+                TENANT + "oidc.issuer-uri", "https://tenant-idp",
+                TENANT + "oidc.client-secret", "",
+                TENANT + "providers.assigned[0]", "oidc"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))
+        .withMessageContaining("provider 'oidc'");
+  }
+
+  @Test
   void shouldAcceptOtherIssuerWithOwnSecret() {
     // given — the secret is equal to the root secret, but the tenant sets it explicitly
     final var environment =
