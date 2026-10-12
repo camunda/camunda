@@ -279,7 +279,8 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
         AdditionalJwkSetUrisByRegistrationId.empty(),
         membershipPort,
         propagator,
-        environment);
+        environment,
+        configuration.physicalTenantOidcSettings(environment, membershipPort, propagator));
   }
 
   private OAuth2AuthenticationToken login(final String accessToken, final JwksTestServer jwksIdp) {
