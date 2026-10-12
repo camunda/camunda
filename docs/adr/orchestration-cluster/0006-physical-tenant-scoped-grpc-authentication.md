@@ -76,15 +76,18 @@ dependency the other way would also be a cycle, since the gateway consumes the r
 
 Each handler is constructed from its PT's config:
 
-- **OIDC** → `new AuthenticationHandler.Oidc(decoder, claimsProvider, oidcConfig)` where **all three
-  arguments are that PT's**: the decoder from
-  `ScopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig)`, `oidcConfig` = that PT's
-  `OidcConfiguration`, and `claimsProvider` = that PT's `OidcClaimsProvider`. This is the key reason
-  the per-PT unit is a handler, not a decoder:
+- **OIDC** → `new AuthenticationHandler.Oidc(decoder, claimsProvider, oidcConfig,
+  claimConfigsByIssuer)` where **all four arguments are that PT's**: the decoder from
+  `ScopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig)`, `oidcConfig` = that PT's default
+  slot `OidcConfiguration`, `claimConfigsByIssuer` = that PT's providers keyed by `issuer-uri` (the
+  default slot, then each assigned `providers.oidc.<id>`), and `claimsProvider` = that PT's
+  `OidcClaimsProvider`. This is the key reason the per-PT unit is a handler, not a decoder:
 
   - The handler derives its `OidcPrincipalLoader` / `OidcGroupsExtractor` and prefer-username /
-    groups-claim behavior from `oidcConfig` at construction time, so a PT on a different IdP (with
-    different username/client-id/groups claim names) needs its own handler.
+    groups-claim behavior per provider at construction time, and picks the set matching the token's
+    `iss`, falling back to `oidcConfig`. A PT on a different IdP (with different
+    username/client-id/groups claim names) therefore needs its own handler, and a PT with several
+    providers resolves each token with the claim names of the provider that issued it.
   - The handler invokes `claimsProvider` between `JwtDecoder.decode(...)` and
     `OidcPrincipalLoader.load(...)` to augment claims from the IdP's `/userinfo` endpoint
     ([identity ADR-0006](/identity/adr/userinfo-claim-augmentation-for-bearer-tokens) —
@@ -201,7 +204,9 @@ non-PT deployments are unchanged.
 - Single/default-PT deployments are unchanged (everything resolves to the one `default` PT).
 - `EndpointManager`'s partition-group routing is unchanged — it still reads the PT id from the
   `Context`; only the producer of that value changes (the merged interceptor instead of the removed
-  `PhysicalTenantInterceptor`).
+  `PhysicalTenantInterceptor`). The same PT id also selects the security config `EndpointManager`
+  uses to build the broker request's authorization claims, so groups and token claims follow the
+  targeted PT's settings rather than the `default` PT's.
 
 ## Alternatives Considered
 
