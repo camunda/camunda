@@ -10,7 +10,7 @@ package io.camunda.zeebe.read;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
-import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterMetricKeyNames;
+import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -54,7 +54,7 @@ public class DataReadMeter implements AutoCloseable {
     for (final ReadQuery query : queries) {
       final Timer timer =
           MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.READ_BENCHMARK)
-              .tag(StarterMetricKeyNames.QUERY_NAME.asString(), query.name())
+              .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), query.name())
               .register(registry);
 
       final ScheduledFuture<?> task =
