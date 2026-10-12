@@ -76,7 +76,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesReque
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
-import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
@@ -100,37 +99,9 @@ public final class EndpointManager {
   private final Map<String, BrokerRequestAuthorizationConverter>
       authorizationConvertersByPhysicalTenant;
 
-  public EndpointManager(
-      final BrokerClient brokerClient,
-      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
-      final StreamJobsHandler streamJobsHandler,
-      final EngineSecurityConfig securityConfiguration) {
-    this(
-        brokerClient,
-        activateJobsHandler,
-        streamJobsHandler,
-        securityConfiguration,
-        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
-  }
-
-  public EndpointManager(
-      final BrokerClient brokerClient,
-      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
-      final StreamJobsHandler streamJobsHandler,
-      final EngineSecurityConfig securityConfiguration,
-      final int maxVariableNameLength) {
-    this(
-        brokerClient,
-        activateJobsHandler,
-        streamJobsHandler,
-        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, securityConfiguration),
-        maxVariableNameLength);
-  }
-
   /**
    * @param securityConfigurationsByPhysicalTenant security config of every physical tenant,
-   *     including {@code default}; a request is converted with the config of the tenant it targets,
-   *     or with the {@code default} config when that tenant has none
+   *     including {@code default}; a request is converted with the config of the tenant it targets
    */
   public EndpointManager(
       final BrokerClient brokerClient,
@@ -619,17 +590,19 @@ public final class EndpointManager {
   private Map<String, Object> getClaims() throws Exception {
     final String username = Context.current().call(AuthenticationHandler.USERNAME::get);
     final String clientId = Context.current().call(AuthenticationHandler.CLIENT_ID::get);
+    final String physicalTenantId =
+        Objects.requireNonNullElse(
+            getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    // fail instead of falling back to the default tenant, whose settings must not apply to another
     final BrokerRequestAuthorizationConverter authorizationConverter =
-        authorizationConvertersByPhysicalTenant.getOrDefault(
-            Objects.requireNonNullElse(
-                getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID),
-            authorizationConvertersByPhysicalTenant.get(
-                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
+        Objects.requireNonNull(
+            authorizationConvertersByPhysicalTenant.get(physicalTenantId),
+            () -> "No security config registered for physical tenant: " + physicalTenantId);
 
     List<String> groups = List.of();
     Map<String, Object> tokenClaims = null;
     if (authorizationConverter.shouldIncludeAuthorizationClaims()) {
-      // the handler only sets groups when the issuing provider configures a groups claim
+      // the handler sets no groups when the tenant configures no groups claim
       groups =
           Objects.requireNonNullElse(
               Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get), List.of());
