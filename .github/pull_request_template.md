@@ -1,6 +1,14 @@
 ## Description
 
 <!-- Describe the goal and purpose of this PR. -->
+<!--
+Optional JMH benchmarks (requires the `jmh-run` label): changed Java benchmark files run
+automatically. To request additional benchmarks, add an uncommented, standalone line to the PR
+description using `JMH: <selector>[, <selector>...]`. Selectors can be benchmark class names or
+individual `ClassName.methodName` names. For example:
+`JMH: MsgpackBenchmark.serialize, DeduplicationCacheBenchmark`.
+The actual `JMH:` line must be outside this comment to be parsed.
+-->
 
 ## Checklist
 

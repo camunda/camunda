@@ -1,0 +1,204 @@
+# Runs changed JMH benchmarks against the pre-perf baseline and PR tip when available.
+# test location: microbenchmarks/src/main/java
+# type: CI Helper
+# owner: @camunda/reliability-testing
+---
+name: JMH PR benchmarks
+
+on:
+  pull_request:
+    types: [edited, opened, labeled, reopened, synchronize]
+
+concurrency:
+  group: jmh-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: '@camunda/reliability-testing'
+  TEST_PRODUCT: Zeebe
+  TEST_TYPE: Performance
+
+jobs:
+  discover-jmh-revisions:
+    name: Discover JMH comparison revisions
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      ((github.event.action == 'labeled' && github.event.label.name == 'jmh-run') ||
+       (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'jmh-run')))
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      baseline_sha: ${{ steps.find-revisions.outputs.baseline_sha }}
+      revisions: ${{ steps.find-revisions.outputs.revisions }}
+    steps:
+      - name: Checkout pull request head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Find pre-perf baseline and revisions
+        id: find-revisions
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/find_pr_microbenchmark_revisions.sh "$BASE_SHA" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: ${{ env.GITHUB_JOB }}
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  run-jmh:
+    name: Run JMH ${{ matrix.revision }} benchmarks
+    needs: discover-jmh-revisions
+    if: needs.discover-jmh-revisions.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        revision: ${{ fromJSON(needs.discover-jmh-revisions.outputs.revisions) }}
+    permissions:
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout pull request head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Set up Java 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Maven cache
+        uses: ./.github/actions/setup-maven-cache
+
+      - name: Detect changed microbenchmark Java files
+        id: changed-microbenchmarks
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          list-files: json
+          filters: |
+            microbenchmark_java:
+              - 'microbenchmarks/**/*.java'
+
+      - name: Find already-reported benchmark commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" --jq '
+            .[]
+            | select(.user.login == "github-actions[bot]")
+            | .body
+            | split("\n")[0]
+            | select(test("^<!-- jmh-run:(baseline|head):[0-9a-f]{40}(:[0-9a-f]{64})? -->$"))
+          ' > "$RUNNER_TEMP/jmh-reported-markers"
+
+      - name: Copy benchmark runner before checking out the baseline
+        run: cp .github/scripts/run_pr_microbenchmarks.py "$RUNNER_TEMP/run_pr_microbenchmarks.py"
+
+      - name: Check out pre-perf baseline
+        if: matrix.revision == 'baseline'
+        env:
+          BASELINE_SHA: ${{ needs.discover-jmh-revisions.outputs.baseline_sha }}
+        run: git checkout --detach "$BASELINE_SHA"
+
+      - name: Select benchmarks for this revision
+        id: select-benchmarks
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          JMH_KIND: ${{ matrix.revision == 'baseline' && 'baseline' || 'head' }}
+          JMH_REPORTED_MARKERS: ${{ runner.temp }}/jmh-reported-markers
+          JMH_REPORT_FILE: ${{ runner.temp }}/jmh-report.md
+          CHANGED_JAVA_FILES_JSON: ${{ steps.changed-microbenchmarks.outputs.microbenchmark_java_files }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+        run: python3 "$RUNNER_TEMP/run_pr_microbenchmarks.py" --select
+
+      - name: Build JMH benchmark jar
+        id: build-jmh
+        if: steps.select-benchmarks.outputs.has_benchmarks == 'true'
+        continue-on-error: true
+        timeout-minutes: 30
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -pl microbenchmarks -am -DskipTests clean package
+
+      - name: Run JMH benchmarks
+        id: run-benchmarks
+        if: steps.select-benchmarks.outputs.should_report == 'true'
+        continue-on-error: true
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          JMH_KIND: ${{ matrix.revision == 'baseline' && 'baseline' || 'head' }}
+          JMH_REPORTED_MARKERS: ${{ runner.temp }}/jmh-reported-markers
+          JMH_REPORT_FILE: ${{ runner.temp }}/jmh-report.md
+          CHANGED_JAVA_FILES_JSON: ${{ steps.changed-microbenchmarks.outputs.microbenchmark_java_files }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+          MAVEN_BUILD_OUTCOME: ${{ steps.build-jmh.outcome }}
+          JAVA_TOOL_OPTIONS: --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED --enable-native-access=ALL-UNNAMED
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 "$RUNNER_TEMP/run_pr_microbenchmarks.py"
+
+      - name: Post JMH results
+        if: steps.select-benchmarks.outputs.should_report == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          JMH_REPORT_FILE: ${{ runner.temp }}/jmh-report.md
+        run: |
+          jq -n --rawfile body "$JMH_REPORT_FILE" '{body: $body}' \
+            | gh api --method POST \
+              "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+              --input -
+
+      - name: Fail if a benchmark failed
+        if: steps.run-benchmarks.outcome == 'failure'
+        run: exit 1
+
+      - name: Restore pull request head for local actions
+        if: always() && matrix.revision == 'baseline'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: git checkout --detach "$HEAD_SHA"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: ${{ env.GITHUB_JOB }}/${{ matrix.revision }}
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
