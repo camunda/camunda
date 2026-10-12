@@ -42,6 +42,7 @@ class StarterTest {
         registry,
         mock(PayloadReader.class),
         mock(ConnectionMonitor.class),
+        mock(StarterLivenessIndicator.class),
         mock(ApplicationContext.class));
 
     // then

@@ -13,8 +13,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.response.Topology;
+import io.grpc.Status;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -70,6 +72,38 @@ class ConnectionMonitorTest {
     assertThat(registry.find(AppMetricsDoc.CONNECTED.getName()).gauge().value())
         .describedAs("app.connected should still flip to 1 after one failed attempt")
         .isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldKeepRetryingOnAuthenticationFailure() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var topology = mock(Topology.class);
+    when(topology.getBrokers()).thenReturn(Collections.emptyList());
+
+    final CamundaFuture<Topology> rejected = mock(CamundaFuture.class);
+    when(rejected.join())
+        .thenThrow(new ClientStatusException(Status.UNAUTHENTICATED, new RuntimeException()))
+        .thenThrow(new ClientStatusException(Status.PERMISSION_DENIED, new RuntimeException()));
+
+    final CamundaFuture<Topology> accepted = mock(CamundaFuture.class);
+    when(accepted.join()).thenReturn(topology);
+
+    final var request = mock(TopologyRequestStep1.class);
+    when(request.send()).thenReturn(rejected, rejected, accepted);
+
+    final var client = mock(CamundaClient.class);
+    when(client.newTopologyRequest()).thenReturn(request);
+
+    final var monitor = new ConnectionMonitor(client, registry);
+
+    // when
+    monitor.awaitAndPrintTopology();
+
+    // then
+    assertThat(monitor.isConnected())
+        .describedAs("monitor should retry authentication failures until the cluster accepts")
+        .isTrue();
   }
 
   @Test
