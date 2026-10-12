@@ -233,7 +233,7 @@ async function evaluateGate(resolver, input) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.summary = exports.setFailed = exports.warning = exports.info = exports.setOutput = exports.getBooleanInput = exports.getInput = void 0;
+exports.summary = exports.setFailed = exports.warning = exports.info = exports.setOutput = exports.getBooleanInput = exports.getInput = exports.escapeHtml = void 0;
 const node_fs_1 = __nccwpck_require__(24);
 const node_crypto_1 = __nccwpck_require__(598);
 /**
@@ -246,6 +246,7 @@ const escape = (msg) => msg.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/
 // The step summary is built as HTML, so escape anything interpolated into it —
 // reasons carry user-controlled PR title/body fragments.
 const escapeHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+exports.escapeHtml = escapeHtml;
 const appendEnvFile = (envVar, content) => {
     const file = process.env[envVar];
     if (file)
@@ -287,11 +288,11 @@ exports.setFailed = setFailed;
 class Summary {
     buf = '';
     addHeading(text, level = 1) {
-        this.buf += `<h${level}>${escapeHtml(text)}</h${level}>\n`;
+        this.buf += `<h${level}>${(0, exports.escapeHtml)(text)}</h${level}>\n`;
         return this;
     }
     addList(items) {
-        this.buf += `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>\n`;
+        this.buf += `<ul>${items.map((item) => `<li>${(0, exports.escapeHtml)(item)}</li>`).join('')}</ul>\n`;
         return this;
     }
     /** Appends already-formatted Markdown verbatim — GITHUB_STEP_SUMMARY renders
