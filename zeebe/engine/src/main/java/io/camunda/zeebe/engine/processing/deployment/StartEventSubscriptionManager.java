@@ -134,11 +134,13 @@ public class StartEventSubscriptionManager {
   private void closeMessageStartEventSubscriptions(final DeployedProcess deployedProcess) {
     messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
         deployedProcess.getKey(),
-        subscription ->
-            stateWriter.appendFollowUpEvent(
-                subscription.getKey(),
-                MessageStartEventSubscriptionIntent.DELETED,
-                subscription.getRecord()));
+        subscription -> {
+          final var record = subscription.getRecord();
+          // Start event subscriptions belong to the definition, not to an instance, enforce here
+          record.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+          stateWriter.appendFollowUpEvent(
+              subscription.getKey(), MessageStartEventSubscriptionIntent.DELETED, record);
+        });
   }
 
   private void closeSignalExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
@@ -238,7 +240,8 @@ public class StartEventSubscriptionManager {
                   .setProcessDefinitionKey(processDefinition.getKey())
                   .setBpmnProcessId(processDefinition.getBpmnProcessId())
                   .setStartEventId(startEvent.getId())
-                  .setTenantId(processDefinition.getTenantId());
+                  .setTenantId(processDefinition.getTenantId())
+                  .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
               final var subscriptionKey = keyGenerator.nextKey();
               stateWriter.appendFollowUpEvent(
