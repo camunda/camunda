@@ -893,7 +893,9 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         }
       } else {
         throw new OptimizeRuntimeException(
-            String.format("There were failures while performing bulk on %s.", itemName));
+            String.format(
+                "There were failures while performing bulk on %s. Message: %s",
+                itemName, describeFailedItems(bulkResponse)));
       }
     }
   }
