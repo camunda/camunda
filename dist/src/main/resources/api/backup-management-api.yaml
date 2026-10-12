@@ -254,7 +254,7 @@ paths:
           description: |
             Set to false to improve the query performance. However, the response will not contain
             fields startTime, failures, failureReason.
-            This parameter is forwarded to Elasticsearch/Opensearch /_snapshot/ API.
+            This parameter is forwarded to Elasticsearch/OpenSearch /_snapshot/ API.
         - in: query
           name: pattern
           schema:
@@ -714,7 +714,7 @@ components:
           example: "backup-snapshot-001"
         state:
           type: string
-          description: Current state of the backup as reported by ElasticSearch/OpenSearch
+          description: Current state of the backup as reported by Elasticsearch/OpenSearch
           example: "SUCCESS"
         startTime:
           type: string
