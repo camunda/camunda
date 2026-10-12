@@ -150,7 +150,9 @@ export PT_LINES_FILE="$pt_lines_file"
   echo "# \`make install\`/\`make template\`, not meant to be hand-edited."
   # .content already ends in exactly one trailing newline (YAML clip-mode "|" block
   # scalar), so no extra separator is needed here — one would insert a blank line.
-  yq eval '{"orchestration": {"extraConfiguration": [{"file": .orchestration.extraConfiguration[0].file, "content": (.orchestration.extraConfiguration[0].content + load_str(strenv(PT_LINES_FILE)))}, .orchestration.extraConfiguration[1]]}}' "$base_file"
+  # Chart 15.x requires the exact "iss" claim once tenants are declared; Keycloak's hostname is pinned
+  # to localhost:18080 in charts/load-test-setup/templates/keycloak/keycloak.yaml.
+  yq eval '{"global": {"identity": {"auth": {"issuer": "http://localhost:18080/auth/realms/camunda-platform"}}}, "orchestration": {"extraConfiguration": [{"file": .orchestration.extraConfiguration[0].file, "content": (.orchestration.extraConfiguration[0].content + load_str(strenv(PT_LINES_FILE)))}, .orchestration.extraConfiguration[1]]}}' "$base_file"
 } > "$output_file"
 
 echo "Generated ${output_file} (physical_tenant_count=${physical_tenant_count}, secondary_storage=${secondary_storage})."
