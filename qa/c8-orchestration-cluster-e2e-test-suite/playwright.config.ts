@@ -107,6 +107,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -114,9 +115,16 @@ const normalProjects = [
   },
   {
     name: 'chromium-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      // A global task listener applies to every user task in the cluster. With
+      // no worker for its jobs, it blocks the user tasks of any spec that runs
+      // at the same time.
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
     use: devices['Desktop Chrome'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
   },
   {
     name: 'firefox',
@@ -126,6 +134,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -133,9 +142,13 @@ const normalProjects = [
   },
   {
     name: 'firefox-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
     use: devices['Desktop Firefox'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
   },
   {
     name: 'msedge',
@@ -145,6 +158,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -152,9 +166,13 @@ const normalProjects = [
   },
   {
     name: 'msedge-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
     use: devices['Desktop Edge'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
   },
   {
     name: 'tasklist-e2e',
