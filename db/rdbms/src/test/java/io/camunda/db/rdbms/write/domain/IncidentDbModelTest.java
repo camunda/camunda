@@ -60,4 +60,24 @@ class IncidentDbModelTest {
     assertThat(truncatedMessage.errorMessage().length()).isEqualTo(2);
     assertThat(truncatedMessage.errorMessage()).isEqualTo("ää");
   }
+
+  @Test
+  void shouldKeepStorageOrdinalWhenTruncatingAndCopying() {
+    // given
+    final IncidentDbModel model =
+        new IncidentDbModel.Builder()
+            .incidentKey(123L)
+            .errorMessage("errorMessage")
+            .tenantId("tenantId")
+            .storageOrdinal(7)
+            .build();
+
+    // when
+    final IncidentDbModel truncated = model.truncateErrorMessage(10, null);
+    final IncidentDbModel copied = model.copy(b -> b);
+
+    // then
+    assertThat(truncated.storageOrdinal()).isEqualTo(7);
+    assertThat(copied.storageOrdinal()).isEqualTo(7);
+  }
 }
