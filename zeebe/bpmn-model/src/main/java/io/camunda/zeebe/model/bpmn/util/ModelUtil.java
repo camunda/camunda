@@ -163,10 +163,23 @@ public class ModelUtil {
         .collect(Collectors.toList());
   }
 
+  /**
+   * Kept for compatibility. This scans all the elements of the activity's scope to find its
+   * boundary events, so prefer {@link #verifyNoDuplicatedBoundaryEvents(Collection, Consumer)} when
+   * the boundary events are already known, e.g. when validating many activities of the same scope.
+   */
   public static void verifyNoDuplicatedBoundaryEvents(
       final Activity activity, final Consumer<String> errorCollector) {
+    verifyNoDuplicatedBoundaryEvents(activity.getBoundaryEvents().list(), errorCollector);
+  }
 
-    final List<EventDefinition> definitions = getEventDefinitionsForBoundaryEvents(activity);
+  public static void verifyNoDuplicatedBoundaryEvents(
+      final Collection<BoundaryEvent> boundaryEvents, final Consumer<String> errorCollector) {
+
+    final List<EventDefinition> definitions =
+        boundaryEvents.stream()
+            .flatMap(event -> event.getEventDefinitions().stream())
+            .collect(Collectors.toList());
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
     verifyNoDuplicatedEscalationHandler(definitions, errorCollector);

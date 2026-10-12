@@ -28,7 +28,10 @@ public final class BpmnValidator {
       final ExpressionLanguage expressionLanguage,
       final ExpressionProcessor expressionProcessor,
       final int validatorResultsOutputMaxSize) {
-    designTimeAspectValidator = new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
+    designTimeAspectValidator =
+        new ValidationVisitor(
+            ZeebeDesignTimeValidators.STATELESS_VALIDATORS_BY_TYPE,
+            ZeebeDesignTimeValidators::newStatefulValidators);
     runtimeAspectValidator =
         new ValidationVisitor(
             ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));

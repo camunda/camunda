@@ -84,7 +84,7 @@ public class ProcessValidationUtil {
         new ValidationVisitor(
             Stream.of(
                     ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor),
-                    ZeebeDesignTimeValidators.VALIDATORS)
+                    ZeebeDesignTimeValidators.getValidators())
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList()));
     walker.walk(visitor);
