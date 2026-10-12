@@ -32,6 +32,7 @@ import io.atomix.cluster.protocol.GroupMembershipEventListener;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.utils.Version;
 import io.atomix.utils.event.AbstractListenerManager;
+import io.atomix.utils.net.Address;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -76,6 +77,11 @@ public class DefaultClusterMembershipService
   @Override
   public Member getMember(final MemberId memberId) {
     return protocol.getMember(memberId);
+  }
+
+  @Override
+  public Member getMember(final Address address) {
+    return protocol.getMember(address);
   }
 
   @Override
