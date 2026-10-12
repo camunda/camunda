@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import static io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import static io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated.MAIN_INDEX;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -228,6 +229,42 @@ class ProcessInstanceExportHandlerTest {
       final var captor = ArgumentCaptor.forClass(ProcessInstanceDbModel.class);
       verify(processInstanceWriter).create(captor.capture());
       assertThat(captor.getValue().businessId()).isNull();
+    }
+  }
+
+  @Test
+  void shouldMapStorageOrdinalOnCreate() {
+    // given
+    final var record = TestRecordFactory.rootProcess(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    when(record.getValue().getStorageOrdinal()).thenReturn(7);
+    try (final var mocked = Mockito.mockStatic(ProcessCacheUtil.class)) {
+      mocked
+          .when(() -> ProcessCacheUtil.getCallActivityIds(any(), any()))
+          .thenReturn(List.of(List.of(100L)));
+      // when
+      handler.export(record);
+      // then
+      final var captor = ArgumentCaptor.forClass(ProcessInstanceDbModel.class);
+      verify(processInstanceWriter).create(captor.capture());
+      assertThat(captor.getValue().storageOrdinal()).isEqualTo(7);
+    }
+  }
+
+  @Test
+  void shouldNotMapStorageOrdinalIfMainIndex() {
+    // given
+    final var record = TestRecordFactory.rootProcess(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    when(record.getValue().getStorageOrdinal()).thenReturn(MAIN_INDEX);
+    try (final var mocked = Mockito.mockStatic(ProcessCacheUtil.class)) {
+      mocked
+          .when(() -> ProcessCacheUtil.getCallActivityIds(any(), any()))
+          .thenReturn(List.of(List.of(100L)));
+      // when
+      handler.export(record);
+      // then
+      final var captor = ArgumentCaptor.forClass(ProcessInstanceDbModel.class);
+      verify(processInstanceWriter).create(captor.capture());
+      assertThat(captor.getValue().storageOrdinal()).isNull();
     }
   }
 

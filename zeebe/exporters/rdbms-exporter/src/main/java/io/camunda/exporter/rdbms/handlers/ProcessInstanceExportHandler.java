@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.exporter.rdbms.utils.ExportUtil.nullIfStorageOrdinalIsMainIndex;
+
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
@@ -115,6 +117,7 @@ public class ProcessInstanceExportHandler
         .treePath(createTreePath(record).toTruncatedString())
         .tags(value.getTags())
         .businessId(emptyToNull(value.getBusinessId()))
+        .storageOrdinal(nullIfStorageOrdinalIsMainIndex(value.getStorageOrdinal()))
         .build();
   }
 
