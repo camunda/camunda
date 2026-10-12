@@ -819,7 +819,7 @@ function decide(refs, optOut) {
             code: 'pr-ref-in-section',
             reasons: [
                 `The "${parser_1.SECTION_HEADING}" section links a pull request (${list}), not an issue.`,
-                'Link the tracked issue this PR resolves (e.g. `closes #1234`), or tick the opt-out checkbox.',
+                'Replace it with the tracked issue this PR resolves (e.g. `closes #1234`); ticking the opt-out checkbox does not clear this.',
             ],
         };
     }
