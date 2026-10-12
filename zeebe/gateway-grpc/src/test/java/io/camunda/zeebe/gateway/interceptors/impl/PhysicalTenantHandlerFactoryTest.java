@@ -21,6 +21,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.UserServices;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
@@ -150,6 +151,72 @@ final class PhysicalTenantHandlerFactoryTest {
     assertThat(keycloakResult.isRight()).isTrue();
     assertThat(keycloakResult.get().call(() -> AuthenticationHandler.USERNAME.get()))
         .isEqualTo("bob");
+  }
+
+  @Test
+  void shouldResolveGroupsAndPrincipalTypeWithSettingsOfIssuingProvider() throws Exception {
+    // given the default slot prefers the username and reads groups from "roles", while the named
+    // provider prefers the client id and reads groups from "groups"
+    final var config = securityConfig(AuthenticationMethod.OIDC);
+    final var defaultSlot = config.getAuthentication().getOidc();
+    defaultSlot.setIssuerUri("https://keycloak.example.com");
+    defaultSlot.setClientId("keycloak-client");
+    defaultSlot.setUsernameClaim("preferred_username");
+    defaultSlot.setClientIdClaim("azp");
+    defaultSlot.setPreferUsernameClaim(true);
+    defaultSlot.setGroupsClaim("roles");
+    final var okta = new OidcConfiguration();
+    okta.setIssuerUri("https://okta.example.com");
+    okta.setClientId("okta-client");
+    okta.setUsernameClaim("preferred_username");
+    okta.setClientIdClaim("azp");
+    okta.setPreferUsernameClaim(false);
+    okta.setGroupsClaim("groups");
+    final var providers = new OidcProvidersConfiguration();
+    providers.setOidc(new LinkedHashMap<>(Map.of("okta", okta)));
+    config.getAuthentication().setProviders(providers);
+
+    final var decoder = mock(JwtDecoder.class);
+    when(decoder.decode("okta-token")).thenReturn(tokenWithAllClaims("https://okta.example.com"));
+    when(decoder.decode("keycloak-token"))
+        .thenReturn(tokenWithAllClaims("https://keycloak.example.com"));
+
+    final var handler =
+        PhysicalTenantHandlerFactory.build(
+                Map.of("tenanta", config),
+                true,
+                authConfig -> decoder,
+                claimsProviderFactory,
+                userServicesForTenant,
+                passwordEncoder)
+            .get("tenanta");
+
+    // when
+    final var oktaContext = handler.authenticate("Bearer okta-token").get();
+    final var keycloakContext = handler.authenticate("Bearer keycloak-token").get();
+
+    // then each token gets the principal type and groups of the provider that issued it
+    assertThat(oktaContext.call(() -> AuthenticationHandler.CLIENT_ID.get()))
+        .isEqualTo("some-client");
+    assertThat(oktaContext.call(() -> AuthenticationHandler.USERNAME.get())).isNull();
+    assertThat(oktaContext.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get()))
+        .containsExactly("okta-team");
+    assertThat(keycloakContext.call(() -> AuthenticationHandler.USERNAME.get())).isEqualTo("alice");
+    assertThat(keycloakContext.call(() -> AuthenticationHandler.CLIENT_ID.get())).isNull();
+    assertThat(keycloakContext.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get()))
+        .containsExactly("keycloak-team");
+  }
+
+  /** A token carrying both principal claims and both groups claims, so only settings decide. */
+  private static Jwt tokenWithAllClaims(final String issuer) {
+    return Jwt.withTokenValue("token")
+        .header("alg", "RS256")
+        .claim("iss", issuer)
+        .claim("preferred_username", "alice")
+        .claim("azp", "some-client")
+        .claim("groups", List.of("okta-team"))
+        .claim("roles", List.of("keycloak-team"))
+        .build();
   }
 
   private static Jwt token(final String issuer, final String claim, final String value) {
