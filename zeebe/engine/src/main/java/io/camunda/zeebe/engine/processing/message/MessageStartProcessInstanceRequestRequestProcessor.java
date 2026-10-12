@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.state.message.MessageStartProcessInstanceDedupEnt
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
@@ -108,6 +109,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
   private final InstantSource clock;
   private final boolean businessIdUniquenessEnabled;
   private final MessageCorrelationMetrics metrics;
+  private final StorageOrdinalProvider storageOrdinalProvider;
   private final MessageStartProcessInstanceRequestRecord startedEventBuffer =
       new MessageStartProcessInstanceRequestRecord();
 
@@ -137,6 +139,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     this.clock = clock;
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     this.metrics = metrics;
+    this.storageOrdinalProvider = storageOrdinalProvider;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -157,6 +160,9 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
         .addKeyValue("processDefinitionKey", request.getProcessDefinitionKey())
         .log("Received cross-partition message-start request");
 
+    // the ask belongs to no instance: force the marker on the request so REQUESTED and every
+    // reply wrapped from it carry it even if the sender left the field at its default
+    request.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.REQUESTED, request);
 
@@ -176,9 +182,11 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       return;
     }
 
-    final var cachedPiKey = lookupValidDedupHit(request);
-    if (cachedPiKey != null) {
-      commandSender.sendStartProcessInstanceStarted(request, cachedPiKey);
+    final var cachedEntry = lookupValidDedupHit(request);
+    if (cachedEntry != null) {
+      final long cachedPiKey = cachedEntry.getProcessInstanceKey();
+      commandSender.sendStartProcessInstanceStarted(
+          request, cachedPiKey, cachedEntry.getStorageOrdinal());
       metrics.crossPartitionRequest(RequestOutcome.DEDUP_HIT);
       logRequestOutcome(request, RequestOutcome.DEDUP_HIT, cachedPiKey);
       return;
@@ -204,6 +212,8 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     }
 
     final long processInstanceKey = keyGenerator.nextKey();
+    // read once and reused for the instance creation, the local STARTED event and the reply
+    final int storageOrdinal = storageOrdinalProvider.getStorageOrdinal();
     // Activate the new PI directly. We do NOT use EventHandle#triggerMessageStartEvent here
     // because that path also writes a MessageStartEventSubscription:CORRELATED event, whose
     // applier dereferences the buffered message in local MessageState — but on P_B the message
@@ -216,7 +226,8 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
             request.getStartEventIdBuffer(),
             request.getVariablesBuffer(),
             request.getTenantId(),
-            request.getBusinessIdBuffer());
+            request.getBusinessIdBuffer(),
+            storageOrdinal);
 
     if (!activated) {
       // Activation failed because the definition is draining/deleted on this partition.
@@ -232,10 +243,11 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     // bookkeeping; this local event is what populates the dedup state on P_B.
     startedEventBuffer.wrap(request);
     startedEventBuffer.setProcessInstanceKey(processInstanceKey);
+    startedEventBuffer.setStorageOrdinal(storageOrdinal);
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.STARTED, startedEventBuffer);
 
-    commandSender.sendStartProcessInstanceStarted(request, processInstanceKey);
+    commandSender.sendStartProcessInstanceStarted(request, processInstanceKey, storageOrdinal);
     metrics.crossPartitionRequest(RequestOutcome.STARTED);
     metrics.recordReleaseToStart(
         request.getBusinessId(),
@@ -306,17 +318,16 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
    * not re-evaluated. The dedup key {@code (processDefinitionKey, messageKey)} is unique per
    * publish, so a not-yet-swept row can never shadow a different publish.
    */
-  private Long lookupValidDedupHit(final MessageStartProcessInstanceRequestRecord request) {
+  private MessageStartProcessInstanceDedupEntry lookupValidDedupHit(
+      final MessageStartProcessInstanceRequestRecord request) {
     final MessageStartProcessInstanceDedupEntry entry =
         dedupState.get(request.getProcessDefinitionKey(), request.getMessageKey());
-    if (entry == null) {
+    if (entry == null || entry.getDeletionDeadline() <= clock.millis()) {
       return null;
     }
-    if (entry.getDeletionDeadline() <= clock.millis()) {
-      return null;
-    }
-    final long cachedPiKey = entry.getProcessInstanceKey();
-    return bannedInstanceState.isProcessInstanceBanned(cachedPiKey) ? null : cachedPiKey;
+    return bannedInstanceState.isProcessInstanceBanned(entry.getProcessInstanceKey())
+        ? null
+        : entry;
   }
 
   /**

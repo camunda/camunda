@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import org.agrona.DirectBuffer;
 
@@ -488,11 +489,14 @@ public class SubscriptionCommandSender {
    * processInstanceKey} of the newly created instance is added on top.
    */
   public boolean sendStartProcessInstanceStarted(
-      final MessageStartProcessInstanceRequestRecord request, final long processInstanceKey) {
+      final MessageStartProcessInstanceRequestRecord request,
+      final long processInstanceKey,
+      final int storageOrdinal) {
     final MessageStartProcessInstanceRequestRecord reply =
         new MessageStartProcessInstanceRequestRecord();
     reply.wrap(request);
     reply.setProcessInstanceKey(processInstanceKey);
+    reply.setStorageOrdinal(storageOrdinal);
     return handleFollowUpCommandBasedOnPartition(
         Protocol.decodePartitionId(request.getMessageKey()),
         ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
@@ -546,7 +550,9 @@ public class SubscriptionCommandSender {
     final MessageStartProcessInstanceRequestRecord reply =
         new MessageStartProcessInstanceRequestRecord();
     reply.wrap(request);
-    // processInstanceKey stays at -1 for rejection replies; defaults are kept by wrap.
+    // processInstanceKey stays at -1 for rejection replies; defaults are kept by wrap. A
+    // rejection belongs to no instance, so the ordinal is forced regardless of the request.
+    reply.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     return handleFollowUpCommandBasedOnPartition(
         Protocol.decodePartitionId(request.getMessageKey()),
         ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
@@ -628,7 +634,8 @@ public class SubscriptionCommandSender {
         .setVariables(variables)
         .setMessageDeadline(messageDeadline)
         .setMessageTtl(messageTtl)
-        .setTenantId(tenantId);
+        .setTenantId(tenantId)
+        .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
   }
 
   /**

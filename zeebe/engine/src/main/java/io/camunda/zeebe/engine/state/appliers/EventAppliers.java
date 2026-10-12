@@ -640,8 +640,9 @@ public final class EventAppliers implements EventApplier {
 
   /**
    * Appliers for the cross-partition {@code MessageStartProcessInstanceRequest} handshake. All
-   * intents are introduced together with this feature and have no prior stream history, so per the
-   * versioned-applier convention a single V1 applier per intent is sufficient (no V2 alongside).
+   * intents were introduced together with this feature, so each starts at a single V1 applier.
+   * {@code STARTED} additionally has a V2 that persists the storage ordinal on the dedup entry; V1
+   * stays registered to replay {@code STARTED} events written before the ordinal existed.
    *
    * <ul>
    *   <li>{@code REQUESTED}: acknowledgement event with no state effect.
@@ -680,6 +681,14 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageStartProcessInstanceRequestIntent.STARTED,
         new MessageStartProcessInstanceStartedV1Applier(
+            state.getMessageStartProcessInstanceDedupState(),
+            state.getMessageStartProcessInstanceAskState(),
+            state.getMessageState(),
+            state.getPartitionId()));
+    register(
+        MessageStartProcessInstanceRequestIntent.STARTED,
+        2,
+        new MessageStartProcessInstanceStartedV2Applier(
             state.getMessageStartProcessInstanceDedupState(),
             state.getMessageStartProcessInstanceAskState(),
             state.getMessageState(),

@@ -137,7 +137,8 @@ public final class MessageStartProcessInstanceRequestStartProcessor
           .setMessageName(reply.getMessageNameBuffer())
           .setBusinessId(reply.getBusinessIdBuffer())
           .setVariables(reply.getVariablesBuffer())
-          .setTenantId(reply.getTenantId());
+          .setTenantId(reply.getTenantId())
+          .setStorageOrdinal(reply.getStorageOrdinal());
       stateWriter.appendFollowUpEvent(
           reply.getMessageStartEventSubscriptionKey(),
           MessageStartEventSubscriptionIntent.CORRELATED,

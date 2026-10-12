@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +100,7 @@ final class DeferredMessageStartCorrelationResponse {
         .setMessageKey(messageKey)
         .setProcessInstanceKey(reply.getProcessInstanceKey())
         .setProcessDefinitionKey(reply.getProcessDefinitionKey())
+        .setStorageOrdinal(reply.getStorageOrdinal())
         .setRequestId(requestData.getRequestId())
         .setRequestStreamId(requestData.getRequestStreamId());
 
@@ -148,6 +150,7 @@ final class DeferredMessageStartCorrelationResponse {
         .setTenantId(reply.getTenantId())
         .setBusinessId(reply.getBusinessId())
         .setMessageKey(messageKey)
+        .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED)
         .setRequestId(requestData.getRequestId())
         .setRequestStreamId(requestData.getRequestStreamId());
 
