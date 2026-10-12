@@ -38,8 +38,9 @@
     <version.agrona>1.23.1</version.agrona>
     <version.assertj>3.26.3</version.assertj>
     <version.awaitility>4.2.2</version.awaitility>
-    <version.bouncycastle-bcpkix>1.85</version.bouncycastle-bcpkix>
-    <version.bouncycastle-bcprov>1.85.2</version.bouncycastle-bcprov>
+    <version.bouncycastle-bcpkix>1.86</version.bouncycastle-bcpkix>
+    <version.bouncycastle-bcprov>1.86</version.bouncycastle-bcprov>
+    <version.bouncycastle-bcutil>1.86</version.bouncycastle-bcutil>
     <version.camunda>7.22.0</version.camunda>
     <version.camunda-license-check>2.9.0</version.camunda-license-check>
     <version.checkstyle>10.18.2</version.checkstyle>
@@ -1659,6 +1660,12 @@
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk18on</artifactId>
         <version>${version.bouncycastle-bcprov}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcutil-jdk18on</artifactId>
+        <version>${version.bouncycastle-bcutil}</version>
       </dependency>
 
       <dependency>
