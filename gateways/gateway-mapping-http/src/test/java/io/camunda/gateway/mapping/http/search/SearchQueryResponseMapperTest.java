@@ -303,7 +303,8 @@ class SearchQueryResponseMapperTest {
             "tenant", // tenantId
             null, // treePath
             null, // businessId
-            suspendedDate); // suspendedDate
+            suspendedDate, // suspendedDate
+            null); // storageOrdinal
 
     // when
     final var response = SearchQueryResponseMapper.toProcessInstance(entity);
@@ -333,7 +334,8 @@ class SearchQueryResponseMapperTest {
             "tenant", // tenantId
             null, // treePath
             null, // businessId
-            null); // suspendedDate
+            null, // suspendedDate
+            null); // storageOrdinal
 
     // when
     final var response = SearchQueryResponseMapper.toProcessInstance(entity);
