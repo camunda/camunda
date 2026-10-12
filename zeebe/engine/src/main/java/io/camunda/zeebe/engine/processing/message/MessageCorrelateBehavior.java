@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.BlockReason;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -96,6 +97,7 @@ public final class MessageCorrelateBehavior {
   private final RoutingInfo routingInfo;
   private final int partitionId;
   private final MessageCorrelationMetrics metrics;
+  private final StorageOrdinalProvider storageOrdinalProvider;
 
   private final MessageStartProcessInstanceRequestRecord askRecord =
       new MessageStartProcessInstanceRequestRecord();
@@ -112,7 +114,8 @@ public final class MessageCorrelateBehavior {
       final boolean businessIdUniquenessEnabled,
       final RoutingInfo routingInfo,
       final int partitionId,
-      final MessageCorrelationMetrics metrics) {
+      final MessageCorrelationMetrics metrics,
+      final StorageOrdinalProvider storageOrdinalProvider) {
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.messageSubscriptionState = messageSubscriptionState;
     this.messageState = messageState;
@@ -125,6 +128,7 @@ public final class MessageCorrelateBehavior {
     this.routingInfo = routingInfo;
     this.partitionId = partitionId;
     this.metrics = metrics;
+    this.storageOrdinalProvider = storageOrdinalProvider;
   }
 
   public void correlateToMessageStartEvents(
@@ -163,14 +167,19 @@ public final class MessageCorrelateBehavior {
 
           final var correlation = evaluateStartEventCorrelation(messageData, subscriptionRecord);
           if (correlation.isRight()) {
+            final int storageOrdinal = storageOrdinalProvider.getStorageOrdinal();
             final var processInstanceKey =
-                triggerOrDelegateStartEvent(messageData, subscription.getKey(), subscriptionRecord);
+                triggerOrDelegateStartEvent(
+                    messageData, subscription.getKey(), subscriptionRecord, storageOrdinal);
             if (processInstanceKey > 0) {
-              // Started locally on this partition — record it so the message is not correlated to
-              // the same process twice. A delegated cross-partition ask returns -1: its CORRELATED
-              // event is written by the STARTED reply processor only after P_B confirms the
-              // activation, so it must not be added here.
+              // Started locally on this partition - record it, together with the ordinal the
+              // instance was created with, so the message is not correlated to the same process
+              // twice and the CORRELATED response carries that ordinal. A delegated
+              // cross-partition ask returns -1: its CORRELATED event is written by the STARTED
+              // reply processor only after P_B confirms the activation, so it must not be added
+              // here.
               subscriptionRecord.setProcessInstanceKey(processInstanceKey);
+              subscriptionRecord.setStorageOrdinal(storageOrdinal);
               correlatingSubscriptions.add(subscriptionRecord);
             } else if (shouldDelegateToBusinessIdPartition(messageData)) {
               // triggerOrDelegateStartEvent returned -1: distinguish a genuine cross-partition
@@ -303,7 +312,8 @@ public final class MessageCorrelateBehavior {
                 messageData.variables(),
                 messageData.correlationKey(),
                 messageData.tenantId(),
-                subscription.subscriptionKey()));
+                subscription.subscriptionKey(),
+                subscription.storageOrdinal()));
   }
 
   /**
@@ -410,11 +420,15 @@ public final class MessageCorrelateBehavior {
    * buffered-message pick-up ({@code BpmnBufferedMessageStartEventBehavior}) so a buffered message
    * whose businessId belongs to {@code P_B} can never be started locally and bypass the
    * cross-partition uniqueness handshake.
+   *
+   * @param storageOrdinal the ordinal for the instance when it is started locally, resolved by the
+   *     caller
    */
   public long triggerOrDelegateStartEvent(
       final MessageData messageData,
       final long messageStartEventSubscriptionKey,
-      final MessageStartEventSubscriptionRecord subscriptionRecord) {
+      final MessageStartEventSubscriptionRecord subscriptionRecord,
+      final int storageOrdinal) {
     if (shouldDelegateToBusinessIdPartition(messageData)) {
       // Cross-partition arm: hand uniqueness ownership to P_B. The local pending-ask entry (written
       // by the REQUESTED applier on P_K) is what makes a dropped reply recoverable via the retry
@@ -431,7 +445,8 @@ public final class MessageCorrelateBehavior {
         messageData.messageName(),
         messageData.correlationKey(),
         messageData.variables(),
-        messageData.businessId());
+        messageData.businessId(),
+        storageOrdinal);
   }
 
   /**

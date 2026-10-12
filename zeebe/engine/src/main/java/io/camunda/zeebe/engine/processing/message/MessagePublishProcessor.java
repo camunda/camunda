@@ -115,7 +115,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             businessIdUniquenessEnabled,
             routingInfo,
             partitionId,
-            metrics);
+            metrics,
+            storageOrdinalProvider);
   }
 
   @Override
