@@ -133,3 +133,30 @@ check() {
   [ "$status" -eq 0 ]
 }
 
+
+# ── Scoped E2E run ───────────────────────────────────────────────────────────
+
+@test "should not be CI-relevant when only the scoped E2E run workflow changed" {
+  # given a PR that changes only the dispatch-only scoped E2E run workflow
+  # when checking CI relevance
+  run check ".github/workflows/c8-orchestration-cluster-e2e-scoped-run.yml"
+  # then CI should be skipped — it runs an existing test, it builds nothing
+  [ "$status" -eq 1 ]
+}
+
+@test "should not be CI-relevant when only the scoped E2E verdict script changed" {
+  # given a PR that changes only the verdict reader for that workflow
+  # when checking CI relevance
+  run check ".github/scripts/e2e-scoped-verdict.mjs"
+  # then CI should be skipped
+  [ "$status" -eq 1 ]
+}
+
+@test "should be CI-relevant when the scoped E2E run workflow and a CI workflow both changed" {
+  # given a PR that changes the scoped E2E run workflow and the CI workflow
+  # when checking CI relevance
+  run check ".github/workflows/c8-orchestration-cluster-e2e-scoped-run.yml" \
+            ".github/workflows/ci.yml"
+  # then CI should be triggered (non-excluded file wins)
+  [ "$status" -eq 0 ]
+}

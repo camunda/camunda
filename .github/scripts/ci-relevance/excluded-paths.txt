@@ -23,3 +23,9 @@
 # Reads qa/coverage/ and the test files those plans point at; compiles nothing.
 .github/workflows/check-coverage-plans.yml
 .github/scripts/coverage-plan-check/**
+
+# ── Scoped E2E run ───────────────────────────────────────────────────────────
+# Dispatch-only; runs one existing E2E case against a container stack. Nothing
+# in the Java or frontend build depends on it.
+.github/workflows/c8-orchestration-cluster-e2e-scoped-run.yml
+.github/scripts/e2e-scoped-verdict.mjs
