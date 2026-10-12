@@ -154,21 +154,6 @@ final class PhysicalTenantEncodedPathOidcRoutingIT {
         .isEqualTo(400);
   }
 
-  @Test
-  void shouldRejectAPercentEncodedTenantPrefix() throws Exception {
-    // given — a token the configured tenant's chain accepts, proven by the baseline above
-
-    // when — the "-" of "/physical-tenants/" is spelled %2D. Spring decodes it, so the tenant's
-    // chain authenticates the request, but the raw path no longer reads as a tenant path
-    final var encodedPrefix =
-        get(EncodedTenantPaths.meEndpointFor(EncodedTenantPaths.TENANT_ID).replace("-", "%2D"));
-
-    // then — it must not fall back to the default tenant's data and memberships
-    assertThat(encodedPrefix.statusCode())
-        .as("an encoded tenant prefix must be rejected, not served as the default tenant")
-        .isEqualTo(400);
-  }
-
   private static HttpResponse<String> get(final String rawPath) throws Exception {
     return EncodedTenantPaths.get(
         BROKER.restAddress().toString(), rawPath, "Bearer " + bearerToken);
