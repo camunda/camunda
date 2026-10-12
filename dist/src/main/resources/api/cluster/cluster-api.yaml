@@ -275,7 +275,8 @@ paths:
 
   /routing-state:
     patch:
-      summary:
+      summary: Update the routing state
+      description:
         Force an update of the routing state using the user provided routing state
         or by fetching the routing state from the engine first and then
         applying it to the configuration.
@@ -310,7 +311,8 @@ paths:
 
   /partitioning:
     put:
-      summary:
+      summary: Update the partition distribution configuration
+      description:
         Update the partition distribution configuration. Exactly one of `config` and `zonePriorities` must be set.
 
         Setting `config` persists a new configuration and applies it immediately by computing the necessary
@@ -419,7 +421,8 @@ paths:
 
   /zones:
     put:
-      summary:
+      summary: Migrate a zone to a zone-aware topology
+      description:
         Migrate one zone of a bare or partially zoned cluster to a zone-aware topology. The request
         contains only the zone name. Before migrating a zone, update the persisted partition
         distribution with `PUT /cluster/partitioning` with a zone aware partition distribution.

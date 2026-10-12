@@ -1,6 +1,6 @@
 openapi: "3.0.2"
 info:
-  title: API Title
+  title: Exporters Management API
   version: "1.0"
 servers:
   - url: "{schema}://{host}:{port}/actuator/exporters"
@@ -40,12 +40,12 @@ paths:
           $ref: 'components.yaml#/responses/TimeoutError'
 
   /{exporterId}/enable:
-    summary: Enable an exporter
-    description: >
-      Enable the exporter with the given exporterId. After the exporter is enabled, the records are exported to this exporter.
-      Without the physicalTenant parameter the exporter is enabled in every physical tenant;
-      with it, only the given physical tenant is affected.
     post:
+      summary: Enable an exporter
+      description: >
+        Enable the exporter with the given exporterId. After the exporter is enabled, the records are exported to this exporter.
+        Without the physicalTenant parameter the exporter is enabled in every physical tenant;
+        with it, only the given physical tenant is affected.
       parameters:
         - $ref: '#/components/parameters/ExporterId'
         - $ref: '#/components/parameters/PhysicalTenantParameter'
