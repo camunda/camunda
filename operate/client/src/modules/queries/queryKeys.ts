@@ -20,6 +20,7 @@ import type {
   QueryElementInstanceIncidentsRequestBody,
   QueryElementInstancesRequestBody,
   QueryJobsRequestBody,
+  QueryMessageSubscriptionsRequestBody,
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
   QueryUserTasksRequestBody,
@@ -233,6 +234,12 @@ const queryKeys = {
   },
   jobs: {
     search: (payload: QueryJobsRequestBody) => ['jobsSearch', payload],
+  },
+  messageSubscriptions: {
+    search: (payload: QueryMessageSubscriptionsRequestBody) => [
+      'messageSubscriptionsSearch',
+      payload,
+    ],
   },
   processInstance: {
     get: (processInstanceKey: string) => [
