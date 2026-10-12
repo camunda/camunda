@@ -70,6 +70,8 @@ public sealed interface AuthenticationHandler {
     }
 
     /**
+     * @param oidcAuthenticationConfiguration the tenant's default slot; its {@code groups-claim}
+     *     sets the tenant's groups mode, and is the groups claim of every provider without its own
      * @param claimConfigsByIssuer claim settings of each provider keyed by its {@code issuer-uri};
      *     a token whose {@code iss} matches no entry is resolved with {@code
      *     oidcAuthenticationConfiguration}
@@ -81,11 +83,13 @@ public sealed interface AuthenticationHandler {
         final Map<String, OidcConfiguration> claimConfigsByIssuer) {
       this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
       this.claimsProvider = Objects.requireNonNull(claimsProvider);
-      defaultClaimSettings =
-          new ClaimSettings(Objects.requireNonNull(oidcAuthenticationConfiguration));
+      Objects.requireNonNull(oidcAuthenticationConfiguration);
+      final String tenantGroupsClaim = oidcAuthenticationConfiguration.getGroupsClaim();
+      defaultClaimSettings = new ClaimSettings(oidcAuthenticationConfiguration, tenantGroupsClaim);
       claimSettingsByIssuer = new LinkedHashMap<>();
       claimConfigsByIssuer.forEach(
-          (issuer, config) -> claimSettingsByIssuer.put(issuer, new ClaimSettings(config)));
+          (issuer, config) ->
+              claimSettingsByIssuer.put(issuer, new ClaimSettings(config, tenantGroupsClaim)));
     }
 
     @Override
@@ -121,13 +125,12 @@ public sealed interface AuthenticationHandler {
             Status.UNAUTHENTICATED.augmentDescription("Failed to resolve OIDC claims"));
       }
 
+      // the groups mode is the tenant's, so it matches what the broker and the Groups API use
+      final boolean groupsClaimConfigured = defaultClaimSettings.config().isGroupsClaimConfigured();
       var context = Context.current();
       context = context.withValue(IS_CAMUNDA_USERS_ENABLED, false);
-      context =
-          context.withValue(
-              IS_CAMUNDA_GROUPS_ENABLED,
-              !oidcAuthenticationConfiguration.isGroupsClaimConfigured());
-      if (oidcAuthenticationConfiguration.isGroupsClaimConfigured()) {
+      context = context.withValue(IS_CAMUNDA_GROUPS_ENABLED, !groupsClaimConfigured);
+      if (groupsClaimConfigured) {
         // A malformed groups claim contributes no groups instead of rejecting the token, so it
         // degrades exactly like a missing claim — the same way the REST membership path handles it.
         // Authorization then fails closed on the reduced set of groups.
@@ -173,11 +176,12 @@ public sealed interface AuthenticationHandler {
         OidcPrincipalLoader principalLoader,
         OidcGroupsExtractor groupsExtractor) {
 
-      private ClaimSettings(final OidcConfiguration config) {
+      private ClaimSettings(final OidcConfiguration config, final String tenantGroupsClaim) {
         this(
             config,
             new OidcPrincipalLoader(config.getUsernameClaim(), config.getClientIdClaim()),
-            new OidcGroupsExtractor(config.getGroupsClaim()));
+            new OidcGroupsExtractor(
+                config.isGroupsClaimConfigured() ? config.getGroupsClaim() : tenantGroupsClaim));
       }
     }
   }

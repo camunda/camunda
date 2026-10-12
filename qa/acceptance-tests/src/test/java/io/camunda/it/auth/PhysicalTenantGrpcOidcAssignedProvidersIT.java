@@ -52,7 +52,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *
  * <p>The root default slot also sets a groups claim and UserInfo augmentation. {@code tenanta}
  * keeps both settings although it does not assign the default slot, which must not make the root
- * issuer trusted again.
+ * issuer trusted again. {@code okta} sets no groups claim of its own, so its tokens are read with
+ * the inherited root one.
  */
 @Testcontainers
 @ZeebeIntegration
@@ -119,7 +120,6 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
         .withProperty(okta + "issuer-uri", keycloakBase + "/realms/" + REALM_O)
         .withProperty(okta + "client-id", CLIENT_O)
         .withProperty(okta + "client-id-claim", OKTA_CLIENT_ID_CLAIM)
-        .withProperty(okta + "groups-claim", "groups")
         .withProperty(okta + "redirect-uri", "{baseUrl}/login/oauth2/code/okta");
     assign(TENANT_A, "okta");
     assign(TENANT_B, "oidc");
@@ -189,7 +189,8 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
 
     // when / then
     assertThatNoException()
-        .as("okta group member deploys on tenanta, so its groups reached the broker")
+        .as(
+            "okta group member deploys on tenanta, so its groups were read with the inherited claim")
         .isThrownBy(() -> TENANTS.deploy(oktaMemberOnTenantA, process, "okta_group_process"));
   }
 
