@@ -339,6 +339,8 @@ java -jar dist/target/camunda-zeebe-*.jar \
 
 Access metrics at: http://localhost:9600/actuator/prometheus
 
+Optimize serves its metrics separately, on its management port: http://localhost:8092/actuator/prometheus
+
 #### Local Dashboard Development
 
 > [!WARNING]
