@@ -14,6 +14,9 @@ import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -32,21 +35,14 @@ class PhysicalTenantOidcSettingsRegistryTest {
     RequestContextHolder.resetRequestAttributes();
   }
 
-  @Test
-  void shouldServeRequestsOutsideAnyTenantFromTheRoot() {
-    // given no tenant bound to the current thread
-
-    // when
-    final var settings = registry.current();
-
-    // then
-    assertThat(settings).isNull();
-  }
-
-  @Test
-  void shouldServeTheDefaultTenantFromTheRoot() {
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(strings = "default")
+  void shouldServeTheRootOutsideAnyTenantAndForTheDefaultTenant(final String physicalTenantId) {
     // given
-    bindPhysicalTenant("default");
+    if (physicalTenantId != null) {
+      bindPhysicalTenant(physicalTenantId);
+    }
 
     // when
     final var settings = registry.current();

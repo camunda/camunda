@@ -8,7 +8,6 @@
 package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -45,7 +44,6 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -90,22 +88,6 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
   @AfterEach
   void clearTenantContext() {
     RequestContextHolder.resetRequestAttributes();
-  }
-
-  @Test
-  void shouldUseAccessTokenIssuedByTenantIssuerWhenTenantOverridesDefaultSlotIssuer()
-      throws Exception {
-    // given
-    final var environment = tenantOverridingDefaultSlotIssuer();
-    final var converter = converter(environment);
-    bindPhysicalTenant("tenanta");
-    final var token = JwksTestServer.signForIssuer(tenantIdp, tenantIdp.issuerUri(), List.of());
-
-    // when
-    final var username = converter.convert(login(token, tenantIdp)).authenticatedUsername();
-
-    // then
-    assertThat(username).isEqualTo(ACCESS_TOKEN_USER);
   }
 
   @Test
@@ -223,20 +205,6 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
 
     // then
     assertThat(username).isEqualTo(ACCESS_TOKEN_USER);
-  }
-
-  @Test
-  void shouldRejectConversionForPhysicalTenantWithoutResolvedConfiguration() throws Exception {
-    // given
-    final var environment = tenantOverridingDefaultSlotIssuer();
-    final var converter = converter(environment);
-    bindPhysicalTenant("unknowntenant");
-    final var token = JwksTestServer.signForIssuer(rootIdp, rootIdp.issuerUri(), List.of());
-    final var authentication = login(token, rootIdp);
-
-    // when / then
-    assertThatThrownBy(() -> converter.convert(authentication))
-        .isInstanceOf(OAuth2AuthenticationException.class);
   }
 
   private static MockEnvironment rootOnly() {

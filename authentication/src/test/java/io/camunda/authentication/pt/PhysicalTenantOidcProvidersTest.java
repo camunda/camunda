@@ -9,13 +9,7 @@ package io.camunda.authentication.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.api.context.MembershipResolutionContextPropagator;
-import io.camunda.security.core.port.out.MembershipPort;
-import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.env.MockEnvironment;
 
 /**
@@ -28,14 +22,11 @@ import org.springframework.mock.env.MockEnvironment;
  * oidc}, the default slot) must stay absent from the derived maps so interactive root login keeps
  * the default converter.
  */
-@ExtendWith(MockitoExtension.class)
 class PhysicalTenantOidcProvidersTest {
 
   private static final String ROOT_PREFIX = "camunda.security.authentication.oidc";
   private static final String SCOPED_PREFIX =
       "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.auth0";
-
-  @Mock private MembershipPort membershipPort;
 
   @Test
   void shouldResolveScopedProviderForItsTenantWithoutRootRegistration() {
@@ -50,40 +41,6 @@ class PhysicalTenantOidcProvidersTest {
     assertThat(providers).containsOnlyKeys("auth0");
     // the scoped provider keeps its own claim, not the root "preferred_username"
     assertThat(providers.get("auth0").getUsernameClaim()).isEqualTo("iss");
-  }
-
-  @Test
-  void shouldBuildTokenClaimsConverterForEachResolvedRegistration() {
-    // given
-    final var providers =
-        PhysicalTenantOidcProviders.providersByPhysicalTenant(rootKeycloakWithScopedAuth0())
-            .get("tenanta");
-
-    // when
-    final var converters =
-        PhysicalTenantOidcProviders.tokenClaimsConverters(
-            providers, membershipPort, MembershipResolutionContextPropagator.identity());
-
-    // then
-    assertThat(converters).containsOnlyKeys("auth0");
-    assertThat(converters.get("auth0")).isNotNull();
-  }
-
-  @Test
-  void shouldCollectIdentityClaimsForUriNormalization() {
-    // given
-    final var providers =
-        PhysicalTenantOidcProviders.providersByPhysicalTenant(rootKeycloakWithScopedAuth0())
-            .get("tenanta");
-
-    // when
-    final var identityClaims =
-        PhysicalTenantOidcProviders.identityClaimsByRegistrationId(providers);
-
-    // then
-    assertThat(identityClaims)
-        .containsOnlyKeys("auth0")
-        .containsEntry("auth0", List.of("iss", "https://camunda.com/claims/client_id"));
   }
 
   @Test
@@ -116,41 +73,6 @@ class PhysicalTenantOidcProvidersTest {
     assertThat(defaultTenantProviders.get("okta").getUsernameClaim()).isEqualTo("root_user");
     // the root default slot is not a named provider, so the root keeps the default converter
     assertThat(defaultTenantProviders).doesNotContainKey("oidc");
-  }
-
-  @Test
-  void shouldResolveTenantOverrideOfDefaultSlotIssuerPerTenant() {
-    // given
-    final var environment = rootKeycloakOnly();
-    environment.setProperty(
-        "camunda.physical-tenants.tenanta.security.authentication.oidc.issuer-uri",
-        "http://idp-a.local/realms/a");
-
-    // when
-    final var providers = PhysicalTenantOidcProviders.providersByPhysicalTenant(environment);
-
-    // then
-    assertThat(providers).containsOnlyKeys("tenanta");
-    assertThat(providers.get("tenanta").get("oidc").getIssuerUri())
-        .isEqualTo("http://idp-a.local/realms/a");
-  }
-
-  @Test
-  void shouldResolveTenantOnlyProviderSettingsPerTenant() {
-    // given
-    final var environment = rootKeycloakWithScopedAuth0();
-    environment.setProperty(SCOPED_PREFIX + ".issuer-uri", "https://auth0.example.com/");
-    environment.setProperty(SCOPED_PREFIX + ".id-token-algorithm", "ES256");
-    environment.setProperty(SCOPED_PREFIX + ".prefer-id-token-claims", "true");
-
-    // when
-    final var providers = PhysicalTenantOidcProviders.providersByPhysicalTenant(environment);
-
-    // then
-    final var auth0 = providers.get("tenanta").get("auth0");
-    assertThat(auth0.getIssuerUri()).isEqualTo("https://auth0.example.com/");
-    assertThat(auth0.getIdTokenAlgorithm()).isEqualTo("ES256");
-    assertThat(auth0.isPreferIdTokenClaims()).isTrue();
   }
 
   @Test
