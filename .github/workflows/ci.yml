@@ -1568,11 +1568,11 @@ jobs:
         shell: bash
         run: >
           ./mvnw -B -T1C --no-snapshot-updates
-          -D forkCount=1
+          -D forkCount=2
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
-          -P async-repl,extract-flaky-tests
+          -P parallel-tests,async-repl,extract-flaky-tests
           -pl qa/acceptance-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
