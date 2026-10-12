@@ -25,15 +25,16 @@ import java.util.stream.Stream;
 import org.springframework.core.env.Environment;
 
 /**
- * Derives per-registration OIDC claim wiring for the named providers of every physical tenant.
+ * Resolves the OIDC providers each physical tenant sees, and derives per-registration claim wiring
+ * from them.
  *
- * <p>Interactive OIDC login selects claim mapping by {@code
- * OAuth2AuthenticationToken#getAuthorizedClientRegistrationId()}. A physical-tenant scoped provider
- * (e.g. an Auth0 registration) can configure different identity claims than the root provider, so
- * the host cannot reuse the single root {@link LazyTokenClaimsConverter}. This factory flattens the
- * named providers of all physical tenants (see {@link
- * PhysicalTenantAuthConfigurations#forAllPhysicalTenants(Environment)}) into maps keyed by
- * registration id that the provider-aware converter looks up at conversion time.
+ * <p>Interactive OIDC login selects settings by the physical tenant of the request and the {@code
+ * OAuth2AuthenticationToken#getAuthorizedClientRegistrationId()}. A registration id can be shared
+ * by the root and several tenants (a shared cluster provider is merged into every tenant) with
+ * different issuer, algorithm, claim or JWKS settings, so nothing is merged across tenants: each
+ * non-default tenant gets its own map (see {@link #providersByPhysicalTenant}), and the default
+ * tenant, which serves the root, is read separately (see {@link #defaultTenantNamedProviders}).
+ * Tenants come from {@link PhysicalTenantAuthConfigurations#forAllPhysicalTenants(Environment)}.
  */
 public final class PhysicalTenantOidcProviders {
 
