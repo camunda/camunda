@@ -5,7 +5,8 @@
 		"src/**/*.browser.test.ts",
 		"src/**/*.browser.test.tsx",
 		"./src/vitest-modules/**/*.ts",
-		"./shared-test-modules/**/*.ts"
+		"./shared-test-modules/**/*.ts",
+		"./test/fixtures/**/*"
 	],
 	"compilerOptions": {
 		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.browser.tsbuildinfo",
