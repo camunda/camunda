@@ -1,0 +1,27 @@
+name: Release-notes apply (dry run)
+description: >
+  Compares the generator's labels.json and comments.json with the version:<tag>
+  labels zcl applied, and writes a divergence report to the job summary.
+  Read-only: it never labels or comments. Real writes are the cutover work
+  unit's job; dry-run=false fails closed until that exists.
+inputs:
+  token:
+    description: Token used to read issues and labels. Read-only scopes only.
+    required: true
+  input-dir:
+    description: Directory holding the generator's labels.json, comments.json and changelog.json. apply-divergence.json is written here too.
+    required: false
+    default: '.'
+  generate-outcome:
+    description: >
+      Outcome of the generate step (steps.<id>.outcome). When it is not
+      success the comparison is skipped with a warning. Empty means unknown.
+    required: false
+    default: ''
+  dry-run:
+    description: Must be true. Any other value fails, because real apply is not implemented.
+    required: false
+    default: 'true'
+runs:
+  using: node24
+  main: dist/index.js
