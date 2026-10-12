@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
@@ -56,5 +57,14 @@ final class ExpressionLabelTest {
     assertThat(new ExpressionLabel("condition expression", null).target())
         .as("a 'kind' without a 'target' is a valid, partial label")
         .isNull();
+  }
+
+  @Test
+  void shouldRejectTargetWithoutKind() {
+    assertThatThrownBy(() -> new ExpressionLabel(null, "sequence flow 's2'"))
+        .as("a 'target' without a 'kind' would be dropped inconsistently by its consumers")
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected 'target' to be null when 'kind' is null, but 'target' was 'sequence flow 's2''");
   }
 }

@@ -29,17 +29,27 @@ import org.agrona.DirectBuffer;
  *
  * <p>Use {@link #NONE} when no additional context should be added to the failure message, which
  * preserves the original generic wording. A label may have a {@code kind} without a {@code target}
- * (e.g. when the target is not relevant or not known at the call site).
+ * (e.g. when the target is not relevant or not known at the call site), but not a {@code target}
+ * without a {@code kind}.
  *
  * @param kind a short, human-readable description of what the expression represents (e.g. {@code
  *     "condition expression"}), or {@code null} if not labeled
  * @param target a short, human-readable description of the specific element the expression belongs
- *     to (e.g. {@code "sequence flow 's2'"}), or {@code null} if not applicable
+ *     to (e.g. {@code "sequence flow 's2'"}), or {@code null} if not applicable; must be {@code
+ *     null} if {@code kind} is {@code null}
  */
 public record ExpressionLabel(String kind, String target) {
 
   /** A label that adds no additional context to the failure message. */
   public static final ExpressionLabel NONE = new ExpressionLabel(null, null);
+
+  public ExpressionLabel {
+    if (kind == null && target != null) {
+      throw new IllegalArgumentException(
+          "Expected 'target' to be null when 'kind' is null, but 'target' was '%s'"
+              .formatted(target));
+    }
+  }
 
   /**
    * Labels an expression as the condition expression of a sequence flow, e.g. for the gateway
