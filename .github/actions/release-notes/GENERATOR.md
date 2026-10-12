@@ -722,10 +722,10 @@ cd .github/actions/release-notes
 npm ci
 npm run typecheck     # tsc --noEmit
 npm test              # node --test over test/*.test.ts
-npm run build         # rebuilds BOTH lint/dist and generate/dist — commit the result
+npm run build         # rebuilds lint/dist, generate/dist and apply/dist — commit the result
 ```
 
-The bundles under `lint/dist/` and `generate/dist/` are committed and CI fails if they drift from a
+The bundles under `lint/dist/`, `generate/dist/` and `apply/dist/` are committed and CI fails if they drift from a
 fresh build.
 
 ---
