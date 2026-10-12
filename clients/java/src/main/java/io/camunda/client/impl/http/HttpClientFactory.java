@@ -37,6 +37,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -49,6 +50,7 @@ import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.RequestConfig.Builder;
+import org.apache.hc.client5.http.impl.ChainElement;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -94,9 +96,17 @@ public class HttpClientFactory {
           .registerModule(new StringFilterPropertyModule());
 
   private final CamundaClientConfiguration config;
+  private final Duration responseDeadlineMargin;
 
   public HttpClientFactory(final CamundaClientConfiguration config) {
+    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN);
+  }
+
+  /** Lets tests shorten the margin of the response deadline. */
+  HttpClientFactory(
+      final CamundaClientConfiguration config, final Duration responseDeadlineMargin) {
     this.config = config;
+    this.responseDeadlineMargin = responseDeadlineMargin;
   }
 
   public HttpClient createClient() {
@@ -137,6 +147,10 @@ public class HttpClientFactory {
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)
             .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
+            // ResponseDeadlineChainHandler discards the whole connection on expiry, which is only
+            // safe with one exchange per HTTP/2 connection. Pin it, as newer httpclient5 versions
+            // default to multiplexing.
+            .setMessageMultiplexing(false)
             .setMaxConnPerRoute(config.getMaxHttpConnections());
 
     if (config.useClientSideLoadBalancing()) {
@@ -235,6 +249,17 @@ public class HttpClientFactory {
             i -> {
               builder.addExecInterceptorLast("handler-" + i, chainHandlers.get(i));
             });
+
+    // httpclient5 5.6.1+ no longer applies the response timeout on HTTP/2 connections, so bound
+    // every exchange client-side to avoid requests (and e.g. job workers) hanging forever.
+    // The handler goes directly in front of the transport, behind the configured handlers. That
+    // way the deadline only starts once the connection has been leased and connected, like the
+    // response timeout it backs up, and the retry executor in front of it runs it for every
+    // attempt and sees its failure.
+    builder.addExecInterceptorBefore(
+        ChainElement.MAIN_TRANSPORT.name(),
+        ResponseDeadlineChainHandler.NAME,
+        new ResponseDeadlineChainHandler(responseDeadlineMargin));
 
     return builder;
   }
