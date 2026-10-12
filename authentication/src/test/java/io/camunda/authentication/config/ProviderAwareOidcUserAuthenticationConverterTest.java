@@ -82,7 +82,7 @@ class ProviderAwareOidcUserAuthenticationConverterTest {
         Map.of("okta", true),
         providerConverters,
         Map.of("okta", List.of("iss", "https://camunda.com/claims/client_id")),
-        Map.of());
+        new PhysicalTenantOidcSettingsRegistry(Map.of()));
   }
 
   private static OAuth2AuthenticationToken authentication(

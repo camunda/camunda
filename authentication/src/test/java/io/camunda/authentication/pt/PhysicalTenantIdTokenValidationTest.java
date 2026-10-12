@@ -13,8 +13,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.config.OidcOverrideBeansConfiguration;
+import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
@@ -249,8 +251,14 @@ class PhysicalTenantIdTokenValidationTest {
     when(port.getOidcAuthenticationConfigurations()).thenReturn(rootProviders);
     final var rootValidators =
         new TokenValidatorFactory(rootProviders, Duration.ofSeconds(60), List.of());
-    return new OidcOverrideBeansConfiguration(new CamundaSecurityLibraryProperties())
-        .idTokenDecoderFactory(rootValidators, port, environment);
+    final var configuration =
+        new OidcOverrideBeansConfiguration(new CamundaSecurityLibraryProperties());
+    final var settings =
+        configuration.physicalTenantOidcSettings(
+            environment,
+            mock(MembershipPort.class),
+            MembershipResolutionContextPropagator.identity());
+    return configuration.idTokenDecoderFactory(rootValidators, port, settings);
   }
 
   private static void bindPhysicalTenant(final String tenantId) {

@@ -230,7 +230,8 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
         AdditionalJwkSetUrisByRegistrationId.empty(),
         membershipPort,
         propagator,
-        environment);
+        environment,
+        configuration.physicalTenantOidcSettings(environment, membershipPort, propagator));
   }
 
   private static OAuth2AuthenticationToken login(

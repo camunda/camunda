@@ -7,14 +7,11 @@
  */
 package io.camunda.authentication.config;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
-import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -44,7 +41,7 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
   private final LazyTokenClaimsConverter defaultTokenClaimsConverter;
   private final Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId;
   private final Map<String, List<String>> identityClaimsByRegistrationId;
-  private final Map<String, PhysicalTenantOidcSettings> settingsByPhysicalTenant;
+  private final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings;
   private final Map<String, Map<String, JwtDecoder>> tenantJwtDecoders = new ConcurrentHashMap<>();
 
   ProviderAwareOidcUserAuthenticationConverter(
@@ -56,7 +53,7 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
       final Map<String, Boolean> preferIdTokenClaimsByRegistrationId,
       final Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId,
       final Map<String, List<String>> identityClaimsByRegistrationId,
-      final Map<String, PhysicalTenantOidcSettings> settingsByPhysicalTenant) {
+      final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings) {
     super(
         authorizedClientRepository,
         accessTokenDecoderFactory,
@@ -68,7 +65,7 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
     this.defaultTokenClaimsConverter = defaultTokenClaimsConverter;
     this.tokenClaimsConvertersByRegistrationId = Map.copyOf(tokenClaimsConvertersByRegistrationId);
     this.identityClaimsByRegistrationId = Map.copyOf(identityClaimsByRegistrationId);
-    this.settingsByPhysicalTenant = Map.copyOf(settingsByPhysicalTenant);
+    this.physicalTenantOidcSettings = physicalTenantOidcSettings;
   }
 
   /**
@@ -79,7 +76,7 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
    */
   @Override
   protected Map<String, Object> getClaims(final OAuth2AuthenticationToken authenticationToken) {
-    final var settings = currentTenantSettings();
+    final var settings = physicalTenantOidcSettings.current();
     if (settings == null) {
       return super.getClaims(authenticationToken);
     }
@@ -97,7 +94,7 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
 
   @Override
   protected JwtDecoder getJwtDecoder(final ClientRegistration clientRegistration) {
-    final var settings = currentTenantSettings();
+    final var settings = physicalTenantOidcSettings.current();
     if (settings == null) {
       return super.getJwtDecoder(clientRegistration);
     }
@@ -113,27 +110,11 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
                     settings.validatorFactory()));
   }
 
-  private PhysicalTenantOidcSettings currentTenantSettings() {
-    final var physicalTenantId = PhysicalTenantContext.currentOrNull();
-    if (physicalTenantId == null || DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-      return null;
-    }
-    final var settings = settingsByPhysicalTenant.get(physicalTenantId);
-    if (settings == null) {
-      throw new OAuth2AuthenticationException(
-          new OAuth2Error(
-              OAuth2ErrorCodes.INVALID_TOKEN,
-              "No OIDC configuration for physical tenant '" + physicalTenantId + "'",
-              null));
-    }
-    return settings;
-  }
-
   @Override
   public CamundaAuthentication convert(final Authentication authentication) {
     final var oauth2Authentication = (OAuth2AuthenticationToken) authentication;
     final var registrationId = oauth2Authentication.getAuthorizedClientRegistrationId();
-    final var settings = currentTenantSettings();
+    final var settings = physicalTenantOidcSettings.current();
     final var tokenClaimsConverter = tokenClaimsConverter(settings, registrationId);
     final var identityClaims =
         settings == null
@@ -174,16 +155,4 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
       claims.put(claimName, value.toString());
     }
   }
-
-  /**
-   * OIDC settings of one non-default physical tenant, resolved from the tenant's own providers: the
-   * access-token validators, and per registration id the additional JWKS URIs, claim preference and
-   * claim mapping.
-   */
-  record PhysicalTenantOidcSettings(
-      TokenValidatorFactory validatorFactory,
-      AdditionalJwkSetUrisByRegistrationId additionalJwkSetUris,
-      Map<String, Boolean> preferIdTokenClaimsByRegistrationId,
-      Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId,
-      Map<String, List<String>> identityClaimsByRegistrationId) {}
 }

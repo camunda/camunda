@@ -167,17 +167,18 @@ class OidcOverrideBeansConfigurationPhysicalTenantClaimMappingTest {
     final var propagator = MembershipResolutionContextPropagator.identity();
     final var defaultConverter =
         new LazyTokenClaimsConverter("root_user", null, false, membershipPort, propagator);
-    return new OidcOverrideBeansConfiguration(cslProperties)
-        .oidcUserAuthenticationConverter(
-            mock(OAuth2AuthorizedClientRepository.class),
-            mock(OidcAccessTokenDecoderFactory.class),
-            defaultConverter,
-            mock(HttpServletRequest.class),
-            port,
-            AdditionalJwkSetUrisByRegistrationId.empty(),
-            membershipPort,
-            propagator,
-            environment);
+    final var configuration = new OidcOverrideBeansConfiguration(cslProperties);
+    return configuration.oidcUserAuthenticationConverter(
+        mock(OAuth2AuthorizedClientRepository.class),
+        mock(OidcAccessTokenDecoderFactory.class),
+        defaultConverter,
+        mock(HttpServletRequest.class),
+        port,
+        AdditionalJwkSetUrisByRegistrationId.empty(),
+        membershipPort,
+        propagator,
+        environment,
+        configuration.physicalTenantOidcSettings(environment, membershipPort, propagator));
   }
 
   private static OAuth2AuthenticationToken login(final String registrationId) {
