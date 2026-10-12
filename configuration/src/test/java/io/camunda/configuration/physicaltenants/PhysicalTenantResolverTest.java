@@ -584,6 +584,8 @@ class PhysicalTenantResolverTest {
     properties.put("camunda.security.authentication.oidc.client-id", "keycloak-client");
     properties.put(
         "camunda.security.authentication.oidc.issuer-uri", "https://keycloak.example.com");
+    properties.put("camunda.security.authentication.oidc.groups-claim", "groups");
+    properties.put("camunda.security.authentication.oidc.user-info-augmentation.enabled", true);
     properties.put("camunda.security.authentication.providers.oidc.okta.client-id", "okta-client");
     properties.put(
         "camunda.security.authentication.providers.oidc.okta.issuer-uri",
@@ -603,9 +605,13 @@ class PhysicalTenantResolverTest {
     // when
     final PhysicalTenantResolver resolver = newResolver();
 
-    // then each tenant only trusts its assigned provider
+    // then each tenant only trusts its assigned provider, and a dropped default slot keeps the
+    // settings that apply to the whole tenant
     final var tenantA = resolver.forPhysicalTenant("tenanta").getSecurity().getAuthentication();
     assertThat(tenantA.getOidc().getClientId()).isNull();
+    assertThat(tenantA.getOidc().getIssuerUri()).isNull();
+    assertThat(tenantA.getOidc().getGroupsClaim()).isEqualTo("groups");
+    assertThat(tenantA.getOidc().getUserInfoAugmentation().isEnabled()).isTrue();
     assertThat(tenantA.getProviders().getOidc()).containsOnlyKeys("okta");
 
     final var tenantB = resolver.forPhysicalTenant("tenantb").getSecurity().getAuthentication();
