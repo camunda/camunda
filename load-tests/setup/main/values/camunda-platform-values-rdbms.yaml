@@ -41,6 +41,10 @@ orchestration:
         # Grant the dedicated leader-balancer client (declared via `identity.clients`) cluster-admin
         # access, so it can call the coordinated `/cluster/v2/rebalance` endpoint.
         camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
+        # Spike: dedicated actor pool per physical tenant, 1 CPU + 1 IO thread each.
+        camunda.system.physical-tenant-actor-pool.enabled: "true"
+        camunda.system.physical-tenant-actor-pool.cpu-thread-count: 1
+        camunda.system.physical-tenant-actor-pool.io-thread-count: 1
         # History cleanup adjust batch sizes
         camunda.data.secondary-storage.rdbms.history.history-cleanup-batch-size: 100000
         camunda.data.secondary-storage.rdbms.history.history-cleanup-process-instance-batch-size: 2000
