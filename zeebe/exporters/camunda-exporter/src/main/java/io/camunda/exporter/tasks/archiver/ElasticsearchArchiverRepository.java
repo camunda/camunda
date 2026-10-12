@@ -23,8 +23,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.CountRequest;
-import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
-import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
 import co.elastic.clients.elasticsearch.core.ReindexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
@@ -283,82 +281,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .toList();
 
     return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]));
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName, final Map<String, List<String>> keysByField) {
-    return deleteDocuments(sourceIndexName, keysByField, Map.of());
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
-    if (keysByField.isEmpty()) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    final var request =
-        new DeleteByQueryRequest.Builder()
-            .index(sourceIndexName)
-            .slices(AUTO_SLICES)
-            .conflicts(Conflicts.Proceed)
-            .query(buildFilterQuery(keysByField, filters))
-            .build();
-
-    final var timer = Timer.start();
-    return client
-        .deleteByQuery(request)
-        .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverDelete(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(DeleteByQueryResponse::total, executor)
-        .thenApplyAsync(ok -> null, executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField, Map.of());
-  }
-
-  @Override
-  public CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
-    if (keysByField.isEmpty()) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    final var request =
-        new ReindexRequest.Builder()
-            .source(src -> src.index(sourceIndexName).query(buildFilterQuery(keysByField, filters)))
-            .dest(dest -> dest.index(destinationIndexName))
-            .conflicts(Conflicts.Proceed)
-            .scroll(REINDEX_SCROLL_TIMEOUT)
-            .slices(AUTO_SLICES)
-            .build();
-
-    final var timer = Timer.start();
-    return client
-        .reindex(request)
-        .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(
-            response -> {
-              validateReindexResponse(sourceIndexName, response);
-              return null;
-            },
-            executor);
   }
 
   @Override
