@@ -43,7 +43,11 @@ const zeebe = c8.getCamundaRestClient();
 const zeebeGrpc = c8.getZeebeGrpcApiClient();
 const deploy = async (processFilePaths: string[]) => {
   try {
-    const results = await zeebe.deployResourcesFromFiles(processFilePaths);
+    const resources = processFilePaths.map((filePath) => ({
+      content: readFileSync(filePath, 'utf-8'),
+      name: basename(filePath),
+    }));
+    const results = await zeebe.deployResources(resources);
     return results;
   } catch (error) {
     console.error('Deployment failed:', error);
