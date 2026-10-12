@@ -6,57 +6,39 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	advancedStringFilterSchema,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {clusterVariableResultSchema} from './gen/zod/clusterVariableResultSchema';
+import {clusterVariableScopeEnumSchema} from './gen/zod/clusterVariableScopeEnumSchema';
+import {clusterVariableSearchQueryRequestSchema} from './gen/zod/clusterVariableSearchQueryRequestSchema';
+import {clusterVariableSearchQueryResultSchema} from './gen/zod/clusterVariableSearchQueryResultSchema';
+import {clusterVariableSearchResultSchema} from './gen/zod/clusterVariableSearchResultSchema';
+import {createClusterVariableRequestSchema} from './gen/zod/createClusterVariableRequestSchema';
+import {updateClusterVariableRequestSchema} from './gen/zod/updateClusterVariableRequestSchema';
+import type {ClusterVariableResult} from './gen/types/ClusterVariableResult';
+import type {ClusterVariableScopeEnumKey} from './gen/types/ClusterVariableScopeEnum';
+import type {ClusterVariableSearchQueryRequest} from './gen/types/ClusterVariableSearchQueryRequest';
+import type {ClusterVariableSearchQueryResult} from './gen/types/ClusterVariableSearchQueryResult';
+import type {ClusterVariableSearchResult} from './gen/types/ClusterVariableSearchResult';
+import type {CreateClusterVariableRequest} from './gen/types/CreateClusterVariableRequest';
+import type {UpdateClusterVariableRequest} from './gen/types/UpdateClusterVariableRequest';
 
-const clusterVariableScopeSchema = z.enum(['GLOBAL', 'TENANT']);
-type ClusterVariableScope = z.infer<typeof clusterVariableScopeSchema>;
+const clusterVariableScopeSchema = clusterVariableScopeEnumSchema;
+type ClusterVariableScope = ClusterVariableScopeEnumKey;
 
-const clusterVariableSchema = z.object({
-	name: z.string(),
-	scope: clusterVariableScopeSchema,
-	tenantId: z.string().nullable(),
-	value: z.string(),
-});
-type ClusterVariable = z.infer<typeof clusterVariableSchema>;
+const clusterVariableSchema = clusterVariableResultSchema;
+type ClusterVariable = ClusterVariableResult;
 
-const clusterVariableSearchResultSchema = clusterVariableSchema.extend({
-	isTruncated: z.boolean(),
-});
-type ClusterVariableSearchResult = z.infer<typeof clusterVariableSearchResultSchema>;
+const createClusterVariableRequestBodySchema = createClusterVariableRequestSchema;
+type CreateClusterVariableRequestBody = CreateClusterVariableRequest;
 
-const createClusterVariableRequestBodySchema = z.object({
-	name: z.string(),
-	value: z.unknown(),
-});
-type CreateClusterVariableRequestBody = z.infer<typeof createClusterVariableRequestBodySchema>;
+const updateClusterVariableRequestBodySchema = updateClusterVariableRequestSchema;
+type UpdateClusterVariableRequestBody = UpdateClusterVariableRequest;
 
-const updateClusterVariableRequestBodySchema = z.object({
-	value: z.unknown(),
-});
-type UpdateClusterVariableRequestBody = z.infer<typeof updateClusterVariableRequestBodySchema>;
+const queryClusterVariablesRequestBodySchema = clusterVariableSearchQueryRequestSchema;
+type QueryClusterVariablesRequestBody = ClusterVariableSearchQueryRequest;
 
-const queryClusterVariablesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'value', 'tenantId', 'scope'] as const,
-	filter: z.object({
-		name: advancedStringFilterSchema.optional(),
-		value: advancedStringFilterSchema.optional(),
-		scope: getEnumFilterSchema(clusterVariableScopeSchema).optional(),
-		tenantId: advancedStringFilterSchema.optional(),
-		isTruncated: z.boolean().optional(),
-	}),
-});
-type QueryClusterVariablesRequestBody = z.infer<typeof queryClusterVariablesRequestBodySchema>;
-
-const queryClusterVariablesResponseBodySchema = getQueryResponseBodySchema(clusterVariableSearchResultSchema);
-type QueryClusterVariablesResponseBody = z.infer<typeof queryClusterVariablesResponseBodySchema>;
+const queryClusterVariablesResponseBodySchema = clusterVariableSearchQueryResultSchema;
+type QueryClusterVariablesResponseBody = ClusterVariableSearchQueryResult;
 
 const searchClusterVariables = {
 	method: 'POST',

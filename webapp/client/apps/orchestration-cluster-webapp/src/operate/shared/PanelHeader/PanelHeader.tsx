@@ -9,7 +9,7 @@
 import {forwardRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Header} from './styled';
-import {Title as PanelTitle} from '../PanelTitle/styled';
+import {Title as PanelTitle} from '#/operate/shared/PanelTitle/styled';
 
 type Props = {
 	title?: string;

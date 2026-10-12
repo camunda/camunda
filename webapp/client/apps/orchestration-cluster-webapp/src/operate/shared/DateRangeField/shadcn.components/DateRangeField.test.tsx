@@ -12,7 +12,7 @@ import {describe, expect, vi, afterEach} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {format} from 'date-fns';
 import {MockDateRangeField} from './mocks';
-import {getWrapper} from '../getWrapper';
+import {getWrapper} from '#/operate/shared/DateRangeField/getWrapper';
 
 const pad = (value: string | number) => {
 	return String(value).padStart(2, '0');

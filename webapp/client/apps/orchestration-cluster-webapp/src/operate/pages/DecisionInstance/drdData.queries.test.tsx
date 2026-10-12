@@ -48,7 +48,7 @@ async function renderQuery(decisionEvaluationKey?: string) {
 function pageSchema(after?: string) {
 	return z.object({
 		filter: z.object({decisionEvaluationKey: z.literal(EVALUATION_KEY)}),
-		sort: z.tuple([z.object({field: z.literal('decisionEvaluationInstanceKey'), order: z.literal('asc')})]),
+		sort: z.tuple([z.object({field: z.literal('decisionEvaluationInstanceKey'), order: z.literal('ASC')})]),
 		page: z.object({after: after === undefined ? z.undefined().optional() : z.literal(after), limit: z.literal(1000)}),
 	});
 }

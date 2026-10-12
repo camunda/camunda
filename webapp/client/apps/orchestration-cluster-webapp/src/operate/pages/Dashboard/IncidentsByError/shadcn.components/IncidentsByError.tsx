@@ -16,9 +16,9 @@ import {ErrorBoundary} from 'react-error-boundary';
 import {InstancesBar} from '#/operate/components/InstancesBar/shadcn.components/InstancesBar';
 import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/EmptyState';
 import emptyStateIconUrl from '#/operate/assets/empty-state-process-instances-by-name.svg';
-import {ExpandableList} from '../../shadcn.components/ExpandableList';
-import {ExpandedRowErrorFallback} from '../../shadcn.components/ExpandedRowErrorFallback';
-import {incidentsByErrorInfiniteQuery} from '../incidentsByError.queries';
+import {ExpandableList} from '#/operate/pages/Dashboard/shadcn.components/ExpandableList';
+import {ExpandedRowErrorFallback} from '#/operate/pages/Dashboard/shadcn.components/ExpandedRowErrorFallback';
+import {incidentsByErrorInfiniteQuery} from '#/operate/pages/Dashboard/IncidentsByError/incidentsByError.queries';
 import {IncidentsByErrorDefinitions} from './IncidentsByErrorDefinitions';
 
 const IncidentsByError: React.FC = () => {

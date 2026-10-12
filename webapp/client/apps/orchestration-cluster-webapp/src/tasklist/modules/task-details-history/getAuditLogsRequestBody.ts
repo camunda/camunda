@@ -7,11 +7,14 @@
  */
 
 import type {QueryUserTaskAuditLogsRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {OffsetPagedRequestBody} from '#/shared/http/queries';
 import type {TaskDetailsHistorySort} from './sortUtils';
 
 const MAX_AUDIT_LOGS_PER_REQUEST = 50;
 
-function getAuditLogsRequestBody(sort: TaskDetailsHistorySort): QueryUserTaskAuditLogsRequestBody {
+function getAuditLogsRequestBody(
+	sort: TaskDetailsHistorySort,
+): OffsetPagedRequestBody<QueryUserTaskAuditLogsRequestBody> {
 	return {
 		sort: [sort],
 		filter: {result: 'SUCCESS'},

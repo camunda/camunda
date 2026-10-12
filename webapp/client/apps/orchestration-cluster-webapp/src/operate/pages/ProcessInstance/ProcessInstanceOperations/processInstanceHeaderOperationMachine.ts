@@ -14,7 +14,7 @@ import {endpoints} from '#/shared/http/endpoints';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {handleOperationError} from '#/operate/shared/utils/handleOperationError';
-import {processInstanceQuery} from '../processInstance.queries';
+import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
 
 type HeaderAction = 'retry' | 'cancel' | 'delete' | 'suspend' | 'resume';
 type Input = {

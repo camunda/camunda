@@ -10,10 +10,10 @@ import {describe, expect, it} from 'vitest';
 import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getHighlightableRules} from './getHighlightableRules';
 
-function createMatchedRules(ruleIndexes: Array<number | null>): GetDecisionInstanceResponseBody['matchedRules'] {
+function createMatchedRules(ruleIndexes: number[]): GetDecisionInstanceResponseBody['matchedRules'] {
 	return ruleIndexes.map((ruleIndex) => ({
 		ruleIndex,
-		ruleId: null,
+		ruleId: `rule-${ruleIndex}`,
 		evaluatedOutputs: [],
 	}));
 }
@@ -27,11 +27,7 @@ describe('getHighlightableRules', () => {
 		expect(getHighlightableRules([])).toEqual([]);
 	});
 
-	it('should ignore matched rules without an index', () => {
-		expect(getHighlightableRules(createMatchedRules([null, null]))).toEqual([]);
-	});
-
-	it('should return distinct non-null rule indexes in their original order', () => {
-		expect(getHighlightableRules(createMatchedRules([3, null, 1, 3, 2, 1, 2]))).toEqual([3, 1, 2]);
+	it('should return distinct rule indexes in their original order', () => {
+		expect(getHighlightableRules(createMatchedRules([3, 1, 3, 2, 1, 2]))).toEqual([3, 1, 2]);
 	});
 });

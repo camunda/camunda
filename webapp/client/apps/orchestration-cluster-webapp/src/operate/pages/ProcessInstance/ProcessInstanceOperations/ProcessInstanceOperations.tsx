@@ -20,7 +20,7 @@ import {MigrationHelperModal} from '#/operate/shared/MigrationHelperModal/Migrat
 import {isMigrationHelperHidden} from '#/operate/shared/MigrationHelperModal/migrationHelperPreference';
 import {getInstanceMigrationLocation} from '#/operate/pages/Processes/instanceMigration';
 import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
-import {useProcessInstancePage} from '../useProcessInstancePage';
+import {useProcessInstancePage} from '#/operate/pages/ProcessInstance/useProcessInstancePage';
 import {processInstanceHeaderOperationMachine, type HeaderAction} from './processInstanceHeaderOperationMachine';
 import {FitContentInlineLoading} from './styled';
 

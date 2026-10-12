@@ -14,7 +14,7 @@ import {AiAgentIcon} from '#/operate/shared/OperationsLogDetailsModal/AiAgentIco
 import {McpIcon} from '#/operate/shared/OperationsLogDetailsModal/McpIcon';
 import {hasActorIcon} from '#/operate/shared/OperationsLogDetailsModal/operationsLogUtils';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
-import {AuthorTooltip, OperationLogName, TooltipCodeSnippet} from '../styled';
+import {AuthorTooltip, OperationLogName, TooltipCodeSnippet} from '#/operate/pages/OperationsLog/styled';
 
 type Props = {
 	item: AuditLog;
@@ -26,7 +26,7 @@ const CellActor: React.FC<Props> = ({item}) => {
 	const getTooltipActorContent = (actor: AuditLogActorType | 'AGENT') => {
 		const label =
 			actor === 'AGENT'
-				? t('operate.operationsLog.actorTooltip.aiAgentOnBehalfOf', {actorType: item.actorType.toLowerCase()})
+				? t('operate.operationsLog.actorTooltip.aiAgentOnBehalfOf', {actorType: item.actorType?.toLowerCase() ?? ''})
 				: spaceAndCapitalize(actor);
 		return (
 			<AuthorTooltip>

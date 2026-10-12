@@ -13,7 +13,7 @@ import {Delete} from './Delete';
 import {ResolveIncident} from './ResolveIncident';
 import {Resume} from './Resume';
 import {Suspend} from './Suspend';
-import type {OperationConfig} from '../types';
+import type {OperationConfig} from '#/operate/shared/Operations/types';
 
 type Props = {
 	operation: OperationConfig;

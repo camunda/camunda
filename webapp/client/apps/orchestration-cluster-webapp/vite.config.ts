@@ -56,6 +56,16 @@ const config = defineConfig(({mode}) => ({
 			'#/admin': path.resolve(import.meta.dirname, './src/admin'),
 		},
 	},
+
+	optimizeDeps: {
+		include: [
+			'@tanstack/react-devtools',
+			'@tanstack/react-query-devtools',
+			'@tanstack/react-router-devtools',
+			'i18next-browser-languagedetector',
+			'react-dom/client',
+		],
+	},
 	plugins: mode === 'sbom' ? [...basePlugins, sbom({specVersion: '1.6'})] : basePlugins,
 	server: {
 		port: 3000,

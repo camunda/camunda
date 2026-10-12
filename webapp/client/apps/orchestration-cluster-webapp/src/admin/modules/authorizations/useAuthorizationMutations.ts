@@ -9,10 +9,14 @@
 import {useMutation, useQueryClient, type QueryKey} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {toast} from '@camunda/design-system';
-import type {Authorization, QueryAuthorizationsRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {
+	Authorization,
+	CreateAuthorizationRequestBody,
+	QueryAuthorizationsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
-import {endpoints, type CreateAuthorizationRequestBody} from '#/shared/http/endpoints';
+import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
 import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
@@ -27,7 +31,7 @@ function getAuthorizationId({authorizationKey}: Pick<Authorization, 'authorizati
 function compareAuthorizations(a: Authorization, b: Authorization, queryKey: QueryKey): number {
 	const sort = (queryKey[1] as QueryAuthorizationsRequestBody | undefined)?.sort?.[0];
 	const field = sort?.field ?? DEFAULT_SORT_FIELD;
-	const direction = sort?.order === 'desc' ? -1 : 1;
+	const direction = sort?.order === 'DESC' ? -1 : 1;
 	const left = a[field] ?? '';
 	const right = b[field] ?? '';
 
@@ -73,8 +77,9 @@ function useAuthorizationMutations() {
 			}
 			const {authorizationKey} = (await response.json()) as Pick<Authorization, 'authorizationKey'>;
 			return {
+				resourceId: null,
+				resourcePropertyName: null,
 				...authorization,
-				resourcePropertyName: authorization.resourcePropertyName ?? null,
 				authorizationKey,
 			} as Authorization;
 		},

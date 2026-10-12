@@ -11,7 +11,7 @@ import type {
 	MessageSubscription,
 	QueryMessageSubscriptionsRequestBody,
 	QueryMessageSubscriptionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DEFAULT_PAGE_SIZE, type McpProcessesSearch} from './searchSchema';
 
 // A blank property carries no more information than an absent one, and the UI renders both
@@ -56,7 +56,7 @@ function getMcpProcessToolsRequestBody(search: McpProcessesSearch): QueryMessage
 	const searchTerm = search.search?.trim();
 
 	return {
-		sort: [{field: 'toolName', order: search.sortOrder ?? 'asc'}],
+		sort: [{field: 'toolName', order: search.sortOrder ?? 'ASC'}],
 		filter: {
 			messageSubscriptionType: 'START_EVENT',
 			messageSubscriptionState: {$neq: 'DELETED'},

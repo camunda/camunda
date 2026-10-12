@@ -507,7 +507,7 @@ paths:
         filters for state are ignored and overridden during this batch operation.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:

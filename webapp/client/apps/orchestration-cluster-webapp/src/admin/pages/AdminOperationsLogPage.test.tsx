@@ -11,7 +11,7 @@ import {userEvent} from 'vitest/browser';
 import {TooltipProvider} from '@camunda/design-system';
 import {describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11';
 import {AdminOperationsLogPage, type AdminOperationsLogPageProps} from './AdminOperationsLogPage';
 
 const DEBOUNCED = {timeout: 3000};
@@ -315,7 +315,7 @@ describe('<AdminOperationsLogPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Actor'}));
 
 		// then
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'actorId', sortOrder: 'asc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'actorId', sortOrder: 'ASC', page: undefined});
 	});
 
 	it('should return to the first page when the page size changes', async () => {

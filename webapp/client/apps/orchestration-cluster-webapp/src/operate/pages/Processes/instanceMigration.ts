@@ -64,7 +64,7 @@ function getInstanceMigration(state: unknown): {source: ProcessDefinition; scope
 		version: instance.processDefinitionVersion,
 		versionTag: instance.processDefinitionVersionTag,
 		tenantId: instance.tenantId,
-		resourceName: null,
+		resourceName: 'unknown',
 		hasStartForm: false,
 		state: 'ACTIVE',
 	};

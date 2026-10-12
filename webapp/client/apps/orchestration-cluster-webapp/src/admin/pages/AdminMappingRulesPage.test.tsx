@@ -118,20 +118,20 @@ describe('<AdminMappingRulesPage />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Mapping rule ID'}));
 
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'mappingRuleId', sortOrder: 'desc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'mappingRuleId', sortOrder: 'DESC', page: undefined});
 	});
 
 	it('should sort by name, claim name, or claim value when the reader sorts those columns', async () => {
 		const {screen, onSearchChange} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Name'}));
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'name', sortOrder: 'asc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'name', sortOrder: 'ASC', page: undefined});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Claim name'}));
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'claimName', sortOrder: 'asc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'claimName', sortOrder: 'ASC', page: undefined});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Claim value'}));
-		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'claimValue', sortOrder: 'asc', page: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'claimValue', sortOrder: 'ASC', page: undefined});
 	});
 
 	it('should return to the first page when the page size changes', async () => {

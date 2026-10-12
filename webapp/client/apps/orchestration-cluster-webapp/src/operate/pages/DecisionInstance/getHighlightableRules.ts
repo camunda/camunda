@@ -13,7 +13,7 @@ function getHighlightableRules(matchedRules: GetDecisionInstanceResponseBody['ma
 		return [];
 	}
 
-	return Array.from(new Set(matchedRules.flatMap(({ruleIndex}) => (ruleIndex === null ? [] : [ruleIndex]))));
+	return Array.from(new Set(matchedRules.map(({ruleIndex}) => ruleIndex)));
 }
 
 export {getHighlightableRules};

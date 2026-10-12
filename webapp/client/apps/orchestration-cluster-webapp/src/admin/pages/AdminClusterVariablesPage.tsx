@@ -106,13 +106,13 @@ const AdminClusterVariablesPage: React.FC<AdminClusterVariablesPageProps> = ({
 		[t],
 	);
 
-	const sortState = useMemo<SortingState>(() => [{id: 'name', desc: search.sortOrder === 'desc'}], [search.sortOrder]);
+	const sortState = useMemo<SortingState>(() => [{id: 'name', desc: search.sortOrder === 'DESC'}], [search.sortOrder]);
 
 	const handleSortingChange = useCallback(
 		(state: SortingState) => {
 			const [sorted] = state;
 			onSearchChange({
-				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'desc' : 'asc',
+				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'DESC' : 'ASC',
 				page: undefined,
 			});
 		},

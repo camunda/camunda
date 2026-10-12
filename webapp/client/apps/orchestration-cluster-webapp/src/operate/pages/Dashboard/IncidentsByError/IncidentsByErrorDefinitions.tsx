@@ -12,8 +12,8 @@ import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camun
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {incidentsByErrorDefinitionsQuery} from './incidentsByError.queries';
 import {truncateErrorMessage} from './truncateErrorMessage';
-import {dashboardTenantId, useDashboardTenants} from '../processesLinkFilters';
-import {Li, LinkWrapper} from '../styled';
+import {dashboardTenantId, useDashboardTenants} from '#/operate/pages/Dashboard/processesLinkFilters';
+import {Li, LinkWrapper} from '#/operate/pages/Dashboard/styled';
 
 type Props = {
 	errorHashCode: number;

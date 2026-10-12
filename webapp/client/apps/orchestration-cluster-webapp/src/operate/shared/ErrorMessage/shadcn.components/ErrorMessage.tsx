@@ -7,7 +7,7 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {EmptyMessage} from '../../EmptyMessage/shadcn.components/EmptyMessage';
+import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 
 type Props = {
 	message?: string;

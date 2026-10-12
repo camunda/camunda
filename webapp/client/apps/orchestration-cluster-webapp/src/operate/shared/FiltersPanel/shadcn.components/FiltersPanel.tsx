@@ -10,7 +10,7 @@ import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Button} from '@camunda/design-system';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
-import {CollapsablePanel} from '../../CollapsablePanel/shadcn.components/CollapsablePanel';
+import {CollapsablePanel} from '#/operate/shared/CollapsablePanel/shadcn.components/CollapsablePanel';
 
 type Props = {
 	localStorageKey:

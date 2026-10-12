@@ -9,10 +9,17 @@
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {Link} from '@tanstack/react-router';
-import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.11';
 import {InstancesBar} from '#/operate/components/InstancesBar/shadcn.components/InstancesBar';
-import {instancesByProcessVersionsQuery, type DrainingLookup} from '../instancesByProcess.queries';
-import {dashboardTenantId, runningOrAllInstancesFilter, useDashboardTenants} from '../../processesLinkFilters';
+import {
+	instancesByProcessVersionsQuery,
+	type DrainingLookup,
+} from '#/operate/pages/Dashboard/InstancesByProcess/instancesByProcess.queries';
+import {
+	dashboardTenantId,
+	runningOrAllInstancesFilter,
+	useDashboardTenants,
+} from '#/operate/pages/Dashboard/processesLinkFilters';
 
 type Props = {
 	processDefinitionId: string;

@@ -10,6 +10,8 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
@@ -20,6 +22,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createQueryDecisionDefinitionsResponse} from '#/shared-test-modules/api-mocks/decision-definitions';
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -31,6 +34,12 @@ test.beforeEach(({network}) => {
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
+		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
 	);
 });
