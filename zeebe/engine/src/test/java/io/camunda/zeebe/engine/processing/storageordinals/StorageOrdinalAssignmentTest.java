@@ -20,12 +20,12 @@ import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferen
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
@@ -135,7 +135,144 @@ public final class StorageOrdinalAssignmentTest {
                 .getStorageOrdinal())
         .isEqualTo(FIXED_ORDINAL);
 
+    assertThat(
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                    MessageStartEventSubscriptionIntent.CORRELATED)
+                .withBpmnProcessId("message-start-process")
+                .getFirst()
+                .getValue())
+        .satisfies(
+            correlated -> {
+              assertThat(correlated.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+              assertThat(correlated.getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+            });
+
     assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToMessageCorrelationRecordsOfAStartEvent() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("message-correlation-start-process")
+                .startEvent()
+                .message("ordinal-correlation-start-message")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when: the message is correlated synchronously, which starts an instance
+    final var correlated =
+        engine
+            .messageCorrelation()
+            .withName("ordinal-correlation-start-message")
+            .withCorrelationKey("")
+            .correlate();
+
+    // then: CORRELATING carries no instance yet, CORRELATED carries the new instance's ordinal
+    assertThat(
+            RecordingExporter.messageCorrelationRecords(MessageCorrelationIntent.CORRELATING)
+                .withName("ordinal-correlation-start-message")
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+    assertThat(correlated.getIntent()).isEqualTo(MessageCorrelationIntent.CORRELATED);
+    assertThat(correlated.getValue().getProcessInstanceKey()).isPositive();
+    assertThat(correlated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToMessageCorrelationRecordsOfASubscription() {
+    // given: an instance waiting at an intermediate message catch event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("message-correlation-catch-process")
+                .startEvent()
+                .intermediateCatchEvent("message-catch")
+                .message(
+                    m ->
+                        m.name("ordinal-correlation-catch-message")
+                            .zeebeCorrelationKeyExpression("key"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("message-correlation-catch-process")
+            .withVariable("key", "correlation-key-2")
+            .create();
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    final var correlated =
+        engine
+            .messageCorrelation()
+            .withName("ordinal-correlation-catch-message")
+            .withCorrelationKey("correlation-key-2")
+            .correlate();
+
+    // then
+    assertThat(correlated.getIntent()).isEqualTo(MessageCorrelationIntent.CORRELATED);
+    assertThat(correlated.getValue().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(correlated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToBufferedMessageStartCorrelation() {
+    // given: a message start event whose first instance holds the correlation key lock
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("buffered-message-start-process")
+                .startEvent()
+                .message(m -> m.name("ordinal-buffered-start-message"))
+                .serviceTask("hold", t -> t.zeebeJobType("ordinal-hold-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    engine
+        .message()
+        .withName("ordinal-buffered-start-message")
+        .withCorrelationKey("buffered-key")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+    final long firstInstanceKey =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CORRELATED)
+            .withBpmnProcessId("buffered-message-start-process")
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    // and: a second message with the same correlation key is buffered behind the lock
+    engine
+        .message()
+        .withName("ordinal-buffered-start-message")
+        .withCorrelationKey("buffered-key")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+
+    // when: the holder completes, the buffered message starts the next instance
+    engine.job().ofInstance(firstInstanceKey).withType("ordinal-hold-job").complete();
+
+    // then: the second CORRELATED carries the configured ordinal too
+    final var secondCorrelated =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CORRELATED)
+            .withBpmnProcessId("buffered-message-start-process")
+            .limit(2)
+            .asList()
+            .get(1)
+            .getValue();
+    assertThat(secondCorrelated.getProcessInstanceKey()).isNotEqualTo(firstInstanceKey);
+    assertThat(secondCorrelated.getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
   }
 
   @Test
@@ -479,14 +616,13 @@ public final class StorageOrdinalAssignmentTest {
         .withCorrelationKey("correlation-key-2")
         .publish();
 
-    // then: every subscription EVENT up to correlation carries the ordinal on both sides; the
-    // inter-partition CREATE/CORRELATE commands are excluded, commands are not exported
+    // then: every subscription record up to correlation carries the ordinal on both sides,
+    // including the inter-partition CREATE and CORRELATE commands
     assertThat(
             RecordingExporter.processMessageSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName("ordinal-catch-message")
                 .limit(r -> r.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED)
-                .filter(r -> r.getRecordType() == RecordType.EVENT)
                 .asList())
         .isNotEmpty()
         .extracting(record -> record.getValue().getStorageOrdinal())
@@ -496,7 +632,6 @@ public final class StorageOrdinalAssignmentTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName("ordinal-catch-message")
                 .limit(r -> r.getIntent() == MessageSubscriptionIntent.CORRELATED)
-                .filter(r -> r.getRecordType() == RecordType.EVENT)
                 .asList())
         .isNotEmpty()
         .extracting(record -> record.getValue().getStorageOrdinal())

@@ -113,6 +113,7 @@ public final class MessageSubscriptionCreateProcessor
         subscriptionRecord.isInterrupting(),
         subscriptionRecord.getTenantId(),
         subscriptionRecord.getBusinessIdBuffer(),
-        subscriptionKey);
+        subscriptionKey,
+        subscriptionRecord.getStorageOrdinal());
   }
 }

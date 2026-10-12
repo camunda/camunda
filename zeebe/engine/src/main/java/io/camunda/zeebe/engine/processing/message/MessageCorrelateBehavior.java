@@ -303,7 +303,8 @@ public final class MessageCorrelateBehavior {
                 messageData.variables(),
                 messageData.correlationKey(),
                 messageData.tenantId(),
-                subscription.subscriptionKey()));
+                subscription.subscriptionKey(),
+                subscription.storageOrdinal()));
   }
 
   /**
