@@ -1,0 +1,252 @@
+# Coverage plan — Visualize Reference Documents in Operate
+#
+# Seeded from the QA issue's T1–T7 scope, then scored against what exists.
+#
+# The scoring contradicts the QA issue's own framing, which is the reason this
+# file is worth having. That issue plans T1 to T6 as "Functional — Manual",
+# analytics as "Manual testing with browser dev tools", and negative and edge
+# cases as manual too. In fact 64 tests already cover them: the variables-tab
+# rendering, the list modal with its lower-bound count, both buttons, the
+# expired state, the analytics events, and every preview type through visual
+# regression. Only the manual-only framing was written down.
+#
+# One structural note. This feature lives in the LEGACY Operate client
+# (operate/client/), not the target orchestration-cluster webapp. A reader who
+# greps webapp/client for it finds nothing and concludes it is untested.
+#
+# For camunda/team-test-automation#83.
+
+epic: camunda/product-hub#3465
+qa_issue: camunda/product-hub#3647
+target_repo: camunda/camunda
+target_versions: ["8.10"]
+
+preconditions:
+  - what: A process instance with top-level document reference variables
+    why: >
+      Only top-level document references and top-level arrays of them are in
+      scope. The component tests supply the variable directly; the end-to-end
+      case deploys a process that produces one.
+
+specs:
+  # ---------------------------------------------------------------------------
+  # UI — end to end, against a real cluster
+  # ---------------------------------------------------------------------------
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/documentVariables.spec.ts
+    framework: playwright
+    covers: >
+      The whole path for one document: a real instance produces a document
+      reference variable, Operate renders it, and it downloads.
+    cases:
+      - id: DOC-UI-01
+        traces_to: >
+          A document reference variable on a real process instance renders in
+          the Variables tab and downloads
+        surface: ui
+        status: automated
+        notes: >
+          The only case here that crosses the real backend. Everything below
+          mocks the document, which is why this one carries T1 and T2 jointly
+          rather than either in detail.
+
+  # ---------------------------------------------------------------------------
+  # UI — visual regression (T7)
+  # ---------------------------------------------------------------------------
+  - path: operate/client/e2e-playwright/visual/documentVariables.spec.ts
+    framework: playwright
+    covers: >
+      Screenshots of every key state: the variables panel, the list modal, and
+      each preview type including its error state.
+    cases:
+      - id: DOC-VIS-01
+        traces_to: >
+          The variables panel with document references, and the document list
+          modal, match their approved screenshots
+        surface: ui
+        count: 2
+        status: automated
+
+      - id: DOC-VIS-02
+        traces_to: >
+          The JSON, image and PDF previews match their approved screenshots,
+          and the JSON and image previews do so in their error states too
+        surface: ui
+        count: 5
+        status: automated
+        notes: >
+          This is T3, T4 and T5 — the three preview types the QA issue planned
+          as manual. There is no PDF error-state screenshot, which is the one
+          asymmetry in the set; the browser's built-in viewer owns that state.
+
+      - id: DOC-VIS-03
+        traces_to: The download affordance matches its approved screenshot
+        surface: ui
+        status: automated
+
+  # ---------------------------------------------------------------------------
+  # Component — the variables tab and the documents view
+  # ---------------------------------------------------------------------------
+  - path: operate/client/src/App/ProcessInstance/BottomPanelTabs/VariablesTab/tests/documentVariable.test.tsx
+    framework: vitest
+    covers: >
+      How a document reference variable renders in the Variables tab: which
+      buttons appear for a single document versus an array, the expired badge,
+      and that a plain variable gets none of it.
+    cases:
+      - id: DOC-C-01
+        traces_to: >
+          A single-document variable offers download and preview, an array
+          offers "view documents" instead, an unsupported type disables
+          preview, and a regular variable offers nothing
+        surface: component
+        count: 7
+        status: automated
+
+      - id: DOC-C-02
+        traces_to: >
+          An expired document shows the Expired badge and has its preview and
+          download disabled, and a live one shows no badge
+        surface: component
+        count: 2
+        status: automated
+        notes: T6. The list-modal half of the same behaviour is DOC-C-05.
+
+      - id: DOC-C-03
+        traces_to: A variable that is not a document reference renders unchanged
+        surface: component
+        status: automated
+        notes: >
+          The QA issue's "Regression — ensure existing Variables tab behavior is
+          unaffected" line, which it planned as part of a manual pass.
+
+  - path: operate/client/src/App/ProcessInstance/DocumentsView/DocumentListModal/index.test.tsx
+    framework: vitest
+    covers: >
+      The document list modal — rows, per-row buttons, the exact and
+      lower-bound counts, loading and error hints, name truncation, expiry.
+    cases:
+      - id: DOC-C-04
+        traces_to: >
+          The list shows a row per document with its filename and size, each
+          with preview and download, and middle-truncates a long filename
+        surface: component
+        count: 3
+        status: automated
+
+      - id: DOC-C-05
+        traces_to: >
+          The list shows the exact count when fully loaded and a lower-bound
+          count with a plus sign when the value was truncated, plus loading and
+          error hints
+        surface: component
+        count: 4
+        status: automated
+        notes: >
+          The "3+ documents" case of T1. The QA issue lists it under Known
+          Limitations as an edge case to test manually; it is asserted here.
+
+      - id: DOC-C-06
+        traces_to: An expired row in the list is marked and its buttons disabled
+        surface: component
+        status: automated
+
+  - path: operate/client/src/App/ProcessInstance/DocumentsView/DocumentPreview/PreviewDocumentButton.test.tsx
+    framework: vitest
+    covers: >
+      The preview button and the modal shell every preview type reuses,
+      including the analytics event.
+    cases:
+      - id: DOC-C-07
+        traces_to: >
+          The preview button opens the shared modal for a previewable type,
+          stays disabled otherwise, and emits its analytics event
+        surface: component
+        count: 13
+        status: automated
+        notes: >
+          Covers the QA issue's "Analytics Verification", planned as manual
+          testing with the network tab — the test spies on `tracking.track`.
+
+  - path: operate/client/src/App/ProcessInstance/DocumentsView/DownloadDocumentButton/index.test.tsx
+    framework: vitest
+    covers: The download button — link, filename, disabled states, analytics.
+    cases:
+      - id: DOC-C-08
+        traces_to: >
+          The download button links with the right href and filename, is
+          disabled when there is no link and when the document is expired, and
+          emits its analytics event
+        surface: component
+        count: 4
+        status: automated
+        notes: T2, plus the second half of the analytics coverage.
+
+  # ---------------------------------------------------------------------------
+  # Unit — the metadata the rendering depends on
+  # ---------------------------------------------------------------------------
+  - path: operate/client/src/App/ProcessInstance/DocumentsView/documentInfo.test.ts
+    framework: vitest
+    covers: >
+      Reading a document reference — name, MIME type, size, expiry — and
+      deciding whether it can be previewed.
+    cases:
+      - id: DOC-U-01
+        traces_to: >
+          A document reference yields its filename, type and size, and whether
+          its type can be previewed
+        surface: unit
+        count: 14
+        status: automated
+
+  - path: operate/client/src/App/ProcessInstance/DocumentsView/humanReadableBytes.test.ts
+    framework: vitest
+    covers: Formatting a byte count for display.
+    cases:
+      - id: DOC-U-02
+        traces_to: A document's size renders in human-readable units
+        surface: unit
+        count: 6
+        status: automated
+
+# ---------------------------------------------------------------------------
+
+out_of_scope:
+  - what: Nested document references inside agent context or other complex objects
+    why: >
+      Named out of scope by the QA issue. Only top-level references and
+      top-level arrays are handled; anything nested stays raw JSON.
+  - what: A dedicated Documents tab, a new backend endpoint, engine or exporter changes
+    why: Named out of scope by the QA issue — this epic is rendering only.
+  - what: Search or filter by variable name in the Variables tab
+    why: Post-MVP in the QA issue, pending API confirmation.
+  - what: Document origin tracing
+    why: Blocked by connector-side changes, per the QA issue.
+  - what: Preview for types beyond JPG, PNG, GIF, WebP, PDF and JSON
+    why: >
+      Named out of scope. That an unsupported type offers no preview IS tested
+      — DOC-C-01 and DOC-C-07.
+  - what: Safety of rendering document content in the application origin
+    why: >
+      Covered by
+      qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/documentBrowserRendering.spec.ts,
+      which asserts active content downloads rather than renders while images
+      still render. That is a document-handling security property rather than
+      part of visualizing a reference, so it is not claimed here.
+
+prerequisites:
+  - what: >
+      Decide what happens to this coverage when Operate's process instance page
+      moves from operate/client to the orchestration-cluster webapp.
+    why: >
+      Every component, unit and visual case here lives in the legacy client.
+      The migration will either carry them across or silently drop them, and
+      nothing currently watches which.
+    status: not started
+
+lifecycle:
+  isolation: >
+    Every case except DOC-UI-01 mocks the document and shares no state. The
+    end-to-end case deploys its own process.
+  notes: >
+    The visual cases hold approved screenshots per theme and viewport, so a
+    change to any of those states needs the snapshots regenerated, not edited.
