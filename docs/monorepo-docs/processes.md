@@ -75,6 +75,8 @@ To identify potential overloads of one group there are views with breakdowns ava
 
 We use a [daily GitHub Actions workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/renovate-daily.yml) to execute the [assignment logic script](https://github.com/camunda/camunda/blob/main/.ci/scripts/renovate-assignments.py) automatically. Actions and PR comments are done via a GitHub App.
 
+As a fallback, the script also dismisses the `renovate-approve[bot]` approval on PRs it processes that have a DRI assigned. This does not replace the [DRI's dismissal](#dri-responsibilities).
+
 ### DRI Responsibilities
 
 The DRI for an open Renovate PR is responsible for addressing the dependency upgrade and getting it merged in a timely manner. They are expected to:
@@ -83,6 +85,7 @@ The DRI for an open Renovate PR is responsible for addressing the dependency upg
   - Reach out to your peers via `#team-orchestration-cluster` on Slack in case of more questions.
 - Do adjustments to the code base to accommodate dependencies with breaking changes, ensuring green CI and passing tests.
   - Minor and patch updates should almost always be resolved in this way, without an extra ticket.
+  - Before pushing manual changes, dismiss the approval from `renovate-approve[bot]` (on the bot's review in the PR conversation, open the **...** menu and select **Dismiss review**). The bot approval only covers Renovate's changes, so a human review of your changes is required before merging.
 - Explore AI-assistance to get breaking changes fixed.
 - If needed, create follow-up tickets for major upgrades or big refactoring tasks, and ensure that those tickets are scheduled within their team's planning.
 - Improve [our Renovate configuration](https://github.com/camunda/camunda/blob/main/.github/renovate.json5) to make sure updates are as smooth as possible, e.g. by:
