@@ -58,6 +58,7 @@ import java.util.function.BooleanSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
@@ -76,7 +77,8 @@ public class Starter implements CommandLineRunner {
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private final CamundaClient client;
+  private final CamundaClient loaderClient;
+  private final CamundaClient queryClient;
   private final ApplicationContext applicationContext;
   private final LoadTesterProperties properties;
   private final StarterProperties starterCfg;
@@ -100,14 +102,16 @@ public class Starter implements CommandLineRunner {
   private DataReadMeter dataReadMeter;
 
   public Starter(
-      final CamundaClient client,
+      final CamundaClient loaderClient,
+      @Qualifier("queryCamundaClient") final CamundaClient queryClient,
       final LoadTesterProperties properties,
       final MeterRegistry registry,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
       final StarterLivenessIndicator livenessIndicator,
       final ApplicationContext applicationContext) {
-    this.client = client;
+    this.loaderClient = loaderClient;
+    this.queryClient = queryClient;
     this.applicationContext = applicationContext;
     this.properties = properties;
     starterCfg = properties.getStarter();
@@ -220,7 +224,7 @@ public class Starter implements CommandLineRunner {
             properties.getMonitorDataAvailabilityInterval(),
             (listOfStartedInstances) -> {
               final CamundaFuture<SearchResponse<ProcessInstance>> send =
-                  client
+                  queryClient
                       .newProcessInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
                       .sort(s -> s.startDate().asc())
@@ -242,7 +246,7 @@ public class Starter implements CommandLineRunner {
         new DataReadMeter(
             registry,
             Executors.newScheduledThreadPool(2),
-            client,
+            queryClient,
             DataReadMeterQueryProvider.getDefaultQueries(properties.getDisabledQueriesList()));
     dataReadMeter.setContextProcessDefinitionId(starterCfg.getProcessId());
     dataReadMeter.setContextBusinessKeySupplier(
@@ -340,7 +344,7 @@ public class Starter implements CommandLineRunner {
 
   private CompletionStage<ProcessInstanceEvent> startInstance(
       final long startTime, final String processId, final HashMap<String, Object> variables) {
-    return client
+    return loaderClient
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
@@ -373,7 +377,7 @@ public class Starter implements CommandLineRunner {
 
   private CompletionStage<?> startInstanceWithAwaitingResult(
       final String processId, final HashMap<String, Object> variables) {
-    return client
+    return loaderClient
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
@@ -384,7 +388,7 @@ public class Starter implements CommandLineRunner {
   }
 
   private CompletionStage<?> startInstanceByMessagePublishing(final Map<String, Object> variables) {
-    return client
+    return loaderClient
         .newPublishMessageCommand()
         .messageName(starterCfg.getMsgName())
         .correlationKey(UUID.randomUUID().toString())
@@ -435,7 +439,9 @@ public class Starter implements CommandLineRunner {
         starterCfg.getBpmnXmlPath(),
         starterCfg.getExtraBpmnModels());
     final var deployCmd =
-        client.newDeployResourceCommand().addResourceFromClasspath(starterCfg.getBpmnXmlPath());
+        loaderClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath(starterCfg.getBpmnXmlPath());
 
     final var extraBpmnModels = starterCfg.getExtraBpmnModels();
     if (extraBpmnModels != null) {
