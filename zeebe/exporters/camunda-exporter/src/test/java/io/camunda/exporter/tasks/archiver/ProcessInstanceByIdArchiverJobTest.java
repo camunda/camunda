@@ -275,7 +275,7 @@ final class ProcessInstanceByIdArchiverJobTest extends ArchiverJobRecordingMetri
     assertThat(nextBatch)
         .isEqualTo(new ProcessInstanceArchiveBatch("2024-01-01", List.of(), List.of()));
 
-    verify(repository).getProcessInstancesNextBatch(1_000);
+    verify(repository).getProcessInstancesNextBatch(5_000);
   }
 
   @Test
@@ -284,7 +284,7 @@ final class ProcessInstanceByIdArchiverJobTest extends ArchiverJobRecordingMetri
     repository.batches =
         List.of(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 300L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1L, 1500L).boxed().toList(), List.of()));
 
     // when
     final var first = job.getNextBatch().toCompletableFuture().join();
@@ -295,17 +295,17 @@ final class ProcessInstanceByIdArchiverJobTest extends ArchiverJobRecordingMetri
     assertThat(first)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 100L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1L, 500L).boxed().toList(), List.of()));
     assertThat(second)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(101L, 200L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(501L, 1000L).boxed().toList(), List.of()));
     assertThat(third)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(201L, 300L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1001L, 1500L).boxed().toList(), List.of()));
 
-    verify(repository).getProcessInstancesNextBatch(1_000);
+    verify(repository).getProcessInstancesNextBatch(5_000);
   }
 
   @Test
@@ -314,7 +314,7 @@ final class ProcessInstanceByIdArchiverJobTest extends ArchiverJobRecordingMetri
     repository.batches =
         List.of(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 200L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1L, 1000L).boxed().toList(), List.of()));
 
     // when
     final var first = job.getNextBatch().toCompletableFuture().join();
@@ -325,17 +325,17 @@ final class ProcessInstanceByIdArchiverJobTest extends ArchiverJobRecordingMetri
     assertThat(first)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 100L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1L, 500L).boxed().toList(), List.of()));
     assertThat(second)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(101L, 200L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(501L, 1000L).boxed().toList(), List.of()));
     assertThat(third)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 100L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1L, 500L).boxed().toList(), List.of()));
 
-    verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
+    verify(repository, times(2)).getProcessInstancesNextBatch(5_000);
   }
 
   @Test
@@ -363,7 +363,7 @@ final class ProcessInstanceByIdArchiverJobTest extends ArchiverJobRecordingMetri
         .isEqualTo(3);
     assertArchiverTimer(2); // job executed twice
 
-    verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
+    verify(repository, times(2)).getProcessInstancesNextBatch(5_000);
   }
 
   private static final class WeirdlyNamedDependant implements ProcessInstanceDependant {
