@@ -131,12 +131,15 @@ for (const allowUnattributed of [false, true]) {
     assert.deepEqual(result.labels.issues, []);
     assert.deepEqual(result.comments.entries, []);
     assert.deepEqual(result.audit.overrides.map((entry) => entry.number), allowUnattributed ? [1] : []);
-    assert.equal(result.customerBody, '');
-    assert.match(result.fullAsset, /fix: correct retries \(#1\)/);
+    assert.equal(result.customerBody, bareLinks(result.fullAsset));
+    assert.match(result.fullAsset, /fix: correct retries \(\[#1\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/1\)\)/);
     assert.doesNotMatch(result.fullAsset, /4777|private-tracker|Local issue/);
     assert.equal(result.calls.some((call) => Object.values(call.variables).includes(4777)), false);
   });
 }
+
+/** The release description carries bare `#N` (GitHub autolinks them); the asset spells out the URL. */
+const bareLinks = (text: string) => text.replace(/\[#(\d+)\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/\d+\)/g, '#$1');
 
 test('should keep same-repository native references alongside foreign ones', (t) => {
   // given / when
@@ -171,8 +174,8 @@ test('should retain a dependency PR breaking-change label in both Markdown outpu
 
   // then
   assert.equal(result.changelog.prs[0]!.breaking, true);
-  for (const body of [result.customerBody, result.fullAsset]) {
-    assert.match(body, /^## Breaking changes\n\n- pkg: 1\.0 → 2\.0 \(#1\)/);
+  for (const [body, pointer] of [[result.customerBody, '#1'], [result.fullAsset, '[#1](https://github.com/camunda/camunda/pull/1)']] as const) {
+    assert.ok(body.startsWith(`## Breaking changes\n\n- pkg: 1.0 → 2.0 (${pointer})`));
     assert.match(body, /## Dependency updates/);
   }
 });
@@ -186,12 +189,11 @@ for (const newerIsBot of [false, true]) {
     ]);
 
     // then
-    assert.match(result.fullAsset, /- pkg: 1\.0 → 3\.0 \(#10, #20\)$/m);
+    assert.match(result.fullAsset, /- pkg: 1\.0 → 3\.0 \(\[#10\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/10\), \[#20\]\(https:\/\/github\.com\/camunda\/camunda\/pull\/20\)\)$/m);
     assert.deepEqual(result.changelog.prs.map((pr) => pr.number), [10, 20]);
     assert.deepEqual(result.labels.pullRequests, [10, 20]);
     assert.deepEqual(result.audit.overrides.map((entry) => entry.number), [newerIsBot ? 20 : 10]);
-    // Issue-less bumps are full-asset only; the customer body points there instead.
-    assert.doesNotMatch(result.customerBody, /pkg:/);
-    assert.match(result.customerBody, /^1 dependency update is listed in the full changelog/m);
+    // Nothing is over the limit, so the release description carries the same bump line as the asset.
+    assert.equal(result.customerBody, bareLinks(result.fullAsset));
   });
 }

@@ -18,8 +18,7 @@ const SECTION_ORDER = [
   'Documentation',
   'Dependency updates',
   'Reverts',
-  'Changes without a tracked issue',
-  'Maintenance', // asset-only, so last — never reached in the customer body
+  'Maintenance', // the first section a too-long description loses after bumps, so last
   'Uncategorized',
 ];
 
@@ -47,6 +46,11 @@ export interface RenderOptions {
   readonly version: string;
   readonly allowUnattributed: boolean;
   readonly unattributedReason?: string;
+  /** "owner/repo". When set, every `#N` in the full asset becomes a link — it and the
+   *  step summary don't autolink the way a release body does. The release description
+   *  keeps bare `#N`, which GitHub autolinks; a URL per reference would cost 49
+   *  characters each against its size limit. */
+  readonly repository?: string;
   /** Every audit line the run produced, in walk order — logged too, but a
    *  log isn't an artifact downstream can read, diff, or archive. */
   readonly warnings?: readonly string[];
@@ -64,31 +68,30 @@ export interface RenderResult {
   readonly failureReason?: string;
 }
 
-/** An empty body reads as "this release ships nothing customer-facing" — true
- *  for a maintenance-only patch, but indistinguishable from the outside if
- *  attribution silently dropped everything into internal/opted-out buckets
- *  instead. Warns either way rather than shipping an empty description that
- *  looks identical to a correct one. See GENERATOR.md § 6. */
+/** Every pull request that has a section is listed, so an empty body means every
+ *  attributed pull request was an excluded `merge` commit — indistinguishable
+ *  from the outside from a release whose categorization silently dropped
+ *  everything. Warns rather than shipping an empty description that looks
+ *  identical to a correct one. See GENERATOR.md § 6. */
 export function emptyCustomerBodyWarning(hasAttributedWork: boolean, customerBody: string): string | undefined {
   return hasAttributedWork && customerBody === ''
-    ? 'Customer-facing body is empty even though pull requests were attributed to this release — every one is internal-only, opted out, or otherwise excluded from the customer body. Verify this is genuinely a maintenance-only release before publishing.'
+    ? 'Customer-facing body is empty even though pull requests were attributed to this release — every one was excluded from the changelog (merge commits). Verify the release really ships nothing before publishing.'
     : undefined;
 }
 
 /** GitHub rejects a longer release body via the API; the web editor silently truncates it. */
 export const RELEASE_BODY_LIMIT = 125_000;
 
-/** Asset-only bumps buy headroom, not a guarantee — warns before cutover
- *  publishes a body GitHub will reject. */
+/** Only reachable when the breaking changes alone exceed the limit — they are never
+ *  cut, so the body stays over and this warns before cutover publishes a body GitHub
+ *  will reject. */
 export function oversizedCustomerBodyWarning(customerBody: string): string | undefined {
   return customerBody.length > RELEASE_BODY_LIMIT
     ? `Customer-facing body is ${customerBody.length} characters, over GitHub's ${RELEASE_BODY_LIMIT}-character release body limit — publishing it will fail.`
     : undefined;
 }
 
-/** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr: RenderPrInput): string {
-  if (pr.attributionSource === 'optOut') return 'Changes without a tracked issue';
   return pr.section ?? 'Uncategorized';
 }
 
@@ -144,7 +147,12 @@ function assetOnlyDependencyBumps(prs: readonly RenderPrInput[]): Set<RenderPrIn
   return new Set(bumps.filter((pr) => !visible.has(pr)));
 }
 
-/** Counts packages, not pull requests — one line each in the full changelog. */
+/** A `deps:` PR with no linked issue whose body yielded no package table — still one line in the changelog. */
+function isUnparsedBump(pr: RenderPrInput): boolean {
+  return pr.section === 'Dependency updates' && pr.issueNumbers.length === 0 && (pr.dependencies?.length ?? 0) === 0;
+}
+
+/** Counts lines of the full changelog (packages plus unparsed bumps), not pull requests. */
 interface DependencyPointer {
   readonly packageCount: number;
   readonly version: string;
@@ -188,7 +196,11 @@ function toEntries(prs: readonly RenderPrInput[]): RenderEntry[] {
   return [...entries, ...collapseDependencies(prs.filter(isDependencyBump))];
 }
 
-function renderSectionedBody(prs: readonly RenderPrInput[], dependencyPointer?: DependencyPointer): string {
+function renderSectionedBody(
+  prs: readonly RenderPrInput[],
+  link: (number: number) => string,
+  dependencyPointer?: DependencyPointer,
+): string {
   const entries = toEntries(prs);
   const groups = new Map<string, RenderEntry[]>();
   for (const entry of entries) {
@@ -200,25 +212,25 @@ function renderSectionedBody(prs: readonly RenderPrInput[], dependencyPointer?: 
   const lines: string[] = [];
   const breaking = entries.filter((entry) => entry.breaking);
   if (breaking.length > 0) {
-    lines.push('## Breaking changes', '', ...breaking.map((entry) => renderLine(entry)), '');
+    lines.push('## Breaking changes', '', ...breaking.map((entry) => renderLine(entry, link)), '');
   }
   const orderedNames = [...SECTION_ORDER, ...[...groups.keys()].filter((name) => !SECTION_ORDER.includes(name))];
   for (const name of orderedNames) {
     const list = groups.get(name) ?? [];
     const pointer = name === 'Dependency updates' && dependencyPointer ? dependencyPointer : undefined;
     if (list.length === 0 && !pointer) continue;
-    lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry)));
+    lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry, link)));
     if (pointer) lines.push(...(list.length > 0 ? [''] : []), renderDependencyPointer(pointer, list.length > 0));
     lines.push('');
   }
   return lines.join('\n').trim();
 }
 
-function renderLine(entry: RenderEntry): string {
-  const prs = entry.prNumbers.map((n) => `#${n}`).join(', ');
+function renderLine(entry: RenderEntry, link: (number: number) => string): string {
+  const prs = entry.prNumbers.map(link).join(', ');
   if (entry.issueNumbers.length === 0) return `- ${entry.title} (${prs})`;
   const partial = entry.delivered ? '' : ' (partially delivered)'; // issue still OPEN — work landed, issue didn't finish
-  return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}${partial}`;
+  return `- ${entry.title} (${entry.issueNumbers.map(link).join(', ')}) — ${prs}${partial}`;
 }
 
 /** Dotted-numeric versions compare numerically; a digest/sha/date tag has no order and returns null. */
@@ -290,6 +302,97 @@ function collapseDependencies(prs: readonly RenderPrInput[]): RenderEntry[] {
   }));
 }
 
+/** What may be dropped from the release description, least valuable first, when
+ *  everything together would not fit GitHub's body limit. A breaking change is
+ *  never dropped. Each step is a whole category: a half-listed section reads as
+ *  a complete one. */
+const DROP_STEPS: readonly { readonly name: string; readonly drops: (prs: readonly RenderPrInput[]) => Set<RenderPrInput> }[] = [
+  {
+    name: 'dependency updates without a linked issue',
+    // All or none: a bump whose body has no parseable table (e.g. a c8run version bump) goes with the rest.
+    drops: (prs) =>
+      new Set([...assetOnlyDependencyBumps(prs), ...prs.filter((pr) => isUnparsedBump(pr) && !pr.breaking)]),
+  },
+  { name: 'Maintenance', drops: (prs) => new Set(prs.filter((pr) => pr.section === 'Maintenance' && !pr.breaking)) },
+  { name: 'Reverts', drops: (prs) => new Set(prs.filter((pr) => pr.section === 'Reverts' && !pr.breaking)) },
+  {
+    name: 'changes tracked only by internal issues (kind/task, kind/epic)',
+    drops: (prs) => new Set(prs.filter((pr) => pr.visibility === 'internal' && !pr.breaking)),
+  },
+  { name: 'changes without an attributed issue', drops: (prs) => new Set(prs.filter((pr) => isUnattributed(pr) && !pr.breaking)) },
+  { name: 'Documentation', drops: (prs) => new Set(prs.filter((pr) => pr.section === 'Documentation' && !pr.breaking)) },
+];
+
+/** An entry is the unit shown to a reader, so a pull request goes only when every
+ *  pull request in its entry does — else the line loses a `#N` it shares with the
+ *  full asset, and its section or "partially delivered" mark can change. */
+function wholeEntries(prs: readonly RenderPrInput[], doomed: ReadonlySet<RenderPrInput>): Set<RenderPrInput> {
+  const keptKeys = new Set(prs.filter((pr) => !doomed.has(pr)).map(entryKeyFor));
+  return new Set(prs.filter((pr) => doomed.has(pr) && !keptKeys.has(entryKeyFor(pr))));
+}
+
+function truncationBanner(options: RenderOptions): string {
+  const assetUrl = options.repository
+    ? `https://github.com/${options.repository}/releases/download/${options.version}/CHANGELOG-${options.version}.md`
+    : undefined;
+  const where = assetUrl ? `[here](${assetUrl})` : 'the release assets';
+  return `> [!WARNING]\n> The release notes are truncated, for full list of changes please download the full assets from ${where}.`;
+}
+
+/** The release description: everything, unless that exceeds GitHub's limit — then
+ *  categories are dropped in DROP_STEPS order until it fits, with a warning banner
+ *  (counted against the limit) pointing at the full asset. If even the
+ *  undroppable sections do not fit, trailing entries are cut — never the breaking changes. */
+function fitCustomerBody(
+  assetPrs: readonly RenderPrInput[],
+  link: (number: number) => string,
+  options: RenderOptions,
+): { body: string; dropped: string[]; cutEntries: number } {
+  let remaining = assetPrs;
+  const dropped: string[] = [];
+  const banner = truncationBanner(options);
+  const render = (prs: readonly RenderPrInput[]) => {
+    const kept = new Set(prs);
+    const left = assetPrs.filter((pr) => !kept.has(pr));
+    const packageCount = new Set(left.filter(isDependencyBump).flatMap(packagesOf)).size + left.filter(isUnparsedBump).length;
+    return renderSectionedBody(prs, link, packageCount > 0 ? { packageCount, version: options.version } : undefined);
+  };
+  const withBanner = (body: string) => (remaining.length < assetPrs.length ? `${banner}\n\n${body}` : body);
+
+  let body = render(remaining);
+  for (const step of DROP_STEPS) {
+    if (withBanner(body).length <= RELEASE_BODY_LIMIT) return { body: withBanner(body), dropped, cutEntries: 0 };
+    const doomed = wholeEntries(remaining, step.drops(remaining));
+    if (doomed.size === 0) continue;
+    remaining = remaining.filter((pr) => !doomed.has(pr));
+    dropped.push(step.name);
+    body = render(remaining);
+  }
+  if (withBanner(body).length <= RELEASE_BODY_LIMIT) return { body: withBanner(body), dropped, cutEntries: 0 };
+
+  // Last resort: what is left is breaking changes, features, fixes and performance. Cut from the
+  // end, but never into the leading breaking-changes block (the lines before its closing blank).
+  const lines = body.split('\n');
+  const blockEnd = lines.indexOf('', 2); // -1 when breaking changes are the whole body
+  const protectedLines = lines[0] !== '## Breaking changes' ? 0 : blockEnd === -1 ? lines.length : blockEnd;
+  const prefixLength = banner.length + 2;
+  let size = lines.join('\n').length;
+  let cutEntries = 0;
+  while (lines.length > protectedLines && prefixLength + size > RELEASE_BODY_LIMIT) {
+    const line = lines.pop()!;
+    size -= line.length + (lines.length > 0 ? 1 : 0);
+    if (line.startsWith('- ')) cutEntries++;
+  }
+  while (lines.length > protectedLines && (lines[lines.length - 1] === '' || lines[lines.length - 1]!.startsWith('## '))) lines.pop();
+  return { body: `${banner}\n\n${lines.join('\n')}`, dropped, cutEntries };
+}
+
+function truncationWarning(dropped: readonly string[], cutEntries: number): string | undefined {
+  if (dropped.length === 0 && cutEntries === 0) return undefined;
+  const parts = [...dropped, ...(cutEntries > 0 ? [`the last ${cutEntries} entries`] : [])];
+  return `Release description exceeded GitHub's ${RELEASE_BODY_LIMIT}-character body limit and was truncated; dropped: ${parts.join(', ')}. The full list is only in the CHANGELOG asset.`;
+}
+
 /** One comment per issue, not per PR that touched it — the marker is keyed
  *  on `<version>:issue-<N>`, so two PRs sharing an issue must aggregate into
  *  one row or the marker collision drops one silently on publish. */
@@ -338,17 +441,13 @@ export function render(all: readonly RenderPrInput[], options: RenderOptions): R
   const failureReason = guardFailed ? describeGuardFailure(unattributed) : undefined;
   const unattributedReason = options.unattributedReason ?? '';
 
-  const customerVisible = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
-  const assetOnly = assetOnlyDependencyBumps(customerVisible);
-  const customerPrs = customerVisible.filter((pr) => !assetOnly.has(pr));
-  const packageCount = new Set([...assetOnly].flatMap(packagesOf)).size;
   const assetPrs = all.filter((pr) => pr.section !== null);
 
-  const customerBody = renderSectionedBody(
-    customerPrs,
-    packageCount > 0 ? { packageCount, version: options.version } : undefined,
-  );
-  const fullAsset = renderSectionedBody(assetPrs);
+  // `/pull/N` and `/issues/N` redirect to each other, so one URL form serves both.
+  const link = (number: number) =>
+    options.repository ? `[#${number}](https://github.com/${options.repository}/pull/${number})` : `#${number}`;
+  const fullAsset = renderSectionedBody(assetPrs, link);
+  const { body: customerBody, dropped, cutEntries } = fitCustomerBody(assetPrs, (number) => `#${number}`, options);
 
   const prsByIssue = new Map<number, RenderPrInput[]>(); // insertion-ordered: issues come out in walk order
   for (const pr of all) {
@@ -366,7 +465,11 @@ export function render(all: readonly RenderPrInput[], options: RenderOptions): R
   // Only recorded when the override actually let the guard pass — else a plain
   // failure would look identical to an approved exception in this file.
   const overrides = guardFailed ? [] : unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
-  const bodyWarnings = [emptyCustomerBodyWarning(prs.length > 0, customerBody), oversizedCustomerBodyWarning(customerBody)];
+  const bodyWarnings = [
+    emptyCustomerBodyWarning(prs.length > 0, customerBody),
+    oversizedCustomerBodyWarning(customerBody),
+    truncationWarning(dropped, cutEntries),
+  ];
   const warnings = [...(options.warnings ?? []), ...bodyWarnings.filter((warning) => warning !== undefined)];
 
   return {

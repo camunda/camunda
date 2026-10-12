@@ -33,7 +33,7 @@ const SECTION_BY_TYPE: Record<(typeof TITLE_TYPES)[number], string | null> = {
   merge: null,
 };
 
-/** The one section hidden from the customer-facing body — still in the full asset. */
+/** The section marked internal — the second thing dropped from the release description if it must be truncated. */
 const INTERNAL_SECTION = 'Maintenance';
 
 /** A customer must never see these, whatever the delivering PR's title says
