@@ -42,9 +42,17 @@ function generateManyVariables(): Record<string, string> {
 const zeebe = c8.getCamundaRestClient();
 const zeebeGrpc = c8.getZeebeGrpcApiClient();
 const deploy = async (processFilePaths: string[]) => {
+  // Deploy each resource under its bare file name. Passing the relative path
+  // straight to the SDK would leak the test harness layout (e.g.
+  // "./resources/foo.bpmn") into the deployed resourceName, which the engine
+  // stores verbatim and returns on the process-definition APIs. basename()
+  // mirrors deployWithProcessId/deployWithSubstitutions below.
+  const resources = processFilePaths.map((filePath) => ({
+    content: readFileSync(filePath, 'utf-8'),
+    name: basename(filePath),
+  }));
   try {
-    const results = await zeebe.deployResourcesFromFiles(processFilePaths);
-    return results;
+    return await zeebe.deployResources(resources);
   } catch (error) {
     console.error('Deployment failed:', error);
     throw error;
