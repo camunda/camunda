@@ -576,6 +576,53 @@ class PhysicalTenantResolverTest {
   }
 
   @Test
+  void shouldNarrowAuthenticationProvidersToAssigned() {
+    // given an OIDC cluster with a root default slot and a named provider, where each tenant is
+    // assigned a different one of them
+    final Map<String, Object> properties = new HashMap<>();
+    properties.put("camunda.security.authentication.method", "oidc");
+    properties.put("camunda.security.authentication.oidc.client-id", "keycloak-client");
+    properties.put(
+        "camunda.security.authentication.oidc.issuer-uri", "https://keycloak.example.com");
+    properties.put("camunda.security.authentication.providers.oidc.okta.client-id", "okta-client");
+    properties.put(
+        "camunda.security.authentication.providers.oidc.okta.issuer-uri",
+        "https://okta.example.com");
+    properties.put(
+        "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]", "okta");
+    properties.put(
+        "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+        "tenanta");
+    properties.put(
+        "camunda.physical-tenants.tenantb.security.authentication.providers.assigned[0]", "oidc");
+    properties.put(
+        "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+        "tenantb");
+    setProperties(properties, "tenanta", "tenantb");
+
+    // when
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then each tenant only trusts its assigned provider
+    final var tenantA = resolver.forPhysicalTenant("tenanta").getSecurity().getAuthentication();
+    assertThat(tenantA.getOidc().getClientId()).isNull();
+    assertThat(tenantA.getProviders().getOidc()).containsOnlyKeys("okta");
+
+    final var tenantB = resolver.forPhysicalTenant("tenantb").getSecurity().getAuthentication();
+    assertThat(tenantB.getOidc().getClientId()).isEqualTo("keycloak-client");
+    assertThat(tenantB.getProviders().getOidc()).isEmpty();
+
+    // and the default tenant, which declares no selection, keeps every provider
+    final var defaultTenant =
+        resolver
+            .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .getSecurity()
+            .getAuthentication();
+    assertThat(defaultTenant.getOidc().getClientId()).isEqualTo("keycloak-client");
+    assertThat(defaultTenant.getProviders().getOidc()).containsOnlyKeys("okta");
+  }
+
+  @Test
   void shouldRejectInvalidTenantIds() {
     // tenant ids must be lowercase alphanumeric — no underscores, no uppercase, no dashes
     // (dashes would make yaml and env-var forms address two different tenants).

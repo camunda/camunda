@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import java.util.LinkedHashMap;
@@ -79,7 +80,8 @@ public final class PhysicalTenantHandlerFactory {
                       new AuthenticationHandler.Oidc(
                           decoderFactory.apply(authConfig),
                           claimsProviderFactory.apply(authConfig),
-                          authConfig.getOidc());
+                          authConfig.getOidc(),
+                          claimConfigsByIssuer(authConfig));
                   case BASIC -> {
                     LOG.atWarn()
                         .log(
@@ -99,5 +101,37 @@ public final class PhysicalTenantHandlerFactory {
         });
 
     return registry;
+  }
+
+  /**
+   * Keys each provider of the tenant by its {@code issuer-uri} so a token is resolved with the
+   * claim settings of the provider that issued it, mirroring the REST bearer-token converter
+   * ({@code OidcOverrideBeansConfiguration#buildPhysicalTenantConverter}): the default slot first
+   * (when it carries an issuer and a client id), then every named provider not already keyed.
+   */
+  private static Map<String, OidcConfiguration> claimConfigsByIssuer(
+      final AuthenticationConfiguration authConfig) {
+    final Map<String, OidcConfiguration> byIssuer = new LinkedHashMap<>();
+    final OidcConfiguration defaultSlot = authConfig.getOidc();
+    if (hasText(defaultSlot.getIssuerUri()) && hasText(defaultSlot.getClientId())) {
+      byIssuer.put(defaultSlot.getIssuerUri(), defaultSlot);
+    }
+    if (authConfig.getProviders() != null && authConfig.getProviders().getOidc() != null) {
+      authConfig
+          .getProviders()
+          .getOidc()
+          .values()
+          .forEach(
+              provider -> {
+                if (hasText(provider.getIssuerUri())) {
+                  byIssuer.putIfAbsent(provider.getIssuerUri(), provider);
+                }
+              });
+    }
+    return byIssuer;
+  }
+
+  private static boolean hasText(final String value) {
+    return value != null && !value.isBlank();
   }
 }

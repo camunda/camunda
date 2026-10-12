@@ -10,10 +10,13 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.UserServices;
@@ -22,6 +25,7 @@ import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 final class PhysicalTenantHandlerFactoryTest {
@@ -100,6 +104,60 @@ final class PhysicalTenantHandlerFactoryTest {
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("tenant-a")
         .hasRootCauseMessage("boom");
+  }
+
+  @Test
+  void shouldResolveTokenWithClaimSettingsOfIssuingProvider() throws Exception {
+    // given a tenant whose default slot and named provider use different issuers and username
+    // claims
+    final var config = securityConfig(AuthenticationMethod.OIDC);
+    final var defaultSlot = config.getAuthentication().getOidc();
+    defaultSlot.setIssuerUri("https://keycloak.example.com");
+    defaultSlot.setClientId("keycloak-client");
+    defaultSlot.setUsernameClaim("preferred_username");
+    final var okta = new OidcConfiguration();
+    okta.setIssuerUri("https://okta.example.com");
+    okta.setClientId("okta-client");
+    okta.setUsernameClaim("email");
+    final var providers = new OidcProvidersConfiguration();
+    providers.setOidc(new LinkedHashMap<>(Map.of("okta", okta)));
+    config.getAuthentication().setProviders(providers);
+
+    final var decoder = mock(JwtDecoder.class);
+    when(decoder.decode("okta-token"))
+        .thenReturn(token("https://okta.example.com", "email", "alice@example.com"));
+    when(decoder.decode("keycloak-token"))
+        .thenReturn(token("https://keycloak.example.com", "preferred_username", "bob"));
+
+    final var handler =
+        PhysicalTenantHandlerFactory.build(
+                Map.of("tenanta", config),
+                true,
+                authConfig -> decoder,
+                claimsProviderFactory,
+                userServicesForTenant,
+                passwordEncoder)
+            .get("tenanta");
+
+    // when
+    final var oktaResult = handler.authenticate("Bearer okta-token");
+    final var keycloakResult = handler.authenticate("Bearer keycloak-token");
+
+    // then each token is resolved with the username claim of the provider that issued it
+    assertThat(oktaResult.isRight()).isTrue();
+    assertThat(oktaResult.get().call(() -> AuthenticationHandler.USERNAME.get()))
+        .isEqualTo("alice@example.com");
+    assertThat(keycloakResult.isRight()).isTrue();
+    assertThat(keycloakResult.get().call(() -> AuthenticationHandler.USERNAME.get()))
+        .isEqualTo("bob");
+  }
+
+  private static Jwt token(final String issuer, final String claim, final String value) {
+    return Jwt.withTokenValue("token")
+        .header("alg", "RS256")
+        .claim("iss", issuer)
+        .claim(claim, value)
+        .build();
   }
 
   private static EngineSecurityConfig securityConfig(final AuthenticationMethod method) {
