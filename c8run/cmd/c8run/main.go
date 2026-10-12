@@ -69,7 +69,7 @@ Commands:
   start                 Start Camunda 8 Run
   stop                  Stop any running Camunda 8 Run processes
   secrets               Manage local development secrets
-  tenants               Manage physical tenants (isolated engines in one c8run)
+  physical-tenants      Manage physical tenants (isolated engines in one c8run)
   help                  Show this help message
 
 Options:
@@ -91,7 +91,7 @@ Examples:
   %[1]s stop
   %[1]s secrets set OPENAI_API_KEY
   %[1]s secrets import .env.secrets
-  %[1]s tenants add sales
+  %[1]s physical-tenants add sales
   %[1]s start --physical-tenants sales,hr
 
 Docs & Support:
@@ -143,8 +143,8 @@ func getBaseCommand() (string, error) {
 		return "stop", nil
 	case "secrets":
 		return "secrets", nil
-	case "tenants", "physical-tenants", "pt":
-		return "tenants", nil
+	case "physical-tenants":
+		return "physical-tenants", nil
 	case "help":
 		usage(0)
 	case "-h", "--help":
@@ -182,7 +182,7 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, erro
 			return settings, startupURLProvided, fmt.Errorf("--physical-tenants: %w", err)
 		}
 		if flagPassed(startFlagSet, "physical-tenants") && len(ids) == 0 {
-			return settings, startupURLProvided, errors.New("--physical-tenants needs at least one tenant ID (e.g. --physical-tenants sales,hr); omit it to start your saved tenants")
+			return settings, startupURLProvided, errors.New("--physical-tenants needs at least one physical tenant ID (e.g. --physical-tenants sales,hr); omit it to start your saved physical tenants")
 		}
 	case "stop":
 		err := stopFlagSet.Parse(os.Args[2:])
@@ -543,7 +543,7 @@ func main() {
 	}
 
 	baseDir, _ := os.Getwd()
-	if baseCommand == "tenants" {
+	if baseCommand == "physical-tenants" {
 		if err := newTenantsCommand().run(baseDir, os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, withCLIName(err.Error(), cliName()))
 			os.Exit(1)
@@ -566,7 +566,7 @@ func main() {
 		}
 		if mode != "local" && len(state.Settings.PhysicalTenants) > 0 {
 			fmt.Fprintf(os.Stderr, "Physical tenants managed by c8run need their own secret stores, which c8run only sets up when %s=local.\n"+
-				"Either unset %s, or declare the tenants and their secret stores in your --config "+
+				"Either unset %s, or declare the physical tenants and their secret stores in your --config "+
 				"(camunda.physical-tenants.<id>.secrets.stores.*).\n", localsecrets.ModeEnv, localsecrets.ModeEnv)
 			os.Exit(1)
 		}
