@@ -89,8 +89,26 @@ jobs:
           # Run from the repository root: the module resolves every spec `path`
           # in a plan against the working directory, which is what lets it read
           # the suite rather than only the plan.
+          # `shell: bash` runs with -e and pipefail, so a non-zero exit here
+          # would end the step and skip the PR below. Exit 3 means "some case
+          # needs a human", and the cases that DID flip are already on disk and
+          # still worth a PR -- losing them because another case in the same
+          # run was uneditable is the opposite of the point. So catch the
+          # status, let the PR step run, and fail the job at the end.
+          set +e
           node "$CHECK_DIR/coverage-writeback.mjs" qa/coverage \
             2>&1 | tee "$RUNNER_TEMP/writeback.txt"
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+          # Anything other than 0 or 3 is a real failure -- a plan that will
+          # not parse, a module that will not load -- and must stop the run.
+          if [[ "$status" -ne 0 && "$status" -ne 3 ]]; then
+            echo "::error::coverage-writeback.mjs exited $status"
+            exit "$status"
+          fi
+
           if git diff --quiet -- qa/coverage; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
@@ -177,6 +195,14 @@ jobs:
           what the gate tells other teams about an epic's coverage.
           BODY
           )"
+
+      - name: Fail when a case needs a hand edit
+        # After the PR step, so a run that both flipped something and hit an
+        # uneditable case still opens the PR for the flips and then goes red.
+        if: always() && steps.writeback.outputs.status == '3'
+        run: |
+          echo "::error::a coverage-plan case could not be edited and needs flipping by hand — see the log above"
+          exit 1
 
       - name: Report result in summary
         if: always()
