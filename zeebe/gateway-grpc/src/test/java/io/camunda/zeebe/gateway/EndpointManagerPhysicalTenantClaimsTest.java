@@ -81,6 +81,20 @@ final class EndpointManagerPhysicalTenantClaimsTest {
     assertThat(sentClaims()).containsEntry(Authorization.USER_TOKEN_CLAIMS, Map.of("sub", "alice"));
   }
 
+  @Test
+  void shouldRejectRequestForTenantWithoutSecurityConfig() {
+    // given
+    final var endpointManager = endpointManager(oidcConfig(null, true), oidcConfig(null, true));
+    final ServerStreamObserver<CompleteJobResponse> observer = observer();
+
+    // when
+    completeJob(endpointManager, observer, "unknown", null, Map.of("sub", "alice"));
+
+    // then
+    verify(observer).onError(any());
+    assertThat(brokerClient.getBrokerRequests()).isEmpty();
+  }
+
   private EndpointManager endpointManager(
       final EngineSecurityConfig defaultConfig, final EngineSecurityConfig tenantConfig) {
     new CompleteJobStub().registerWith(brokerClient);
@@ -108,9 +122,18 @@ final class EndpointManagerPhysicalTenantClaimsTest {
       final ServerStreamObserver<CompleteJobResponse> observer,
       final List<String> groups,
       final Map<String, Object> tokenClaims) {
+    completeJob(endpointManager, observer, TENANT, groups, tokenClaims);
+  }
+
+  private static void completeJob(
+      final EndpointManager endpointManager,
+      final ServerStreamObserver<CompleteJobResponse> observer,
+      final String physicalTenantId,
+      final List<String> groups,
+      final Map<String, Object> tokenClaims) {
     Context context =
         Context.current()
-            .withValue(InterceptorUtil.getPhysicalTenantIdKey(), TENANT)
+            .withValue(InterceptorUtil.getPhysicalTenantIdKey(), physicalTenantId)
             .withValue(AuthenticationHandler.USERNAME, "alice")
             .withValue(AuthenticationHandler.Oidc.USER_CLAIMS, tokenClaims);
     if (groups != null) {
