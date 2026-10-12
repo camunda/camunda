@@ -375,13 +375,13 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   }
 
   @Test
-  void shouldPropagateRoutingForEachBulkDeleteOperation() {
+  void shouldPropagateRoutingAndUseOptimisticConcurrencyForEachBulkDeleteOperation() {
     // given
     final var docs =
         List.of(
-            new IdWithRouting("4", "routing-4"),
-            new IdWithRouting("5", "routing-5"),
-            new IdWithRouting("6", "routing-6"));
+            new IdWithRouting("4", "routing-4", 40L, 44L),
+            new IdWithRouting("5", "routing-5", 50L, 55L),
+            new IdWithRouting("6", "routing-6", 60L, 66L));
     when(client.bulk(any(BulkRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(bulkResponse("4", "5", "6")));
 
@@ -399,12 +399,24 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
 
     final var operations = captor.getValue().operations();
     assertThat(operations).hasSize(3);
-    assertThat(operations.get(0).delete().id()).isEqualTo("4");
-    assertThat(operations.get(0).delete().routing()).isEqualTo("routing-4");
-    assertThat(operations.get(1).delete().id()).isEqualTo("5");
-    assertThat(operations.get(1).delete().routing()).isEqualTo("routing-5");
-    assertThat(operations.get(2).delete().id()).isEqualTo("6");
-    assertThat(operations.get(2).delete().routing()).isEqualTo("routing-6");
+
+    final var deleteOperation0 = operations.get(0).delete();
+    assertThat(deleteOperation0.id()).isEqualTo("4");
+    assertThat(deleteOperation0.routing()).isEqualTo("routing-4");
+    assertThat(deleteOperation0.ifSeqNo()).isEqualTo(40L);
+    assertThat(deleteOperation0.ifPrimaryTerm()).isEqualTo(44L);
+
+    final var deleteOperation1 = operations.get(1).delete();
+    assertThat(deleteOperation1.id()).isEqualTo("5");
+    assertThat(deleteOperation1.routing()).isEqualTo("routing-5");
+    assertThat(deleteOperation1.ifSeqNo()).isEqualTo(50L);
+    assertThat(deleteOperation1.ifPrimaryTerm()).isEqualTo(55L);
+
+    final var deleteOperation2 = operations.get(2).delete();
+    assertThat(deleteOperation2.id()).isEqualTo("6");
+    assertThat(deleteOperation2.routing()).isEqualTo("routing-6");
+    assertThat(deleteOperation2.ifSeqNo()).isEqualTo(60L);
+    assertThat(deleteOperation2.ifPrimaryTerm()).isEqualTo(66L);
   }
 
   private SearchResponse<Void> searchResponse(final String... ids) {
