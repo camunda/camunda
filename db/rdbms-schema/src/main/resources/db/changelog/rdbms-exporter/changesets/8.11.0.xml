@@ -33,4 +33,15 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_storage_ordinal_column_to_incident" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}INCIDENT" columnName="STORAGE_ORDINAL"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}INCIDENT">
+      <column name="STORAGE_ORDINAL" type="INT"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

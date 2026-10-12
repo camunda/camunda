@@ -28,8 +28,7 @@ public record IncidentEntity(
     @Nullable IncidentState state,
     @Nullable Long jobKey,
     String tenantId,
-    // absent on documents exported before storage ordinals were introduced; also not populated by
-    // the RDBMS secondary storage.
+    // absent on data exported before storage ordinals were introduced.
     @Nullable Integer storageOrdinal)
     implements TenantOwnedEntity {
 

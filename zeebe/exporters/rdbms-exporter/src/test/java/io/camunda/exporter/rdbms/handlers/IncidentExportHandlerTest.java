@@ -50,6 +50,28 @@ class IncidentExportHandlerTest {
     handler = new IncidentExportHandler(incidentWriter, processCache, MAX_TREE_PATH_SIZE);
   }
 
+  @Test
+  void shouldExportStorageOrdinal() {
+    // given
+    final IncidentRecordValue value =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withElementInstancePath(List.of(List.of(111L, 123L)))
+            .withProcessInstanceKey(111L)
+            .withStorageOrdinal(42)
+            .build();
+    final Record<IncidentRecordValue> record =
+        factory.generateRecord(
+            ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED).withValue(value));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(incidentWriter).create(incidentCaptor.capture());
+    assertThat(incidentCaptor.getValue().storageOrdinal()).isEqualTo(42);
+  }
+
   // Regression test for https://github.com/camunda/camunda/issues/50014.
   @Test
   void shouldUpdateTreePathWhenCallActivityIsNestedInAnotherFlowScope() {
