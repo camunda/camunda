@@ -94,6 +94,26 @@ class PhysicalTenantOidcClientSecretValidationTest {
   }
 
   @Test
+  void shouldRejectTenantWithoutAssignedList() {
+    // given — only the default tenant may omit 'assigned'; then all providers apply to it
+    final var environment =
+        environmentWith(
+            Map.of(
+                ROOT + "providers.oidc.azure.issuer-uri",
+                "https://root-idp",
+                ROOT + "providers.oidc.azure.client-secret",
+                "root-secret",
+                "camunda.physical-tenants.default.security.authentication.providers.oidc.azure"
+                    + ".issuer-uri",
+                "https://tenant-idp"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))
+        .withMessageContaining("physical tenant 'default', provider 'azure'");
+  }
+
+  @Test
   void shouldAcceptOtherIssuerWithOwnSecret() {
     // given — the secret is equal to the root secret, but the tenant sets it explicitly
     final var environment =
