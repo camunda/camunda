@@ -183,11 +183,13 @@ outputs:
   openapi-webapp-client-typecheck:
     description: >-
       Output whether the Webapp Client types must be checked against a changed C8 OpenAPI spec.
-      Only file changes trigger it: push, schedule and CI config changes are already covered by the
-      Webapp Client type check, which regenerates the schemas from the spec in every `npm ci`.
+      Only changes to the spec files trigger it, as the types are generated from them alone: lint
+      rules and annotation tooling cannot affect them. Push, schedule and CI config changes are
+      already covered by the Webapp Client type check, which regenerates the schemas from the spec
+      in every `npm ci`.
     value: >-
       ${{
-        steps.filter-common.outputs.openapi-change == 'true'
+        steps.filter-common.outputs.openapi-spec-change == 'true'
       }}
   stable-branch-changes:
     description: Output whether the change is occurring on a stable/X.Y branch or not
@@ -401,6 +403,9 @@ runs:
           - 'zeebe/gateway-protocol/spectral-tests/**'
           - '.github/scripts/x-added-in-version-check/**'
           - '.github/workflows/verify-x-added-in-version-annotations.yml'
+
+        openapi-spec-change:
+          - 'zeebe/gateway-protocol/src/main/proto/v2/**'
 
         rdbms-change:
         - 'db/rdbms/**'
