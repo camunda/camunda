@@ -149,6 +149,22 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     checkMembers(member1, member1);
   }
 
+  @Test
+  public void shouldFindMemberByAddress() throws Exception {
+    // given
+    reset(false);
+    final var protocol = startProtocol(member1, member1.id().toString());
+
+    // when
+    final var found = protocol.getMember(member1.address());
+    final var unknown = protocol.getMember(new Address("localhost", 5999));
+
+    // then
+    assertThat(found).isNotNull();
+    assertThat(found.id()).isEqualTo(member1.id());
+    assertThat(unknown).isNull();
+  }
+
   /**
    * The properties of the local member are mutated in place by other components, e.g. by the broker
    * to publish partition roles and health, while listeners are notified asynchronously. A change

@@ -226,6 +226,16 @@ public class SwimMembershipProtocol
   }
 
   @Override
+  public Member getMember(final Address address) {
+    for (final SwimMember member : members.values()) {
+      if (member.address().equals(address)) {
+        return member;
+      }
+    }
+    return null;
+  }
+
+  @Override
   public CompletableFuture<Void> join(
       final BootstrapService bootstrap, final NodeDiscoveryService discovery, final Member member) {
     if (started.compareAndSet(false, true)) {
