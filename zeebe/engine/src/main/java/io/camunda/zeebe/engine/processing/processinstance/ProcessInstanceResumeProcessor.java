@@ -162,13 +162,14 @@ public final class ProcessInstanceResumeProcessor
 
   private Either<Rejection, ElementInstance> validateSuspensionState(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
-    final var marker = suspensionState.getSuspensionState(command.getKey());
-    if (marker == SuspensionState.State.SUSPENDING) {
+    final var currentSuspensionState = suspensionState.getSuspensionState(command.getKey());
+    if (currentSuspensionState == SuspensionState.State.SUSPENDING) {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_STATE, PROCESS_SUSPENDING_MESSAGE.formatted(command.getKey())));
     }
-    if (marker != SuspensionState.State.SUSPENDED && marker != SuspensionState.State.RESUMING) {
+    if (currentSuspensionState != SuspensionState.State.SUSPENDED
+        && currentSuspensionState != SuspensionState.State.RESUMING) {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_STATE,
