@@ -49,6 +49,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * <p>{@code okta} maps the client id from a custom claim, and only that claim's value is an admin
  * of {@code tenanta}. Every token carries {@code sub}, so a principal resolved with any other claim
  * settings is still authenticated but not authorized: the deployment is what proves the claims.
+ *
+ * <p>The root default slot also sets a groups claim and UserInfo augmentation. {@code tenanta}
+ * keeps both settings although it does not assign the default slot, which must not make the root
+ * issuer trusted again.
  */
 @Testcontainers
 @ZeebeIntegration
@@ -65,6 +69,8 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
   private static final String CLIENT_O = "client-o";
   private static final String OKTA_CLIENT_ID_CLAIM = "okta_client";
   private static final String OKTA_PRINCIPAL = "okta-principal";
+  private static final String CLIENT_O_MEMBER = "client-o-member";
+  private static final String OKTA_GROUP = "okta-team";
 
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
@@ -85,11 +91,18 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
   private static CamundaClient oktaOnTenantA;
   private static CamundaClient keycloakOnTenantB;
   private static CamundaClient oktaOnTenantB;
+  private static CamundaClient oktaMemberOnTenantA;
 
   @BeforeAll
   static void startBroker(@TempDir final Path tempDir) {
-    createRealm(REALM_K, CLIENT_K, Map.of());
-    createRealm(REALM_O, CLIENT_O, Map.of(OKTA_CLIENT_ID_CLAIM, OKTA_PRINCIPAL));
+    createRealm(REALM_K, serviceClient(CLIENT_K));
+    createRealm(
+        REALM_O,
+        serviceClient(CLIENT_O, hardcodedClaim(OKTA_CLIENT_ID_CLAIM, OKTA_PRINCIPAL, "String")),
+        serviceClient(
+            CLIENT_O_MEMBER,
+            hardcodedClaim(OKTA_CLIENT_ID_CLAIM, "okta-member", "String"),
+            hardcodedClaim("groups", "[\"" + OKTA_GROUP + "\"]", "JSON")));
 
     final String keycloakBase = KEYCLOAK.getAuthServerUrl();
     // redirectUri is required by Spring's client registration even though gRPC never redirects
@@ -98,12 +111,15 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
           c.getAuthentication().getOidc().setIssuerUri(keycloakBase + "/realms/" + REALM_K);
           c.getAuthentication().getOidc().setClientId(CLIENT_K);
           c.getAuthentication().getOidc().setRedirectUri("{baseUrl}/login/oauth2/code/oidc");
+          c.getAuthentication().getOidc().setGroupsClaim("groups");
+          c.getAuthentication().getOidc().getUserInfoAugmentation().setEnabled(true);
         });
     final String okta = "camunda.security.authentication.providers.oidc.okta.";
     BROKER
         .withProperty(okta + "issuer-uri", keycloakBase + "/realms/" + REALM_O)
         .withProperty(okta + "client-id", CLIENT_O)
         .withProperty(okta + "client-id-claim", OKTA_CLIENT_ID_CLAIM)
+        .withProperty(okta + "groups-claim", "groups")
         .withProperty(okta + "redirect-uri", "{baseUrl}/login/oauth2/code/okta");
     assign(TENANT_A, "okta");
     assign(TENANT_B, "oidc");
@@ -119,7 +135,9 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
                             "users",
                             List.of(TENANTS.adminUsername(TENANT_A)),
                             "clients",
-                            List.of(OKTA_PRINCIPAL)))));
+                            List.of(OKTA_PRINCIPAL),
+                            "groups",
+                            List.of(OKTA_GROUP)))));
 
     BROKER.start();
 
@@ -127,6 +145,7 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
     oktaOnTenantA = client(REALM_O, CLIENT_O, TENANT_A, tempDir);
     keycloakOnTenantB = client(REALM_K, CLIENT_K, TENANT_B, tempDir);
     oktaOnTenantB = client(REALM_O, CLIENT_O, TENANT_B, tempDir);
+    oktaMemberOnTenantA = client(REALM_O, CLIENT_O_MEMBER, TENANT_A, tempDir);
 
     Awaitility.await("broker ready")
         .atMost(Duration.ofSeconds(60))
@@ -136,7 +155,8 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
 
   @AfterAll
   static void closeClients() {
-    CloseHelper.quietCloseAll(keycloakOnTenantA, oktaOnTenantA, keycloakOnTenantB, oktaOnTenantB);
+    CloseHelper.quietCloseAll(
+        keycloakOnTenantA, oktaOnTenantA, keycloakOnTenantB, oktaOnTenantB, oktaMemberOnTenantA);
   }
 
   @Test
@@ -159,6 +179,18 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
     assertThatNoException()
         .as("okta token deploys on tenanta, so it resolved to the admin %s", OKTA_PRINCIPAL)
         .isThrownBy(() -> TENANTS.deploy(oktaOnTenantA, process, "okta_process"));
+  }
+
+  @Test
+  void shouldForwardGroupsOfAssignedProviderToBroker() {
+    // given a client that is not an admin itself, only through its okta group
+    final var process =
+        Bpmn.createExecutableProcess("okta_group_process").startEvent().endEvent().done();
+
+    // when / then
+    assertThatNoException()
+        .as("okta group member deploys on tenanta, so its groups reached the broker")
+        .isThrownBy(() -> TENANTS.deploy(oktaMemberOnTenantA, process, "okta_group_process"));
   }
 
   @Test
@@ -185,44 +217,40 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
         providerId);
   }
 
-  private static void createRealm(
-      final String realmName, final String clientId, final Map<String, String> hardcodedClaims) {
+  private static void createRealm(final String realmName, final ClientRepresentation... clients) {
+    final var realm = new RealmRepresentation();
+    realm.setRealm(realmName);
+    realm.setEnabled(true);
+    realm.setClients(List.of(clients));
+    try (final var admin = KEYCLOAK.getKeycloakAdminClient()) {
+      admin.realms().create(realm);
+    }
+  }
+
+  private static ClientRepresentation serviceClient(
+      final String clientId, final ProtocolMapperRepresentation... mappers) {
     final var client = new ClientRepresentation();
     client.setClientId(clientId);
     client.setEnabled(true);
     client.setClientAuthenticatorType("client-secret");
     client.setSecret(clientId + "-secret");
     client.setServiceAccountsEnabled(true);
-    client.setProtocolMappers(
-        hardcodedClaims.entrySet().stream()
-            .map(claim -> hardcodedClaimMapper(claim.getKey(), claim.getValue()))
-            .toList());
-
-    final var realm = new RealmRepresentation();
-    realm.setRealm(realmName);
-    realm.setEnabled(true);
-    realm.setClients(List.of(client));
-    try (final var admin = KEYCLOAK.getKeycloakAdminClient()) {
-      admin.realms().create(realm);
-    }
+    client.setProtocolMappers(List.of(mappers));
+    return client;
   }
 
-  private static ProtocolMapperRepresentation hardcodedClaimMapper(
-      final String name, final String value) {
+  private static ProtocolMapperRepresentation hardcodedClaim(
+      final String name, final String value, final String jsonType) {
     final var mapper = new ProtocolMapperRepresentation();
     mapper.setName(name + "-mapper");
     mapper.setProtocol("openid-connect");
     mapper.setProtocolMapper("oidc-hardcoded-claim-mapper");
     mapper.setConfig(
         Map.of(
-            "claim.name",
-            name,
-            "claim.value",
-            value,
-            "jsonType.label",
-            "String",
-            "access.token.claim",
-            "true"));
+            "claim.name", name,
+            "claim.value", value,
+            "jsonType.label", jsonType,
+            "access.token.claim", "true"));
     return mapper;
   }
 

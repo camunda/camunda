@@ -67,8 +67,9 @@ public final class PhysicalTenantAuthenticationProviderConfigurations {
    * {@code PhysicalTenantAuthConfigurations#narrowToAssigned} in the authentication module. CSL's
    * {@link OidcProvidersConfiguration} has no {@code assigned} field, so the list is read from the
    * environment: the reserved id {@link OidcConfiguration#DEFAULT_REGISTRATION_ID} keeps the
-   * default slot, every other id keeps the like-named provider. A tenant without a selection keeps
-   * every provider.
+   * default slot (otherwise it keeps only the tenant-wide settings, see {@link #withoutProvider}),
+   * every other id keeps the like-named provider. A tenant without a selection keeps every
+   * provider.
    */
   static void narrowToAssigned(
       final Camunda physicalTenant, final String tenantId, final Environment environment) {
@@ -90,11 +91,23 @@ public final class PhysicalTenantAuthenticationProviderConfigurations {
     final AuthenticationConfiguration authentication =
         physicalTenant.getSecurity().getAuthentication();
     if (!keep.contains(OidcConfiguration.DEFAULT_REGISTRATION_ID)) {
-      authentication.setOidc(new OidcConfiguration());
+      authentication.setOidc(withoutProvider(authentication.getOidc()));
     }
     final OidcProvidersConfiguration providers = authentication.getProviders();
     if (providers != null && providers.getOidc() != null) {
       providers.getOidc().keySet().removeIf(id -> !keep.contains(id));
     }
+  }
+
+  /**
+   * The default slot without its provider fields. {@code groups-claim} (the tenant's groups mode)
+   * and {@code user-info-augmentation} also apply to the tenant's named providers, so they are
+   * kept; without a {@code client-id} CSL's {@code flatten} does not treat the slot as a provider.
+   */
+  private static OidcConfiguration withoutProvider(final OidcConfiguration defaultSlot) {
+    final OidcConfiguration tenantSettings = new OidcConfiguration();
+    tenantSettings.setGroupsClaim(defaultSlot.getGroupsClaim());
+    tenantSettings.setUserInfoAugmentation(defaultSlot.getUserInfoAugmentation());
+    return tenantSettings;
   }
 }

@@ -173,9 +173,10 @@ public final class PhysicalTenantAuthConfigurations {
    *
    * <ul>
    *   <li>the reserved id {@value #DEFAULT_SLOT_ASSIGNED_ID} keeps the unnamed default slot ({@code
-   *       authentication.oidc.*}); when it is absent from {@code assigned} the slot is reset to a
-   *       content-less instance, which CSL's {@code flatten} ignores (so the inherited cluster
-   *       provider is not turned into a chain for this tenant);
+   *       authentication.oidc.*}); when it is absent from {@code assigned} the slot loses its
+   *       provider fields and keeps only the tenant-wide settings (see {@link #withoutProvider}),
+   *       so CSL's {@code flatten} ignores it and the inherited cluster provider is not turned into
+   *       a chain for this tenant;
    *   <li>every other entry keeps the like-named {@code providers.oidc.<name>}; named providers not
    *       listed are removed.
    * </ul>
@@ -208,10 +209,9 @@ public final class PhysicalTenantAuthConfigurations {
       }
     }
 
-    // Default slot: drop unless explicitly assigned by its reserved id. setOidc never stores null
-    // (it coerces to an empty instance), so a fresh OidcConfiguration is the canonical "no slot".
+    // Default slot: drop its provider unless explicitly assigned by its reserved id.
     if (!assignedIds.contains(DEFAULT_SLOT_ASSIGNED_ID)) {
-      config.setOidc(new OidcConfiguration());
+      config.setOidc(withoutProvider(config.getOidc()));
     }
 
     // Named providers: keep only the assigned ids.
@@ -219,6 +219,18 @@ public final class PhysicalTenantAuthConfigurations {
     if (named != null) {
       named.keySet().removeIf(id -> !assignedIds.contains(id));
     }
+  }
+
+  /**
+   * The default slot without its provider fields. {@code groups-claim} (the tenant's groups mode)
+   * and {@code user-info-augmentation} also apply to the tenant's named providers, so they are
+   * kept; without a {@code client-id} CSL's {@code flatten} does not treat the slot as a provider.
+   */
+  private static OidcConfiguration withoutProvider(final OidcConfiguration defaultSlot) {
+    final OidcConfiguration tenantSettings = new OidcConfiguration();
+    tenantSettings.setGroupsClaim(defaultSlot.getGroupsClaim());
+    tenantSettings.setUserInfoAugmentation(defaultSlot.getUserInfoAugmentation());
+    return tenantSettings;
   }
 
   /**
