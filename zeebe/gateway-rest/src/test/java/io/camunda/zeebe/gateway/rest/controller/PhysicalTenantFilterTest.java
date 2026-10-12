@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.FilterChain;
@@ -112,5 +113,20 @@ class PhysicalTenantFilterTest {
     // Attribute not set — getPhysicalTenantId returns null; only current() falls back to default.
     assertThat(PhysicalTenantContext.getPhysicalTenantId(request)).isNull();
     verify(chain).doFilter(request, response);
+  }
+
+  @Test
+  void shouldRejectPercentEncodedTenantPrefix() throws Exception {
+    // given — Spring decodes %2D, so the tenant chain would authenticate this as a tenant path
+    final var request =
+        new MockHttpServletRequest("GET", "/physical%2Dtenants/tenanta/v2/roles/search");
+    final var response = new MockHttpServletResponse();
+
+    // when
+    filter.doFilter(request, response, chain);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(400);
+    verifyNoInteractions(chain);
   }
 }

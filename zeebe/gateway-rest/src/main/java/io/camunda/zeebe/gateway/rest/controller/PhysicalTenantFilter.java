@@ -14,9 +14,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
  * Servlet {@link Filter} that extracts the physical tenant id from tenant-prefixed request paths
@@ -34,6 +36,11 @@ import org.slf4j.LoggerFactory;
  * extraction point, and rejection of unknown tenants is left to CSL's security chains (an
  * unconfigured tenant matches no per-scope chain and is rejected by the catch-all with 404). See
  * ADR-0003.
+ *
+ * <p>Spring Security and Spring MVC match the <em>decoded</em> path, so {@code
+ * /physical%2Dtenants/tenanta/...} is authenticated by tenant {@code tenanta}'s chain. Reading only
+ * the raw URI would stamp no tenant id and silently fall back to the {@code default} tenant, so
+ * requests whose raw and decoded paths disagree on being a tenant path are rejected with 400.
  */
 public final class PhysicalTenantFilter implements Filter {
 
@@ -46,9 +53,24 @@ public final class PhysicalTenantFilter implements Filter {
       final FilterChain chain)
       throws IOException, ServletException {
     if (servletRequest instanceof final HttpServletRequest request) {
+      if (hasEncodedTenantPrefix(request)) {
+        LOG.warn("Rejecting request with a percent-encoded physical tenant path prefix");
+        ((HttpServletResponse) servletResponse).sendError(HttpServletResponse.SC_BAD_REQUEST);
+        return;
+      }
       extractTenantId(request);
     }
     chain.doFilter(servletRequest, servletResponse);
+  }
+
+  private static boolean hasEncodedTenantPrefix(final HttpServletRequest request) {
+    final String decoded = UrlPathHelper.defaultInstance.getPathWithinApplication(request);
+    return decoded.startsWith(PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT)
+        && !isTenantPath(contextRelativePath(request));
+  }
+
+  private static boolean isTenantPath(final String path) {
+    return path != null && path.startsWith(PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT);
   }
 
   private void extractTenantId(final HttpServletRequest request) {
@@ -57,7 +79,7 @@ public final class PhysicalTenantFilter implements Filter {
     // context-relative path. Strip the context path so both agree regardless of how the host is
     // deployed.
     final String path = contextRelativePath(request);
-    if (path == null || !path.startsWith(PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT)) {
+    if (!isTenantPath(path)) {
       return;
     }
     // Extract the segment after /physical-tenants/
