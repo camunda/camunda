@@ -54,7 +54,7 @@ public final class PhysicalTenantFilter implements Filter {
       throws IOException, ServletException {
     if (servletRequest instanceof final HttpServletRequest request) {
       if (hasEncodedTenantPrefix(request)) {
-        LOG.warn("Rejecting request with a percent-encoded physical tenant path prefix");
+        LOG.debug("Rejecting request with a percent-encoded physical tenant path prefix");
         ((HttpServletResponse) servletResponse).sendError(HttpServletResponse.SC_BAD_REQUEST);
         return;
       }
