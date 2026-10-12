@@ -7,11 +7,13 @@
  */
 package io.camunda.it.physicaltenant;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.security.api.context.CamundaSecurityScopeProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
@@ -101,9 +103,14 @@ final class PhysicalTenantOidcClientSecretIT {
     // given — the tenant sets its own secret for the other IdP
     final var broker = brokerWithTenantOverride("tenant-secret");
 
-    // when/then
+    // when/then — the secret that reaches the tenant's client registration is the tenant's own
     try {
       assertThatCode(broker::start).doesNotThrowAnyException();
+      assertThat(broker.bean(CamundaSecurityScopeProvider.class).get())
+          .filteredOn(scope -> scope.basePath().endsWith("/" + TENANT_ID))
+          .singleElement()
+          .extracting(scope -> scope.authentication().getOidc().getClientSecret())
+          .isEqualTo("tenant-secret");
     } finally {
       broker.close();
     }
