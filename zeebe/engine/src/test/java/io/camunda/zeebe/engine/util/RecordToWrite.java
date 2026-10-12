@@ -392,6 +392,11 @@ public final class RecordToWrite implements LogAppendEntry {
     return this;
   }
 
+  public RecordToWrite recordVersion(final int recordVersion) {
+    recordMetadata.recordVersion(recordVersion);
+    return this;
+  }
+
   @Override
   public long key() {
     return key;

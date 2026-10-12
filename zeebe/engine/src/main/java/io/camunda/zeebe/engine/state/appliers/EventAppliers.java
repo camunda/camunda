@@ -642,8 +642,8 @@ public final class EventAppliers implements EventApplier {
   /**
    * Appliers for the cross-partition {@code MessageStartProcessInstanceRequest} handshake. All
    * intents were introduced together with this feature, so each starts at a single V1 applier.
-   * {@code STARTED} additionally has a V2, registered as version 2 and currently identical to V1,
-   * so the follow-up change that persists the storage ordinal shows as a plain diff against it.
+   * {@code STARTED} additionally has a V2 that persists the storage ordinal on the dedup entry; V1
+   * stays registered to replay {@code STARTED} events written before the ordinal existed.
    *
    * <ul>
    *   <li>{@code REQUESTED}: acknowledgement event with no state effect.
