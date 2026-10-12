@@ -207,6 +207,63 @@ final class PhysicalTenantHandlerFactoryTest {
         .containsExactly("keycloak-team");
   }
 
+  @Test
+  void shouldReadGroupsWithTenantGroupsClaimWhenProviderSetsNone() throws Exception {
+    // given the tenant reads groups from "roles", and the named provider sets no groups claim
+    final var handler = handlerWithGroupsClaims("roles", null);
+
+    // when
+    final var oktaContext = handler.authenticate("Bearer okta-token").get();
+
+    // then the provider's tokens inherit the tenant's groups claim
+    assertThat(oktaContext.call(() -> AuthenticationHandler.IS_CAMUNDA_GROUPS_ENABLED.get()))
+        .isFalse();
+    assertThat(oktaContext.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get()))
+        .containsExactly("keycloak-team");
+  }
+
+  @Test
+  void shouldNotReadTokenGroupsWhenTenantUsesCamundaGroups() throws Exception {
+    // given the tenant uses Camunda groups (empty groups claim), and the named provider sets one
+    final var handler = handlerWithGroupsClaims("", "groups");
+
+    // when
+    final var oktaContext = handler.authenticate("Bearer okta-token").get();
+
+    // then the tenant's groups mode wins and no token groups are sent
+    assertThat(oktaContext.call(() -> AuthenticationHandler.IS_CAMUNDA_GROUPS_ENABLED.get()))
+        .isTrue();
+    assertThat(oktaContext.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get())).isNull();
+  }
+
+  private AuthenticationHandler handlerWithGroupsClaims(
+      final String tenantGroupsClaim, final String oktaGroupsClaim) {
+    final var config = securityConfig(AuthenticationMethod.OIDC);
+    final var defaultSlot = config.getAuthentication().getOidc();
+    defaultSlot.setIssuerUri("https://keycloak.example.com");
+    defaultSlot.setClientId("keycloak-client");
+    defaultSlot.setGroupsClaim(tenantGroupsClaim);
+    final var okta = new OidcConfiguration();
+    okta.setIssuerUri("https://okta.example.com");
+    okta.setClientId("okta-client");
+    okta.setUsernameClaim("preferred_username");
+    okta.setGroupsClaim(oktaGroupsClaim);
+    final var providers = new OidcProvidersConfiguration();
+    providers.setOidc(new LinkedHashMap<>(Map.of("okta", okta)));
+    config.getAuthentication().setProviders(providers);
+
+    final var decoder = mock(JwtDecoder.class);
+    when(decoder.decode("okta-token")).thenReturn(tokenWithAllClaims("https://okta.example.com"));
+    return PhysicalTenantHandlerFactory.build(
+            Map.of("tenanta", config),
+            true,
+            authConfig -> decoder,
+            claimsProviderFactory,
+            userServicesForTenant,
+            passwordEncoder)
+        .get("tenanta");
+  }
+
   /** A token carrying both principal claims and both groups claims, so only settings decide. */
   private static Jwt tokenWithAllClaims(final String issuer) {
     return Jwt.withTokenValue("token")
