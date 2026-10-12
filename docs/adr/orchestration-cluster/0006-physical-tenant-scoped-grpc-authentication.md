@@ -201,7 +201,9 @@ non-PT deployments are unchanged.
 - Single/default-PT deployments are unchanged (everything resolves to the one `default` PT).
 - `EndpointManager`'s partition-group routing is unchanged — it still reads the PT id from the
   `Context`; only the producer of that value changes (the merged interceptor instead of the removed
-  `PhysicalTenantInterceptor`).
+  `PhysicalTenantInterceptor`). The same PT id also selects the security config `EndpointManager`
+  uses to build the broker request's authorization claims, so groups and token claims follow the
+  targeted PT's settings rather than the `default` PT's.
 
 ## Alternatives Considered
 
