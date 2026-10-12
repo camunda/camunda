@@ -14,6 +14,7 @@ import java.util.Objects;
 public record SearchTopHitsAggregator<T>(
     String name,
     String field,
+    List<String> excludes,
     Integer size,
     List<SearchAggregator> aggregations,
     Class<T> documentClass)
@@ -33,6 +34,7 @@ public record SearchTopHitsAggregator<T>(
       extends SearchAggregator.AbstractBuilder<SearchTopHitsAggregator.Builder<T>>
       implements ObjectBuilder<SearchTopHitsAggregator<T>> {
     private String field;
+    private List<String> excludes;
     private Integer size = 1; // Default to 1 hits
     private Class<T> documentClass;
 
@@ -43,6 +45,11 @@ public record SearchTopHitsAggregator<T>(
 
     public SearchTopHitsAggregator.Builder<T> field(final String value) {
       field = value;
+      return this;
+    }
+
+    public SearchTopHitsAggregator.Builder<T> excludes(final List<String> values) {
+      excludes = values;
       return this;
     }
 
@@ -65,6 +72,7 @@ public record SearchTopHitsAggregator<T>(
       return new SearchTopHitsAggregator<T>(
           Objects.requireNonNull(name, "Expected non-null field for name."),
           Objects.requireNonNull(field, "Expected non-null field for field."),
+          Objects.requireNonNullElse(excludes, List.of()),
           size,
           aggregations,
           documentClass);

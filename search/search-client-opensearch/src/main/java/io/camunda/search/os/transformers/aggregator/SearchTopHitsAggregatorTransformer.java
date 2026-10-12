@@ -37,6 +37,9 @@ public class SearchTopHitsAggregatorTransformer
                                 });
                             return sortBuilder;
                           });
+                  if (!value.excludes().isEmpty()) {
+                    topHitsAggBuilder.source(s -> s.filter(f -> f.excludes(value.excludes())));
+                  }
                   return topHitsAggBuilder;
                 });
     applySubAggregations(builder, value);
