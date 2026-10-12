@@ -87,8 +87,15 @@ work, or a real multi-command CLI.
 - Everything under `load-tests/setup/` — Makefiles, values files, secondary
   storage config, scripts
 
+**Always backport:**
+- `load-tests/load-tester/`: Java app, version-coupled to the branch's client library. Every
+  change to it carries a `backport stable/X.Y` label for each supported stable branch it applies
+  to, set when the PR is created. Skip a branch only when the change cannot apply there (for
+  example, 8.7 has no REST API, so REST and data availability changes do not apply to it) and say
+  so in the PR description. Later changes build on earlier ones, so a skipped backport turns the
+  next backport of the same files into a conflict.
+
 **Backport only when the stable-branch artifact itself changes:**
-- `load-tests/load-tester/` — Java app; version-coupled to the branch's client library
 - `.github/workflows/` on stable branches — thin wrappers that sparse-checkout
   `load-tests/setup/stable-8X` from `main`. Only backport when the wrapper shell
   itself changes, not when setup values change.
