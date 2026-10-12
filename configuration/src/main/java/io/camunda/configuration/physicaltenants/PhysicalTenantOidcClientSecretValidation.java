@@ -25,15 +25,12 @@ import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
 
 /**
- * Fail-fast startup validation: a physical tenant that points a cluster OIDC provider at a
- * different identity provider must set its own {@code client-secret}.
+ * Stops startup when a physical tenant would send the cluster OIDC client secret to a different
+ * identity provider.
  *
- * <p>A tenant inherits every provider field it does not set from the cluster provider with the same
- * id (the default slot {@code oidc} or a named {@code providers.oidc.<id>}). If the tenant changes
- * the {@code issuer-uri} or the {@code token-uri} but not the secret, the cluster secret is sent to
- * the token endpoint of the other identity provider. A secret the tenant sets itself, also one
- * equal to the cluster secret, is accepted. Providers that authenticate with {@code
- * private_key_jwt} send no secret and are not checked.
+ * <p>A tenant inherits each provider field that it does not set. If it changes the issuer or the
+ * token endpoint but not the secret, the inherited secret goes to the other identity provider. A
+ * secret that the tenant sets itself is accepted, because then the operator made the decision.
  */
 @NullMarked
 final class PhysicalTenantOidcClientSecretValidation {
@@ -62,7 +59,6 @@ final class PhysicalTenantOidcClientSecretValidation {
       throw new UnifiedConfigurationException(e);
     }
 
-    // provider id -> relative path of the provider below the authentication prefix
     final Map<String, String> sharedProviders = new LinkedHashMap<>();
     sharedProviders.put(OidcConfiguration.DEFAULT_REGISTRATION_ID, "oidc");
     binder
@@ -94,8 +90,8 @@ final class PhysicalTenantOidcClientSecretValidation {
     if (!violations.isEmpty()) {
       throw new UnifiedConfigurationException(
           "A physical tenant that changes the 'issuer-uri' or 'token-uri' of a cluster OIDC "
-              + "provider must set its own 'client-secret'; otherwise the cluster secret is sent to "
-              + "the other identity provider. "
+              + "provider must set its own 'client-secret'. If not, the cluster secret goes to the "
+              + "other identity provider. "
               + violations);
     }
   }
@@ -109,9 +105,10 @@ final class PhysicalTenantOidcClientSecretValidation {
     if (binder.bind(tenantPath + ".client-secret", Bindable.of(String.class)).isBound()) {
       return false;
     }
-    // the same binding order as the runtime merge: root first, tenant overlay on top
+    // Bind in the same order as the runtime merge, so that the check sees the same values.
     final OidcConfiguration merged =
         bindProvider(binder, tenantPath, bindProvider(binder, rootPath, new OidcConfiguration()));
+    // private_key_jwt does not send the secret.
     if (OidcConfiguration.CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT.equals(
         merged.getClientAuthenticationMethod())) {
       return false;

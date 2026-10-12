@@ -26,10 +26,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * A physical tenant inherits every OIDC field it does not set from the cluster provider with the
- * same id. When the tenant points that provider at a different identity provider, an inherited
- * client secret would be sent to that other identity provider. The broker must refuse to start in
- * that case, and must start when the tenant sets its own secret.
+ * A tenant inherits each OIDC field that it does not set. Startup must stop when this would send
+ * the cluster client secret to the identity provider of a tenant. Keycloak gives real issuers, so
+ * that the correct config can start.
  */
 @Testcontainers
 @ZeebeIntegration
@@ -82,7 +81,7 @@ final class PhysicalTenantOidcClientSecretIT {
 
   @Test
   void shouldStartWhenTenantIssuerHasItsOwnClientSecret() {
-    // given — the tenant sets its own secret together with the other IdP
+    // given — the tenant sets its own secret for the other IdP
     final var broker = brokerWithTenantOverride("tenant-secret");
 
     // when/then
