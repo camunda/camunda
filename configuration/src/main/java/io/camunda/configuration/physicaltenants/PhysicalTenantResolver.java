@@ -88,6 +88,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     PhysicalTenantOverridePolicyValidation.validate(environment);
     PhysicalTenantRequiredOverrideValidation.validate(environment);
     PhysicalTenantAssignedProvidersValidation.validate(environment);
+    PhysicalTenantOidcClientSecretValidation.validate(environment);
     PhysicalTenantDocumentAssignedValidation.validateRootAssignedAbsent(environment);
     PhysicalTenantExporterAssignedValidation.validateRootAssignedAbsent(environment);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
