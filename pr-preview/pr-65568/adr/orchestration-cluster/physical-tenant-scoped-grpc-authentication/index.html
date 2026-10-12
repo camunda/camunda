@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-65568/adr/orchestration-cluster/physical-tenant-scoped-grpc-authentication/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-65568/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-65568/adr/orchestration-cluster/physical-tenant-scoped-grpc-authentication/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-65568/adr/orchestration-cluster/physical-tenant-scoped-grpc-authentication/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-65568/adr/orchestration-cluster/physical-tenant-scoped-grpc-authentication/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Orchestration Cluster","item":"https://camunda.github.io/camunda/pr-preview/pr-65568/adr/orchestration-cluster/"},{"@type":"ListItem","position":2,"name":"ADR-0006: Physical-Tenant-Scoped gRPC Authentication","item":"https://camunda.github.io/camunda/pr-preview/pr-65568/adr/orchestration-cluster/physical-tenant-scoped-grpc-authentication"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-65568/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-65568/assets/js/runtime~main.dc0ded9a.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-65568/assets/js/main.3f673dfa.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-65568/assets/js/runtime~main.d29c8676.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-65568/assets/js/main.471d8641.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -86,9 +86,11 @@ slot <code>OidcConfiguration</code>, <code>claimConfigsByIssuer</code> = that PT
 default slot, then each assigned <code>providers.oidc.&lt;id&gt;</code>), and <code>claimsProvider</code> = that PT&#x27;s
 <code>OidcClaimsProvider</code>. This is the key reason the per-PT unit is a handler, not a decoder:</p>
 <ul>
-<li class="">The handler derives its <code>OidcPrincipalLoader</code> / <code>OidcGroupsExtractor</code> and prefer-username /
-groups-claim behavior per provider at construction time, and picks the set matching the token&#x27;s
-<code>iss</code>, falling back to <code>oidcConfig</code>. A PT on a different IdP (with different
+<li class="">The handler derives its <code>OidcPrincipalLoader</code> / <code>OidcGroupsExtractor</code> and prefer-username
+behavior per provider at construction time, and picks the set matching the token&#x27;s <code>iss</code>,
+falling back to <code>oidcConfig</code>. A provider without its own <code>groups-claim</code> uses the PT&#x27;s, and the
+groups mode (token groups or Camunda groups) always comes from the PT&#x27;s <code>oidcConfig</code>, so it
+matches the broker and the Groups API. A PT on a different IdP (with different
 username/client-id/groups claim names) therefore needs its own handler, and a PT with several
 providers resolves each token with the claim names of the provider that issued it.</li>
 <li class="">The handler invokes <code>claimsProvider</code> between <code>JwtDecoder.decode(...)</code> and
