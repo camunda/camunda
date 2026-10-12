@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.zeebe.util.FunctionUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -113,7 +114,8 @@ public class UsageMetricsArchiverJob implements ArchiverJob {
       final String idField,
       final List<String> ids) {
     return repository
-        .moveDocuments(sourceIndex, destinationIndexName, idField, ids, executor)
+        .moveDocumentsById(
+            sourceIndex, destinationIndexName, idField, ids, Map.of(), Map.of(), executor)
         .thenApplyAsync(ok -> ids.size(), executor);
   }
 
