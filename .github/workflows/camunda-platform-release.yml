@@ -775,6 +775,27 @@ jobs:
           allow-unattributed: 'true'
           unattributed-reason: 'shadow run (#57713) — comparing against the legacy zcl changelog, not yet gating'
           output-dir: release-notes-shadow
+      # Read-only comparison of the generator's label/comment plan with the
+      # version:<tag> labels zcl applied in the github job (#57714). Writes
+      # nothing to GitHub; the report lands in this job's summary.
+      - name: Compare label and comment plan with zcl (apply dry run)
+        id: apply-dry-run-shadow
+        if: ${{ always() && !cancelled() }}
+        continue-on-error: true
+        uses: ./.github/actions/release-notes/apply
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          input-dir: release-notes-shadow
+          generate-outcome: ${{ steps.gen-changelog-shadow.outcome }}
+      - name: Upload apply divergence report
+        if: ${{ always() && !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: apply-divergence-${{ inputs.releaseVersion }}
+          path: release-notes-shadow/apply-divergence.json
+          if-no-files-found: ignore
+          retention-days: 30
       # continue-on-error above hides a timeout or crash from the job's own
       # status; surface it here so a swallowed failure still shows up.
       - name: Report shadow-run outcome
