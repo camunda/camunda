@@ -877,6 +877,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     if (bulkResponse.errors()) {
       final Set<String> failedOperationIds = getFailedOperationIds(bulkResponse);
       if (!failedOperationIds.isEmpty()) {
+        recordNestedLimitSkippedDocuments(itemName, failedOperationIds.size());
         LOG.warn(
             "There were failures while performing bulk on {} due to the nested document limit being reached."
                 + " Removing {} failed items and retrying",
