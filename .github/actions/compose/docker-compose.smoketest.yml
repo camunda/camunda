@@ -151,6 +151,9 @@ services:
   operate:
     image: camunda/operate:${OPERATE_VERSION:-latest}
     container_name: operate
+    # Operate 8.6 is Alpine/musl: it stops at the runner's k8s search domains and fails to resolve "zeebe"
+    dns_opt:
+      - ndots:0
     environment:
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
