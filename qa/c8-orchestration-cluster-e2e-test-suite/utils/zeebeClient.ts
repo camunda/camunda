@@ -43,8 +43,16 @@ const zeebe = c8.getCamundaRestClient();
 const zeebeGrpc = c8.getZeebeGrpcApiClient();
 const deploy = async (processFilePaths: string[]) => {
   try {
-    const results = await zeebe.deployResourcesFromFiles(processFilePaths);
-    return results;
+    // The SDK's deployResourcesFromFiles stores the full path passed in as the
+    // deployed resourceName (e.g. "./resources/foo.bpmn"). Deploy each resource
+    // under its basename instead so resourceName matches the suite-wide
+    // convention ("foo.bpmn") that search filters and assertions rely on, and
+    // that every other deploy path (e.g. deployWithSubstitutions) already uses.
+    const resources = processFilePaths.map((filePath) => ({
+      content: readFileSync(filePath, {encoding: 'binary'}),
+      name: basename(filePath),
+    }));
+    return await zeebe.deployResources(resources);
   } catch (error) {
     console.error('Deployment failed:', error);
     throw error;
