@@ -16,10 +16,14 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessIn
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 
 /**
- * Records the state effects of a successful cross-partition message-start {@link
+ * Version 2 of the STARTED applier: additionally stores the storage ordinal of the created instance
+ * in the dedup row, so a dedup hit on {@code P_B} can reply with it. Version 1 is released and
+ * stays unchanged; rows it wrote carry ordinal 0.
+ *
+ * <p>Records the state effects of a successful cross-partition message-start {@link
  * MessageStartProcessInstanceRequestIntent#STARTED} reply.
  *
- * <p>The handshake — and therefore this applier — is engaged only when the holder's {@code
+ * <p>The handshake - and therefore this applier - is engaged only when the holder's {@code
  * businessId} hashes to a different partition than the message's correlation key ({@code P_B !=
  * P_K}). Single-partition deployments, and the case where {@code businessId} and correlation key
  * happen to hash to the same partition, take the local message-start path instead and never reach
@@ -30,18 +34,19 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
  *
  * <ul>
  *   <li><b>Dedup upsert on {@code P_B}.</b> Writes {@code (processDefinitionKey, messageKey) ->
- *       (processInstanceKey, deletionDeadline)} into the dedup column family. The {@code
- *       deletionDeadline} is taken directly from the request record's {@code messageDeadline} — the
- *       deadline of the originating buffered message on {@code P_K} ({@code publishTime + ttl}) —
- *       so the dedup row on {@code P_B} and the buffered message on {@code P_K} share the same
- *       lifetime without any engine-internal time coupling. The entry exists to bound {@code P_K}'s
- *       retry window, not to track the holder PI's lifecycle. Combined with the lookup-time
- *       banned-PI filter and the scheduled sweeper, this defends {@code P_B} against retries from
- *       {@code P_K}'s pending-ask state. Upsert semantics let a fresh {@code STARTED} after a
- *       previous holder was banned (or after the previous deadline passed but the sweep had not yet
- *       run) replace the prior entry with a new {@code processInstanceKey} and the deadline carried
- *       by the retry's record. On {@code P_K} the put is wasted state but never read, so leaving it
- *       in place keeps the applier symmetric and avoids routing logic inside the applier.
+ *       (processInstanceKey, deletionDeadline, storageOrdinal)} into the dedup column family. The
+ *       {@code deletionDeadline} is taken directly from the request record's {@code
+ *       messageDeadline} - the deadline of the originating buffered message on {@code P_K} ({@code
+ *       publishTime + ttl}) - so the dedup row on {@code P_B} and the buffered message on {@code
+ *       P_K} share the same lifetime without any engine-internal time coupling. The entry exists to
+ *       bound {@code P_K}'s retry window, not to track the holder PI's lifecycle. Combined with the
+ *       lookup-time banned-PI filter and the scheduled sweeper, this defends {@code P_B} against
+ *       retries from {@code P_K}'s pending-ask state. Upsert semantics let a fresh {@code STARTED}
+ *       after a previous holder was banned (or after the previous deadline passed but the sweep had
+ *       not yet run) replace the prior entry with a new {@code processInstanceKey} and the deadline
+ *       carried by the retry's record. On {@code P_K} the put is wasted state but never read, so
+ *       leaving it in place keeps the applier symmetric and avoids routing logic inside the
+ *       applier.
  *   <li><b>Pending-ask removal on {@code P_K}.</b> Always called; {@code remove} is a no-op when
  *       the entry is absent. On {@code P_B} there is no pending-ask, so this is also a harmless
  *       no-op.
@@ -50,11 +55,11 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
  *       {@code messageKey} whose partition bits address {@code P_K}, so that when the holder later
  *       completes or terminates on {@code P_B} it can push a {@code RELEASE} to {@code P_K} without
  *       re-deriving those coordinates from the completing element's context (the completing context
- *       is unreliable under migration — the holder may since run a different process id).
+ *       is unreliable under migration - the holder may since run a different process id).
  *       Discriminated to {@code P_B} by the holder instance key's partition bits: the PI was
  *       created on {@code P_B}, so {@code decodePartitionId(processInstanceKey) == partitionId}
  *       there, whereas on {@code P_K} the same reply carries a PI key that decodes to {@code P_B}
- *       and is skipped — the mirror of the discriminator used by the lock write below. Written only
+ *       and is skipped - the mirror of the discriminator used by the lock write below. Written only
  *       when the holder carries a correlation key: without one there is no correlation-key lock on
  *       {@code P_K} to release. The write is {@code upsert} and therefore idempotent under a
  *       re-applied {@code STARTED} reply.
@@ -104,7 +109,8 @@ final class MessageStartProcessInstanceStartedV2Applier
         value.getProcessDefinitionKey(),
         value.getMessageKey(),
         value.getProcessInstanceKey(),
-        value.getMessageDeadline());
+        value.getMessageDeadline(),
+        value.getStorageOrdinal());
 
     // On P_K: remove the pending ask so the retry scheduler stops resending. Safe to call
     // unconditionally; remove() is a no-op when no entry exists.

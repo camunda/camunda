@@ -45,7 +45,7 @@ final class MessageStartProcessInstanceStartedV2ApplierTest {
 
   @Test
   public void shouldWriteHolderOriginOnHolderPartition() {
-    // given the applier runs on P_B — the partition the holder instance was created on
+    // given the applier runs on P_B - the partition the holder instance was created on
     final var applier = applierForPartition(P_B);
     final long holderKey = Protocol.encodePartitionId(P_B, RAW_HOLDER_KEY);
 
@@ -63,7 +63,7 @@ final class MessageStartProcessInstanceStartedV2ApplierTest {
 
   @Test
   public void shouldNotWriteHolderOriginOnLockPartition() {
-    // given the applier runs on P_K — the lock partition, where the same STARTED reply is applied
+    // given the applier runs on P_K - the lock partition, where the same STARTED reply is applied
     // but the holder instance lives on another partition (its key encodes P_B)
     final var applier = applierForPartition(P_K);
     final long holderKey = Protocol.encodePartitionId(P_B, RAW_HOLDER_KEY);
@@ -87,6 +87,24 @@ final class MessageStartProcessInstanceStartedV2ApplierTest {
 
     // then no holder-origin entry is written
     assertThat(messageState.getCrossPartitionStartHolderOrigin(holderKey)).isNull();
+  }
+
+  @Test
+  public void shouldStoreStorageOrdinalInDedupEntry() {
+    // given
+    final var applier = applierForPartition(P_B);
+    final long holderKey = Protocol.encodePartitionId(P_B, RAW_HOLDER_KEY);
+
+    // when
+    applier.applyState(
+        1L, startedRecord(holderKey, CORRELATION_KEY, BUSINESS_ID).setStorageOrdinal(1234));
+
+    // then
+    final var entry =
+        processingState
+            .getMessageStartProcessInstanceDedupState()
+            .get(PROCESS_DEFINITION_KEY, MESSAGE_KEY);
+    assertThat(entry.getStorageOrdinal()).isEqualTo(1234);
   }
 
   private MessageStartProcessInstanceStartedV2Applier applierForPartition(final int partitionId) {

@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
@@ -655,13 +656,90 @@ public class SubscriptionCommandSenderTest {
   }
 
   @Test
+  public void shouldMarkStartProcessInstanceRequestAsNotOrdinalControlled() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceRequest(
+        SAME_PARTITION,
+        DEFAULT_MESSAGE_KEY,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_START_EVENT_ID,
+        DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY,
+        DEFAULT_VARIABLES,
+        DEFAULT_MESSAGE_DEADLINE,
+        DEFAULT_MESSAGE_TTL,
+        DEFAULT_TENANT);
+
+    // then
+    final var recordCaptor =
+        ArgumentCaptor.forClass(MessageStartProcessInstanceRequestRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkDirectStartProcessInstanceRequestAsNotOrdinalControlled() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendDirectStartProcessInstanceRequest(
+        DIFFERENT_PARTITION,
+        DEFAULT_MESSAGE_KEY,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_START_EVENT_ID,
+        DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY,
+        DEFAULT_VARIABLES,
+        DEFAULT_MESSAGE_DEADLINE,
+        DEFAULT_MESSAGE_TTL,
+        DEFAULT_TENANT);
+
+    // then
+    final var recordCaptor =
+        ArgumentCaptor.forClass(MessageStartProcessInstanceRequestRecord.class);
+    verify(mockInterPartitionCommandSender)
+        .sendCommand(
+            eq(DIFFERENT_PARTITION),
+            eq(ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST),
+            eq(MessageStartProcessInstanceRequestIntent.REQUEST),
+            recordCaptor.capture());
+    assertThat(recordCaptor.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkStartProcessInstanceRejectionReplyAsNotOrdinalControlled() {
+    // given a request that (wrongly) carries an instance ordinal
+    final var request = requestFromSourcePartition(SAME_PARTITION).setStorageOrdinal(1234);
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceUniquenessRejected(request);
+
+    // then the rejection is forced to the marker, the request value is not copied
+    final var recordCaptor =
+        ArgumentCaptor.forClass(MessageStartProcessInstanceRequestRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
   public void shouldSentFollowUpCommandForStartProcessInstanceStartedReply() {
     // given a request whose messageKey encodes a different source partition than the sender
     final var request = requestFromSourcePartition(DIFFERENT_PARTITION);
     final long createdPiKey = 999L;
 
     // when the P_B side replies STARTED
-    subscriptionCommandSender.sendStartProcessInstanceStarted(request, createdPiKey);
+    subscriptionCommandSender.sendStartProcessInstanceStarted(request, createdPiKey, 1234);
 
     // then it is dispatched cross-partition back to P_K (the source partition)
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -674,7 +752,7 @@ public class SubscriptionCommandSenderTest {
     final var request = requestFromSourcePartition(SAME_PARTITION);
 
     // when the (degenerate) reply targets the same partition
-    subscriptionCommandSender.sendStartProcessInstanceStarted(request, 999L);
+    subscriptionCommandSender.sendStartProcessInstanceStarted(request, 999L, 1234);
 
     // then it is written as a local follow-up command instead of being sent
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
