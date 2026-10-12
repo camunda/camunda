@@ -73,6 +73,36 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
+   * Total number of scheduled process instance start submissions by their {@code outcome}: {@code
+   * submitted} when the request was sent, {@code skipped} when it was dropped because the maximum
+   * number of in-flight requests was reached. A non-zero skipped rate means the target rate is not
+   * sustained, e.g. because the cluster responds slower than the starter schedules requests.
+   */
+  PROCESS_INSTANCES_SUBMISSIONS {
+    private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.OUTCOME};
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Total number of scheduled process instance start submissions by outcome.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.process.instances.submissions";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+  },
+
+  /**
    * Set to 1 when the starter has finished its instance-creation loop (either because the
    * configured duration-limit elapsed or because it was otherwise stopped). Stays at 0 while the
    * starter is actively creating instances. Lets external watchers (e.g. the quicker load test
@@ -103,6 +133,14 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "name";
+      }
+    },
+
+    /** The outcome of a scheduled start submission */
+    OUTCOME {
+      @Override
+      public String asString() {
+        return "outcome";
       }
     },
 
