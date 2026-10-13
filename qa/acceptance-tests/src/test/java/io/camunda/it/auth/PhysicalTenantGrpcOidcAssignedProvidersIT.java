@@ -16,6 +16,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -178,7 +179,7 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
     // when / then
     assertThatNoException()
         .as("okta token deploys on tenanta, so it resolved to the admin %s", OKTA_PRINCIPAL)
-        .isThrownBy(() -> TENANTS.deploy(oktaOnTenantA, process, "okta_process"));
+        .isThrownBy(() -> deploy(oktaOnTenantA, process, "okta_process"));
   }
 
   @Test
@@ -191,7 +192,7 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
     assertThatNoException()
         .as(
             "okta group member deploys on tenanta, so its groups were read with the inherited claim")
-        .isThrownBy(() -> TENANTS.deploy(oktaMemberOnTenantA, process, "okta_group_process"));
+        .isThrownBy(() -> deploy(oktaMemberOnTenantA, process, "okta_group_process"));
   }
 
   @Test
@@ -199,6 +200,24 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
     // when / then
     assertUnauthenticated(keycloakOnTenantA, "default-slot token on tenanta (assigned only okta)");
     assertUnauthenticated(oktaOnTenantB, "okta token on tenantb (assigned only the default slot)");
+  }
+
+  /** Deploys {@code process}, retrying while the tenant's partition still elects a leader. */
+  private static void deploy(
+      final CamundaClient client, final BpmnModelInstance process, final String processId) {
+    Awaitility.await("deployment of '%s' succeeds".formatted(processId))
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        client
+                            .newDeployResourceCommand()
+                            .addProcessModel(process, processId + ".bpmn")
+                            .send()
+                            .join()
+                            .getProcesses())
+                    .isNotEmpty());
   }
 
   private static void assertUnauthenticated(final CamundaClient client, final String description) {
