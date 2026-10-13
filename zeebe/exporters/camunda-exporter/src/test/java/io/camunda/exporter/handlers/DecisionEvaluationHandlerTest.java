@@ -150,6 +150,7 @@ public class DecisionEvaluationHandlerTest {
             .from(factory.generateObject(DecisionEvaluationRecordValue.class))
             .withEvaluatedDecisions(List.of(evaluatedDecision))
             .withBusinessId("order-123")
+            .withStorageOrdinal(1001)
             .build();
 
     final Record<DecisionEvaluationRecordValue> decisionRecord =
@@ -252,6 +253,7 @@ public class DecisionEvaluationHandlerTest {
         .isEqualTo(decisionRecordValue.getRootProcessInstanceKey());
     assertThat(decisionInstanceEntity.getBusinessId())
         .isEqualTo(decisionRecordValue.getBusinessId());
+    assertThat(decisionInstanceEntity.getStorageOrdinal()).isEqualTo(1001);
   }
 
   @Test

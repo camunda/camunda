@@ -117,7 +117,8 @@ public class DecisionEvaluationHandler
         .setResult(decision.getDecisionOutput())
         .setEvaluatedOutputs(createEvaluationOutputs(decision.getMatchedRules()))
         .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
-        .setTenantId(ExporterUtil.tenantOrDefault(decisionEvaluation.getTenantId()));
+        .setTenantId(ExporterUtil.tenantOrDefault(decisionEvaluation.getTenantId()))
+        .setStorageOrdinal(decisionEvaluation.getStorageOrdinal());
     if (state.equals(DecisionInstanceState.FAILED)) {
       entity.setEvaluationFailureMessage(decisionEvaluation.getEvaluationFailureMessage());
     }
