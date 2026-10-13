@@ -39,6 +39,20 @@ Prometheus defaults to `http://localhost:9090` without authentication, for examp
 
 Every option can also be set through an environment variable named `LOADTESTCTL_VERIFY_<OPTION>`, for example `LOADTESTCTL_VERIFY_WAIT_TIMEOUT`. The Prometheus options are read from `LOADTESTCTL_PROMETHEUS_URL`, `LOADTESTCTL_PROMETHEUS_USER` and `LOADTESTCTL_PROMETHEUS_PASSWORD`, which the workflow sets. A flag on the command line overrides the variable. `uv run loadtestctl verify --help` lists the variable next to each option.
 
+### prometheus
+
+`loadtestctl prometheus` port-forwards the load-test Prometheus (`kubectl port-forward`) until you press Ctrl-C. It requires `kubectl` on the `PATH` with the load-test cluster as current context.
+
+```bash
+uv run loadtestctl prometheus
+```
+
+Options (see `uv run loadtestctl prometheus --help` for environment variables):
+
+- `-n`, `--namespace <ns>`: namespace of the Prometheus service. Default: `monitoring`.
+- `-s`, `--service <name>`: Prometheus service name. Default: `kube-prometheus-stack-prometheus`.
+- `-p`, `--local-port <port>`: local port to listen on. Default: `9090`, which matches the `report` default endpoint.
+
 ### report
 
 `loadtestctl report` builds a wide report for one load-test namespace by querying
@@ -89,8 +103,8 @@ arguments are visible in the process list and the shell history. `uv run loadtes
 Port-forwarded Prometheus, JSON:
 
 ```bash
-kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090
 cd load-tests/loadtestctl
+uv run loadtestctl prometheus &
 uv run loadtestctl report c8-ck-baseline-20260814 --duration-seconds 1800
 ```
 

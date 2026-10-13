@@ -1,5 +1,6 @@
 import click
 
+from .prometheus.cli import prometheus
 from .report.cli import report
 from .verify.cli import verify
 
@@ -13,6 +14,7 @@ def cli() -> None:
     pass
 
 
+cli.add_command(prometheus)
 cli.add_command(report)
 cli.add_command(verify)
 
