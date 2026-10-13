@@ -21,7 +21,6 @@ import (
 
 	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
 	"github.com/camunda/camunda/c8run/internal/types"
-	"gopkg.in/yaml.v3"
 )
 
 type tenantsCommand struct {
@@ -102,7 +101,8 @@ func (c *tenantsCommand) run(baseDir string, args []string) error {
 		return fmt.Errorf("physical tenants require Camunda 8.%d or newer; this c8run bundles Camunda %s", pt.MinCamundaMinor, v)
 	}
 	store := pt.NewStore(path)
-	if port := pt.LastStartPort(baseDir); port > 0 && os.Getenv("C8RUN_PORT") == "" {
+	state := pt.LastStartState(baseDir)
+	if port := state.Port; port > 0 && os.Getenv("C8RUN_PORT") == "" {
 		c.port = port
 	}
 
@@ -113,7 +113,7 @@ func (c *tenantsCommand) run(baseDir string, args []string) error {
 		if len(args) != 1 {
 			return errors.New("usage: c8run physical-tenants list")
 		}
-		return c.list(baseDir, store)
+		return c.list(baseDir, store, state)
 	case "remove", "rm":
 		return c.remove(baseDir, store, args[1:])
 	case "reset":
@@ -259,20 +259,19 @@ func (c *tenantsCommand) readTenantPassword(id string, opts addOptions) (string,
 	return "", errors.New("no password set after 3 attempts")
 }
 
-func (c *tenantsCommand) list(baseDir string, store *pt.Store) error {
+func (c *tenantsCommand) list(baseDir string, store *pt.Store, state pt.StartupState) error {
 	tenants, err := store.List()
 	if err != nil {
 		return err
 	}
 	running := camundaRunning(baseDir)
-	active := activeTenantIDs(baseDir)
-	effective := pt.LastStartTenants(baseDir)
 	tw := tabwriter.NewWriter(c.output, 0, 0, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "PHYSICAL TENANT\tSTATUS\tLOGIN\tCONNECTORS\tOPERATE\tORCHESTRATION API")
 	d := pt.EndpointsFor(pt.DefaultID, "http", c.port)
 	_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", pt.DefaultID, statusLabel(running, true), "start login", "yes", d.Operate, d.REST)
 	listed := map[string]bool{}
 	for _, t := range tenants {
+		effective, active := state.Tenants[t.ID]
 		listed[t.ID] = true
 		e := pt.EndpointsFor(t.ID, "http", c.port)
 		login := "start login"
@@ -283,35 +282,34 @@ func (c *tenantsCommand) list(baseDir string, store *pt.Store) error {
 		if t.NoConnectors {
 			conn = "no"
 		}
-		if running && active[t.ID] {
-			login, conn = effectiveTenantDisplay(effective, t.ID)
+		if running && active {
+			login, conn = effectiveTenantDisplay(effective)
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, statusLabel(running, active[t.ID]), login, conn, e.Operate, e.REST)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, statusLabel(running, active), login, conn, e.Operate, e.REST)
 	}
 	var removed []string
-	for id := range active {
+	for id := range state.Tenants {
 		if !listed[id] && running {
 			removed = append(removed, id)
 		}
 	}
 	sort.Strings(removed)
 	for _, id := range removed {
-		login, conn := effectiveTenantDisplay(effective, id)
+		login, conn := effectiveTenantDisplay(state.Tenants[id])
 		e := pt.EndpointsFor(id, "http", c.port)
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", id, "active (not saved)", login, conn, e.Operate, e.REST)
 	}
 	if err := tw.Flush(); err != nil {
 		return err
 	}
-	if len(tenants) == 0 && (!running || len(active) == 0) {
+	if len(tenants) == 0 && (!running || len(state.Tenants) == 0) {
 		_, _ = fmt.Fprintln(c.output, "\nNo extra physical tenants yet. Add one with `c8run physical-tenants add <id>`.")
 	}
 	return nil
 }
 
-func effectiveTenantDisplay(tenants map[string]pt.Tenant, id string) (string, string) {
-	tenant, ok := tenants[id]
-	if !ok {
+func effectiveTenantDisplay(tenant *pt.Tenant) (string, string) {
+	if tenant == nil {
 		return "unknown", "unknown"
 	}
 	connectors := "yes"
@@ -426,26 +424,6 @@ func (c *tenantsCommand) printRestartHint(baseDir, verb string, count int) {
 func camundaRunning(baseDir string) bool {
 	_, err := os.Stat(filepath.Join(baseDir, "camunda.process"))
 	return err == nil
-}
-
-// activeTenantIDs reads the tenants the running Camunda was started with.
-func activeTenantIDs(baseDir string) map[string]bool {
-	ids := map[string]bool{}
-	content, err := os.ReadFile(filepath.Join(baseDir, "configuration", pt.GeneratedConfigName))
-	if err != nil {
-		return ids
-	}
-	var root struct {
-		Camunda struct {
-			PhysicalTenants map[string]any `yaml:"physical-tenants"`
-		} `yaml:"camunda"`
-	}
-	if yaml.Unmarshal(content, &root) == nil {
-		for id := range root.Camunda.PhysicalTenants {
-			ids[id] = true
-		}
-	}
-	return ids
 }
 
 const tenantsHelp = `Usage:

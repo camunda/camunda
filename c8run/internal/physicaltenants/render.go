@@ -148,23 +148,46 @@ func RenderForPort(tenants []types.PhysicalTenant, storageType string, port int)
 
 const tenantsMarker = "# c8run-tenants: "
 
-// LastStartTenants reads effective display settings from the same file as the active IDs.
-// Older generated files have no metadata; callers should display unknown settings.
-func LastStartTenants(baseDir string) map[string]Tenant {
+// StartupState describes the last generated configuration. A nil tenant value means
+// the tenant was declared but its display settings are unknown (as in older files).
+type StartupState struct {
+	Port    int
+	Tenants map[string]*Tenant
+}
+
+// LastStartState reads the port, declared tenants and display settings from one snapshot.
+func LastStartState(baseDir string) StartupState {
+	var state StartupState
 	content, err := os.ReadFile(GeneratedConfigPath(baseDir))
 	if err != nil {
-		return nil
+		return state
 	}
+	var metadata map[string]*Tenant
 	for _, line := range strings.Split(string(content), "\n") {
-		if strings.HasPrefix(line, tenantsMarker) {
-			var tenants map[string]Tenant
-			if json.Unmarshal([]byte(strings.TrimPrefix(line, tenantsMarker)), &tenants) == nil {
-				return tenants
+		switch {
+		case strings.HasPrefix(line, portMarker):
+			var port int
+			if _, err := fmt.Sscanf(strings.TrimPrefix(line, portMarker), "%d", &port); err == nil {
+				state.Port = port
 			}
-			return nil
+		case strings.HasPrefix(line, tenantsMarker):
+			if err := json.Unmarshal([]byte(strings.TrimPrefix(line, tenantsMarker)), &metadata); err != nil {
+				metadata = nil
+			}
 		}
 	}
-	return nil
+	var root struct {
+		Camunda struct {
+			PhysicalTenants map[string]any `yaml:"physical-tenants"`
+		} `yaml:"camunda"`
+	}
+	if yaml.Unmarshal(content, &root) == nil {
+		state.Tenants = make(map[string]*Tenant, len(root.Camunda.PhysicalTenants))
+		for id := range root.Camunda.PhysicalTenants {
+			state.Tenants[id] = metadata[id]
+		}
+	}
+	return state
 }
 
 // ApplyGeneratedConfig writes content to the generated config path, or removes the file when
@@ -297,21 +320,4 @@ func Resolve(in ResolveInput) (Resolution, error) {
 		res.Tenants = append(res.Tenants, t)
 	}
 	return res, nil
-}
-
-// LastStartPort returns the port recorded by the last start with physical tenants, or 0.
-func LastStartPort(baseDir string) int {
-	content, err := os.ReadFile(filepath.Join(baseDir, "configuration", GeneratedConfigName))
-	if err != nil {
-		return 0
-	}
-	for _, line := range strings.Split(string(content), "\n") {
-		if strings.HasPrefix(line, portMarker) {
-			var port int
-			if _, err := fmt.Sscanf(strings.TrimPrefix(line, portMarker), "%d", &port); err == nil {
-				return port
-			}
-		}
-	}
-	return 0
 }
