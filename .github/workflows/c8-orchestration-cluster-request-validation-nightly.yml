@@ -28,7 +28,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ matrix.branch }}
+          # A manual dispatch tests the branch it was dispatched from; the schedule tests main.
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || matrix.branch }}
 
       - name: Start Camunda
         run: |
