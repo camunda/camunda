@@ -1,6 +1,6 @@
 {
   "source_repo": "camunda/c8-cross-component-e2e-tests",
-  "source_ref": "7ae9517c17e8246ff786aa51571791ca1d2f6835",
+  "source_ref": "b61c91c6c3e4de67fa2d91833b35191c60ed0f72",
   "files": [
     {
       "source_path": "scripts/coverage-plan.mjs",

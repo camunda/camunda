@@ -3,7 +3,7 @@
 // VENDORED FILE — do not edit here.
 //
 // Source of truth: camunda/c8-cross-component-e2e-tests, scripts/coverage-writeback.mjs
-// Vendored at:     7ae9517c17e8246ff786aa51571791ca1d2f6835
+// Vendored at:     b61c91c6c3e4de67fa2d91833b35191c60ed0f72
 //
 // The rule this applies — only `planned` becomes `automated`, and only on
 // evidence that a test by that id exists — is owned by that repository, which
@@ -51,6 +51,14 @@ import path from 'node:path';
 import {findCoveragePlans, parseCoveragePlan} from './coverage-plan.mjs';
 
 /**
+ * Exit code for "some case needs a human".
+ *
+ * Distinct from 1, which `--check` uses for "plans are behind their suite", so
+ * a caller can tell the two apart: the flips it made are still worth a PR.
+ */
+export const EXIT_NEEDS_HAND_EDIT = 3;
+
+/**
  * Whether a spec file carries a TEST TITLE for this case id.
  *
  * The evidence has to be a title, not merely the characters. `includes` is
@@ -82,10 +90,18 @@ import {findCoveragePlans, parseCoveragePlan} from './coverage-plan.mjs';
  * then in the way. `test.skip` and `test.fixme` are excluded for the same
  * reason as `stub` — the declaration is there and the test is not run.
  *
- * Still not a parser, and the residue falls the safe way. A title built by
- * concatenation, or a `test(` inside a block comment, are both false
- * NEGATIVES: the plan keeps saying `planned` and a human corrects it, which is
- * the state this module exists to improve on rather than a claim it invents.
+ * A block comment needs its own handling, and claiming otherwise was wrong:
+ * `/*` + newline + `test('EX-01: ...')` puts the declaration at the start of
+ * its line, so the anchor matches and a commented-out test reads as live --
+ * a false POSITIVE, the exact thing this narrowing exists to stop, not the
+ * harmless false negative an earlier version of this comment called it. So
+ * block comments are blanked before matching, below.
+ *
+ * Still not a parser, and what is left falls the safe way: a title built by
+ * concatenation, or a `/*` inside a string literal that blanks real code
+ * after it, are false NEGATIVES. The plan keeps saying `planned` and a human
+ * corrects it, which is the state this module exists to improve on rather
+ * than a claim it invents.
  *
  * The colon stays part of the match, so DUP-010's test never satisfies DUP-01.
  *
@@ -100,7 +116,23 @@ export function hasTitledCase(source, id) {
   const declares = String.raw`(?:test|it)(?:\.(?:only|concurrent))?|@DisplayName`;
   return new RegExp(
     `(?:^|\\n)[ \\t]*(?:${declares})\\s*\\(\\s*['"\`]\\s*${escaped}:`,
-  ).test(source);
+  ).test(blankBlockComments(source));
+}
+
+/**
+ * Replace every `/* ... *\/` span with spaces, keeping newlines.
+ *
+ * Spaces rather than nothing, so line boundaries survive: the matcher anchors
+ * on them, and collapsing a comment would splice the line before it onto the
+ * line after and invent a declaration that is not there.
+ *
+ * @param {string} source
+ * @returns {string}
+ */
+function blankBlockComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, (span) =>
+    span.replace(/[^\n]/g, ' '),
+  );
 }
 
 /**
@@ -286,6 +318,10 @@ function runCli(argv) {
 
   let changedFiles = 0;
   let totalFlips = 0;
+  // A case whose status could not be edited safely is a plan that stays stale
+  // with nobody told. It has to outlive this loop and change the exit code --
+  // see below.
+  let totalSkipped = 0;
   for (const file of plans) {
     let plan;
     try {
@@ -298,10 +334,9 @@ function runCli(argv) {
     const {text: next, flipped, skipped} = writeBackPlan(text, plan, readSpec);
 
     for (const {id, reason} of skipped) {
-      // Not a failure: the evidence says the test exists, so the status is
-      // wrong either way. It just could not be edited safely from here.
+      totalSkipped++;
       console.error(
-        `• ${path.basename(file)}: ${id} needs flipping by hand — ${reason}`,
+        `✗ ${path.basename(file)}: ${id} needs flipping by hand — ${reason}`,
       );
     }
     if (flipped.length === 0) continue;
@@ -315,14 +350,30 @@ function runCli(argv) {
     if (!check) fs.writeFileSync(file, next);
   }
 
-  if (totalFlips === 0) {
+  if (totalFlips === 0 && totalSkipped === 0) {
     console.log('Every plan already matches its suite.');
     return 0;
   }
-  console.log(
-    `${totalFlips} case(s) across ${changedFiles} plan(s) ` +
-      `${check ? 'need flipping to' : 'flipped to'} "automated".`,
-  );
+  if (totalFlips > 0) {
+    console.log(
+      `${totalFlips} case(s) across ${changedFiles} plan(s) ` +
+        `${check ? 'need flipping to' : 'flipped to'} "automated".`,
+    );
+  }
+
+  // A skipped case is the quiet failure this whole mechanism exists to stop.
+  // The evidence says the test exists, so the plan IS stale; it just could not
+  // be edited from here. Reported alone it went to stderr and the run still
+  // printed "Every plan already matches its suite" and exited 0, so a plan
+  // could stay wrong indefinitely with a green job every week saying it was
+  // not. Its own exit code, distinct from --check's, so the caller can open
+  // the PR for whatever DID flip and still fail the run.
+  if (totalSkipped > 0) {
+    console.log(
+      `${totalSkipped} case(s) could not be edited and need flipping by hand.`,
+    );
+    return EXIT_NEEDS_HAND_EDIT;
+  }
   // --check is for CI: a non-zero exit is the signal that the plans are behind
   // their suite. Without it this is the edit itself, which succeeded.
   return check ? 1 : 0;
