@@ -21,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ScriptTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.function.Consumer;
@@ -112,6 +113,47 @@ class ZeebeScriptTaskValidatorTest {
     // given / when
     final BpmnModelInstance process =
         process(task -> task.zeebeJobType("type").zeebeJobPriority("42"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void linkedResourcesNotAllowedWithScript() {
+    // given / when
+    final BpmnModelInstance process =
+        process(
+            task ->
+                task.zeebeExpression("true")
+                    .zeebeResultVariable("result")
+                    .zeebeLinkedResources(
+                        l ->
+                            l.resourceId("sum.js")
+                                .resourceType("ManagedScript")
+                                .bindingType(ZeebeBindingType.latest)
+                                .linkName("script")));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ScriptTask.class,
+            "'zeebe:linkedResources' is only allowed in job-worker mode ('zeebe:taskDefinition')"));
+  }
+
+  @Test
+  void linkedResourcesAllowedWithTaskDefinition() {
+    // given / when
+    final BpmnModelInstance process =
+        process(
+            task ->
+                task.zeebeJobType("type")
+                    .zeebeLinkedResources(
+                        l ->
+                            l.resourceId("sum.js")
+                                .resourceType("ManagedScript")
+                                .bindingType(ZeebeBindingType.latest)
+                                .linkName("script")));
 
     // then
     ProcessValidationUtil.assertThatProcessIsValid(process);

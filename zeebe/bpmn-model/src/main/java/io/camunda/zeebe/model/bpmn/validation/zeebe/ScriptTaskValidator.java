@@ -19,9 +19,11 @@ import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -45,14 +47,25 @@ public final class ScriptTaskValidator implements ModelElementValidator<ScriptTa
               ZeebeConstants.ELEMENT_SCRIPT, ZeebeConstants.ELEMENT_TASK_DEFINITION));
     }
 
-    if (hasJobPriorityDefinitionWithoutTaskDefinition(element)) {
-      validationResultCollector.addError(
-          0,
-          String.format(
-              "'zeebe:%s' is only allowed in job-worker mode ('zeebe:%s')",
-              ZeebeConstants.ELEMENT_JOB_PRIORITY_DEFINITION,
-              ZeebeConstants.ELEMENT_TASK_DEFINITION));
+    if (hasExtensionWithoutTaskDefinition(element, ZeebeJobPriorityDefinition.class)) {
+      addJobWorkerModeOnlyError(
+          validationResultCollector, ZeebeConstants.ELEMENT_JOB_PRIORITY_DEFINITION);
     }
+
+    // Linked resources make the engine treat the task as a job worker (e.g. the straight-through
+    // loop validation), but a script task in FEEL mode is still evaluated by the engine.
+    if (hasExtensionWithoutTaskDefinition(element, ZeebeLinkedResources.class)) {
+      addJobWorkerModeOnlyError(validationResultCollector, ZeebeConstants.ELEMENT_LINKED_RESOURCES);
+    }
+  }
+
+  private static void addJobWorkerModeOnlyError(
+      final ValidationResultCollector validationResultCollector, final String elementName) {
+    validationResultCollector.addError(
+        0,
+        String.format(
+            "'zeebe:%s' is only allowed in job-worker mode ('zeebe:%s')",
+            elementName, ZeebeConstants.ELEMENT_TASK_DEFINITION));
   }
 
   private boolean hasExactlyOneExtension(final ScriptTask element) {
@@ -71,15 +84,15 @@ public final class ScriptTaskValidator implements ModelElementValidator<ScriptTa
         || scriptExtensions.isEmpty() && taskDefinitionExtensions.size() == 1;
   }
 
-  private boolean hasJobPriorityDefinitionWithoutTaskDefinition(final ScriptTask element) {
+  private boolean hasExtensionWithoutTaskDefinition(
+      final ScriptTask element, final Class<? extends ModelElementInstance> extensionType) {
     final ExtensionElements extensionElements = element.getExtensionElements();
     if (extensionElements == null) {
       return false;
     }
-    final boolean hasJobPriorityDefinition =
-        !extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class).isEmpty();
+    final boolean hasExtension = !extensionElements.getChildElementsByType(extensionType).isEmpty();
     final boolean hasTaskDefinition =
         !extensionElements.getChildElementsByType(ZeebeTaskDefinition.class).isEmpty();
-    return hasJobPriorityDefinition && !hasTaskDefinition;
+    return hasExtension && !hasTaskDefinition;
   }
 }

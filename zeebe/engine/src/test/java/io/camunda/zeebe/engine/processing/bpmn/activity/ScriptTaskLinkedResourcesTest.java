@@ -22,11 +22,10 @@ import io.camunda.zeebe.model.bpmn.builder.LinkedResourceBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -303,40 +302,37 @@ public final class ScriptTaskLinkedResourcesTest {
   }
 
   @Test
-  public void shouldIgnoreLinkedResourcesOfFeelScriptTask() {
-    // given - a FEEL expression script task is not a job worker, so its linked resources are not
-    // resolved and must not lead to an incident
+  public void shouldRejectLinkedResourcesOfFeelScriptTask() {
+    // given - a loop of FEEL script tasks. Linked resources would make the straight-through loop
+    // validation treat task1 as a job worker, while it still runs as FEEL and loops forever.
     final var processId = "feel-script-with-linked-resources";
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .scriptTask(
-                    "script",
-                    t ->
-                        t.zeebeExpression("1 + 2")
-                            .zeebeResultVariable("result")
-                            .zeebeLinkedResources(
-                                l ->
-                                    l.resourceId("not-deployed.js")
-                                        .resourceType(RESOURCE_TYPE)
-                                        .bindingType(ZeebeBindingType.latest)
-                                        .linkName(LINK_NAME)))
-                .endEvent()
-                .done())
-        .deploy();
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .scriptTask(
+                "task1",
+                t ->
+                    t.zeebeExpression("true")
+                        .zeebeResultVariable("result")
+                        .zeebeLinkedResources(
+                            l ->
+                                l.resourceId("sum-feel.js")
+                                    .resourceType(RESOURCE_TYPE)
+                                    .bindingType(ZeebeBindingType.latest)
+                                    .linkName(LINK_NAME)))
+            .scriptTask("task2", t -> t.zeebeExpression("true").zeebeResultVariable("result"))
+            .connectTo("task1")
+            .done();
 
     // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final var rejection = ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
 
     // then
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .exists())
-        .isTrue();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains("Element: task1")
+        .contains(
+            "'zeebe:linkedResources' is only allowed in job-worker mode ('zeebe:taskDefinition')");
   }
 
   private static BpmnModelInstance scriptTaskProcess(
