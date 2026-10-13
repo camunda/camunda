@@ -20,44 +20,55 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 plugins { id("buildlogic.java-conventions") }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val esJavaVersion = versionCatalog.requiredVersion("co-elastic-clients-elasticsearch-java")
-val elasticsearchVersion = versionCatalog.requiredVersion("elasticsearch")
-val asmVersion = versionCatalog.requiredVersion("asm")
-val animalSnifferVersion = versionCatalog.requiredVersion("animal-sniffer")
-val byteBuddyVersion = versionCatalog.requiredVersion("net-bytebuddy-byte-buddy")
-val httpcore5Version = versionCatalog.requiredVersion("org-apache-httpcomponents-core5-httpcore5")
-val httpclient5Version =
-  versionCatalog.requiredVersion("org-apache-httpcomponents-client5-httpclient5")
-val httpclientVersion = versionCatalog.requiredVersion("org-apache-httpcomponents-httpclient")
 val springBootVersion = versionCatalog.requiredVersion("spring-boot")
 val micrometerVersion = versionCatalog.requiredVersion("micrometer")
-val slf4jVersion = versionCatalog.requiredVersion("slf4j")
-val snakeyamlVersion = versionCatalog.requiredVersion("org-yaml-snakeyaml")
-val auth0Version = versionCatalog.requiredVersion("auth0")
-val errorProneVersion = versionCatalog.requiredVersion("com-google-errorprone-error-prone-core")
-val jsonPathVersion = versionCatalog.requiredVersion("com-jayway-jsonpath-json-path")
-val jwksRsaVersion = versionCatalog.requiredVersion("jwks-rsa")
-val okioJvmVersion = versionCatalog.requiredVersion("okio-jvm")
-val nimbusJoseJwtVersion = versionCatalog.requiredVersion("com-nimbusds-nimbus-jose-jwt")
-val jetbrainsAnnotationsVersion = versionCatalog.requiredVersion("org-jetbrains-annotations")
-val keycloakClientVersion = versionCatalog.requiredVersion("keycloak-client")
-val checkerQualVersion = versionCatalog.requiredVersion("org-checkerframework-checker-qual")
-val commonsCodecVersion = versionCatalog.requiredVersion("commons-codec")
-val commonsCollectionsVersion =
-  versionCatalog.requiredVersion("org-apache-commons-commons-collections")
-val commonsLangVersion = versionCatalog.requiredVersion("org-apache-commons-commons-lang3")
-val commonsLoggingVersion = versionCatalog.requiredVersion("commons-logging")
-val gsonVersion = versionCatalog.requiredVersion("gson")
-val guavaVersion = versionCatalog.requiredVersion("guava")
-val jakartaXmlBindVersion = versionCatalog.requiredVersion("jakarta-xml-bind-jakarta-xml-bind-api")
-val javassistVersion = versionCatalog.requiredVersion("javassist")
-val jnaVersion = versionCatalog.requiredVersion("jna")
-val jnaPlatformVersion = versionCatalog.requiredVersion("jna-platform")
-val kotlinStdlibVersion = versionCatalog.requiredVersion("kotlin-stdlib")
-val objenesisVersion = versionCatalog.requiredVersion("objenesis")
-val tomcatVersion = versionCatalog.requiredVersion("tomcat")
-val protoGoogleCommonProtosVersion =
-  versionCatalog.requiredVersion("com-google-api-grpc-proto-google-common-protos")
+
+// Module coordinates pinned by the parent POM, mapped to the catalog entry holding their version.
+val forcedModules =
+  mapOf(
+      "co.elastic.clients:elasticsearch-java" to "co-elastic-clients-elasticsearch-java",
+      "com.google.code.gson:gson" to "gson",
+      "org.elasticsearch.client:elasticsearch-rest-client" to "elasticsearch",
+      "com.google.guava:guava" to "guava",
+      "com.google.api.grpc:proto-google-common-protos" to
+        "com-google-api-grpc-proto-google-common-protos",
+      "com.jayway.jsonpath:json-path" to "com-jayway-jsonpath-json-path",
+      "net.bytebuddy:byte-buddy" to "net-bytebuddy-byte-buddy",
+      "org.jetbrains:annotations" to "org-jetbrains-annotations",
+      "org.keycloak:keycloak-admin-client" to "keycloak-client",
+      "org.keycloak:keycloak-client-common-synced" to "keycloak-client",
+      "org.objenesis:objenesis" to "objenesis",
+      "org.ow2.asm:asm" to "asm",
+      "commons-codec:commons-codec" to "commons-codec",
+      "commons-collections:commons-collections" to "org-apache-commons-commons-collections",
+      "commons-logging:commons-logging" to "commons-logging",
+      "org.apache.commons:commons-lang3" to "org-apache-commons-commons-lang3",
+      "com.auth0:auth0" to "auth0",
+      "com.auth0:jwks-rsa" to "jwks-rsa",
+      "com.nimbusds:nimbus-jose-jwt" to "com-nimbusds-nimbus-jose-jwt",
+      "com.squareup.okio:okio-jvm" to "okio-jvm",
+      "org.yaml:snakeyaml" to "org-yaml-snakeyaml",
+      "jakarta.xml.bind:jakarta.xml.bind-api" to "jakarta-xml-bind-jakarta-xml-bind-api",
+      "net.java.dev.jna:jna" to "jna",
+      "net.java.dev.jna:jna-platform" to "jna-platform",
+      "org.apache.httpcomponents.client5:httpclient5" to
+        "org-apache-httpcomponents-client5-httpclient5",
+      "org.apache.httpcomponents:httpclient" to "org-apache-httpcomponents-httpclient",
+      "org.apache.httpcomponents.core5:httpcore5" to "org-apache-httpcomponents-core5-httpcore5",
+      "org.apache.httpcomponents.core5:httpcore5-h2" to
+        "org-apache-httpcomponents-core5-httpcore5",
+      "org.apache.tomcat.embed:tomcat-embed-el" to "tomcat",
+      "org.apache.tomcat.embed:tomcat-embed-websocket" to "tomcat",
+      "org.checkerframework:checker-qual" to "org-checkerframework-checker-qual",
+      "org.codehaus.mojo:animal-sniffer-annotations" to "animal-sniffer",
+      "org.javassist:javassist" to "javassist",
+      "org.jetbrains.kotlin:kotlin-stdlib" to "kotlin-stdlib",
+      "com.google.errorprone:error_prone_annotations" to
+        "com-google-errorprone-error-prone-core",
+      "org.slf4j:slf4j-api" to "slf4j",
+    )
+    .map { (module, versionKey) -> "$module:${versionCatalog.requiredVersion(versionKey)}" }
+    .toTypedArray()
 
 dependencies {
   // Mirror the parent POM's imported BOMs. Platforms add version constraints only; they do not
@@ -104,44 +115,7 @@ dependencies {
 // Force versions in the same way they are pinned by maven.
 // Either explicitly or implicitly by the order of the dependencies being listed in the pom.
 configurations.configureEach {
-  resolutionStrategy.force(
-    "co.elastic.clients:elasticsearch-java:$esJavaVersion",
-    "com.google.code.gson:gson:$gsonVersion",
-    "org.elasticsearch.client:elasticsearch-rest-client:$elasticsearchVersion",
-    "com.google.guava:guava:$guavaVersion",
-    "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion",
-    "com.jayway.jsonpath:json-path:$jsonPathVersion",
-    "net.bytebuddy:byte-buddy:$byteBuddyVersion",
-    "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
-    "org.keycloak:keycloak-admin-client:$keycloakClientVersion",
-    "org.keycloak:keycloak-client-common-synced:$keycloakClientVersion",
-    "org.objenesis:objenesis:$objenesisVersion",
-    "org.ow2.asm:asm:$asmVersion",
-    "commons-codec:commons-codec:$commonsCodecVersion",
-    "commons-collections:commons-collections:$commonsCollectionsVersion",
-    "commons-logging:commons-logging:$commonsLoggingVersion",
-    "org.apache.commons:commons-lang3:$commonsLangVersion",
-    "com.auth0:auth0:$auth0Version",
-    "com.auth0:jwks-rsa:$jwksRsaVersion",
-    "com.nimbusds:nimbus-jose-jwt:$nimbusJoseJwtVersion",
-    "com.squareup.okio:okio-jvm:$okioJvmVersion",
-    "org.yaml:snakeyaml:$snakeyamlVersion",
-    "jakarta.xml.bind:jakarta.xml.bind-api:$jakartaXmlBindVersion",
-    "net.java.dev.jna:jna:$jnaVersion",
-    "net.java.dev.jna:jna-platform:$jnaPlatformVersion",
-    "org.apache.httpcomponents.client5:httpclient5:$httpclient5Version",
-    "org.apache.httpcomponents:httpclient:$httpclientVersion",
-    "org.apache.httpcomponents.core5:httpcore5:$httpcore5Version",
-    "org.apache.httpcomponents.core5:httpcore5-h2:$httpcore5Version",
-    "org.apache.tomcat.embed:tomcat-embed-el:$tomcatVersion",
-    "org.apache.tomcat.embed:tomcat-embed-websocket:$tomcatVersion",
-    "org.checkerframework:checker-qual:$checkerQualVersion",
-    "org.codehaus.mojo:animal-sniffer-annotations:$animalSnifferVersion",
-    "org.javassist:javassist:$javassistVersion",
-    "org.jetbrains.kotlin:kotlin-stdlib:$kotlinStdlibVersion",
-    "com.google.errorprone:error_prone_annotations:$errorProneVersion",
-    "org.slf4j:slf4j-api:$slf4jVersion",
-  )
+  resolutionStrategy.force(*forcedModules)
   resolutionStrategy.eachDependency {
     if (requested.group == "org.springframework.boot") {
       useVersion(springBootVersion)
