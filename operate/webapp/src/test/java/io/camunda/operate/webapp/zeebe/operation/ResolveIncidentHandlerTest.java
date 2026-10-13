@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.zeebe.operation;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -97,5 +98,73 @@ public class ResolveIncidentHandlerTest {
     verify(operateServicesAdapter, times(1)).resolveIncident(incidentKey, operationId);
     inOrder.verify(operateServicesAdapter).updateJobRetries(jobKey, 1, operationId);
     inOrder.verify(operateServicesAdapter).resolveIncident(incidentKey, operationId);
+  }
+
+  @Test
+  public void shouldNotResolveIncidentBelongingToDifferentProcessInstance() throws Exception {
+    // given: the incident belongs to a different process instance
+    final Long incidentKey = 123L;
+    final Long foreignProcessInstanceKey = 999L;
+    final Long ownProcessInstanceKey = 100L;
+    final String workerId = "1";
+    when(incidentReader.getIncidentById(incidentKey))
+        .thenReturn(
+            new IncidentEntity()
+                .setErrorType(ErrorType.UNKNOWN)
+                .setKey(incidentKey)
+                .setProcessInstanceKey(foreignProcessInstanceKey));
+
+    final String operationId = "789";
+    final OperationEntity operationEntity =
+        new OperationEntity()
+            .setType(OperationType.RESOLVE_INCIDENT)
+            .setIncidentKey(incidentKey)
+            .setProcessInstanceKey(ownProcessInstanceKey)
+            .setId(operationId)
+            .setState(OperationState.LOCKED)
+            .setLockOwner(workerId);
+
+    doNothing().when(batchOperationWriter).updateOperation(any());
+    doNothing().when(metrics).recordCounts(any(String.class), any(long.class), any(String[].class));
+    final OperationExecutorProperties properties = new OperationExecutorProperties();
+    properties.setWorkerId(workerId);
+    when(operateProperties.getOperationExecutor()).thenReturn(properties);
+
+    // when
+    resolveIncidentHandler.handleWithException(operationEntity);
+
+    // then: the incident is not resolved
+    verify(operateServicesAdapter, never()).resolveIncident(incidentKey, operationId);
+  }
+
+  @Test
+  public void shouldNotResolveIncidentWithoutProcessInstanceKey() throws Exception {
+    // given: the incident carries no process instance key
+    final Long incidentKey = 123L;
+    final String workerId = "1";
+    when(incidentReader.getIncidentById(incidentKey))
+        .thenReturn(new IncidentEntity().setErrorType(ErrorType.UNKNOWN).setKey(incidentKey));
+
+    final String operationId = "790";
+    final OperationEntity operationEntity =
+        new OperationEntity()
+            .setType(OperationType.RESOLVE_INCIDENT)
+            .setIncidentKey(incidentKey)
+            .setProcessInstanceKey(100L)
+            .setId(operationId)
+            .setState(OperationState.LOCKED)
+            .setLockOwner(workerId);
+
+    doNothing().when(batchOperationWriter).updateOperation(any());
+    doNothing().when(metrics).recordCounts(any(String.class), any(long.class), any(String[].class));
+    final OperationExecutorProperties properties = new OperationExecutorProperties();
+    properties.setWorkerId(workerId);
+    when(operateProperties.getOperationExecutor()).thenReturn(properties);
+
+    // when
+    resolveIncidentHandler.handleWithException(operationEntity);
+
+    // then
+    verify(operateServicesAdapter, never()).resolveIncident(incidentKey, operationId);
   }
 }

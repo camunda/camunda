@@ -292,6 +292,53 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  public void testResolveIncidentOfOtherProcessInstanceFails() throws Exception {
+    // given
+    // two instances, only the first one has an incident (jobs are failed oldest first)
+    final Long otherProcessInstanceKey = startDemoProcessInstance();
+    failTaskWithNoRetriesLeft("taskA", otherProcessInstanceKey, "Some error");
+    final Long processInstanceKey = startDemoProcessInstance();
+    final String otherIncidentId =
+        incidentReader
+            .getIncidentsByProcessInstanceId(String.valueOf(otherProcessInstanceKey))
+            .getIncidents()
+            .get(0)
+            .getId();
+
+    // when
+    // we call RESOLVE_INCIDENT operation on the second instance, targeting the incident of the
+    // first one
+    postOperationWithOKResponse(
+        processInstanceKey,
+        new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT)
+            .setIncidentId(otherIncidentId));
+
+    // and execute the operation
+    executeOneBatch();
+    searchTestRule.refreshSerchIndexes();
+
+    // then
+    // the operation of the second instance failed
+    final ListViewProcessInstanceDto processInstance =
+        processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
+    assertThat(processInstance.getOperations()).hasSize(1);
+    assertThat(processInstance.getOperations().get(0).getType())
+        .isEqualTo(OperationType.RESOLVE_INCIDENT);
+    assertThat(processInstance.getOperations().get(0).getState()).isEqualTo(OperationState.FAILED);
+
+    // and the incident of the first instance was not touched
+    final ListViewProcessInstanceDto otherProcessInstance =
+        processInstanceReader.getProcessInstanceWithOperationsByKey(otherProcessInstanceKey);
+    assertThat(otherProcessInstance.getOperations()).isEmpty();
+    final List<IncidentDto> otherIncidents =
+        incidentReader
+            .getIncidentsByProcessInstanceId(String.valueOf(otherProcessInstanceKey))
+            .getIncidents();
+    assertThat(otherIncidents).hasSize(1);
+    assertThat(otherIncidents.get(0).isHasActiveOperation()).isFalse();
+  }
+
+  @Test
   public void testResolveIncidentForExecutionListener() throws Exception {
 
     // given
