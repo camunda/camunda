@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  * @param apiBase the path prefix of that tenant's API, e.g. {@code /physical-tenants/pt1}; empty
  *     for the unprefixed API of the default tenant
  * @param physicalTenants all physical tenants, each with the path of its discovery document; only
- *     in the default tenant's unsuffixed document, and only when listing is enabled
+ *     in the unsuffixed document
  */
 @NullMarked
 @JsonInclude(JsonInclude.Include.NON_EMPTY)

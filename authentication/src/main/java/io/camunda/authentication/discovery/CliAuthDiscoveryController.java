@@ -47,10 +47,8 @@ import org.springframework.web.server.ResponseStatusException;
  * <p>Physical tenants authenticate independently - each has its own providers, audiences and CLI
  * clients - so each has its own document, at the RFC 9728 style path suffix {@code
  * /.well-known/camunda-auth/physical-tenants/<id>}. The unsuffixed document describes the default
- * tenant, which also serves the unprefixed API. By default tenants are not listed: a client names
- * the one it wants, so the endpoint does not disclose which tenants exist. With {@code
- * cli-discovery.list-physical-tenants} enabled, the unsuffixed document lists them for selection
- * (see {@link CliDiscoveryProperties}).
+ * tenant, which also serves the unprefixed API, and lists all physical tenants - just the default
+ * one without physical tenants configured - so a client can offer them for selection.
  *
  * <p>Served on {@code SecurityPaths.UNPROTECTED_PATHS}, a chain without any authentication filter,
  * because a client calls it before it holds a credential, and a stray one must not turn it into a
@@ -71,7 +69,6 @@ public class CliAuthDiscoveryController {
   private final String method;
   private final Map<String, List<Provider>> providersByTenant;
   private final List<PhysicalTenant> physicalTenants;
-  private final boolean listPhysicalTenants;
 
   public CliAuthDiscoveryController(
       final CamundaSecurityLibraryProperties securityProperties,
@@ -93,12 +90,11 @@ public class CliAuthDiscoveryController {
             ? providersByTenant(oidcProviders, cliClientsProperties, environment)
             : Map.of();
     physicalTenants = physicalTenants(discoveryProperties, environment);
-    listPhysicalTenants = discoveryProperties.listPhysicalTenants();
   }
 
   @GetMapping(path = PATH, produces = MediaType.APPLICATION_JSON_VALUE)
   public CliAuthDiscoveryResponse discover() {
-    return response(DEFAULT_PHYSICAL_TENANT_ID, "", listPhysicalTenants);
+    return response(DEFAULT_PHYSICAL_TENANT_ID, "", true);
   }
 
   @GetMapping(
