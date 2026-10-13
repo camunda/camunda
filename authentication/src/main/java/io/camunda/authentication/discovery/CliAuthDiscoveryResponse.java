@@ -19,6 +19,8 @@ import org.jspecify.annotations.Nullable;
  * @param physicalTenant the physical tenant this document describes
  * @param apiBase the path prefix of that tenant's API, e.g. {@code /physical-tenants/pt1}; empty
  *     for the unprefixed API of the default tenant
+ * @param physicalTenants all physical tenants, each with the path of its discovery document; only
+ *     in the default tenant's unsuffixed document, and only when listing is enabled
  */
 @NullMarked
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -27,9 +29,14 @@ public record CliAuthDiscoveryResponse(
     String method,
     @JsonProperty("physical_tenant") String physicalTenant,
     @JsonProperty("api_base") String apiBase,
-    List<Provider> providers) {
+    List<Provider> providers,
+    @JsonProperty("physical_tenants") List<PhysicalTenant> physicalTenants) {
 
   public static final int VERSION = 1;
+
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
+  public record PhysicalTenant(
+      String id, @Nullable String name, @JsonProperty("discovery") String discoveryPath) {}
 
   /**
    * @param audience the audiences the cluster accepts in access tokens from this issuer, so a

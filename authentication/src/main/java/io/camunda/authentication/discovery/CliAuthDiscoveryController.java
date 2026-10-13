@@ -10,8 +10,10 @@ package io.camunda.authentication.discovery;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 
+import io.camunda.authentication.discovery.CliAuthDiscoveryResponse.PhysicalTenant;
 import io.camunda.authentication.discovery.CliAuthDiscoveryResponse.Provider;
 import io.camunda.authentication.discovery.CliClientsProperties.CliClient;
+import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
 import io.camunda.authentication.pt.PhysicalTenantOidcProviders;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -45,8 +47,10 @@ import org.springframework.web.server.ResponseStatusException;
  * <p>Physical tenants authenticate independently - each has its own providers, audiences and CLI
  * clients - so each has its own document, at the RFC 9728 style path suffix {@code
  * /.well-known/camunda-auth/physical-tenants/<id>}. The unsuffixed document describes the default
- * tenant, which also serves the unprefixed API. Tenants are not listed: a client names the one it
- * wants, so the endpoint does not disclose which tenants exist.
+ * tenant, which also serves the unprefixed API. By default tenants are not listed: a client names
+ * the one it wants, so the endpoint does not disclose which tenants exist. With {@code
+ * cli-discovery.list-physical-tenants} enabled, the unsuffixed document lists them for selection
+ * (see {@link CliDiscoveryProperties}).
  *
  * <p>Served on {@code SecurityPaths.UNPROTECTED_PATHS}, a chain without any authentication filter,
  * because a client calls it before it holds a credential, and a stray one must not turn it into a
@@ -61,14 +65,19 @@ public class CliAuthDiscoveryController {
 
   private static final String TENANT_CLI_CLIENTS_PREFIX =
       "camunda.physical-tenants.%s.security.authentication.cli-clients";
+  private static final String TENANT_DISPLAY_NAME =
+      "camunda.physical-tenants.%s.security.authentication.cli-discovery.display-name";
 
   private final String method;
   private final Map<String, List<Provider>> providersByTenant;
+  private final List<PhysicalTenant> physicalTenants;
+  private final boolean listPhysicalTenants;
 
   public CliAuthDiscoveryController(
       final CamundaSecurityLibraryProperties securityProperties,
       final ObjectProvider<OidcProviderConfigurationPort> oidcProviders,
       final CliClientsProperties cliClientsProperties,
+      final CliDiscoveryProperties discoveryProperties,
       final Environment environment) {
     final var authentication = securityProperties.getAuthentication();
     if (authentication.isUnprotectedApi()) {
@@ -83,30 +92,53 @@ public class CliAuthDiscoveryController {
         "oidc".equals(method)
             ? providersByTenant(oidcProviders, cliClientsProperties, environment)
             : Map.of();
+    physicalTenants = physicalTenants(discoveryProperties, environment);
+    listPhysicalTenants = discoveryProperties.listPhysicalTenants();
   }
 
   @GetMapping(path = PATH, produces = MediaType.APPLICATION_JSON_VALUE)
   public CliAuthDiscoveryResponse discover() {
-    return response(DEFAULT_PHYSICAL_TENANT_ID, "");
+    return response(DEFAULT_PHYSICAL_TENANT_ID, "", listPhysicalTenants);
   }
 
   @GetMapping(
       path = PATH + PHYSICAL_TENANTS_PATH_SEGMENT + "{tenantId}",
       produces = MediaType.APPLICATION_JSON_VALUE)
   public CliAuthDiscoveryResponse discover(@PathVariable final String tenantId) {
-    if ("oidc".equals(method) && !providersByTenant.containsKey(tenantId)) {
+    if (physicalTenants.stream().noneMatch(tenant -> tenant.id().equals(tenantId))) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
-    return response(tenantId, PHYSICAL_TENANTS_PATH_SEGMENT + tenantId);
+    return response(tenantId, PHYSICAL_TENANTS_PATH_SEGMENT + tenantId, false);
   }
 
-  private CliAuthDiscoveryResponse response(final String tenantId, final String apiBase) {
+  private CliAuthDiscoveryResponse response(
+      final String tenantId, final String apiBase, final boolean listTenants) {
     return new CliAuthDiscoveryResponse(
         CliAuthDiscoveryResponse.VERSION,
         method,
         tenantId,
         apiBase,
-        providersByTenant.getOrDefault(tenantId, List.of()));
+        providersByTenant.getOrDefault(tenantId, List.of()),
+        listTenants ? physicalTenants : List.of());
+  }
+
+  /** All tenants, the default first, each with its display name and discovery document path. */
+  private static List<PhysicalTenant> physicalTenants(
+      final CliDiscoveryProperties discoveryProperties, final Environment environment) {
+    final var binder = Binder.get(environment);
+    return PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment).keySet().stream()
+        .map(
+            tenantId ->
+                new PhysicalTenant(
+                    tenantId,
+                    binder
+                        .bind(TENANT_DISPLAY_NAME.formatted(tenantId), String.class)
+                        .orElse(
+                            DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
+                                ? discoveryProperties.displayName()
+                                : null),
+                    PATH + PHYSICAL_TENANTS_PATH_SEGMENT + tenantId))
+        .toList();
   }
 
   /**
