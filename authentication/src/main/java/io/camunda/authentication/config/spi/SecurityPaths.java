@@ -52,7 +52,9 @@ public final class SecurityPaths {
           "/startup",
           "/favicon.ico",
           "/cluster/v2/status",
-          "/cluster/v2/status/upgrade");
+          "/cluster/v2/status/upgrade",
+          // read by CLIs before they hold any credential, see CliAuthDiscoveryController
+          "/.well-known/camunda-auth");
 
   private SecurityPaths() {}
 }
