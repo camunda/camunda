@@ -176,14 +176,14 @@ describe('<Toolbar /> (shadcn)', () => {
 		expect(body?.filter.decisionEvaluationInstanceKey).toEqual(key);
 	});
 
-	it('should close the dialog and discard the selection when cancelling', async () => {
+	it('should close the dialog and keep the selection when cancelling', async () => {
 		const {screen, onDiscard} = await renderToolbar();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
 		await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument();
-		expect(onDiscard).toHaveBeenCalledOnce();
+		expect(onDiscard).not.toHaveBeenCalled();
 	});
 
 	it('should show a permission warning when the delete request is forbidden', async ({worker}) => {
