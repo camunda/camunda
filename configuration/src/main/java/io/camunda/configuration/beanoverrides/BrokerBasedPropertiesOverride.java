@@ -293,6 +293,13 @@ public class BrokerBasedPropertiesOverride {
     override
         .getExperimental()
         .getEngine()
+        .getStartup()
+        .setProcessDefinitionRestoreEnabled(
+            camunda.getProcessing().getEngine().getStartup().isProcessDefinitionRestoreEnabled());
+
+    override
+        .getExperimental()
+        .getEngine()
         .setInputMappingMode(
             toEngineMode(camunda.getProcessing().getEngine().getMappings().getInputMode()));
 

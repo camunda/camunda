@@ -90,4 +90,29 @@ public class EngineStartupTest {
           .isFalse();
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.processing.engine.startup.process-definition-restore-enabled=false",
+      })
+  class WithOnlyUnifiedConfigSetForProcessDefinitionRestore {
+    final BrokerBasedProperties brokerCfg;
+
+    WithOnlyUnifiedConfigSetForProcessDefinitionRestore(
+        @Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetProcessDefinitionRestoreEnabled() {
+      assertThat(
+              brokerCfg
+                  .getExperimental()
+                  .getEngine()
+                  .getStartup()
+                  .isProcessDefinitionRestoreEnabled())
+          .isFalse();
+    }
+  }
 }
