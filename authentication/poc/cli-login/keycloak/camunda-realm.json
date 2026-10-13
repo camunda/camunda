@@ -38,7 +38,7 @@
       "publicClient": true,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
-      "redirectUris": ["http://127.0.0.1/*"],
+      "redirectUris": ["http://127.0.0.1/*", "http://localhost/*", "http://[::1]/*"],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "oauth2.device.authorization.grant.enabled": "true"

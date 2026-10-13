@@ -26,7 +26,8 @@ GET /.well-known/camunda-auth
       "id": "oidc",
       "issuer": "http://localhost:18080/realms/camunda",
       "client_id": "c8ctl",
-      "scopes": ["openid", "offline_access"]
+      "scopes": ["openid", "offline_access"],
+      "redirect_uri": "http://127.0.0.1/callback"
     }
   ]
 }
@@ -45,8 +46,25 @@ camunda.security.authentication.cli-clients:
   oidc:                       # registration id
     client-id: c8ctl          # required
     scopes: [openid, offline_access]
+    redirect-uri: http://127.0.0.1/callback   # default; see below
     # client-secret: ...      # rejected at startup: CLI clients must be public
 ```
+
+### Redirect URI
+
+Identity providers compare the redirect URI exactly with the client registration; for loopback
+URIs only the port is ignored (RFC 8252). Keycloak allows wildcards, Entra ID does not, so the
+cluster announces the URI the admin registered and the CLI only adds its port:
+
+| `redirect-uri`                         | CLI listens on                               |
+|----------------------------------------|----------------------------------------------|
+| `http://127.0.0.1/callback` (default)  | `127.0.0.1:<random>`                         |
+| `http://[::1]/callback`                | `[::1]:<random>`                             |
+| `http://localhost/callback`            | `127.0.0.1` **and** `[::1]`, same random port (the browser may resolve `localhost` to either) |
+| `http://127.0.0.1:8085/callback`       | `127.0.0.1:8085` (fixed port, for IdPs that need one) |
+
+Anything that is not `http` on a loopback host aborts the cluster start: a CLI cannot receive the
+browser redirect elsewhere.
 
 ## Run it
 

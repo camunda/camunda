@@ -119,21 +119,65 @@ async function chooseProvider(providers, providerId) {
   return p;
 }
 
-// Waits for the authorization server to redirect the browser back to the loopback port.
-function startCallbackServer(expectedState) {
+const DEFAULT_REDIRECT_URI = "http://127.0.0.1/callback";
+const LOOPBACK_ADDRESSES = { "127.0.0.1": ["127.0.0.1"], "[::1]": ["::1"], localhost: ["127.0.0.1", "::1"] };
+const BIND_ATTEMPTS = 5;
+
+// The redirect URI must match the IdP registration exactly, except for the loopback port
+// (RFC 8252), so host and path come from discovery and only the port is ours. "localhost" is a
+// name the browser may resolve to 127.0.0.1 or ::1, so it is served on both, on the same port.
+function parseRedirectUri(redirectUri) {
+  const uri = new URL(redirectUri ?? DEFAULT_REDIRECT_URI);
+  const addresses = LOOPBACK_ADDRESSES[uri.hostname];
+  if (uri.protocol !== "http:" || !addresses) {
+    throw new Error(`redirect URI ${uri} is not an http loopback URI; a CLI cannot receive the browser redirect there`);
+  }
+  return { host: uri.hostname, addresses, fixedPort: uri.port ? Number(uri.port) : undefined, path: uri.pathname };
+}
+
+function listen(server, port, address) {
+  return new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, address, () => {
+      server.off("error", reject);
+      resolve(server.address().port);
+    });
+  });
+}
+
+// Waits for the authorization server to redirect the browser back to the loopback address(es).
+async function startCallbackServer(redirect, expectedState) {
   let resolveCode, rejectCode;
   const code = new Promise((res, rej) => ((resolveCode = res), (rejectCode = rej)));
-  const server = createServer((req, res) => {
+  const handler = (req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
-    if (url.pathname !== "/callback") return res.writeHead(404).end();
+    if (url.pathname !== redirect.path) return res.writeHead(404).end();
     const error = url.searchParams.get("error");
     const ok = !error && url.searchParams.get("state") === expectedState;
     res.writeHead(ok ? 200 : 400, { "content-type": "text/html" });
     res.end(ok ? "<h3>Logged in to c8poc. You can close this tab.</h3>" : `<h3>Login failed: ${error ?? "state mismatch"}</h3>`);
     ok ? resolveCode(url.searchParams.get("code")) : rejectCode(new Error(error ?? "state mismatch"));
-  });
-  const listening = new Promise((res) => server.listen(0, "127.0.0.1", () => res(server.address().port)));
-  return { listening, code, close: () => server.close() };
+  };
+
+  // The first address picks the port (unless fixed); the others must get the same one. If one is
+  // taken there, start over with a new port.
+  for (let attempt = 1; ; attempt++) {
+    const servers = [];
+    try {
+      let port = redirect.fixedPort ?? 0;
+      for (const address of redirect.addresses) {
+        const server = createServer(handler);
+        servers.push(server);
+        port = await listen(server, port, address);
+      }
+      return { port, code, close: () => servers.forEach((s) => s.close()) };
+    } catch (e) {
+      servers.forEach((s) => s.close());
+      if (e.code !== "EADDRINUSE" || redirect.fixedPort || attempt >= BIND_ATTEMPTS) {
+        throw new Error(`cannot listen for the login redirect on ${redirect.host}: ${e.message}`);
+      }
+    }
+  }
 }
 
 async function browserLogin(meta, provider, { noBrowser }) {
@@ -141,8 +185,9 @@ async function browserLogin(meta, provider, { noBrowser }) {
   const challenge = base64url(createHash("sha256").update(verifier).digest());
   const state = base64url(randomBytes(16));
 
-  const callback = startCallbackServer(state);
-  const redirectUri = `http://127.0.0.1:${await callback.listening}/callback`;
+  const redirect = parseRedirectUri(provider.redirect_uri);
+  const callback = await startCallbackServer(redirect, state);
+  const redirectUri = `http://${redirect.host}:${callback.port}${redirect.path}`;
 
   const authorize = new URL(meta.authorization_endpoint);
   authorize.search = new URLSearchParams({
