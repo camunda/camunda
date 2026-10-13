@@ -24,6 +24,9 @@ public class EngineStartup {
   private static final Set<String> LEGACY_RPA_REEXPORT_MIGRATION_ENABLED_PROPERTIES =
       Set.of("zeebe.broker.experimental.engine.startup.rpaReexportMigrationEnabled");
 
+  private static final Set<String> LEGACY_PROCESS_DEFINITION_RESTORE_ENABLED_PROPERTIES =
+      Set.of("zeebe.broker.experimental.engine.startup.processDefinitionRestoreEnabled");
+
   /**
    * Configures whether the one-time migration that re-exports existing RPA resources runs on broker
    * startup.
@@ -50,7 +53,12 @@ public class EngineStartup {
   }
 
   public boolean isProcessDefinitionRestoreEnabled() {
-    return processDefinitionRestoreEnabled;
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".process-definition-restore-enabled",
+        processDefinitionRestoreEnabled,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_PROCESS_DEFINITION_RESTORE_ENABLED_PROPERTIES);
   }
 
   public void setProcessDefinitionRestoreEnabled(final boolean processDefinitionRestoreEnabled) {
