@@ -102,4 +102,14 @@ public class ProcessDefinitionRestoreContinueProcessor
             .setTenantId(cursor.tenantId())
             .setProcessDefinitionKey(cursor.processDefinitionKey()));
   }
+
+  /**
+   * Without this, the self-chained {@code CONTINUE} commands would run in this command's own batch
+   * (up to the max commands in batch), accumulating every chunk's {@link #VISIT_LIMIT} deserialized
+   * rows into one transaction and defeating the per-command bound.
+   */
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
+  }
 }
