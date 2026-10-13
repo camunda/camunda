@@ -97,7 +97,8 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessor
             .setProcessInstanceKey(holder.getProcessInstanceKey())
             .setBpmnProcessId(holder.getBpmnProcessId())
             .setCorrelationKey(holder.getCorrelationKey())
-            .setTenantId(holder.getTenantId());
+            .setTenantId(holder.getTenantId())
+            .setStorageOrdinal(holder.getStorageOrdinal());
       }
     }
 

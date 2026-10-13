@@ -130,6 +130,7 @@ public interface MessageState {
         DirectBuffer bpmnProcessId,
         DirectBuffer correlationKey,
         long holderProcessInstanceKey,
-        String tenantId);
+        String tenantId,
+        int storageOrdinal);
   }
 }

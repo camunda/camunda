@@ -18,10 +18,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -687,6 +689,68 @@ public final class MessageStateTest {
     final var origin = messageState.getCrossPartitionStartHolderOrigin(1L);
     assertThat(origin).isNotNull();
     assertThat(origin.getMessageKey()).isEqualTo(42L);
+  }
+
+  @Test
+  void shouldPersistStorageOrdinalOnCrossPartitionStartHolderOrigin() {
+    // when
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L, 1234);
+
+    // then
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(1L);
+    assertThat(origin).isNotNull();
+    assertThat(origin.getStorageOrdinal()).isEqualTo(1234);
+  }
+
+  @Test
+  void shouldWriteMainIndexOrdinalOnHolderOriginWithoutStorageOrdinalEvenAfterPriorOrdinal() {
+    // given an entry previously written with a non-zero ordinal (the value object is reused)
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L, 1234);
+
+    // when the shorter overload (used by the released v1 applier) writes another entry
+    messageState.putCrossPartitionStartHolderOrigin(
+        2L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L);
+
+    // then it carries the main index ordinal rather than the previous write's ordinal
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(2L);
+    assertThat(origin).isNotNull();
+    assertThat(origin.getStorageOrdinal()).isEqualTo(StorageOrdinalRelated.MAIN_INDEX);
+  }
+
+  @Test
+  void shouldPersistStorageOrdinalOnCrossPartitionStartLock() {
+    // when
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT, 1234);
+
+    // then the visitor receives the ordinal
+    final var ordinals = new ArrayList<Integer>();
+    messageState.visitCrossPartitionStartLocks(
+        (bpmnProcessId, correlationKey, holder, tenantId, storageOrdinal) ->
+            ordinals.add(storageOrdinal));
+    assertThat(ordinals).containsExactly(1234);
+  }
+
+  @Test
+  void shouldWriteMainIndexOrdinalOnLockWithoutStorageOrdinalEvenAfterPriorOrdinal() {
+    // given a lock previously written with a non-zero ordinal (the value object is reused)
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT, 1234);
+
+    // when the shorter overload (used by the released v1 applier) writes another lock
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-2"), 43L, DEFAULT_TENANT);
+
+    // then the new lock carries the main index ordinal
+    final var ordinalsByHolder = new HashMap<Long, Integer>();
+    messageState.visitCrossPartitionStartLocks(
+        (bpmnProcessId, correlationKey, holder, tenantId, storageOrdinal) ->
+            ordinalsByHolder.put(holder, storageOrdinal));
+    assertThat(ordinalsByHolder)
+        .containsEntry(42L, 1234)
+        .containsEntry(43L, StorageOrdinalRelated.MAIN_INDEX);
   }
 
   @Test

@@ -603,7 +603,8 @@ public class SubscriptionCommandSender {
         .setProcessInstanceKey(holder.getProcessInstanceKey())
         .setBpmnProcessId(holder.getBpmnProcessId())
         .setCorrelationKey(holder.getCorrelationKey())
-        .setTenantId(holder.getTenantId());
+        .setTenantId(holder.getTenantId())
+        .setStorageOrdinal(holder.getStorageOrdinal());
     return handleFollowUpCommandBasedOnPartition(
         Protocol.decodePartitionId(requestKey),
         ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,

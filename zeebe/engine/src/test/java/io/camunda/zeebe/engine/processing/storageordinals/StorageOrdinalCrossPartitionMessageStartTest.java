@@ -12,11 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,6 +32,7 @@ public final class StorageOrdinalCrossPartitionMessageStartTest {
   private static final String MESSAGE_NAME = "ordinal-cross-partition-message";
   private static final String CORRELATION_KEY = "ck-1";
   private static final String BUSINESS_ID = "biz-1";
+  private static final Duration POLL_INTERVAL = Duration.ofSeconds(1);
 
   @Rule
   public final EngineRule engine =
@@ -37,7 +41,8 @@ public final class StorageOrdinalCrossPartitionMessageStartTest {
               c ->
                   c.setBusinessIdUniquenessEnabled(true)
                       .setArchiverlessEnabled(true)
-                      .setFixedStorageOrdinal(FIXED_ORDINAL));
+                      .setFixedStorageOrdinal(FIXED_ORDINAL)
+                      .setMessageStartLockReleasePollInterval(POLL_INTERVAL));
 
   @Before
   public void assertCrossPartitionRouting() {
@@ -119,6 +124,77 @@ public final class StorageOrdinalCrossPartitionMessageStartTest {
     assertThat(correlated.getValue().getProcessInstanceKey())
         .isEqualTo(creation.getProcessInstanceKey());
     assertThat(correlated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    // and: the holder completes right away, so the push path carries the ordinal on its PUSHED
+    // event, the RELEASE it sends to P_K and the RELEASED event P_K applies
+    final long holderKey = creation.getProcessInstanceKey();
+    assertLockReleaseHolderOrdinal(MessageStartCorrelationKeyLockReleaseIntent.PUSHED, holderKey);
+    assertLockReleaseHolderOrdinal(MessageStartCorrelationKeyLockReleaseIntent.RELEASE, holderKey);
+    assertLockReleaseHolderOrdinal(MessageStartCorrelationKeyLockReleaseIntent.RELEASED, holderKey);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToLockReleaseQueryRecords() {
+    // given a holder that stays active, so the reconciliation poll on P_K queries it
+    final String processId = "ordinal-cross-partition-poll";
+    final String messageName = "ordinal-cross-partition-poll-message";
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("message-start")
+                .message(messageName)
+                .serviceTask("task", t -> t.zeebeJobType("ordinal-hold"))
+                .endEvent()
+                .done())
+        .deploy();
+    RecordingExporter.messageStartEventSubscriptionRecords(
+            MessageStartEventSubscriptionIntent.CREATED)
+        .withMessageName(messageName)
+        .limit(PARTITION_COUNT)
+        .asList();
+    engine
+        .message()
+        .withName(messageName)
+        .withCorrelationKey(CORRELATION_KEY)
+        .withBusinessId(BUSINESS_ID)
+        .publish();
+    final long holderKey =
+        RecordingExporter.processInstanceCreationRecords()
+            .withBpmnProcessId(processId)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+    // the lock on P_K is written once the STARTED reply is applied there
+    RecordingExporter.messageStartProcessInstanceRequestRecords(
+            MessageStartProcessInstanceRequestIntent.STARTED)
+        .filter(r -> r.getValue().getProcessInstanceKey() == holderKey)
+        .limit(2)
+        .asList();
+
+    // when the reconciliation poll fires
+    engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
+
+    // then the QUERY sent by P_K and the QUERIED acknowledged on P_B carry the holder's ordinal
+    assertLockReleaseHolderOrdinal(MessageStartCorrelationKeyLockReleaseIntent.QUERY, holderKey);
+    assertLockReleaseHolderOrdinal(MessageStartCorrelationKeyLockReleaseIntent.QUERIED, holderKey);
+  }
+
+  private static void assertLockReleaseHolderOrdinal(
+      final MessageStartCorrelationKeyLockReleaseIntent intent, final long holderKey) {
+    final var record =
+        RecordingExporter.messageStartCorrelationKeyLockReleaseRecords(intent)
+            .filter(
+                r ->
+                    r.getValue().getHolders().stream()
+                        .anyMatch(h -> h.getProcessInstanceKey() == holderKey))
+            .getFirst();
+    assertThat(record.getValue().getHolders())
+        .as("%s carries the holder with the configured ordinal", intent)
+        .filteredOn(h -> h.getProcessInstanceKey() == holderKey)
+        .singleElement()
+        .extracting(MessageStartLockReleaseHolderValue::getStorageOrdinal)
+        .isEqualTo(FIXED_ORDINAL);
   }
 
   private static int partitionFor(final String key) {

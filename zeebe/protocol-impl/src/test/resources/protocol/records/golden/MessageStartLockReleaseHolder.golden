@@ -9,10 +9,12 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -35,13 +37,16 @@ public final class MessageStartLockReleaseHolder extends ObjectValue
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final IntegerProperty storageOrdinalProp =
+      new IntegerProperty("storageOrdinal", StorageOrdinalRelated.MAIN_INDEX);
 
   public MessageStartLockReleaseHolder() {
-    super(4);
+    super(5);
     declareProperty(processInstanceKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(correlationKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(storageOrdinalProp);
   }
 
   @Override
@@ -109,10 +114,21 @@ public final class MessageStartLockReleaseHolder extends ObjectValue
     return this;
   }
 
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public MessageStartLockReleaseHolder setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
+    return this;
+  }
+
   public void copy(final MessageStartLockReleaseHolder other) {
     setProcessInstanceKey(other.getProcessInstanceKey());
     setBpmnProcessId(other.getBpmnProcessIdBuffer());
     setCorrelationKey(other.getCorrelationKeyBuffer());
     setTenantId(other.getTenantId());
+    setStorageOrdinal(other.getStorageOrdinal());
   }
 }

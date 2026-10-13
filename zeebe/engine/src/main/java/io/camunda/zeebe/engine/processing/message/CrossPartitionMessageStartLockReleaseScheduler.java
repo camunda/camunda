@@ -102,7 +102,7 @@ public final class CrossPartitionMessageStartLockReleaseScheduler
     // to the visitor are only valid during the callback, so copy into immutable values here.
     final Map<Integer, List<Lock>> locksByPartition = new HashMap<>();
     messageState.visitCrossPartitionStartLocks(
-        (bpmnProcessId, correlationKey, holderProcessInstanceKey, tenantId) -> {
+        (bpmnProcessId, correlationKey, holderProcessInstanceKey, tenantId, storageOrdinal) -> {
           final int targetPartition = Protocol.decodePartitionId(holderProcessInstanceKey);
           if (targetPartition == partitionId) {
             // Defensive: a cross-partition lock entry never targets the local partition. Skip
@@ -116,7 +116,8 @@ public final class CrossPartitionMessageStartLockReleaseScheduler
                       BufferUtil.bufferAsString(bpmnProcessId),
                       BufferUtil.bufferAsString(correlationKey),
                       holderProcessInstanceKey,
-                      tenantId));
+                      tenantId,
+                      storageOrdinal));
         });
 
     locksByPartition.forEach(
@@ -144,7 +145,8 @@ public final class CrossPartitionMessageStartLockReleaseScheduler
           .setProcessInstanceKey(lock.holderProcessInstanceKey())
           .setBpmnProcessId(lock.bpmnProcessId())
           .setCorrelationKey(lock.correlationKey())
-          .setTenantId(lock.tenantId());
+          .setTenantId(lock.tenantId())
+          .setStorageOrdinal(lock.storageOrdinal());
     }
 
     LOG.trace(
@@ -160,5 +162,6 @@ public final class CrossPartitionMessageStartLockReleaseScheduler
       String bpmnProcessId,
       String correlationKey,
       long holderProcessInstanceKey,
-      String tenantId) {}
+      String tenantId,
+      int storageOrdinal) {}
 }

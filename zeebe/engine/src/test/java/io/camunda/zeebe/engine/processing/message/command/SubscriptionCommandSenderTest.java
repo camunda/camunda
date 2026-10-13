@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartLockReleaseHolder;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -27,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -407,6 +410,30 @@ public class SubscriptionCommandSenderTest {
     final var recordCaptor = ArgumentCaptor.forClass(ProcessMessageSubscriptionRecord.class);
     verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
     assertThat(recordCaptor.getValue().getStorageOrdinal()).isEqualTo(DEFAULT_STORAGE_ORDINAL);
+  }
+
+  @Test
+  public void shouldSetStorageOrdinalOnCorrelationKeyLockReleaseRecord() {
+    // given
+    final var holder =
+        new MessageStartLockReleaseHolder()
+            .setProcessInstanceKey(DEFAULT_ELEMENT_INSTANCE_KEY)
+            .setBpmnProcessId(DEFAULT_PROCESS_ID)
+            .setCorrelationKey(DEFAULT_CORRELATION_KEY)
+            .setTenantId(DEFAULT_TENANT)
+            .setStorageOrdinal(DEFAULT_STORAGE_ORDINAL);
+
+    // when
+    subscriptionCommandSender.sendCorrelationKeyLockRelease(SAME_RECEIVER_PARTITION_KEY, holder);
+
+    // then
+    final var recordCaptor =
+        ArgumentCaptor.forClass(MessageStartCorrelationKeyLockReleaseRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getHolders())
+        .singleElement()
+        .extracting(MessageStartLockReleaseHolderValue::getStorageOrdinal)
+        .isEqualTo(DEFAULT_STORAGE_ORDINAL);
   }
 
   @Test
