@@ -94,7 +94,6 @@ jobs:
 
       - name: Run PromQL queries via loadtestctl report
         id: run-queries
-        working-directory: load-tests/loadtestctl
         env:
           LOADTESTCTL_REPORT_END: ${{ env.AT }}
         # `report-queries-comparison.yaml` holds the metrics of the comparison table. Metrics that
@@ -103,7 +102,7 @@ jobs:
         # with the full report step so both cover the same window. A failing report leaves
         # every metric out of the summary instead of failing the workflow.
         run: |
-          if ! uv run --frozen loadtestctl report "$NAMESPACE" \
+          if ! load-tests/loadtestctl/loadtestctl report "$NAMESPACE" \
               --queries report-queries-comparison.yaml > "$RUNNER_TEMP/comparison.json"; then
             echo "::warning::loadtestctl report failed; some metrics may be missing from the summary"
             echo '{"metrics": {}}' > "$RUNNER_TEMP/comparison.json"
@@ -124,9 +123,8 @@ jobs:
         # Artifact for later analysis; the comparison above does not depend on it.
         continue-on-error: true
         timeout-minutes: 3
-        working-directory: load-tests/loadtestctl
         run: |
-          uv run --frozen loadtestctl report "$NAMESPACE" \
+          load-tests/loadtestctl/loadtestctl report "$NAMESPACE" \
             --output "$RUNNER_TEMP/report.json"
 
       - name: Upload full load test report
