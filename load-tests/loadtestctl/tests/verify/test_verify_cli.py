@@ -12,18 +12,6 @@ from .helpers import completed
 CLI = "loadtestctl.verify.cli"
 
 
-@pytest.fixture(autouse=True)
-def clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in (
-        "LOADTESTCTL_VERIFY_RESULT_FILE",
-        "PROMETHEUS_URL",
-        "PROMETHEUS_USER",
-        "PROMETHEUS_PASSWORD",
-        "K6_METRICS_TIMEOUT",
-    ):
-        monkeypatch.delenv(name, raising=False)
-
-
 def run(argv: Sequence[str]) -> int:
     try:
         cli(args=["verify", *argv], prog_name="loadtestctl")
@@ -65,9 +53,9 @@ def test_should_query_a_local_prometheus_without_authentication_by_default() -> 
 
 
 def test_should_read_prometheus_options_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("PROMETHEUS_URL", "http://prom")
-    monkeypatch.setenv("PROMETHEUS_USER", "u")
-    monkeypatch.setenv("K6_METRICS_TIMEOUT", "120")
+    monkeypatch.setenv("LOADTESTCTL_PROMETHEUS_URL", "http://prom")
+    monkeypatch.setenv("LOADTESTCTL_PROMETHEUS_USER", "u")
+    monkeypatch.setenv("LOADTESTCTL_VERIFY_K6_METRICS_TIMEOUT", "120")
 
     run_verify = run_verify_options(["c8-test"])
 
@@ -76,8 +64,8 @@ def test_should_read_prometheus_options_from_the_environment(monkeypatch: pytest
 
 
 def test_should_use_the_defaults_for_empty_environment_variables(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("K6_METRICS_TIMEOUT", "")
-    monkeypatch.setenv("PROMETHEUS_URL", "")
+    monkeypatch.setenv("LOADTESTCTL_VERIFY_K6_METRICS_TIMEOUT", "")
+    monkeypatch.setenv("LOADTESTCTL_PROMETHEUS_URL", "")
 
     run_verify = run_verify_options(["c8-test"])
 
@@ -86,7 +74,7 @@ def test_should_use_the_defaults_for_empty_environment_variables(monkeypatch: py
 
 
 def test_should_validate_the_k6_metrics_timeout_of_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("K6_METRICS_TIMEOUT", "-1")
+    monkeypatch.setenv("LOADTESTCTL_VERIFY_K6_METRICS_TIMEOUT", "-1")
 
     assert run(["c8-test"]) == 2
 

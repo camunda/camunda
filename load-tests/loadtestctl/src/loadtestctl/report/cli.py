@@ -5,11 +5,13 @@ from dataclasses import dataclass
 from datetime import UTC
 from datetime import datetime
 from datetime import timedelta
-from functools import partial
 from pathlib import Path
 
 import click
 from pydantic import ValidationError
+
+from loadtestctl.options import option
+from loadtestctl.options import prometheus_options
 
 from .errors import ReportError
 from .prometheus import PrometheusClient
@@ -23,8 +25,6 @@ DEFAULT_QUERIES_FILE = HERE / "report-queries.yaml"
 NAMESPACE_PATTERN = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
 DURATION_COMPONENT_PATTERN = re.compile(r"[1-9][0-9]*(ms|[ywdhms])")
 DURATION_UNIT_ORDER = ("y", "w", "d", "h", "m", "s", "ms")
-
-option = partial(click.option, show_envvar=True)
 
 
 @dataclass(frozen=True)
@@ -149,9 +149,9 @@ Examples:
 
 \b
   # CI monitor ingress with basic auth:
-  LOADTESTCTL_REPORT_PROMETHEUS_PASSWORD="$PROM_PASS" loadtestctl report c8-ck-baseline-20260814 \\
+  LOADTESTCTL_PROMETHEUS_PASSWORD="$PROM_PASS" loadtestctl report c8-ck-baseline-20260814 \\
     --duration-seconds 1800 \\
-    --endpoint https://ci-monitor.benchmark.camunda.cloud \\
+    --prometheus-url https://ci-monitor.benchmark.camunda.cloud \\
     --prometheus-user "$PROM_USER" \\
     --format csv > /tmp/load-test-report.csv"""
 
@@ -267,9 +267,7 @@ def run_report(options: Options) -> None:
     show_default="now",
     help="End of the reporting window, RFC3339 or Unix timestamp. Must not be in the future.",
 )
-@option("-e", "--endpoint", default="http://localhost:9090", show_default=True, help="Prometheus base URL.")
-@option("-u", "--prometheus-user", default="", help="Basic auth user for Prometheus.")
-@option("-p", "--prometheus-password", default="", help="Basic auth password for Prometheus.")
+@prometheus_options("Prometheus base URL.")
 @option(
     "-f",
     "--format",
@@ -289,7 +287,7 @@ def report(
     queries: Path,
     start: datetime | None,
     end: datetime | None,
-    endpoint: str,
+    prometheus_url: str,
     prometheus_user: str,
     prometheus_password: str,
     format: str,
@@ -305,7 +303,7 @@ def report(
                 duration_seconds=window_seconds,
                 rate_interval=rate_interval,
                 sample_step=sample_step,
-                endpoint=endpoint,
+                endpoint=prometheus_url,
                 basic_auth_user=prometheus_user,
                 basic_auth_password=prometheus_password,
                 time_anchor=end_label,

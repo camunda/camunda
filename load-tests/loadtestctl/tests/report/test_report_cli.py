@@ -325,8 +325,8 @@ def test_should_reject_invalid_namespace_forms(args: list[str], capsys: pytest.C
 
 def test_should_read_options_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADTESTCTL_REPORT_DURATION_SECONDS", "90")
-    monkeypatch.setenv("LOADTESTCTL_REPORT_PROMETHEUS_USER", "env-user")
-    monkeypatch.setenv("LOADTESTCTL_REPORT_PROMETHEUS_PASSWORD", "env-pass")
+    monkeypatch.setenv("LOADTESTCTL_PROMETHEUS_USER", "env-user")
+    monkeypatch.setenv("LOADTESTCTL_PROMETHEUS_PASSWORD", "env-pass")
     monkeypatch.setenv("LOADTESTCTL_REPORT_FORMAT", "csv")
     monkeypatch.setenv("LOADTESTCTL_REPORT_NO_HEADER", "true")
 
@@ -341,7 +341,7 @@ def test_should_read_options_from_environment(monkeypatch: pytest.MonkeyPatch) -
 
 def test_should_prefer_command_line_over_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADTESTCTL_REPORT_DURATION_SECONDS", "90")
-    monkeypatch.setenv("LOADTESTCTL_REPORT_PROMETHEUS_PASSWORD", "env-pass")
+    monkeypatch.setenv("LOADTESTCTL_PROMETHEUS_PASSWORD", "env-pass")
 
     options = parse_args(["c8-ck-test", "-d", "30", "-u", "cli-user", "-p", "cli-pass"])
 

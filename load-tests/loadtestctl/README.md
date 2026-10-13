@@ -37,7 +37,7 @@ It needs `kubectl` access to the cluster. Progress is logged to stderr and the e
 
 Prometheus defaults to `http://localhost:9090` without authentication, for example through `kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090`. Use `--prometheus-url`, `--prometheus-user` and `--prometheus-password` for a remote one.
 
-Every option can also be set through an environment variable named `LOADTESTCTL_VERIFY_<OPTION>`, for example `LOADTESTCTL_VERIFY_WAIT_TIMEOUT`. The Prometheus options and the k6 metrics timeout are read from `PROMETHEUS_URL`, `PROMETHEUS_USER`, `PROMETHEUS_PASSWORD` and `K6_METRICS_TIMEOUT`, which the workflow sets. A flag on the command line overrides the variable. `uv run loadtestctl verify --help` lists the variable next to each option.
+Every option can also be set through an environment variable named `LOADTESTCTL_VERIFY_<OPTION>`, for example `LOADTESTCTL_VERIFY_WAIT_TIMEOUT`. The Prometheus options are read from `LOADTESTCTL_PROMETHEUS_URL`, `LOADTESTCTL_PROMETHEUS_USER` and `LOADTESTCTL_PROMETHEUS_PASSWORD`, which the workflow sets. A flag on the command line overrides the variable. `uv run loadtestctl verify --help` lists the variable next to each option.
 
 ### report
 
@@ -65,7 +65,7 @@ Common options:
   - `--start` only: the end is the start plus `--duration-seconds`.
   - `--end` only: the start is the end minus `--duration-seconds`.
   - both: the duration is derived, and `--duration-seconds` cannot be combined with them.
-- `-e`, `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
+- `-e`, `--prometheus-url <url>`: Prometheus base URL. Default: `http://localhost:9090`.
 - `-u`, `--prometheus-user <user>` and `-p`, `--prometheus-password <password>`: basic auth credentials for Prometheus.
 - `-f`, `--format json|csv|tsv`: output format. Default: `json`.
 - `--no-header`: omit the CSV or TSV header row for direct spreadsheet row pasting.
@@ -76,10 +76,11 @@ Common options:
 #### Environment variables
 
 Every option can also be set through an environment variable named
-`LOADTESTCTL_REPORT_<OPTION>`, for example `LOADTESTCTL_REPORT_DURATION_SECONDS`,
-`LOADTESTCTL_REPORT_ENDPOINT`, `LOADTESTCTL_REPORT_PROMETHEUS_USER` and
-`LOADTESTCTL_REPORT_PROMETHEUS_PASSWORD`. A flag on the command line overrides
-the variable, and an empty variable counts as unset. Prefer `LOADTESTCTL_REPORT_PROMETHEUS_PASSWORD` over `--prometheus-password`, because command line
+`LOADTESTCTL_REPORT_<OPTION>`, for example `LOADTESTCTL_REPORT_DURATION_SECONDS`. The Prometheus
+options are read from `LOADTESTCTL_PROMETHEUS_URL`, `LOADTESTCTL_PROMETHEUS_USER` and
+`LOADTESTCTL_PROMETHEUS_PASSWORD`, which `loadtestctl verify` shares.
+A flag on the command line overrides the variable, and an empty variable counts as unset. Prefer
+`LOADTESTCTL_PROMETHEUS_PASSWORD` over `--prometheus-password`, because command line
 arguments are visible in the process list and the shell history. `uv run loadtestctl report
 --help` lists the variable next to each option.
 
@@ -118,9 +119,9 @@ uv run loadtestctl report c8-ck-base-8736-endurance \
 CI monitor ingress with basic auth:
 
 ```bash
-LOADTESTCTL_REPORT_PROMETHEUS_PASSWORD="$PROM_PASS" uv run loadtestctl report c8-ck-baseline-20260814 \
+LOADTESTCTL_PROMETHEUS_PASSWORD="$PROM_PASS" uv run loadtestctl report c8-ck-baseline-20260814 \
   --duration-seconds 1800 \
-  --endpoint https://ci-monitor.benchmark.camunda.cloud \
+  --prometheus-url https://ci-monitor.benchmark.camunda.cloud \
   --prometheus-user "$PROM_USER" \
   --format csv > /tmp/load-test-report.csv
 ```

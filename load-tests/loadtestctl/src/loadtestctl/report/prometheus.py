@@ -140,9 +140,9 @@ If you are running locally, start the port-forward in another terminal:
 
 Then rerun this script with:
 
-  --endpoint http://localhost:9090
+  --prometheus-url http://localhost:9090
 
 If you are using the CI monitor ingress, verify the URL and pass credentials with
 --prometheus-user/--prometheus-password, for example:
 
-  --endpoint https://ci-monitor.benchmark.camunda.cloud --prometheus-user "$PROM_USER" --prometheus-password "$PROM_PASS"'''
+  --prometheus-url https://ci-monitor.benchmark.camunda.cloud --prometheus-user "$PROM_USER" --prometheus-password "$PROM_PASS"'''
