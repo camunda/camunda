@@ -40,6 +40,7 @@ public class JobEntityTransformer
         .processInstanceKey(value.getProcessInstanceKey())
         .rootProcessInstanceKey(value.getRootProcessInstanceKey())
         .businessId(value.getBusinessId())
+        .storageOrdinal(value.getStorageOrdinal())
         .elementId(value.getFlowNodeId())
         .elementInstanceKey(value.getFlowNodeInstanceId())
         .tenantId(value.getTenantId())

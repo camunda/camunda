@@ -41,6 +41,7 @@ public record JobEntity(
     Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
     @Nullable String businessId,
+    @Nullable Integer storageOrdinal,
     String elementId,
     Long elementInstanceKey,
     String tenantId,
@@ -93,6 +94,7 @@ public record JobEntity(
     private @Nullable Long processInstanceKey;
     private @Nullable Long rootProcessInstanceKey;
     private @Nullable String businessId;
+    private @Nullable Integer storageOrdinal;
     private @Nullable String elementId;
     private @Nullable Long elementInstanceKey;
     private @Nullable String tenantId;
@@ -204,6 +206,11 @@ public record JobEntity(
       return this;
     }
 
+    public Builder storageOrdinal(final Integer storageOrdinal) {
+      this.storageOrdinal = storageOrdinal;
+      return this;
+    }
+
     public Builder elementId(final String elementId) {
       this.elementId = elementId;
       return this;
@@ -254,6 +261,7 @@ public record JobEntity(
           processInstanceKey,
           rootProcessInstanceKey,
           businessId,
+          storageOrdinal,
           elementId,
           elementInstanceKey,
           tenantId,

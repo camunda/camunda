@@ -752,6 +752,7 @@ class SearchQueryResponseMapperTest {
             .processInstanceKey(789L)
             .rootProcessInstanceKey(999L)
             .businessId("business-1")
+            .storageOrdinal(1001)
             .elementId("serviceTask1")
             .elementInstanceKey(111L)
             .tenantId("tenant")
@@ -766,6 +767,7 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(jobs.getItems().getFirst().getBusinessId()).isEqualTo("business-1");
+    assertThat(jobs.getItems().getFirst().getStorageOrdinal()).isEqualTo(1001);
   }
 
   @Test
@@ -800,6 +802,7 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(jobs.getItems().getFirst().getBusinessId()).isNull();
+    assertThat(jobs.getItems().getFirst().getStorageOrdinal()).isNull();
   }
 
   @Test
