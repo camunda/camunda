@@ -44,6 +44,7 @@ import io.camunda.configuration.Security;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.TlsCluster;
 import io.camunda.configuration.Webapps;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.io.IOException;
@@ -113,6 +114,7 @@ public class ExtendedConfigurationBuilder {
     mapper.addMixIn(BatchOperation.class, BatchOperationMixIn.class);
     mapper.addMixIn(DocumentBasedHistory.class, PrefixMixIn.class);
     mapper.addMixIn(PostExport.class, PrefixMixIn.class);
+    mapper.addMixIn(OidcConfiguration.class, OidcConfigurationMixIn.class);
     return mapper;
   }
 
@@ -525,6 +527,16 @@ public class ExtendedConfigurationBuilder {
    */
   private abstract static class PrefixMixIn {
     @JsonIgnore private String prefix;
+  }
+
+  /**
+   * Hides the flags that record which principal claims the configuration sets. They are not
+   * properties; binding the claim properties sets them again.
+   */
+  private abstract static class OidcConfigurationMixIn {
+    @JsonIgnore private boolean usernameClaimSet;
+    @JsonIgnore private boolean clientIdClaimSet;
+    @JsonIgnore private boolean preferUsernameClaimSet;
   }
 
   /**

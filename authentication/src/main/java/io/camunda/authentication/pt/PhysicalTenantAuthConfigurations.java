@@ -222,14 +222,22 @@ public final class PhysicalTenantAuthConfigurations {
   }
 
   /**
-   * The default slot without its provider fields. {@code groups-claim} (the tenant's groups mode)
-   * and {@code user-info-augmentation} also apply to the tenant's named providers, so they are
-   * kept; without a {@code client-id} CSL's {@code flatten} does not treat the slot as a provider.
+   * The default slot without its provider fields. {@code groups-claim} (the tenant's groups mode),
+   * {@code user-info-augmentation} and the principal claims also apply to the tenant's named
+   * providers, so they are kept; without a {@code client-id} CSL's {@code flatten} does not treat
+   * the slot as a provider.
+   *
+   * <p>Keep this equal to {@code
+   * PhysicalTenantAuthenticationProviderConfigurations#withoutProvider} in the configuration
+   * module, so gRPC and REST read the same claims for a tenant.
    */
   private static OidcConfiguration withoutProvider(final OidcConfiguration defaultSlot) {
     final OidcConfiguration tenantSettings = new OidcConfiguration();
     tenantSettings.setGroupsClaim(defaultSlot.getGroupsClaim());
     tenantSettings.setUserInfoAugmentation(defaultSlot.getUserInfoAugmentation());
+    tenantSettings.setUsernameClaim(defaultSlot.getUsernameClaim());
+    tenantSettings.setClientIdClaim(defaultSlot.getClientIdClaim());
+    tenantSettings.setPreferUsernameClaim(defaultSlot.isPreferUsernameClaim());
     return tenantSettings;
   }
 

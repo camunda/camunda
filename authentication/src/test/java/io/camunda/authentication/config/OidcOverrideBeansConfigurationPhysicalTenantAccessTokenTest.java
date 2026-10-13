@@ -39,9 +39,7 @@ import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -97,7 +95,8 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
     final var token = JwksTestServer.signForIssuer(tenantIdp, rootIdp.issuerUri(), List.of());
 
     // when
-    final var username = converter.convert(login(token, tenantIdp)).authenticatedUsername();
+    final var username =
+        converter.convert(login(token, environment, "tenanta")).authenticatedUsername();
 
     // then
     assertThat(username).isEqualTo(ID_TOKEN_USER);
@@ -120,14 +119,18 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
         JwksTestServer.signForIssuer(otherTenantIdp, tenantIdp.issuerUri(), List.of());
 
     // when
-    final var usernameOnRoot = converter.convert(login(rootToken, rootIdp)).authenticatedUsername();
+    final var usernameOnRoot =
+        converter.convert(login(rootToken, environment, "default")).authenticatedUsername();
     bindPhysicalTenant("tenanta");
-    final var usernameOnA = converter.convert(login(tokenA, tenantIdp)).authenticatedUsername();
+    final var usernameOnA =
+        converter.convert(login(tokenA, environment, "tenanta")).authenticatedUsername();
     bindPhysicalTenant("tenantb");
     final var usernameOnB =
-        converter.convert(login(tokenB, otherTenantIdp)).authenticatedUsername();
+        converter.convert(login(tokenB, environment, "tenantb")).authenticatedUsername();
     final var usernameOnBWithAIssuer =
-        converter.convert(login(tokenWithAIssuerForB, otherTenantIdp)).authenticatedUsername();
+        converter
+            .convert(login(tokenWithAIssuerForB, environment, "tenantb"))
+            .authenticatedUsername();
 
     // then each decodes its own access token, and tenant B rejects tenant A's issuer
     assertThat(usernameOnRoot).isEqualTo(ACCESS_TOKEN_USER);
@@ -143,11 +146,13 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
     environment.setProperty(TENANT_OIDC_PREFIX + ".prefer-id-token-claims", "true");
     final var converter = converter(environment);
     final var token = JwksTestServer.signForIssuer(rootIdp, rootIdp.issuerUri(), List.of());
-    final var rootUsername = converter.convert(login(token, rootIdp)).authenticatedUsername();
+    final var rootUsername =
+        converter.convert(login(token, environment, "default")).authenticatedUsername();
 
     // when
     bindPhysicalTenant("tenanta");
-    final var tenantUsername = converter.convert(login(token, rootIdp)).authenticatedUsername();
+    final var tenantUsername =
+        converter.convert(login(token, environment, "tenanta")).authenticatedUsername();
 
     // then
     assertThat(rootUsername).isEqualTo(ACCESS_TOKEN_USER);
@@ -165,7 +170,8 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
     final var token = JwksTestServer.signForIssuer(tenantIdp, tenantIdp.issuerUri(), List.of());
 
     // when
-    final var username = converter.convert(login(token, tenantIdp)).authenticatedUsername();
+    final var username =
+        converter.convert(login(token, environment, "tenanta")).authenticatedUsername();
 
     // then
     assertThat(username).isEqualTo(ACCESS_TOKEN_USER);
@@ -182,7 +188,8 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
     final var token = JwksTestServer.signForIssuer(extraIdp, tenantIdp.issuerUri(), List.of());
 
     // when
-    final var username = converter.convert(login(token, tenantIdp)).authenticatedUsername();
+    final var username =
+        converter.convert(login(token, environment, "tenanta")).authenticatedUsername();
 
     // then
     assertThat(username).isEqualTo(ACCESS_TOKEN_USER);
@@ -232,8 +239,21 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
         configuration.physicalTenantOidcSettings(environment, membershipPort, propagator));
   }
 
-  private OAuth2AuthenticationToken login(final String accessToken, final JwksTestServer jwksIdp) {
-    final var registration = registration(jwksIdp);
+  /**
+   * A login on {@code physicalTenantId}. Its authorized client holds the registration that the
+   * tenant's login chain builds with the library, from the tenant's own merged settings.
+   */
+  private OAuth2AuthenticationToken login(
+      final String accessToken, final MockEnvironment environment, final String physicalTenantId) {
+    final var registration =
+        new ScopedClientRegistrationFactory()
+            .createWithoutLoginRoutes(
+                Map.of(
+                    "oidc",
+                    PhysicalTenantAuthConfigurations.forPhysicalTenant(
+                            physicalTenantId, environment)
+                        .getOidc()))
+            .getFirst();
     final var client =
         new OAuth2AuthorizedClient(
             registration,
@@ -247,16 +267,5 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
     final var principal = mock(OidcUser.class);
     when(principal.getAttributes()).thenReturn(Map.of("sub", ID_TOKEN_USER));
     return new OAuth2AuthenticationToken(principal, List.of(), "oidc");
-  }
-
-  private static ClientRegistration registration(final JwksTestServer jwksIdp) {
-    return ClientRegistration.withRegistrationId("oidc")
-        .clientId("client-id")
-        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-        .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
-        .authorizationUri(tenantIdp.issuerUri() + "/auth")
-        .tokenUri(tenantIdp.issuerUri() + "/token")
-        .jwkSetUri(jwksIdp.issuerUri() + "/jwks")
-        .build();
   }
 }
