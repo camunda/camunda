@@ -72,6 +72,7 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
         new Builder()
             .jobKey(record.getKey())
             .partitionId(record.getPartitionId())
+            .storageOrdinal(value.getStorageOrdinal())
             .processInstanceKey(value.getProcessInstanceKey())
             .rootProcessInstanceKey(value.getRootProcessInstanceKey())
             .businessId(StringUtils.defaultIfEmpty(value.getBusinessId(), null))
