@@ -198,6 +198,15 @@ reacts immediately instead of waiting for the regular rebase and assignment wind
 This gives early signal and confidence while observing the experiment. The exact wiring of the
 notification is an implementation detail and can change without changing this decision.
 
+## Temporary soft integration
+
+For the first weeks after the Gradle build lands, the D4 checks are not enforced. The
+`Gradle / Test Classes` and `Gradle / Distribution Parity` jobs still run as described in D4, but
+they are not part of `check-results`, so they never block a pull request or merge group. A failure
+on a push to `main` sends a Slack notification to the Gradle build notifications channel.
+The soft period ends, and the D4 behavior above applies in full, when the team agrees the build is
+stable enough to enforce it. Gradle stays opt-in for contributors until then.
+
 ## Deferred work
 
 The following work is intentionally excluded from this change:

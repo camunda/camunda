@@ -23,6 +23,10 @@ remains the application-test path for every event. The `gradle-changes` output i
 triggers the experimental Gradle `testClasses` and distribution-parity jobs when Gradle, Maven,
 Java, or relevant CI inputs change.
 
+Temporary soft integration: the Gradle jobs still run, but are not part of `check-results`, so
+they do not block pull requests or merge groups. A failure on `main` sends a Slack notification
+(see the ADR).
+
 This keeps the experimental Gradle signal honest: it validates compilation and packaged artifact
 names, but it is not a Gradle application-test suite. Maven remains the landing-gate authority,
 including pull requests, merge groups, protected-branch pushes, schedules, and manual runs.
@@ -99,7 +103,7 @@ The rebase audit identifies what changed. It does not replace the porting proced
 ### Gradle CI gates
 
 On an eligible Gradle CI path, `gradle-compile-check` runs the root `testClasses` lifecycle task
-and builds `:camunda-zeebe:distZip` in the same invocation. The required
+and builds `:camunda-zeebe:distZip` in the same invocation. The
 `gradle-dist-parity` job then compares the Gradle distribution archive with the Maven
 distribution archive using `compare-dist.py` (the current CI artifacts are ZIPs; the tool also
 supports tar.gz/exploded distribution comparisons). These are the Gradle build gates; do not
