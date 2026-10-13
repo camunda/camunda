@@ -50,14 +50,17 @@ func TestPhysicalTenantSelectionE2E(t *testing.T) {
 	password := "local-selection-test"
 	run := func(input string, args ...string) string {
 		t.Helper()
+		started := time.Now()
+		t.Logf("Starting c8run %v", args)
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binary, args...)
 		cmd.Dir = dir
 		cmd.Stdin = strings.NewReader(input)
 		output, err := cmd.CombinedOutput()
-		require.NoError(t, err, "%v\n%s", args, output)
-		t.Logf("c8run %v\n%s", args, output)
+		t.Logf("c8run %v finished after %s\n%s", args, time.Since(started).Round(time.Millisecond), output)
+		require.NoError(t, ctx.Err(), "c8run %v exceeded its command deadline", args)
+		require.NoError(t, err, "c8run %v", args)
 		return string(output)
 	}
 	t.Cleanup(func() {
@@ -92,7 +95,7 @@ func TestPhysicalTenantSelectionE2E(t *testing.T) {
 	}
 
 	add(existing)
-	run("", "start", "--no-browser")
+	run("", "start", "--no-browser", "--disable-connectors")
 	checkSaved(existing)
 	run("", "stop")
 	add(fresh)
@@ -112,7 +115,7 @@ func TestPhysicalTenantSelectionE2E(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, before, after)
 	run("", "stop")
-	run("", "start", "--no-browser")
+	run("", "start", "--no-browser", "--disable-connectors")
 	checkSaved(existing)
 	checkSaved(fresh)
 	check(unsaved, "demo", "demo", http.StatusNotFound)
