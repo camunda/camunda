@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -249,6 +251,13 @@ public final class RecordToWrite implements LogAppendEntry {
   public RecordToWrite process(final ProcessIntent intent, final Process value) {
     recordMetadata.valueType(ValueType.PROCESS).intent(intent);
     unifiedRecordValue = (ProcessRecord) value;
+    return this;
+  }
+
+  public RecordToWrite processDefinitionRestore(
+      final ProcessDefinitionRestoreIntent intent, final ProcessDefinitionRestoreRecord value) {
+    recordMetadata.valueType(ValueType.PROCESS_DEFINITION_RESTORE).intent(intent);
+    unifiedRecordValue = value;
     return this;
   }
 
