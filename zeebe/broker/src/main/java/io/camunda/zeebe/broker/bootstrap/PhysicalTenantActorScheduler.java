@@ -14,9 +14,12 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
 
@@ -34,6 +37,8 @@ record PhysicalTenantActorScheduler(
     @Nullable MeterRegistry meterRegistry,
     ExecutorService expressionEvaluationExecutor)
     implements AutoCloseable {
+
+  private static final Duration EXPRESSION_EVALUATION_THREAD_KEEP_ALIVE = Duration.ofSeconds(60);
 
   /**
    * Starts a scheduler for the tenant from a builder that already carries the settings shared with
@@ -58,8 +63,15 @@ record PhysicalTenantActorScheduler(
             .build();
     scheduler.start();
     final var expressionEvaluationExecutor =
-        Executors.newFixedThreadPool(
-            pool.getCpuThreadCount(), expressionEvaluationThreadFactory(physicalTenantId));
+        new ThreadPoolExecutor(
+            pool.getCpuThreadCount(),
+            pool.getCpuThreadCount(),
+            EXPRESSION_EVALUATION_THREAD_KEEP_ALIVE.toSeconds(),
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(),
+            expressionEvaluationThreadFactory(physicalTenantId));
+    // threads are started on demand and exit when idle
+    expressionEvaluationExecutor.allowCoreThreadTimeOut(true);
     return new PhysicalTenantActorScheduler(scheduler, meterRegistry, expressionEvaluationExecutor);
   }
 
