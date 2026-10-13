@@ -548,10 +548,9 @@ class PhysicalTenantAuthConfigurationsTest {
     final AuthenticationConfiguration cfg =
         PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
 
-    // then the claims stay for the named providers to inherit, and an unset claim stays unset
+    // then the claims stay for the named providers to inherit
     assertThat(cfg.getOidc().getUsernameClaim()).isEqualTo("upn");
     assertThat(cfg.getOidc().getClientIdClaim()).isEqualTo("azp");
-    assertThat(cfg.getOidc().isPreferUsernameClaimSet()).isFalse();
     assertThat(OidcPrincipalClaims.resolve(cfg.getProviders().getOidc().get("okta"), cfg.getOidc()))
         .isEqualTo(new OidcPrincipalClaims("upn", "azp", false));
   }

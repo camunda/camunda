@@ -359,10 +359,10 @@ public class OidcOverrideBeansConfiguration {
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
     final Map<String, PhysicalTenantOidcSettings> settingsByTenant = new LinkedHashMap<>();
-    final var defaultSlots = PhysicalTenantOidcProviders.defaultSlotsByPhysicalTenant(environment);
-    PhysicalTenantOidcProviders.providersByPhysicalTenant(environment)
+    PhysicalTenantOidcProviders.byPhysicalTenant(environment)
         .forEach(
-            (physicalTenantId, providers) -> {
+            (physicalTenantId, tenant) -> {
+              final var providers = tenant.providers();
               final var validatorFactory = newTokenValidatorFactory(cslProperties, providers);
               settingsByTenant.put(
                   physicalTenantId,
@@ -370,11 +370,11 @@ public class OidcOverrideBeansConfiguration {
                       buildIdTokenDecoderFactory(validatorFactory, providers),
                       PhysicalTenantOidcProviders.tokenClaimsConverters(
                           providers,
-                          defaultSlots.get(physicalTenantId),
+                          tenant.defaultSlot(),
                           membershipPort,
                           membershipResolutionContextPropagator),
                       PhysicalTenantOidcProviders.identityClaimsByRegistrationId(
-                          providers, defaultSlots.get(physicalTenantId))));
+                          providers, tenant.defaultSlot())));
             });
     return new PhysicalTenantOidcSettingsRegistry(settingsByTenant);
   }

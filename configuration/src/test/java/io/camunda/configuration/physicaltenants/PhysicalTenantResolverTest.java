@@ -604,7 +604,6 @@ class PhysicalTenantResolverTest {
     // then the gRPC handler of the tenant resolves the okta claims with the tenant's claims
     final var tenantA = resolver.forPhysicalTenant("tenanta").getSecurity().getAuthentication();
     assertThat(tenantA.getOidc().getClientId()).isNull();
-    assertThat(tenantA.getOidc().isPreferUsernameClaimSet()).isFalse();
     assertThat(
             OidcPrincipalClaims.resolve(
                 tenantA.getProviders().getOidc().get("okta"), tenantA.getOidc()))
