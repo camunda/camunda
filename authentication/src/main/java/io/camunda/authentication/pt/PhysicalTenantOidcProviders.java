@@ -68,35 +68,32 @@ public final class PhysicalTenantOidcProviders {
    */
   public static Map<String, Map<String, OidcConfiguration>> providersByPhysicalTenant(
       final Environment environment) {
-    final var flattener = new ScopedClientRegistrationFactory();
     final Map<String, Map<String, OidcConfiguration>> providersByTenant = new LinkedHashMap<>();
-    PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment)
-        .forEach(
-            (tenantId, authentication) -> {
-              if (!DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)) {
-                providersByTenant.put(
-                    tenantId, Collections.unmodifiableMap(flattener.flatten(authentication)));
-              }
-            });
+    byPhysicalTenant(environment)
+        .forEach((tenantId, tenant) -> providersByTenant.put(tenantId, tenant.providers()));
     return Collections.unmodifiableMap(providersByTenant);
   }
 
   /**
-   * The default slot ({@code authentication.oidc.*}) of every non-default physical tenant, with the
-   * tenant's own merged settings. Its claims apply to each provider of the tenant that does not set
-   * its own.
+   * Like {@link #providersByPhysicalTenant}, and also the tenant's default slot ({@code
+   * authentication.oidc.*}), whose claims apply to each provider that does not set its own. Reads
+   * each tenant's configuration once.
    */
-  public static Map<String, OidcConfiguration> defaultSlotsByPhysicalTenant(
-      final Environment environment) {
-    final Map<String, OidcConfiguration> slotsByTenant = new LinkedHashMap<>();
+  public static Map<String, TenantOidc> byPhysicalTenant(final Environment environment) {
+    final var flattener = new ScopedClientRegistrationFactory();
+    final Map<String, TenantOidc> byTenant = new LinkedHashMap<>();
     PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment)
         .forEach(
             (tenantId, authentication) -> {
               if (!DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)) {
-                slotsByTenant.put(tenantId, authentication.getOidc());
+                byTenant.put(
+                    tenantId,
+                    new TenantOidc(
+                        Collections.unmodifiableMap(flattener.flatten(authentication)),
+                        authentication.getOidc()));
               }
             });
-    return Collections.unmodifiableMap(slotsByTenant);
+    return Collections.unmodifiableMap(byTenant);
   }
 
   /**
@@ -149,12 +146,19 @@ public final class PhysicalTenantOidcProviders {
    * before conversion.
    */
   public static List<String> identityClaims(final OidcConfiguration config) {
-    return identityClaims(OidcPrincipalClaims.resolve(config, config));
+    return identityClaims(config.getUsernameClaim(), config.getClientIdClaim());
   }
 
   private static List<String> identityClaims(final OidcPrincipalClaims claims) {
-    return Stream.of(claims.usernameClaim(), claims.clientIdClaim())
-        .filter(Objects::nonNull)
-        .toList();
+    return identityClaims(claims.usernameClaim(), claims.clientIdClaim());
   }
+
+  private static List<String> identityClaims(
+      final String usernameClaim, final String clientIdClaim) {
+    return Stream.of(usernameClaim, clientIdClaim).filter(Objects::nonNull).toList();
+  }
+
+  /** The OIDC providers of one physical tenant, keyed by registration id, and its default slot. */
+  public record TenantOidc(
+      Map<String, OidcConfiguration> providers, OidcConfiguration defaultSlot) {}
 }

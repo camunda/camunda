@@ -226,21 +226,18 @@ public final class PhysicalTenantAuthConfigurations {
    * {@code user-info-augmentation} and the principal claims also apply to the tenant's named
    * providers, so they are kept; without a {@code client-id} CSL's {@code flatten} does not treat
    * the slot as a provider.
+   *
+   * <p>Keep this equal to {@code
+   * PhysicalTenantAuthenticationProviderConfigurations#withoutProvider} in the configuration
+   * module, so gRPC and REST read the same claims for a tenant.
    */
   private static OidcConfiguration withoutProvider(final OidcConfiguration defaultSlot) {
     final OidcConfiguration tenantSettings = new OidcConfiguration();
     tenantSettings.setGroupsClaim(defaultSlot.getGroupsClaim());
     tenantSettings.setUserInfoAugmentation(defaultSlot.getUserInfoAugmentation());
-    // copy only the claims that are set, so the tenant's providers still inherit the others
-    if (defaultSlot.isUsernameClaimSet()) {
-      tenantSettings.setUsernameClaim(defaultSlot.getUsernameClaim());
-    }
-    if (defaultSlot.isClientIdClaimSet()) {
-      tenantSettings.setClientIdClaim(defaultSlot.getClientIdClaim());
-    }
-    if (defaultSlot.isPreferUsernameClaimSet()) {
-      tenantSettings.setPreferUsernameClaim(defaultSlot.isPreferUsernameClaim());
-    }
+    tenantSettings.setUsernameClaim(defaultSlot.getUsernameClaim());
+    tenantSettings.setClientIdClaim(defaultSlot.getClientIdClaim());
+    tenantSettings.setPreferUsernameClaim(defaultSlot.isPreferUsernameClaim());
     return tenantSettings;
   }
 
