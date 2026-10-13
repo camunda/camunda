@@ -11,9 +11,15 @@ import static io.camunda.spring.utils.PhysicalTenantConfigUtil.MAX_TENANT_ID_LEN
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.spring.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
+import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.net.http.HttpClient;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -481,6 +487,43 @@ class PhysicalTenantAuthConfigurationsTest {
     assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("tenanta");
     assertThat(cfg.getProviders().getOidc().get("tenanta").getClientId())
         .isEqualTo("client-tenanta");
+  }
+
+  @Test
+  void shouldKeepTenantWideSettingsOfDroppedDefaultSlot() {
+    // given a root default slot with a groups claim and UserInfo augmentation, and a tenant that
+    // is assigned only a named provider
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.oidc.groups-claim", "groups",
+                "camunda.security.authentication.oidc.user-info-augmentation.enabled", "true",
+                "camunda.security.authentication.providers.oidc.okta.client-id", "client-okta",
+                "camunda.security.authentication.providers.oidc.okta.issuer-uri", "http://idp/okta",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "okta"));
+
+    // when
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // then the slot is no longer a provider, but keeps the settings that apply to the tenant
+    assertThat(cfg.getOidc().getClientId()).isNull();
+    assertThat(cfg.getOidc().getIssuerUri()).isNull();
+    assertThat(cfg.getOidc().getGroupsClaim()).isEqualTo("groups");
+    assertThat(cfg.getOidc().getUserInfoAugmentation().isEnabled()).isTrue();
+    // and the tenant still gets a UserInfo-augmenting claims provider, not the no-op one
+    final var claimsProviderFactory =
+        new ScopedOidcClaimsProviderFactory(
+            new ScopedClientRegistrationFactory(),
+            HttpClient.newHttpClient(),
+            new ObjectMapper(),
+            new SimpleMeterRegistry());
+    assertThat(claimsProviderFactory.buildClaimsProvider(cfg))
+        .isNotInstanceOf(NoopOidcClaimsProvider.class);
   }
 
   @Test

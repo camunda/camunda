@@ -21,6 +21,7 @@ import io.camunda.zeebe.util.Either;
 import io.grpc.Context;
 import io.grpc.Status;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 
@@ -57,24 +59,37 @@ public sealed interface AuthenticationHandler {
     private static final Logger LOG = LoggerFactory.getLogger(Oidc.class);
     private final JwtDecoder jwtDecoder;
     private final OidcClaimsProvider claimsProvider;
-    private final OidcConfiguration oidcAuthenticationConfiguration;
-    private final OidcPrincipalLoader oidcPrincipalLoader;
-    private final OidcGroupsExtractor oidcGroupsExtractor;
+    private final ClaimSettings defaultClaimSettings;
+    private final Map<String, ClaimSettings> claimSettingsByIssuer;
 
     public Oidc(
         final JwtDecoder jwtDecoder,
         final OidcClaimsProvider claimsProvider,
         final OidcConfiguration oidcAuthenticationConfiguration) {
+      this(jwtDecoder, claimsProvider, oidcAuthenticationConfiguration, Map.of());
+    }
+
+    /**
+     * @param oidcAuthenticationConfiguration the tenant's default slot; its {@code groups-claim}
+     *     sets the tenant's groups mode, and is the groups claim of every provider without its own
+     * @param claimConfigsByIssuer claim settings of each provider keyed by its {@code issuer-uri};
+     *     a token whose {@code iss} matches no entry is resolved with {@code
+     *     oidcAuthenticationConfiguration}
+     */
+    public Oidc(
+        final JwtDecoder jwtDecoder,
+        final OidcClaimsProvider claimsProvider,
+        final OidcConfiguration oidcAuthenticationConfiguration,
+        final Map<String, OidcConfiguration> claimConfigsByIssuer) {
       this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
       this.claimsProvider = Objects.requireNonNull(claimsProvider);
-      this.oidcAuthenticationConfiguration =
-          Objects.requireNonNull(oidcAuthenticationConfiguration);
-      oidcPrincipalLoader =
-          new OidcPrincipalLoader(
-              oidcAuthenticationConfiguration.getUsernameClaim(),
-              oidcAuthenticationConfiguration.getClientIdClaim());
-      oidcGroupsExtractor =
-          new OidcGroupsExtractor(oidcAuthenticationConfiguration.getGroupsClaim());
+      Objects.requireNonNull(oidcAuthenticationConfiguration);
+      final String tenantGroupsClaim = oidcAuthenticationConfiguration.getGroupsClaim();
+      defaultClaimSettings = new ClaimSettings(oidcAuthenticationConfiguration, tenantGroupsClaim);
+      claimSettingsByIssuer = new LinkedHashMap<>();
+      claimConfigsByIssuer.forEach(
+          (issuer, config) ->
+              claimSettingsByIssuer.put(issuer, new ClaimSettings(config, tenantGroupsClaim)));
     }
 
     @Override
@@ -96,6 +111,11 @@ public sealed interface AuthenticationHandler {
         return Either.left(Status.UNAUTHENTICATED.augmentDescription("Invalid bearer token"));
       }
 
+      final ClaimSettings claimSettings =
+          claimSettingsByIssuer.getOrDefault(
+              token.getClaimAsString(JwtClaimNames.ISS), defaultClaimSettings);
+      final OidcConfiguration oidcAuthenticationConfiguration = claimSettings.config();
+
       final Map<String, Object> claims;
       try {
         claims = claimsProvider.claimsFor(token.getClaims(), tokenValue);
@@ -105,13 +125,12 @@ public sealed interface AuthenticationHandler {
             Status.UNAUTHENTICATED.augmentDescription("Failed to resolve OIDC claims"));
       }
 
+      // the groups mode is the tenant's, so it matches what the broker and the Groups API use
+      final boolean groupsClaimConfigured = defaultClaimSettings.config().isGroupsClaimConfigured();
       var context = Context.current();
       context = context.withValue(IS_CAMUNDA_USERS_ENABLED, false);
-      context =
-          context.withValue(
-              IS_CAMUNDA_GROUPS_ENABLED,
-              !oidcAuthenticationConfiguration.isGroupsClaimConfigured());
-      if (oidcAuthenticationConfiguration.isGroupsClaimConfigured()) {
+      context = context.withValue(IS_CAMUNDA_GROUPS_ENABLED, !groupsClaimConfigured);
+      if (groupsClaimConfigured) {
         // A malformed groups claim contributes no groups instead of rejecting the token, so it
         // degrades exactly like a missing claim — the same way the REST membership path handles it.
         // Authorization then fails closed on the reduced set of groups.
@@ -119,12 +138,14 @@ public sealed interface AuthenticationHandler {
             context.withValue(
                 GROUPS_CLAIMS,
                 OidcClaimExtractor.extractOrFallback(
-                    () -> oidcGroupsExtractor.extract(claims), List.of(), "grpcGroups"));
+                    () -> claimSettings.groupsExtractor().extract(claims),
+                    List.of(),
+                    "grpcGroups"));
       }
 
       final OidcPrincipals principals;
       try {
-        principals = oidcPrincipalLoader.load(claims);
+        principals = claimSettings.principalLoader().load(claims);
       } catch (final Exception e) {
         LOG.warn("Rejecting bearer token: OIDC principal loader failed", e);
         return Either.left(
@@ -147,6 +168,20 @@ public sealed interface AuthenticationHandler {
       } else {
         return Either.right(
             context.withValue(CLIENT_ID, principals.clientId()).withValue(USER_CLAIMS, claims));
+      }
+    }
+
+    private record ClaimSettings(
+        OidcConfiguration config,
+        OidcPrincipalLoader principalLoader,
+        OidcGroupsExtractor groupsExtractor) {
+
+      private ClaimSettings(final OidcConfiguration config, final String tenantGroupsClaim) {
+        this(
+            config,
+            new OidcPrincipalLoader(config.getUsernameClaim(), config.getClientIdClaim()),
+            new OidcGroupsExtractor(
+                config.isGroupsClaimConfigured() ? config.getGroupsClaim() : tenantGroupsClaim));
       }
     }
   }
