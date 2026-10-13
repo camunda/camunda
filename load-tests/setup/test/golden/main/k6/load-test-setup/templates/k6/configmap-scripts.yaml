@@ -33,25 +33,55 @@ data:
         return this.request("POST", endpoint, payload, params);
       }
   
-      /* Send an authenticated JSON request to a Camunda endpoint, renewing the token if needed.
+      /**
+       * Send an authenticated JSON request to a Camunda endpoint, renewing the token if needed.
        *
-       * The endpoint is also used as the `name` tag, so that metrics are grouped per endpoint.
-       * `payload` is optional and is serialized as JSON.
-       * `params` is optional: these k6 request params are merged into the default ones, and its
-       * `headers` and `tags` take precedence over the default headers and tags. */
-      request(method, endpoint, payload, params = {}) {
+       * @param {string} method - HTTP method.
+       * @param {string} endpoint - Path appended to the base URL. Also used as the `name` tag, so that
+       *   metrics are grouped per endpoint.
+       * @param {*} [payload] - Request body. Serialized as JSON, unless `params.multipart` is true: the
+       *   payload is then passed to k6 as is, and k6 encodes the `http.file()` values as
+       *   multipart/form-data.
+       * @param {object} [params] - k6 request params, merged into the default ones. Its `headers` and
+       *   `tags` take precedence over the default headers and tags.
+       * @param {boolean} [params.multipart=false] - Send the payload as multipart/form-data.
+       * @returns {import("k6/http").RefinedResponse} The k6 response.
+       */
+      request(method, endpoint, payload, { multipart = false, ...params } = {}) {
         this.#renewToken();
+  
+        const contentTypeHeader = multipart
+          ? {}
+          : { "Content-Type": "application/json" };
+  
+        // Create a new k6 params object based on the passed parameters and default values.
         const mergedParams = {
           ...params,
           headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + this.token.accessToken,
+            ...contentTypeHeader,
+            Authorization: `Bearer ${this.token.accessToken}`,
             ...params.headers,
           },
           tags: { name: endpoint, ...params.tags },
         };
-        const body = payload === undefined ? null : JSON.stringify(payload);
+  
+        let body = null;
+        if (payload !== undefined) {
+          // Do not build a `FormData` here: it can use **way** more memory than
+          // the plain object that k6 encodes.
+          body = multipart ? payload : JSON.stringify(payload);
+        }
+  
         return http.request(method, this.baseURL + endpoint, body, mergedParams);
+      }
+  
+      // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/create-deployment/
+      deploy(name, resourceContent) {
+        return this.post(
+          "/v2/deployments",
+          { resources: http.file(resourceContent, name) },
+          { multipart: true },
+        );
       }
   
       // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/search-process-definitions/
@@ -194,6 +224,31 @@ data:
         }
       }
     }
+  lib.data.js: |
+    /* Load static resources from a data directory.
+     *
+     * The `open()` function is relative to the location of the script, unless the path it tries to open is absolute.
+     *
+     * By default, it tries to open a file in the `../data` directory (which is convenient when testing locally with `k6 run`).
+     *
+     * When run from within Kubernetes, the DATA_DIR environment variable is explicitly configured to where the data files are mounted in.
+     *
+     * To override the DATA_DIR environment variable:
+     *
+     * * Either set it before calling `k6`: `DATA_DIR=/path/to/data k6 run ...`
+     * * Or use the `-e` option to set it for the test: `k6 run -e DATA_DIR=/path/to/data ...`
+     *
+     */
+    const DATA_DIR = __ENV.DATA_DIR || "../data";
+  
+    /* Read the file `name` from the data directory and return its content as a string.
+     *
+     * k6 only allows reading files in the `init` context, once per-VU: call this at module level. */
+    export function loadData(name) {
+      const path = `${DATA_DIR}/${name}`;
+      console.log(`Loading data file ${path}...`);
+      return open(path);
+    }
   test.data-read.js: |
     import { check, sleep } from "k6";
   
@@ -201,6 +256,11 @@ data:
   
     // Module-level code runs once per VU, so each VU has its own client.
     const client = new Client();
+  
+    // Ignore process definitions that are created by k6 itself: they are not
+    // relevant for these tests as they are not expected to create any process
+    // instances.
+    const IGNORED_PREFIX = "k6-";
   
     /* Tests reading data from Camunda, which requires a secondary storage.
      * This test is disabled when running with `secondary_storage=none`. */
@@ -223,16 +283,18 @@ data:
       },
     };
   
-    export async function setup() {
-      await client.waitUntilReady();
+    export function setup() {
+      client.waitUntilReady();
   
       // Process definition to search process instances for. Retries until one exists.
       const waitTime = 10; // seconds
       let processDefinitionId;
       while (processDefinitionId === undefined) {
-        const response = await client.searchProcessDefinitions();
+        const response = client.searchProcessDefinitions();
         if (response.status == 200) {
-          const items = response.json().items;
+          const items = response
+            .json()
+            .items.filter((i) => !i.processDefinitionId.startsWith(IGNORED_PREFIX));
           if (items.length > 0) {
             processDefinitionId = items[0].processDefinitionId;
             break;
@@ -254,19 +316,21 @@ data:
       return { processDefinitionId };
     }
   
-    export async function searchProcessInstances(data) {
-      const response = await client.searchProcessInstances(
-        data.processDefinitionId,
-      );
+    export function searchProcessInstances(data) {
+      const response = client.searchProcessInstances(data.processDefinitionId);
       check(response, { "status is 200": (r) => r.status === 200 });
     }
   test.default.js: |
     import { check } from "k6";
   
     import { Client } from "./lib.camunda.js";
+    import { loadData } from "./lib.data.js";
   
     // Module-level code runs once per VU, so each VU has its own client.
     const client = new Client();
+  
+    const FILENAME = "micro.bpmn";
+    const bpmn = loadData(FILENAME);
   
     export const options = {
       // Give enough time for Camunda to be ready before continuing with the test.
@@ -283,14 +347,30 @@ data:
           preAllocatedVUs: 10,
           maxVUs: 100,
         },
+        deploy: {
+          exec: "deploy",
+          executor: "constant-arrival-rate",
+          duration: "60d",
+          rate: 1,
+          timeUnit: "1s",
+          preAllocatedVUs: 1,
+          maxVUs: 20,
+        },
       },
     };
   
-    export async function setup() {
-      await client.waitUntilReady();
+    export function setup() {
+      client.waitUntilReady();
     }
   
-    export async function checkTopology() {
-      const response = await client.topology();
+    export function checkTopology() {
+      const response = client.topology();
+      check(response, { "status is 200": (r) => r.status === 200 });
+    }
+  
+    export function deploy() {
+      /* Sanity check of the `/v2/deployments` API, not a load test: the same
+       * unchanged resource is deployed on purpose, so Zeebe deduplicates it. */
+      const response = client.deploy(FILENAME, bpmn);
       check(response, { "status is 200": (r) => r.status === 200 });
     }

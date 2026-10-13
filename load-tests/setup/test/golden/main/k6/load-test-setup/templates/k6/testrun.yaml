@@ -55,6 +55,9 @@ spec:
       - name: K6_FEATURES
         value: native-histograms
 
+      - name: DATA_DIR
+        value: /data
+
       # Credentials
       - name: CAMUNDA_BASE_URL
         valueFrom:
@@ -104,6 +107,15 @@ spec:
         key: nodepool
         operator: Equal
         value: n2-standard-4-stable
+
+    volumes:
+      - name: k6-data
+        configMap:
+          name: k6-data
+
+    volumeMounts:
+      - name: k6-data
+        mountPath: /data
 
 ---
 # Source: load-test-setup/templates/k6/testrun.yaml
@@ -162,6 +174,9 @@ spec:
       - name: K6_FEATURES
         value: native-histograms
 
+      - name: DATA_DIR
+        value: /data
+
       # Credentials
       - name: CAMUNDA_BASE_URL
         valueFrom:
@@ -211,3 +226,12 @@ spec:
         key: nodepool
         operator: Equal
         value: n2-standard-4-stable
+
+    volumes:
+      - name: k6-data
+        configMap:
+          name: k6-data
+
+    volumeMounts:
+      - name: k6-data
+        mountPath: /data
