@@ -49,20 +49,13 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-<<<<<<< HEAD
+import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
-=======
-import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
-import io.camunda.zeebe.broker.system.management.BrokerAdminService;
-import io.camunda.zeebe.broker.system.management.PartitionStatus;
-import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
-import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
->>>>>>> 59d77d99 (test: skip 30s bootstrap timeout when starting ClusteringRule clusters)
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.JobStreamComponent;
