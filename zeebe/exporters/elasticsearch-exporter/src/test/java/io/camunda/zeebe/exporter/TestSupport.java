@@ -151,6 +151,11 @@ final class TestSupport {
             ValueType.RESOURCE_REEXPORT,
             ValueType.SECRET_REFERENCE,
             ValueType.BUFFERED_COMMAND,
+<<<<<<< HEAD
+=======
+            ValueType.ELEMENT_INSTANCE_WALK,
+            ValueType.PROCESS_DEFINITION_RESTORE,
+>>>>>>> c9747186 (feat: add protocol records for restoring stray pending-deletion definitions)
             // internal engine-to-engine record, never exported by design
             ValueType.AGENT_HISTORY_BATCH);
     return EnumSet.complementOf(excludedValueTypes).stream();

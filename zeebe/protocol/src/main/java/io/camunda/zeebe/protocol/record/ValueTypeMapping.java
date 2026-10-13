@@ -62,6 +62,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -159,6 +160,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessDefinitionRestoreRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
@@ -257,6 +259,10 @@ public final class ValueTypeMapping {
         ValueType.MESSAGE_SUBSCRIPTION,
         new Mapping<>(MessageSubscriptionRecordValue.class, MessageSubscriptionIntent.class));
     mapping.put(ValueType.PROCESS, new Mapping<>(Process.class, ProcessIntent.class));
+    mapping.put(
+        ValueType.PROCESS_DEFINITION_RESTORE,
+        new Mapping<>(
+            ProcessDefinitionRestoreRecordValue.class, ProcessDefinitionRestoreIntent.class));
     mapping.put(
         ValueType.PROCESS_EVENT,
         new Mapping<>(ProcessEventRecordValue.class, ProcessEventIntent.class));

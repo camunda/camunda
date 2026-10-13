@@ -102,6 +102,11 @@
       <validValue name="BUFFERED_COMMAND">76</validValue>
       <validValue name="AGENT_DEFINITION">77</validValue>
       <validValue name="AGENT_HISTORY_BATCH">78</validValue>
+<<<<<<< HEAD
+=======
+      <validValue name="ELEMENT_INSTANCE_WALK">79</validValue>
+      <validValue name="PROCESS_DEFINITION_RESTORE">80</validValue>
+>>>>>>> c9747186 (feat: add protocol records for restoring stray pending-deletion definitions)
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->
