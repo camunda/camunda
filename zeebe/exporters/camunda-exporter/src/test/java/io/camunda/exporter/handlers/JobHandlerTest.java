@@ -185,6 +185,7 @@ final class JobHandlerTest {
             .withCustomHeaders(Map.of("key", "val"))
             .withTenantId(tenantId)
             .withBusinessId(businessId)
+            .withStorageOrdinal(1001)
             .withErrorMessage(errorMessage)
             .withJobKind(jobKind)
             .withJobListenerEventType(jobListenerEventType)
@@ -238,6 +239,7 @@ final class JobHandlerTest {
     assertThat(entity.getDeniedReason()).isEqualTo(null);
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
     assertThat(entity.getBusinessId()).isEqualTo(businessId);
+    assertThat(entity.getStorageOrdinal()).isEqualTo(1001);
   }
 
   @Test
