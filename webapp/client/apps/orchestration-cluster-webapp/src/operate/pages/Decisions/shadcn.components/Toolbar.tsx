@@ -109,7 +109,8 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 						key: 'delete',
 						label: t('operate.decisions.toolbar.delete'),
 						icon: <Trash2 aria-hidden />,
-						disabled: isDeleting,
+						loading: isDeleting,
+						variant: 'destructive',
 						onClick: () => setShowDeleteModal(true),
 					},
 				]}
@@ -123,7 +124,6 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 				cancelLabel={t('operate.decisions.toolbar.deleteModalCancel')}
 				isDestructive
 				onOpenChange={setShowDeleteModal}
-				onCancel={onDiscard}
 				onConfirm={() => void handleDelete()}
 			/>
 		</>
