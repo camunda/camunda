@@ -23,7 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
  * <p>Terminating element instances are skipped: their user task is about to be canceled, so a
  * buffered {@code RESUME} would target a task that no longer exists.
  */
-final class UserTaskSuspensionVisitor implements ElementInstanceSuspensionVisitor {
+final class UserTaskSuspensionVisitor implements ElementInstanceVisitor {
 
   private final StateWriter stateWriter;
   private final CommandBufferingBehavior bufferingBehavior;
@@ -40,11 +40,13 @@ final class UserTaskSuspensionVisitor implements ElementInstanceSuspensionVisito
   }
 
   @Override
+  public boolean shouldVisit(final ElementInstance elementInstance) {
+    return elementInstance.getUserTaskKey() > 0 && !elementInstance.isTerminating();
+  }
+
+  @Override
   public void visit(final ElementInstance elementInstance) {
     final long userTaskKey = elementInstance.getUserTaskKey();
-    if (userTaskKey <= 0 || elementInstance.isTerminating()) {
-      return;
-    }
     final var userTask = userTaskState.getUserTask(userTaskKey);
     if (userTask == null) {
       return;

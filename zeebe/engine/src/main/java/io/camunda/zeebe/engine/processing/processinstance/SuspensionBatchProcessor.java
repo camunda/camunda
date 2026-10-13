@@ -36,7 +36,7 @@ import org.agrona.collections.MutableLong;
  * not grow with the tree. Called process instances are not children of their call activity in the
  * element instance tree, so the walk does not enter them.
  *
- * <p>Each visited element instance is passed to every {@link ElementInstanceSuspensionVisitor}, in
+ * <p>Each visited element instance is passed to every {@link ElementInstanceVisitor}, in
  * order. The order matters, since commands buffered for resume drain in the order they were
  * buffered.
  *
@@ -68,7 +68,7 @@ public final class SuspensionBatchProcessor
   private final ElementInstanceState elementInstanceState;
   private final SuspensionState suspensionState;
   private final SuspensionMetrics suspensionMetrics;
-  private final List<ElementInstanceSuspensionVisitor> visitors;
+  private final List<ElementInstanceVisitor> visitors;
 
   public SuspensionBatchProcessor(
       final Writers writers,
@@ -173,9 +173,9 @@ public final class SuspensionBatchProcessor
     if (elementInstance == null) {
       return;
     }
-    for (final var visitor : visitors) {
-      visitor.visit(elementInstance);
-    }
+    visitors.stream()
+        .filter(v -> v.shouldVisit(elementInstance))
+        .forEach(v -> v.visit(elementInstance));
   }
 
   /**

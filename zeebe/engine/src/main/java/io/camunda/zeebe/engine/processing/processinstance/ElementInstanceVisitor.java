@@ -9,12 +9,9 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 
-/**
- * Suspends one concern of an element instance, such as its user task, while {@link
- * SuspensionBatchProcessor} walks the element instance tree.
- */
-interface ElementInstanceSuspensionVisitor {
+interface ElementInstanceVisitor {
 
-  /** Suspends what the element instance owns for this concern. */
+  boolean shouldVisit(ElementInstance elementInstance);
+
   void visit(ElementInstance elementInstance);
 }
