@@ -42,6 +42,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final String tenantId;
   private final Set<String> tags;
   private final String businessId;
+  private final Integer storageOrdinal;
 
   public ProcessInstanceImpl(final ProcessInstanceResult item) {
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
@@ -61,6 +62,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     tenantId = item.getTenantId();
     tags = item.getTags();
     businessId = item.getBusinessId();
+    storageOrdinal = item.getStorageOrdinal();
   }
 
   @Override
@@ -146,5 +148,10 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public String getBusinessId() {
     return businessId;
+  }
+
+  @Override
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
   }
 }
