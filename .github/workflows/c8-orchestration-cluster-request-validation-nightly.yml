@@ -200,7 +200,7 @@ jobs:
 
       - name: Print Docker logs after failed tests
         if: failure()
-        run: docker compose logs camunda
+        run: DATABASE=elasticsearch docker compose logs --timestamps camunda
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
