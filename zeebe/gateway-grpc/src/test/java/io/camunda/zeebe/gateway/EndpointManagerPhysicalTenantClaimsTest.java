@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -90,8 +91,13 @@ final class EndpointManagerPhysicalTenantClaimsTest {
     // when
     completeJob(endpointManager, observer, "unknown", null, Map.of("sub", "alice"));
 
-    // then
-    verify(observer).onError(any());
+    // then the tenant lookup rejects it, not another failure
+    verify(observer)
+        .onError(
+            argThat(
+                e ->
+                    e instanceof IllegalStateException
+                        && e.getMessage().contains("physical tenant: unknown")));
     assertThat(brokerClient.getBrokerRequests()).isEmpty();
   }
 
