@@ -42,6 +42,20 @@ describe("test.data-read.js k6 test script", () => {
     );
   });
 
+  it("should skip process definitions whose id starts with `k6-`", async () => {
+    // given: Camunda returns k6-prefixed definitions and one regular definition.
+    respondWith(
+      { status: 200 },
+      definitions("k6-micro", "k6-other", "my-process-1", "my-process-2"),
+    );
+
+    // when
+    const data = await script.setup();
+
+    // then: we should get the first non-k6 definition.
+    assert.equal(data.processDefinitionId, "my-process-1");
+  });
+
   it("should search instances of the process definition and check that status code is 200", async () => {
     // given
     respondWith({ status: 200 }, { status: 500 });

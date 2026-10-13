@@ -1,4 +1,4 @@
-// Unit tests for `scripts/test.default.js`. The k6 modules are mocked, the Camunda client is real.
+// Unit tests for `scripts/test.default.js`. The k6 modules and the data loader are mocked, the Camunda client is real.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -8,6 +8,7 @@ import {
 
 const { script, http, respondWith, checkResults } = await loadK6Module(
   "../scripts/test.default.js",
+  { data: (name) => `content of ${name}` },
 );
 
 describe("test.default.js k6 test script", () => {
@@ -39,6 +40,28 @@ describe("test.default.js k6 test script", () => {
     await script.checkTopology();
 
     // then
+    assert.deepEqual(checkResults(), [true, false]);
+  });
+
+  it("should deploy the BPMN file as a multipart request and check that status code is 200", () => {
+    // given
+    respondWith({ status: 200 }, { status: 500 });
+
+    // when
+    script.deploy();
+    script.deploy();
+
+    // then
+    assert.deepEqual(http.file.mock.calls[0].arguments, [
+      "content of micro.bpmn",
+      "micro.bpmn",
+    ]);
+    const [method, url, body] = http.request.mock.calls[0].arguments;
+    assert.equal(method, "POST");
+    assert.equal(url, "http://camunda:8080/v2/deployments");
+    assert.deepEqual(body, {
+      resources: { content: "content of micro.bpmn", name: "micro.bpmn" },
+    });
     assert.deepEqual(checkResults(), [true, false]);
   });
 });

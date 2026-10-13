@@ -23,25 +23,55 @@ export class Client {
     return this.request("POST", endpoint, payload, params);
   }
 
-  /* Send an authenticated JSON request to a Camunda endpoint, renewing the token if needed.
+  /**
+   * Send an authenticated JSON request to a Camunda endpoint, renewing the token if needed.
    *
-   * The endpoint is also used as the `name` tag, so that metrics are grouped per endpoint.
-   * `payload` is optional and is serialized as JSON.
-   * `params` is optional: these k6 request params are merged into the default ones, and its
-   * `headers` and `tags` take precedence over the default headers and tags. */
-  request(method, endpoint, payload, params = {}) {
+   * @param {string} method - HTTP method.
+   * @param {string} endpoint - Path appended to the base URL. Also used as the `name` tag, so that
+   *   metrics are grouped per endpoint.
+   * @param {*} [payload] - Request body. Serialized as JSON, unless `params.multipart` is true: the
+   *   payload is then passed to k6 as is, and k6 encodes the `http.file()` values as
+   *   multipart/form-data.
+   * @param {object} [params] - k6 request params, merged into the default ones. Its `headers` and
+   *   `tags` take precedence over the default headers and tags.
+   * @param {boolean} [params.multipart=false] - Send the payload as multipart/form-data.
+   * @returns {import("k6/http").RefinedResponse} The k6 response.
+   */
+  request(method, endpoint, payload, { multipart = false, ...params } = {}) {
     this.#renewToken();
+
+    const contentTypeHeader = multipart
+      ? {}
+      : { "Content-Type": "application/json" };
+
+    // Create a new k6 params object based on the passed parameters and default values.
     const mergedParams = {
       ...params,
       headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + this.token.accessToken,
+        ...contentTypeHeader,
+        Authorization: `Bearer ${this.token.accessToken}`,
         ...params.headers,
       },
       tags: { name: endpoint, ...params.tags },
     };
-    const body = payload === undefined ? null : JSON.stringify(payload);
+
+    let body = null;
+    if (payload !== undefined) {
+      // Do not build a `FormData` here: it can use **way** more memory than
+      // the plain object that k6 encodes.
+      body = multipart ? payload : JSON.stringify(payload);
+    }
+
     return http.request(method, this.baseURL + endpoint, body, mergedParams);
+  }
+
+  // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/create-deployment/
+  deploy(name, resourceContent) {
+    return this.post(
+      "/v2/deployments",
+      { resources: http.file(resourceContent, name) },
+      { multipart: true },
+    );
   }
 
   // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/search-process-definitions/

@@ -207,3 +207,23 @@ describe("Client.waitUntilReady", () => {
     );
   });
 });
+
+describe("Client.deploy", () => {
+  it("should post the resource as a multipart request to the deployments endpoint", () => {
+    // given
+    const client = new Client();
+
+    // when
+    client.deploy("my.bpmn", "<bpmn/>");
+
+    // then
+    assert.deepEqual(http.file.mock.calls[0].arguments, ["<bpmn/>", "my.bpmn"]);
+    const [method, url, body, params] = http.request.mock.calls[0].arguments;
+    assert.equal(method, "POST");
+    assert.equal(url, "http://camunda:8080/v2/deployments");
+    assert.deepEqual(body, {
+      resources: { content: "<bpmn/>", name: "my.bpmn" },
+    });
+    assert.equal(params.headers.Authorization, "Bearer token-1");
+  });
+});
