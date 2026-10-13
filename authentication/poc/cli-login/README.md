@@ -154,53 +154,70 @@ npm link
 Then:
 
 ```sh
-c8poc login http://localhost:8080 --provider oidc   # default tenant: demo / demo
-c8poc whoami                        # context, tenant, user, issuer, client, audience, expiry
+c8poc login                         # choose physical tenant + provider; Keycloak: demo / demo
+c8poc whoami                        # context, physical tenant, identity, issuer, client, audience
 c8poc topology                      # GET /v2/topology with the stored token
-c8poc api /v2/license               # GET any path below the tenant's API
-c8poc logout
+c8poc api /v2/license               # GET any path below the physical tenant's API
+c8poc logout                        # deletes the context and its user
 ```
 
-`login` options: `--provider <id>` to skip the provider prompt, `--no-browser` to only print the
-login URL. Without `npm link`, run `node c8poc.mjs <command>` instead.
+`login` options: `--physical-tenant <id>`, `--provider <id>` to skip the prompts, `--name <context>`
+for the context name, `--no-browser` to only print the login URL. Without `npm link`, run
+`node c8poc.mjs <command>` instead.
 
-### Contexts: several tenants and identity providers at once
+### Configuration: clusters, users, contexts (like kubectl)
 
-Every login creates a **context** - cluster + physical tenant + identity + tokens - named
-`<host>[/<physical tenant>]` unless `--context <name>` is given, and makes it current (like
-kubectl). The physical tenant comes from the url, `--physical-tenant`, or - if the cluster has more
-than the default one - a selection:
+The configuration in `~/.c8poc/config.json` (mode 600; `C8POC_HOME` changes the directory) is
+structured like a kubeconfig:
+
+- **clusters** - a cluster's URL, shared by its contexts
+- **users** - an identity and its credentials: provider, issuer, client, tokens (or basic
+  credentials). A token is only valid for the physical tenant it was issued for, so every login
+  creates its own user, named `<identity>@<context>`.
+- **contexts** - cluster + physical tenant (what a namespace is to kubectl) + user, one of them
+  current. Every command uses the current context, or the one given with the global `--context`.
+
+Every `login` stores a cluster, a user and a context - named `<host>[/<physical tenant>]` unless
+`--name` (or `--context`) is given - and makes the context current. Logging in again with the same
+name replaces that context's user. The physical tenant comes from the url, `--physical-tenant`, or -
+if the cluster has more than the default one - a selection:
 
 ```sh
-c8poc physical-tenants                                       # the cluster's physical tenants
+c8poc physical-tenants                                    # the cluster's physical tenants
 # PHYSICAL TENANT  NAME       LOGIN
 # default          Default    http://localhost:8080
 # pt1              Sales EU   http://localhost:8080/physical-tenants/pt1
 # pt2              ACME Corp  http://localhost:8080/physical-tenants/pt2
 
-c8poc login                                                  # asks: [1] default [2] pt1 [3] pt2
-c8poc login http://localhost:8080/physical-tenants/pt1       # demo / demo     -> localhost:8080/pt1
-c8poc login --physical-tenant pt2                            # alice / alice   -> localhost:8080/pt2 (acme realm)
-
-c8poc contexts
-#    CONTEXT             PHYSICAL TENANT  PROVIDER  USER   ACCESS TOKEN EXPIRES
-#    localhost:8080      default          oidc      demo   ...
-#    localhost:8080/pt1  pt1              oidc      demo   ...
-# *  localhost:8080/pt2  pt2              acme      alice  ...
-
-c8poc use localhost:8080/pt1                     # switch
-c8poc use                                        # or choose from a list
-c8poc topology                                   # -> /physical-tenants/pt1/v2/topology
-c8poc topology --context localhost:8080/pt2      # one-off on another context
-c8poc logout localhost:8080/pt2                  # or: c8poc logout --all
+c8poc login                                               # asks: [1] default [2] pt1 [3] pt2
+c8poc login http://localhost:8080/physical-tenants/pt1    # demo / demo   -> context localhost:8080/pt1
+c8poc login --physical-tenant pt2 --name acme             # alice / alice -> context acme
 ```
 
-Tokens do not cross tenants: the default tenant, pt1 and pt2 each accept only their own context's
-token (different issuer or audience), every other combination is a 401.
+Managing the configuration works like `kubectl config`:
 
-Contexts (tokens, or basic credentials) are stored in `~/.c8poc/session.json` with mode 600; set
-`C8POC_HOME` to use another directory. An expired access token is refreshed with the refresh token
-before the next call.
+```sh
+c8poc config get-contexts
+# CURRENT   NAME                 CLUSTER          PHYSICAL TENANT   USER
+#           localhost:8080       localhost:8080   default           demo@localhost:8080
+#           localhost:8080/pt1   localhost:8080   pt1               demo@localhost:8080/pt1
+# *         acme                 localhost:8080   pt2               alice@acme
+
+c8poc config use-context localhost:8080/pt1     # switch
+c8poc config current-context
+c8poc config rename-context localhost:8080/pt1 sales
+c8poc config delete-context acme                # also deletes its user (and an unused cluster)
+c8poc config get-clusters
+c8poc config get-users
+c8poc config view                               # whole configuration, tokens REDACTED
+
+c8poc --context acme topology                   # one command on another context
+```
+
+Tokens do not cross physical tenants: the default physical tenant, pt1 and pt2 each accept only
+their own context's token (different issuer or audience), every other combination is a 401. An
+expired access token is refreshed with the refresh token before the next call. A
+`session.json` of an earlier c8poc version is migrated on first use.
 
 ## Keycloak setup (what the realm import does)
 
