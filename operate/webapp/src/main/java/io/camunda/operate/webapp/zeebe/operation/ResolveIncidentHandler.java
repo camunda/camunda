@@ -15,6 +15,7 @@ import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import java.util.Objects;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -38,6 +39,16 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
       incident = incidentReader.getIncidentById(operation.getIncidentKey());
     } catch (final NotFoundException ex) {
       failOperation(operation, "No appropriate incidents found: " + ex.getMessage());
+      return;
+    }
+
+    if (!Objects.equals(operation.getProcessInstanceKey(), incident.getProcessInstanceKey())) {
+      // The incident must belong to this process instance (null-safe: fail closed).
+      failOperation(
+          operation,
+          String.format(
+              "Incident %s does not belong to process instance %s.",
+              incident.getKey(), operation.getProcessInstanceKey()));
       return;
     }
 
