@@ -1067,8 +1067,11 @@ public class CamundaMultiDBExtension
       manageApplicationUnderTest();
     }
 
-    if (multiPhysicalTenantIds != null) {
+    if (physicalTenantId != null || multiPhysicalTenantIds != null) {
       awaitEveryPhysicalTenantSecondaryStorageReady();
+    }
+
+    if (multiPhysicalTenantIds != null) {
       multiPhysicalTenantClients = buildMultiPhysicalTenantClients(multiPhysicalTenantIds);
       closeables.add(multiPhysicalTenantClients);
       awaitMultiPhysicalTenantAdminsReady(multiPhysicalTenantClients);
