@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -38,6 +39,7 @@ class StarterTest {
     // when
     new Starter(
         mock(CamundaClient.class),
+        mock(CamundaClientConfiguration.class),
         properties,
         registry,
         mock(PayloadReader.class),

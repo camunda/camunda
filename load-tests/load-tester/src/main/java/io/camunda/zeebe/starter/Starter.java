@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
@@ -77,6 +78,7 @@ public class Starter implements CommandLineRunner {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final CamundaClient client;
+  private final CamundaClientConfiguration clientConfiguration;
   private final ApplicationContext applicationContext;
   private final LoadTesterProperties properties;
   private final StarterProperties starterCfg;
@@ -98,9 +100,11 @@ public class Starter implements CommandLineRunner {
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
+  private CamundaClient queryClient;
 
   public Starter(
       final CamundaClient client,
+      final CamundaClientConfiguration clientConfiguration,
       final LoadTesterProperties properties,
       final MeterRegistry registry,
       final PayloadReader payloadReader,
@@ -108,6 +112,7 @@ public class Starter implements CommandLineRunner {
       final StarterLivenessIndicator livenessIndicator,
       final ApplicationContext applicationContext) {
     this.client = client;
+    this.clientConfiguration = clientConfiguration;
     this.applicationContext = applicationContext;
     this.properties = properties;
     starterCfg = properties.getStarter();
@@ -143,6 +148,12 @@ public class Starter implements CommandLineRunner {
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
         .register(registry);
+
+    if (properties.isMonitorDataAvailability() || properties.isPerformReadBenchmarks()) {
+      // Has its own connections, but shares the executor service of the configuration and shuts it
+      // down on close, so the starter must not run in the same JVM as job workers.
+      queryClient = CamundaClient.newClient(clientConfiguration);
+    }
 
     if (properties.isMonitorDataAvailability()) {
       setupDataAvailabilityMeter();
@@ -201,6 +212,9 @@ public class Starter implements CommandLineRunner {
     if (dataReadMeter != null) {
       dataReadMeter.close();
     }
+    if (queryClient != null) {
+      queryClient.close();
+    }
   }
 
   private Counter registerSubmissionCounter(final String outcome) {
@@ -220,7 +234,7 @@ public class Starter implements CommandLineRunner {
             properties.getMonitorDataAvailabilityInterval(),
             (listOfStartedInstances) -> {
               final CamundaFuture<SearchResponse<ProcessInstance>> send =
-                  client
+                  queryClient
                       .newProcessInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
                       .sort(s -> s.startDate().asc())
@@ -242,7 +256,7 @@ public class Starter implements CommandLineRunner {
         new DataReadMeter(
             registry,
             Executors.newScheduledThreadPool(2),
-            client,
+            queryClient,
             DataReadMeterQueryProvider.getDefaultQueries(properties.getDisabledQueriesList()));
     dataReadMeter.setContextProcessDefinitionId(starterCfg.getProcessId());
     dataReadMeter.setContextBusinessKeySupplier(
