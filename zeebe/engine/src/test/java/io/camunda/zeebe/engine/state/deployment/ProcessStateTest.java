@@ -907,6 +907,87 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldRestoreStrayPendingDeletionProcessBackToActive() {
+    // given
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+    processState.updateProcessState(processRecord, PersistedProcessState.PENDING_DELETION);
+
+    // when
+    processState.restoreFromPendingDeletion(processRecord.getTenantId(), processDefinitionKey);
+
+    // then
+    final var restored =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
+    assertThat(restored.getState()).isEqualTo(PersistedProcessState.ACTIVE);
+  }
+
+  @Test
+  public void shouldNotRestoreProcessThatIsNotPendingDeletion() {
+    // given - an ACTIVE process never touched by the stray PENDING_DELETION bug
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+
+    // when
+    processState.restoreFromPendingDeletion(processRecord.getTenantId(), processDefinitionKey);
+
+    // then - still ACTIVE, restoring is a no-op
+    final var process =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
+    assertThat(process.getState()).isEqualTo(PersistedProcessState.ACTIVE);
+  }
+
+  @Test
+  public void shouldNotRestoreDrainingProcess() {
+    // given - DRAINING must never be treated as a stray PENDING_DELETION row
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+    processState.markDraining(processRecord);
+
+    // when
+    processState.restoreFromPendingDeletion(processRecord.getTenantId(), processDefinitionKey);
+
+    // then
+    final var process =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
+    assertThat(process.getState()).isEqualTo(PersistedProcessState.DRAINING);
+  }
+
+  @Test
+  public void shouldNotRestoreProcessThatNoLongerExists() {
+    // when - restoring a definition key that was never persisted
+    processState.restoreFromPendingDeletion(TENANT_ID, 404L);
+
+    // then - no exception, nothing to restore
+    final var process = processState.getProcessByKeyAndTenant(404L, TENANT_ID);
+    assertThat(process).isNull();
+  }
+
+  @Test
+  public void shouldReturnFalseWhenProcessDefinitionRestoreHasNotRun() {
+    // when
+    final boolean hasRun = processState.hasRunProcessDefinitionRestore();
+
+    // then
+    assertThat(hasRun).isFalse();
+  }
+
+  @Test
+  public void shouldReturnTrueAfterProcessDefinitionRestoreIsMarkedAsRun() {
+    // given
+    processState.markProcessDefinitionRestoreAsRun();
+
+    // when
+    final boolean hasRun = processState.hasRunProcessDefinitionRestore();
+
+    // then
+    assertThat(hasRun).isTrue();
+  }
+
+  @Test
   public void shouldMarkProcessAsDrainingAndKeepItRetrievable() {
     // given
     final long processDefinitionKey = 100L;
