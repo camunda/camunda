@@ -24,12 +24,14 @@ import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.ListenerEventType;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
+import io.camunda.client.impl.search.response.JobImpl;
 import io.camunda.client.protocol.rest.JobFilter;
 import io.camunda.client.protocol.rest.JobKindEnum;
 import io.camunda.client.protocol.rest.JobKindFilterProperty;
 import io.camunda.client.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.client.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.client.protocol.rest.JobSearchQuery;
+import io.camunda.client.protocol.rest.JobSearchResult;
 import io.camunda.client.protocol.rest.JobStateEnum;
 import io.camunda.client.protocol.rest.JobStateFilterProperty;
 import io.camunda.client.protocol.rest.SortOrderEnum;
@@ -310,5 +312,29 @@ public class SearchJobTest extends ClientRestTest {
     assertSort(sorts.get(18), "isDenied", SortOrderEnum.ASC);
     assertSort(sorts.get(19), "retries", SortOrderEnum.DESC);
     assertSort(sorts.get(20), "priority", SortOrderEnum.ASC);
+  }
+
+  @Test
+  void shouldMapStorageOrdinal() {
+    // given
+    final JobSearchResult result = new JobSearchResult().storageOrdinal(3);
+
+    // when
+    final JobImpl job = new JobImpl(result);
+
+    // then
+    assertThat(job.getStorageOrdinal()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldMapNullStorageOrdinal() {
+    // given
+    final JobSearchResult result = new JobSearchResult().storageOrdinal(null);
+
+    // when
+    final JobImpl job = new JobImpl(result);
+
+    // then
+    assertThat(job.getStorageOrdinal()).isNull();
   }
 }

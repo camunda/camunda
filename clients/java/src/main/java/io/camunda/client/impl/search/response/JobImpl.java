@@ -53,6 +53,7 @@ public class JobImpl implements Job {
   private final String tenantId;
   private final OffsetDateTime creationTime;
   private final OffsetDateTime lastUpdatedTime;
+  private final Integer storageOrdinal;
 
   public JobImpl(final JobSearchResult item) {
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
@@ -81,6 +82,7 @@ public class JobImpl implements Job {
     tenantId = item.getTenantId();
     creationTime = ParseUtil.parseOffsetDateTimeOrNull(item.getCreationTime());
     lastUpdatedTime = ParseUtil.parseOffsetDateTimeOrNull(item.getLastUpdateTime());
+    storageOrdinal = item.getStorageOrdinal();
   }
 
   @Override
@@ -211,5 +213,10 @@ public class JobImpl implements Job {
   @Override
   public OffsetDateTime getLastUpdateTime() {
     return lastUpdatedTime;
+  }
+
+  @Override
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
   }
 }
