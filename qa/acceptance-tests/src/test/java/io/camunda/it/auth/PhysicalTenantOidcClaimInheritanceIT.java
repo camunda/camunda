@@ -7,6 +7,7 @@
  */
 package io.camunda.it.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
@@ -14,6 +15,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -21,8 +23,10 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -141,7 +145,25 @@ final class PhysicalTenantOidcClaimInheritanceIT {
     final var process = Bpmn.createExecutableProcess(processId).startEvent().endEvent().done();
     assertThatNoException()
         .as("the M2M token is admin on %s only by that tenant's client-id claim", tenantId)
-        .isThrownBy(() -> TENANTS.deploy(client, process, processId));
+        .isThrownBy(() -> deploy(client, process, processId));
+  }
+
+  /** Deploys {@code process}, retrying while the tenant's partition still elects a leader. */
+  private static void deploy(
+      final CamundaClient client, final BpmnModelInstance process, final String processId) {
+    Awaitility.await("deployment of '%s' succeeds".formatted(processId))
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        client
+                            .newDeployResourceCommand()
+                            .addProcessModel(process, processId + ".bpmn")
+                            .send()
+                            .join()
+                            .getProcesses())
+                    .isNotEmpty());
   }
 
   private static void assign(final String tenantId) {
