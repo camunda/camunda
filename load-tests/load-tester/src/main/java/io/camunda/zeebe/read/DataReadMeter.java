@@ -9,13 +9,17 @@ package io.camunda.zeebe.read;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.metrics.ErrorType;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -29,8 +33,12 @@ import org.slf4j.LoggerFactory;
 public class DataReadMeter implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(DataReadMeter.class);
+  private static final String OUTCOME_SUCCESS = "success";
+  private static final String OUTCOME_FAILURE = "failure";
+  private static final String NO_ERROR = "none";
   private final ScheduledExecutorService executorService;
   private final MeterRegistry registry;
+  private final Map<TimerKey, Timer> timers = new ConcurrentHashMap<>();
   private final CamundaClient client;
   private final List<ReadQuery> queries;
   private volatile boolean closed;
@@ -55,23 +63,19 @@ public class DataReadMeter implements AutoCloseable {
    */
   public void start() {
     for (final ReadQuery query : queries) {
-      final Timer timer =
-          MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.READ_BENCHMARK)
-              .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), query.name())
-              .register(registry);
-
-      scheduleNext(query, timer);
+      timer(query, OUTCOME_SUCCESS, NO_ERROR);
+      scheduleNext(query);
     }
     LOG.info("Started {} read benchmark queries", queries.size());
   }
 
-  private void scheduleNext(final ReadQuery query, final Timer timer) {
+  private void scheduleNext(final ReadQuery query) {
     if (closed) {
       return;
     }
     try {
       executorService.schedule(
-          () -> executeQuery(query, timer), query.interval().toMillis(), TimeUnit.MILLISECONDS);
+          () -> executeQuery(query), query.interval().toMillis(), TimeUnit.MILLISECONDS);
     } catch (final RejectedExecutionException e) {
       if (!closed) {
         LOG.error("Failed to schedule read query '{}'", query.name(), e);
@@ -79,7 +83,7 @@ public class DataReadMeter implements AutoCloseable {
     }
   }
 
-  private void executeQuery(final ReadQuery query, final Timer timer) {
+  private void executeQuery(final ReadQuery query) {
     final long startTime = System.nanoTime();
     try {
       query
@@ -90,16 +94,8 @@ public class DataReadMeter implements AutoCloseable {
           .handle((response, error) -> new Result(System.nanoTime() - startTime, error))
           .whenCompleteAsync(
               (result, ignored) -> {
-                if (result.error() == null) {
-                  timer.record(result.durationNanos(), TimeUnit.NANOSECONDS);
-                  LOG.debug(
-                      "Read query '{}' executed in {} ms",
-                      query.name(),
-                      TimeUnit.NANOSECONDS.toMillis(result.durationNanos()));
-                } else {
-                  LOG.warn("Error while executing read query '{}'", query.name(), result.error());
-                }
-                scheduleNext(query, timer);
+                record(query, result.durationNanos(), result.error());
+                scheduleNext(query);
               },
               executorService);
     } catch (final RejectedExecutionException e) {
@@ -107,9 +103,34 @@ public class DataReadMeter implements AutoCloseable {
         LOG.warn("Error while executing read query '{}'", query.name(), e);
       }
     } catch (final Exception e) {
-      LOG.warn("Error while executing read query '{}'", query.name(), e);
-      scheduleNext(query, timer);
+      record(query, System.nanoTime() - startTime, e);
+      scheduleNext(query);
     }
+  }
+
+  private void record(final ReadQuery query, final long durationNanos, final Throwable error) {
+    if (error == null) {
+      timer(query, OUTCOME_SUCCESS, NO_ERROR).record(durationNanos, TimeUnit.NANOSECONDS);
+      LOG.debug(
+          "Read query '{}' executed in {} ms",
+          query.name(),
+          TimeUnit.NANOSECONDS.toMillis(durationNanos));
+    } else {
+      timer(query, OUTCOME_FAILURE, ErrorType.of(error))
+          .record(durationNanos, TimeUnit.NANOSECONDS);
+      LOG.warn("Error while executing read query '{}'", query.name(), error);
+    }
+  }
+
+  private Timer timer(final ReadQuery query, final String outcome, final String error) {
+    return timers.computeIfAbsent(
+        new TimerKey(query.name(), outcome, error),
+        key ->
+            MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.READ_BENCHMARK)
+                .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), key.query())
+                .tag(StarterMetricKeyNames.OUTCOME.asString(), key.outcome())
+                .tag(StarterMetricKeyNames.ERROR.asString(), key.error())
+                .register(registry));
   }
 
   @Override
@@ -136,6 +157,8 @@ public class DataReadMeter implements AutoCloseable {
       final Supplier<Pair<String, Object>> businessKeySupplier) {
     queryContext.updateAndGet(context -> context.withBusinessKey(businessKeySupplier));
   }
+
+  private record TimerKey(String query, String outcome, String error) {}
 
   private record Result(long durationNanos, Throwable error) {}
 
