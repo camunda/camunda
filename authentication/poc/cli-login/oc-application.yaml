@@ -17,7 +17,9 @@ camunda:
         client-id: camunda
         client-secret: camunda-secret
         redirect-uri: http://localhost:8080/sso-callback
-        audiences: [camunda-api]
+        # The same list validates the webapp's ID tokens (aud = client-id "camunda") and the API's
+        # access tokens (aud = camunda-api, via the Keycloak client scope).
+        audiences: [camunda-api, camunda]
         username-claim: preferred_username
       # New in the PoC: the public client a CLI logs users in with, per OIDC registration id
       # ("oidc" is the flat block above).
