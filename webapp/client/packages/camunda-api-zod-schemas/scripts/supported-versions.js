@@ -109,10 +109,10 @@ async function getCurrentVersion() {
 	let currentVersion = `${match[1]}.${match[2]}`;
 
 	// The release dry-run runs on main with the placeholder version `0.0.0-dryrun-*`.
-	// ponytail: placeholder `0.0` maps to the `main` entry, drop if dry-runs stop using fake versions
-	if (currentVersion === '0.0') {
+	// ponytail: only the dry-run prefix maps to the `main` entry, drop if dry-runs stop using fake versions
+	if (version.startsWith('0.0.0-dryrun-')) {
 		currentVersion =
-			Object.keys(CONFIG).find((version) => CONFIG[version].download.branch === 'main') ?? currentVersion;
+			Object.keys(CONFIG).find((releaseLine) => CONFIG[releaseLine].download.branch === 'main') ?? currentVersion;
 	}
 
 	if (!CONFIG[currentVersion]) {
