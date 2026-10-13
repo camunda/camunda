@@ -210,6 +210,73 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE);
   }
 
+  /** A batch migration is rejected when the initiating user has no permission on the target. */
+  @Test
+  public void
+      shouldRejectBatchMigrateProcessCommandWhenUserHasNoPermissionOnTargetProcessDefinition() {
+    // given
+    final var user = createUser();
+    addProcessDefinitionPermissionsToUser(user, PermissionType.UPDATE_PROCESS_INSTANCE, "process");
+    final Map<String, Object> claims = Map.of(AUTHORIZED_USERNAME, user.getUsername());
+
+    // create a process with a user task a - the user is authorized on this one only
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process").startEvent().userTask("userTaskA").done())
+        .deploy();
+
+    // create another process with a user task b - the user has NO permission on this one
+    final long processDefinitionKey2 =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2").startEvent().userTask("userTaskB").done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId("process").create();
+
+    // wait for the user task to exist
+    RecordingExporter.jobRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withIntent(JobIntent.CREATED)
+        .getFirst();
+
+    // when - migrate via batch to the target process definition the user has no rights on
+    final var batchOperationKey =
+        createNewMigrateProcessesBatchOperation(
+            List.of(processInstanceKey),
+            processDefinitionKey2,
+            Map.of("userTaskA", "userTaskB"),
+            claims);
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.COMPLETED);
+
+    // then - the individual migrate command is rejected as forbidden
+    final var rejection =
+        RecordingExporter.processInstanceMigrationRecords()
+            .withRecordKey(processInstanceKey)
+            .onlyCommandRejections()
+            .getFirst();
+    Assertions.assertThat(rejection)
+        .hasKey(processInstanceKey)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE);
+    assertThat(rejection.getRejectionReason())
+        .startsWith(
+            "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
+  }
+
   @Test
   public void shouldHandleRejectedMigrateProcessCommandNoProcessInstance() {
     // given
