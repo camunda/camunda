@@ -1058,6 +1058,34 @@ the Product-Bug Escalation skip-PR path (there is nothing to run-and-green —
 the "fix" is a `test.skip()` annotation) and the Workflow-Level Failure Fix
 Agent (no single spec to reproduce against).
 
+### Ownership routing
+
+Only when the run's prompt says the routing runbook is available. Name the team that owns each
+root-cause group, so the Slack thread and the job summary say whose failure it is. Routing never
+notifies anyone and never holds up a fix: work on the fix first, and record the routing of a group
+as soon as its root cause is known.
+
+1. **`.codeowners` first.** Look up every failing spec of the group in the repository-root
+   `.codeowners` (the last matching rule wins). If they all resolve to one team other than the suite
+   owner `@camunda/test-automation-team`, that team is the owner: tier `High`, source
+   `codeowners: <the matching rule>`. Do not read the runbook for that group.
+2. **Otherwise, follow `skills/route.md`** in the runbook directory, with these changes for the
+   nightly:
+   - The input is what you diagnosed: the spec paths, the error messages and the root cause. The
+     root cause outranks the area of the spec ("Root cause outranks surface symptom" in
+     `route.md`). A product bug routes to the team that owns the broken component.
+   - Discover the teams by listing `memory/teams/`, as `route.md` requires.
+   - The available signals are `team-entries`, `codeowners` and `git-history` (in the workspace).
+     `prior-questions`, `prior-incidents`, `handbook` and `glean` are not available here. Name one
+     under `gaps` only when its absence lowered the tier.
+   - Use the tiers of `route.md`. `Low`: no owner, up to three candidate slugs, best first. `None`:
+     no owner and no candidates. This replaces the fallback to `team-core-api`, because the suite
+     owner already reviews the nights that nobody owns.
+   - Ignore the Slack and Claude Code output adapters, the pings and the improvement loop. Never
+     write to the runbook directory, and never open a PR against `camunda/eng-kit-memory`. Put a
+     memory gap that you find under `gaps`.
+3. **Record one `routing` entry per group** in `/tmp/fix-meta.json` (see "Result manifest").
+
 ### Constraints
 
 - **Allowed tools, outside the Live Docker Verify loop:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `date` (needed for the Time Budget checkpoint comparisons above), `mv` (needed for atomic checkpoint writes above), `npx prettier`, `npx eslint`, `npm run responses:regenerate`. Everything else — `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test` — is forbidden here: the fix agent does **not** execute tests from artifact evidence alone.
@@ -1176,6 +1204,30 @@ having to open the issue to find out the bug is theirs.
 `suspect_commit` is surfaced directly in the Slack thread. The triage dispatcher reads each issue's
 fingerprint marker to suppress re-dispatch while the issue is open; once the skip PR merges the test
 no longer runs, and when the issue is later closed the skip should be removed so the test runs again.
+
+**`routing`** — one entry per root-cause group, only when the routing runbook was available (see
+"Ownership routing" above):
+
+```json
+"routing": [
+  {
+    "tests": ["tests/operate/dashboard.spec.ts › Navigate to processes view"],
+    "team": "Operate & Admin Pod",
+    "slug": "team-operate-pod",
+    "github_handle": "@camunda/operate-admin-pod",
+    "tier": "High",
+    "reasoning": ["\"<literal phrase from the error or root cause>\" matches team-operate-pod: \"<line from the entry>\""],
+    "sources": ["codeowners: camunda/camunda:<rule>", "team-entries: memory/teams/team-operate-pod.md"],
+    "candidates": [],
+    "gaps": []
+  }
+]
+```
+
+`team`, `slug` and `github_handle` come from the frontmatter of the team entry. Leave them `""` for
+`Low` and `None`. `reasoning` follows the output contract of `route.md`: at least two bullets when
+the runbook was used, each quoting a literal phrase. The calling workflow shows `team` and `tier`
+in the Slack thread and the whole entry in the job summary.
 
 ## Unskip Verify Agent
 
