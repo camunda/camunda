@@ -52,9 +52,6 @@ public final class CommandBufferingBehavior {
    * JOB}/{@code INCIDENT}/{@code USER_TASK} commands don't carry it on the wire; the buffered
    * record is indexed by this key, so it must be the real instance key for the command to drain on
    * resume.
-   *
-   * <p>The buffered-command metric is recorded as a side effect, so it is only recorded once the
-   * batch is committed and not on replay.
    */
   public void bufferCommand(
       final long commandKey,
@@ -86,6 +83,6 @@ public final class CommandBufferingBehavior {
         .state()
         .appendFollowUpEvent(
             bufferedCommandKey, BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
-    writers.sideEffect().appendSideEffect(suspensionMetrics::commandBuffered);
+    suspensionMetrics.commandBuffered();
   }
 }
