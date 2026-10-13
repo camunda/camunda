@@ -25,14 +25,19 @@ import org.immutables.value.Value;
 public interface SuspensionBatchRecordValue extends RecordValue, ProcessInstanceRelated {
 
   /**
-   * @return the element key or inclusive child-key cursor to visit; -1 starts at the first child.
-   *     For traversal completion, this identifies the scope whose subtree has been visited.
+   * @return the element instance to suspend.
    */
-  long getIndexKey();
+  long getElementInstanceKey();
 
   /**
-   * @return the containing scope used to find children and siblings; -1 identifies the traversal
-   *     root without a parent.
+   * @return the parent of {@link #getElementInstanceKey()}, or -1 for the process instance; used to
+   *     continue the walk if the element instance is gone.
    */
   long getParentKey();
+
+  /**
+   * @return the child of {@link #getElementInstanceKey()} that was suspended last, so the walk
+   *     continues after it; -1 to start at the first child.
+   */
+  long getIndex();
 }

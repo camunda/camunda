@@ -37,7 +37,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModific
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeJobsProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspendProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.SuspensionBatchProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.SuspensionBatchSuspendElementInstanceProcessor;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -232,24 +232,17 @@ public final class BpmnProcessors {
             subscriptionCommandSender,
             transientProcessMessageSubscriptionState,
             clock,
-            suspensionMetrics,
-            keyGenerator));
-    final var suspensionBatchProcessor =
-        new SuspensionBatchProcessor(
+            suspensionMetrics));
+    typedRecordProcessors.onCommand(
+        ValueType.SUSPENSION_BATCH,
+        SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE,
+        new SuspensionBatchSuspendElementInstanceProcessor(
             writers,
             keyGenerator,
             processingState.getElementInstanceState(),
             processingState.getSuspensionState(),
             processingState.getUserTaskState(),
-            suspensionMetrics);
-    typedRecordProcessors.onCommand(
-        ValueType.SUSPENSION_BATCH,
-        SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE,
-        suspensionBatchProcessor);
-    typedRecordProcessors.onCommand(
-        ValueType.SUSPENSION_BATCH,
-        SuspensionBatchIntent.COMPLETE_SUSPENDING_ELEMENT_INSTANCE,
-        suspensionBatchProcessor);
+            suspensionMetrics));
   }
 
   private static void addBufferedCommandProcessor(

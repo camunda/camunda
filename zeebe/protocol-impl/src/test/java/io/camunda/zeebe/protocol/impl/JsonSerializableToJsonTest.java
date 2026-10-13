@@ -3070,15 +3070,17 @@ final class JsonSerializableToJsonTest {
                 new SuspensionBatchRecord()
                     .setProcessInstanceKey(123L)
                     .setProcessDefinitionKey(234L)
-                    .setIndexKey(456L)
+                    .setElementInstanceKey(456L)
                     .setParentKey(345L)
+                    .setIndex(567L)
                     .setStorageOrdinal(1001),
         """
                 {
                   "processInstanceKey": 123,
                   "processDefinitionKey": 234,
-                  "indexKey": 456,
+                  "elementInstanceKey": 456,
                   "parentKey": 345,
+                  "index": 567,
                   "storageOrdinal": 1001
                 }
                 """
@@ -3090,8 +3092,9 @@ final class JsonSerializableToJsonTest {
                 {
                   "processInstanceKey": -1,
                   "processDefinitionKey": -1,
-                  "indexKey": -1,
+                  "elementInstanceKey": -1,
                   "parentKey": -1,
+                  "index": -1,
                   "storageOrdinal": 0
                 }
                 """

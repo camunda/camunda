@@ -20,29 +20,31 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
   private final LongProperty processDefinitionKeyProperty =
       new LongProperty("processDefinitionKey", -1L);
 
-  /**
-   * The index of the position in the suspension batch. When the index is {@code -1}, there are no
-   * more children to visit.
-   *
-   * <p>This is the element instance key of the next child to visit for most intents, or the key the
-   * scope for which traversal was completed for {@code COMPLETE_SUSPENDING_ELEMENT_INSTANCE}.
-   */
-  private final LongProperty indexKeyProperty = new LongProperty("indexKey", -1L);
+  /** The element instance to suspend. */
+  private final LongProperty elementInstanceKeyProperty =
+      new LongProperty("elementInstanceKey", -1L);
 
   /**
-   * The parent key used to find its children and siblings. {@code -1} identifies the traversal root
-   * without a parent.
+   * The parent of {@code elementInstanceKey}, or {@code -1} for the process instance; used to
+   * continue the walk if the element instance is gone.
    */
   private final LongProperty parentKeyProperty = new LongProperty("parentKey", -1L);
+
+  /**
+   * The child of {@code elementInstanceKey} that was suspended last, so the walk continues after
+   * it; {@code -1} to start at the first child.
+   */
+  private final LongProperty indexProperty = new LongProperty("index", -1L);
 
   private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
 
   public SuspensionBatchRecord() {
-    super(5);
+    super(6);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(indexKeyProperty)
+        .declareProperty(elementInstanceKeyProperty)
         .declareProperty(parentKeyProperty)
+        .declareProperty(indexProperty)
         .declareProperty(storageOrdinalProperty);
   }
 
@@ -67,12 +69,12 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getIndexKey() {
-    return indexKeyProperty.getValue();
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProperty.getValue();
   }
 
-  public SuspensionBatchRecord setIndexKey(final long indexKey) {
-    indexKeyProperty.setValue(indexKey);
+  public SuspensionBatchRecord setElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeyProperty.setValue(elementInstanceKey);
     return this;
   }
 
@@ -83,6 +85,16 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
 
   public SuspensionBatchRecord setParentKey(final long parentKey) {
     parentKeyProperty.setValue(parentKey);
+    return this;
+  }
+
+  @Override
+  public long getIndex() {
+    return indexProperty.getValue();
+  }
+
+  public SuspensionBatchRecord setIndex(final long index) {
+    indexProperty.setValue(index);
     return this;
   }
 

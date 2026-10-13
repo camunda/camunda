@@ -207,8 +207,9 @@ public class EventAppliersTest {
         new SuspensionBatchRecord()
             .setProcessInstanceKey(123L)
             .setProcessDefinitionKey(234L)
-            .setIndexKey(456L)
+            .setElementInstanceKey(456L)
             .setParentKey(345L)
+            .setIndex(567L)
             .setStorageOrdinal(1001);
 
     // when

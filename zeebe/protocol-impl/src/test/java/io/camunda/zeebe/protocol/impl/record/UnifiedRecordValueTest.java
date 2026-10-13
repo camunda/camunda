@@ -63,8 +63,9 @@ final class UnifiedRecordValueTest {
     // then
     assertThat(copy.getProcessInstanceKey()).isEqualTo(original.getProcessInstanceKey());
     assertThat(copy.getProcessDefinitionKey()).isEqualTo(original.getProcessDefinitionKey());
-    assertThat(copy.getIndexKey()).isEqualTo(original.getIndexKey());
+    assertThat(copy.getElementInstanceKey()).isEqualTo(original.getElementInstanceKey());
     assertThat(copy.getParentKey()).isEqualTo(original.getParentKey());
+    assertThat(copy.getIndex()).isEqualTo(original.getIndex());
     assertThat(copy.getStorageOrdinal()).isEqualTo(original.getStorageOrdinal());
   }
 
@@ -80,8 +81,9 @@ final class UnifiedRecordValueTest {
     // then
     assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
     assertThat(record.getProcessDefinitionKey()).isEqualTo(-1L);
-    assertThat(record.getIndexKey()).isEqualTo(-1L);
+    assertThat(record.getElementInstanceKey()).isEqualTo(-1L);
     assertThat(record.getParentKey()).isEqualTo(-1L);
+    assertThat(record.getIndex()).isEqualTo(-1L);
     assertThat(record.getStorageOrdinal()).isZero();
   }
 
@@ -91,14 +93,16 @@ final class UnifiedRecordValueTest {
         new SuspensionBatchRecord()
             .setProcessInstanceKey(123L)
             .setProcessDefinitionKey(234L)
-            .setIndexKey(123L)
+            .setElementInstanceKey(123L)
             .setParentKey(-1L)
+            .setIndex(456L)
             .setStorageOrdinal(1001),
         new SuspensionBatchRecord()
             .setProcessInstanceKey(123L)
             .setProcessDefinitionKey(234L)
-            .setIndexKey(Long.MAX_VALUE - 1)
+            .setElementInstanceKey(Long.MAX_VALUE - 1)
             .setParentKey(345L)
+            .setIndex(Long.MAX_VALUE - 2)
             .setStorageOrdinal(1002));
   }
 

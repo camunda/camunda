@@ -140,7 +140,6 @@ public final class ProcessorNamingArchTest {
                   private static final Set<String> WHITELIST =
                       Set.of(
                           "BpmnStreamProcessor", // special case
-                          "SuspensionBatchProcessor", // walks the tree with multiple intents
                           "UserTaskProcessor"); // will be refactored in the future
                   private static volatile boolean initialized = false;
 
