@@ -51,6 +51,7 @@
     <module>protocol-impl</module>
     <module>protocol-jackson</module>
     <module>zb-db</module>
+    <module>zb-db-rocksdb</module>
     <module>expression-language</module>
     <module>feel</module>
     <module>feel-tagged-parameters</module>

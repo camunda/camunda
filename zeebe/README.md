@@ -55,5 +55,6 @@ This is a small overview of the contents of the different modules:
 * `test-util` shared testing utilities
 * `transport` is our abstraction over network transports
 * `util` contains custom implementations of building blocks like an actor scheduler, buffer allocations, and metrics. Its parts are used in most of the other modules
-* `zb-db` is our RocksDB wrapper for state management
+* `zb-db` is the storage-neutral abstraction for state management
+* `zb-db-rocksdb` is the RocksDB implementation of `zb-db`
 * `qa` engine integration test suite

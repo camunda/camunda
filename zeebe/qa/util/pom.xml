@@ -276,6 +276,10 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db-rocksdb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-testcontainer</artifactId>
     </dependency>
 
