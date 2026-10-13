@@ -53,6 +53,7 @@ import org.agrona.io.DirectBufferInputStream;
 
 public final class DbProcessState implements MutableProcessState {
 
+  public static final String PROCESS_DEFINITION_RESTORE_KEY_VALUE = "process-definition-restore";
   private static final int DEFAULT_VERSION_VALUE = 0;
 
   private final BpmnTransformer transformer;
@@ -121,6 +122,11 @@ public final class DbProcessState implements MutableProcessState {
   /** [process definition key | partition id] => [DbNil] */
   private final ColumnFamily<DbCompositeKey<DbLong, DbInt>, DbNil>
       pendingProcessDeletionsPerPartitionColumnFamily;
+
+  private final DbString processDefinitionRestoreKey;
+
+  /** [process-definition-restore] => [DbNil], set once the startup restore has run */
+  private final ColumnFamily<DbString, DbNil> processDefinitionRestoreColumnFamily;
 
   public DbProcessState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -200,6 +206,15 @@ public final class DbProcessState implements MutableProcessState {
             ZbColumnFamilies.PENDING_PROCESS_DELETIONS_PER_PARTITION,
             transactionContext,
             pendingDeletionKey,
+            DbNil.INSTANCE);
+
+    processDefinitionRestoreKey = new DbString();
+    processDefinitionRestoreKey.wrapString(PROCESS_DEFINITION_RESTORE_KEY_VALUE);
+    processDefinitionRestoreColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DEFAULT,
+            transactionContext,
+            processDefinitionRestoreKey,
             DbNil.INSTANCE);
 
     final var collectedDoc = EngineMetricsDoc.PROCESS_CACHE_COLLECTED;
@@ -395,6 +410,35 @@ public final class DbProcessState implements MutableProcessState {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     pendingDeletionPartitionId.wrapInt(partitionId);
     pendingProcessDeletionsPerPartitionColumnFamily.deleteExisting(pendingDeletionKey);
+  }
+
+  @Override
+  public void restoreFromPendingDeletion(final String tenantId, final long processDefinitionKey) {
+    tenantIdKey.wrapString(tenantId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+
+    final var process = processColumnFamily.get(tenantAwareProcessDefinitionKey);
+    if (process == null || process.getState() != PersistedProcessState.PENDING_DELETION) {
+      // Already restored, deleted, or never stray to begin with - nothing to do. This keeps the
+      // restore idempotent against state that may have moved on since it was scheduled.
+      return;
+    }
+
+    process.setState(PersistedProcessState.ACTIVE);
+    processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
+    updateInMemoryState(process);
+  }
+
+  @Override
+  public void markProcessDefinitionRestoreAsRun() {
+    processDefinitionRestoreKey.wrapString(PROCESS_DEFINITION_RESTORE_KEY_VALUE);
+    processDefinitionRestoreColumnFamily.upsert(processDefinitionRestoreKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public boolean hasRunProcessDefinitionRestore() {
+    processDefinitionRestoreKey.wrapString(PROCESS_DEFINITION_RESTORE_KEY_VALUE);
+    return processDefinitionRestoreColumnFamily.exists(processDefinitionRestoreKey);
   }
 
   private void invalidateCaches(

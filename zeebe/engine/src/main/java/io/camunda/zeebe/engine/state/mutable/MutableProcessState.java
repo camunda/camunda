@@ -66,4 +66,25 @@ public interface MutableProcessState extends ProcessState {
 
   /** Clears the given partition's outstanding drain report for the given process definition. */
   void removePendingDeletion(long processDefinitionKey, int partitionId);
+
+  /**
+   * Restores a process definition that is resting in {@link PersistedProcessState#PENDING_DELETION}
+   * back to {@link PersistedProcessState#ACTIVE}. Updates both the by-key ColumnFamily and the
+   * in-memory cache; the by-version copy is intentionally left untouched, as it is only used to
+   * resolve the by-key definition key (see {@code DbProcessState#lookupPersistenceState}).
+   *
+   * <p>This is a no-op if the definition no longer exists, or is no longer {@code PENDING_DELETION}
+   * (for example, because it was legitimately deleted or already restored since the restore was
+   * scheduled), so it is safe to apply even if state has moved on.
+   *
+   * @param tenantId tenant id of the process definition to restore
+   * @param processDefinitionKey the key of the process definition to restore
+   */
+  void restoreFromPendingDeletion(final String tenantId, final long processDefinitionKey);
+
+  /**
+   * Records that the startup cleanup which restores stray resting {@code PENDING_DELETION} process
+   * definitions has run on this partition, so it is not scheduled again on a later recovery.
+   */
+  void markProcessDefinitionRestoreAsRun();
 }
