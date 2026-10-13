@@ -225,17 +225,10 @@ jobs:
           C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
         working-directory: ./c8run/e2e_tests
 
-      - name: Stop c8run before physical tenant selection regression
+      - name: Stop c8run after physical tenant isolation test
         shell: bash
         run: ./c8run stop
         working-directory: ${{ env.C8RUN_E2E_DIR }}
-
-      - name: Run physical tenant selection auth regression
-        shell: bash
-        run: |
-          test -n "$C8RUN_E2E_DIR"
-          go test ./cmd/c8run -run '^TestPhysicalTenantSelectionE2E$' -count=1 -timeout=10m -v
-        working-directory: ./c8run
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -427,17 +420,10 @@ jobs:
           C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
         working-directory: .\c8run\e2e_tests
 
-      - name: Stop c8run before physical tenant selection regression
+      - name: Stop c8run after physical tenant isolation test
         shell: bash
         run: ./c8run.exe stop
         working-directory: ${{ env.C8RUN_E2E_DIR }}
-
-      - name: Run physical tenant selection auth regression
-        shell: bash
-        run: |
-          test -n "$C8RUN_E2E_DIR"
-          go test ./cmd/c8run -run '^TestPhysicalTenantSelectionE2E$' -count=1 -timeout=10m -v
-        working-directory: ./c8run
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -473,6 +459,99 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  test_c8run_physical_tenant_selection:
+    name: C8Run Tenant Selection ${{ matrix.os }}
+    needs: [test_c8run_on_unix, test_c8run_e2e_on_windows]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
+        include:
+          - os: ubuntu-latest
+            artifact: camunda8-run-build-ubuntu-latest
+          - os: macos-latest
+            artifact: camunda8-run-build-macos-latest
+          - os: macos-15-intel
+            artifact: camunda8-run-build-macos-15-intel
+          - os: windows-latest
+            artifact: camunda8-run-build-windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./c8run
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Download packaged C8Run
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ matrix.artifact }}
+          path: c8run
+
+      - name: Extract packaged C8Run on Unix
+        if: runner.os != 'Windows'
+        run: |
+          mkdir e2e-distribution
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            tar -xzf camunda8-run-*.tar.gz -C e2e-distribution
+          else
+            unzip -q camunda8-run-*.zip -d e2e-distribution
+          fi
+          shopt -s nullglob
+          distributions=("$PWD"/e2e-distribution/c8run-*)
+          if [[ ${#distributions[@]} -ne 1 || ! -d "${distributions[0]}" ]]; then
+            echo "Expected exactly one extracted C8Run distribution" >&2
+            exit 1
+          fi
+          echo "C8RUN_E2E_DIR=${distributions[0]}" >> "$GITHUB_ENV"
+
+      - name: Extract packaged C8Run on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path e2e-distribution | Out-Null
+          Expand-Archive -Path (Get-ChildItem camunda8-run-*.zip).FullName -DestinationPath e2e-distribution
+          $distributions = @(Get-ChildItem e2e-distribution -Directory -Filter 'c8run-*')
+          if ($distributions.Count -ne 1) {
+            throw "Expected exactly one extracted C8Run distribution"
+          }
+          "C8RUN_E2E_DIR=$($distributions[0].FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Run physical tenant selection auth regression
+        run: |
+          test -n "$C8RUN_E2E_DIR"
+          go test ./cmd/c8run -run '^TestPhysicalTenantSelectionE2E$' -count=1 -timeout=10m -v
+
+      - name: Upload physical tenant selection logs
+        if: ${{ (failure() || cancelled()) && env.C8RUN_E2E_DIR != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: c8run-tenant-selection-logs-${{ matrix.os }}
+          path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
+          retention-days: 10
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "test_c8run_physical_tenant_selection/${{ matrix.os }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
