@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.authentication.pt.PhysicalTenantTestSupport.bindPhysicalTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -25,7 +26,6 @@ import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
-import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.time.Instant;
@@ -36,7 +36,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -46,7 +45,6 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Drives the real {@code oidcUserAuthenticationConverter} bean to check that the access token of a
@@ -106,34 +104,15 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
   }
 
   @Test
-  void shouldNotReuseRootAccessTokenDecoderForTenantSharingTheRegistrationId() throws Exception {
-    // given
-    final var environment = tenantOverridingDefaultSlotIssuer();
-    final var converter = converter(environment);
-    final var rootToken = JwksTestServer.signForIssuer(rootIdp, rootIdp.issuerUri(), List.of());
-    final var tenantToken =
-        JwksTestServer.signForIssuer(tenantIdp, tenantIdp.issuerUri(), List.of());
-    final var rootUsername = converter.convert(login(rootToken, rootIdp)).authenticatedUsername();
-
-    // when
-    bindPhysicalTenant("tenanta");
-    final var tenantUsername =
-        converter.convert(login(tenantToken, tenantIdp)).authenticatedUsername();
-
-    // then
-    assertThat(rootUsername).isEqualTo(ACCESS_TOKEN_USER);
-    assertThat(tenantUsername).isEqualTo(ACCESS_TOKEN_USER);
-  }
-
-  @Test
-  void shouldDecodeAccessTokenWithEachTenantsOwnIssuerWhenTenantsShareTheRegistrationId()
+  void shouldKeepAccessTokenDecodersApartForTheRootAndEachTenantSharingTheRegistrationId()
       throws Exception {
-    // given two tenants overriding the default-slot issuer with different issuers
+    // given the root and two tenants share the default-slot registration id, with different issuers
     final var environment = tenantOverridingDefaultSlotIssuer();
     environment.setProperty(
         "camunda.physical-tenants.tenantb.security.authentication.oidc.issuer-uri",
         otherTenantIdp.issuerUri());
     final var converter = converter(environment);
+    final var rootToken = JwksTestServer.signForIssuer(rootIdp, rootIdp.issuerUri(), List.of());
     final var tokenA = JwksTestServer.signForIssuer(tenantIdp, tenantIdp.issuerUri(), List.of());
     final var tokenB =
         JwksTestServer.signForIssuer(otherTenantIdp, otherTenantIdp.issuerUri(), List.of());
@@ -141,6 +120,7 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
         JwksTestServer.signForIssuer(otherTenantIdp, tenantIdp.issuerUri(), List.of());
 
     // when
+    final var usernameOnRoot = converter.convert(login(rootToken, rootIdp)).authenticatedUsername();
     bindPhysicalTenant("tenanta");
     final var usernameOnA = converter.convert(login(tokenA, tenantIdp)).authenticatedUsername();
     bindPhysicalTenant("tenantb");
@@ -149,7 +129,8 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
     final var usernameOnBWithAIssuer =
         converter.convert(login(tokenWithAIssuerForB, otherTenantIdp)).authenticatedUsername();
 
-    // then each tenant decodes its own access token, and rejects the other tenant's issuer
+    // then each decodes its own access token, and tenant B rejects tenant A's issuer
+    assertThat(usernameOnRoot).isEqualTo(ACCESS_TOKEN_USER);
     assertThat(usernameOnA).isEqualTo(ACCESS_TOKEN_USER);
     assertThat(usernameOnB).isEqualTo(ACCESS_TOKEN_USER);
     assertThat(usernameOnBWithAIssuer).isEqualTo(ID_TOKEN_USER);
@@ -277,11 +258,5 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
         .tokenUri(tenantIdp.issuerUri() + "/token")
         .jwkSetUri(jwksIdp.issuerUri() + "/jwks")
         .build();
-  }
-
-  private static void bindPhysicalTenant(final String tenantId) {
-    final var request = new MockHttpServletRequest();
-    PhysicalTenantContext.setPhysicalTenantId(request, tenantId);
-    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
   }
 }

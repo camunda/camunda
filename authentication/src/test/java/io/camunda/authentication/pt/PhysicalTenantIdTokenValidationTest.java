@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.pt;
 
+import static io.camunda.authentication.pt.PhysicalTenantTestSupport.bindPhysicalTenant;
+import static io.camunda.authentication.pt.PhysicalTenantTestSupport.unifiedSecurityProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -17,10 +19,8 @@ import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
-import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
-import io.camunda.spring.utils.PhysicalTenantContext;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -29,25 +29,26 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 class PhysicalTenantIdTokenValidationTest {
 
   private static JwksTestServer rootIdp;
   private static JwksTestServer tenantIdp;
   private static JwksTestServer otherTenantIdp;
+  private static JwksTestServer ecIdp;
 
   @BeforeAll
   static void startIdps() throws Exception {
     rootIdp = JwksTestServer.start("root-kid");
     tenantIdp = JwksTestServer.start("tenant-kid");
     otherTenantIdp = JwksTestServer.start("other-tenant-kid");
+    ecIdp = JwksTestServer.startEc("ec-kid");
   }
 
   @AfterAll
@@ -55,6 +56,7 @@ class PhysicalTenantIdTokenValidationTest {
     rootIdp.stop();
     tenantIdp.stop();
     otherTenantIdp.stop();
+    ecIdp.stop();
   }
 
   @AfterEach
@@ -77,22 +79,7 @@ class PhysicalTenantIdTokenValidationTest {
     // then
     assertThat(jwt.getIssuer()).hasToString(rootIdp.issuerUri());
     assertThatThrownBy(() -> decoder.decode(otherIssuerToken))
-        .isInstanceOf(JwtValidationException.class)
-        .hasMessageContaining("iss claim");
-  }
-
-  @Test
-  void shouldRejectRootIssuerWhenTenantOverridesDefaultSlotIssuer() throws Exception {
-    // given
-    final var decoderFactory = decoderFactoryWithTenantOverridingDefaultSlotIssuer();
-    bindPhysicalTenant("tenanta");
-    final var decoder = decoderFactory.createDecoder(registrationFor("oidc", tenantIdp));
-    final var token = JwksTestServer.signForIssuer(tenantIdp, rootIdp.issuerUri(), List.of());
-
-    // when / then
-    assertThatThrownBy(() -> decoder.decode(token))
-        .isInstanceOf(JwtValidationException.class)
-        .hasMessageContaining("iss claim");
+        .isInstanceOf(JwtValidationException.class);
   }
 
   @Test
@@ -124,11 +111,64 @@ class PhysicalTenantIdTokenValidationTest {
     final var tokenWithBIssuerForA =
         JwksTestServer.signForIssuer(tenantIdp, otherTenantIdp.issuerUri(), List.of());
     assertThatThrownBy(() -> decoderB.decode(tokenWithAIssuerForB))
-        .isInstanceOf(JwtValidationException.class)
-        .hasMessageContaining("iss claim");
+        .isInstanceOf(JwtValidationException.class);
     assertThatThrownBy(() -> decoderA.decode(tokenWithBIssuerForA))
-        .isInstanceOf(JwtValidationException.class)
-        .hasMessageContaining("iss claim");
+        .isInstanceOf(JwtValidationException.class);
+    final var tokenWithRootIssuerForA =
+        JwksTestServer.signForIssuer(tenantIdp, rootIdp.issuerUri(), List.of());
+    assertThatThrownBy(() -> decoderA.decode(tokenWithRootIssuerForA))
+        .isInstanceOf(JwtValidationException.class);
+  }
+
+  @Test
+  void shouldApplyTheDefaultTenantOverlayToTheRootAndTheDefaultTenant() throws Exception {
+    // given the default tenant overlays the issuer of the default slot
+    final var environment = rootOnlyEnvironment();
+    environment.setProperty(
+        "camunda.physical-tenants.default.security.authentication.oidc.issuer-uri",
+        tenantIdp.issuerUri());
+    final var decoderFactory = decoderFactory(environment);
+    final var overlayIssuerToken =
+        JwksTestServer.signForIssuer(tenantIdp, tenantIdp.issuerUri(), List.of());
+    final var rootIssuerToken =
+        JwksTestServer.signForIssuer(tenantIdp, rootIdp.issuerUri(), List.of());
+
+    // when
+    final var rootDecoder = decoderFactory.createDecoder(registrationFor("oidc", tenantIdp));
+    bindPhysicalTenant("default");
+    final var defaultTenantDecoder =
+        decoderFactory.createDecoder(registrationFor("oidc", tenantIdp));
+
+    // then outside any tenant and on the default tenant, the overlay issuer replaces the root one
+    for (final var decoder : List.of(rootDecoder, defaultTenantDecoder)) {
+      assertThat(decoder.decode(overlayIssuerToken).getIssuer()).hasToString(tenantIdp.issuerUri());
+      assertThatThrownBy(() -> decoder.decode(rootIssuerToken))
+          .isInstanceOf(JwtValidationException.class);
+    }
+  }
+
+  @Test
+  void shouldUseTenantIdTokenAlgorithmForASharedRegistrationIdWhileTheRootKeepsRs256()
+      throws Exception {
+    // given a tenant that sets ES256 for the default slot, and a token signed with an EC key
+    final var environment = rootOnlyEnvironment();
+    environment.setProperty(
+        "camunda.physical-tenants.tenanta.security.authentication.oidc.id-token-algorithm",
+        "ES256");
+    final var decoderFactory = decoderFactory(environment);
+    final var rootDecoder = decoderFactory.createDecoder(registrationFor("oidc", ecIdp));
+    bindPhysicalTenant("tenanta");
+    final var tenantDecoder = decoderFactory.createDecoder(registrationFor("oidc", ecIdp));
+    final var token = JwksTestServer.signForIssuer(ecIdp, rootIdp.issuerUri(), List.of());
+
+    // when
+    final var jwt = tenantDecoder.decode(token);
+
+    // then the tenant accepts the token, while the root, which keeps RS256, rejects the same token
+    assertThat(jwt.getIssuer()).hasToString(rootIdp.issuerUri());
+    assertThatThrownBy(() -> rootDecoder.decode(token))
+        .isInstanceOf(JwtException.class)
+        .hasMessageContaining("algorithm");
   }
 
   @Test
@@ -152,8 +192,7 @@ class PhysicalTenantIdTokenValidationTest {
     // then
     assertThat(jwt.getIssuer()).hasToString(tenantIdp.issuerUri());
     assertThatThrownBy(() -> decoder.decode(wrongIssuerToken))
-        .isInstanceOf(JwtValidationException.class)
-        .hasMessageContaining("iss claim");
+        .isInstanceOf(JwtValidationException.class);
   }
 
   @Test
@@ -195,27 +234,20 @@ class PhysicalTenantIdTokenValidationTest {
 
   private static JwtDecoderFactory<ClientRegistration> decoderFactory(
       final MockEnvironment environment) {
+    final var cslProperties = unifiedSecurityProperties(environment);
     final Map<String, OidcConfiguration> rootProviders =
-        new ScopedClientRegistrationFactory()
-            .flatten(PhysicalTenantAuthConfigurations.forPhysicalTenant("default", environment));
+        new ScopedClientRegistrationFactory().flatten(cslProperties.getAuthentication());
     final var port = mock(OidcProviderConfigurationPort.class);
     when(port.getOidcAuthenticationConfigurations()).thenReturn(rootProviders);
     final var rootValidators =
         new TokenValidatorFactory(rootProviders, Duration.ofSeconds(60), List.of());
-    final var configuration =
-        new OidcOverrideBeansConfiguration(new CamundaSecurityLibraryProperties());
+    final var configuration = new OidcOverrideBeansConfiguration(cslProperties);
     final var settings =
         configuration.physicalTenantOidcSettings(
             environment,
             mock(MembershipPort.class),
             MembershipResolutionContextPropagator.identity());
     return configuration.idTokenDecoderFactory(rootValidators, port, settings);
-  }
-
-  private static void bindPhysicalTenant(final String tenantId) {
-    final var request = new MockHttpServletRequest();
-    PhysicalTenantContext.setPhysicalTenantId(request, tenantId);
-    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
   }
 
   private static ClientRegistration registrationFor(

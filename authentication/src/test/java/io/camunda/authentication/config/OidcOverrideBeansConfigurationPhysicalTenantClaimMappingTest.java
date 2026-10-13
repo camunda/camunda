@@ -7,22 +7,20 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.authentication.pt.PhysicalTenantTestSupport.bindPhysicalTenant;
+import static io.camunda.authentication.pt.PhysicalTenantTestSupport.unifiedSecurityProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
-import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
-import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.List;
@@ -30,14 +28,12 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Drives the real {@code oidcUserAuthenticationConverter} bean to check that a browser login maps
@@ -133,6 +129,31 @@ class OidcOverrideBeansConfigurationPhysicalTenantClaimMappingTest {
   }
 
   @Test
+  void shouldApplyTheDefaultTenantOverlayClaimToTheRootAndTheDefaultTenant() {
+    // given the default tenant overlays the username claim of the default slot
+    final var environment = rootWithSharedNamedProvider();
+    environment.setProperty(ROOT_PREFIX + ".oidc.client-id", "root-client");
+    environment.setProperty(ROOT_PREFIX + ".oidc.username-claim", "root_user");
+    environment.setProperty(
+        "camunda.physical-tenants.default.security.authentication.oidc.username-claim",
+        "user_default");
+    final var converter = converter(environment);
+    final var attributes =
+        Map.<String, Object>of("root_user", "root-user", "user_default", "default-user");
+
+    // when
+    final var usernameOutsideTenants =
+        converter.convert(login("oidc", attributes)).authenticatedUsername();
+    bindPhysicalTenant("default");
+    final var usernameOnDefaultTenant =
+        converter.convert(login("oidc", attributes)).authenticatedUsername();
+
+    // then the overlay claim applies outside any tenant and on the default tenant
+    assertThat(usernameOutsideTenants).isEqualTo("default-user");
+    assertThat(usernameOnDefaultTenant).isEqualTo("default-user");
+  }
+
+  @Test
   void shouldRejectLoginForRegistrationNotResolvedForThePhysicalTenant() {
     // given
     final var environment = rootWithSharedNamedProvider();
@@ -156,22 +177,18 @@ class OidcOverrideBeansConfigurationPhysicalTenantClaimMappingTest {
 
   private static CamundaAuthenticationConverter<Authentication> converter(
       final MockEnvironment environment) {
+    final var cslProperties = unifiedSecurityProperties(environment);
     final var rootProviders =
-        new ScopedClientRegistrationFactory()
-            .flatten(PhysicalTenantAuthConfigurations.forPhysicalTenant("default", environment));
+        new ScopedClientRegistrationFactory().flatten(cslProperties.getAuthentication());
     final var port = mock(OidcProviderConfigurationPort.class);
     when(port.getOidcAuthenticationConfigurations()).thenReturn(rootProviders);
-    final var cslProperties = new CamundaSecurityLibraryProperties();
-    cslProperties.getAuthentication().getOidc().setUsernameClaim("root_user");
     final var membershipPort = mock(MembershipPort.class);
     final var propagator = MembershipResolutionContextPropagator.identity();
-    final var defaultConverter =
-        new LazyTokenClaimsConverter("root_user", null, false, membershipPort, propagator);
     final var configuration = new OidcOverrideBeansConfiguration(cslProperties);
     return configuration.oidcUserAuthenticationConverter(
         mock(OAuth2AuthorizedClientRepository.class),
         mock(OidcAccessTokenDecoderFactory.class),
-        defaultConverter,
+        configuration.tokenClaimsConverter(cslProperties, membershipPort, propagator),
         mock(HttpServletRequest.class),
         port,
         AdditionalJwkSetUrisByRegistrationId.empty(),
@@ -190,11 +207,5 @@ class OidcOverrideBeansConfigurationPhysicalTenantClaimMappingTest {
     final var principal = mock(OidcUser.class);
     when(principal.getAttributes()).thenReturn(attributes);
     return new OAuth2AuthenticationToken(principal, List.of(), registrationId);
-  }
-
-  private static void bindPhysicalTenant(final String tenantId) {
-    final var request = new MockHttpServletRequest();
-    PhysicalTenantContext.setPhysicalTenantId(request, tenantId);
-    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
   }
 }

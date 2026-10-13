@@ -7,20 +7,18 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.authentication.pt.PhysicalTenantTestSupport.bindPhysicalTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 class PhysicalTenantOidcSettingsRegistryTest {
 
@@ -70,11 +68,5 @@ class PhysicalTenantOidcSettingsRegistryTest {
 
     // when / then
     assertThatThrownBy(registry::current).isInstanceOf(OAuth2AuthenticationException.class);
-  }
-
-  private static void bindPhysicalTenant(final String tenantId) {
-    final var request = new MockHttpServletRequest();
-    PhysicalTenantContext.setPhysicalTenantId(request, tenantId);
-    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
   }
 }
