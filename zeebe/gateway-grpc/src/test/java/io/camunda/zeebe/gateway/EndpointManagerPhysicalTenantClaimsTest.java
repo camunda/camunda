@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.grpc.Context;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +110,7 @@ final class EndpointManagerPhysicalTenantClaimsTest {
         null,
         null,
         Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, defaultConfig, TENANT, tenantConfig),
-        100);
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
 
   private static EngineSecurityConfig oidcConfig(
