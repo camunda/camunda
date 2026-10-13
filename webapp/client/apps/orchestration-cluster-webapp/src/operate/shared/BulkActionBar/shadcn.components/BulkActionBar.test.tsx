@@ -34,13 +34,15 @@ describe('<BulkActionBar />', () => {
 		expect(onDiscard).toHaveBeenCalledOnce();
 	});
 
-	it('should keep a disabled action focusable and expose its reason as title', async () => {
+	it('should keep a disabled action focusable and expose its reason in a tooltip', async () => {
 		const onRetry = vi.fn();
 		const screen = await render(
 			<BulkActionBar
 				selectedLabel="1 item selected"
 				discardLabel="Discard"
-				actions={[{key: 'retry', label: 'Retry', disabled: true, title: 'No incidents selected', onClick: onRetry}]}
+				actions={[
+					{key: 'retry', label: 'Retry', disabled: true, disabledReason: 'No incidents selected', onClick: onRetry},
+				]}
 				onDiscard={vi.fn()}
 			/>,
 		);
@@ -48,11 +50,40 @@ describe('<BulkActionBar />', () => {
 		const retry = screen.getByRole('button', {name: 'Retry'});
 
 		await expect.element(retry).toHaveAttribute('aria-disabled', 'true');
-		await expect.element(retry).toHaveAttribute('title', 'No incidents selected');
 		await userEvent.tab();
 		await expect.element(retry).toHaveFocus();
+		await expect.element(screen.getByRole('tooltip')).toHaveTextContent('No incidents selected');
 		await userEvent.keyboard('{Enter}');
 		expect(onRetry).not.toHaveBeenCalled();
+	});
+
+	it('should render a destructive action with the destructive variant', async () => {
+		const screen = await render(
+			<BulkActionBar
+				selectedLabel="1 item selected"
+				discardLabel="Discard"
+				actions={[{key: 'delete', label: 'Delete', variant: 'destructive', onClick: vi.fn()}]}
+				onDiscard={vi.fn()}
+			/>,
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'Delete'})).toHaveAttribute('data-variant', 'destructive');
+	});
+
+	it('should mark a loading action busy and ignore clicks', async () => {
+		const onClick = vi.fn();
+		const screen = await render(
+			<BulkActionBar
+				selectedLabel="1 item selected"
+				discardLabel="Discard"
+				actions={[{key: 'delete', label: 'Delete', loading: true, onClick}]}
+				onDiscard={vi.fn()}
+			/>,
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'Delete'})).toHaveAttribute('aria-busy', 'true');
+		await userEvent.keyboard('{Tab}{Enter}');
+		expect(onClick).not.toHaveBeenCalled();
 	});
 
 	it('should render additional actions before the standard actions', async () => {
