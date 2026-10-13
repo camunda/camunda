@@ -80,7 +80,9 @@ func TestPhysicalTenantSelectionE2E(t *testing.T) {
 		client := http.Client{Timeout: 10 * time.Second}
 		response, err := client.Do(request)
 		require.NoError(t, err)
-		defer response.Body.Close()
+		defer func() {
+			assert.NoError(t, response.Body.Close())
+		}()
 		require.Equal(t, status, response.StatusCode, "tenant=%s login=%s", id, user)
 	}
 	checkSaved := func(id string) {
