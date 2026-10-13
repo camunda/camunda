@@ -273,6 +273,7 @@
                                             EVALUATION_FAILURE_MESSAGE,
                                             TENANT_ID,
                                             PARTITION_ID,
+                                            STORAGE_ORDINAL,
                                             HISTORY_CLEANUP_DATE)
     VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey},
             #{rootProcessInstanceKey},
@@ -285,7 +286,7 @@
             #{decisionType}, #{state},
             #{evaluationDate, jdbcType=TIMESTAMP}, #{result, jdbcType=CLOB}, #{evaluationFailure},
             #{evaluationFailureMessage},
-            #{tenantId}, #{partitionId},
+            #{tenantId}, #{partitionId}, #{storageOrdinal},
             #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
