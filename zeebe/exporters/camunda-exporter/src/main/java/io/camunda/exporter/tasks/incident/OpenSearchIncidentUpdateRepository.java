@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.WillCloseWhenClosed;
@@ -70,6 +71,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   private final String listViewFullQualifiedName;
   private final String flowNodeAlias;
   private final String operationAlias;
+  private final LongSupplier exportedPosition;
 
   public OpenSearchIncidentUpdateRepository(
       final int partitionId,
@@ -80,6 +82,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
       final String listViewFullQualifiedName,
       final String flowNodeAlias,
       final String operationAlias,
+      final LongSupplier exportedPosition,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
@@ -92,6 +95,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
+    this.exportedPosition = exportedPosition;
   }
 
   @Override
@@ -475,6 +479,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
         QueryBuilders.range()
             .field(PostImporterQueueTemplate.POSITION)
             .gt(JsonData.of(fromPosition))
+            .lte(JsonData.of(exportedPosition.getAsLong()))
             .build()
             .toQuery();
     final var typeQ =
