@@ -52,10 +52,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -72,6 +75,7 @@ public class Starter implements CommandLineRunner {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final ZeebeClient client;
+  private final ApplicationContext applicationContext;
   private final LoadTesterProperties properties;
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
@@ -79,6 +83,7 @@ public class Starter implements CommandLineRunner {
   private final ConnectionMonitor connectionMonitor;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
+  private final AtomicReference<Error> fatalError = new AtomicReference<>();
 
   private Timer responseLatencyTimer;
   private Counter processInstancesStartedCounter;
@@ -89,8 +94,10 @@ public class Starter implements CommandLineRunner {
       final LoadTesterProperties properties,
       final MeterRegistry registry,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final ApplicationContext applicationContext) {
     this.client = client;
+    this.applicationContext = applicationContext;
     this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
@@ -125,6 +132,11 @@ public class Starter implements CommandLineRunner {
       countDownLatch.await();
     } catch (final InterruptedException e) {
       LOG.error("Awaiting of count down latch was interrupted.", e);
+    }
+
+    if (fatalError.get() != null) {
+      scheduledTask.cancel(true);
+      System.exit(SpringApplication.exit(applicationContext, () -> 1));
     }
 
     runFinished.set(1);
@@ -199,6 +211,12 @@ public class Starter implements CommandLineRunner {
                 });
           } catch (final Exception e) {
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
+          } catch (final Error e) {
+            // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
+            // stop the starter and fail the application instead.
+            LOG.error("Fatal error on creating new process instance, stopping the starter", e);
+            fatalError.set(e);
+            countDownLatch.countDown();
           }
         },
         0,
