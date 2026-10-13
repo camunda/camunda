@@ -44,8 +44,7 @@ the report directly against `http://localhost:9090`:
 kubectl port-forward svc/kube-prometheus-stack-prometheus -n monitoring 9090:9090
 
 # Then build the headline metrics report
-cd load-tests/loadtestctl
-uv run loadtestctl report <full-namespace-with-c8-prefix> --duration-seconds 1200 \
+load-tests/loadtestctl/loadtestctl report <full-namespace-with-c8-prefix> --duration-seconds 1200 \
   --queries report-queries-comparison.yaml > /tmp/report.json
 ```
 

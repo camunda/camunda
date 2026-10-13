@@ -19,8 +19,10 @@ resolved dependency graph.
 
 ## Usage
 
+[`loadtestctl`](loadtestctl) runs the CLI in its own `uv` project and works from any directory, so callers do not need `uv run`. The examples assume the current directory is `load-tests/loadtestctl`; put it on the `PATH` to drop the `./`.
+
 ```bash
-uv run loadtestctl --help
+./loadtestctl --help
 ```
 
 ## Features
@@ -30,24 +32,24 @@ uv run loadtestctl --help
 `loadtestctl verify` checks that a deployed load test is up and running: the Camunda platform and load test client pods are ready, the k6 TestRuns (if any) are healthy, the client is connected to the gateway, and k6 reports metrics to Prometheus.
 
 ```bash
-uv run loadtestctl verify <namespace> [options]
+./loadtestctl verify <namespace> [options]
 ```
 
 It needs `kubectl` access to the cluster. Progress is logged to stderr and the exit code is `0` on success and `1` on failure. The result is `status=success` or `status=failure`. It is printed to stdout, or appended to the file given with `--result-file`, for example `$GITHUB_OUTPUT` in GitHub Actions. See `--help` for the timeouts and the Prometheus options.
 
 Prometheus defaults to `http://localhost:9090` without authentication, for example through `kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090`. Use `--prometheus-url`, `--prometheus-user` and `--prometheus-password` for a remote one.
 
-Every option can also be set through an environment variable named `LOADTESTCTL_VERIFY_<OPTION>`, for example `LOADTESTCTL_VERIFY_WAIT_TIMEOUT`. The Prometheus options are read from `LOADTESTCTL_PROMETHEUS_URL`, `LOADTESTCTL_PROMETHEUS_USER` and `LOADTESTCTL_PROMETHEUS_PASSWORD`, which the workflow sets. A flag on the command line overrides the variable. `uv run loadtestctl verify --help` lists the variable next to each option.
+Every option can also be set through an environment variable named `LOADTESTCTL_VERIFY_<OPTION>`, for example `LOADTESTCTL_VERIFY_WAIT_TIMEOUT`. The Prometheus options are read from `LOADTESTCTL_PROMETHEUS_URL`, `LOADTESTCTL_PROMETHEUS_USER` and `LOADTESTCTL_PROMETHEUS_PASSWORD`, which the workflow sets. A flag on the command line overrides the variable. `./loadtestctl verify --help` lists the variable next to each option.
 
 ### prometheus
 
 `loadtestctl prometheus` port-forwards the load-test Prometheus (`kubectl port-forward`) until you press Ctrl-C. It requires `kubectl` on the `PATH` with the load-test cluster as current context.
 
 ```bash
-uv run loadtestctl prometheus
+./loadtestctl prometheus
 ```
 
-Options (see `uv run loadtestctl prometheus --help` for environment variables):
+Options (see `./loadtestctl prometheus --help` for environment variables):
 
 - `-n`, `--namespace <ns>`: namespace of the Prometheus service. Default: `monitoring`.
 - `-s`, `--service <name>`: Prometheus service name. Default: `kube-prometheus-stack-prometheus`.
@@ -60,7 +62,7 @@ Prometheus. It emits JSON for structured processing and CSV or TSV for spreadshe
 imports.
 
 ```bash
-uv run loadtestctl report <namespace> [options]
+./loadtestctl report <namespace> [options]
 ```
 
 Common options:
@@ -95,7 +97,7 @@ options are read from `LOADTESTCTL_PROMETHEUS_URL`, `LOADTESTCTL_PROMETHEUS_USER
 `LOADTESTCTL_PROMETHEUS_PASSWORD`, which `loadtestctl verify` shares.
 A flag on the command line overrides the variable, and an empty variable counts as unset. Prefer
 `LOADTESTCTL_PROMETHEUS_PASSWORD` over `--prometheus-password`, because command line
-arguments are visible in the process list and the shell history. `uv run loadtestctl report
+arguments are visible in the process list and the shell history. `./loadtestctl report
 --help` lists the variable next to each option.
 
 #### Examples
@@ -105,15 +107,15 @@ Port-forwarded Prometheus, JSON:
 ```bash
 cd load-tests/loadtestctl
 # terminal 1: keep the port-forward running
-uv run loadtestctl prometheus
+./loadtestctl prometheus
 # terminal 2
-uv run loadtestctl report c8-ck-baseline-20260814 --duration-seconds 1800
+./loadtestctl report c8-ck-baseline-20260814 --duration-seconds 1800
 ```
 
 Exact historical window, TSV row ready to paste into a spreadsheet:
 
 ```bash
-uv run loadtestctl report c8-ck-baseline-20260814 \
+./loadtestctl report c8-ck-baseline-20260814 \
   --start 2026-08-14T10:00:00Z \
   --duration-seconds 1800 \
   --format tsv --no-header
@@ -125,7 +127,7 @@ missing metrics.
 8.7-style Zeebe broker plus Zeebe Gateway layout:
 
 ```bash
-uv run loadtestctl report c8-ck-base-8736-endurance \
+./loadtestctl report c8-ck-base-8736-endurance \
   --queries report-queries-stable-87.yaml \
   --start 2026-08-12T09:00:00Z \
   --duration-seconds 79200 \
@@ -135,7 +137,7 @@ uv run loadtestctl report c8-ck-base-8736-endurance \
 CI monitor ingress with basic auth:
 
 ```bash
-LOADTESTCTL_PROMETHEUS_PASSWORD="$PROM_PASS" uv run loadtestctl report c8-ck-baseline-20260814 \
+LOADTESTCTL_PROMETHEUS_PASSWORD="$PROM_PASS" ./loadtestctl report c8-ck-baseline-20260814 \
   --duration-seconds 1800 \
   --prometheus-url https://ci-monitor.benchmark.camunda.cloud \
   --prometheus-user "$PROM_USER" \
@@ -155,7 +157,7 @@ The package also includes
 for the Camunda 8.7 Zeebe broker and gateway layout. Select it with:
 
 ```bash
-uv run loadtestctl report c8-ck-base-8736-endurance \
+./loadtestctl report c8-ck-base-8736-endurance \
   --queries report-queries-stable-87.yaml
 ```
 

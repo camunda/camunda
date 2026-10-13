@@ -60,9 +60,8 @@ jobs:
 
       - name: Verify Load test
         env:
-          UV_PROJECT: load-tests/loadtestctl
           LOADTESTCTL_PROMETHEUS_URL: https://ci-monitor.benchmark.camunda.cloud
-        run: uv run loadtestctl verify "${NAMESPACE}" --result-file "${GITHUB_OUTPUT}"
+        run: load-tests/loadtestctl/loadtestctl verify "${NAMESPACE}" --result-file "${GITHUB_OUTPUT}"
 
       - name: Observe build status
         if: always()
