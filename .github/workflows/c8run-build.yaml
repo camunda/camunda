@@ -1,4 +1,5 @@
 # description: For C8Run, this workflow runs a linting check, unit tests, a build, tests on unix, and end to end tests on windows
+# test location: c8run/e2e_tests/ and c8run/cmd/c8run/physicaltenants_e2e_test.go
 # type: CI
 # owner: @camunda/distribution
 ---
@@ -166,7 +167,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, macos-15-intel]
     name: C8Run Test ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 25
     needs: camunda-dist-build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -215,6 +216,18 @@ jobs:
           CHECK_CONNECTORS: "1"
           C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
         working-directory: ./c8run/e2e_tests
+
+      - name: Stop c8run before physical tenant selection regression
+        shell: bash
+        run: ./c8run stop
+        working-directory: ${{ env.C8RUN_E2E_DIR }}
+
+      - name: Run physical tenant selection auth regression
+        shell: bash
+        run: |
+          test -n "$C8RUN_E2E_DIR"
+          go test ./cmd/c8run -run '^TestPhysicalTenantSelectionE2E$' -count=1 -timeout=10m -v
+        working-directory: ./c8run
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
@@ -266,7 +279,7 @@ jobs:
   test_c8run_e2e_on_windows:
     name: C8Run Test Windows
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     needs: camunda-dist-build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -397,6 +410,18 @@ jobs:
           CHECK_CONNECTORS: "1"
           C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
         working-directory: .\c8run\e2e_tests
+
+      - name: Stop c8run before physical tenant selection regression
+        shell: bash
+        run: ./c8run.exe stop
+        working-directory: ${{ env.C8RUN_E2E_DIR }}
+
+      - name: Run physical tenant selection auth regression
+        shell: bash
+        run: |
+          test -n "$C8RUN_E2E_DIR"
+          go test ./cmd/c8run -run '^TestPhysicalTenantSelectionE2E$' -count=1 -timeout=10m -v
+        working-directory: ./c8run
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
