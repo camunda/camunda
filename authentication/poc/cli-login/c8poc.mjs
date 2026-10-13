@@ -30,16 +30,18 @@ const USAGE = `Usage: c8poc <command> [options]
 Commands:
   login [url]            Log in and make it the current context; OIDC opens the browser.
                          url: the cluster (default ${DEFAULT_CLUSTER}), or a physical
-                         tenant, e.g. ${DEFAULT_CLUSTER}/physical-tenants/pt1
-      --tenant <id>      Physical tenant (instead of putting it in the url)
+                         tenant, e.g. ${DEFAULT_CLUSTER}/physical-tenants/pt1. Without a
+                         physical tenant, asks for one if the cluster lists them
+      --physical-tenant <id>  Physical tenant (instead of putting it in the url)
       --provider <id>    Pick an identity provider instead of being asked
-      --context <name>   Context name (default: <host>[/<tenant>])
+      --context <name>   Context name (default: <host>[/<physical tenant>])
       --no-browser       Only print the login URL
+  physical-tenants [url]  List the cluster's physical tenants (if the cluster lists them)
   contexts               List contexts (* = current)
   use <context>          Switch the current context
-  whoami                 Show the current context's cluster, tenant and identity
+  whoami                 Show the current context's cluster, physical tenant and identity
   topology               GET /v2/topology on the context's physical tenant
-  api <path>             GET any path below the tenant's API, e.g. c8poc api /v2/license
+  api <path>             GET any path below the physical tenant's API, e.g. c8poc api /v2/license
   logout [<context>]     Forget the current (or the named) context; --all forgets all
 
 whoami, topology, api and logout take --context <name> to use another than the current one.
@@ -97,9 +99,9 @@ function loadStore() {
     return { current: undefined, contexts: {} };
   }
   if (raw.contexts) return raw;
-  // single session of an earlier c8poc version: keep it as a context of the default tenant
+  // single session of an earlier c8poc version: keep it as a context of the default physical tenant
   const name = contextName(raw.clusterUrl, undefined);
-  return { current: name, contexts: { [name]: { ...raw, tenant: "default", apiBase: "" } } };
+  return { current: name, contexts: { [name]: { ...raw, physicalTenant: "default", apiBase: "" } } };
 }
 
 function saveStore(store) {
@@ -123,18 +125,18 @@ function requireContext(name) {
   return { name: resolved, context };
 }
 
-function contextName(clusterUrl, tenant) {
-  return new URL(clusterUrl).host + (tenant && tenant !== "default" ? `/${tenant}` : "");
+function contextName(clusterUrl, physicalTenant) {
+  return new URL(clusterUrl).host + (physicalTenant && physicalTenant !== "default" ? `/${physicalTenant}` : "");
 }
 
 // "https://oc/physical-tenants/pt1" -> cluster "https://oc", tenant "pt1"
-function parseTarget(url, tenantFlag) {
+function parseTarget(url, physicalTenantFlag) {
   const trimmed = url.replace(/\/$/, "");
   const match = trimmed.match(/^(.*)\/physical-tenants\/([^/]+)$/);
-  if (match && tenantFlag && tenantFlag !== match[2]) {
-    throw new Error(`--tenant ${tenantFlag} contradicts the url's tenant ${match[2]}`);
+  if (match && physicalTenantFlag && physicalTenantFlag !== match[2]) {
+    throw new Error(`--physical-tenant ${physicalTenantFlag} contradicts the url's physical tenant ${match[2]}`);
   }
-  return match ? { clusterUrl: match[1], tenant: match[2] } : { clusterUrl: trimmed, tenant: tenantFlag };
+  return match ? { clusterUrl: match[1], physicalTenant: match[2] } : { clusterUrl: trimmed, physicalTenant: physicalTenantFlag };
 }
 
 function withTokens(session, tokens) {
@@ -323,24 +325,20 @@ function checkAccessToken(accessToken, provider) {
 async function login(args) {
   const providerId = takeFlag(args, "--provider", true);
   const noBrowser = takeFlag(args, "--no-browser", false);
-  const tenantFlag = takeFlag(args, "--tenant", true);
+  const physicalTenantFlag = takeFlag(args, "--physical-tenant", true);
   const nameFlag = takeFlag(args, "--context", true);
   const store = loadStore();
   const defaultUrl = store.contexts[store.current]?.clusterUrl ?? DEFAULT_CLUSTER;
-  const { clusterUrl, tenant } = parseTarget(args[0] ?? defaultUrl, tenantFlag);
+  const { clusterUrl, physicalTenant } = parseTarget(args[0] ?? defaultUrl, physicalTenantFlag);
 
-  // RFC 9728 style: the tenant's document sits at the well-known path plus the tenant's path
-  const discoveryUrl = `${clusterUrl}/.well-known/camunda-auth${tenant ? `/physical-tenants/${tenant}` : ""}`;
-  const discovery = await getJson(discoveryUrl).catch((e) => {
-    throw new Error(e.message.includes("-> 404") ? `${clusterUrl} has no physical tenant '${tenant}'` : e.message);
-  });
+  const discovery = await discover(clusterUrl, physicalTenant ?? (await choosePhysicalTenant(clusterUrl)));
   const target = {
     clusterUrl,
-    tenant: discovery.physical_tenant ?? tenant ?? "default",
+    physicalTenant: discovery.physical_tenant ?? physicalTenant ?? "default",
     apiBase: discovery.api_base ?? "",
   };
-  const name = nameFlag ?? contextName(clusterUrl, tenant);
-  const where = `${clusterUrl}${target.apiBase ? ` (physical tenant ${target.tenant})` : ""}`;
+  const name = nameFlag ?? contextName(clusterUrl, target.physicalTenant);
+  const where = `${clusterUrl}${target.apiBase ? ` (physical tenant ${target.physicalTenant})` : ""}`;
 
   if (discovery.method === "none") {
     saveContext(name, { ...target, method: "none" }, { makeCurrent: true });
@@ -376,6 +374,37 @@ async function login(args) {
   info(`Logged in to ${where} as ${claims.preferred_username ?? claims.sub} via ${provider.id} (${provider.issuer}). Context '${name}' is current.`);
 }
 
+// RFC 9728 style: a physical tenant's document sits at the well-known path plus its API path
+async function discover(clusterUrl, physicalTenant) {
+  const url = `${clusterUrl}/.well-known/camunda-auth${physicalTenant ? `/physical-tenants/${physicalTenant}` : ""}`;
+  return getJson(url).catch((e) => {
+    throw new Error(e.message.includes("-> 404") ? `${clusterUrl} has no physical tenant '${physicalTenant}'` : e.message);
+  });
+}
+
+// Asks for a physical tenant if the cluster lists them (opt-in on the cluster); otherwise the
+// default physical tenant, whose document is the unsuffixed one.
+async function choosePhysicalTenant(clusterUrl) {
+  const physicalTenants = (await discover(clusterUrl)).physical_tenants ?? [];
+  if (physicalTenants.length < 2) return undefined;
+  physicalTenants.forEach((t, i) => info(`  [${i + 1}] ${t.id}${t.name ? `  (${t.name})` : ""}`));
+  const chosen = physicalTenants[Number(await prompt("Physical tenant: ")) - 1];
+  if (!chosen) throw new Error("invalid choice");
+  return chosen.id === "default" ? undefined : chosen.id;
+}
+
+async function listPhysicalTenants(url) {
+  const store = loadStore();
+  const { clusterUrl } = parseTarget(url ?? store.contexts[store.current]?.clusterUrl ?? DEFAULT_CLUSTER);
+  const physicalTenants = (await discover(clusterUrl)).physical_tenants;
+  if (!physicalTenants) {
+    return info(`${clusterUrl} does not list its physical tenants - log in with the physical tenant's url or --physical-tenant <id>`);
+  }
+  const table = [["PHYSICAL TENANT", "NAME", "LOGIN"], ...physicalTenants.map((t) => [t.id, t.name ?? "", t.id === "default" ? clusterUrl : `${clusterUrl}/physical-tenants/${t.id}`])];
+  const widths = table[0].map((_, i) => Math.max(...table.map((r) => r[i].length)));
+  for (const row of table) console.log(row.map((c, i) => c.padEnd(widths[i])).join("  ").trimEnd());
+}
+
 function authHeaders(context) {
   if (context.method === "basic") return { authorization: `Basic ${context.basic}` };
   if (context.method === "oidc") return { authorization: `Bearer ${context.accessToken}` };
@@ -400,7 +429,7 @@ async function call(path, contextFlag) {
 }
 
 function describe(name, context) {
-  const out = { context: name, cluster: context.clusterUrl, physicalTenant: context.tenant ?? "default", apiBase: context.apiBase || "/", method: context.method };
+  const out = { context: name, cluster: context.clusterUrl, physicalTenant: context.physicalTenant ?? context.tenant ?? "default", apiBase: context.apiBase || "/", method: context.method };
   if (context.method === "basic") out.user = context.username;
   if (context.method === "oidc") {
     const claims = decodeJwt(context.accessToken);
@@ -429,7 +458,7 @@ function contexts() {
     return [name === store.current ? "*" : "", name, d.physicalTenant, d.provider ?? d.method, d.user ?? "", d.accessTokenExpires ?? ""];
   });
   if (!rows.length) return info("No contexts - run: c8poc login [url]");
-  const table = [["", "CONTEXT", "TENANT", "PROVIDER", "USER", "ACCESS TOKEN EXPIRES"], ...rows];
+  const table = [["", "CONTEXT", "PHYSICAL TENANT", "PROVIDER", "USER", "ACCESS TOKEN EXPIRES"], ...rows];
   const widths = table[0].map((_, i) => Math.max(...table.map((r) => String(r[i]).length)));
   for (const row of table) console.log(row.map((c, i) => String(c).padEnd(widths[i])).join("  ").trimEnd());
 }
@@ -462,6 +491,7 @@ const [command, ...args] = process.argv.slice(2);
 const contextFlag = command === "login" ? undefined : takeFlag(args, "--context", true);
 const commands = {
   login: () => login(args),
+  "physical-tenants": () => listPhysicalTenants(args[0]),
   contexts: () => contexts(),
   use: () => use(args[0]),
   whoami: () => whoami(contextFlag),

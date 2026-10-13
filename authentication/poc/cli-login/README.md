@@ -85,9 +85,30 @@ GET /.well-known/camunda-auth/physical-tenants/pt1
 { "physical_tenant": "pt1", "api_base": "/physical-tenants/pt1", "providers": [ ... ] }
 ```
 
-The unsuffixed document describes the default tenant (unprefixed API). An unknown tenant is a 404.
-Tenants are **not listed**: the client names the tenant, so the endpoint does not disclose which
-tenants exist.
+The unsuffixed document describes the default physical tenant (unprefixed API). An unknown physical
+tenant is a 404.
+
+By default physical tenants are **not listed**: the client names the physical tenant, so the
+endpoint does not disclose which ones exist. Listing is opt-in, for setups where the ids are not
+sensitive (environments or departments of one organization rather than different customers):
+
+```yaml
+camunda.security.authentication.cli-discovery:
+  list-physical-tenants: true      # cluster-wide, default false
+  display-name: Default            # name of the default physical tenant in the list
+camunda.physical-tenants.pt1.security.authentication.cli-discovery:
+  display-name: Sales EU           # each physical tenant names itself
+```
+
+The unsuffixed document then carries the list (the physical tenants' own documents do not):
+
+```json
+"physical_tenants": [
+  { "id": "default", "name": "Default",   "discovery": "/.well-known/camunda-auth/physical-tenants/default" },
+  { "id": "pt1",     "name": "Sales EU",  "discovery": "/.well-known/camunda-auth/physical-tenants/pt1" },
+  { "id": "pt2",     "name": "ACME Corp", "discovery": "/.well-known/camunda-auth/physical-tenants/pt2" }
+]
+```
 
 A tenant's CLI clients are the cluster's `cli-clients`, replaced per registration id by the
 tenant's own `camunda.physical-tenants.<id>.security.authentication.cli-clients` - a provider only
@@ -146,18 +167,26 @@ login URL. Without `npm link`, run `node c8poc.mjs <command>` instead.
 ### Contexts: several tenants and identity providers at once
 
 Every login creates a **context** - cluster + physical tenant + identity + tokens - named
-`<host>[/<tenant>]` unless `--context <name>` is given, and makes it current (like kubectl):
+`<host>[/<physical tenant>]` unless `--context <name>` is given, and makes it current (like
+kubectl). The physical tenant comes from the url, `--physical-tenant`, or - if the cluster lists its
+physical tenants - a selection:
 
 ```sh
-c8poc login http://localhost:8080 --provider oidc            # demo / demo     -> localhost:8080
+c8poc physical-tenants                                       # what the cluster lists (kit: listing on)
+# PHYSICAL TENANT  NAME       LOGIN
+# default          Default    http://localhost:8080
+# pt1              Sales EU   http://localhost:8080/physical-tenants/pt1
+# pt2              ACME Corp  http://localhost:8080/physical-tenants/pt2
+
+c8poc login                                                  # asks: [1] default [2] pt1 [3] pt2
 c8poc login http://localhost:8080/physical-tenants/pt1       # demo / demo     -> localhost:8080/pt1
-c8poc login --tenant pt2                                     # alice / alice   -> localhost:8080/pt2 (acme realm)
+c8poc login --physical-tenant pt2                            # alice / alice   -> localhost:8080/pt2 (acme realm)
 
 c8poc contexts
-#    CONTEXT             TENANT   PROVIDER  USER   ACCESS TOKEN EXPIRES
-#    localhost:8080      default  oidc      demo   ...
-#    localhost:8080/pt1  pt1      oidc      demo   ...
-# *  localhost:8080/pt2  pt2      acme      alice  ...
+#    CONTEXT             PHYSICAL TENANT  PROVIDER  USER   ACCESS TOKEN EXPIRES
+#    localhost:8080      default          oidc      demo   ...
+#    localhost:8080/pt1  pt1              oidc      demo   ...
+# *  localhost:8080/pt2  pt2              acme      alice  ...
 
 c8poc use localhost:8080/pt1                     # switch
 c8poc topology                                   # -> /physical-tenants/pt1/v2/topology
@@ -196,5 +225,5 @@ Keycloak admin console: http://localhost:18080 (`admin` / `admin`).
 
 ## Out of scope
 
-Listing physical tenants, linking from RFC 9728 protected-resource metadata, CIMD / dynamic client
+Listing physical tenants after login ("which physical tenants accept my identity"), linking from RFC 9728 protected-resource metadata, CIMD / dynamic client
 registration, device authorization grant in the CLI, secure credential storage (OS keychain).
