@@ -19,6 +19,14 @@ Configuration is in `src/main/resources/application.yaml`. Override any property
 variables (e.g. `CAMUNDA_CLIENT_GRPC_ADDRESS`, `LOAD_TESTER_STARTER_RATE`) or Spring Boot
 `--property=value` arguments.
 
+## Camunda clients
+
+The starter uses two clients, both built from the same `camunda.client.*` configuration:
+
+1. The default client only generates load on the cluster.
+2. Every read query (data availability checks and read benchmarks) uses a separate client, so that
+   queries do not share connections or threads with the load.
+
 ## Build docker images for benchmark application
 
 To build the docker images for the load test application, run the following command:
