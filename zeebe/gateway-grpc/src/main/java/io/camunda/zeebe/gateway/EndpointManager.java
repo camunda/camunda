@@ -593,11 +593,14 @@ public final class EndpointManager {
     final String physicalTenantId =
         Objects.requireNonNullElse(
             getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    // fail instead of falling back to the default tenant, whose settings must not apply to another
     final BrokerRequestAuthorizationConverter authorizationConverter =
-        Objects.requireNonNull(
-            authorizationConvertersByPhysicalTenant.get(physicalTenantId),
-            () -> "No security config registered for physical tenant: " + physicalTenantId);
+        authorizationConvertersByPhysicalTenant.get(physicalTenantId);
+    if (authorizationConverter == null) {
+      // fail instead of falling back to the default tenant, whose settings must not apply to
+      // another; not an NPE, so it is not mistaken for a missing claim
+      throw new IllegalStateException(
+          "No security config registered for physical tenant: " + physicalTenantId);
+    }
 
     List<String> groups = List.of();
     Map<String, Object> tokenClaims = null;
