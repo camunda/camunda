@@ -537,6 +537,8 @@ This uninstalls the Helm releases (Camunda Platform + load test + load-test-setu
 
 The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reinstall the load-test-setup chart, which recreates the namespace and credentials secret), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
 
+To remove all local folders whose namespace no longer exists, run `./cleanupStaleFolders.sh` from `load-tests/setup/` (dry run) and add `--delete` to remove them.
+
 ## Running on stable VMs
 
 By default, load tests deploy onto preemptible (spot) GKE nodes — defined inline
