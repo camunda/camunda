@@ -8,7 +8,7 @@ description: Add or extend a k6 load test in the load-test-setup chart (load-tes
 All paths are relative to `load-tests/setup/charts/load-test-setup/`. Read `README.md` in that
 directory (section "k6 tests") before starting.
 
-## 1. Decide whether to extend an existing test
+## 1. Decide whether to extend an existing k6 test script or create a new one
 
 Existing tests are `k6/scripts/test.*.js` and are registered in `k6.tests` in `values.yaml`.
 
@@ -95,6 +95,8 @@ k6:
    `k6_data_read_supported` in `../../common.mk`). Ask the user before changing the Makefiles.
 
 ## 6. Validate
+
+To run the k6 test in a cluster, see "How to run a load test" in `load-tests/setup/README.md`.
 
 1. Run the test locally if a cluster is available:
    1. Set up the port-forwards and export the `CAMUNDA_*` variables as described in "How to run
