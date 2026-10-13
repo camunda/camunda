@@ -44,6 +44,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockRel
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -132,6 +133,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessDefinitionRestoreRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
@@ -485,6 +487,16 @@ public final class RecordingExporter implements Exporter {
   public static ElementInstanceWalkRecordStream elementInstanceWalkRecords(
       final ElementInstanceWalkIntent intent) {
     return elementInstanceWalkRecords().withIntent(intent);
+  }
+
+  public static ProcessDefinitionRestoreRecordStream processDefinitionRestoreRecords() {
+    return new ProcessDefinitionRestoreRecordStream(
+        records(ValueType.PROCESS_DEFINITION_RESTORE, ProcessDefinitionRestoreRecordValue.class));
+  }
+
+  public static ProcessDefinitionRestoreRecordStream processDefinitionRestoreRecords(
+      final ProcessDefinitionRestoreIntent intent) {
+    return processDefinitionRestoreRecords().withIntent(intent);
   }
 
   public static TimerRecordStream timerRecords() {

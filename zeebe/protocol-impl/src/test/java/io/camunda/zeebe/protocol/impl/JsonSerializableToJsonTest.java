@@ -49,6 +49,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceReexportRecord;
@@ -5188,6 +5189,34 @@ final class JsonSerializableToJsonTest {
         """
         {
           "resourceKey": -1,
+          "tenantId": ""
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// ProcessDefinitionRestoreRecord
+      // ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessDefinitionRestoreRecord",
+        (Supplier<ProcessDefinitionRestoreRecord>)
+            () ->
+                new ProcessDefinitionRestoreRecord()
+                    .setProcessDefinitionKey(123L)
+                    .setTenantId("tenant-1"),
+        """
+        {
+          "processDefinitionKey": 123,
+          "tenantId": "tenant-1"
+        }
+        """
+      },
+      {
+        "Empty ProcessDefinitionRestoreRecord",
+        (Supplier<ProcessDefinitionRestoreRecord>) ProcessDefinitionRestoreRecord::new,
+        """
+        {
+          "processDefinitionKey": -1,
           "tenantId": ""
         }
         """
