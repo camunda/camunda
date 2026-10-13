@@ -40,3 +40,50 @@ camunda:
       default-roles:
         admin:
           users: [demo]
+  # Two physical tenants, each authenticating on its own:
+  # - pt1: the same Keycloak realm as the default tenant, but its own audience, so a token of the
+  #   default tenant does not work on pt1 and vice versa
+  # - pt2: an identity provider only pt2 knows (Keycloak realm "acme"), with its own CLI client
+  physical-tenants:
+    pt1:
+      data:
+        secondary-storage:
+          type: rdbms
+          rdbms:
+            url: jdbc:h2:mem:camunda-cli-poc-pt1;DB_CLOSE_DELAY=-1
+            username: sa
+            password:
+      security:
+        authentication:
+          providers:
+            assigned: [oidc]
+          oidc:
+            audiences: [camunda-api-pt1, camunda]
+          cli-clients:
+            oidc:
+              client-id: c8ctl
+              scopes: [openid, offline_access, camunda-api-pt1]
+    pt2:
+      data:
+        secondary-storage:
+          type: rdbms
+          rdbms:
+            url: jdbc:h2:mem:camunda-cli-poc-pt2;DB_CLOSE_DELAY=-1
+            username: sa
+            password:
+      security:
+        authentication:
+          providers:
+            assigned: [acme]
+            oidc:
+              acme:
+                client-name: ACME Keycloak
+                issuer-uri: http://localhost:18080/realms/acme
+                client-id: camunda
+                client-secret: acme-secret
+                audiences: [camunda-api, camunda]
+                username-claim: preferred_username
+          cli-clients:
+            acme:
+              client-id: c8ctl
+              scopes: [openid, offline_access, camunda-api]

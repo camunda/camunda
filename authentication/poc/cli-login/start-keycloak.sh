@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Downloads Keycloak (once) and starts it in dev mode on :18080 with the PoC realm imported.
+# Downloads Keycloak (once) and starts it in dev mode on :18080 with the PoC realms imported.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -19,7 +19,8 @@ fi
 # Start from a fresh dev database so the realm file is always the source of truth.
 rm -rf "$KEYCLOAK_HOME/data/h2"
 mkdir -p "$KEYCLOAK_HOME/data/import"
-cp "$HERE/keycloak/camunda-realm.json" "$KEYCLOAK_HOME/data/import/"
+rm -f "$KEYCLOAK_HOME"/data/import/*.json
+cp "$HERE"/keycloak/*-realm.json "$KEYCLOAK_HOME/data/import/"
 
 export KC_BOOTSTRAP_ADMIN_USERNAME="${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}"
 export KC_BOOTSTRAP_ADMIN_PASSWORD="${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}"

@@ -68,7 +68,8 @@
         "phone",
         "microprofile-jwt",
         "organization",
-        "camunda-api"
+        "camunda-api",
+        "camunda-api-pt1"
       ]
     }
   ],
@@ -753,6 +754,28 @@
           "protocolMapper": "oidc-audience-mapper",
           "config": {
             "included.custom.audience": "camunda-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "camunda-api-pt1",
+      "description": "Adds the camunda-api-pt1 audience",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "camunda-api-pt1-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "camunda-api-pt1",
             "access.token.claim": "true",
             "id.token.claim": "false",
             "introspection.token.claim": "true"

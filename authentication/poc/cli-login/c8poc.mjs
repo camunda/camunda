@@ -5,7 +5,12 @@
 //   3. authorization code + PKCE in the browser, redirected to a random 127.0.0.1 port (RFC 8252)
 //   4. later commands call the cluster API with the stored token, refreshing it when it expires
 //
-// Zero dependencies; needs Node 18+. The session lives in ~/.c8poc/session.json.
+// Physical tenants authenticate independently (own identity providers, clients, audiences), so
+// every login creates a context - cluster + physical tenant + identity + tokens - like kubectl
+// contexts: you can be logged in to pt1 via one identity provider and to pt2 via another, and
+// switch between them.
+//
+// Zero dependencies; needs Node 18+. Contexts live in ~/.c8poc/session.json.
 
 import { execFile } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -23,13 +28,21 @@ const REFRESH_LEEWAY_SECONDS = 30;
 const USAGE = `Usage: c8poc <command> [options]
 
 Commands:
-  login [clusterUrl]     Log in (default ${DEFAULT_CLUSTER}); OIDC opens the browser
-      --provider <id>    Pick an OIDC provider instead of being asked
+  login [url]            Log in and make it the current context; OIDC opens the browser.
+                         url: the cluster (default ${DEFAULT_CLUSTER}), or a physical
+                         tenant, e.g. ${DEFAULT_CLUSTER}/physical-tenants/pt1
+      --tenant <id>      Physical tenant (instead of putting it in the url)
+      --provider <id>    Pick an identity provider instead of being asked
+      --context <name>   Context name (default: <host>[/<tenant>])
       --no-browser       Only print the login URL
-  whoami                 Show the cluster and the logged-in identity
-  topology               GET /v2/topology
-  api <path>             GET any cluster path, e.g. c8poc api /v2/topology
-  logout                 Forget the session
+  contexts               List contexts (* = current)
+  use <context>          Switch the current context
+  whoami                 Show the current context's cluster, tenant and identity
+  topology               GET /v2/topology on the context's physical tenant
+  api <path>             GET any path below the tenant's API, e.g. c8poc api /v2/license
+  logout [<context>]     Forget the current (or the named) context; --all forgets all
+
+whoami, topology, api and logout take --context <name> to use another than the current one.
 `;
 
 // ---------- helpers ----------
@@ -74,25 +87,54 @@ async function prompt(question) {
   }
 }
 
-// ---------- session ----------
+// ---------- contexts ----------
 
-function loadSession() {
+function loadStore() {
+  let raw;
   try {
-    return JSON.parse(readFileSync(SESSION_FILE, "utf8"));
+    raw = JSON.parse(readFileSync(SESSION_FILE, "utf8"));
   } catch {
-    return undefined;
+    return { current: undefined, contexts: {} };
   }
+  if (raw.contexts) return raw;
+  // single session of an earlier c8poc version: keep it as a context of the default tenant
+  const name = contextName(raw.clusterUrl, undefined);
+  return { current: name, contexts: { [name]: { ...raw, tenant: "default", apiBase: "" } } };
 }
 
-function saveSession(session) {
+function saveStore(store) {
   mkdirSync(SESSION_DIR, { recursive: true, mode: 0o700 });
-  writeFileSync(SESSION_FILE, JSON.stringify(session, null, 2), { mode: 0o600 });
+  writeFileSync(SESSION_FILE, JSON.stringify(store, null, 2), { mode: 0o600 });
 }
 
-function requireSession() {
-  const session = loadSession();
-  if (!session) throw new Error("not logged in - run: c8poc login [clusterUrl]");
-  return session;
+function saveContext(name, context, { makeCurrent }) {
+  const store = loadStore();
+  store.contexts[name] = context;
+  if (makeCurrent) store.current = name;
+  saveStore(store);
+}
+
+function requireContext(name) {
+  const store = loadStore();
+  const resolved = name ?? store.current;
+  if (!resolved) throw new Error("not logged in - run: c8poc login [url]");
+  const context = store.contexts[resolved];
+  if (!context) throw new Error(`no context '${resolved}' - see: c8poc contexts`);
+  return { name: resolved, context };
+}
+
+function contextName(clusterUrl, tenant) {
+  return new URL(clusterUrl).host + (tenant && tenant !== "default" ? `/${tenant}` : "");
+}
+
+// "https://oc/physical-tenants/pt1" -> cluster "https://oc", tenant "pt1"
+function parseTarget(url, tenantFlag) {
+  const trimmed = url.replace(/\/$/, "");
+  const match = trimmed.match(/^(.*)\/physical-tenants\/([^/]+)$/);
+  if (match && tenantFlag && tenantFlag !== match[2]) {
+    throw new Error(`--tenant ${tenantFlag} contradicts the url's tenant ${match[2]}`);
+  }
+  return match ? { clusterUrl: match[1], tenant: match[2] } : { clusterUrl: trimmed, tenant: tenantFlag };
 }
 
 function withTokens(session, tokens) {
@@ -232,7 +274,7 @@ async function browserLogin(meta, provider, { noBrowser }) {
   });
 }
 
-async function refresh(session) {
+async function refresh(name, session) {
   if (!session.refreshToken) throw new Error("session expired - run: c8poc login");
   const tokens = await getJson(session.tokenEndpoint, {
     method: "POST",
@@ -247,7 +289,7 @@ async function refresh(session) {
     throw new Error("session expired - run: c8poc login");
   });
   const refreshed = withTokens(session, tokens);
-  saveSession(refreshed);
+  saveContext(name, refreshed, { makeCurrent: false });
   return refreshed;
 }
 
@@ -281,58 +323,74 @@ function checkAccessToken(accessToken, provider) {
 async function login(args) {
   const providerId = takeFlag(args, "--provider", true);
   const noBrowser = takeFlag(args, "--no-browser", false);
-  const clusterUrl = (args[0] ?? loadSession()?.clusterUrl ?? DEFAULT_CLUSTER).replace(/\/$/, "");
+  const tenantFlag = takeFlag(args, "--tenant", true);
+  const nameFlag = takeFlag(args, "--context", true);
+  const store = loadStore();
+  const defaultUrl = store.contexts[store.current]?.clusterUrl ?? DEFAULT_CLUSTER;
+  const { clusterUrl, tenant } = parseTarget(args[0] ?? defaultUrl, tenantFlag);
 
-  const discovery = await getJson(`${clusterUrl}/.well-known/camunda-auth`);
+  // RFC 9728 style: the tenant's document sits at the well-known path plus the tenant's path
+  const discoveryUrl = `${clusterUrl}/.well-known/camunda-auth${tenant ? `/physical-tenants/${tenant}` : ""}`;
+  const discovery = await getJson(discoveryUrl).catch((e) => {
+    throw new Error(e.message.includes("-> 404") ? `${clusterUrl} has no physical tenant '${tenant}'` : e.message);
+  });
+  const target = {
+    clusterUrl,
+    tenant: discovery.physical_tenant ?? tenant ?? "default",
+    apiBase: discovery.api_base ?? "",
+  };
+  const name = nameFlag ?? contextName(clusterUrl, tenant);
+  const where = `${clusterUrl}${target.apiBase ? ` (physical tenant ${target.tenant})` : ""}`;
 
   if (discovery.method === "none") {
-    saveSession({ clusterUrl, method: "none" });
-    info(`${clusterUrl} does not require authentication.`);
+    saveContext(name, { ...target, method: "none" }, { makeCurrent: true });
+    info(`${where} does not require authentication. Context '${name}' is current.`);
     return;
   }
 
   if (discovery.method === "basic") {
     const username = await prompt("Username: ");
     const password = await prompt("Password: ");
-    const session = { clusterUrl, method: "basic", username, basic: Buffer.from(`${username}:${password}`).toString("base64") };
-    const res = await fetch(`${clusterUrl}/v2/topology`, { headers: authHeaders(session) });
+    const context = { ...target, method: "basic", username, basic: Buffer.from(`${username}:${password}`).toString("base64") };
+    const res = await fetch(`${clusterUrl}${target.apiBase}/v2/topology`, { headers: authHeaders(context) });
     if (!res.ok) throw new Error(`login failed: ${res.status}`);
-    saveSession(session);
-    info(`Logged in to ${clusterUrl} as ${username} (basic auth).`);
+    saveContext(name, context, { makeCurrent: true });
+    info(`Logged in to ${where} as ${username} (basic auth). Context '${name}' is current.`);
     return;
   }
 
   if (discovery.method !== "oidc") throw new Error(`unsupported authentication method '${discovery.method}'`);
-  if (!discovery.providers?.length) throw new Error(`${clusterUrl} announces no CLI client for any identity provider`);
+  if (!discovery.providers?.length) throw new Error(`${where} announces no CLI client for any identity provider`);
 
   const provider = await chooseProvider(discovery.providers, providerId);
   const meta = await getJson(`${provider.issuer.replace(/\/$/, "")}/.well-known/openid-configuration`);
   const tokens = await browserLogin(meta, provider, { noBrowser });
   checkAccessToken(tokens.access_token, provider);
 
-  const session = withTokens(
-    { clusterUrl, method: "oidc", provider: provider.id, issuer: provider.issuer, clientId: provider.client_id, tokenEndpoint: meta.token_endpoint, resource: provider.resource },
+  const context = withTokens(
+    { ...target, method: "oidc", provider: provider.id, issuer: provider.issuer, clientId: provider.client_id, tokenEndpoint: meta.token_endpoint, resource: provider.resource },
     tokens,
   );
-  saveSession(session);
-  const claims = decodeJwt(session.accessToken);
-  info(`Logged in to ${clusterUrl} as ${claims.preferred_username ?? claims.sub} via ${provider.id} (${provider.issuer}).`);
+  saveContext(name, context, { makeCurrent: true });
+  const claims = decodeJwt(context.accessToken);
+  info(`Logged in to ${where} as ${claims.preferred_username ?? claims.sub} via ${provider.id} (${provider.issuer}). Context '${name}' is current.`);
 }
 
-function authHeaders(session) {
-  if (session.method === "basic") return { authorization: `Basic ${session.basic}` };
-  if (session.method === "oidc") return { authorization: `Bearer ${session.accessToken}` };
+function authHeaders(context) {
+  if (context.method === "basic") return { authorization: `Basic ${context.basic}` };
+  if (context.method === "oidc") return { authorization: `Bearer ${context.accessToken}` };
   return {};
 }
 
-async function call(path) {
-  let session = requireSession();
-  if (session.method === "oidc" && session.expiresAt - REFRESH_LEEWAY_SECONDS < Date.now() / 1000) {
-    session = await refresh(session);
+async function call(path, contextFlag) {
+  let { name, context } = requireContext(contextFlag);
+  if (context.method === "oidc" && context.expiresAt - REFRESH_LEEWAY_SECONDS < Date.now() / 1000) {
+    context = await refresh(name, context);
   }
-  const res = await fetch(`${session.clusterUrl}${path.startsWith("/") ? path : `/${path}`}`, { headers: authHeaders(session) });
+  const url = `${context.clusterUrl}${context.apiBase ?? ""}${path.startsWith("/") ? path : `/${path}`}`;
+  const res = await fetch(url, { headers: authHeaders(context) });
   const body = await res.text();
-  if (res.status === 401) throw new Error("401 Unauthorized - run: c8poc login");
+  if (res.status === 401) throw new Error(`401 Unauthorized on ${url} - run: c8poc login`);
   try {
     console.log(JSON.stringify(JSON.parse(body), null, 2));
   } catch {
@@ -341,42 +399,78 @@ async function call(path) {
   if (!res.ok) process.exitCode = 1;
 }
 
-function whoami() {
-  const session = requireSession();
-  const out = { cluster: session.clusterUrl, method: session.method };
-  if (session.method === "basic") out.user = session.username;
-  if (session.method === "oidc") {
-    const claims = decodeJwt(session.accessToken);
+function describe(name, context) {
+  const out = { context: name, cluster: context.clusterUrl, physicalTenant: context.tenant ?? "default", apiBase: context.apiBase || "/", method: context.method };
+  if (context.method === "basic") out.user = context.username;
+  if (context.method === "oidc") {
+    const claims = decodeJwt(context.accessToken);
     Object.assign(out, {
       user: claims.preferred_username ?? claims.sub,
-      provider: session.provider,
-      issuer: session.issuer,
-      client: session.clientId,
+      provider: context.provider,
+      issuer: context.issuer,
+      client: context.clientId,
       audience: claims.aud,
-      accessTokenExpires: new Date(session.expiresAt * 1000).toISOString(),
-      refreshToken: session.refreshToken ? "present" : "none",
+      accessTokenExpires: new Date(context.expiresAt * 1000).toISOString(),
+      refreshToken: context.refreshToken ? "present" : "none",
     });
   }
-  console.log(JSON.stringify(out, null, 2));
+  return out;
 }
 
-function logout() {
-  rmSync(SESSION_FILE, { force: true });
-  info("Logged out.");
+function whoami(contextFlag) {
+  const { name, context } = requireContext(contextFlag);
+  console.log(JSON.stringify(describe(name, context), null, 2));
+}
+
+function contexts() {
+  const store = loadStore();
+  const rows = Object.entries(store.contexts).map(([name, context]) => {
+    const d = describe(name, context);
+    return [name === store.current ? "*" : "", name, d.physicalTenant, d.provider ?? d.method, d.user ?? "", d.accessTokenExpires ?? ""];
+  });
+  if (!rows.length) return info("No contexts - run: c8poc login [url]");
+  const table = [["", "CONTEXT", "TENANT", "PROVIDER", "USER", "ACCESS TOKEN EXPIRES"], ...rows];
+  const widths = table[0].map((_, i) => Math.max(...table.map((r) => String(r[i]).length)));
+  for (const row of table) console.log(row.map((c, i) => String(c).padEnd(widths[i])).join("  ").trimEnd());
+}
+
+function use(name) {
+  if (!name) throw new Error("usage: c8poc use <context>");
+  const store = loadStore();
+  if (!store.contexts[name]) throw new Error(`no context '${name}' - see: c8poc contexts`);
+  store.current = name;
+  saveStore(store);
+  info(`Context '${name}' is current.`);
+}
+
+function logout(args, contextFlag) {
+  const store = loadStore();
+  if (takeFlag(args, "--all", false)) {
+    rmSync(SESSION_FILE, { force: true });
+    return info("Logged out of all contexts.");
+  }
+  const { name } = requireContext(args[0] ?? contextFlag);
+  delete store.contexts[name];
+  if (store.current === name) store.current = undefined;
+  saveStore(store);
+  info(`Logged out of '${name}'.${store.current ? "" : " No context is current - see: c8poc contexts / c8poc use"}`);
 }
 
 // ---------- main ----------
 
 const [command, ...args] = process.argv.slice(2);
+const contextFlag = command === "login" ? undefined : takeFlag(args, "--context", true);
 const commands = {
   login: () => login(args),
-  whoami: () => whoami(),
-  topology: () => call("/v2/topology"),
+  contexts: () => contexts(),
+  use: () => use(args[0]),
+  whoami: () => whoami(contextFlag),
+  topology: () => call("/v2/topology", contextFlag),
   api: () => {
     if (!args[0]) throw new Error("usage: c8poc api <path>");
-    return call(args[0]);
+    return call(args[0], contextFlag);
   },
-  logout: () => logout(),
+  logout: () => logout(args, contextFlag),
 };
 
 if (!commands[command]) {

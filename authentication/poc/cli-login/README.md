@@ -36,6 +36,8 @@ GET /.well-known/camunda-auth
 ```
 
 - `method` is `oidc`, `basic` (the CLI asks for username and password), or `none` (unprotected API).
+- `physical_tenant` / `api_base` name the physical tenant the document describes and its API prefix
+  (see [Physical tenants](#physical-tenants)).
 - Only providers with a configured CLI client are listed. `id` is the OIDC registration id: `oidc`
   for the flat `camunda.security.authentication.oidc.*` block, otherwise the
   `providers.oidc.<id>` key.
@@ -69,6 +71,27 @@ After login the CLI compares the token's `iss` and `aud` with the announced `iss
 `audience` and fails with the reason (for example a Microsoft Graph token from Entra ID when the
 API scope is missing) instead of a bare 401 on the first call. It skips this for opaque tokens; the
 cluster always validates anyway.
+
+### Physical tenants
+
+Each physical tenant authenticates on its own - its providers (`providers.assigned`), audiences and
+CLI clients can all differ - so each has its own document, at the RFC 9728 style path suffix:
+
+```http
+GET /.well-known/camunda-auth/physical-tenants/pt1
+```
+
+```json
+{ "physical_tenant": "pt1", "api_base": "/physical-tenants/pt1", "providers": [ ... ] }
+```
+
+The unsuffixed document describes the default tenant (unprefixed API). An unknown tenant is a 404.
+Tenants are **not listed**: the client names the tenant, so the endpoint does not disclose which
+tenants exist.
+
+A tenant's CLI clients are the cluster's `cli-clients`, replaced per registration id by the
+tenant's own `camunda.physical-tenants.<id>.security.authentication.cli-clients` - a provider only
+the tenant knows needs one there.
 
 ### Redirect URI
 
@@ -110,19 +133,44 @@ npm link
 Then:
 
 ```sh
-c8poc login http://localhost:8080   # opens the browser: log in as demo / demo
-c8poc whoami                        # cluster, user, issuer, client, token expiry
+c8poc login http://localhost:8080 --provider oidc   # default tenant: demo / demo
+c8poc whoami                        # context, tenant, user, issuer, client, audience, expiry
 c8poc topology                      # GET /v2/topology with the stored token
-c8poc api /v2/license               # GET any cluster path
+c8poc api /v2/license               # GET any path below the tenant's API
 c8poc logout
 ```
 
 `login` options: `--provider <id>` to skip the provider prompt, `--no-browser` to only print the
 login URL. Without `npm link`, run `node c8poc.mjs <command>` instead.
 
-The session (tokens, or basic credentials) is stored in `~/.c8poc/session.json` with mode 600;
-set `C8POC_HOME` to use another directory. An expired access token is refreshed with the refresh
-token before the next call.
+### Contexts: several tenants and identity providers at once
+
+Every login creates a **context** - cluster + physical tenant + identity + tokens - named
+`<host>[/<tenant>]` unless `--context <name>` is given, and makes it current (like kubectl):
+
+```sh
+c8poc login http://localhost:8080 --provider oidc            # demo / demo     -> localhost:8080
+c8poc login http://localhost:8080/physical-tenants/pt1       # demo / demo     -> localhost:8080/pt1
+c8poc login --tenant pt2                                     # alice / alice   -> localhost:8080/pt2 (acme realm)
+
+c8poc contexts
+#    CONTEXT             TENANT   PROVIDER  USER   ACCESS TOKEN EXPIRES
+#    localhost:8080      default  oidc      demo   ...
+#    localhost:8080/pt1  pt1      oidc      demo   ...
+# *  localhost:8080/pt2  pt2      acme      alice  ...
+
+c8poc use localhost:8080/pt1                     # switch
+c8poc topology                                   # -> /physical-tenants/pt1/v2/topology
+c8poc topology --context localhost:8080/pt2      # one-off on another context
+c8poc logout localhost:8080/pt2                  # or: c8poc logout --all
+```
+
+Tokens do not cross tenants: the default tenant, pt1 and pt2 each accept only their own context's
+token (different issuer or audience), every other combination is a 401.
+
+Contexts (tokens, or basic credentials) are stored in `~/.c8poc/session.json` with mode 600; set
+`C8POC_HOME` to use another directory. An expired access token is refreshed with the refresh token
+before the next call.
 
 ## Keycloak setup (what the realm import does)
 
@@ -139,9 +187,14 @@ The realm declares Keycloak's standard client scopes (`basic`, `profile`, `email
 taken from a Keycloak export: a realm import that declares any client scope gets none of the
 built-in ones.
 
+The `camunda-api-pt1` client scope does the same for physical tenant pt1, whose audience differs.
+
+A second realm, `acme` (user `alice` / `alice`), is the identity provider only physical tenant pt2
+knows, with its own `c8ctl` client and `camunda-api` scope.
+
 Keycloak admin console: http://localhost:18080 (`admin` / `admin`).
 
 ## Out of scope
 
-Physical tenants, linking from RFC 9728 protected-resource metadata, CIMD / dynamic client
+Listing physical tenants, linking from RFC 9728 protected-resource metadata, CIMD / dynamic client
 registration, device authorization grant in the CLI, secure credential storage (OS keychain).
