@@ -13,7 +13,7 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.DefaultZeebeDbFactory;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;

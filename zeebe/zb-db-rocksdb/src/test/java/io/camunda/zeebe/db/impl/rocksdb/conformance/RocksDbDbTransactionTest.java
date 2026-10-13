@@ -9,7 +9,7 @@ package io.camunda.zeebe.db.impl.rocksdb.conformance;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.conformance.AbstractDbTransactionTest;
-import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.DefaultZeebeDbFactory;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 

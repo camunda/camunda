@@ -10,7 +10,7 @@ package io.camunda.zeebe.db.impl.rocksdb.conformance;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.conformance.AbstractDbTenantAwareKeyColumnFamilyTest;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.DefaultZeebeDbFactory;
 
 public final class RocksDbDbTenantAwareKeyColumnFamilyTest
     extends AbstractDbTenantAwareKeyColumnFamilyTest {

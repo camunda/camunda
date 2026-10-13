@@ -22,7 +22,6 @@ import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.db.impl.DbByte;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc;

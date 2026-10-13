@@ -15,7 +15,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.DefaultZeebeDbFactory;
 import java.io.File;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
