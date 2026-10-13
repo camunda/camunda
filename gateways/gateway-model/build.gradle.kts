@@ -53,7 +53,7 @@ val openApiGenerateSimple =
   ) {
     generatorName.set("spring")
     inputSpec.set("$openapiDir/rest-api.yaml")
-    outputDir.set("${project.layout.buildDirectory.get()}/generated/openapi-simple")
+    outputDir.set(layout.buildDirectory.dir("generated/openapi-simple"))
     modelPackage.set("io.camunda.gateway.protocol.model.simple")
 
     inputs

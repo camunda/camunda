@@ -19,13 +19,12 @@ plugins {
 // OpenAPI generation tasks for the dist module (4 executions matching Maven pom.xml)
 // Each generator task gets its own output directory so Gradle can track them independently.
 // We then merge the generated Java sources into a single source directory for compilation.
-val openApiBackupsOutputDir = "${project.layout.buildDirectory.get()}/generated/openapi-backups"
-val openApiClusterOutputDir = "${project.layout.buildDirectory.get()}/generated/openapi-cluster"
-val openApiExporterOutputDir = "${project.layout.buildDirectory.get()}/generated/openapi-exporter"
+val openApiBackupsOutputDir = layout.buildDirectory.dir("generated/openapi-backups")
+val openApiClusterOutputDir = layout.buildDirectory.dir("generated/openapi-cluster")
+val openApiExporterOutputDir = layout.buildDirectory.dir("generated/openapi-exporter")
 val openApiUpgradeReadinessOutputDir =
-  "${project.layout.buildDirectory.get()}/generated/openapi-upgrade-readiness"
-val mergedOpenApiJavaDir =
-  "${project.layout.buildDirectory.get()}/generated/openapi-merged/src/main/java"
+  layout.buildDirectory.dir("generated/openapi-upgrade-readiness")
+val mergedOpenApiJavaDir = layout.buildDirectory.dir("generated/openapi-merged/src/main/java")
 
 private val commonOpenApiConfigOptions =
   mapOf(
