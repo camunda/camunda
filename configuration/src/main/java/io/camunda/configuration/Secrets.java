@@ -34,6 +34,11 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.stores.gcp.<id>.path-prefix}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.endpoint}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.container-secret-id}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.vault-url}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.path-prefix}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.container-secret-name}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.managed-identity-client-id}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.authority-host}
  * </ul>
  *
  * <p>Exactly one store per physical tenant is supported, and its {@code <id>} must be {@code
@@ -165,6 +170,7 @@ public class Secrets {
     private Map<String, FileStore> file = new LinkedHashMap<>();
     private Map<String, AwsSecretsManagerStore> aws = new LinkedHashMap<>();
     private Map<String, GcpSecretManagerStore> gcp = new LinkedHashMap<>();
+    private Map<String, AzureKeyVaultStore> azure = new LinkedHashMap<>();
 
     public Map<String, FileStore> getFile() {
       return file;
@@ -201,6 +207,22 @@ public class Secrets {
 
     public void setGcp(final Map<String, GcpSecretManagerStore> gcp) {
       this.gcp = gcp;
+    }
+
+    /**
+     * @throws IllegalArgumentException if any store sets a blank vault-url, a blank
+     *     container-secret-name/managed-identity-client-id/authority-host, a path-prefix or
+     *     container-secret-name with characters outside {@code [0-9A-Za-z-]}, an effective
+     *     container secret name longer than 127 characters (Azure Key Vault secret-name rules), a
+     *     negative max-retries, or a non-positive call-timeout
+     */
+    public Map<String, AzureKeyVaultStore> getAzure() {
+      azure.forEach((id, store) -> store.validate(id));
+      return azure;
+    }
+
+    public void setAzure(final Map<String, AzureKeyVaultStore> azure) {
+      this.azure = azure;
     }
   }
 
@@ -695,6 +717,233 @@ public class Secrets {
                   + " effective container secret id (path-prefix + container-secret-id) must be at "
                   + "most "
                   + MAX_SECRET_ID_LENGTH
+                  + " characters, but was "
+                  + fullLength);
+        }
+      }
+    }
+  }
+
+  /**
+   * Configuration for an Azure Key Vault store. Authentication uses the Azure {@code
+   * DefaultAzureCredential} chain (managed identity, workload identity, an environment service
+   * principal via {@code AZURE_CLIENT_ID}/{@code AZURE_TENANT_ID}/{@code AZURE_CLIENT_SECRET}, or
+   * the Azure CLI). This config does not accept an explicit client secret field.
+   */
+  public static class AzureKeyVaultStore {
+
+    /**
+     * Azure Key Vault secret names allow only these characters and are capped at 127 characters.
+     * Both {@link #pathPrefix} (prepended to form names) and {@link #containerSecretName} (itself a
+     * name) must respect this, otherwise every lookup would target a name Key Vault rejects.
+     */
+    private static final Pattern SECRET_NAME_PATTERN = Pattern.compile("[0-9A-Za-z-]*");
+
+    private static final int MAX_SECRET_NAME_LENGTH = 127;
+
+    /**
+     * Default retry count, mirroring the Azure SDK's own default and {@code
+     * AzureKeyVaultStoreConfig#DEFAULT_MAX_RETRIES} in the store module.
+     */
+    private static final int DEFAULT_MAX_RETRIES = 3;
+
+    /**
+     * Key Vault URL owning the secrets (e.g. {@code https://my-vault.vault.azure.net}). Required
+     * and must not be blank.
+     */
+    private @Nullable String vaultUrl;
+
+    /**
+     * Optional prefix prepended, with no separator inserted, to every reference name to form the
+     * Key Vault secret name (e.g. {@code camunda-} plus reference {@code db-password} resolves to
+     * secret name {@code camunda-db-password}; include the trailing separator here if one is
+     * wanted). When omitted, references map to bare secret names. Applies to {@link
+     * #containerSecretName} as well, since that is itself resolved as a Key Vault secret name.
+     *
+     * <p>Note Key Vault secret names only allow {@code [0-9A-Za-z-]} (no underscore or slash) and
+     * are capped at 127 characters, so a {@code camunda-} prefix works but a {@code camunda/} or
+     * {@code camunda_} one would produce invalid names.
+     */
+    private @Nullable String pathPrefix;
+
+    /**
+     * Opt-in: instead of one Key Vault secret per reference, treat every reference as a JSON key
+     * inside this one named secret (e.g. {@code app-config}). If set it must not be blank.
+     *
+     * <p>The named secret's value must be a flat JSON object mapping each reference name to a JSON
+     * string value (e.g. {@code {"db-password": "s3cr3t"}}); nested objects/arrays are not
+     * supported, and a non-object value makes the store unusable.
+     */
+    private @Nullable String containerSecretName;
+
+    /**
+     * Optional client id of a user-assigned managed identity to select within {@code
+     * DefaultAzureCredential}. When omitted, the system-assigned identity (or whichever credential
+     * the chain resolves) is used. This is how a per-tenant identity is pinned without any static
+     * secret. If set it must not be blank.
+     */
+    private @Nullable String managedIdentityClientId;
+
+    /**
+     * Optional Azure AD authority host override for sovereign/government clouds (e.g. {@code
+     * https://login.microsoftonline.us/}). When omitted, the public cloud default is used. If set
+     * it must not be blank.
+     */
+    private @Nullable String authorityHost;
+
+    /**
+     * How many times the Key Vault client retries a throttled/transient request before giving up.
+     * Must not be negative.
+     */
+    private int maxRetries = DEFAULT_MAX_RETRIES;
+
+    /**
+     * Upper bound on one call to Key Vault, retries included. The Azure SDK's default response
+     * timeout lets an unresponsive endpoint hold the caller far longer than that. The background
+     * secret resolution calls the store from an IO-bound actor thread shared with every partition's
+     * exporter, so an unbounded call there stalls exporting broker-wide (camunda/camunda#62869).
+     * Must be positive.
+     */
+    private Duration callTimeout = DEFAULT_CALL_TIMEOUT;
+
+    public @Nullable String getVaultUrl() {
+      return vaultUrl;
+    }
+
+    public void setVaultUrl(final @Nullable String vaultUrl) {
+      this.vaultUrl = vaultUrl;
+    }
+
+    public @Nullable String getPathPrefix() {
+      return pathPrefix;
+    }
+
+    public void setPathPrefix(final @Nullable String pathPrefix) {
+      this.pathPrefix = pathPrefix;
+    }
+
+    public @Nullable String getContainerSecretName() {
+      return containerSecretName;
+    }
+
+    public void setContainerSecretName(final @Nullable String containerSecretName) {
+      this.containerSecretName = containerSecretName;
+    }
+
+    public @Nullable String getManagedIdentityClientId() {
+      return managedIdentityClientId;
+    }
+
+    public void setManagedIdentityClientId(final @Nullable String managedIdentityClientId) {
+      this.managedIdentityClientId = managedIdentityClientId;
+    }
+
+    public @Nullable String getAuthorityHost() {
+      return authorityHost;
+    }
+
+    public void setAuthorityHost(final @Nullable String authorityHost) {
+      this.authorityHost = authorityHost;
+    }
+
+    public int getMaxRetries() {
+      return maxRetries;
+    }
+
+    public void setMaxRetries(final int maxRetries) {
+      this.maxRetries = maxRetries;
+    }
+
+    public Duration getCallTimeout() {
+      return callTimeout;
+    }
+
+    /**
+     * @param callTimeout the configured value, or {@code null}, bound to the default the same way
+     *     an unset property is, so an explicitly empty value does not leave the store unbounded
+     */
+    public void setCallTimeout(final @Nullable Duration callTimeout) {
+      this.callTimeout = callTimeout == null ? DEFAULT_CALL_TIMEOUT : callTimeout;
+    }
+
+    /**
+     * Only present-value checks live here (blank, Key-Vault-secret-name charset, and length), so
+     * the validating {@link Stores#getAzure()} stays safe to call from the physical-tenant overlay:
+     * a transiently-inherited-then-missing field is {@code null}, which is skipped. Connectivity is
+     * enforced by the Azure store implementation's startup probe instead, not by this config layer.
+     *
+     * <p>{@code path-prefix} and {@code container-secret-name} are validated against the Key Vault
+     * secret-name rules ({@code [0-9A-Za-z-]}, max 127 chars) because both feed into secret names:
+     * a bad prefix would corrupt every name, and the container-secret-name is itself a name.
+     *
+     * @throws IllegalArgumentException if vault-url is unset or blank, if
+     *     container-secret-name/managed-identity-client-id/authority-host is set but blank, if
+     *     path-prefix or container-secret-name contains characters outside {@code [0-9A-Za-z-]}, if
+     *     max-retries is negative, if call-timeout is not positive, or if the effective container
+     *     secret name (path-prefix + container-secret-name) exceeds 127 characters
+     */
+    void validate(final String storeId) {
+      if (vaultUrl == null || vaultUrl.isBlank()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.azure." + storeId + ".vault-url must not be blank");
+      }
+      if (containerSecretName != null && containerSecretName.isBlank()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.azure." + storeId + ".container-secret-name must not be blank");
+      }
+      if (managedIdentityClientId != null && managedIdentityClientId.isBlank()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.azure."
+                + storeId
+                + ".managed-identity-client-id must not be blank");
+      }
+      if (authorityHost != null && authorityHost.isBlank()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.azure." + storeId + ".authority-host must not be blank");
+      }
+      if (pathPrefix != null && !SECRET_NAME_PATTERN.matcher(pathPrefix).matches()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.azure."
+                + storeId
+                + ".path-prefix must contain only [0-9A-Za-z-] to form valid Key Vault secret "
+                + "names, but was '"
+                + pathPrefix
+                + "'");
+      }
+      if (containerSecretName != null
+          && !SECRET_NAME_PATTERN.matcher(containerSecretName).matches()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.azure."
+                + storeId
+                + ".container-secret-name must contain only [0-9A-Za-z-] to be a valid Key Vault "
+                + "secret name, but was '"
+                + containerSecretName
+                + "'");
+      }
+      if (maxRetries < 0) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.azure."
+                + storeId
+                + ".max-retries must not be negative, but was "
+                + maxRetries);
+      }
+      if (!callTimeout.isPositive()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.azure."
+                + storeId
+                + ".call-timeout must be positive, but was "
+                + callTimeout);
+      }
+      if (containerSecretName != null) {
+        final int fullLength =
+            (pathPrefix == null ? 0 : pathPrefix.length()) + containerSecretName.length();
+        if (fullLength > MAX_SECRET_NAME_LENGTH) {
+          throw new IllegalArgumentException(
+              "camunda.secrets.stores.azure."
+                  + storeId
+                  + " effective container secret name (path-prefix + container-secret-name) must "
+                  + "be at most "
+                  + MAX_SECRET_NAME_LENGTH
                   + " characters, but was "
                   + fullLength);
         }

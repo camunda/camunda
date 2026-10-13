@@ -29,6 +29,7 @@ import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
+import io.camunda.secretstore.azure.AzureKeyVaultSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.shared.management.ActorClockEndpoint;
@@ -457,6 +458,52 @@ class SecretStoreConfigurationTest {
                 "camunda.secrets.stores.gcp.gcp-store.project-id", "my-project"));
 
     // when / then — the per-tenant cap is enforced before any GCP client is built
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .withMessageContaining("only one is supported");
+  }
+
+  @Test
+  void shouldBuildAzureKeyVaultStoreEvenWithoutReachableCredentials() {
+    // given — AzureKeyVaultSecretStore.fromConfig() only probes connectivity/credentials
+    // best-effort, logging a warning rather than failing, so wiring an azure store outside a real
+    // Azure environment still constructs successfully; the connectivity error would only surface on
+    // first use. That is also why this asserts which store answers rather than what it reads. Real
+    // resolution is covered at the integration level by AzureKeyVaultSecretStoreIT, which runs
+    // against the Lowkey Vault emulator.
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.azure.default.vault-url",
+                    "https://my-vault.vault.azure.net",
+                "camunda.secrets.stores.azure.default.path-prefix", "camunda-"));
+
+    // when
+    final var registries = registries(resolver).byPhysicalTenant();
+
+    // then the azure branch is what built the store, not the noop fallback or another store type
+    final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(registry.getStores()).containsKey(SecretStoreRegistry.DEFAULT_STORE_ID);
+    assertThat(
+            registry
+                .getStores()
+                .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+                .is(AzureKeyVaultSecretStore.class))
+        .isTrue();
+  }
+
+  @Test
+  void shouldThrowWhenFileAndAzureStoresCombinedExceedOne() {
+    // given one file store and one azure store for the same tenant
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.file-store.path", "/etc/camunda/secrets",
+                "camunda.secrets.stores.azure.azure-store.vault-url",
+                    "https://my-vault.vault.azure.net"));
+
+    // when / then — the per-tenant cap is enforced before any Key Vault client is built
     assertThatIllegalStateException()
         .isThrownBy(() -> registries(resolver))
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)

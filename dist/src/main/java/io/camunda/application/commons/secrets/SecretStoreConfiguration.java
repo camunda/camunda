@@ -11,6 +11,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Secrets;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
+import io.camunda.configuration.Secrets.AzureKeyVaultStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
 import io.camunda.configuration.Secrets.Stores;
@@ -22,6 +23,8 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig;
+import io.camunda.secretstore.azure.AzureKeyVaultSecretStore;
+import io.camunda.secretstore.azure.AzureKeyVaultStoreConfig;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerStoreConfig;
@@ -37,6 +40,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,7 +72,9 @@ public class SecretStoreConfiguration {
           new StoreBinding<>(
               "aws", "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
           new StoreBinding<>(
-              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
+              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore),
+          new StoreBinding<>(
+              "azure", "Azure Key Vault", Stores::getAzure, SecretStoreConfiguration::azureStore));
 
   /**
    * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
@@ -344,6 +350,19 @@ public class SecretStoreConfiguration {
             config.getEndpoint(),
             config.getContainerSecretId(),
             false,
+            config.getCallTimeout()));
+  }
+
+  private static SecretStore azureStore(
+      final String storeId, final String tenantId, final AzureKeyVaultStore config) {
+    return AzureKeyVaultSecretStore.fromConfig(
+        new AzureKeyVaultStoreConfig(
+            Objects.requireNonNull(config.getVaultUrl(), "vault-url"),
+            config.getPathPrefix(),
+            config.getContainerSecretName(),
+            config.getManagedIdentityClientId(),
+            config.getAuthorityHost(),
+            config.getMaxRetries(),
             config.getCallTimeout()));
   }
 
