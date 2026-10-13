@@ -79,34 +79,12 @@ jobs:
             echo "Response from Identity: $identity_status"
             sleep 10
           done
-          if [ "$ready" != true ]; then
+          if [ "$ready" = true ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
             echo "Services failed to start in time."
             exit 1
           fi
-
-          # The web apps answer before secondary storage is ready, and until it is
-          # every secondary-storage endpoint is rejected with 503 (before request
-          # validation runs). Wait until such an endpoint is actually served.
-          storage_ready=false
-          deadline=$((SECONDS + 300))
-          while (( SECONDS < deadline )); do
-            status=$(curl -s -o /dev/null -m 10 -w '%{http_code}' \
-              -u demo:demo -X POST \
-              -H 'Content-Type: application/json' -d '{}' \
-              http://localhost:8080/v2/process-definitions/search || echo "000")
-            if [[ "$status" == "200" ]]; then
-              echo "Secondary storage is ready!"
-              storage_ready=true
-              break
-            fi
-            echo "Waiting for secondary storage... HTTP status: $status"
-            sleep 5
-          done
-          if [ "$storage_ready" != true ]; then
-            echo "Secondary storage did not become ready in time."
-            exit 1
-          fi
-          echo "ready=true" >> "$GITHUB_OUTPUT"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Print Docker logs before failing
