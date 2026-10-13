@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.toMap;
 
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
@@ -67,25 +68,42 @@ public final class PhysicalTenantOidcProviders {
    */
   public static Map<String, Map<String, OidcConfiguration>> providersByPhysicalTenant(
       final Environment environment) {
-    final var flattener = new ScopedClientRegistrationFactory();
     final Map<String, Map<String, OidcConfiguration>> providersByTenant = new LinkedHashMap<>();
-    PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment)
-        .forEach(
-            (tenantId, authentication) -> {
-              if (!DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)) {
-                providersByTenant.put(
-                    tenantId, Collections.unmodifiableMap(flattener.flatten(authentication)));
-              }
-            });
+    byPhysicalTenant(environment)
+        .forEach((tenantId, tenant) -> providersByTenant.put(tenantId, tenant.providers()));
     return Collections.unmodifiableMap(providersByTenant);
   }
 
   /**
-   * Builds a {@link LazyTokenClaimsConverter} per registration from its configured username and
-   * client-id claims.
+   * Like {@link #providersByPhysicalTenant}, and also the tenant's default slot ({@code
+   * authentication.oidc.*}), whose claims apply to each provider that does not set its own. Reads
+   * each tenant's configuration once.
+   */
+  public static Map<String, TenantOidc> byPhysicalTenant(final Environment environment) {
+    final var flattener = new ScopedClientRegistrationFactory();
+    final Map<String, TenantOidc> byTenant = new LinkedHashMap<>();
+    PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment)
+        .forEach(
+            (tenantId, authentication) -> {
+              if (!DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)) {
+                byTenant.put(
+                    tenantId,
+                    new TenantOidc(
+                        Collections.unmodifiableMap(flattener.flatten(authentication)),
+                        authentication.getOidc()));
+              }
+            });
+    return Collections.unmodifiableMap(byTenant);
+  }
+
+  /**
+   * Builds a {@link LazyTokenClaimsConverter} per registration from its username, client-id and
+   * prefer-username claims. A provider uses the claims of {@code defaultSlot} for each claim that
+   * it does not set.
    */
   public static Map<String, LazyTokenClaimsConverter> tokenClaimsConverters(
       final Map<String, OidcConfiguration> providers,
+      final OidcConfiguration defaultSlot,
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
     return providers.entrySet().stream()
@@ -94,11 +112,11 @@ public final class PhysicalTenantOidcProviders {
                 toMap(
                     Map.Entry::getKey,
                     entry -> {
-                      final var config = entry.getValue();
+                      final var claims = OidcPrincipalClaims.resolve(entry.getValue(), defaultSlot);
                       return new LazyTokenClaimsConverter(
-                          config.getUsernameClaim(),
-                          config.getClientIdClaim(),
-                          config.isPreferUsernameClaim(),
+                          claims.usernameClaim(),
+                          claims.clientIdClaim(),
+                          claims.preferUsernameClaim(),
                           membershipPort,
                           membershipResolutionContextPropagator);
                     }),
@@ -111,11 +129,14 @@ public final class PhysicalTenantOidcProviders {
    * normalizes these claim values to strings before conversion.
    */
   public static Map<String, List<String>> identityClaimsByRegistrationId(
-      final Map<String, OidcConfiguration> providers) {
+      final Map<String, OidcConfiguration> providers, final OidcConfiguration defaultSlot) {
     return providers.entrySet().stream()
         .collect(
             collectingAndThen(
-                toMap(Map.Entry::getKey, entry -> identityClaims(entry.getValue())),
+                toMap(
+                    Map.Entry::getKey,
+                    entry ->
+                        identityClaims(OidcPrincipalClaims.resolve(entry.getValue(), defaultSlot))),
                 Collections::unmodifiableMap));
   }
 
@@ -125,8 +146,19 @@ public final class PhysicalTenantOidcProviders {
    * before conversion.
    */
   public static List<String> identityClaims(final OidcConfiguration config) {
-    return Stream.of(config.getUsernameClaim(), config.getClientIdClaim())
-        .filter(Objects::nonNull)
-        .toList();
+    return identityClaims(config.getUsernameClaim(), config.getClientIdClaim());
   }
+
+  private static List<String> identityClaims(final OidcPrincipalClaims claims) {
+    return identityClaims(claims.usernameClaim(), claims.clientIdClaim());
+  }
+
+  private static List<String> identityClaims(
+      final String usernameClaim, final String clientIdClaim) {
+    return Stream.of(usernameClaim, clientIdClaim).filter(Objects::nonNull).toList();
+  }
+
+  /** The OIDC providers of one physical tenant, keyed by registration id, and its default slot. */
+  public record TenantOidc(
+      Map<String, OidcConfiguration> providers, OidcConfiguration defaultSlot) {}
 }

@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import io.camunda.security.spring.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
@@ -524,6 +525,34 @@ class PhysicalTenantAuthConfigurationsTest {
             new SimpleMeterRegistry());
     assertThat(claimsProviderFactory.buildClaimsProvider(cfg))
         .isNotInstanceOf(NoopOidcClaimsProvider.class);
+  }
+
+  @Test
+  void shouldKeepThePrincipalClaimsOfDroppedDefaultSlot() {
+    // given a tenant that overrides the username claim and is assigned only a named provider
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.oidc.client-id-claim", "azp",
+                "camunda.security.authentication.providers.oidc.okta.client-id", "client-okta",
+                "camunda.security.authentication.providers.oidc.okta.issuer-uri", "http://idp/okta",
+                "camunda.physical-tenants.tenanta.security.authentication.oidc.username-claim",
+                    "upn",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "okta"));
+
+    // when
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // then the claims stay for the named providers to inherit
+    assertThat(cfg.getOidc().getUsernameClaim()).isEqualTo("upn");
+    assertThat(cfg.getOidc().getClientIdClaim()).isEqualTo("azp");
+    assertThat(OidcPrincipalClaims.resolve(cfg.getProviders().getOidc().get("okta"), cfg.getOidc()))
+        .isEqualTo(new OidcPrincipalClaims("upn", "azp", false));
   }
 
   @Test

@@ -12,37 +12,25 @@ import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
-import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthenticationConverter {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(ProviderAwareOidcUserAuthenticationConverter.class);
-
-  private final OidcAccessTokenDecoderFactory accessTokenDecoderFactory;
   private final LazyTokenClaimsConverter defaultTokenClaimsConverter;
   private final Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId;
   private final Map<String, List<String>> identityClaimsByRegistrationId;
   private final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings;
-  private final Map<String, Map<String, JwtDecoder>> tenantJwtDecoders = new ConcurrentHashMap<>();
 
   ProviderAwareOidcUserAuthenticationConverter(
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
@@ -61,53 +49,10 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
         request,
         additionalJwkSetUrisByRegistrationId,
         preferIdTokenClaimsByRegistrationId);
-    this.accessTokenDecoderFactory = accessTokenDecoderFactory;
     this.defaultTokenClaimsConverter = defaultTokenClaimsConverter;
     this.tokenClaimsConvertersByRegistrationId = Map.copyOf(tokenClaimsConvertersByRegistrationId);
     this.identityClaimsByRegistrationId = Map.copyOf(identityClaimsByRegistrationId);
     this.physicalTenantOidcSettings = physicalTenantOidcSettings;
-  }
-
-  /**
-   * The super implementation reads the root settings and caches decoders by registration id alone,
-   * so a tenant sharing a registration id with the root, or with another tenant, would get the
-   * other's issuer, key sets and claim preference. Requests of the default tenant and requests
-   * outside any tenant keep the super behavior.
-   */
-  @Override
-  protected Map<String, Object> getClaims(final OAuth2AuthenticationToken authenticationToken) {
-    final var settings = physicalTenantOidcSettings.current();
-    if (settings == null) {
-      return super.getClaims(authenticationToken);
-    }
-    final var registrationId = authenticationToken.getAuthorizedClientRegistrationId();
-    if (Boolean.TRUE.equals(settings.preferIdTokenClaimsByRegistrationId().get(registrationId))) {
-      return getIdTokenClaims(authenticationToken);
-    }
-    return Optional.ofNullable(getAccessTokenClaims(authenticationToken))
-        .orElseGet(
-            () -> {
-              LOG.warn("Falling back to ID Token claims");
-              return getIdTokenClaims(authenticationToken);
-            });
-  }
-
-  @Override
-  protected JwtDecoder getJwtDecoder(final ClientRegistration clientRegistration) {
-    final var settings = physicalTenantOidcSettings.current();
-    if (settings == null) {
-      return super.getJwtDecoder(clientRegistration);
-    }
-    final var registrationId = clientRegistration.getRegistrationId();
-    return tenantJwtDecoders
-        .computeIfAbsent(PhysicalTenantContext.currentOrNull(), k -> new ConcurrentHashMap<>())
-        .computeIfAbsent(
-            registrationId,
-            k ->
-                accessTokenDecoderFactory.createAccessTokenDecoder(
-                    clientRegistration,
-                    settings.additionalJwkSetUris().get(registrationId),
-                    settings.validatorFactory()));
   }
 
   @Override

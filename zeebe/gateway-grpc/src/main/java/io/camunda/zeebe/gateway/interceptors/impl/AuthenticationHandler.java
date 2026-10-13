@@ -12,6 +12,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.oidc.OidcPrincipalLoader;
 import io.camunda.security.core.oidc.OidcPrincipalLoader.OidcPrincipals;
@@ -71,7 +72,8 @@ public sealed interface AuthenticationHandler {
 
     /**
      * @param oidcAuthenticationConfiguration the tenant's default slot; its {@code groups-claim}
-     *     sets the tenant's groups mode, and is the groups claim of every provider without its own
+     *     sets the tenant's groups mode. Its groups, username, client-id and prefer-username claims
+     *     apply to every provider that does not set its own
      * @param claimConfigsByIssuer claim settings of each provider keyed by its {@code issuer-uri};
      *     a token whose {@code iss} matches no entry is resolved with {@code
      *     oidcAuthenticationConfiguration}
@@ -85,11 +87,15 @@ public sealed interface AuthenticationHandler {
       this.claimsProvider = Objects.requireNonNull(claimsProvider);
       Objects.requireNonNull(oidcAuthenticationConfiguration);
       final String tenantGroupsClaim = oidcAuthenticationConfiguration.getGroupsClaim();
-      defaultClaimSettings = new ClaimSettings(oidcAuthenticationConfiguration, tenantGroupsClaim);
+      defaultClaimSettings =
+          new ClaimSettings(
+              oidcAuthenticationConfiguration, oidcAuthenticationConfiguration, tenantGroupsClaim);
       claimSettingsByIssuer = new LinkedHashMap<>();
       claimConfigsByIssuer.forEach(
           (issuer, config) ->
-              claimSettingsByIssuer.put(issuer, new ClaimSettings(config, tenantGroupsClaim)));
+              claimSettingsByIssuer.put(
+                  issuer,
+                  new ClaimSettings(config, oidcAuthenticationConfiguration, tenantGroupsClaim)));
     }
 
     @Override
@@ -114,7 +120,6 @@ public sealed interface AuthenticationHandler {
       final ClaimSettings claimSettings =
           claimSettingsByIssuer.getOrDefault(
               token.getClaimAsString(JwtClaimNames.ISS), defaultClaimSettings);
-      final OidcConfiguration oidcAuthenticationConfiguration = claimSettings.config();
 
       final Map<String, Object> claims;
       try {
@@ -157,11 +162,11 @@ public sealed interface AuthenticationHandler {
             Status.UNAUTHENTICATED.augmentDescription(
                 "Expected either a username (claim: %s) or client ID (claim: %s) on the token, but no matching claim found"
                     .formatted(
-                        oidcAuthenticationConfiguration.getUsernameClaim(),
-                        oidcAuthenticationConfiguration.getClientIdClaim())));
+                        claimSettings.principalClaims().usernameClaim(),
+                        claimSettings.principalClaims().clientIdClaim())));
       }
 
-      final var preferUsernameClaim = oidcAuthenticationConfiguration.isPreferUsernameClaim();
+      final var preferUsernameClaim = claimSettings.principalClaims().preferUsernameClaim();
       if ((preferUsernameClaim && principals.username() != null) || principals.clientId() == null) {
         return Either.right(
             context.withValue(USERNAME, principals.username()).withValue(USER_CLAIMS, claims));
@@ -173,13 +178,30 @@ public sealed interface AuthenticationHandler {
 
     private record ClaimSettings(
         OidcConfiguration config,
+        OidcPrincipalClaims principalClaims,
         OidcPrincipalLoader principalLoader,
         OidcGroupsExtractor groupsExtractor) {
 
-      private ClaimSettings(final OidcConfiguration config, final String tenantGroupsClaim) {
+      /**
+       * A provider uses its own claims, and the claims of the tenant's default slot for each claim
+       * that it does not set.
+       */
+      private ClaimSettings(
+          final OidcConfiguration config,
+          final OidcConfiguration tenantDefaultSlot,
+          final String tenantGroupsClaim) {
+        this(config, OidcPrincipalClaims.resolve(config, tenantDefaultSlot), tenantGroupsClaim);
+      }
+
+      private ClaimSettings(
+          final OidcConfiguration config,
+          final OidcPrincipalClaims principalClaims,
+          final String tenantGroupsClaim) {
         this(
             config,
-            new OidcPrincipalLoader(config.getUsernameClaim(), config.getClientIdClaim()),
+            principalClaims,
+            new OidcPrincipalLoader(
+                principalClaims.usernameClaim(), principalClaims.clientIdClaim()),
             new OidcGroupsExtractor(
                 config.isGroupsClaimConfigured() ? config.getGroupsClaim() : tenantGroupsClaim));
       }

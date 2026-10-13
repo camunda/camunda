@@ -19,6 +19,7 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
@@ -245,12 +246,14 @@ public class OidcOverrideBeansConfiguration {
         .forEach(
             (registrationId, provider) -> {
               if (hasText(provider.getIssuerUri())) {
+                // the provider uses the tenant's claims for each claim that it does not set
+                final var claims = OidcPrincipalClaims.resolve(provider, flat);
                 byIssuer.putIfAbsent(
                     provider.getIssuerUri(),
                     new LazyTokenClaimsConverter(
-                        provider.getUsernameClaim(),
-                        provider.getClientIdClaim(),
-                        provider.isPreferUsernameClaim(),
+                        claims.usernameClaim(),
+                        claims.clientIdClaim(),
+                        claims.preferUsernameClaim(),
                         membershipPort,
                         membershipResolutionContextPropagator));
               }
@@ -339,6 +342,7 @@ public class OidcOverrideBeansConfiguration {
             oidcProviderRepository.getOidcAuthenticationConfigurations()),
         PhysicalTenantOidcProviders.tokenClaimsConverters(
             PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment),
+            cslProperties.getAuthentication().getOidc(),
             membershipPort,
             membershipResolutionContextPropagator),
         buildIdentityClaimsByRegistrationId(environment),
@@ -355,35 +359,24 @@ public class OidcOverrideBeansConfiguration {
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
     final Map<String, PhysicalTenantOidcSettings> settingsByTenant = new LinkedHashMap<>();
-    PhysicalTenantOidcProviders.providersByPhysicalTenant(environment)
+    PhysicalTenantOidcProviders.byPhysicalTenant(environment)
         .forEach(
-            (physicalTenantId, providers) -> {
+            (physicalTenantId, tenant) -> {
+              final var providers = tenant.providers();
               final var validatorFactory = newTokenValidatorFactory(cslProperties, providers);
               settingsByTenant.put(
                   physicalTenantId,
                   new PhysicalTenantOidcSettings(
-                      validatorFactory,
                       buildIdTokenDecoderFactory(validatorFactory, providers),
-                      additionalJwkSetUris(providers),
-                      buildPreferIdTokenClaimsByRegistrationId(providers),
                       PhysicalTenantOidcProviders.tokenClaimsConverters(
-                          providers, membershipPort, membershipResolutionContextPropagator),
-                      PhysicalTenantOidcProviders.identityClaimsByRegistrationId(providers)));
+                          providers,
+                          tenant.defaultSlot(),
+                          membershipPort,
+                          membershipResolutionContextPropagator),
+                      PhysicalTenantOidcProviders.identityClaimsByRegistrationId(
+                          providers, tenant.defaultSlot())));
             });
     return new PhysicalTenantOidcSettingsRegistry(settingsByTenant);
-  }
-
-  private static AdditionalJwkSetUrisByRegistrationId additionalJwkSetUris(
-      final Map<String, OidcConfiguration> providers) {
-    final Map<String, List<String>> byRegistrationId = new LinkedHashMap<>();
-    providers.forEach(
-        (registrationId, config) -> {
-          final var uris = config.getAdditionalJwkSetUris();
-          if (uris != null && uris.stream().anyMatch(OidcOverrideBeansConfiguration::hasText)) {
-            byRegistrationId.put(registrationId, uris);
-          }
-        });
-    return new AdditionalJwkSetUrisByRegistrationId(byRegistrationId);
   }
 
   private Map<String, List<String>> buildIdentityClaimsByRegistrationId(
@@ -391,7 +384,8 @@ public class OidcOverrideBeansConfiguration {
     final Map<String, List<String>> identityClaims =
         new LinkedHashMap<>(
             PhysicalTenantOidcProviders.identityClaimsByRegistrationId(
-                PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment)));
+                PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment),
+                cslProperties.getAuthentication().getOidc()));
     // The root default slot is not a named provider, so normalize its URI-valued identity claims
     // (e.g. iss) under the default registration id too, matching the scoped registrations.
     identityClaims.put(
