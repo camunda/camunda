@@ -48,7 +48,7 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 
 	// The saved tenants file is only needed when c8run will actually read saved tenants.
 	var store *physicaltenants.Store
-	if len(flagIDs) == 0 && mode == "local" && !externallyDeclared {
+	if mode == "local" && !externallyDeclared {
 		path, err := physicaltenants.ResolvePath(baseDir)
 		if err != nil {
 			// Never silently start without the user's saved tenants.

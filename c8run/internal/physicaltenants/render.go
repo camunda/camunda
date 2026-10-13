@@ -9,6 +9,7 @@ package physicaltenants
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -132,7 +133,61 @@ func RenderForPort(tenants []types.PhysicalTenant, storageType string, port int)
 	if port > 0 {
 		content = append([]byte(fmt.Sprintf("%s%d\n", portMarker, port)), content...)
 	}
+	// Record only display settings: passwords must never enter generated configuration.
+	state := make(map[string]Tenant, len(tenants))
+	for _, tenant := range tenants {
+		state[tenant.ID] = Tenant{ID: tenant.ID, Username: tenant.Username, NoConnectors: !tenant.Connectors}
+	}
+	metadata, err := json.Marshal(state)
+	if err != nil {
+		return nil, err
+	}
+	content = append(append([]byte(tenantsMarker), append(metadata, '\n')...), content...)
 	return content, nil
+}
+
+const tenantsMarker = "# c8run-tenants: "
+
+// StartupState describes the last generated configuration. A nil tenant value means
+// the tenant was declared but its display settings are unknown (as in older files).
+type StartupState struct {
+	Port    int
+	Tenants map[string]*Tenant
+}
+
+// LastStartState reads the port, declared tenants and display settings from one snapshot.
+func LastStartState(baseDir string) StartupState {
+	var state StartupState
+	content, err := os.ReadFile(GeneratedConfigPath(baseDir))
+	if err != nil {
+		return state
+	}
+	var metadata map[string]*Tenant
+	for _, line := range strings.Split(string(content), "\n") {
+		switch {
+		case strings.HasPrefix(line, portMarker):
+			var port int
+			if _, err := fmt.Sscanf(strings.TrimPrefix(line, portMarker), "%d", &port); err == nil {
+				state.Port = port
+			}
+		case strings.HasPrefix(line, tenantsMarker):
+			if err := json.Unmarshal([]byte(strings.TrimPrefix(line, tenantsMarker)), &metadata); err != nil {
+				metadata = nil
+			}
+		}
+	}
+	var root struct {
+		Camunda struct {
+			PhysicalTenants map[string]any `yaml:"physical-tenants"`
+		} `yaml:"camunda"`
+	}
+	if yaml.Unmarshal(content, &root) == nil {
+		state.Tenants = make(map[string]*Tenant, len(root.Camunda.PhysicalTenants))
+		for id := range root.Camunda.PhysicalTenants {
+			state.Tenants[id] = metadata[id]
+		}
+	}
+	return state
 }
 
 // ApplyGeneratedConfig writes content to the generated config path, or removes the file when
@@ -221,14 +276,25 @@ func Resolve(in ResolveInput) (Resolution, error) {
 
 	var stored []Tenant
 	creds := map[string]string{}
-	if len(in.FlagIDs) > 0 {
-		for _, id := range in.FlagIDs {
-			stored = append(stored, Tenant{ID: id})
-		}
-	} else if mode == "local" && in.Store != nil {
+	if mode == "local" && in.Store != nil {
 		if stored, creds, err = in.Store.Snapshot(); err != nil {
 			return res, err
 		}
+	}
+	if len(in.FlagIDs) > 0 {
+		byID := make(map[string]Tenant, len(stored))
+		for _, tenant := range stored {
+			byID[tenant.ID] = tenant
+		}
+		selected := make([]Tenant, 0, len(in.FlagIDs))
+		for _, id := range in.FlagIDs {
+			tenant, saved := byID[id]
+			if !saved {
+				tenant = Tenant{ID: id}
+			}
+			selected = append(selected, tenant)
+		}
+		stored = selected
 	}
 
 	port := in.FirstConnectorsPort
@@ -254,21 +320,4 @@ func Resolve(in ResolveInput) (Resolution, error) {
 		res.Tenants = append(res.Tenants, t)
 	}
 	return res, nil
-}
-
-// LastStartPort returns the port recorded by the last start with physical tenants, or 0.
-func LastStartPort(baseDir string) int {
-	content, err := os.ReadFile(filepath.Join(baseDir, "configuration", GeneratedConfigName))
-	if err != nil {
-		return 0
-	}
-	for _, line := range strings.Split(string(content), "\n") {
-		if strings.HasPrefix(line, portMarker) {
-			var port int
-			if _, err := fmt.Sscanf(strings.TrimPrefix(line, portMarker), "%d", &port); err == nil {
-				return port
-			}
-		}
-	}
-	return 0
 }
