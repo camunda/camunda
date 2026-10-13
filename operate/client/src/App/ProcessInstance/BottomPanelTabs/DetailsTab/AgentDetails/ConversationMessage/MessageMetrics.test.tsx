@@ -88,6 +88,25 @@ describe('<MessageMetrics />', () => {
     expect(tooltip).toHaveTextContent('Cache write: 0');
   });
 
+  it('should only list the tooltip lines that have a value', async () => {
+    const {user} = render(
+      <MessageMetrics
+        metrics={{
+          ...FULL_METRICS,
+          cacheCreationTokenCount: null,
+          cacheReadTokenCount: null,
+          reasoningTokenCount: null,
+        }}
+      />,
+    );
+
+    await user.hover(screen.getByTestId('message-token-metric'));
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent('Input: 12,345Output: 456');
+    expect(tooltip.textContent).toBe('Input: 12,345Output: 456');
+    expect(tooltip.querySelectorAll('br')).toHaveLength(1);
+  });
+
   it('should treat a null inputTokens as 0 but show --- in the tooltip', async () => {
     const {user} = render(
       <MessageMetrics
