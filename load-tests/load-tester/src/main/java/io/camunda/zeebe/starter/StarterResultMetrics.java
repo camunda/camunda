@@ -7,16 +7,11 @@
  */
 package io.camunda.zeebe.starter;
 
-import io.camunda.client.api.command.ClientHttpException;
-import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.zeebe.metrics.ErrorType;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
-import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.Locale;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 
 /** Counts the answers to process instance start requests by outcome and error type. */
 final class StarterResultMetrics {
@@ -40,7 +35,7 @@ final class StarterResultMetrics {
     if (error == null) {
       successCounter.increment();
     } else {
-      counter("failure", errorType(error)).increment();
+      counter("failure", ErrorType.of(error)).increment();
     }
   }
 
@@ -50,22 +45,5 @@ final class StarterResultMetrics {
         .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
         .tag(StarterMetricKeyNames.ERROR.asString(), error)
         .register(registry);
-  }
-
-  static String errorType(final Throwable error) {
-    Throwable cause = error;
-    while ((cause instanceof CompletionException || cause instanceof ExecutionException)
-        && cause.getCause() != null) {
-      cause = cause.getCause();
-    }
-
-    if (cause instanceof final ClientStatusException statusException) {
-      return "grpc_" + statusException.getStatusCode().name().toLowerCase(Locale.ROOT);
-    } else if (cause instanceof final StatusRuntimeException statusException) {
-      return "grpc_" + statusException.getStatus().getCode().name().toLowerCase(Locale.ROOT);
-    } else if (cause instanceof final ClientHttpException httpException) {
-      return "http_" + httpException.code();
-    }
-    return cause.getClass().getSimpleName();
   }
 }
