@@ -19,6 +19,7 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
@@ -245,12 +246,14 @@ public class OidcOverrideBeansConfiguration {
         .forEach(
             (registrationId, provider) -> {
               if (hasText(provider.getIssuerUri())) {
+                // the provider uses the tenant's claims for each claim that it does not set
+                final var claims = OidcPrincipalClaims.resolve(provider, flat);
                 byIssuer.putIfAbsent(
                     provider.getIssuerUri(),
                     new LazyTokenClaimsConverter(
-                        provider.getUsernameClaim(),
-                        provider.getClientIdClaim(),
-                        provider.isPreferUsernameClaim(),
+                        claims.usernameClaim(),
+                        claims.clientIdClaim(),
+                        claims.preferUsernameClaim(),
                         membershipPort,
                         membershipResolutionContextPropagator));
               }
@@ -339,6 +342,7 @@ public class OidcOverrideBeansConfiguration {
             oidcProviderRepository.getOidcAuthenticationConfigurations()),
         PhysicalTenantOidcProviders.tokenClaimsConverters(
             PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment),
+            cslProperties.getAuthentication().getOidc(),
             membershipPort,
             membershipResolutionContextPropagator),
         buildIdentityClaimsByRegistrationId(environment),
@@ -355,6 +359,7 @@ public class OidcOverrideBeansConfiguration {
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
     final Map<String, PhysicalTenantOidcSettings> settingsByTenant = new LinkedHashMap<>();
+    final var defaultSlots = PhysicalTenantOidcProviders.defaultSlotsByPhysicalTenant(environment);
     PhysicalTenantOidcProviders.providersByPhysicalTenant(environment)
         .forEach(
             (physicalTenantId, providers) -> {
@@ -367,8 +372,12 @@ public class OidcOverrideBeansConfiguration {
                       additionalJwkSetUris(providers),
                       buildPreferIdTokenClaimsByRegistrationId(providers),
                       PhysicalTenantOidcProviders.tokenClaimsConverters(
-                          providers, membershipPort, membershipResolutionContextPropagator),
-                      PhysicalTenantOidcProviders.identityClaimsByRegistrationId(providers)));
+                          providers,
+                          defaultSlots.get(physicalTenantId),
+                          membershipPort,
+                          membershipResolutionContextPropagator),
+                      PhysicalTenantOidcProviders.identityClaimsByRegistrationId(
+                          providers, defaultSlots.get(physicalTenantId))));
             });
     return new PhysicalTenantOidcSettingsRegistry(settingsByTenant);
   }
@@ -391,7 +400,8 @@ public class OidcOverrideBeansConfiguration {
     final Map<String, List<String>> identityClaims =
         new LinkedHashMap<>(
             PhysicalTenantOidcProviders.identityClaimsByRegistrationId(
-                PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment)));
+                PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment),
+                cslProperties.getAuthentication().getOidc()));
     // The root default slot is not a named provider, so normalize its URI-valued identity claims
     // (e.g. iss) under the default registration id too, matching the scoped registrations.
     identityClaims.put(
