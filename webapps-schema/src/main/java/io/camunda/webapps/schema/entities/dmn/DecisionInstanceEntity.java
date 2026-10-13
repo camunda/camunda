@@ -64,6 +64,10 @@ public class DecisionInstanceEntity
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String businessId;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.11.0. */
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private Integer storageOrdinal;
+
   @JsonIgnore private Object[] sortValues;
 
   @Override
@@ -362,6 +366,15 @@ public class DecisionInstanceEntity
     return this;
   }
 
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public DecisionInstanceEntity setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     int result1 =
@@ -395,7 +408,8 @@ public class DecisionInstanceEntity
             evaluatedOutputs,
             tenantId,
             rootProcessInstanceKey,
-            businessId);
+            businessId,
+            storageOrdinal);
     result1 = 31 * result1 + Arrays.hashCode(sortValues);
     return result1;
   }
@@ -439,6 +453,7 @@ public class DecisionInstanceEntity
         && Objects.equals(tenantId, that.tenantId)
         && Arrays.equals(sortValues, that.sortValues)
         && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
-        && Objects.equals(businessId, that.businessId);
+        && Objects.equals(businessId, that.businessId)
+        && Objects.equals(storageOrdinal, that.storageOrdinal);
   }
 }
