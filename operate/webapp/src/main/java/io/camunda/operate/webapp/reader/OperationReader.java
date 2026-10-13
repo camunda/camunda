@@ -14,7 +14,13 @@ import java.util.List;
 import java.util.Map;
 
 public interface OperationReader {
-  List<OperationEntity> acquireOperations(int batchSize);
+
+  /**
+   * Finds operations that are scheduled or locked with an expired lock. Each operation is returned
+   * with the sequence number and primary term it was read at, so that it can be locked with an
+   * optimistic concurrency check.
+   */
+  List<VersionedOperation> acquireOperations(int batchSize);
 
   Map<Long, List<OperationEntity>> getOperationsPerProcessInstanceKey(
       List<Long> processInstanceKeys);
@@ -30,4 +36,6 @@ public interface OperationReader {
 
   List<OperationDto> getOperations(
       OperationType operationType, String processInstanceId, String scopeId, String variableName);
+
+  record VersionedOperation(OperationEntity operation, long seqNo, long primaryTerm) {}
 }

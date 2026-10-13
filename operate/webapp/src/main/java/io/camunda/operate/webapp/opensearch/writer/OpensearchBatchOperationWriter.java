@@ -22,7 +22,6 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -31,6 +30,7 @@ import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.opensearch.OpenSearchQueryHelper;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.reader.OperationReader.VersionedOperation;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
@@ -55,13 +55,18 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
@@ -69,6 +74,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
@@ -112,11 +118,18 @@ public class OpensearchBatchOperationWriter
   @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
 
   /**
-   * Finds operation, which are scheduled or locked with expired timeout, in the amount of
+   * Finds operations, which are scheduled or locked with expired timeout, in the amount of
    * configured batch size, and locks them.
    *
+   * <p>Every Operate instance runs its own operation executor, so several instances may find the
+   * same operations at the same time. Each lock is therefore conditional on the operation not
+   * having changed since it was read; operations that were locked by another instance in the
+   * meantime are skipped, so that two instances do not lock and execute the same operation at the
+   * same time.
+   *
    * @return list of locked operations
-   * @throws PersistenceException
+   * @throws PersistenceException if an operation could not be locked for another reason than being
+   *     locked by another instance
    */
   @Override
   public List<OperationEntity> lockBatch() throws PersistenceException {
@@ -126,24 +139,57 @@ public class OpensearchBatchOperationWriter
 
     // select process instances, which has scheduled operations, or locked with expired
     // lockExpirationTime
-    final List<OperationEntity> operationEntities = operationReader.acquireOperations(batchSize);
+    final List<VersionedOperation> candidates = operationReader.acquireOperations(batchSize);
+    if (candidates.isEmpty()) {
+      LOGGER.debug("0 operations locked");
+      return List.of();
+    }
 
-    final BatchRequest batchRequest = operationStore.newBatchRequest();
-
-    // lock the operations
-    for (final OperationEntity operation : operationEntities) {
-      // lock operation: update workerId, state, lockExpirationTime
+    final BulkRequest.Builder bulkRequest = new BulkRequest.Builder().refresh(Refresh.True);
+    for (final VersionedOperation candidate : candidates) {
+      final OperationEntity operation = candidate.operation();
       operation.setState(OperationState.LOCKED);
       operation.setLockOwner(workerId);
       operation.setLockExpirationTime(OffsetDateTime.now().plus(lockTimeout, ChronoUnit.MILLIS));
 
-      // TODO decide with index refresh
-      batchRequest.update(operationTemplate.getFullQualifiedName(), operation.getId(), operation);
+      final Map<String, Object> lockFields = new HashMap<>();
+      lockFields.put(OperationTemplate.STATE, operation.getState());
+      lockFields.put(OperationTemplate.LOCK_OWNER, operation.getLockOwner());
+      lockFields.put(OperationTemplate.LOCK_EXPIRATION_TIME, operation.getLockExpirationTime());
+      bulkRequest.operations(
+          op ->
+              op.update(
+                  upd ->
+                      upd.index(operationTemplate.getFullQualifiedName())
+                          .id(operation.getId())
+                          .document(lockFields)
+                          .ifSeqNo(candidate.seqNo())
+                          .ifPrimaryTerm(candidate.primaryTerm())));
     }
-    // TODO decide with index refresh
-    batchRequest.executeWithRefresh();
-    LOGGER.debug("{} operations locked", operationEntities.size());
-    return operationEntities;
+
+    final List<BulkResponseItem> items =
+        richOpenSearchClient.batch().bulkWithResponse(bulkRequest.build()).items();
+
+    final List<OperationEntity> lockedOperations = new ArrayList<>();
+    final List<String> failures = new ArrayList<>();
+    for (int i = 0; i < items.size(); i++) {
+      final BulkResponseItem item = items.get(i);
+      if (item.error() == null) {
+        lockedOperations.add(candidates.get(i).operation());
+      } else if (item.status() == HttpStatus.CONFLICT.value()) {
+        LOGGER.debug("Operation {} was locked by another worker, skipping it", item.id());
+      } else {
+        failures.add(item.id() + ": " + item.error().reason());
+      }
+    }
+    if (!failures.isEmpty()) {
+      throw new PersistenceException(
+          String.format(
+              "Failed to lock %d of %d operations, first failure: %s",
+              failures.size(), items.size(), failures.getFirst()));
+    }
+    LOGGER.debug("{} operations locked", lockedOperations.size());
+    return lockedOperations;
   }
 
   @Override
