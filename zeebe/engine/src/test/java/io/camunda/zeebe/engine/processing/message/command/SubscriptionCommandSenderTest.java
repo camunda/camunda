@@ -90,7 +90,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -107,7 +108,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -380,6 +382,25 @@ public class SubscriptionCommandSenderTest {
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
         -1L,
+        DEFAULT_STORAGE_ORDINAL);
+
+    // then
+    final var recordCaptor = ArgumentCaptor.forClass(ProcessMessageSubscriptionRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal()).isEqualTo(DEFAULT_STORAGE_ORDINAL);
+  }
+
+  @Test
+  public void shouldSetStorageOrdinalOnCloseProcessMessageSubscriptionRecord() {
+    // given
+
+    // when
+    subscriptionCommandSender.closeProcessMessageSubscription(
+        SAME_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_MESSAGE_NAME,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_STORAGE_ORDINAL);
 
     // then
