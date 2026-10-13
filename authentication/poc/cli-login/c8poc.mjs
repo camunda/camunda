@@ -30,8 +30,9 @@ const USAGE = `Usage: c8poc [--context <name>] <command> [options]
 
 Log in:
   login [url]                    Log in, store a user and a context, make the context current.
-                                 url: the cluster (default ${DEFAULT_CLUSTER}) or a physical
-                                 tenant, e.g. ${DEFAULT_CLUSTER}/physical-tenants/pt1
+                                 Without url: log in to the current context (or --context);
+                                 url: a cluster or a physical tenant, e.g.
+                                 ${DEFAULT_CLUSTER}/physical-tenants/pt1
       --physical-tenant <id>     Physical tenant (instead of putting it in the url); without
                                  either, asks if the cluster has more than the default one
       --provider <id>            Identity provider (instead of being asked)
@@ -47,6 +48,10 @@ Use the cluster (with the current context, or --context <name>):
   api <path>                     GET any path below the physical tenant's API
 
 Configuration (like kubectl config):
+  config discover [url]          Add a context for each physical tenant of the cluster (not
+                                 logged in yet; log in with c8poc --context <name> login)
+  config set-context <name> [--cluster <url>] [--physical-tenant <id>]
+                                 Create or change a context
   config get-contexts            List contexts (* = current)
   config current-context         Print the current context
   config use-context <name>      Switch the current context
@@ -129,14 +134,19 @@ function migrateLegacySession() {
 
 // Stores what a login produced: the cluster (shared by its contexts), a user and a context.
 function addLogin(config, name, target, user) {
+  const userName = `${identity(user) ?? user.method}@${name}`;
+  config.users[userName] = user;
+  setContext(config, name, target, userName);
+}
+
+// A context without a user is configured but not logged in yet.
+function setContext(config, name, target, userName) {
   const clusterName = new URL(target.clusterUrl).host;
   config.clusters[clusterName] = { server: target.clusterUrl };
-  const userName = `${identity(user) ?? user.method}@${name}`;
-  const previous = config.contexts[name]?.user;
-  config.users[userName] = user;
+  const previous = config.contexts[name];
   config.contexts[name] = { cluster: clusterName, physicalTenant: target.physicalTenant, apiBase: target.apiBase, user: userName };
-  if (previous && previous !== userName) deleteUserIfUnused(config, previous);
-  return name;
+  if (previous?.user && previous.user !== userName) deleteUserIfUnused(config, previous.user);
+  if (previous && previous.cluster !== clusterName) deleteClusterIfUnused(config, previous.cluster);
 }
 
 function deleteUserIfUnused(config, userName) {
@@ -154,8 +164,9 @@ function resolveContext(config, name) {
   const context = config.contexts[resolved];
   if (!context) throw new Error(`no context '${resolved}' - see: c8poc config get-contexts`);
   const cluster = config.clusters[context.cluster];
+  if (!cluster) throw new Error(`context '${resolved}' has no cluster - see: c8poc config set-context`);
   const user = config.users[context.user];
-  if (!cluster || !user) throw new Error(`context '${resolved}' is incomplete - run: c8poc login`);
+  if (!user) throw new Error(`context '${resolved}' is not logged in - run: c8poc --context ${resolved} login`);
   return { name: resolved, context, clusterUrl: cluster.server, user };
 }
 
@@ -371,9 +382,13 @@ async function login(args, contextFlag) {
   const physicalTenantFlag = takeFlag(args, "--physical-tenant", true);
   const nameFlag = takeFlag(args, "--name", true) ?? contextFlag;
   const config = loadConfig();
-  const current = config.contexts[config.currentContext];
-  const defaultUrl = config.clusters[current?.cluster]?.server ?? DEFAULT_CLUSTER;
-  const { clusterUrl, physicalTenant } = parseTarget(args[0] ?? defaultUrl, physicalTenantFlag);
+  // Without a url, log in to a configured context: the named one, else the current one.
+  const existingName = !args[0] && !physicalTenantFlag ? (nameFlag ?? config.currentContext) : undefined;
+  const existing = existingName && config.contexts[existingName];
+  const { clusterUrl, physicalTenant } = existing
+    ? { clusterUrl: config.clusters[existing.cluster]?.server, physicalTenant: existing.physicalTenant }
+    : parseTarget(args[0] ?? DEFAULT_CLUSTER, physicalTenantFlag);
+  if (!clusterUrl) throw new Error(`context '${existingName}' has no cluster - see: c8poc config set-context`);
 
   const discovery = await discover(clusterUrl, physicalTenant ?? (await choosePhysicalTenant(clusterUrl)));
   const target = {
@@ -381,7 +396,7 @@ async function login(args, contextFlag) {
     physicalTenant: discovery.physical_tenant ?? physicalTenant ?? "default",
     apiBase: discovery.api_base ?? "",
   };
-  const name = nameFlag ?? contextName(clusterUrl, target.physicalTenant);
+  const name = existing ? existingName : (nameFlag ?? contextName(clusterUrl, target.physicalTenant));
   const where = `${clusterUrl}${target.apiBase ? ` (physical tenant ${target.physicalTenant})` : ""}`;
 
   let user;
@@ -514,11 +529,49 @@ function deleteContext(config, name) {
 }
 
 const configCommands = {
+  discover: async ([url]) => {
+    const config = loadConfig();
+    const current = config.contexts[config.currentContext];
+    const { clusterUrl } = parseTarget(url ?? config.clusters[current?.cluster]?.server ?? DEFAULT_CLUSTER);
+    const physicalTenants = (await discover(clusterUrl)).physical_tenants ?? [{ id: "default" }];
+    const rows = [];
+    for (const { id, name: displayName } of physicalTenants) {
+      const name = contextName(clusterUrl, id);
+      if (config.contexts[name]) {
+        rows.push([name, id, displayName, "exists"]);
+        continue;
+      }
+      const document = await discover(clusterUrl, id === "default" ? undefined : id);
+      setContext(config, name, { clusterUrl, physicalTenant: id, apiBase: document.api_base ?? "" }, undefined);
+      rows.push([name, id, displayName, "added"]);
+    }
+    saveConfig(config);
+    printTable(["CONTEXT", "PHYSICAL TENANT", "NAME", ""], rows);
+    info(`\nLog in with: c8poc --context <context> login   (or: c8poc config use-context <context>; c8poc login)`);
+  },
+  "set-context": async (args) => {
+    const name = args.shift();
+    const cluster = takeFlag(args, "--cluster", true);
+    const physicalTenantFlag = takeFlag(args, "--physical-tenant", true);
+    if (!name || (!cluster && !physicalTenantFlag)) {
+      throw new Error("usage: c8poc config set-context <name> [--cluster <url>] [--physical-tenant <id>]");
+    }
+    const config = loadConfig();
+    const existing = config.contexts[name];
+    const clusterUrl = parseTarget(cluster ?? config.clusters[existing?.cluster]?.server ?? DEFAULT_CLUSTER).clusterUrl;
+    const physicalTenant = physicalTenantFlag ?? existing?.physicalTenant ?? "default";
+    const document = await discover(clusterUrl, physicalTenant === "default" ? undefined : physicalTenant);
+    // a user is only valid for the cluster and physical tenant it logged in to
+    const keepsUser = existing && existing.cluster === new URL(clusterUrl).host && existing.physicalTenant === physicalTenant;
+    setContext(config, name, { clusterUrl, physicalTenant, apiBase: document.api_base ?? "" }, keepsUser ? existing.user : undefined);
+    saveConfig(config);
+    console.log(`Context "${name}" ${existing ? "modified" : "created"}.${keepsUser ? "" : ` Log in with: c8poc --context ${name} login`}`);
+  },
   "get-contexts": () => {
     const config = loadConfig();
     printTable(
       ["CURRENT", "NAME", "CLUSTER", "PHYSICAL TENANT", "USER"],
-      Object.entries(config.contexts).map(([name, c]) => [name === config.currentContext ? "*" : "", name, c.cluster, c.physicalTenant, c.user]),
+      Object.entries(config.contexts).map(([name, c]) => [name === config.currentContext ? "*" : "", name, c.cluster, c.physicalTenant, c.user ?? "(not logged in)"]),
     );
   },
   "current-context": () => {

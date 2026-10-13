@@ -177,10 +177,11 @@ structured like a kubeconfig:
 - **contexts** - cluster + physical tenant (what a namespace is to kubectl) + user, one of them
   current. Every command uses the current context, or the one given with the global `--context`.
 
-Every `login` stores a cluster, a user and a context - named `<host>[/<physical tenant>]` unless
-`--name` (or `--context`) is given - and makes the context current. Logging in again with the same
-name replaces that context's user. The physical tenant comes from the url, `--physical-tenant`, or -
-if the cluster has more than the default one - a selection:
+Every `login` stores a user and a context - named `<host>[/<physical tenant>]` unless `--name` (or
+`--context`) is given - and makes the context current. **Without a url, `login` logs in to a
+configured context**: the one given with `--context`, else the current one; logging in again
+replaces that context's user. With a url, the physical tenant comes from the url,
+`--physical-tenant`, or - if the cluster has more than the default one - a selection:
 
 ```sh
 c8poc physical-tenants                                    # the cluster's physical tenants
@@ -194,12 +195,31 @@ c8poc login http://localhost:8080/physical-tenants/pt1    # demo / demo   -> con
 c8poc login --physical-tenant pt2 --name acme             # alice / alice -> context acme
 ```
 
+Contexts can also be configured first and logged in to later, like `kubectl config set-context`:
+
+```sh
+c8poc config discover http://localhost:8080     # a context per physical tenant, not logged in
+# CONTEXT              PHYSICAL TENANT   NAME
+# localhost:8080       default           Default     added
+# localhost:8080/pt1   pt1               Sales EU    added
+# localhost:8080/pt2   pt2               ACME Corp   added
+
+c8poc config use-context localhost:8080/pt2
+c8poc login                                     # logs in to pt2 - no selection
+c8poc --context localhost:8080/pt1 login        # or name the context to log in to
+
+c8poc config set-context sales --cluster http://localhost:8080 --physical-tenant pt1
+```
+
+`discover` leaves existing contexts alone. Changing a context's cluster or physical tenant drops its
+user: a token is only valid where it was issued.
+
 Managing the configuration works like `kubectl config`:
 
 ```sh
 c8poc config get-contexts
 # CURRENT   NAME                 CLUSTER          PHYSICAL TENANT   USER
-#           localhost:8080       localhost:8080   default           demo@localhost:8080
+#           localhost:8080       localhost:8080   default           (not logged in)
 #           localhost:8080/pt1   localhost:8080   pt1               demo@localhost:8080/pt1
 # *         acme                 localhost:8080   pt2               alice@acme
 
