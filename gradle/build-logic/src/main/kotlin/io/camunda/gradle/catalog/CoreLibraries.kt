@@ -152,6 +152,12 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
     )
     .versionRef("org-apache-httpcomponents-core5-httpcore5")
   library(
+      "org-apache-httpcomponents-core5-httpcore5-h2",
+      "org.apache.httpcomponents.core5",
+      "httpcore5-h2",
+    )
+    .versionRef("org-apache-httpcomponents-core5-httpcore5")
+  library(
       "org-apache-httpcomponents-httpasyncclient",
       "org.apache.httpcomponents",
       "httpasyncclient",

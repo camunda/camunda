@@ -30,6 +30,7 @@ dependencies {
   api(libs.org.agrona.agrona)
   implementation(project(":zeebe-broker"))
   implementation(project(":zeebe-protocol"))
+  api(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(libs.io.camunda.security.library.api)

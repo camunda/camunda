@@ -221,6 +221,7 @@ dependencies {
   testImplementation(libs.org.apache.logging.log4j.log4j.core.test)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.awaitility.awaitility)
+  testImplementation(libs.org.apache.httpcomponents.core5.httpcore5.h2)
   testImplementation(libs.org.jmock.jmock)
   testImplementation(libs.org.instancio.instancio.core)
   testImplementation(libs.org.wiremock.wiremock.standalone)

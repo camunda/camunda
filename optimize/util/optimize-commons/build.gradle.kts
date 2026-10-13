@@ -22,6 +22,7 @@ dependencies {
   implementation(libs.org.apache.logging.log4j.log4j.core)
   api(libs.com.google.guava.guava)
   implementation(libs.org.apache.commons.commons.lang3)
+  implementation(libs.io.micrometer.micrometer.core)
   api(libs.net.jodah.failsafe)
   implementation(libs.com.vdurmont.semver4j)
   api(libs.org.apache.httpcomponents.core5.httpcore5)
