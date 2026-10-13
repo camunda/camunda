@@ -325,10 +325,14 @@ Artifact names: one per pod (each contains the cpu/wall/alloc reports for that p
 Snapshot run metrics into a JSON / job-summary report — useful for post-run analysis before
 tear-down, so you can capture results and then delete the namespace to free resources.
 
-The workflow and `loadTestMetrics.sh` script both run the **headline queries only** — the fixed
-set defined in [`load-tests/docs/scripts/queries.yaml`](https://github.com/camunda/camunda/blob/main/load-tests/docs/scripts/queries.yaml):
+The workflow runs the **headline queries only**, the fixed set defined in
+[`report-queries-comparison.yaml`](https://github.com/camunda/camunda/blob/main/load-tests/loadtestctl/src/loadtestctl/report/report-queries-comparison.yaml):
 throughput (PI/s), completion ratio, backpressure, data-availability p99, and
 request-response latency p99. This is enough to answer "did the run meet its SLO?".
+
+The workflow also uploads the full `loadtestctl report` (resources, throughput, latency and backlog
+columns) as a `load-test-report-<namespace>` artifact of the run, so the deeper numbers are
+available after collection without re-querying Prometheus.
 
 For deeper investigation (FNI/s, processing/exporting latency, CPU throttling, JVM heap trend,
 processing and exporting backlogs, write IOPS, disk usage, …), the full metric catalogue with

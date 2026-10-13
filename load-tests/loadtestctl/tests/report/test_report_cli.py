@@ -39,9 +39,9 @@ def test_should_parse_auth_flags(tmp_path: Path) -> None:
     options = parse_args(
         [
             "c8-ck-test",
-            "--user",
+            "--prometheus-user",
             "user",
-            "--password",
+            "--prometheus-password",
             "pass",
             "--queries",
             str(queries_file),
@@ -91,6 +91,62 @@ def test_should_default_to_window_ending_now() -> None:
 
 def test_should_reject_window_ending_in_the_future(capsys: pytest.CaptureFixture[str]) -> None:
     exit_code = run(["c8-ck-test", "--start", "2999-01-01T00:00:00Z"])
+
+    assert exit_code == 1
+    assert "must not end in the future" in capsys.readouterr().err
+
+
+def test_should_derive_start_from_end_and_duration() -> None:
+    options = parse_args(["c8-ck-test", "--end", "2026-08-14T10:30:00Z", "--duration-seconds", "1800"])
+
+    assert options.duration_seconds == 1800
+    assert options.start_label == "2026-08-14T10:00:00Z"
+    assert options.end_label == "2026-08-14T10:30:00Z"
+    assert options.time_anchor == "2026-08-14T10:30:00Z"
+
+
+def test_should_accept_unix_end_with_the_default_duration() -> None:
+    options = parse_args(["c8-ck-test", "--end", "1791438000"])
+
+    assert options.duration_seconds == 600
+    assert options.start_label == "2026-10-08T05:30:00Z"
+    assert options.end_label == "2026-10-08T05:40:00Z"
+
+
+def test_should_derive_duration_from_start_and_end() -> None:
+    options = parse_args(["c8-ck-test", "--start", "2026-08-14T10:00:00Z", "--end", "2026-08-14T13:00:00Z"])
+
+    assert options.duration_seconds == 10800
+    assert options.start_label == "2026-08-14T10:00:00Z"
+    assert options.end_label == "2026-08-14T13:00:00Z"
+
+
+def test_should_reject_duration_with_both_start_and_end(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(
+        [
+            "c8-ck-test",
+            "--start",
+            "2026-08-14T10:00:00Z",
+            "--end",
+            "2026-08-14T10:30:00Z",
+            "--duration-seconds",
+            "1800",
+        ]
+    )
+
+    assert exit_code == 1
+    assert "cannot be combined with both --start and --end" in capsys.readouterr().err
+
+
+def test_should_reject_end_not_after_start(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-test", "--start", "2026-08-14T10:30:00Z", "--end", "2026-08-14T10:00:00Z"])
+
+    assert exit_code == 1
+    assert "must end after it starts" in capsys.readouterr().err
+
+
+def test_should_reject_end_in_the_future(capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = run(["c8-ck-test", "--end", "2999-01-01T00:00:00Z"])
 
     assert exit_code == 1
     assert "must not end in the future" in capsys.readouterr().err
@@ -176,7 +232,7 @@ def test_should_build_basic_auth_header() -> None:
 
 
 def test_should_reject_incomplete_basic_auth() -> None:
-    with pytest.raises(ReportError, match="--user and --password"):
+    with pytest.raises(ReportError, match="--prometheus-user and --prometheus-password"):
         auth_headers("user", "")
 
 
@@ -269,8 +325,8 @@ def test_should_reject_invalid_namespace_forms(args: list[str], capsys: pytest.C
 
 def test_should_read_options_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADTESTCTL_REPORT_DURATION_SECONDS", "90")
-    monkeypatch.setenv("LOADTESTCTL_REPORT_USER", "env-user")
-    monkeypatch.setenv("LOADTESTCTL_REPORT_PASSWORD", "env-pass")
+    monkeypatch.setenv("LOADTESTCTL_PROMETHEUS_USER", "env-user")
+    monkeypatch.setenv("LOADTESTCTL_PROMETHEUS_PASSWORD", "env-pass")
     monkeypatch.setenv("LOADTESTCTL_REPORT_FORMAT", "csv")
     monkeypatch.setenv("LOADTESTCTL_REPORT_NO_HEADER", "true")
 
@@ -285,7 +341,7 @@ def test_should_read_options_from_environment(monkeypatch: pytest.MonkeyPatch) -
 
 def test_should_prefer_command_line_over_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADTESTCTL_REPORT_DURATION_SECONDS", "90")
-    monkeypatch.setenv("LOADTESTCTL_REPORT_PASSWORD", "env-pass")
+    monkeypatch.setenv("LOADTESTCTL_PROMETHEUS_PASSWORD", "env-pass")
 
     options = parse_args(["c8-ck-test", "-d", "30", "-u", "cli-user", "-p", "cli-pass"])
 

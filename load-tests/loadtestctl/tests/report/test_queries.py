@@ -1,6 +1,8 @@
+import json
 from pathlib import Path
 
 import pytest
+import yaml
 from pydantic import ValidationError
 
 import loadtestctl.report
@@ -183,8 +185,46 @@ def test_should_use_stable_87_specific_metric_sources() -> None:
     assert "N/A" in queries["data_availability_p99_seconds"].query
 
 
+def test_should_substitute_comparison_queries() -> None:
+    document = QueriesDocument.from_file(
+        PROJECT_DIR / "report-queries-comparison.yaml",
+        {"$NAMESPACE": "c8-ck-test", "$DURATION_S": "1800s"},
+    )
+
+    assert [query.key for query in document.queries] == [
+        "process-instances-started",
+        "process-instances-completed",
+        "throughput-per-second",
+        "completed-pi-rate-per-second",
+        "completion-ratio",
+        "backpressure-percent",
+        "starter-rate-per-second",
+        "data-availability",
+        "request-response-latency",
+    ]
+    for query in document.queries:
+        assert "c8-ck-test" in query.query
+        assert "$NAMESPACE" not in query.query
+        assert "$DURATION_S" not in query.query
+
+
+def test_should_keep_comparison_keys_in_sync_with_display_metadata_and_optimal_values() -> None:
+    scripts_dir = PROJECT_DIR.parents[3] / "docs" / "scripts"
+    document = QueriesDocument.from_file(
+        PROJECT_DIR / "report-queries-comparison.yaml",
+        {"$NAMESPACE": "c8-ck-test", "$DURATION_S": "1800s"},
+    )
+    display = yaml.safe_load((scripts_dir / "queries.yaml").read_text(encoding="utf-8"))["queries"]
+    optimal = json.loads((scripts_dir / "optimal.json").read_text(encoding="utf-8"))
+
+    keys = [query.key for query in document.queries]
+
+    assert [entry["name"] for entry in display] == keys
+    assert set(optimal["metrics"]) <= set(keys)
+
+
 def test_should_keep_packaged_descriptions_before_headers() -> None:
-    for query_file_name in PACKAGED_QUERY_FILES:
+    for query_file_name in (*PACKAGED_QUERY_FILES, "report-queries-comparison.yaml"):
         query_text = (PROJECT_DIR / query_file_name).read_text(encoding="utf-8").split("queries:\n", 1)[1]
         entries = [entry for entry in query_text.split("\n\n") if entry.startswith("  - key:")]
 

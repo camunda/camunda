@@ -1,8 +1,9 @@
-from functools import partial
 from pathlib import Path
 
 import click
 
+from loadtestctl.options import option
+from loadtestctl.options import prometheus_options
 from loadtestctl.report.cli import NamespaceType
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.prometheus import PrometheusClient
@@ -15,8 +16,6 @@ from .context import log
 from .k6 import verify_metrics
 from .k6 import wait_for_testruns
 from .pods import wait_for_pods
-
-option = partial(click.option, show_envvar=True)
 
 VERIFY_HELP = (
     "Wait for the pods and k6 TestRuns of a load test to be healthy, for the client to be "
@@ -111,7 +110,6 @@ def run_verify(
     "--k6-metrics-timeout",
     default=300,
     type=click.IntRange(min=1),
-    envvar="K6_METRICS_TIMEOUT",
     show_default=True,
     show_envvar=True,
     help="Timeout for k6 to report metrics to Prometheus in seconds.",
@@ -121,28 +119,7 @@ def run_verify(
     type=click.Path(dir_okay=False, path_type=Path),
     help="File to append the result (`status=success` or `status=failure`) to instead of printing it.",
 )
-@option(
-    "--prometheus-url",
-    default="http://localhost:9090",
-    envvar="PROMETHEUS_URL",
-    show_default=True,
-    show_envvar=True,
-    help="Base URL of the Prometheus queried for k6 metrics.",
-)
-@option(
-    "--prometheus-user",
-    default="",
-    envvar="PROMETHEUS_USER",
-    show_envvar=True,
-    help="Basic auth user for Prometheus. No authentication if empty.",
-)
-@option(
-    "--prometheus-password",
-    default="",
-    envvar="PROMETHEUS_PASSWORD",
-    show_envvar=True,
-    help="Basic auth password for Prometheus.",
-)
+@prometheus_options("Base URL of the Prometheus queried for k6 metrics.")
 def verify(
     namespace: str,
     wait_timeout: int,

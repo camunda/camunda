@@ -53,15 +53,15 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/qa/ci/common LDAP_QA_USER | PROMETHEUS_USER;
-            secret/data/products/qa/ci/common LDAP_QA_PASSWORD | PROMETHEUS_PASSWORD;
+            secret/data/products/qa/ci/common LDAP_QA_USER | LOADTESTCTL_PROMETHEUS_USER;
+            secret/data/products/qa/ci/common LDAP_QA_PASSWORD | LOADTESTCTL_PROMETHEUS_PASSWORD;
 
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       - name: Verify Load test
         env:
           UV_PROJECT: load-tests/loadtestctl
-          PROMETHEUS_URL: https://ci-monitor.benchmark.camunda.cloud
+          LOADTESTCTL_PROMETHEUS_URL: https://ci-monitor.benchmark.camunda.cloud
         run: uv run loadtestctl verify "${NAMESPACE}" --result-file "${GITHUB_OUTPUT}"
 
       - name: Observe build status
