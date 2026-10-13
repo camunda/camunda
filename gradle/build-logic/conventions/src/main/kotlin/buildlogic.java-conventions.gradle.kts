@@ -111,6 +111,7 @@ val includeRandomTests = providers.gradleProperty("includeRandomTests").isPresen
 val includeSlowTests = providers.gradleProperty("includeSlowTests").isPresent
 val includePerformanceTests = providers.gradleProperty("includePerformanceTests").isPresent
 val includeStraceTests = providers.gradleProperty("includeStraceTests").isPresent
+val randomizedCategoryTag = "io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory"
 val parallelTests = providers.gradleProperty("parallel.tests").isPresent
 val junitThreadCount = providers.gradleProperty("junit.thread.count").getOrElse("2")
 val testJvmMaxHeap = providers.gradleProperty("test.jvm.maxheap").orNull
@@ -164,35 +165,42 @@ tasks.withType<Test>().configureEach {
   // systemProperty("junit.jupiter.execution.timeout.default", "5 m")
 
   useJUnitPlatform()
+
+  // Tag selection is decided here and nowhere else. Like the Maven profiles, an include flag on the
+  // unit-test task selects only its tests and replaces the default excludes. Every task keeps
+  // performance and strace tests out unless they were asked for.
+  val isUnitTest = name == "test"
+  val profileSelectsTags = isUnitTest && (includeRandomTests || includePerformanceTests || includeStraceTests)
+  val includedTags = buildList {
+    if (includePerformanceTests) add("performance")
+    if (includeStraceTests) add("strace")
+    if (includeRandomTests && isUnitTest) {
+      add("randomized")
+      add(randomizedCategoryTag)
+    }
+  }
+  val excludedTags = buildList {
+    if (profileSelectsTags) return@buildList
+    if (!includePerformanceTests) add("performance")
+    if (!includeStraceTests) add("strace")
+    if (isUnitTest) {
+      addAll(listOf("randomized", randomizedCategoryTag, "dl-nightly"))
+      if (!includeSlowTests) addAll(listOf("slow", "io.camunda.zeebe.test.util.junit.SlowTest"))
+    }
+  }
+  val junitOptions = options as JUnitPlatformOptions
+  junitOptions.includeTags(*includedTags.toTypedArray())
+  junitOptions.excludeTags(*excludedTags.toTypedArray())
 }
 
 tasks.named<Test>("test") {
   description = "Runs unit tests (Maven surefire equivalent); excludes IT* patterns"
   exclude(itPatterns)
 
-  val junitOptions = options as JUnitPlatformOptions
   if (includeRandomTests) {
-    junitOptions.includeTags(
-      "randomized",
-      "io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory",
-    )
     systemProperty("processCount", "10")
     systemProperty("executionCount", "100")
     systemProperty("replayExecutionCount", "5")
-  } else if (!includePerformanceTests && !includeStraceTests) {
-    val excludedTags =
-      mutableListOf(
-        "performance",
-        "randomized",
-        "strace",
-        "io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory",
-        "dl-nightly",
-      )
-    if (!includeSlowTests) {
-      excludedTags.add("slow")
-      excludedTags.add("io.camunda.zeebe.test.util.junit.SlowTest")
-    }
-    junitOptions.excludeTags(*excludedTags.toTypedArray())
   }
 }
 
