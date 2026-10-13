@@ -51,6 +51,7 @@ public class JobEntityMapperTest {
             .elementInstanceKey(1L)
             .tenantId("tenantId")
             .businessId("testBusinessId")
+            .storageOrdinal(1001)
             .creationTime(OffsetDateTime.now())
             .lastUpdateTime(OffsetDateTime.now())
             .build();
@@ -129,6 +130,7 @@ public class JobEntityMapperTest {
     assertThat(entity.tenantId())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.businessId()).isNull();
+    assertThat(entity.storageOrdinal()).isNull();
     assertThat(entity.creationTime()).isNotNull();
     assertThat(entity.lastUpdateTime()).isNotNull();
   }
