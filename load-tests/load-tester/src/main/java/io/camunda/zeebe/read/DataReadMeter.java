@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
@@ -33,8 +34,8 @@ public class DataReadMeter implements AutoCloseable {
   private final CamundaClient client;
   private final List<ReadQuery> queries;
   private volatile boolean closed;
-  private ReadQueryContext queryContext =
-      new ReadQueryContext(0L, "", 0L, () -> Pair.of("foo", 0L));
+  private final AtomicReference<ReadQueryContext> queryContext =
+      new AtomicReference<>(new ReadQueryContext(0L, "", 0L, () -> Pair.of("foo", 0L)));
 
   public DataReadMeter(
       final MeterRegistry meterRegistry,
@@ -83,7 +84,7 @@ public class DataReadMeter implements AutoCloseable {
     try {
       query
           .queryFunction()
-          .apply(client, queryContext)
+          .apply(client, queryContext.get())
           .send()
           // measured on the completing thread, so time spent waiting for the executor is excluded
           .handle((response, error) -> new Result(System.nanoTime() - startTime, error))
@@ -118,20 +119,22 @@ public class DataReadMeter implements AutoCloseable {
   }
 
   public void setContextProcessInstanceKey(final long processInstanceKey) {
-    queryContext = queryContext.withProcessInstanceKey(processInstanceKey);
+    queryContext.updateAndGet(context -> context.withProcessInstanceKey(processInstanceKey));
   }
 
   public void setContextProcessDefinitionId(final String processDefinitionId) {
-    queryContext = queryContext.withBenchmarkProcessDefinitionId(processDefinitionId);
+    queryContext.updateAndGet(
+        context -> context.withBenchmarkProcessDefinitionId(processDefinitionId));
   }
 
   public void setContextProcessDefinitionKey(final long processDefinitionKey) {
-    queryContext = queryContext.withBenchmarkProcessDefinitionKey(processDefinitionKey);
+    queryContext.updateAndGet(
+        context -> context.withBenchmarkProcessDefinitionKey(processDefinitionKey));
   }
 
   public void setContextBusinessKeySupplier(
       final Supplier<Pair<String, Object>> businessKeySupplier) {
-    queryContext = queryContext.withBusinessKey(businessKeySupplier);
+    queryContext.updateAndGet(context -> context.withBusinessKey(businessKeySupplier));
   }
 
   private record Result(long durationNanos, Throwable error) {}
