@@ -540,6 +540,45 @@ public final class UserTaskSuspensionGateTest {
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
+  @Test
+  public void shouldRejectResumeOfUserTaskWhenProcessInstanceIsNotResuming() {
+    // given - an active user task whose process instance was never suspended
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", t -> t.zeebeUserTask())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .userTask(
+                UserTaskIntent.RESUME,
+                new UserTaskRecord()
+                    .setUserTaskKey(userTaskKey)
+                    .setProcessInstanceKey(processInstanceKey))
+            .key(userTaskKey));
+
+    // then
+    final var rejection =
+        RecordingExporter.userTaskRecords(UserTaskIntent.RESUME)
+            .onlyCommandRejections()
+            .withRecordKey(userTaskKey)
+            .getFirst();
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
   private static List<Long> keysWithIntent(
       final List<Record<UserTaskRecordValue>> records, final UserTaskIntent intent) {
     return records.stream().filter(r -> r.getIntent() == intent).map(Record::getKey).toList();
