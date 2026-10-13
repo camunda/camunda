@@ -104,6 +104,7 @@ class DecisionInstanceSearchIT {
 
     // then
     assertThat(result.items()).hasSize(5);
+    assertThat(result.items()).allSatisfy(item -> assertThat(item.getStorageOrdinal()).isNotNull());
   }
 
   @Test
@@ -794,6 +795,7 @@ class DecisionInstanceSearchIT {
         .isEqualTo(expectedDecisionInstance.getRootDecisionDefinitionKey());
     assertThat(result.getResult()).isEqualTo("\"day-to-day expense\"");
     assertThat(result.getEvaluationDate()).isNotNull();
+    assertThat(result.getStorageOrdinal()).isNotNull();
 
     // Assert evaluated inputs
     assertThat(result.getEvaluatedInputs()).hasSize(2);
