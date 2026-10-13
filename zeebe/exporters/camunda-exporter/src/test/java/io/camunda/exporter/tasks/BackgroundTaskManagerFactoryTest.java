@@ -57,7 +57,8 @@ class BackgroundTaskManagerFactoryTest {
             mock(ExporterMetadata.class),
             new ObjectMapper(),
             mock(ExporterEntityCacheImpl.class),
-            InstantSource.system());
+            InstantSource.system(),
+            () -> Long.MAX_VALUE);
   }
 
   @Test
