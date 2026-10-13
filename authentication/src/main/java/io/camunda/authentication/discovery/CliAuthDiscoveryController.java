@@ -27,6 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
  * with the public client the tool logs the user in with (authorization code + PKCE on a loopback
  * redirect).
  *
+ * <p>Each provider also carries the audiences the cluster validates for its issuer, so a client can
+ * recognize a token it would be rejected with, typically one minted for another API.
+ *
  * <p>Served on {@code SecurityPaths.UNPROTECTED_PATHS}, a chain without any authentication filter,
  * because a client calls it before it holds a credential, and a stray one must not turn it into a
  * 401. Issuers are read from the configuration, never resolved, so the endpoint answers while an
@@ -81,10 +84,17 @@ public class CliAuthDiscoveryController {
                     issuer,
                     cliClient.clientId(),
                     cliClient.scopes(),
-                    cliClient.redirectUri()));
+                    cliClient.redirectUri(),
+                    audiences(configuration),
+                    cliClient.resource()));
           }
         });
     return providers;
+  }
+
+  private static List<String> audiences(final OidcConfiguration configuration) {
+    final var audiences = configuration.getAudiences();
+    return audiences == null ? List.of() : audiences.stream().sorted().toList();
   }
 
   private static CliAuthDiscoveryResponse response(

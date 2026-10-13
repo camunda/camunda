@@ -28,6 +28,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * since providers compare it exactly (only the port of a loopback URI is ignored, RFC 8252). It
  * must be an {@code http} loopback URI, because the CLI receives the browser's redirect on its own
  * machine; without a port the CLI picks a free one per login.
+ *
+ * <p>{@code resource} is the RFC 8707 resource indicator a CLI sends, for identity providers that
+ * set the token audience from it (Auth0's {@code audience} works the same way); providers that
+ * derive the audience from a scope, like Keycloak client scopes or Entra ID, need it in {@code
+ * scopes} instead.
  */
 @NullMarked
 @ConfigurationProperties(prefix = "camunda.security.authentication")
@@ -40,7 +45,11 @@ public record CliClientsProperties(Map<String, CliClient> cliClients) {
 
   @SuppressWarnings("ConstantValue") // Spring passes null for an unset property
   public record CliClient(
-      String clientId, List<String> scopes, String redirectUri, @Nullable String clientSecret) {
+      String clientId,
+      List<String> scopes,
+      String redirectUri,
+      @Nullable String resource,
+      @Nullable String clientSecret) {
 
     public static final String DEFAULT_REDIRECT_URI = "http://127.0.0.1/callback";
     private static final Set<String> LOOPBACK_HOSTS = Set.of("127.0.0.1", "[::1]", "localhost");
