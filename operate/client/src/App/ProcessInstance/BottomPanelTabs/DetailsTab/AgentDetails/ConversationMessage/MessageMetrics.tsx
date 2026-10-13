@@ -8,7 +8,7 @@
 
 import type {AgentInstanceHistoryItemMetrics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Tag, Tooltip} from '@carbon/react';
-import {memo} from 'react';
+import {Fragment, memo} from 'react';
 import styled from 'styled-components';
 import {getTotalTokens} from '../getTotalTokens';
 
@@ -55,16 +55,14 @@ const MessageMetrics: React.FC<Props> = memo(function MessageMetrics({
     cacheReadTokens: metrics.cacheReadTokenCount,
     cacheCreationTokens: metrics.cacheCreationTokenCount,
   });
-  const inputTooltip = `Input: ${formatToken(metrics.inputTokens)}`;
-  const cacheReadTooltip =
-    metrics.cacheReadTokenCount !== null
-      ? `Cache read: ${formatToken(metrics.cacheReadTokenCount)}`
-      : '';
-  const outputTooltip = `Output: ${formatToken(metrics.outputTokens)} ${metrics.reasoningTokenCount !== null ? `(${formatToken(metrics.reasoningTokenCount)} reasoning)` : ''}`;
-  const cacheWriteTooltip =
-    metrics.cacheCreationTokenCount !== null
-      ? `Cache write: ${formatToken(metrics.cacheCreationTokenCount)}`
-      : '';
+  const tooltipLines = [
+    `Input: ${formatToken(metrics.inputTokens)}`,
+    metrics.cacheReadTokenCount !== null &&
+      `Cache read: ${formatToken(metrics.cacheReadTokenCount)}`,
+    metrics.cacheCreationTokenCount !== null &&
+      `Cache write: ${formatToken(metrics.cacheCreationTokenCount)}`,
+    `Output: ${formatToken(metrics.outputTokens)}${metrics.reasoningTokenCount !== null ? ` (${formatToken(metrics.reasoningTokenCount)} reasoning)` : ''}`,
+  ].filter((line) => line !== false);
 
   return (
     <MetricsContainer>
@@ -72,13 +70,12 @@ const MessageMetrics: React.FC<Props> = memo(function MessageMetrics({
         <Tooltip
           description={
             <>
-              {inputTooltip}
-              <br />
-              {cacheReadTooltip}
-              <br />
-              {cacheWriteTooltip}
-              <br />
-              {outputTooltip}
+              {tooltipLines.map((line, index) => (
+                <Fragment key={line}>
+                  {index > 0 && <br />}
+                  {line}
+                </Fragment>
+              ))}
             </>
           }
           align="bottom"
