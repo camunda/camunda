@@ -268,6 +268,11 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
   Consumers must tolerate duplicates. This only happens on the rare fallback where both a cursor's
   target element instance and its parent have terminated mid-walk — the common case of a missing
   target with a present parent just continues the walk there instead.
+- A `SUSPEND` sent while a walk is still running (allowed, since the `SUSPENDING` restart lets it
+  through) starts a second walk from the root. User tasks visited by both walks get duplicate
+  `UserTask.SUSPENDED` events and duplicate buffered `RESUME` commands, which drain into duplicate
+  `UserTask.RESUMED` events. Only one `ProcessInstance.SUSPENDED` is written. Consumers must
+  tolerate these duplicates until a follow-up deduplicates user task suspension.
 - Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking for
   job suspension.
 
