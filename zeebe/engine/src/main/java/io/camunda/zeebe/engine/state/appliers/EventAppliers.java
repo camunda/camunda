@@ -202,8 +202,12 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {
-    register(ProcessDefinitionRestoreIntent.STARTED, NOOP_EVENT_APPLIER);
-    register(ProcessDefinitionRestoreIntent.RESTORED, NOOP_EVENT_APPLIER);
+    register(
+        ProcessDefinitionRestoreIntent.STARTED,
+        new ProcessDefinitionRestoreStartedApplier(state.getProcessState()));
+    register(
+        ProcessDefinitionRestoreIntent.RESTORED,
+        new ProcessDefinitionRestoredApplier(state.getProcessState()));
     register(ProcessDefinitionRestoreIntent.FINISHED, NOOP_EVENT_APPLIER);
   }
 
