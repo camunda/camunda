@@ -15,6 +15,8 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -706,6 +708,29 @@ public class CamundaMultiDBExtension
     return new MultiPhysicalTenantClients(clients);
   }
 
+  /**
+   * Waits until every physical tenant's secondary-storage schema is initialized, not just one.
+   *
+   * <p>The application's startup gate opens as soon as <em>any</em> physical tenant is serviceable
+   * and the rest have settled, so a tenant whose first schema attempt failed is still degraded and
+   * retrying in the background once the port is open. Components that consult that state degrade
+   * silently rather than failing: a persistent web session created on a degraded tenant is dropped
+   * with a warning, and the request that reads it back then sees no session at all. A test starting
+   * at that moment observes it as a flake, so the wait belongs here rather than in each test.
+   */
+  private void awaitEveryPhysicalTenantSecondaryStorageReady() {
+    if (!applicationUnderTest.shouldBeManaged) {
+      // the application is started by the test itself, so there is no context to consult here
+      return;
+    }
+    final TestStandaloneApplication<?> application = applicationUnderTest.application();
+    final PhysicalTenantIds tenantIds = application.bean(PhysicalTenantIds.class);
+    final SecondaryStorageReadiness readiness = application.bean(SecondaryStorageReadiness.class);
+    Awaitility.await("every physical tenant's secondary storage is ready")
+        .timeout(TIMEOUT_DATABASE_READINESS)
+        .until(() -> tenantIds.known().stream().allMatch(readiness::isReady));
+  }
+
   private void awaitMultiPhysicalTenantAdminsReady(final MultiPhysicalTenantClients ptClients) {
     for (final String tenantId : multiPhysicalTenantIds) {
       final CamundaClient admin = ptClients.admin(tenantId);
@@ -1027,6 +1052,10 @@ public class CamundaMultiDBExtension
 
     if (applicationUnderTest.shouldBeManaged) {
       manageApplicationUnderTest();
+    }
+
+    if (physicalTenantId != null || multiPhysicalTenantIds != null) {
+      awaitEveryPhysicalTenantSecondaryStorageReady();
     }
 
     if (multiPhysicalTenantIds != null) {
