@@ -368,6 +368,53 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  # Temporary soft integration: the Gradle jobs still run, but are not part of check-results, so
+  # they never block a PR or merge group. Failures on main are reported to Slack instead.
+  gradle-notify-failure:
+    name: "Gradle / Notify on failure"
+    if: >-
+      always() &&
+      github.repository == 'camunda/camunda' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      (needs.gradle-compile-check.result == 'failure' || needs.gradle-dist-parity.result == 'failure')
+    needs: [ gradle-compile-check, gradle-dist-parity ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      # Squash merges end the commit title with "(#<PR number>)". Only the digits are used below,
+      # so an arbitrary commit message cannot inject content into the Slack payload.
+      - name: Find merged pull request
+        id: pr
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          pr_number="$(head -n1 <<< "$COMMIT_MESSAGE" | grep -oE '\(#[0-9]+\)$' | grep -oE '[0-9]+' || true)"
+          echo "number=${pr_number}" >> "$GITHUB_OUTPUT"
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions GRADLE_BUILD_NOTIFICATIONS_WEBHOOK_URL;
+      - name: Send notification
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.secrets.outputs.GRADLE_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            text: "Gradle build on main failed (${{ github.sha }})"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "Gradle build on *main* FAILED (Test Classes: ${{ needs.gradle-compile-check.result }}, Distribution Parity: ${{ needs.gradle-dist-parity.result }})\nCommit: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}${{ steps.pr.outputs.number && format(' (PR {0}/{1}/pull/{2})', github.server_url, github.repository, steps.pr.outputs.number) || '' }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
   junit-vintage-check:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Lint / JUnit Vintage Engine"
@@ -3069,8 +3116,6 @@ jobs:
       - docker-checks
       - general-unit-tests
       - generate-db-versions
-      - gradle-compile-check
-      - gradle-dist-parity
       - history-tests
       - identity-frontend-tests
       - identity-tests
