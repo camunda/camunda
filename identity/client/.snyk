@@ -1,0 +1,13 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.1
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-JS-ZOD-20510278:
+    - '*':
+        reason: >-
+          No fixed zod version exists. zod only runs client-side in the browser and we don't
+          use it to parse large arrays, so an oversized array could at most exhaust the
+          memory of the user's own tab.
+        expires: 2026-11-13T00:00:00.000Z
+        created: 2026-10-13T00:00:00.000Z
+patch: {}
