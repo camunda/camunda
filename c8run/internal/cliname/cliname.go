@@ -35,7 +35,7 @@ func RewriteAs(s, name string) string {
 	if name == "" {
 		return s
 	}
-	return commandPattern.ReplaceAllString(s, name+" $1")
+	return commandPattern.ReplaceAllString(s, strings.ReplaceAll(name, "$", "$$")+" $1")
 }
 
 // Rewrite applies the configured wrapper name to s.
