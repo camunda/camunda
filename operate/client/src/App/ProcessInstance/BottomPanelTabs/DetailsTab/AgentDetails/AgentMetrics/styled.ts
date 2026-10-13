@@ -38,16 +38,6 @@ const MetricCardValue = styled.span`
 const MetricCardValueRow = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--cds-spacing-03);
-`;
-
-const InfoButton = styled.button`
-  display: inline-flex;
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--cds-icon-secondary);
 `;
 
 const MetricHelperText = styled.span`
@@ -119,7 +109,6 @@ export {
   MetricCardTitle,
   MetricCardValue,
   MetricCardValueRow,
-  InfoButton,
   MetricHelperText,
   LimitMeterContainer,
   LimitMeter,

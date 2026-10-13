@@ -8,13 +8,12 @@
 
 import {useId} from 'react';
 import {Information} from '@carbon/react/icons';
-import {Tooltip} from '@carbon/react';
+import {IconButton} from '@carbon/react';
 import {
   MetricCardContainer,
   MetricCardTitle,
   MetricCardValue,
   MetricCardValueRow,
-  InfoButton,
   MetricHelperText,
   LimitMeter,
   LimitMeterContainer,
@@ -40,11 +39,15 @@ const MetricCard: React.FC<MetricCardProps> = ({
       <MetricCardValueRow>
         <MetricCardValue>{value.toLocaleString()}</MetricCardValue>
         {valueInfo !== undefined && (
-          <Tooltip description={valueInfo} align="bottom">
-            <InfoButton type="button" aria-label={`${title} calculation`}>
-              <Information size={16} />
-            </InfoButton>
-          </Tooltip>
+          <IconButton
+            kind="ghost"
+            size="xs"
+            label={valueInfo}
+            align="bottom"
+            aria-label={`${title} calculation`}
+          >
+            <Information />
+          </IconButton>
         )}
       </MetricCardValueRow>
       {children}
