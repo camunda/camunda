@@ -66,7 +66,7 @@ Common options:
   - `--end` only: the start is the end minus `--duration-seconds`.
   - both: the duration is derived, and `--duration-seconds` cannot be combined with them.
 - `-e`, `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
-- `-u`, `--user <user>` and `-p`, `--password <password>`: basic auth credentials for Prometheus.
+- `-u`, `--prometheus-user <user>` and `-p`, `--prometheus-password <password>`: basic auth credentials for Prometheus.
 - `-f`, `--format json|csv|tsv`: output format. Default: `json`.
 - `--no-header`: omit the CSV or TSV header row for direct spreadsheet row pasting.
 - `--missing-value <value>`: placeholder for missing CSV or TSV metrics. Default:
@@ -77,9 +77,9 @@ Common options:
 
 Every option can also be set through an environment variable named
 `LOADTESTCTL_REPORT_<OPTION>`, for example `LOADTESTCTL_REPORT_DURATION_SECONDS`,
-`LOADTESTCTL_REPORT_ENDPOINT`, `LOADTESTCTL_REPORT_USER` and
-`LOADTESTCTL_REPORT_PASSWORD`. A flag on the command line overrides
-the variable, and an empty variable counts as unset. Prefer `LOADTESTCTL_REPORT_PASSWORD` over `--password`, because command line
+`LOADTESTCTL_REPORT_ENDPOINT`, `LOADTESTCTL_REPORT_PROMETHEUS_USER` and
+`LOADTESTCTL_REPORT_PROMETHEUS_PASSWORD`. A flag on the command line overrides
+the variable, and an empty variable counts as unset. Prefer `LOADTESTCTL_REPORT_PROMETHEUS_PASSWORD` over `--prometheus-password`, because command line
 arguments are visible in the process list and the shell history. `uv run loadtestctl report
 --help` lists the variable next to each option.
 
@@ -118,10 +118,10 @@ uv run loadtestctl report c8-ck-base-8736-endurance \
 CI monitor ingress with basic auth:
 
 ```bash
-LOADTESTCTL_REPORT_PASSWORD="$PROM_PASS" uv run loadtestctl report c8-ck-baseline-20260814 \
+LOADTESTCTL_REPORT_PROMETHEUS_PASSWORD="$PROM_PASS" uv run loadtestctl report c8-ck-baseline-20260814 \
   --duration-seconds 1800 \
   --endpoint https://ci-monitor.benchmark.camunda.cloud \
-  --user "$PROM_USER" \
+  --prometheus-user "$PROM_USER" \
   --format csv > /tmp/load-test-report.csv
 ```
 

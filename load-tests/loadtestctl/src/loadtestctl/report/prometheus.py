@@ -108,7 +108,7 @@ class PrometheusClient:
 
 def auth_headers(basic_auth_user: str, basic_auth_password: str) -> dict[str, str]:
     if bool(basic_auth_user) != bool(basic_auth_password):
-        raise ReportError("--user and --password must be provided together.")
+        raise ReportError("--prometheus-user and --prometheus-password must be provided together.")
     headers: dict[str, str] = {}
     if basic_auth_user:
         credentials = f"{basic_auth_user}:{basic_auth_password}".encode()
@@ -143,6 +143,6 @@ Then rerun this script with:
   --endpoint http://localhost:9090
 
 If you are using the CI monitor ingress, verify the URL and pass credentials with
---user/--password, for example:
+--prometheus-user/--prometheus-password, for example:
 
-  --endpoint https://ci-monitor.benchmark.camunda.cloud --user "$PROM_USER" --password "$PROM_PASS"'''
+  --endpoint https://ci-monitor.benchmark.camunda.cloud --prometheus-user "$PROM_USER" --prometheus-password "$PROM_PASS"'''

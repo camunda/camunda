@@ -149,10 +149,10 @@ Examples:
 
 \b
   # CI monitor ingress with basic auth:
-  LOADTESTCTL_REPORT_PASSWORD="$PROM_PASS" loadtestctl report c8-ck-baseline-20260814 \\
+  LOADTESTCTL_REPORT_PROMETHEUS_PASSWORD="$PROM_PASS" loadtestctl report c8-ck-baseline-20260814 \\
     --duration-seconds 1800 \\
     --endpoint https://ci-monitor.benchmark.camunda.cloud \\
-    --user "$PROM_USER" \\
+    --prometheus-user "$PROM_USER" \\
     --format csv > /tmp/load-test-report.csv"""
 
 
@@ -268,8 +268,8 @@ def run_report(options: Options) -> None:
     help="End of the reporting window, RFC3339 or Unix timestamp. Must not be in the future.",
 )
 @option("-e", "--endpoint", default="http://localhost:9090", show_default=True, help="Prometheus base URL.")
-@option("-u", "--user", default="", help="Basic auth user for Prometheus.")
-@option("-p", "--password", default="", help="Basic auth password for Prometheus.")
+@option("-u", "--prometheus-user", default="", help="Basic auth user for Prometheus.")
+@option("-p", "--prometheus-password", default="", help="Basic auth password for Prometheus.")
 @option(
     "-f",
     "--format",
@@ -290,8 +290,8 @@ def report(
     start: datetime | None,
     end: datetime | None,
     endpoint: str,
-    user: str,
-    password: str,
+    prometheus_user: str,
+    prometheus_password: str,
     format: str,
     no_header: bool,
     missing_value: str,
@@ -306,8 +306,8 @@ def report(
                 rate_interval=rate_interval,
                 sample_step=sample_step,
                 endpoint=endpoint,
-                basic_auth_user=user,
-                basic_auth_password=password,
+                basic_auth_user=prometheus_user,
+                basic_auth_password=prometheus_password,
                 time_anchor=end_label,
                 start_label=start_label,
                 end_label=end_label,
