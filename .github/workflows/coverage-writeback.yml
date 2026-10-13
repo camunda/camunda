@@ -1,0 +1,235 @@
+# description: Flips a qa/coverage plan's `planned` cases to `automated` once
+#              their tests exist, and opens the correction as a PR.
+#              See camunda/team-test-automation#83.
+# test location: /qa/coverage
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: Coverage plan write-back
+
+# A coverage plan is authored once; the tests it describes arrive over the
+# following weeks. Nothing flipped a case's status when its test landed, so a
+# plan keeps saying `planned` — and because the coverage gate reports FROM the
+# plan, every product PR linking that epic is told a stale number as fact. It is
+# how qa/coverage/product-hub-3526.yml came to under-report its own epic by 47
+# cases while the gate said 27 of 74.
+#
+# `coverage-plan.mjs validate` already warns on each one. This makes the edit
+# the warning asks for and opens it as a PR, so the correction is reviewed
+# rather than applied silently: the status is a claim about coverage, and a
+# human should see the claim change.
+#
+# Only `planned` -> `automated`, and only where a test TITLED "<ID>: ..." exists
+# — the id has to sit immediately inside a quote, so a comment mentioning it is
+# not evidence. That narrowing is what makes this safe to run here at all.
+# check-coverage-plans.yml passes `--no-case-ids` because this repository's
+# suites predate the convention and a bare grep over them verifies nothing; the
+# same bare grep in a job that EDITS the plan would commit a coverage claim
+# nobody made. See .github/scripts/coverage-plan-check/coverage-writeback.mjs.
+#
+# Until a plan points at a spec whose titles carry ids, this job correctly finds
+# nothing. That is the intended resting state, not a misconfiguration.
+
+on:
+  schedule:
+    - cron: '41 7 * * 2'  # Tuesdays, 07:41 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+# Both triggers rewrite ONE fixed branch and open ONE PR on it, so two runs at
+# once race: whichever pushes second loses its lease, and both can reach
+# `gh pr create`. Queue them instead of cancelling -- a cancelled run could
+# leave the branch pushed with no PR opened for it.
+concurrency:
+  group: coverage-writeback
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CHECK_DIR: .github/scripts/coverage-plan-check
+  BRANCH: chore/coverage-writeback
+
+jobs:
+  writeback:
+    name: Flip landed cases to automated
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job commits the corrected plans and pushes the
+        # branch it opens the PR from.
+        # zizmor: ignore[artipacked]
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+
+      # coverage-writeback.mjs imports coverage-plan.mjs, which imports `yaml`.
+      # Without this the job dies on ERR_MODULE_NOT_FOUND before reading a
+      # single plan.
+      - name: Install validator dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CHECK_DIR }}
+
+      - name: Write back landed cases
+        id: writeback
+        run: |
+          # Run from the repository root: the module resolves every spec `path`
+          # in a plan against the working directory, which is what lets it read
+          # the suite rather than only the plan.
+          # `shell: bash` runs with -e and pipefail, so a non-zero exit here
+          # would end the step and skip the PR below. Exit 3 means "some case
+          # needs a human", and the cases that DID flip are already on disk and
+          # still worth a PR -- losing them because another case in the same
+          # run was uneditable is the opposite of the point. So catch the
+          # status, let the PR step run, and fail the job at the end.
+          set +e
+          node "$CHECK_DIR/coverage-writeback.mjs" qa/coverage \
+            2>&1 | tee "$RUNNER_TEMP/writeback.txt"
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+          # Anything other than 0 or 3 is a real failure -- a plan that will
+          # not parse, a module that will not load -- and must stop the run.
+          if [[ "$status" -ne 0 && "$status" -ne 3 ]]; then
+            echo "::error::coverage-writeback.mjs exited $status"
+            exit "$status"
+          fi
+
+          if git diff --quiet -- qa/coverage; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open a pull request
+        if: steps.writeback.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          # One branch, reused. A new branch per run would open a fresh PR every
+          # week for a correction nobody had got round to reviewing yet.
+          git checkout -B "$BRANCH"
+          git add qa/coverage
+          git commit -F - <<EOF
+          test: flip coverage-plan cases whose tests have landed
+
+          Found by .github/scripts/coverage-plan-check/coverage-writeback.mjs:
+          each case below is \`planned\` in its plan while a test titled
+          \`<ID>: ...\` exists in the spec the plan points at.
+
+          The coverage gate reports from the plan, so until this lands the gate
+          under-reports these cases to every product PR that links the epic.
+
+          $(cat "$RUNNER_TEMP/writeback.txt")
+          EOF
+          # --force-with-lease compares against refs/remotes/origin/$BRANCH, and
+          # actions/checkout fetched only the default branch -- so on the second
+          # run, when the branch already exists, there is nothing to compare and
+          # the push is rejected as "stale info". A plain `git fetch origin
+          # $BRANCH` does NOT fix it: that writes FETCH_HEAD, and the implicit
+          # lease only honours a ref the configured refspec covers. Widen the
+          # refspec, then fetch. `|| true` because on the first run the branch
+          # legitimately does not exist and the fetch fails.
+          git config --add remote.origin.fetch \
+            "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
+          git fetch --no-tags origin || true
+          git push --force-with-lease -u origin "$BRANCH"
+
+          # A PR may already be open on this branch from an earlier run; the
+          # push above has just updated it, so there is nothing more to do.
+          open_pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" \
+            --state open --json number --jq '.[0].number // ""')
+          if [[ -n "$open_pr" ]]; then
+            echo "PR #${open_pr} already open for $BRANCH — updated it."
+            exit 0
+          fi
+
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$BRANCH" \
+            --title 'test: flip coverage-plan cases whose tests have landed' \
+            --body "$(cat <<'BODY'
+          Opened by the **Coverage plan write-back** job.
+
+          Each case in the diff is `planned` in its coverage plan while a test
+          titled `<ID>: ...` already exists in the spec file that plan points
+          at. The coverage gate reports from the plan, so until this merges the
+          gate under-reports those cases on every product PR linking the epic.
+
+          Only `planned` → `automated` is written back. A case that is
+          `automated` with no matching test is an error rather than a flip —
+          `check-coverage-plans.yml` fails on it — and a `stub` is never
+          promoted, because its id is present while its test is still skipped.
+
+          Evidence is a test *title*: the id has to sit immediately inside a
+          quote. A comment mentioning it does not count, which is what makes
+          this safe over suites that predate the convention.
+
+          ## Related issues
+
+          <!-- Ticked, not blank: the release-notes gate accepts only `[x]`
+               (.github/actions/release-notes/src/parser isOptOutTicked), and
+               these PRs have no tracked issue by design, so a blank box fails
+               the gate on every one of them. -->
+          - [x] This PR does not need a linked issue
+
+          Review what the diff claims, not just that it is green: this changes
+          what the gate tells other teams about an epic's coverage.
+          BODY
+          )"
+
+      - name: Fail when a case needs a hand edit
+        # After the PR step, so a run that both flipped something and hit an
+        # uneditable case still opens the PR for the flips and then goes red.
+        if: always() && steps.writeback.outputs.status == '3'
+        run: |
+          echo "::error::a coverage-plan case could not be edited and needs flipping by hand — see the log above"
+          exit 1
+
+      - name: Report result in summary
+        if: always()
+        env:
+          CHANGED: ${{ steps.writeback.outputs.changed }}
+        run: |
+          # The markdown below contains backticks inside single quotes — a code
+          # fence and an inline branch name — which is what SC2016 flags.
+          # shellcheck disable=SC2016
+          {
+            echo '## Coverage plan write-back'
+            echo ''
+            echo '```'
+            cat "$RUNNER_TEMP/writeback.txt" 2>/dev/null || echo '(no output)'
+            echo '```'
+            if [[ "$CHANGED" == 'true' ]]; then
+              echo ''
+              echo "Opened or updated \`$BRANCH\`."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
