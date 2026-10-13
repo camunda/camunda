@@ -39,10 +39,12 @@ import org.jspecify.annotations.Nullable;
  *
  * @see RecordValue
  * @see TenantOwned
+ * @see StorageOrdinalRelated
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableExpressionRecordValue.Builder.class)
-public interface ExpressionRecordValue extends RecordValue, TenantOwned, RecordValueWithVariables {
+public interface ExpressionRecordValue
+    extends RecordValue, TenantOwned, RecordValueWithVariables, StorageOrdinalRelated {
 
   /**
    * Returns the FEEL expression to be evaluated.

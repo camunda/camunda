@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionReco
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1761,6 +1763,124 @@ public final class StorageOrdinalAssignmentTest {
             .withIntent(AdHocSubProcessInstructionIntent.COMPLETED)
             .getFirst();
     assertThat(completed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignInstanceOrdinalToScopedExpressionEvaluation() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("expression-scope-process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("expression-scope-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("expression-scope-process").create();
+
+    // when
+    final var evaluated =
+        engine.expression().withExpression("=1").withScopeKey(processInstanceKey).resolve();
+
+    // then
+    assertThat(evaluated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldMarkUnscopedExpressionEvaluationAsNotOrdinalControlled() {
+    // when
+    final var evaluated = engine.expression().withExpression("=1").resolve();
+
+    // then
+    assertThat(evaluated.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkRejectedExpressionEvaluationAsNotOrdinalControlled() {
+    // given
+    final long nonExistingScopeKey = Long.MAX_VALUE - 7;
+
+    // when: the scope does not exist, so the command is rejected before any instance resolves
+    final var rejection =
+        engine
+            .expression()
+            .withExpression("=1")
+            .withScopeKey(nonExistingScopeKey)
+            .expectRejection()
+            .resolve();
+
+    // then
+    assertThat(rejection.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void
+      shouldMarkScopedExpressionEvaluationRejectedAfterScopeResolutionAsNotOrdinalControlled() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("expression-rejected-scope-process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("expression-rejected-scope-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("expression-rejected-scope-process").create();
+
+    // when: the scope resolves, then the evaluation itself fails
+    final var rejection =
+        engine
+            .expression()
+            .withExpression("=assert(notExisting, notExisting != null)")
+            .withScopeKey(processInstanceKey)
+            .expectRejection()
+            .resolve();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.PROCESSING_ERROR);
+    assertThat(rejection.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void
+      shouldMarkScopedExpressionEvaluationRejectedByUnexpectedErrorAsNotOrdinalControlled() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("expression-unexpected-error-process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("expression-unexpected-error-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("expression-unexpected-error-process").create();
+    // the command fits into a batch, but the EVALUATED event (variables + result) does not, so
+    // the failure is thrown after the scope has resolved and the engine writes the rejection
+    final var largeValue = "x".repeat(2_200_000);
+
+    // when
+    final var rejection =
+        engine
+            .expression()
+            .withExpression("=large")
+            .withVariables(Map.of("large", largeValue))
+            .withScopeKey(processInstanceKey)
+            .expectRejection()
+            .resolve();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
+    assertThat(rejection.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
   }
 
   private void assertProcessEventTriggeringCarriesOrdinal(final long processInstanceKey) {
