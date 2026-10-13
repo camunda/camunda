@@ -87,7 +87,8 @@ jobs:
           # every secondary-storage endpoint is rejected with 503 (before request
           # validation runs). Wait until such an endpoint is actually served.
           storage_ready=false
-          for i in {1..30}; do
+          deadline=$((SECONDS + 300))
+          while (( SECONDS < deadline )); do
             status=$(curl -s -o /dev/null -m 10 -w '%{http_code}' \
               -u demo:demo -X POST \
               -H 'Content-Type: application/json' -d '{}' \
@@ -97,8 +98,8 @@ jobs:
               storage_ready=true
               break
             fi
-            echo "Waiting for secondary storage... ($i/30) HTTP status: $status"
-            sleep 10
+            echo "Waiting for secondary storage... HTTP status: $status"
+            sleep 5
           done
           if [ "$storage_ready" != true ]; then
             echo "Secondary storage did not become ready in time."
