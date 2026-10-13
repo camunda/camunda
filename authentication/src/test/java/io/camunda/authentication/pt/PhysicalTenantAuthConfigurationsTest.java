@@ -491,6 +491,63 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   @Test
+  void shouldMergeAndNarrowCamelCaseRootProvider() {
+    // given a camel-case root provider, overridden per field and assigned by the tenant
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.AzureAd.client-id", "root-client",
+                "camunda.security.authentication.providers.oidc.AzureAd.issuer-uri",
+                    "http://idp/azure",
+                "camunda.security.authentication.providers.oidc.other.client-id", "client-other",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.AzureAd.client-id",
+                    "pt-client",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "AzureAd"));
+
+    // when
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // then
+    assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("AzureAd");
+    final var provider = cfg.getProviders().getOidc().get("AzureAd");
+    assertThat(provider.getClientId()).isEqualTo("pt-client");
+    assertThat(provider.getIssuerUri()).isEqualTo("http://idp/azure");
+  }
+
+  @Test
+  void shouldApplyTenantIssuerOverrideToUnderscoreAndBracketDeclaredProviders() {
+    // given providers declared as `azure_ad` and `[AzureAd]`, each with a tenant issuer override
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.azure_ad.client-id", "c1",
+                "camunda.security.authentication.providers.oidc.azure_ad.issuer-uri",
+                    "http://idp/cluster-1",
+                "camunda.security.authentication.providers.oidc[AzureAd].client-id", "c2",
+                "camunda.security.authentication.providers.oidc[AzureAd].issuer-uri",
+                    "http://idp/cluster-2",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.azure_ad.issuer-uri",
+                    "http://idp/tenant-1",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc[AzureAd].issuer-uri",
+                    "http://idp/tenant-2"));
+
+    // when
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // then each provider keeps its cluster client-id and trusts the tenant's issuer
+    final var providers = cfg.getProviders().getOidc();
+    assertThat(providers.get("azure_ad").getClientId()).isEqualTo("c1");
+    assertThat(providers.get("azure_ad").getIssuerUri()).isEqualTo("http://idp/tenant-1");
+    assertThat(providers.get("AzureAd").getClientId()).isEqualTo("c2");
+    assertThat(providers.get("AzureAd").getIssuerUri()).isEqualTo("http://idp/tenant-2");
+  }
+
+  @Test
   void shouldKeepTenantWideSettingsOfDroppedDefaultSlot() {
     // given a root default slot with a groups claim and UserInfo augmentation, and a tenant that
     // is assigned only a named provider
