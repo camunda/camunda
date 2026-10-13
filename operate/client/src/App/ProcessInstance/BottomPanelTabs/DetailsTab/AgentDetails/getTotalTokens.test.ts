@@ -15,8 +15,8 @@ describe('getTotalTokens', () => {
       getTotalTokens({
         inputTokens: null,
         outputTokens: null,
-        cacheReadTokens: null,
-        cacheCreationTokens: null,
+        cacheReadTokenCount: null,
+        cacheCreationTokenCount: null,
       }),
     ).toBe(0);
   });
@@ -26,8 +26,8 @@ describe('getTotalTokens', () => {
       getTotalTokens({
         inputTokens: 20,
         outputTokens: 4262,
-        cacheReadTokens: 60189,
-        cacheCreationTokens: 32385,
+        cacheReadTokenCount: 60189,
+        cacheCreationTokenCount: 32385,
       }),
     ).toBe(96856);
   });
@@ -37,8 +37,8 @@ describe('getTotalTokens', () => {
       getTotalTokens({
         inputTokens: null,
         outputTokens: null,
-        cacheReadTokens: 7,
-        cacheCreationTokens: null,
+        cacheReadTokenCount: 7,
+        cacheCreationTokenCount: null,
       }),
     ).toBe(7);
   });
