@@ -259,16 +259,17 @@ jobs:
                 )
               )
             }}
-      # Build the distribution in the same Gradle invocation as testClasses so the archive
-      # reuses the compilation output instead of compiling the repository again.
-      - name: Compile, package, and verify Gradle cache reuse
+      - name: Compile
         run: |
-          set -euo pipefail
           ./gradlew --console=plain --parallel -Pskip.fe.build \
-            testClasses :camunda-zeebe:distZip
-
-          verification_log="$(mktemp)"
-          trap 'rm -f "$verification_log"' EXIT
+            testClasses
+      - name: Package distribution
+        run: |
+          ./gradlew --console=plain --parallel -Pskip.fe.build \
+            :camunda-zeebe:distZip
+      - name: Verify Gradle cache reuse
+        run: |
+          verification_log="$RUNNER_TEMP/gradle-cache-verification.log"
           ./gradlew --console=plain --parallel -Pskip.fe.build \
             testClasses 2>&1 | tee "$verification_log"
 
@@ -291,7 +292,8 @@ jobs:
           fi
 
           echo "Cache verification passed: $summary"
-
+      - name: Write distribution dependency report
+        run: |
           ./gradlew --no-configuration-cache --console=plain -Pskip.fe.build \
             :camunda-zeebe:writeDistDependencyReport
       - name: Verify Gradle isolated-project compatibility
