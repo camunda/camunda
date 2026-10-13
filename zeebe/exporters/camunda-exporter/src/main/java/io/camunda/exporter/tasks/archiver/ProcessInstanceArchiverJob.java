@@ -105,6 +105,20 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   }
 
   @Override
+  protected CompletableFuture<Integer> archive(
+      final IndexTemplateDescriptor templateDescriptor,
+      final ProcessInstanceArchiveBatch batch,
+      final Map<String, String> filters) {
+    final var sourceIdxName = templateDescriptor.getFullQualifiedName();
+    final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
+    final var finishDate = batch.finishDate();
+    final var executor = getExecutor();
+    return getArchiverRepository()
+        .moveDocuments(sourceIdxName, sourceIdxName + finishDate, idsMap, filters, executor)
+        .thenApplyAsync(ok -> batch.size(), executor);
+  }
+
+  @Override
   protected Map<String, List<String>> createIdsByFieldMap(
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
     final Map<String, List<String>> idsMap = new HashMap<>();
