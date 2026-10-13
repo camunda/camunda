@@ -13,10 +13,21 @@ import java.util.List;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-/** Payload of {@code GET /.well-known/camunda-auth}. */
+/**
+ * Payload of {@code GET /.well-known/camunda-auth[/physical-tenants/<id>]}.
+ *
+ * @param physicalTenant the physical tenant this document describes
+ * @param apiBase the path prefix of that tenant's API, e.g. {@code /physical-tenants/pt1}; empty
+ *     for the unprefixed API of the default tenant
+ */
 @NullMarked
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public record CliAuthDiscoveryResponse(int version, String method, List<Provider> providers) {
+public record CliAuthDiscoveryResponse(
+    int version,
+    String method,
+    @JsonProperty("physical_tenant") String physicalTenant,
+    @JsonProperty("api_base") String apiBase,
+    List<Provider> providers) {
 
   public static final int VERSION = 1;
 
