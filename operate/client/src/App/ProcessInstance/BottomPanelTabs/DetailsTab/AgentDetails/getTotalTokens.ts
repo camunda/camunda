@@ -9,20 +9,20 @@
 type TokenCounts = {
   inputTokens?: number | null;
   outputTokens?: number | null;
-  cacheReadTokens?: number | null;
-  cacheCreationTokens?: number | null;
+  cacheReadTokenCount?: number | null;
+  cacheCreationTokenCount?: number | null;
 };
 
 function getTotalTokens({
   inputTokens,
   outputTokens,
-  cacheReadTokens,
-  cacheCreationTokens,
+  cacheReadTokenCount,
+  cacheCreationTokenCount,
 }: TokenCounts): number {
   return (
     (inputTokens ?? 0) +
-    (cacheReadTokens ?? 0) +
-    (cacheCreationTokens ?? 0) +
+    (cacheReadTokenCount ?? 0) +
+    (cacheCreationTokenCount ?? 0) +
     (outputTokens ?? 0)
   );
 }

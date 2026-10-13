@@ -34,8 +34,8 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
   const totalTokens = getTotalTokens({
     inputTokens,
     outputTokens,
-    cacheReadTokens,
-    cacheCreationTokens,
+    cacheReadTokenCount: cacheReadTokens,
+    cacheCreationTokenCount: cacheCreationTokens,
   });
 
   return (

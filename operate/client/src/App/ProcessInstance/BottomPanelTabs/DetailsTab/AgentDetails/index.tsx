@@ -127,6 +127,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   const statusLabel =
     STATUS_LABELS[agentInstance.status] ?? agentInstance.status;
   const {metrics, limits, definition} = agentInstance;
+  const totalTokens = getTotalTokens(metrics);
 
   const remainingAgentsCount =
     agentInstances.length < totalAgentsCount
@@ -185,12 +186,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
                 {metrics.modelCalls.toLocaleString()} model calls
               </Tag>
               <Tag type="gray" size="sm">
-                {getTotalTokens({
-                  inputTokens: metrics.inputTokens,
-                  outputTokens: metrics.outputTokens,
-                  cacheReadTokens: metrics.cacheReadTokenCount,
-                  cacheCreationTokens: metrics.cacheCreationTokenCount,
-                }).toLocaleString()}
+                {totalTokens.toLocaleString()}
                 &nbsp;tokens
               </Tag>
             </SectionTitle>
