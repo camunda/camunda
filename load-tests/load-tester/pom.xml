@@ -47,6 +47,12 @@
       </exclusions>
     </dependency>
 
+    <!-- activates the starter's HTTP client metrics: request timings and connection pool state -->
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5-observation</artifactId>
+    </dependency>
+
     <!-- Webflux (Netty) instead of Web (Tomcat) to minimize memory footprint.
          The old HOCON app used a ~2 MB Prometheus HTTPServer; Tomcat adds ~40 MB
          overhead that causes OOM in 256 Mi worker pods under load. Netty is much
@@ -355,6 +361,7 @@
           <usedDependencies>
             <dependency>org.springframework.boot:spring-boot-starter-webflux</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-actuator</dependency>
+            <dependency>org.apache.httpcomponents.client5:httpclient5-observation</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dependency>
             <!-- Log4j2 runtime deps loaded via SPI / log4j2.xml, not direct imports -->
