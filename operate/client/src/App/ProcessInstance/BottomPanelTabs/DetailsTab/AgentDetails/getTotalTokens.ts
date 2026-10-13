@@ -13,10 +13,6 @@ type TokenCounts = {
   cacheCreationTokens?: number | null;
 };
 
-/**
- * The token buckets are disjoint: input is uncached input only, and output
- * already includes reasoning tokens, so reasoning is never added.
- */
 function getTotalTokens({
   inputTokens,
   outputTokens,
