@@ -1,0 +1,33 @@
+# Orchestration Cluster for the CLI login PoC: OIDC against the local Keycloak, H2 as secondary
+# storage, authorizations off (the PoC proves authentication, not permissions).
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:mem:camunda-cli-poc;DB_CLOSE_DELAY=-1
+        username: sa
+        password:
+  security:
+    authentication:
+      method: oidc
+      unprotected-api: false
+      oidc:
+        issuer-uri: http://localhost:18080/realms/camunda
+        client-id: camunda
+        client-secret: camunda-secret
+        redirect-uri: http://localhost:8080/sso-callback
+        audiences: [camunda-api]
+        username-claim: preferred_username
+      # New in the PoC: the public client a CLI logs users in with, per OIDC registration id
+      # ("oidc" is the flat block above).
+      cli-clients:
+        oidc:
+          client-id: c8ctl
+          scopes: [openid, offline_access]
+    authorizations:
+      enabled: false
+    initialization:
+      default-roles:
+        admin:
+          users: [demo]
