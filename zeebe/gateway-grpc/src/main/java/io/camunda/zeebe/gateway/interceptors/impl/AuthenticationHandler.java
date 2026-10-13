@@ -188,6 +188,8 @@ public sealed interface AuthenticationHandler {
 
   final class BasicAuth implements AuthenticationHandler {
     private static final String BASIC_PREFIX = "Basic ";
+    private static final Status MALFORMED_CREDENTIALS =
+        Status.UNAUTHENTICATED.augmentDescription("Malformed Basic credentials");
     private final UserServices userServices;
     private final PasswordEncoder passwordEncoder;
 
@@ -204,10 +206,20 @@ public sealed interface AuthenticationHandler {
                 "Expected authentication information to start with '%s'".formatted(BASIC_PREFIX)));
       }
 
-      final var decodedAuth =
-          new String(
-              Base64.getDecoder().decode(authorizationHeader.substring(BASIC_PREFIX.length())));
+      final String decodedAuth;
+      try {
+        decodedAuth =
+            new String(
+                Base64.getDecoder().decode(authorizationHeader.substring(BASIC_PREFIX.length())));
+      } catch (final IllegalArgumentException e) {
+        return Either.left(MALFORMED_CREDENTIALS);
+      }
+
       final var authParts = decodedAuth.split(":", 2);
+      if (authParts.length < 2) {
+        return Either.left(MALFORMED_CREDENTIALS);
+      }
+
       final var username = authParts[0];
       final var password = authParts[1];
 
