@@ -139,27 +139,11 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullProcessInstance(processInstance, processInstanceKey);
     final ProcessInstanceRecord processInstanceRecord = processInstance.getValue();
 
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(processInstanceRecord.getTenantId())
-            .addResourceId(processInstanceRecord.getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "migrate a process instance",
-                  processInstanceRecord.getProcessInstanceKey(),
-                  "such process instance")
-              : rejection.reason();
-      enrichRejectionCommand(command, processInstanceRecord);
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
+    if (!isAuthorizedToUpdate(
+        command,
+        processInstanceRecord,
+        processInstanceRecord.getBpmnProcessId(),
+        processInstanceRecord.getTenantId())) {
       return;
     }
 
@@ -173,6 +157,15 @@ public class ProcessInstanceMigrationMigrateProcessor
             processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord.getTenantId());
 
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
+
+    if (!isAuthorizedToUpdate(
+        command,
+        processInstanceRecord,
+        BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId()),
+        targetProcessDefinition.getTenantId())) {
+      return;
+    }
+
     requireTargetProcessDefinitionNotDraining(targetProcessDefinition, targetProcessDefinitionKey);
     requireNoStartEventInstanceForTargetProcess(
         processInstance, targetProcessDefinition, messageState);
@@ -229,6 +222,41 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  /**
+   * Checks the UPDATE_PROCESS_INSTANCE permission on the given process definition and the tenant
+   * assignment. Writes the rejection and returns false if either check fails.
+   */
+  private boolean isAuthorizedToUpdate(
+      final TypedRecord<ProcessInstanceMigrationRecord> command,
+      final ProcessInstanceRecord processInstanceRecord,
+      final String bpmnProcessId,
+      final String tenantId) {
+    final var authorizationRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+            .tenantId(tenantId)
+            .addResourceId(bpmnProcessId)
+            .build();
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.NOT_FOUND.equals(rejection.type())
+              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "migrate a process instance",
+                  processInstanceRecord.getProcessInstanceKey(),
+                  "such process instance")
+              : rejection.reason();
+      enrichRejectionCommand(command, processInstanceRecord);
+      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
+      return false;
+    }
+    return true;
   }
 
   /**
