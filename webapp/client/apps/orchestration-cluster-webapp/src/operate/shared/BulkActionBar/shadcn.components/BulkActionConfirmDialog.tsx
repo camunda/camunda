@@ -28,7 +28,7 @@ type Props = {
 	isDestructive?: boolean;
 	isConfirmDisabled?: boolean;
 	onOpenChange: (open: boolean) => void;
-	onCancel: () => void;
+	onCancel?: () => void;
 	onConfirm: () => void;
 };
 
