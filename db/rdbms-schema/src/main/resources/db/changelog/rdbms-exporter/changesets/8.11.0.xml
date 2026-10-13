@@ -55,4 +55,15 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_storage_ordinal_to_job" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}JOB" columnName="STORAGE_ORDINAL"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}JOB">
+      <column name="STORAGE_ORDINAL" type="INTEGER"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>
