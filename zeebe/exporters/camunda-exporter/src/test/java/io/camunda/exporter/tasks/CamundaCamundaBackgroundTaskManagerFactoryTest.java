@@ -61,8 +61,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
             mock(ExporterMetadata.class),
             new ObjectMapper(),
             mock(ExporterEntityCacheImpl.class),
-            InstantSource.system(),
-            () -> Long.MAX_VALUE);
+            InstantSource.system());
   }
 
   @Test
