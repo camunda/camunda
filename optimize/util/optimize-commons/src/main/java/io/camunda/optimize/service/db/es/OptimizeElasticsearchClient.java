@@ -948,12 +948,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                   failedOperationIds.size(),
                   itemName,
                   getHintForErrorMsg(bulkResponse),
-                  bulkResponse.items().stream()
-                      .filter(i -> Objects.nonNull(i.error()))
-                      .map(
-                          i ->
-                              i.operationType() + " " + i.error().type() + " " + i.error().reason())
-                      .collect(Collectors.joining(" , "))));
+                  describeFailedItems(bulkResponse)));
         }
       } catch (final IOException e) {
         final String reason =
@@ -975,6 +970,13 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           + "See Optimize documentation for details.";
     }
     return "";
+  }
+
+  static String describeFailedItems(final BulkResponse bulkResponse) {
+    return bulkResponse.items().stream()
+        .filter(i -> Objects.nonNull(i.error()))
+        .map(i -> i.operationType() + " " + i.error().type() + " " + i.error().reason())
+        .collect(Collectors.joining(" , "));
   }
 
   private static boolean containsNestedDocumentLimitErrorMessage(final BulkResponse bulkResponse) {
@@ -1027,7 +1029,9 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           }
         } else {
           throw new OptimizeRuntimeException(
-              String.format("There were failures while performing bulk on %s", itemName));
+              String.format(
+                  "There were failures while performing bulk on %s. Message: %s",
+                  itemName, describeFailedItems(bulkResponse)));
         }
       } catch (final IOException e) {
         final String reason =
