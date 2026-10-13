@@ -40,9 +40,11 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.Counter;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableBoolean;
@@ -757,6 +759,19 @@ public final class DbProcessState implements MutableProcessState {
           return false;
         });
     return hasPending.get();
+  }
+
+  @Override
+  public Set<Integer> getPendingDeletionPartitions(final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    final var partitions = new HashSet<Integer>();
+    pendingProcessDeletionsPerPartitionColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        key -> {
+          partitions.add(key.second().getValue());
+          return true;
+        });
+    return partitions;
   }
 
   private DeployedProcess lookupProcessByIdAndPersistedVersion(
