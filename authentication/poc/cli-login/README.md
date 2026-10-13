@@ -189,6 +189,7 @@ c8poc contexts
 # *  localhost:8080/pt2  pt2              acme      alice  ...
 
 c8poc use localhost:8080/pt1                     # switch
+c8poc use                                        # or choose from a list
 c8poc topology                                   # -> /physical-tenants/pt1/v2/topology
 c8poc topology --context localhost:8080/pt2      # one-off on another context
 c8poc logout localhost:8080/pt2                  # or: c8poc logout --all

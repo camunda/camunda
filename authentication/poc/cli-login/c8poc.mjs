@@ -38,7 +38,7 @@ Commands:
       --no-browser       Only print the login URL
   physical-tenants [url]  List the cluster's physical tenants (if the cluster lists them)
   contexts               List contexts (* = current)
-  use <context>          Switch the current context
+  use [<context>]        Switch the current context (without a name: choose from a list)
   whoami                 Show the current context's cluster, physical tenant and identity
   topology               GET /v2/topology on the context's physical tenant
   api <path>             GET any path below the physical tenant's API, e.g. c8poc api /v2/license
@@ -463,9 +463,19 @@ function contexts() {
   for (const row of table) console.log(row.map((c, i) => String(c).padEnd(widths[i])).join("  ").trimEnd());
 }
 
-function use(name) {
-  if (!name) throw new Error("usage: c8poc use <context>");
+async function use(nameArg) {
   const store = loadStore();
+  const names = Object.keys(store.contexts);
+  if (!names.length) throw new Error("no contexts - run: c8poc login [url]");
+  let name = nameArg;
+  if (!name) {
+    names.forEach((n, i) => {
+      const d = describe(n, store.contexts[n]);
+      info(`  [${i + 1}] ${n === store.current ? "*" : " "} ${n}  (${d.physicalTenant}, ${d.provider ?? d.method}${d.user ? `, ${d.user}` : ""})`);
+    });
+    name = names[Number(await prompt("Use context: ")) - 1];
+    if (!name) throw new Error("invalid choice");
+  }
   if (!store.contexts[name]) throw new Error(`no context '${name}' - see: c8poc contexts`);
   store.current = name;
   saveStore(store);
