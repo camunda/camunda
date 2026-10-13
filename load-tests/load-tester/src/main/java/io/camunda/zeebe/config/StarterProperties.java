@@ -32,6 +32,7 @@ public class StarterProperties {
   private boolean withResults = false;
   private Duration withResultsTimeout = Duration.ofSeconds(60);
   private int durationLimit = 0;
+  private Duration livenessMaxNoSuccessAge = Duration.ofMinutes(2);
   private boolean startViaMessage = false;
   private String msgName = "msg";
 
@@ -158,5 +159,13 @@ public class StarterProperties {
 
   public void setMsgName(final String msgName) {
     this.msgName = msgName;
+  }
+
+  public Duration getLivenessMaxNoSuccessAge() {
+    return livenessMaxNoSuccessAge;
+  }
+
+  public void setLivenessMaxNoSuccessAge(final Duration livenessMaxNoSuccessAge) {
+    this.livenessMaxNoSuccessAge = livenessMaxNoSuccessAge;
   }
 }

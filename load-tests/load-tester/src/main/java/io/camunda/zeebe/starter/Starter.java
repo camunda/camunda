@@ -81,6 +81,7 @@ public class Starter implements CommandLineRunner {
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
   private final ConnectionMonitor connectionMonitor;
+  private final StarterLivenessIndicator livenessIndicator;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
   private final AtomicReference<Error> fatalError = new AtomicReference<>();
@@ -95,6 +96,7 @@ public class Starter implements CommandLineRunner {
       final MeterRegistry registry,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
+      final StarterLivenessIndicator livenessIndicator,
       final ApplicationContext applicationContext) {
     this.client = client;
     this.applicationContext = applicationContext;
@@ -103,11 +105,13 @@ public class Starter implements CommandLineRunner {
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
+    this.livenessIndicator = livenessIndicator;
   }
 
   @Override
   public void run(final String... args) {
     connectionMonitor.awaitAndPrintTopology();
+    livenessIndicator.recordStarted();
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
@@ -139,6 +143,7 @@ public class Starter implements CommandLineRunner {
       System.exit(SpringApplication.exit(applicationContext, () -> 1));
     }
 
+    livenessIndicator.recordFinished();
     runFinished.set(1);
     LOG.info(
         "Starter finished. Total process instance start requests submitted: {}",
@@ -198,6 +203,7 @@ public class Starter implements CommandLineRunner {
             }
             requestFuture.whenComplete(
                 (noop, error) -> {
+                  livenessIndicator.recordResult(error);
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
