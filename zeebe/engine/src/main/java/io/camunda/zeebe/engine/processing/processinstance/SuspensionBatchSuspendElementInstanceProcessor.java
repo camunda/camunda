@@ -102,7 +102,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
   public void processRecord(final TypedRecord<SuspensionBatchRecord> command) {
     final var value = command.getValue();
     final long processInstanceKey = value.getProcessInstanceKey();
-    if (!validate(command, processInstanceKey)) {
+    if (!validateProcessInstance(command, processInstanceKey)) {
       return;
     }
 
@@ -113,20 +113,16 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
       // instance is impossible here, validate already rejected that case). Continue at the next
       // sibling under its declared parent, ascend if there is none, or restart from the root if
       // the parent is gone too.
-      continueAfter(command, value, value.getParentKey(), value.getElementInstanceKey());
+      continueWithNextSiblingOrParent(command, value.getParentKey(), instanceToSuspendKey);
       return;
     }
 
-    final long childKey =
-        instanceToSuspend.getNumberOfActiveElementInstances() > 0
-            ? findChild(instanceToSuspendKey, value.getIndex())
-            : NO_KEY;
+    final long childKey = findChild(instanceToSuspend, value.getIndex());
     if (childKey != NO_KEY) {
-      appendSuspendElementInstance(command, childKey, instanceToSuspendKey, NO_KEY);
-      return;
+      continueWithChild(command, childKey, instanceToSuspendKey);
+    } else {
+      suspend(command, instanceToSuspendKey, instanceToSuspend);
     }
-
-    suspend(command, value, instanceToSuspendKey, instanceToSuspend, processInstanceKey);
   }
 
   /**
@@ -152,7 +148,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
     return SuspensionAction.PROCESS;
   }
 
-  private boolean validate(
+  private boolean validateProcessInstance(
       final TypedRecord<SuspensionBatchRecord> command, final long processInstanceKey) {
     final var processInstance = elementInstanceState.getInstance(processInstanceKey);
     if (processInstance == null) {
@@ -179,68 +175,91 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
   /** No (more) children left to visit: suspend the instance itself and continue the walk. */
   private void suspend(
       final TypedRecord<SuspensionBatchRecord> command,
-      final SuspensionBatchRecord value,
       final long instanceToSuspendKey,
-      final ElementInstance instanceToSuspend,
-      final long processInstanceKey) {
+      final ElementInstance instanceToSuspend) {
+    final var value = command.getValue();
     visitors.stream()
         .filter(v -> v.shouldVisit(instanceToSuspend))
         .forEach(v -> v.visit(instanceToSuspend));
     stateWriter.appendFollowUpEvent(
         command.getKey(), SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED, value);
 
-    if (instanceToSuspendKey == processInstanceKey) {
+    if (isProcessInstance(instanceToSuspendKey, value)) {
       stateWriter.appendFollowUpEvent(
-          processInstanceKey, ProcessInstanceIntent.SUSPENDED, instanceToSuspend.getValue());
+          value.getProcessInstanceKey(),
+          ProcessInstanceIntent.SUSPENDED,
+          instanceToSuspend.getValue());
       suspensionMetrics.instanceSuspended();
-      return;
+    } else {
+      continueWithNextSiblingOrParent(
+          command, instanceToSuspend.getParentKey(), instanceToSuspendKey);
     }
+  }
 
-    continueAfter(command, value, instanceToSuspend.getParentKey(), instanceToSuspendKey);
+  private boolean isProcessInstance(
+      final long elementInstanceKey, final SuspensionBatchRecord value) {
+    return elementInstanceKey == value.getProcessInstanceKey();
+  }
+
+  /** Descends into {@code childKey}, which starts at its own first child. */
+  private void continueWithChild(
+      final TypedRecord<SuspensionBatchRecord> command, final long childKey, final long parentKey) {
+    appendContinueTraversal(command, childKey, parentKey, NO_KEY);
   }
 
   /**
-   * Continues the walk after {@code childKey} (now suspended) under {@code parentKey}: moves on to
-   * the next sibling after {@code childKey} if one exists; otherwise ascends to {@code parentKey},
-   * with {@code index} set to {@code childKey} so the parent's own next step seeks from there. If
-   * {@code parentKey} itself no longer exists — e.g. concurrently terminated between the child
-   * being found and continuing past it — restarts the walk from the root so no remaining element
-   * instance is missed.
+   * Ascends to {@code parent}, with {@code index} set to {@code suspendedChildKey} so the parent's
+   * own next step seeks from there.
    */
-  private void continueAfter(
+  private void continueWithParent(
       final TypedRecord<SuspensionBatchRecord> command,
-      final SuspensionBatchRecord value,
+      final ElementInstance parent,
+      final long suspendedChildKey) {
+    appendContinueTraversal(command, parent.getKey(), parent.getParentKey(), suspendedChildKey);
+  }
+
+  /**
+   * Continues the walk after {@code suspendedChildKey} (now suspended) under {@code parentKey}:
+   * moves on to the next sibling after {@code suspendedChildKey} if one exists; otherwise ascends
+   * to {@code parentKey}. If {@code parentKey} itself no longer exists — e.g. concurrently
+   * terminated between the child being found and continuing past it — restarts the walk from the
+   * root so no remaining element instance is missed.
+   */
+  private void continueWithNextSiblingOrParent(
+      final TypedRecord<SuspensionBatchRecord> command,
       final long parentKey,
-      final long childKey) {
+      final long suspendedChildKey) {
     final var parent = parentKey > 0 ? elementInstanceState.getInstance(parentKey) : null;
     if (parent == null) {
-      restartFromRoot(command, value);
+      restartFromRoot(command);
       return;
     }
 
-    final long siblingKey =
-        parent.getNumberOfActiveElementInstances() > 0 ? findChild(parentKey, childKey) : NO_KEY;
+    final long siblingKey = findChild(parent, suspendedChildKey);
     if (siblingKey != NO_KEY) {
-      appendSuspendElementInstance(command, siblingKey, parentKey, NO_KEY);
-      return;
+      continueWithChild(command, siblingKey, parentKey);
+    } else {
+      continueWithParent(command, parent, suspendedChildKey);
     }
-    appendSuspendElementInstance(command, parentKey, parent.getParentKey(), childKey);
   }
 
-  private void restartFromRoot(
-      final TypedRecord<SuspensionBatchRecord> command, final SuspensionBatchRecord value) {
-    appendSuspendElementInstance(command, value.getProcessInstanceKey(), NO_KEY, NO_KEY);
+  private void restartFromRoot(final TypedRecord<SuspensionBatchRecord> command) {
+    appendContinueTraversal(command, command.getValue().getProcessInstanceKey(), NO_KEY, NO_KEY);
   }
 
   /**
-   * Returns the key of the first child of {@code parentKey} after {@code index}, or {@code -1} if
-   * there is none. Starts at the first child when {@code index} is {@code -1}.
+   * Returns the key of the first child of {@code parent} after {@code afterKey}, or {@code -1} if
+   * there is none. Starts at the first child when {@code afterKey} is {@code -1}.
    */
-  private long findChild(final long parentKey, final long index) {
+  private long findChild(final ElementInstance parent, final long afterKey) {
+    if (parent.getNumberOfActiveElementInstances() <= 0) {
+      return NO_KEY;
+    }
+
     final MutableLong foundChildKey = new MutableLong(NO_KEY);
     elementInstanceState.forEachChild(
-        parentKey,
-        index < 0 ? NO_KEY : index + 1,
+        parent.getKey(),
+        afterKey + 1,
         (childKey, child) -> {
           foundChildKey.set(childKey);
           return false;
@@ -248,7 +267,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
     return foundChildKey.get();
   }
 
-  private void appendSuspendElementInstance(
+  private void appendContinueTraversal(
       final TypedRecord<SuspensionBatchRecord> command,
       final long elementInstanceKey,
       final long parentKey,
