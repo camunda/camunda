@@ -108,6 +108,7 @@ class IncidentSearchIT {
 
     // then incidents are updated by background task, PENDING state is changed on ACTIVE
     assertThat(incidents).extracting(Incident::getState).containsOnly(ACTIVE);
+    assertThat(incidents).extracting(Incident::getStorageOrdinal).doesNotContainNull();
   }
 
   @Test
@@ -119,6 +120,7 @@ class IncidentSearchIT {
 
     // then
     assertThat(result).isEqualTo(incident);
+    assertThat(result.getStorageOrdinal()).isNotNull();
   }
 
   @Test
