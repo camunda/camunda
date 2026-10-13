@@ -78,12 +78,33 @@ jobs:
             echo "Response from Identity: $identity_status"
             sleep 10
           done
-          if [ "$ready" = true ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
+          if [ "$ready" != true ]; then
             echo "Services failed to start in time."
             exit 1
           fi
+
+          # The web apps answer before secondary storage is ready, and until it is
+          # every secondary-storage endpoint is rejected with 503 (before request
+          # validation runs). Wait until such an endpoint is actually served.
+          storage_ready=false
+          for i in {1..30}; do
+            status=$(curl -s -o /dev/null -m 10 -w '%{http_code}' \
+              -u demo:demo -X POST \
+              -H 'Content-Type: application/json' -d '{}' \
+              http://localhost:8080/v2/process-definitions/search || echo "000")
+            if [[ "$status" == "200" ]]; then
+              echo "Secondary storage is ready!"
+              storage_ready=true
+              break
+            fi
+            echo "Waiting for secondary storage... ($i/30) HTTP status: $status"
+            sleep 10
+          done
+          if [ "$storage_ready" != true ]; then
+            echo "Secondary storage did not become ready in time."
+            exit 1
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Print Docker logs before failing
@@ -174,6 +195,11 @@ jobs:
           # Use custom project configuration for request validation tests only
           npm run test -- --project=request-validation-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Print Docker logs after failed tests
+        if: failure()
+        run: docker compose logs camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
