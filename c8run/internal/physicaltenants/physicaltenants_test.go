@@ -236,19 +236,38 @@ func TestResolveSelectionFailsClosed(t *testing.T) {
 	}
 }
 
-func TestLastStartTenantsMetadata(t *testing.T) {
+func TestLastStartStateMetadata(t *testing.T) {
 	base := t.TempDir()
-	assert.Nil(t, LastStartTenants(base))
+	assert.Equal(t, StartupState{}, LastStartState(base))
 	content, err := RenderForPort([]types.PhysicalTenant{{ID: "hr", Username: "alice\n# injected", Password: "private-value"}}, "rdbms", 9090)
 	require.NoError(t, err)
 	assert.NotContains(t, string(content), "private-value")
 	require.NoError(t, ApplyGeneratedConfig(base, content))
-	assert.Equal(t, map[string]Tenant{"hr": {ID: "hr", Username: "alice\n# injected", NoConnectors: true}}, LastStartTenants(base))
-	assert.Equal(t, 9090, LastStartPort(base))
-	require.NoError(t, ApplyGeneratedConfig(base, []byte(tenantsMarker+"invalid\n")))
-	assert.Nil(t, LastStartTenants(base))
+	assert.Equal(t, StartupState{
+		Port:    9090,
+		Tenants: map[string]*Tenant{"hr": {ID: "hr", Username: "alice\n# injected", NoConnectors: true}},
+	}, LastStartState(base))
 	require.NoError(t, ApplyGeneratedConfig(base, nil))
-	assert.Nil(t, LastStartTenants(base))
+	assert.Equal(t, StartupState{}, LastStartState(base))
+}
+
+func TestLastStartStateUsesDeclaredTenants(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		metadata string
+	}{
+		{name: "legacy file"},
+		{name: "invalid metadata", metadata: tenantsMarker + "invalid\n"},
+		{name: "null metadata", metadata: tenantsMarker + `{"hr":null}` + "\n"},
+		{name: "undeclared tenant", metadata: tenantsMarker + `{"ghost":{"id":"ghost","username":"alice"}}` + "\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			base := t.TempDir()
+			content := tc.metadata + portMarker + "9090\ncamunda:\n  physical-tenants:\n    hr: {}\n"
+			require.NoError(t, ApplyGeneratedConfig(base, []byte(content)))
+			assert.Equal(t, StartupState{Port: 9090, Tenants: map[string]*Tenant{"hr": nil}}, LastStartState(base))
+		})
+	}
 }
 
 func TestResolveExternalModeIgnoresStore(t *testing.T) {
@@ -427,11 +446,11 @@ func TestResolveDefersToEnvironmentTenants(t *testing.T) {
 
 func TestApplyGeneratedConfig(t *testing.T) {
 	base := t.TempDir()
-	assert.Zero(t, LastStartPort(base))
+	assert.Zero(t, LastStartState(base).Port)
 	content, err := RenderForPort([]types.PhysicalTenant{{ID: "a"}}, "rdbms", 8090)
 	require.NoError(t, err)
 	require.NoError(t, ApplyGeneratedConfig(base, content))
-	assert.Equal(t, 8090, LastStartPort(base))
+	assert.Equal(t, 8090, LastStartState(base).Port)
 	require.NoError(t, ApplyGeneratedConfig(base, nil))
 	assert.NoFileExists(t, GeneratedConfigPath(base))
 	empty, err := RenderForPort(nil, "rdbms", 8090)
