@@ -212,10 +212,26 @@ const normalProjects = [
   },
 ];
 
+// The generated cluster and restore specs put the whole cluster into recovery mode for their
+// restore scenarios. While a tenant is recovering, its secondary-storage endpoints answer 503, so
+// these specs must not overlap with any other spec. They run as the teardown of the main project,
+// i.e. after every other spec has finished (and also when one of them failed).
+const recoveryModeSpecs = [
+  'v2-stateless-tests/tests/request-validation/cluster-validation-api-tests.spec.ts',
+  'v2-stateless-tests/tests/request-validation/restore-validation-api-tests.spec.ts',
+];
+
 const v2StatelessProjects = [
   {
     name: 'request-validation-tests',
     testMatch: ['v2-stateless-tests/tests/request-validation/*.spec.ts'],
+    testIgnore: recoveryModeSpecs,
+    teardown: 'request-validation-recovery-mode-tests',
+    use: devices['Desktop Chrome'],
+  },
+  {
+    name: 'request-validation-recovery-mode-tests',
+    testMatch: recoveryModeSpecs,
     use: devices['Desktop Chrome'],
   },
 ];
