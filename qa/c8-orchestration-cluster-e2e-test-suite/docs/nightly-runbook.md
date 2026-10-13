@@ -35,7 +35,7 @@ The proposed area owners are not live yet. They wait for the area teams to appro
 
 - **Per run.** Each nightly posts its Playwright results to `#c8-orchestration-cluster-e2e-test-results`.
 - **Triage digest.** `C8 Orchestration Cluster Nightly Triage` runs Monday to Friday at 03:30 UTC and posts one digest to the same channel. Fix-agent results arrive as replies in its thread.
-- **Suite health.** The triage run also posts to the same channel when a nightly stays red or stops running. See [Suite health](#suite-health).
+- **Suite health.** A second run of the triage workflow, Monday to Friday at 07:45 UTC, posts to the same channel when a nightly stays red or stops running. See [Suite health](#suite-health).
 - **Metrics report.** `C8 Orchestration Cluster Nightly Metrics Report` posts the latest outcome of every nightly, by version, to the same channel at 03:30 UTC.
 - **Nightly metrics.** `camunda/qa-metrics-exporter` posts a daily digest at 11:00 UTC to `#team-test-automation-metrics`. Its `OC` lines are these nightlies: failures per version against the 7-day average, tests that failed 3 nights or more in a row, new breakages and flakiness.
 
@@ -67,12 +67,12 @@ Every Monday, `camunda/qa-metrics-exporter` opens pull requests that remove the 
 
 ## Suite health
 
-Triage reads the newest run of each nightly only. After it, a suite-health check reads the scheduled history of each nightly and posts in `#c8-orchestration-cluster-e2e-test-results` when:
+Triage reads the newest run of each nightly only. A suite-health check reads the scheduled history of each nightly, Monday to Friday at 07:45 UTC, and posts in `#c8-orchestration-cluster-e2e-test-results` when:
 
 - a nightly has been red on 3 scheduled runs in a row. Weekend runs count. Cancelled and skipped runs are ignored.
 - a nightly has had no scheduled run for 26 hours, for example because the workflow was disabled.
 
-It posts each condition once, again every 7 days while it lasts, and once more when it clears. New and repeated alerts mention the Slack group in the repository variable `OC_SUITE_HEALTH_SLACK_MENTION`, if it is set. A red streak means that the nightly has not been fixed for several days: look at it today. For a nightly with no run, check in the Actions tab that its workflow is enabled.
+It runs later than triage because GitHub can start a nightly hours after its scheduled time: at 07:45 UTC, a nightly that did not run that night is more than 26 hours past its previous run. It posts each condition once, again every 7 days while it lasts, and once more when it clears. New and repeated alerts mention the Slack group in the repository variable `OC_SUITE_HEALTH_SLACK_MENTION`, if it is set. A red streak means that the nightly has not been fixed for several days: look at it today. For a nightly with no run, check in the Actions tab that its workflow is enabled.
 
 The check reads the nightlies listed in `NIGHTLY_WORKFLOWS` of the triage workflow, the same list that triage scans. It saves what it announced in `health.json` on the `nightly-triage-state` branch.
 

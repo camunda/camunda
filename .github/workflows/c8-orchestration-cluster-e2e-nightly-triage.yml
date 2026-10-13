@@ -3,8 +3,8 @@
 #              workflow for every supported version (8.7 / 8.8 / 8.9 / 8.10 / main), extracts
 #              failing tests from json-report artifacts, groups by version, and dispatches
 #              one fix-agent run per version. Skips dispatch when an open failing-test-fix
-#              PR already exists for the same base branch. Then checks the scheduled history
-#              of each nightly and posts when one stays red or stops running.
+#              PR already exists for the same base branch. A second schedule checks the
+#              scheduled history of each nightly and posts when one stays red or stops running.
 # type: CI
 # owner: @camunda/test-automation-team
 ---
@@ -21,6 +21,10 @@ on:
                            # over that worst case while still starting earlier. Revisit
                            # if a nightly job's finish time drifts close to this trigger.
                            # Still runs before close-stale-fix-prs.yml at 05:00 UTC.
+    - cron: '45 7 * * 1-5' # 07:45 UTC Mon-Fri -- the suite-health job only. GitHub starts a
+                           # nightly up to ~2h45 after its cron (8.10 E2E, cron 02:15, has
+                           # started as late as 04:57), so only after ~07:00 is a nightly that
+                           # did not run today more than 26 hours past its previous run.
   workflow_dispatch:
     inputs:
       dispatch:
@@ -83,6 +87,7 @@ env:
 
 jobs:
   triage:
+    if: github.event.schedule != '45 7 * * 1-5'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -1060,10 +1065,11 @@ jobs:
 
   suite-health:
     name: Check suite health
-    # Triage reads the latest run of each nightly; this reads their scheduled history. It runs
-    # after dispatch because both commit to the nightly-triage-state branch.
+    # Triage reads the latest run of each nightly; this reads their scheduled history. It has its
+    # own schedule (see on.schedule). In a manual run it runs after dispatch, because both commit
+    # to the nightly-triage-state branch.
     needs: [triage, dispatch]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || github.event.schedule == '45 7 * * 1-5') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
