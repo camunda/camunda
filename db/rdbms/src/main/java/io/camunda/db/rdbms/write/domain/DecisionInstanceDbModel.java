@@ -40,6 +40,7 @@ public record DecisionInstanceDbModel(
     DecisionDefinitionType decisionType,
     String tenantId,
     int partitionId,
+    Integer storageOrdinal,
     List<EvaluatedInput> evaluatedInputs,
     List<EvaluatedOutput> evaluatedOutputs,
     OffsetDateTime historyCleanupDate) {
@@ -90,6 +91,7 @@ public record DecisionInstanceDbModel(
         decisionType,
         tenantId,
         partitionId,
+        storageOrdinal,
         evaluatedInputs,
         evaluatedOutputs,
         historyCleanupDate);
@@ -119,6 +121,7 @@ public record DecisionInstanceDbModel(
         .decisionType(decisionType)
         .tenantId(tenantId)
         .partitionId(partitionId)
+        .storageOrdinal(storageOrdinal)
         .evaluatedInputs(evaluatedInputs)
         .evaluatedOutputs(evaluatedOutputs)
         .historyCleanupDate(historyCleanupDate);
@@ -148,6 +151,7 @@ public record DecisionInstanceDbModel(
     private DecisionDefinitionType decisionType;
     private String tenantId;
     private int partitionId;
+    private Integer storageOrdinal;
     private List<EvaluatedInput> evaluatedInputs;
     private List<EvaluatedOutput> evaluatedOutputs;
     private OffsetDateTime historyCleanupDate;
@@ -262,6 +266,11 @@ public record DecisionInstanceDbModel(
       return this;
     }
 
+    public Builder storageOrdinal(final Integer value) {
+      storageOrdinal = value;
+      return this;
+    }
+
     public Builder evaluatedInputs(final List<EvaluatedInput> value) {
       evaluatedInputs = value;
       return this;
@@ -302,6 +311,7 @@ public record DecisionInstanceDbModel(
           decisionType,
           tenantId,
           partitionId,
+          storageOrdinal,
           evaluatedInputs,
           evaluatedOutputs,
           historyCleanupDate);
