@@ -359,7 +359,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
     assertThat(positionRange.gt().to(Long.class)).isEqualTo(fromPosition);
     assertThat(positionRange.lt()).isNull();
-    assertThat(positionRange.lte()).isNull();
+    assertThat(positionRange.lte().to(Long.class)).isEqualTo(Long.MAX_VALUE);
     assertThat(positionRange.gte()).isNull();
   }
 
@@ -448,6 +448,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
         "flowNodeAlias",
         "operationAlias",
         "importPositionFullQualifiedName",
+        () -> Long.MAX_VALUE,
         client,
         Runnable::run,
         LOGGER);

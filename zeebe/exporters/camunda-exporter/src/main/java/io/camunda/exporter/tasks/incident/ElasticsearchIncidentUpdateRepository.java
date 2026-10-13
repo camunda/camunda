@@ -50,6 +50,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.WillCloseWhenClosed;
@@ -74,6 +75,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   private final String flowNodeAlias;
   private final String operationAlias;
   private final String importPositionFullQualifiedName;
+  private final LongSupplier exportedPosition;
 
   public ElasticsearchIncidentUpdateRepository(
       final int partitionId,
@@ -85,6 +87,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
       final String flowNodeAlias,
       final String operationAlias,
       final String importPositionFullQualifiedName,
+      final LongSupplier exportedPosition,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
@@ -98,6 +101,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
     this.importPositionFullQualifiedName = importPositionFullQualifiedName;
+    this.exportedPosition = exportedPosition;
   }
 
   @Override
@@ -460,7 +464,9 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
             r ->
                 r.untyped(
                     n ->
-                        n.field(PostImporterQueueTemplate.POSITION).gt(JsonData.of(fromPosition))));
+                        n.field(PostImporterQueueTemplate.POSITION)
+                            .gt(JsonData.of(fromPosition))
+                            .lte(JsonData.of(exportedPosition.getAsLong()))));
     final var typeQ =
         QueryBuilders.term(
             t ->

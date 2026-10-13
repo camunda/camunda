@@ -54,6 +54,7 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
         flowNodeInstanceTemplate.getAlias(),
         operationTemplate.getAlias(),
         importPositionIndex.getFullQualifiedName(),
+        () -> Long.MAX_VALUE,
         client,
         Runnable::run,
         LOGGER);
