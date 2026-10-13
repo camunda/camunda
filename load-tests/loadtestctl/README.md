@@ -33,7 +33,7 @@ uv run loadtestctl --help
 uv run loadtestctl verify <namespace> [options]
 ```
 
-It needs `kubectl` access to the cluster. Progress is logged to stderr and the exit code is `0` on success and `1` on failure. The result is `status=success` or `status=failure`: in GitHub Actions it is appended to `$GITHUB_OUTPUT`, otherwise it is printed to stdout. See `--help` for the timeouts and the Prometheus options.
+It needs `kubectl` access to the cluster. Progress is logged to stderr and the exit code is `0` on success and `1` on failure. The result is `status=success` or `status=failure`. It is printed to stdout, or appended to the file given with `--result-file`, for example `$GITHUB_OUTPUT` in GitHub Actions. See `--help` for the timeouts and the Prometheus options.
 
 Prometheus defaults to `http://localhost:9090` without authentication, for example through `kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090`. Use `--prometheus-url`, `--prometheus-user` and `--prometheus-password` for a remote one.
 

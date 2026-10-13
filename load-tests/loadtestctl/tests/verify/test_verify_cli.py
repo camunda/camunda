@@ -14,7 +14,13 @@ CLI = "loadtestctl.verify.cli"
 
 @pytest.fixture(autouse=True)
 def clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("GITHUB_OUTPUT", "PROMETHEUS_URL", "PROMETHEUS_USER", "PROMETHEUS_PASSWORD", "K6_METRICS_TIMEOUT"):
+    for name in (
+        "LOADTESTCTL_VERIFY_RESULT_FILE",
+        "PROMETHEUS_URL",
+        "PROMETHEUS_USER",
+        "PROMETHEUS_PASSWORD",
+        "K6_METRICS_TIMEOUT",
+    ):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -99,21 +105,37 @@ def test_should_print_success_status_only_on_stdout(capsys: pytest.CaptureFixtur
     assert capsys.readouterr().out == "status=success\n"
 
 
-def test_should_append_the_status_to_github_output(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    github_output = tmp_path / "output"
-    monkeypatch.setenv("GITHUB_OUTPUT", str(github_output))
+def test_should_append_the_status_to_the_result_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    result_file = tmp_path / "result"
+    result_file.write_text("existing=1\n")
 
     with (
         mock.patch(f"{CLI}.kubectl", return_value=completed()),
         mock.patch(f"{CLI}.wait_for_pods", side_effect=VerifyError("boom")),
     ):
-        exit_code = run(["c8-test"])
+        exit_code = run(["c8-test", "--result-file", str(result_file)])
 
     assert exit_code == 1
-    assert github_output.read_text() == "status=failure\n"
+    assert result_file.read_text() == "existing=1\nstatus=failure\n"
     assert capsys.readouterr().out == ""
+
+
+def test_should_print_the_status_when_the_result_file_is_not_writable(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with (
+        mock.patch(f"{CLI}.kubectl", return_value=completed()),
+        mock.patch(f"{CLI}.wait_for_pods"),
+        mock.patch(f"{CLI}.wait_for_testruns"),
+        mock.patch(f"{CLI}.verify_connected"),
+        mock.patch(f"{CLI}.verify_metrics"),
+    ):
+        exit_code = run(["c8-test", "--result-file", str(tmp_path / "missing" / "result")])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert captured.out == "status=success\n"
+    assert "Could not write result file" in captured.err
 
 
 def test_should_print_failure_status_when_a_check_fails(capsys: pytest.CaptureFixture[str]) -> None:

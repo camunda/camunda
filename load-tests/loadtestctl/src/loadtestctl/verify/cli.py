@@ -1,8 +1,8 @@
 from functools import partial
+from pathlib import Path
 
 import click
 
-from loadtestctl import github
 from loadtestctl.report.cli import NamespaceType
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.prometheus import PrometheusClient
@@ -26,19 +26,31 @@ VERIFY_HELP = (
 VERIFY_EPILOG = """\b
 Output:
   Progress is logged to stderr. The result is `status=success` or `status=failure`, and the exit code is
-  0 on success and 1 on failure. In GitHub Actions the status is appended to $GITHUB_OUTPUT, otherwise it
-  is printed to stdout.
+  0 on success and 1 on failure. The result is printed to stdout, or appended to --result-file if given.
 
 \b
 Examples:
   loadtestctl verify c8-ck-baseline-20260814
-  loadtestctl verify c8-ck-baseline-20260814 --connectivity-timeout 1800
+  loadtestctl verify c8-ck-baseline-20260814 --result-file "$GITHUB_OUTPUT"
 
 \b
 Prometheus:
   Queries http://localhost:9090 without authentication by default, for example through
   `kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090`.
 """
+
+
+def report_result(status: str, result_file: Path | None) -> None:
+    line = f"status={status}"
+    if result_file is None:
+        click.echo(line)
+        return
+    try:
+        with result_file.open("a", encoding="utf-8") as file:
+            file.write(f"{line}\n")
+    except OSError as error:
+        log(f"Could not write result file '{result_file}': {error}")
+        click.echo(line)
 
 
 def run_verify(
@@ -105,6 +117,11 @@ def run_verify(
     help="Timeout for k6 to report metrics to Prometheus in seconds.",
 )
 @option(
+    "--result-file",
+    type=click.Path(dir_okay=False, path_type=Path),
+    help="File to append the result (`status=success` or `status=failure`) to instead of printing it.",
+)
+@option(
     "--prometheus-url",
     default="http://localhost:9090",
     envvar="PROMETHEUS_URL",
@@ -136,8 +153,10 @@ def verify(
     prometheus_url: str,
     prometheus_user: str,
     prometheus_password: str,
+    result_file: Path | None,
 ) -> None:
     ctx = Context(namespace=namespace, wait_timeout=wait_timeout, wait_retries=wait_retries)
+    status = "success"
     try:
         run_verify(
             ctx,
@@ -150,10 +169,11 @@ def verify(
         )
     except (VerifyError, ReportError) as error:
         log(f"Error: {error}")
-        github.output("status", "failure")
-        raise click.exceptions.Exit(1) from error
-    except Exception as error:
+        status = "failure"
+    except Exception as error:  # noqa: BLE001
         log(f"Unexpected error: {error!r}")
-        github.output("status", "failure")
-        raise click.exceptions.Exit(1) from error
-    github.output("status", "success")
+        status = "failure"
+
+    report_result(status, result_file)
+    if status != "success":
+        raise click.exceptions.Exit(1)
