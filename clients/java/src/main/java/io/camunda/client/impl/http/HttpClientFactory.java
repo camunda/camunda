@@ -234,6 +234,10 @@ public class HttpClientFactory {
             .evictIdleConnections(TimeValue.ofSeconds(30))
             .useSystemProperties(); // allow users to customize via system properties
 
+    if (config.getMeterRegistry() != null) {
+      HttpClientMetrics.enable(builder, config.getMeterRegistry());
+    }
+
     // Register a request-level interceptor that injects the Authorization header at the
     // latest possible point — inside httpProcessor.process(), which runs AFTER connection
     // acquisition in AsyncMainClientExec.produceRequest(). This is critical under load:
