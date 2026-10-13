@@ -93,7 +93,8 @@ function getAvailableVersions() {
 
 /**
  * Reads the release line of the current branch (for example `8.11`) from the version in the workspace
- * `package.json` (for example `8.11.0-SNAPSHOT`).
+ * `package.json` (for example `8.11.0-SNAPSHOT`). The release dry-run placeholder `0.0.0-dryrun-*` resolves
+ * to the line that is downloaded from `main`.
  * @returns {Promise<string>} The release line, which is always a supported version
  */
 async function getCurrentVersion() {
@@ -105,7 +106,14 @@ async function getCurrentVersion() {
 		throw new Error(`Cannot read the release line from version "${version}" in ${packageJsonPath}`);
 	}
 
-	const currentVersion = `${match[1]}.${match[2]}`;
+	let currentVersion = `${match[1]}.${match[2]}`;
+
+	// The release dry-run runs on main with the placeholder version `0.0.0-dryrun-*`.
+	// ponytail: placeholder `0.0` maps to the `main` entry, drop if dry-runs stop using fake versions
+	if (currentVersion === '0.0') {
+		currentVersion =
+			Object.keys(CONFIG).find((version) => CONFIG[version].download.branch === 'main') ?? currentVersion;
+	}
 
 	if (!CONFIG[currentVersion]) {
 		throw new Error(
