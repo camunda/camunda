@@ -441,7 +441,9 @@ class TransactionalColumnFamily<
   /**
    * Every prefix iteration bounds its iterator to the prefix, see {@link PrefixBoundedReadOptions}.
    * Iterations can nest (a visitor may iterate again), so each open iterator takes its own instance
-   * from this small free list; instances are created on demand and closed with the database.
+   * from this small free list; instances are created on demand and closed with the database. It
+   * never holds more than two, since {@link ColumnFamilyContext#withPrefixKey} allows one level of
+   * nesting.
    */
   private PrefixBoundedReadOptions acquireReadOptions() {
     final var readOptions = boundedReadOptions.poll();
@@ -450,6 +452,38 @@ class TransactionalColumnFamily<
 
   private void releaseReadOptions(final PrefixBoundedReadOptions readOptions) {
     boundedReadOptions.push(readOptions);
+  }
+
+  private enum Direction {
+    FORWARD,
+    REVERSE
+  }
+
+  @FunctionalInterface
+  private interface PrefixIteration {
+    void iterate(RocksIterator iterator, byte[] prefixKey, int prefixLength);
+  }
+
+  /**
+   * Opens an iterator bounded to the given prefix, see {@link PrefixBoundedReadOptions}, runs the
+   * iteration with it, and closes it afterwards.
+   */
+  private void withPrefixIterator(
+      final DbKey prefix, final Direction direction, final PrefixIteration iteration) {
+    columnFamilyContext.withPrefixKey(
+        prefix,
+        (prefixKey, prefixLength) -> {
+          final var readOptions = acquireReadOptions();
+          final var bounded =
+              direction == Direction.FORWARD
+                  ? readOptions.forward(prefixKey, prefixLength)
+                  : readOptions.reverse(prefixKey, prefixLength);
+          try (final RocksIterator iterator = newIterator(context, bounded)) {
+            iteration.iterate(iterator, prefixKey, prefixLength);
+          } finally {
+            releaseReadOptions(readOptions);
+          }
+        });
   }
 
   RocksIterator newIterator(final TransactionContext context, final ReadOptions options) {
@@ -487,36 +521,21 @@ class TransactionalColumnFamily<
       requireNonNull(prefix);
       requireNonNull(visitor);
 
-      /*
-       * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
-       * iterators at the moment, so using prefixes seem to be mostly related to skipping files that
-       * do not contain keys with the given prefix (which is useful anyway), but it will still iterate
-       * over all keys contained in those files, so we still need to make sure the key actually
-       * matches the prefix.
-       *
-       * <p>While iterating over subsequent keys we have to validate it.
-       */
-      columnFamilyContext.withPrefixKey(
+      withPrefixIterator(
           prefix,
-          (prefixKey, prefixLength) -> {
-            final var readOptions = acquireReadOptions();
-            try (final RocksIterator iterator =
-                newIterator(context, readOptions.forward(prefixKey, prefixLength))) {
+          Direction.FORWARD,
+          (iterator, prefixKey, prefixLength) -> {
+            boolean shouldVisitNext = true;
 
-              boolean shouldVisitNext = true;
-
-              for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
-                  iterator.isValid() && shouldVisitNext;
-                  iterator.next()) {
-                final byte[] keyBytes = iterator.key();
-                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                  break;
-                }
-
-                shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
+            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+                iterator.isValid() && shouldVisitNext;
+                iterator.next()) {
+              final byte[] keyBytes = iterator.key();
+              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+                break;
               }
-            } finally {
-              releaseReadOptions(readOptions);
+
+              shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
             }
           });
     }
@@ -540,29 +559,23 @@ class TransactionalColumnFamily<
       requireNonNull(prefix);
       requireNonNull(visitor);
 
-      columnFamilyContext.withPrefixKey(
+      withPrefixIterator(
           prefix,
-          (prefixKey, prefixLength) -> {
-            final var readOptions = acquireReadOptions();
-            try (final RocksIterator iterator =
-                newIterator(context, readOptions.reverse(prefixKey, prefixLength))) {
+          Direction.REVERSE,
+          (iterator, prefixKey, prefixLength) -> {
+            final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
 
-              final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
+            boolean shouldVisitNext = true;
 
-              boolean shouldVisitNext = true;
-
-              for (iterator.seekForPrev(seekTarget);
-                  iterator.isValid() && shouldVisitNext;
-                  iterator.prev()) {
-                final byte[] keyBytes = iterator.key();
-                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                  break;
-                }
-
-                shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
+            for (iterator.seekForPrev(seekTarget);
+                iterator.isValid() && shouldVisitNext;
+                iterator.prev()) {
+              final byte[] keyBytes = iterator.key();
+              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+                break;
               }
-            } finally {
-              releaseReadOptions(readOptions);
+
+              shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
             }
           });
     }
@@ -583,34 +596,19 @@ class TransactionalColumnFamily<
 
     final var count = new MutableLong(0);
 
-    /*
-     * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
-     * iterators at the moment, so using prefixes seem to be mostly related to skipping files that
-     * do not contain keys with the given prefix (which is useful anyway), but it will still iterate
-     * over all keys contained in those files, so we still need to make sure the key actually
-     * matches the prefix.
-     *
-     * <p>While iterating over subsequent keys we have to validate it.
-     */
-    columnFamilyContext.withPrefixKey(
+    withPrefixIterator(
         prefix,
-        (prefixKey, prefixLength) -> {
-          final var readOptions = acquireReadOptions();
-          try (final RocksIterator iterator =
-              newIterator(context, readOptions.forward(prefixKey, prefixLength))) {
-
-            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
-                iterator.isValid();
-                iterator.next()) {
-              final byte[] keyBytes = iterator.key();
-              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                break;
-              }
-
-              count.increment();
+        Direction.FORWARD,
+        (iterator, prefixKey, prefixLength) -> {
+          for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+              iterator.isValid();
+              iterator.next()) {
+            final byte[] keyBytes = iterator.key();
+            if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+              break;
             }
-          } finally {
-            releaseReadOptions(readOptions);
+
+            count.increment();
           }
         });
 
@@ -646,27 +644,21 @@ class TransactionalColumnFamily<
       requireNonNull(prefix);
       requireNonNull(visitor);
 
-      columnFamilyContext.withPrefixKey(
+      withPrefixIterator(
           prefix,
-          (prefixKey, prefixLength) -> {
-            final var readOptions = acquireReadOptions();
-            try (final RocksIterator iterator =
-                newIterator(context, readOptions.forward(prefixKey, prefixLength))) {
+          Direction.FORWARD,
+          (iterator, prefixKey, prefixLength) -> {
+            boolean shouldVisitNext = true;
 
-              boolean shouldVisitNext = true;
-
-              for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
-                  iterator.isValid() && shouldVisitNext;
-                  iterator.next()) {
-                final byte[] keyBytes = iterator.key();
-                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                  break;
-                }
-
-                shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
+            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+                iterator.isValid() && shouldVisitNext;
+                iterator.next()) {
+              final byte[] keyBytes = iterator.key();
+              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+                break;
               }
-            } finally {
-              releaseReadOptions(readOptions);
+
+              shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
             }
           });
     }
@@ -688,29 +680,23 @@ class TransactionalColumnFamily<
       requireNonNull(prefix);
       requireNonNull(visitor);
 
-      columnFamilyContext.withPrefixKey(
+      withPrefixIterator(
           prefix,
-          (prefixKey, prefixLength) -> {
-            final var readOptions = acquireReadOptions();
-            try (final RocksIterator iterator =
-                newIterator(context, readOptions.reverse(prefixKey, prefixLength))) {
+          Direction.REVERSE,
+          (iterator, prefixKey, prefixLength) -> {
+            final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
 
-              final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
+            boolean shouldVisitNext = true;
 
-              boolean shouldVisitNext = true;
-
-              for (iterator.seekForPrev(seekTarget);
-                  iterator.isValid() && shouldVisitNext;
-                  iterator.prev()) {
-                final byte[] keyBytes = iterator.key();
-                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                  break;
-                }
-
-                shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
+            for (iterator.seekForPrev(seekTarget);
+                iterator.isValid() && shouldVisitNext;
+                iterator.prev()) {
+              final byte[] keyBytes = iterator.key();
+              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+                break;
               }
-            } finally {
-              releaseReadOptions(readOptions);
+
+              shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
             }
           });
     }
