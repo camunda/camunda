@@ -154,6 +154,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMet
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessDefinitionRestoreRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
@@ -349,6 +350,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.JOB_METRICS_BATCH, this::summarizeJobMetricsBatch);
     valueLoggers.put(ValueType.GLOBAL_LISTENER, this::summarizeGlobalListener);
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
+    valueLoggers.put(ValueType.PROCESS_DEFINITION_RESTORE, this::summarizeProcessDefinitionRestore);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
@@ -2253,6 +2255,16 @@ public class CompactRecordLogger {
 
     result.append("resourceKey:").append(shortenKey(resourceKey));
     result.append("tenantId:").append(tenantId);
+
+    return result.toString();
+  }
+
+  private String summarizeProcessDefinitionRestore(final Record<?> record) {
+    final var value = (ProcessDefinitionRestoreRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result.append("processDefinitionKey:").append(shortenKey(value.getProcessDefinitionKey()));
+    result.append(" tenantId:").append(value.getTenantId());
 
     return result.toString();
   }
