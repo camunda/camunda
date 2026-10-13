@@ -148,6 +148,7 @@ public class ProcessInstanceSearchIT {
     assertThat(result.getHasIncident()).isFalse();
     assertThat(result.getTenantId()).isEqualTo("<default>");
     assertThat(result.getTags()).isEmpty();
+    assertThat(result.getStorageOrdinal()).isNotNull();
   }
 
   @Test
@@ -160,6 +161,7 @@ public class ProcessInstanceSearchIT {
     assertThat(result).isNotNull();
     assertThat(result.getState()).isEqualTo(ACTIVE);
     assertThat(result.getHasIncident()).isTrue();
+    assertThat(result.getStorageOrdinal()).isNotNull();
   }
 
   @Test
@@ -201,6 +203,7 @@ public class ProcessInstanceSearchIT {
     assertThat(result.page().totalItems()).isEqualTo(expectedBpmnProcessIds.size());
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
+    assertThat(result.items()).allSatisfy(item -> assertThat(item.getStorageOrdinal()).isNotNull());
   }
 
   @Test
@@ -220,6 +223,7 @@ public class ProcessInstanceSearchIT {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(result.items().getFirst().getStorageOrdinal()).isNotNull();
   }
 
   @Test
