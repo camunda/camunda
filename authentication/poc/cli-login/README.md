@@ -88,19 +88,19 @@ GET /.well-known/camunda-auth/physical-tenants/pt1
 The unsuffixed document describes the default physical tenant (unprefixed API). An unknown physical
 tenant is a 404.
 
-By default physical tenants are **not listed**: the client names the physical tenant, so the
-endpoint does not disclose which ones exist. Listing is opt-in, for setups where the ids are not
-sensitive (environments or departments of one organization rather than different customers):
+The unsuffixed document lists all physical tenants (the physical tenants' own documents do not);
+without physical tenants configured, that is just the default one. Each can have a display name:
 
 ```yaml
 camunda.security.authentication.cli-discovery:
-  list-physical-tenants: true      # cluster-wide, default false
   display-name: Default            # name of the default physical tenant in the list
 camunda.physical-tenants.pt1.security.authentication.cli-discovery:
   display-name: Sales EU           # each physical tenant names itself
 ```
 
-The unsuffixed document then carries the list (the physical tenants' own documents do not):
+Note that the document is unauthenticated, so the list discloses the physical tenant ids to anyone
+who can reach the cluster - fine when physical tenants are environments or departments of one
+organization, to be reviewed when they are different customers.
 
 ```json
 "physical_tenants": [
@@ -168,11 +168,11 @@ login URL. Without `npm link`, run `node c8poc.mjs <command>` instead.
 
 Every login creates a **context** - cluster + physical tenant + identity + tokens - named
 `<host>[/<physical tenant>]` unless `--context <name>` is given, and makes it current (like
-kubectl). The physical tenant comes from the url, `--physical-tenant`, or - if the cluster lists its
-physical tenants - a selection:
+kubectl). The physical tenant comes from the url, `--physical-tenant`, or - if the cluster has more
+than the default one - a selection:
 
 ```sh
-c8poc physical-tenants                                       # what the cluster lists (kit: listing on)
+c8poc physical-tenants                                       # the cluster's physical tenants
 # PHYSICAL TENANT  NAME       LOGIN
 # default          Default    http://localhost:8080
 # pt1              Sales EU   http://localhost:8080/physical-tenants/pt1

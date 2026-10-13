@@ -34,10 +34,8 @@ camunda:
           # RFC 8707 resource indicator, for identity providers that set the audience from it
           # (Keycloak and Entra ID use scopes instead, so it is not needed here).
           # resource: http://localhost:8080
-      # Lists the physical tenants in the (unauthenticated) discovery document, so a CLI can offer
-      # them for selection. Off by default: it discloses the tenant ids to anyone.
+      # Name of the default physical tenant in the discovery document's list of physical tenants
       cli-discovery:
-        list-physical-tenants: true
         display-name: Default
     authorizations:
       enabled: false
