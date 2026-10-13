@@ -76,13 +76,13 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesReque
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
-import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -96,27 +96,21 @@ public final class EndpointManager {
   private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
-  private final BrokerRequestAuthorizationConverter authorizationConverter;
+  private final Map<String, BrokerRequestAuthorizationConverter>
+      authorizationConvertersByPhysicalTenant;
 
+  /**
+   * @param securityConfigurationsByPhysicalTenant security config of every physical tenant,
+   *     including {@code default}; a request is converted with the config of the tenant it targets
+   */
   public EndpointManager(
       final BrokerClient brokerClient,
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
-      final EngineSecurityConfig securityConfiguration) {
-    this(
-        brokerClient,
-        activateJobsHandler,
-        streamJobsHandler,
-        securityConfiguration,
-        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
-  }
-
-  public EndpointManager(
-      final BrokerClient brokerClient,
-      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
-      final StreamJobsHandler streamJobsHandler,
-      final EngineSecurityConfig securityConfiguration,
+      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
       final int maxVariableNameLength) {
+    final EngineSecurityConfig securityConfiguration =
+        securityConfigurationsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
     this.streamJobsHandler = streamJobsHandler;
@@ -124,7 +118,11 @@ public final class EndpointManager {
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
     RequestMapper.setMultiTenancyEnabled(securityConfiguration.isMultiTenancyChecksEnabled());
     RequestMapper.setMaxVariableNameLength(maxVariableNameLength);
-    authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    authorizationConvertersByPhysicalTenant = new HashMap<>();
+    securityConfigurationsByPhysicalTenant.forEach(
+        (physicalTenantId, config) ->
+            authorizationConvertersByPhysicalTenant.put(
+                physicalTenantId, new BrokerRequestAuthorizationConverter(config)));
   }
 
   private void addBrokerInfo(
@@ -592,11 +590,25 @@ public final class EndpointManager {
   private Map<String, Object> getClaims() throws Exception {
     final String username = Context.current().call(AuthenticationHandler.USERNAME::get);
     final String clientId = Context.current().call(AuthenticationHandler.CLIENT_ID::get);
+    final String physicalTenantId =
+        Objects.requireNonNullElse(
+            getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    final BrokerRequestAuthorizationConverter authorizationConverter =
+        authorizationConvertersByPhysicalTenant.get(physicalTenantId);
+    if (authorizationConverter == null) {
+      // fail instead of falling back to the default tenant, whose settings must not apply to
+      // another; not an NPE, so it is not mistaken for a missing claim
+      throw new IllegalStateException(
+          "No security config registered for physical tenant: " + physicalTenantId);
+    }
 
-    List<String> groups = null;
+    List<String> groups = List.of();
     Map<String, Object> tokenClaims = null;
     if (authorizationConverter.shouldIncludeAuthorizationClaims()) {
-      groups = Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
+      // the handler sets no groups when the tenant configures no groups claim
+      groups =
+          Objects.requireNonNullElse(
+              Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get), List.of());
       tokenClaims = Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
     }
 

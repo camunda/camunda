@@ -217,7 +217,7 @@ public final class Gateway implements CloseableSilently {
             brokerClient,
             activateJobsHandler,
             streamJobsHandler,
-            securityConfigurationsByPhysicalTenant.get(DEFAULT_PHYSICAL_TENANT_ID),
+            securityConfigurationsByPhysicalTenant,
             maxVariableNameLength);
     final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
     return buildServer(serverBuilder, gatewayGrpcService);
