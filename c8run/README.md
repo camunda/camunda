@@ -53,6 +53,10 @@ Each physical tenant gets its own connectors runtime on the next free port from 
 
 To run with physical tenants for one start only, without saving them (useful in CI), use `./c8run start --physical-tenants sales,hr`. Removing a physical tenant keeps its data in secondary storage under the physical tenant's prefix, so adding the same ID again restores it, including its users. `./c8run physical-tenants reset` removes all saved physical tenants.
 
+Selecting a saved physical tenant with `--physical-tenants` preserves its dedicated login and `--no-connectors` setting. IDs that are not saved use the startup login and Connectors defaults. The flag changes only which physical tenants start; it does not change the saved configuration. `physical-tenants list` shows startup settings for active physical tenants and saved settings for stopped or pending physical tenants. An active physical tenant absent from the saved configuration is marked `active (not saved)`.
+
+Earlier builds ignored saved settings when `--physical-tenants` was used and could initialize an additional user with the startup credentials (by default `demo`/`demo`). Upgrading prevents this for saved physical tenants but does not remove users already initialized. Review and remove unintended users through the tenant's user management; removing and re-adding the physical tenant does not delete its users.
+
 `./c8run physical-tenants path` shows where physical tenants are saved; `C8RUN_TENANTS_FILE` selects another file. If your `--config` already declares `camunda.physical-tenants`, c8run uses it as-is and does not apply its saved physical tenants. Set `C8RUN_TENANTS_MODE=external` to leave physical tenants entirely to your `--config`: the `physical-tenants` commands are disabled, saved physical tenants are not applied, and `start --physical-tenants` is rejected.
 
 Tools that wrap c8run, such as `c8ctl cluster`, can set `C8RUN_CLI_NAME` to the command users type, for example `C8RUN_CLI_NAME="c8ctl cluster"`. c8run then shows that name in help output and in command hints such as `c8ctl cluster physical-tenants list`. When the variable is unset, output names `c8run`.
@@ -67,6 +71,16 @@ Physical tenants are isolated engines; logical tenants, such as those managed by
 - c8run does not manage physical tenants when your `--config`, `CAMUNDA_PHYSICALTENANTS_*` environment variables or `JAVA_OPTS` already declare them, or when `C8RUN_TENANTS_MODE=external` is set.
 - Each physical tenant's connectors runtime uses an extra local port (from 8087 upwards) and its own JVM.
 - Physical tenants need `C8RUN_SECRETS_MODE=local`, the default, so each physical tenant gets its own secret store.
+
+## Validate saved physical-tenant selection locally
+
+The opt-in Go integration test owns the cluster lifecycle. Point it at a dedicated, stopped distribution containing the C8Run binary under test:
+
+```bash
+C8RUN_E2E_DIR=/path/to/dedicated/c8run go test ./cmd/c8run -run '^TestPhysicalTenantSelectionE2E$' -count=1 -v
+```
+
+Run this from the `c8run/` source directory. It verifies protected API authentication, saved and unsaved tenant selection, disabled Connectors, runtime listing, and restart behavior. Tenant configuration and secrets use temporary directories; engine data remains in the dedicated distribution after the test stops it.
 
 ## CI requirement for merging
 
