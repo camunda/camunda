@@ -46,6 +46,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Validates a {@link RestoreRequest} against the current cluster configuration and produces the
@@ -59,6 +61,8 @@ import java.util.stream.Collectors;
  * ClusterConfigurationRequestFailedException}, which the coordinator surfaces as an error response.
  */
 public final class RestoreRequestTransformer implements ConfigurationChangeRequest {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RestoreRequestTransformer.class);
 
   private final RestoreRequest request;
   private final RequestValidatorRegistry registry;
@@ -117,9 +121,11 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
       return Either.left(mapFailure(resolved.getLeft()));
     }
     try {
-      return Either.right(
-          restoreGraph(
-              partitionsPerMember, (RestoreResolvedRequest) resolved.get(), currentRoutingState));
+      final var resolvedRequest = (RestoreResolvedRequest) resolved.get();
+      if (!resolvedRequest.dryRun()) {
+        logPlan(partitionsPerMember, resolvedRequest, currentRoutingState);
+      }
+      return Either.right(restoreGraph(partitionsPerMember, resolvedRequest, currentRoutingState));
     } catch (final Exception e) {
       return Either.left(mapFailure(e));
     }
@@ -265,6 +271,28 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
 
     builder.add(new UpdateIncarnationNumberOperation(partitionsPerMember.firstKey()), awaits);
     return builder.build();
+  }
+
+  /**
+   * Logged when the plan is built, which the coordinator also does to validate a change and to
+   * simulate a dry run, hence the {@code dryRun} flag.
+   */
+  private void logPlan(
+      final SortedMap<MemberId, Set<Integer>> partitionsPerMember,
+      final RestoreResolvedRequest resolved,
+      final Optional<RoutingState> currentRoutingState) {
+    final var partitionCount = resolved.backups().size();
+    final var wiped = new TreeSet<Integer>();
+    partitionsPerMember.values().forEach(wiped::addAll);
+    wiped.removeAll(resolved.backups().keySet());
+    LOG.info(
+        "Restoring physical tenant '{}' with partitions 1..{}. Routing state"
+            + " updates from {} to {}. Partitions dropped: {}",
+        request.physicalTenantId(),
+        partitionCount,
+        currentRoutingState,
+        restoredRoutingState(currentRoutingState, partitionCount),
+        wiped);
   }
 
   private static RoutingState restoredRoutingState(
