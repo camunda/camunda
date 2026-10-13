@@ -485,6 +485,9 @@ jobs:
     # The workflow is divided into multiple sequential jobs to allow giving only minimal permissions to
     # the GitHub token passed around.
     name: Auto-merge backport and release PRs
+    # GitHub cannot enable auto-merge on stacked PRs, so this job fails for them. That failure must
+    # not fail zeebe-ci, which the `check-results` merge gate depends on.
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 3
     needs: [ test-summary ]
