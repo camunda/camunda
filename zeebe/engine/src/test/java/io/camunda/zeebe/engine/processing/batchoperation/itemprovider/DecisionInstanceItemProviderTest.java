@@ -64,11 +64,11 @@ class DecisionInstanceItemProviderTest {
         new SearchQueryResult.Builder<DecisionInstanceEntity>()
             .items(
                 List.of(
-                    createDecisionInstanceEntity(1L, 10L, null),
-                    createDecisionInstanceEntity(2L, 20L, 20L),
-                    createDecisionInstanceEntity(3L, 30L, 20L),
-                    createDecisionInstanceEntity(4L, 40L, 40L),
-                    createDecisionInstanceEntity(5L, 50L, 50L)))
+                    createDecisionInstanceEntity(1L, 10L, null, null),
+                    createDecisionInstanceEntity(2L, 20L, 20L, null),
+                    createDecisionInstanceEntity(3L, 30L, 20L, 123),
+                    createDecisionInstanceEntity(4L, 40L, 40L, 456),
+                    createDecisionInstanceEntity(5L, 50L, 50L, 456)))
             .total(5)
             .endCursor("5")
             .build();
@@ -83,11 +83,11 @@ class DecisionInstanceItemProviderTest {
     assertThat(resultPage.items())
         .isEqualTo(
             List.of(
-                new Item(1, 10L, null),
-                new Item(2, 20L, 20L),
-                new Item(3, 30L, 20L),
-                new Item(4, 40L, 40L),
-                new Item(5, 50L, 50L)));
+                new Item(1, 10L, null, null),
+                new Item(2, 20L, 20L, null),
+                new Item(3, 30L, 20L, 123),
+                new Item(4, 40L, 40L, 456),
+                new Item(5, 50L, 50L, 456)));
   }
 
   @Test
@@ -121,9 +121,9 @@ class DecisionInstanceItemProviderTest {
         new SearchQueryResult.Builder<DecisionInstanceEntity>()
             .items(
                 List.of(
-                    createDecisionInstanceEntity(1L, 10L, null),
-                    createDecisionInstanceEntity(2L, 20L, null),
-                    createDecisionInstanceEntity(3L, 30L, null)))
+                    createDecisionInstanceEntity(1L, 10L, null, null),
+                    createDecisionInstanceEntity(2L, 20L, null, 123),
+                    createDecisionInstanceEntity(3L, 30L, null, 456)))
             .total(3)
             .endCursor("3")
             .build();
@@ -136,17 +136,23 @@ class DecisionInstanceItemProviderTest {
     assertThat(resultPage.endCursor()).isEqualTo("3");
     assertThat(resultPage.isLastPage()).isTrue();
     assertThat(resultPage.items())
-        .isEqualTo(List.of(new Item(1, 10L, null), new Item(2, 20L, null), new Item(3, 30L, null)));
+        .isEqualTo(
+            List.of(
+                new Item(1, 10L, null, null),
+                new Item(2, 20L, null, 123),
+                new Item(3, 30L, null, 456)));
   }
 
   private DecisionInstanceEntity createDecisionInstanceEntity(
       final long decisionInstanceKey,
       final long processInstanceKey,
-      final Long rootProcessInstanceKey) {
+      final Long rootProcessInstanceKey,
+      final Integer storageOrdinal) {
     return Instancio.of(DecisionInstanceEntity.class)
         .set(field(DecisionInstanceEntity::decisionInstanceKey), decisionInstanceKey)
         .set(field(DecisionInstanceEntity::processInstanceKey), processInstanceKey)
         .set(field(DecisionInstanceEntity::rootProcessInstanceKey), rootProcessInstanceKey)
+        .set(field(DecisionInstanceEntity::storageOrdinal), storageOrdinal)
         .create();
   }
 }
