@@ -10,10 +10,14 @@ package io.camunda.authentication.pt;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.sun.net.httpserver.HttpServer;
@@ -27,7 +31,8 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Minimal JWKS + OIDC discovery HTTP server backed by a freshly generated RSA key pair. Serves:
+ * Minimal JWKS + OIDC discovery HTTP server backed by a freshly generated RSA or EC key pair.
+ * Serves:
  *
  * <ul>
  *   <li>{@code /jwks} — the public JWK set (for token verification)
@@ -38,21 +43,28 @@ import java.util.List;
  * </ul>
  *
  * <p>Mirrors the {@code JwksTestServer} pattern from CSL's {@code ScopedJwtDecoderFactoryTest}.
- * Shared by {@link PhysicalTenantApiChainIsolationIT} and {@link PhysicalTenantDefaultAliasChainIT}
- * — package-private rather than nested in either, since neither owns it.
+ * Shared by {@link PhysicalTenantApiChainIsolationIT}, {@link PhysicalTenantDefaultAliasChainIT}
+ * and the OIDC tests in sibling packages, so it is public rather than nested in any one of them.
  */
 public final class JwksTestServer {
 
   private final HttpServer server;
   private final String kid;
   private final JWSSigner signer;
+  private final JWSAlgorithm algorithm;
 
-  private JwksTestServer(final HttpServer server, final String kid, final JWSSigner signer) {
+  private JwksTestServer(
+      final HttpServer server,
+      final String kid,
+      final JWSSigner signer,
+      final JWSAlgorithm algorithm) {
     this.server = server;
     this.kid = kid;
     this.signer = signer;
+    this.algorithm = algorithm;
   }
 
+  /** Starts a server that signs with RS256. */
   public static JwksTestServer start(final String kid) throws Exception {
     final var generator = KeyPairGenerator.getInstance("RSA");
     generator.initialize(2048);
@@ -64,6 +76,23 @@ public final class JwksTestServer {
             .algorithm(JWSAlgorithm.RS256)
             .keyID(kid)
             .build();
+    return serve(kid, jwk, new RSASSASigner(jwk), JWSAlgorithm.RS256);
+  }
+
+  /** Starts a server that signs with ES256. */
+  public static JwksTestServer startEc(final String kid) throws Exception {
+    final var jwk =
+        new ECKeyGenerator(Curve.P_256)
+            .keyUse(KeyUse.SIGNATURE)
+            .algorithm(JWSAlgorithm.ES256)
+            .keyID(kid)
+            .generate();
+    return serve(kid, jwk, new ECDSASigner(jwk), JWSAlgorithm.ES256);
+  }
+
+  private static JwksTestServer serve(
+      final String kid, final JWK jwk, final JWSSigner signer, final JWSAlgorithm algorithm)
+      throws Exception {
     final var jwkSetJson = new JWKSet(jwk).toPublicJWKSet().toString();
     final var httpServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     final var base = "http://127.0.0.1:" + httpServer.getAddress().getPort();
@@ -76,10 +105,10 @@ public final class JwksTestServer {
           "jwks_uri": "%s/jwks",
           "response_types_supported": ["code"],
           "subject_types_supported": ["public"],
-          "id_token_signing_alg_values_supported": ["RS256"]
+          "id_token_signing_alg_values_supported": ["%s"]
         }
         """
-            .formatted(base, base, base, base);
+            .formatted(base, base, base, base, algorithm.getName());
 
     httpServer.createContext(
         "/jwks",
@@ -108,7 +137,7 @@ public final class JwksTestServer {
           exchange.close();
         });
     httpServer.start();
-    return new JwksTestServer(httpServer, kid, new RSASSASigner(jwk));
+    return new JwksTestServer(httpServer, kid, signer, algorithm);
   }
 
   String kid() {
@@ -139,7 +168,7 @@ public final class JwksTestServer {
   public static String signForIssuer(
       final JwksTestServer server, final String issuer, final List<String> audiences)
       throws Exception {
-    final var header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(server.kid()).build();
+    final var header = new JWSHeader.Builder(server.algorithm).keyID(server.kid()).build();
     final var builder =
         new JWTClaimsSet.Builder()
             .subject("alice")
