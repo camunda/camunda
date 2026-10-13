@@ -110,6 +110,13 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- required to run both jqwik and junit as test engines -->
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>net.jqwik</groupId>
       <artifactId>jqwik-api</artifactId>
@@ -117,4 +124,18 @@
     </dependency>
 
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <dependency>net.jqwik:jqwik</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
