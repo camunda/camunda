@@ -132,7 +132,10 @@ function parseRedirectUri(redirectUri) {
   if (uri.protocol !== "http:" || !addresses) {
     throw new Error(`redirect URI ${uri} is not an http loopback URI; a CLI cannot receive the browser redirect there`);
   }
-  return { host: uri.hostname, addresses, fixedPort: uri.port ? Number(uri.port) : undefined, path: uri.pathname };
+  // URL normalizes a missing path to "/", but the IdP compares the string: "http://localhost"
+  // and "http://localhost/" are different registrations (Entra ID registers the former).
+  const rawPath = (redirectUri ?? DEFAULT_REDIRECT_URI).match(/^http:\/\/(?:\[[^\]]*\]|[^/:?#]+)(?::\d+)?(\/[^?#]*)?/)?.[1] ?? "";
+  return { host: uri.hostname, addresses, fixedPort: uri.port ? Number(uri.port) : undefined, path: rawPath };
 }
 
 function listen(server, port, address) {
@@ -151,7 +154,7 @@ async function startCallbackServer(redirect, expectedState) {
   const code = new Promise((res, rej) => ((resolveCode = res), (rejectCode = rej)));
   const handler = (req, res) => {
     const url = new URL(req.url, "http://127.0.0.1");
-    if (url.pathname !== redirect.path) return res.writeHead(404).end();
+    if (url.pathname !== (redirect.path || "/")) return res.writeHead(404).end();
     const error = url.searchParams.get("error");
     const ok = !error && url.searchParams.get("state") === expectedState;
     res.writeHead(ok ? 200 : 400, { "content-type": "text/html" });

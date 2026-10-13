@@ -1,2 +1,3 @@
 .keycloak/
 .oc-data/
+oc-application.local.yaml
