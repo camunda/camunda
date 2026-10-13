@@ -108,6 +108,24 @@ class JobEntityTransformerTest {
     assertThat(transformed.businessId()).isNull();
   }
 
+  @Test
+  void shouldMapStorageOrdinal() {
+    when(entityValue.getStorageOrdinal()).thenReturn(1001);
+
+    final var transformed = transformer.apply(entityValue);
+
+    assertThat(transformed.storageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldMapNullStorageOrdinal() {
+    when(entityValue.getStorageOrdinal()).thenReturn(null);
+
+    final var transformed = transformer.apply(entityValue);
+
+    assertThat(transformed.storageOrdinal()).isNull();
+  }
+
   @ParameterizedTest
   @EnumSource(ListenerEventType.class)
   void handlesAllListenerEventTypes(final ListenerEventType listenerEventType) {
