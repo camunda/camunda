@@ -23,7 +23,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 class PhysicalTenantOidcSettingsRegistryTest {
 
   private static final PhysicalTenantOidcSettings TENANT_A_SETTINGS =
-      new PhysicalTenantOidcSettings(null, null, null, Map.of(), Map.of(), Map.of());
+      new PhysicalTenantOidcSettings(null, Map.of(), Map.of());
 
   private final PhysicalTenantOidcSettingsRegistry registry =
       new PhysicalTenantOidcSettingsRegistry(Map.of("tenanta", TENANT_A_SETTINGS));

@@ -367,10 +367,7 @@ public class OidcOverrideBeansConfiguration {
               settingsByTenant.put(
                   physicalTenantId,
                   new PhysicalTenantOidcSettings(
-                      validatorFactory,
                       buildIdTokenDecoderFactory(validatorFactory, providers),
-                      additionalJwkSetUris(providers),
-                      buildPreferIdTokenClaimsByRegistrationId(providers),
                       PhysicalTenantOidcProviders.tokenClaimsConverters(
                           providers,
                           defaultSlots.get(physicalTenantId),
@@ -380,19 +377,6 @@ public class OidcOverrideBeansConfiguration {
                           providers, defaultSlots.get(physicalTenantId))));
             });
     return new PhysicalTenantOidcSettingsRegistry(settingsByTenant);
-  }
-
-  private static AdditionalJwkSetUrisByRegistrationId additionalJwkSetUris(
-      final Map<String, OidcConfiguration> providers) {
-    final Map<String, List<String>> byRegistrationId = new LinkedHashMap<>();
-    providers.forEach(
-        (registrationId, config) -> {
-          final var uris = config.getAdditionalJwkSetUris();
-          if (uris != null && uris.stream().anyMatch(OidcOverrideBeansConfiguration::hasText)) {
-            byRegistrationId.put(registrationId, uris);
-          }
-        });
-    return new AdditionalJwkSetUrisByRegistrationId(byRegistrationId);
   }
 
   private Map<String, List<String>> buildIdentityClaimsByRegistrationId(
