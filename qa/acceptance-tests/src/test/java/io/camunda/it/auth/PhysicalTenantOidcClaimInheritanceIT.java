@@ -119,7 +119,9 @@ final class PhysicalTenantOidcClaimInheritanceIT {
   @ParameterizedTest(name = "over REST = {0}")
   @ValueSource(booleans = {true, false})
   void shouldReadTheTokenWithTheTenantClaimOnTheTenant(final boolean rest) {
+    // given a client token from the provider
     try (final var client = client(TENANT_A, rest)) {
+      // when / then it may deploy only by the client-id claim it inherits
       assertDeploys(client, TENANT_A, "tenant_" + rest);
     }
   }
@@ -127,7 +129,9 @@ final class PhysicalTenantOidcClaimInheritanceIT {
   @ParameterizedTest(name = "over REST = {0}")
   @ValueSource(booleans = {true, false})
   void shouldReadTheTokenWithTheGlobalClaimOnTheDefaultTenant(final boolean rest) {
+    // given a client token from the provider
     try (final var client = client(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, rest)) {
+      // when / then it may deploy only by the client-id claim it inherits
       assertDeploys(client, PhysicalTenantsITHelper.DEFAULT_TENANT_ID, "default_" + rest);
     }
   }

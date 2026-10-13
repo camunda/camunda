@@ -126,7 +126,9 @@ final class OidcNamedProvidersGlobalClaimsIT {
   @ParameterizedTest(name = "over REST = {0}")
   @ValueSource(booleans = {true, false})
   void shouldResolveTheM2mClientOfAProviderWithoutClaimsWithTheGlobalClaim(final boolean rest) {
+    // given a client token from the provider
     try (final var client = m2mClient(REALM_ALPHA, ALPHA_M2M, rest)) {
+      // when / then it may deploy only by the client-id claim it inherits
       assertDeploys(client, "alpha_" + rest);
     }
   }
@@ -135,7 +137,9 @@ final class OidcNamedProvidersGlobalClaimsIT {
   @ValueSource(booleans = {true, false})
   void shouldResolveTheM2mClientWithTheGlobalClaimWhenTheProviderSetsOnlyItsUsername(
       final boolean rest) {
+    // given a client token from the provider
     try (final var client = m2mClient(REALM_BETA, BETA_M2M, rest)) {
+      // when / then it may deploy only by the client-id claim it inherits
       assertDeploys(client, "beta_" + rest);
     }
   }
