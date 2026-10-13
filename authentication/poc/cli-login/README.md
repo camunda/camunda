@@ -6,7 +6,8 @@ A CLI (`c8poc`, standing in for c8ctl) logs a user in with nothing but the clust
    and, for OIDC, each provider's issuer with the **public client** the CLI should use.
 2. The CLI reads the issuer's `/.well-known/openid-configuration`.
 3. Authorization code + PKCE in the browser, redirected to a random `127.0.0.1` port (RFC 8252).
-4. The CLI calls the cluster API with the access token.
+4. The CLI checks the token's issuer and audience against what the cluster announced, then calls
+   the cluster API with it.
 
 Everything runs bare metal: Keycloak from its distribution, the Orchestration Cluster from the
 locally built `dist`, the CLI with plain Node (no dependencies).
@@ -26,8 +27,9 @@ GET /.well-known/camunda-auth
       "id": "oidc",
       "issuer": "http://localhost:18080/realms/camunda",
       "client_id": "c8ctl",
-      "scopes": ["openid", "offline_access"],
-      "redirect_uri": "http://127.0.0.1/callback"
+      "scopes": ["openid", "offline_access", "camunda-api"],
+      "redirect_uri": "http://127.0.0.1/callback",
+      "audience": ["camunda-api"]
     }
   ]
 }
@@ -45,10 +47,28 @@ Configuration (see [`oc-application.yaml`](oc-application.yaml)):
 camunda.security.authentication.cli-clients:
   oidc:                       # registration id
     client-id: c8ctl          # required
-    scopes: [openid, offline_access]
+    scopes: [openid, offline_access, camunda-api]
     redirect-uri: http://127.0.0.1/callback   # default; see below
+    # resource: https://oc.example.com        # RFC 8707, see below
     # client-secret: ...      # rejected at startup: CLI clients must be public
 ```
+
+### Audience
+
+The cluster only accepts access tokens whose `aud` contains one of its configured
+`camunda.security.authentication.oidc.audiences`. Discovery announces them as `audience` (no extra
+configuration), and the CLI must make the identity provider issue such a token:
+
+| Identity provider          | How the CLI asks for the audience                          | Configure            |
+|----------------------------|------------------------------------------------------------|----------------------|
+| Keycloak                   | optional client scope with an audience mapper (`camunda-api`) | `scopes`          |
+| Entra ID                   | the API's scope, e.g. `api://camunda-oc/access_as_user`    | `scopes`             |
+| RFC 8707 / Auth0-style     | `resource` on the authorize, token and refresh requests     | `resource`           |
+
+After login the CLI compares the token's `iss` and `aud` with the announced `issuer` and
+`audience` and fails with the reason (for example a Microsoft Graph token from Entra ID when the
+API scope is missing) instead of a bare 401 on the first call. It skips this for opaque tokens; the
+cluster always validates anyway.
 
 ### Redirect URI
 
@@ -108,12 +128,16 @@ token before the next call.
 
 | Client    | Type                                    | Purpose                                                    |
 |-----------|-----------------------------------------|------------------------------------------------------------|
-| `camunda` | confidential, secret `camunda-secret`   | the cluster's own webapp login                             |
-| `c8ctl`   | public, PKCE S256, redirect `http://127.0.0.1/*` | the CLI; Keycloak accepts any loopback port       |
+| `camunda` | confidential, secret `camunda-secret`   | the cluster's own webapp login; audience mapper on the client |
+| `c8ctl`   | public, PKCE S256, redirects `http://127.0.0.1/*`, `http://localhost/*`, `http://[::1]/*` | the CLI; Keycloak accepts any loopback port |
 
-Both carry an audience mapper adding `camunda-api` to the access token, which is the audience the
-cluster validates (`camunda.security.authentication.oidc.audiences`). Without it, the CLI gets a
-valid token the cluster rejects with 401.
+The `camunda-api` client scope carries the audience mapper and is an **optional** scope of `c8ctl`:
+a token only gets `aud: camunda-api` when the CLI requests that scope. Try it by removing
+`camunda-api` from `cli-clients.oidc.scopes` - the login then stops with an audience error.
+
+The realm declares Keycloak's standard client scopes (`basic`, `profile`, `email`, ...) explicitly,
+taken from a Keycloak export: a realm import that declares any client scope gets none of the
+built-in ones.
 
 Keycloak admin console: http://localhost:18080 (`admin` / `admin`).
 

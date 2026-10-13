@@ -24,10 +24,14 @@ camunda:
       cli-clients:
         oidc:
           client-id: c8ctl
-          scopes: [openid, offline_access]
+          # camunda-api is the Keycloak client scope that adds the cluster's audience
+          scopes: [openid, offline_access, camunda-api]
           # Must equal the redirect URI registered at the IdP (only the loopback port is ignored).
           # http on 127.0.0.1, [::1] or localhost; without a port the CLI picks one per login.
           redirect-uri: http://127.0.0.1/callback
+          # RFC 8707 resource indicator, for identity providers that set the audience from it
+          # (Keycloak and Entra ID use scopes instead, so it is not needed here).
+          # resource: http://localhost:8080
     authorizations:
       enabled: false
     initialization:

@@ -198,6 +198,7 @@ async function browserLogin(meta, provider, { noBrowser }) {
     state,
     code_challenge: challenge,
     code_challenge_method: "S256",
+    ...(provider.resource ? { resource: provider.resource } : {}),
   });
 
   if (noBrowser) {
@@ -223,6 +224,7 @@ async function browserLogin(meta, provider, { noBrowser }) {
       redirect_uri: redirectUri,
       client_id: provider.client_id,
       code_verifier: verifier,
+      ...(provider.resource ? { resource: provider.resource } : {}),
     }),
   });
 }
@@ -236,6 +238,7 @@ async function refresh(session) {
       grant_type: "refresh_token",
       refresh_token: session.refreshToken,
       client_id: session.clientId,
+      ...(session.resource ? { resource: session.resource } : {}),
     }),
   }).catch(() => {
     throw new Error("session expired - run: c8poc login");
@@ -243,6 +246,31 @@ async function refresh(session) {
   const refreshed = withTokens(session, tokens);
   saveSession(refreshed);
   return refreshed;
+}
+
+// Fails the login on a token the cluster would reject, with the reason, instead of letting the
+// first API call end in a bare 401. Best effort: opaque (non-JWT) tokens are left to the cluster.
+function checkAccessToken(accessToken, provider) {
+  const claims = decodeJwt(accessToken);
+  if (!claims.iss) return;
+  const trim = (u) => String(u).replace(/\/$/, "");
+  if (trim(claims.iss) !== trim(provider.issuer)) {
+    throw new Error(
+      `the access token was issued by ${claims.iss}, but the cluster trusts ${provider.issuer} for '${provider.id}'` +
+        " (for Entra ID: set the API's requestedAccessTokenVersion to 2)",
+    );
+  }
+  const expected = provider.audience ?? [];
+  const actual = [].concat(claims.aud ?? []);
+  if (expected.length && !actual.some((a) => expected.includes(a))) {
+    const request = provider.resource ? `resource ${provider.resource}` : `scopes '${(provider.scopes ?? []).join(" ")}'`;
+    throw new Error(
+      `the access token has audience ${JSON.stringify(actual)}, but the cluster accepts ${JSON.stringify(expected)}.` +
+        ` The identity provider did not grant the cluster's audience for ${request}:` +
+        ` request the API's scope (cli-clients.${provider.id}.scopes) or resource (cli-clients.${provider.id}.resource),` +
+        ` or add an audience mapper at the identity provider`,
+    );
+  }
 }
 
 // ---------- commands ----------
@@ -277,9 +305,10 @@ async function login(args) {
   const provider = await chooseProvider(discovery.providers, providerId);
   const meta = await getJson(`${provider.issuer.replace(/\/$/, "")}/.well-known/openid-configuration`);
   const tokens = await browserLogin(meta, provider, { noBrowser });
+  checkAccessToken(tokens.access_token, provider);
 
   const session = withTokens(
-    { clusterUrl, method: "oidc", provider: provider.id, issuer: provider.issuer, clientId: provider.client_id, tokenEndpoint: meta.token_endpoint },
+    { clusterUrl, method: "oidc", provider: provider.id, issuer: provider.issuer, clientId: provider.client_id, tokenEndpoint: meta.token_endpoint, resource: provider.resource },
     tokens,
   );
   saveSession(session);
