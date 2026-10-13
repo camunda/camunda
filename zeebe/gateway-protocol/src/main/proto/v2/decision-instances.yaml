@@ -377,6 +377,7 @@ components:
         - rootDecisionDefinitionKey
         - rootProcessInstanceKey
         - state
+        - storageOrdinal
         - tenantId
       properties:
         businessId:
@@ -451,6 +452,13 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         state:
           $ref: '#/components/schemas/DecisionInstanceStateEnum'
+        storageOrdinal:
+          description: |
+            The storage ordinal of the decision instance, which groups entities that are stored and
+            disposed of together. This is `null` for decision instances created before version 8.11.
+          type: integer
+          format: int32
+          nullable: true
         tenantId:
           description: The tenant ID of the decision instance.
           allOf:
@@ -490,6 +498,8 @@ components:
           addedInVersion: "8.9"
         - propertyName: state
           addedInVersion: "8.6"
+        - propertyName: storageOrdinal
+          addedInVersion: "8.11"
         - propertyName: tenantId
           addedInVersion: "8.6"
 

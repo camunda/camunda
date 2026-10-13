@@ -32,6 +32,7 @@ function createDecisionInstance(overrides?: Partial<GetDecisionInstanceResponseB
 		elementInstanceKey: '2251799813685254',
 		rootDecisionDefinitionKey: '2251799813685253',
 		businessId: null,
+		storageOrdinal: null,
 		evaluatedInputs: [],
 		matchedRules: [],
 		...overrides,

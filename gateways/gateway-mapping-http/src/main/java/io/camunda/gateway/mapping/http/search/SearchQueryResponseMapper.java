@@ -1484,6 +1484,7 @@ public final class SearchQueryResponseMapper {
                 keyToStringOrNull(entity.rootDecisionDefinitionKey()), "rootDecisionDefinitionKey"))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .state(toDecisionInstanceStateEnum(entity.state()))
+        .storageOrdinal(entity.storageOrdinal())
         .tenantId(entity.tenantId())
         .build();
   }
@@ -1511,6 +1512,7 @@ public final class SearchQueryResponseMapper {
                 keyToStringOrNull(entity.rootDecisionDefinitionKey()), "rootDecisionDefinitionKey"))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .state(toDecisionInstanceStateEnum(entity.state()))
+        .storageOrdinal(entity.storageOrdinal())
         .tenantId(entity.tenantId())
         .evaluatedInputs(
             requireNonNull(toEvaluatedInputs(entity.evaluatedInputs()), "evaluatedInputs"))
