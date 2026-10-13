@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
 import org.agrona.collections.MutableLong;
+import org.slf4j.Logger;
 
 /**
  * Walks the element instance tree of a suspending process instance depth-first (post-order), one
@@ -59,6 +61,8 @@ import org.agrona.collections.MutableLong;
 @ExcludeAuthorizationCheck
 public final class SuspensionBatchSuspendElementInstanceProcessor
     implements TypedRecordProcessor<SuspensionBatchRecord>, SuspensionAware<SuspensionBatchRecord> {
+
+  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private static final long NO_KEY = -1L;
 
@@ -231,7 +235,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
       final long suspendedChildKey) {
     final var parent = parentKey > 0 ? elementInstanceState.getInstance(parentKey) : null;
     if (parent == null) {
-      restartFromRoot(command);
+      restartFromRoot(command, parentKey, suspendedChildKey);
       return;
     }
 
@@ -243,8 +247,19 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
     }
   }
 
-  private void restartFromRoot(final TypedRecord<SuspensionBatchRecord> command) {
-    appendContinueTraversal(command, command.getValue().getProcessInstanceKey(), NO_KEY, NO_KEY);
+  private void restartFromRoot(
+      final TypedRecord<SuspensionBatchRecord> command,
+      final long parentKey,
+      final long suspendedChildKey) {
+    final long processInstanceKey = command.getValue().getProcessInstanceKey();
+    LOG.warn(
+        "Expected to continue suspending process instance '{}' after element instance '{}', but "
+            + "its parent element instance '{}' no longer exists. Restarting the suspension walk "
+            + "from the process instance, which may emit duplicate user task events.",
+        processInstanceKey,
+        suspendedChildKey,
+        parentKey);
+    appendContinueTraversal(command, processInstanceKey, NO_KEY, NO_KEY);
   }
 
   /**
