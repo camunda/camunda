@@ -71,6 +71,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                     "processInstanceKey": "3",
                     "rootProcessInstanceKey": "37",
                     "businessId": "business-1",
+                    "storageOrdinal": 1001,
                     "elementId": "elementId",
                     "elementInstanceKey": "4",
                     "tenantId": "<default>",
@@ -113,6 +114,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                       .processInstanceKey(3L)
                       .rootProcessInstanceKey(37L)
                       .businessId("business-1")
+                      .storageOrdinal(1001)
                       .elementId("elementId")
                       .elementInstanceKey(4L)
                       .tenantId("<default>")
