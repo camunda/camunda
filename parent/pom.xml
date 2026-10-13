@@ -313,7 +313,7 @@
       (e.g. to cap the heap of each fork). Note that a plain -DargLine=... has no effect, as argLine
       is set explicitly in the surefire/failsafe plugin configuration.
     -->
-    <jvm.test.extra.args></jvm.test.extra.args>
+    <jvm.test.extra.args/>
 
     <!--
       you can use the following to disable specific check plugins. this can also be used to skip the

@@ -477,9 +477,9 @@ public class ClusteringRule extends ExternalResource {
                     Duration.ofMillis(500),
                     Duration.ofSeconds(5))));
 
-    // By default, RocksDB takes 10% of the host memory per broker (FRACTION strategy), which adds up
-    // quickly when many brokers run in the same JVM or many test forks run in parallel. Use the
-    // minimum of 32 MiB per partition instead.
+    // By default, RocksDB takes 10% of the host memory per broker (FRACTION strategy), which adds
+    // up quickly when many brokers run in the same JVM or many test forks run in parallel. Use
+    // the minimum of 32 MiB per partition instead.
     final var rocksdbCfg = brokerCfg.getExperimental().getRocksdb();
     rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     rocksdbCfg.setMemoryLimit(DataSize.ofMegabytes(32));
