@@ -9,7 +9,6 @@ package io.camunda.it.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
@@ -18,20 +17,9 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpClient.Redirect;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandler;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -117,15 +105,10 @@ final class PhysicalTenantOidcLoginSeparateIdpsIT {
     Awaitility.await("the tenant login is served")
         .atMost(Duration.ofSeconds(120))
         .ignoreExceptions()
-        .untilAsserted(
+        .until(
             () ->
-                assertThat(
-                        new Browser()
-                            .send(
-                                get("/physical-tenants/" + TENANT_B + "/oauth2/authorization/oidc"),
-                                BodyHandlers.discarding())
-                            .statusCode())
-                    .isEqualTo(302));
+                OidcBrowserLogin.isLoginServed(
+                    BROKER.restAddress(), "/physical-tenants/" + TENANT_B, "oidc"));
   }
 
   @Test
@@ -144,59 +127,8 @@ final class PhysicalTenantOidcLoginSeparateIdpsIT {
   }
 
   private static String loginAndReadUsername(final String pathPrefix) throws Exception {
-    final var app = new Browser();
-    final var keycloak = new Browser();
-
-    // the app answers the login start with a redirect to the IdP and remembers the request
-    final var authorizationRedirect =
-        app.send(get(pathPrefix + "/oauth2/authorization/oidc"), BodyHandlers.discarding());
-    assertThat(authorizationRedirect.statusCode()).isEqualTo(302);
-    final var authorizationUrl = location(authorizationRedirect.headers().map());
-
-    // the user signs in on the IdP's login form
-    final var loginPage =
-        keycloak.send(
-            HttpRequest.newBuilder(URI.create(authorizationUrl)).GET(), BodyHandlers.ofString());
-    final var matcher =
-        Pattern.compile("<form[^>]*kc-form-login[^>]*action=\"([^\"]+)\"")
-            .matcher(loginPage.body());
-    assertThat(matcher.find()).as("Keycloak login form in %s", loginPage.body()).isTrue();
-    final var signIn =
-        keycloak.send(
-            HttpRequest.newBuilder(URI.create(matcher.group(1).replace("&amp;", "&")))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(
-                    HttpRequest.BodyPublishers.ofString(
-                        "username=" + USERNAME + "&password=" + PASSWORD)),
-            BodyHandlers.ofString());
-    assertThat(signIn.statusCode()).isEqualTo(302);
-    final var callbackUrl = location(signIn.headers().map());
-    assertThat(URI.create(callbackUrl).getPath()).isEqualTo(pathPrefix + "/sso-callback");
-
-    // the browser returns to the app's callback with the session of the login start
-    final var callback =
-        app.send(HttpRequest.newBuilder(URI.create(callbackUrl)).GET(), BodyHandlers.discarding());
-    assertThat(callback.statusCode()).isEqualTo(302);
-
-    final var me =
-        app.send(
-            HttpRequest.newBuilder(
-                    BROKER.restAddress().resolve(pathPrefix + "/v2/authentication/me"))
-                .header("Accept", "application/json")
-                .GET(),
-            BodyHandlers.ofString());
-    assertThat(me.statusCode()).as("GET me on %s: %s", pathPrefix, me.body()).isEqualTo(200);
-    return new ObjectMapper().readTree(me.body()).get("username").asText();
-  }
-
-  private static HttpRequest.Builder get(final String path) {
-    return HttpRequest.newBuilder(BROKER.restAddress().resolve(path))
-        .header("Accept", "text/html")
-        .GET();
-  }
-
-  private static String location(final Map<String, List<String>> headers) {
-    return headers.get("location").get(0);
+    return OidcBrowserLogin.loginAndReadUsername(
+        BROKER.restAddress(), pathPrefix, "oidc", USERNAME, PASSWORD);
   }
 
   private static String issuerUri(final String realm) {
@@ -265,46 +197,5 @@ final class PhysicalTenantOidcLoginSeparateIdpsIT {
             "id.token.claim", "false",
             "userinfo.token.claim", "false"));
     return mapper;
-  }
-
-  /**
-   * A browser stand-in that replays the cookies a server set, by name only. The JDK cookie manager
-   * does not send Keycloak's login cookies back over plain HTTP.
-   */
-  private static final class Browser {
-    private final HttpClient client =
-        HttpClient.newBuilder().followRedirects(Redirect.NEVER).build();
-    private final Map<String, String> cookies = new LinkedHashMap<>();
-
-    <T> HttpResponse<T> send(final HttpRequest.Builder request, final BodyHandler<T> handler)
-        throws Exception {
-      if (!cookies.isEmpty()) {
-        request.header(
-            "Cookie",
-            cookies.entrySet().stream()
-                .map(cookie -> cookie.getKey() + "=" + cookie.getValue())
-                .collect(Collectors.joining("; ")));
-      }
-      final var response = client.send(request.build(), handler);
-      response.headers().allValues("set-cookie").forEach(this::store);
-      return response;
-    }
-
-    private void store(final String setCookie) {
-      final var attributes = setCookie.split(";");
-      final var nameAndValue = attributes[0].split("=", 2);
-      final var name = nameAndValue[0].trim();
-      final var expired =
-          nameAndValue.length < 2
-              || nameAndValue[1].isBlank()
-              || Arrays.stream(attributes)
-                  .skip(1)
-                  .anyMatch(attribute -> attribute.trim().equalsIgnoreCase("Max-Age=0"));
-      if (expired) {
-        cookies.remove(name);
-      } else {
-        cookies.put(name, nameAndValue[1].trim());
-      }
-    }
   }
 }
