@@ -2947,6 +2947,9 @@ jobs:
         id: build-camunda
         with:
           maven-extra-args: -PskipFrontendBuild
+          # Must stay above the slowest observed build (~5min); two attempts fit the 20min job timeout.
+          retry-max-attempts: 2
+          retry-timeout-minutes: 7
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         with:
