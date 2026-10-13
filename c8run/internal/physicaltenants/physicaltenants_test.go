@@ -202,6 +202,55 @@ func TestResolveDefersToUserConfig(t *testing.T) {
 	assert.ErrorContains(t, err, "cannot be combined")
 }
 
+func TestResolveSelectionPreservesSavedSettings(t *testing.T) {
+	for _, connectors := range []bool{true, false} {
+		t.Run(fmt.Sprint(connectors), func(t *testing.T) {
+			store := NewStore(filepath.Join(t.TempDir(), FileName))
+			require.NoError(t, store.Add([]Tenant{{ID: "hr", Username: "alice", NoConnectors: true}, {ID: "sales"}, {ID: "excluded"}}, map[string]string{"hr": "tenant-password"}))
+			before, err := os.ReadFile(store.Path())
+			require.NoError(t, err)
+			res, err := Resolve(ResolveInput{Store: store, FlagIDs: []string{"new", "hr", "sales"}, DefaultUsername: "demo", DefaultPassword: "demo", ConnectorsEnabled: connectors, FirstConnectorsPort: 8087})
+			require.NoError(t, err)
+			require.Len(t, res.Tenants, 3)
+			assert.Equal(t, types.PhysicalTenant{ID: "hr", Username: "alice", Password: "tenant-password"}, res.Tenants[1])
+			for _, i := range []int{0, 2} {
+				assert.Equal(t, "demo", res.Tenants[i].Username)
+				assert.Equal(t, connectors, res.Tenants[i].Connectors)
+			}
+			after, err := os.ReadFile(store.Path())
+			require.NoError(t, err)
+			assert.Equal(t, before, after)
+		})
+	}
+}
+
+func TestResolveSelectionFailsClosed(t *testing.T) {
+	for _, content := range []string{"[invalid", "version: 1\ntenants:\n- id: hr\n  username: alice\n"} {
+		t.Run(content, func(t *testing.T) {
+			store := NewStore(filepath.Join(t.TempDir(), FileName))
+			require.NoError(t, os.WriteFile(store.Path(), []byte(content), 0o600))
+			res, err := Resolve(ResolveInput{Store: store, FlagIDs: []string{"hr"}, DefaultUsername: "demo", DefaultPassword: "demo"})
+			require.Error(t, err)
+			assert.Empty(t, res.Tenants)
+		})
+	}
+}
+
+func TestLastStartTenantsMetadata(t *testing.T) {
+	base := t.TempDir()
+	assert.Nil(t, LastStartTenants(base))
+	content, err := RenderForPort([]types.PhysicalTenant{{ID: "hr", Username: "alice\n# injected", Password: "private-value"}}, "rdbms", 9090)
+	require.NoError(t, err)
+	assert.NotContains(t, string(content), "private-value")
+	require.NoError(t, ApplyGeneratedConfig(base, content))
+	assert.Equal(t, map[string]Tenant{"hr": {ID: "hr", Username: "alice\n# injected", NoConnectors: true}}, LastStartTenants(base))
+	assert.Equal(t, 9090, LastStartPort(base))
+	require.NoError(t, ApplyGeneratedConfig(base, []byte(tenantsMarker+"invalid\n")))
+	assert.Nil(t, LastStartTenants(base))
+	require.NoError(t, ApplyGeneratedConfig(base, nil))
+	assert.Nil(t, LastStartTenants(base))
+}
+
 func TestResolveExternalModeIgnoresStore(t *testing.T) {
 	t.Setenv(ModeEnv, "external")
 	store := NewStore(filepath.Join(t.TempDir(), FileName))

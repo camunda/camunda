@@ -9,6 +9,7 @@ package physicaltenants
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -132,7 +133,38 @@ func RenderForPort(tenants []types.PhysicalTenant, storageType string, port int)
 	if port > 0 {
 		content = append([]byte(fmt.Sprintf("%s%d\n", portMarker, port)), content...)
 	}
+	// Record only display settings: passwords must never enter generated configuration.
+	state := make(map[string]Tenant, len(tenants))
+	for _, tenant := range tenants {
+		state[tenant.ID] = Tenant{ID: tenant.ID, Username: tenant.Username, NoConnectors: !tenant.Connectors}
+	}
+	metadata, err := json.Marshal(state)
+	if err != nil {
+		return nil, err
+	}
+	content = append(append([]byte(tenantsMarker), append(metadata, '\n')...), content...)
 	return content, nil
+}
+
+const tenantsMarker = "# c8run-tenants: "
+
+// LastStartTenants reads effective display settings from the same file as the active IDs.
+// Older generated files have no metadata; callers should display unknown settings.
+func LastStartTenants(baseDir string) map[string]Tenant {
+	content, err := os.ReadFile(GeneratedConfigPath(baseDir))
+	if err != nil {
+		return nil
+	}
+	for _, line := range strings.Split(string(content), "\n") {
+		if strings.HasPrefix(line, tenantsMarker) {
+			var tenants map[string]Tenant
+			if json.Unmarshal([]byte(strings.TrimPrefix(line, tenantsMarker)), &tenants) == nil {
+				return tenants
+			}
+			return nil
+		}
+	}
+	return nil
 }
 
 // ApplyGeneratedConfig writes content to the generated config path, or removes the file when
@@ -221,14 +253,25 @@ func Resolve(in ResolveInput) (Resolution, error) {
 
 	var stored []Tenant
 	creds := map[string]string{}
-	if len(in.FlagIDs) > 0 {
-		for _, id := range in.FlagIDs {
-			stored = append(stored, Tenant{ID: id})
-		}
-	} else if mode == "local" && in.Store != nil {
+	if mode == "local" && in.Store != nil {
 		if stored, creds, err = in.Store.Snapshot(); err != nil {
 			return res, err
 		}
+	}
+	if len(in.FlagIDs) > 0 {
+		byID := make(map[string]Tenant, len(stored))
+		for _, tenant := range stored {
+			byID[tenant.ID] = tenant
+		}
+		selected := make([]Tenant, 0, len(in.FlagIDs))
+		for _, id := range in.FlagIDs {
+			tenant, saved := byID[id]
+			if !saved {
+				tenant = Tenant{ID: id}
+			}
+			selected = append(selected, tenant)
+		}
+		stored = selected
 	}
 
 	port := in.FirstConnectorsPort

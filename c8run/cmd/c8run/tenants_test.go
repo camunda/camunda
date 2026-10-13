@@ -215,6 +215,63 @@ func TestApplyPhysicalTenantsFromFlag(t *testing.T) {
 	assert.ErrorContains(t, applyPhysicalTenants(base, "8.9.1", &old), "8.10 or newer")
 }
 
+func TestApplyPhysicalTenantSelectionPreservesCredentials(t *testing.T) {
+	for _, flags := range [][]string{{"new,hr"}, {"new", "hr"}} {
+		t.Run(strings.Join(flags, "/"), func(t *testing.T) {
+			base := t.TempDir()
+			cmd, _, _ := testTenantsCommand(t, "tenant-password\n", false)
+			require.NoError(t, cmd.run(base, []string{"add", "hr", "--username", "alice", "--password-stdin", "--no-connectors"}))
+			settings := types.C8RunSettings{Port: 8080, Username: "demo", Password: "demo", PhysicalTenantsFlag: flags, SecondaryStorageType: "rdbms"}
+			require.NoError(t, applyPhysicalTenants(base, "8.10.3", &settings))
+			require.Len(t, settings.PhysicalTenants, 2)
+			assert.Equal(t, types.PhysicalTenant{ID: "hr", Username: "alice", Password: "tenant-password"}, settings.PhysicalTenants[1])
+			assert.Equal(t, "alice", settings.PhysicalTenantsEnv["CAMUNDA_PHYSICALTENANTS_HR_SECURITY_INITIALIZATION_USERS_0_USERNAME"])
+			assert.Equal(t, "tenant-password", settings.PhysicalTenantsEnv["CAMUNDA_PHYSICALTENANTS_HR_SECURITY_INITIALIZATION_USERS_0_PASSWORD"])
+		})
+	}
+}
+
+func TestTenantsListReportsEffectiveSettings(t *testing.T) {
+	base := t.TempDir()
+	cmd, out, _ := testTenantsCommand(t, "", false)
+	store := pt.NewStore(os.Getenv(pt.FileEnv))
+	// Saved settings can change while the engine continues using its startup settings.
+	require.NoError(t, store.Add([]pt.Tenant{{ID: "hr", Username: "bob"}, {ID: "pending"}}, map[string]string{"hr": "new-password"}))
+	content, err := pt.RenderForPort([]types.PhysicalTenant{
+		{ID: "hr", Username: "alice", Password: "never-record-this"},
+		{ID: "temp", Username: "demo", Connectors: true, ConnectorsPort: 8087},
+	}, "rdbms", 8080)
+	require.NoError(t, err)
+	assert.NotContains(t, string(content), "never-record-this")
+	require.NoError(t, pt.ApplyGeneratedConfig(base, content))
+	require.NoError(t, os.WriteFile(filepath.Join(base, "camunda.process"), []byte("1"), 0o600))
+	require.NoError(t, cmd.run(base, []string{"list"}))
+	assert.Regexp(t, `hr\s+active\s+alice\s+no`, out.String())
+	assert.Regexp(t, `temp\s+active \(not saved\)\s+demo\s+yes`, out.String())
+	assert.Contains(t, out.String(), "http://localhost:8080/physical-tenants/temp/v2/")
+	assert.Regexp(t, `pending\s+pending restart`, out.String())
+
+	require.NoError(t, os.Remove(filepath.Join(base, "camunda.process")))
+	out.Reset()
+	require.NoError(t, cmd.run(base, []string{"list"}))
+	assert.Regexp(t, `hr\s+stopped\s+bob\s+yes`, out.String())
+	assert.NotContains(t, out.String(), "temp")
+}
+
+func TestTenantsListDoesNotGuessLegacyStartupSettings(t *testing.T) {
+	base := t.TempDir()
+	cmd, out, _ := testTenantsCommand(t, "", false)
+	require.NoError(t, cmd.run(base, []string{"add", "hr", "--no-connectors"}))
+	content, err := pt.Render([]types.PhysicalTenant{{ID: "hr"}, {ID: "temp"}}, "rdbms")
+	require.NoError(t, err)
+	require.NoError(t, pt.ApplyGeneratedConfig(base, content))
+	require.NoError(t, os.WriteFile(filepath.Join(base, "camunda.process"), []byte("1"), 0o600))
+	out.Reset()
+	require.NoError(t, cmd.run(base, []string{"list"}))
+	assert.Regexp(t, `hr\s+active\s+unknown\s+unknown`, out.String())
+	assert.Regexp(t, `temp\s+active \(not saved\)\s+unknown\s+unknown`, out.String())
+}
+
 func TestSecretsPhysicalTenantFlagUsesTenantDirectory(t *testing.T) {
 	for _, selector := range [][]string{{"--physical-tenant", "sales"}, {"--physical-tenant=sales"}} {
 		t.Run(strings.Join(selector, " "), func(t *testing.T) {
