@@ -411,20 +411,20 @@ public class ModifyProcessInstanceRejectionTest {
         .deploy();
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var userTaskKey =
+    final var userTask =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withParentProcessInstanceKey(processInstanceKey)
             .withElementId("A")
-            .getFirst()
-            .getKey();
+            .getFirst();
+    final var childProcessInstanceKey = userTask.getValue().getProcessInstanceKey();
 
     // when
     final var rejection =
         ENGINE
             .processInstance()
-            .withInstanceKey(processInstanceKey)
+            .withInstanceKey(childProcessInstanceKey)
             .modification()
-            .terminateElement(userTaskKey)
+            .terminateElement(userTask.getKey())
             .expectRejection()
             .modify();
 
