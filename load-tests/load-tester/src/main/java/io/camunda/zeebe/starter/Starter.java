@@ -59,6 +59,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -75,6 +77,7 @@ public class Starter implements CommandLineRunner {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final CamundaClient client;
+  private final ApplicationContext applicationContext;
   private final LoadTesterProperties properties;
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
@@ -83,6 +86,7 @@ public class Starter implements CommandLineRunner {
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
+  private final AtomicReference<Error> fatalError = new AtomicReference<>();
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
 
@@ -99,8 +103,10 @@ public class Starter implements CommandLineRunner {
       final LoadTesterProperties properties,
       final MeterRegistry registry,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final ApplicationContext applicationContext) {
     this.client = client;
+    this.applicationContext = applicationContext;
     this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
@@ -161,6 +167,11 @@ public class Starter implements CommandLineRunner {
       countDownLatch.await();
     } catch (final InterruptedException e) {
       LOG.error("Awaiting of count down latch was interrupted.", e);
+    }
+
+    if (fatalError.get() != null) {
+      scheduledTask.cancel(true);
+      System.exit(SpringApplication.exit(applicationContext, () -> 1));
     }
 
     runFinished.set(1);
@@ -288,6 +299,13 @@ public class Starter implements CommandLineRunner {
           } catch (final Exception e) {
             inFlight.release();
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
+            return;
+          } catch (final Error e) {
+            // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
+            // stop the starter and fail the application instead.
+            LOG.error("Fatal error on creating new process instance, stopping the starter", e);
+            fatalError.set(e);
+            countDownLatch.countDown();
             return;
           }
 
