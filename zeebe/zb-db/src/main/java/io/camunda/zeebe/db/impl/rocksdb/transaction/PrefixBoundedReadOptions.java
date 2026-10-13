@@ -14,20 +14,21 @@ import org.rocksdb.ReadOptions;
 
 /**
  * Prefix read options bounded to a given key prefix, so RocksDB stops iterating at the end of the
- * prefix instead of at the end of the column family prefix extracted by the prefix extractor.
- * Forward iterations get {@code iterate_upper_bound} set to the first key after the prefix, reverse
- * iterations additionally get {@code iterate_lower_bound} set to the prefix itself.
+ * prefix instead of at the end of the column family prefix extracted by the prefix extractor. Both
+ * {@code iterate_lower_bound} (the prefix itself) and {@code iterate_upper_bound} (the first key
+ * after the prefix) are set, so iterators only ever see keys that start with the prefix.
  *
- * <p>Without the bound, a seek into a prefix with no live keys has to step over every tombstone
- * until the next live key of the whole column family, which can be millions of entries for
- * queue-like column families with high churn (e.g. activatable jobs). With it, RocksDB stops at the
- * bound, and the cost is limited to tombstones within the prefix.
+ * <p>Without the upper bound, a seek into a prefix with no live keys has to step over every
+ * tombstone until the next live key of the whole column family, which can be millions of entries
+ * for queue-like column families with high churn (e.g. activatable jobs). With it, RocksDB stops at
+ * the bound, and the cost is limited to tombstones within the prefix.
+ *
+ * <p>Since the bounds are exclusive of everything outside the prefix, RocksDB moves a seek target
+ * outside the bounds to the nearest bound. Callers must therefore seek within the prefix.
  *
  * <p>The bounds are backed by reusable direct buffers, so bounding an iteration does not allocate.
- * Both bounds are set on every call (the lower bound to the empty key for forward iterations), so a
- * bound left over from a previous iteration can never hide keys of the current one. Forward
- * iterations deliberately get no lower bound: RocksDB would move a seek target below the bound up
- * to it, while today such a seek lands outside the prefix and ends the iteration.
+ * Both bounds are set on every call, so a bound left over from a previous iteration can never hide
+ * keys of the current one.
  *
  * <p>An instance must not be shared between iterators that are open at the same time, since the
  * iterator reads the bound throughout its lifetime. Not thread safe.
@@ -48,22 +49,10 @@ final class PrefixBoundedReadOptions implements AutoCloseable {
   }
 
   /**
-   * Bounds a forward iteration to keys starting with the given prefix, and returns the read options
-   * to create the iterator with. The returned options stay valid until the next call on this
-   * instance.
+   * Bounds an iteration to keys starting with the given prefix, and returns the read options to
+   * create the iterator with. The returned options stay valid until the next call on this instance.
    */
-  ReadOptions forward(final byte[] prefix, final int prefixLength) {
-    lowerBoundSlice.setLength(0);
-    setUpperBound(prefix, prefixLength);
-    return readOptions;
-  }
-
-  /**
-   * Bounds a reverse iteration to keys starting with the given prefix, and returns the read options
-   * to create the iterator with. The returned options stay valid until the next call on this
-   * instance.
-   */
-  ReadOptions reverse(final byte[] prefix, final int prefixLength) {
+  ReadOptions bound(final byte[] prefix, final int prefixLength) {
     ensureLowerBoundCapacity(prefixLength);
     lowerBound.put(0, prefix, 0, prefixLength);
     lowerBoundSlice.setLength(prefixLength);

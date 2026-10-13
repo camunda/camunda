@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.db.ColumnFamily;
@@ -454,32 +453,23 @@ class TransactionalColumnFamily<
     boundedReadOptions.push(readOptions);
   }
 
-  private enum Direction {
-    FORWARD,
-    REVERSE
-  }
-
   @FunctionalInterface
   private interface PrefixIteration {
-    void iterate(RocksIterator iterator, byte[] prefixKey, int prefixLength);
+    void iterate(RocksIterator iterator);
   }
 
   /**
    * Opens an iterator bounded to the given prefix, see {@link PrefixBoundedReadOptions}, runs the
    * iteration with it, and closes it afterwards.
    */
-  private void withPrefixIterator(
-      final DbKey prefix, final Direction direction, final PrefixIteration iteration) {
+  private void withPrefixIterator(final DbKey prefix, final PrefixIteration iteration) {
     columnFamilyContext.withPrefixKey(
         prefix,
         (prefixKey, prefixLength) -> {
           final var readOptions = acquireReadOptions();
-          final var bounded =
-              direction == Direction.FORWARD
-                  ? readOptions.forward(prefixKey, prefixLength)
-                  : readOptions.reverse(prefixKey, prefixLength);
-          try (final RocksIterator iterator = newIterator(context, bounded)) {
-            iteration.iterate(iterator, prefixKey, prefixLength);
+          try (final RocksIterator iterator =
+              newIterator(context, readOptions.bound(prefixKey, prefixLength))) {
+            iteration.iterate(iterator);
           } finally {
             releaseReadOptions(readOptions);
           }
@@ -507,7 +497,7 @@ class TransactionalColumnFamily<
    * This is the preferred method to implement methods that iterate over a column family.
    *
    * @param startAt seek to this key before starting iteration. If null, seek to {@code prefix}
-   *     instead.
+   *     instead. Must lie within {@code prefix}, as the iterator is bounded to it.
    * @param prefix of all keys that are iterated over.
    * @param visitor called for all kv pairs where the key matches the given prefix. The visitor can
    *     indicate whether iteration should continue or not, see {@link KeyValuePairVisitor}.
@@ -523,18 +513,12 @@ class TransactionalColumnFamily<
 
       withPrefixIterator(
           prefix,
-          Direction.FORWARD,
-          (iterator, prefixKey, prefixLength) -> {
+          iterator -> {
             boolean shouldVisitNext = true;
 
             for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
                 iterator.isValid() && shouldVisitNext;
                 iterator.next()) {
-              final byte[] keyBytes = iterator.key();
-              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                break;
-              }
-
               shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
             }
           });
@@ -545,7 +529,8 @@ class TransactionalColumnFamily<
    * Reverse counterpart of {@link #forEachInPrefix(DbKey, DbKey, KeyValuePairVisitor)}. Iterates
    * backward over key-value pairs within the given prefix.
    *
-   * @param startAt seek to this key before starting reverse iteration.
+   * @param startAt seek to this key before starting reverse iteration. Must lie within {@code
+   *     prefix}, as the iterator is bounded to it.
    * @param prefix of all keys that are iterated over.
    * @param visitor called for all kv pairs where the key matches the given prefix. The visitor can
    *     indicate whether iteration should continue or not, see {@link KeyValuePairVisitor}.
@@ -561,8 +546,7 @@ class TransactionalColumnFamily<
 
       withPrefixIterator(
           prefix,
-          Direction.REVERSE,
-          (iterator, prefixKey, prefixLength) -> {
+          iterator -> {
             final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
 
             boolean shouldVisitNext = true;
@@ -570,11 +554,6 @@ class TransactionalColumnFamily<
             for (iterator.seekForPrev(seekTarget);
                 iterator.isValid() && shouldVisitNext;
                 iterator.prev()) {
-              final byte[] keyBytes = iterator.key();
-              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                break;
-              }
-
               shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
             }
           });
@@ -598,16 +577,10 @@ class TransactionalColumnFamily<
 
     withPrefixIterator(
         prefix,
-        Direction.FORWARD,
-        (iterator, prefixKey, prefixLength) -> {
+        iterator -> {
           for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
               iterator.isValid();
               iterator.next()) {
-            final byte[] keyBytes = iterator.key();
-            if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-              break;
-            }
-
             count.increment();
           }
         });
@@ -632,7 +605,7 @@ class TransactionalColumnFamily<
    * over keys within the given prefix without reading values from the database.
    *
    * @param startAt seek to this key before starting iteration. If null, seek to {@code prefix}
-   *     instead.
+   *     instead. Must lie within {@code prefix}, as the iterator is bounded to it.
    * @param prefix of all keys that are iterated over.
    * @param visitor called for all keys that match the given prefix. The visitor can indicate
    *     whether iteration should continue or not, see {@link KeyVisitor}.
@@ -646,18 +619,13 @@ class TransactionalColumnFamily<
 
       withPrefixIterator(
           prefix,
-          Direction.FORWARD,
-          (iterator, prefixKey, prefixLength) -> {
+          iterator -> {
             boolean shouldVisitNext = true;
 
             for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
                 iterator.isValid() && shouldVisitNext;
                 iterator.next()) {
               final byte[] keyBytes = iterator.key();
-              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                break;
-              }
-
               shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
             }
           });
@@ -668,7 +636,8 @@ class TransactionalColumnFamily<
    * Key-only counterpart of {@link #forEachInPrefixReverse(DbKey, DbKey, KeyValuePairVisitor)}.
    * Iterates backward over keys within the given prefix without reading values from the database.
    *
-   * @param startAt seek to this key before starting reverse iteration.
+   * @param startAt seek to this key before starting reverse iteration. Must lie within {@code
+   *     prefix}, as the iterator is bounded to it.
    * @param prefix of all keys that are iterated over.
    * @param visitor called for all keys that match the given prefix. The visitor can indicate
    *     whether iteration should continue or not, see {@link KeyVisitor}.
@@ -682,8 +651,7 @@ class TransactionalColumnFamily<
 
       withPrefixIterator(
           prefix,
-          Direction.REVERSE,
-          (iterator, prefixKey, prefixLength) -> {
+          iterator -> {
             final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
 
             boolean shouldVisitNext = true;
@@ -692,10 +660,6 @@ class TransactionalColumnFamily<
                 iterator.isValid() && shouldVisitNext;
                 iterator.prev()) {
               final byte[] keyBytes = iterator.key();
-              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                break;
-              }
-
               shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
             }
           });

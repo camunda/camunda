@@ -14,8 +14,10 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
-import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.protocol.ColumnFamilyScope;
+import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +30,7 @@ import org.rocksdb.RocksDB;
 
 final class PrefixBoundedIterationTest {
 
-  private ZeebeDb<DefaultColumnFamily> zeebeDb;
+  private ZeebeDb<TestColumnFamily> zeebeDb;
   private DbLong firstKey;
   private DbLong secondKey;
   private DbCompositeKey<DbLong, DbLong> compositeKey;
@@ -36,13 +38,13 @@ final class PrefixBoundedIterationTest {
 
   @BeforeEach
   void setup(final @TempDir File pathName) {
-    zeebeDb = DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory().createDb(pathName);
+    zeebeDb = DefaultZeebeDbFactory.<TestColumnFamily>getDefaultFactory().createDb(pathName);
     firstKey = new DbLong();
     secondKey = new DbLong();
     compositeKey = new DbCompositeKey<>(firstKey, secondKey);
     columnFamily =
         zeebeDb.createColumnFamily(
-            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), compositeKey, DbNil.INSTANCE);
+            TestColumnFamily.DEFAULT, zeebeDb.createContext(), compositeKey, DbNil.INSTANCE);
   }
 
   @AfterEach
@@ -152,8 +154,7 @@ final class PrefixBoundedIterationTest {
     final List<List<Long>> visited = new ArrayList<>();
     final var context = zeebeDb.createContext();
     final var transactionalColumnFamily =
-        zeebeDb.createColumnFamily(
-            DefaultColumnFamily.DEFAULT, context, compositeKey, DbNil.INSTANCE);
+        zeebeDb.createColumnFamily(TestColumnFamily.DEFAULT, context, compositeKey, DbNil.INSTANCE);
     context.runInTransaction(
         () -> {
           firstKey.wrapLong(1);
@@ -174,6 +175,130 @@ final class PrefixBoundedIterationTest {
 
     // then
     assertThat(visited).containsExactly(List.of(1L, 1L), List.of(1L, 2L));
+  }
+
+  @Test
+  void shouldIterateForwardFromStartAtWithinPrefix() {
+    // given
+    insert(1, 1);
+    insert(1, 2);
+    insert(1, 3);
+    insert(2, 1);
+
+    // when
+    final var prefix = new DbLong();
+    prefix.wrapLong(1);
+    firstKey.wrapLong(1);
+    secondKey.wrapLong(2);
+    final List<List<Long>> visited = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        prefix,
+        compositeKey,
+        (key, value) -> {
+          visited.add(List.of(key.first().getValue(), key.second().getValue()));
+          return true;
+        });
+
+    // then
+    assertThat(visited).containsExactly(List.of(1L, 2L), List.of(1L, 3L));
+  }
+
+  @Test
+  void shouldIterateInReverseFromStartAtWithinColumnFamily() {
+    // given
+    insert(1, 1);
+    insert(1, 2);
+    insert(1, 3);
+
+    // when
+    firstKey.wrapLong(1);
+    secondKey.wrapLong(2);
+    final List<List<Long>> visited = new ArrayList<>();
+    columnFamily.whileTrueReverse(
+        compositeKey,
+        (key, value) -> {
+          visited.add(List.of(key.first().getValue(), key.second().getValue()));
+          return true;
+        });
+
+    // then
+    assertThat(visited).containsExactly(List.of(1L, 2L), List.of(1L, 1L));
+  }
+
+  @Test
+  void shouldNotVisitUncommittedKeysOutsidePrefixWhenIteratingForward() {
+    // given
+    final var context = zeebeDb.createContext();
+    final var transactionalColumnFamily =
+        zeebeDb.createColumnFamily(TestColumnFamily.DEFAULT, context, compositeKey, DbNil.INSTANCE);
+    final List<List<Long>> visited = new ArrayList<>();
+
+    // when - keys just below and above the prefix are written in the same, still open transaction
+    context.runInTransaction(
+        () -> {
+          upsert(transactionalColumnFamily, 0, 9);
+          upsert(transactionalColumnFamily, 1, 1);
+          upsert(transactionalColumnFamily, 1, 2);
+          upsert(transactionalColumnFamily, 2, 0);
+
+          final var prefix = new DbLong();
+          prefix.wrapLong(1);
+          firstKey.wrapLong(1);
+          secondKey.wrapLong(1);
+          transactionalColumnFamily.whileEqualPrefix(
+              prefix,
+              compositeKey,
+              (key, value) -> {
+                visited.add(List.of(key.first().getValue(), key.second().getValue()));
+                return true;
+              });
+        });
+
+    // then
+    assertThat(visited).containsExactly(List.of(1L, 1L), List.of(1L, 2L));
+  }
+
+  @Test
+  void shouldNotVisitUncommittedKeysOutsideColumnFamilyWhenIteratingInReverse() {
+    // given - the neighbouring column families sit right below and above the iterated one
+    final var context = zeebeDb.createContext();
+    final var below =
+        zeebeDb.createColumnFamily(TestColumnFamily.DEFAULT, context, compositeKey, DbNil.INSTANCE);
+    final var target =
+        zeebeDb.createColumnFamily(TestColumnFamily.TARGET, context, compositeKey, DbNil.INSTANCE);
+    final var above =
+        zeebeDb.createColumnFamily(TestColumnFamily.ABOVE, context, compositeKey, DbNil.INSTANCE);
+    final List<List<Long>> visited = new ArrayList<>();
+
+    // when
+    context.runInTransaction(
+        () -> {
+          upsert(below, 9, 9);
+          upsert(target, 1, 1);
+          upsert(target, 1, 2);
+          upsert(above, 0, 0);
+
+          firstKey.wrapLong(Long.MAX_VALUE);
+          secondKey.wrapLong(Long.MAX_VALUE);
+          target.whileTrueReverse(
+              compositeKey,
+              (key, value) -> {
+                visited.add(List.of(key.first().getValue(), key.second().getValue()));
+                return true;
+              });
+        });
+
+    // then
+    assertThat(visited).containsExactly(List.of(1L, 2L), List.of(1L, 1L));
+  }
+
+  private void upsert(
+      final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> family,
+      final long first,
+      final long second) {
+    firstKey.wrapLong(first);
+    secondKey.wrapLong(second);
+    family.upsert(compositeKey, DbNil.INSTANCE);
   }
 
   private void insert(final long first, final long second) {
@@ -198,5 +323,22 @@ final class PrefixBoundedIterationTest {
     final var field = ZeebeTransactionDb.class.getDeclaredField("rocksDB");
     field.setAccessible(true);
     return (RocksDB) field.get(zeebeDb);
+  }
+
+  /** Three adjacent column families, so the ones next to {@code TARGET} can be written to. */
+  private enum TestColumnFamily implements EnumValue, ScopedColumnFamily {
+    DEFAULT,
+    TARGET,
+    ABOVE;
+
+    @Override
+    public int getValue() {
+      return ordinal();
+    }
+
+    @Override
+    public ColumnFamilyScope partitionScope() {
+      return ColumnFamilyScope.PARTITION_LOCAL;
+    }
   }
 }
