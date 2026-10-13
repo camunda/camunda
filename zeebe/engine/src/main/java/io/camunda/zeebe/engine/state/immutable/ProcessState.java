@@ -115,6 +115,12 @@ public interface ProcessState {
   /** The partitions that still owe a drain report for the given process definition. */
   Set<Integer> getPendingDeletionPartitions(long processDefinitionKey);
 
+  /**
+   * Whether the startup cleanup that restores stray resting {@code PENDING_DELETION} process
+   * definitions back to {@code ACTIVE} has already run on this partition.
+   */
+  boolean hasRunProcessDefinitionRestore();
+
   record ProcessIdentifier(String tenantId, long processDefinitionKey)
       implements ResourceIdentifier {}
 
