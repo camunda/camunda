@@ -61,7 +61,7 @@ func TestConfirmReadFailureIsAnError(t *testing.T) {
 func TestTenantsHelpUsesOnlyCanonicalCommand(t *testing.T) {
 	cmd, out, _ := testTenantsCommand(t, "", false, "")
 	require.NoError(t, cmd.run(t.TempDir(), []string{"help"}))
-	assert.Contains(t, out.String(), "without saving them.\n\nC8RUN_TENANTS_FILE")
+	assert.Contains(t, out.String(), "unsaved IDs use the start defaults.\n\nC8RUN_TENANTS_FILE")
 	assert.Contains(t, out.String(), "c8run physical-tenants add")
 	assert.NotContains(t, out.String(), "c8run tenants")
 	assert.NotContains(t, out.String(), "Aliases")

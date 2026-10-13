@@ -266,6 +266,7 @@ func (c *tenantsCommand) list(baseDir string, store *pt.Store) error {
 	}
 	running := camundaRunning(baseDir)
 	active := activeTenantIDs(baseDir)
+	effective := pt.LastStartTenants(baseDir)
 	tw := tabwriter.NewWriter(c.output, 0, 0, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "PHYSICAL TENANT\tSTATUS\tLOGIN\tCONNECTORS\tOPERATE\tORCHESTRATION API")
 	d := pt.EndpointsFor(pt.DefaultID, "http", c.port)
@@ -282,6 +283,9 @@ func (c *tenantsCommand) list(baseDir string, store *pt.Store) error {
 		if t.NoConnectors {
 			conn = "no"
 		}
+		if running && active[t.ID] {
+			login, conn = effectiveTenantDisplay(effective, t.ID)
+		}
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, statusLabel(running, active[t.ID]), login, conn, e.Operate, e.REST)
 	}
 	var removed []string
@@ -292,15 +296,29 @@ func (c *tenantsCommand) list(baseDir string, store *pt.Store) error {
 	}
 	sort.Strings(removed)
 	for _, id := range removed {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t-\t-\t-\t-\n", id, "removed (restart to apply)")
+		login, conn := effectiveTenantDisplay(effective, id)
+		e := pt.EndpointsFor(id, "http", c.port)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", id, "active (not saved)", login, conn, e.Operate, e.REST)
 	}
 	if err := tw.Flush(); err != nil {
 		return err
 	}
-	if len(tenants) == 0 {
+	if len(tenants) == 0 && (!running || len(active) == 0) {
 		_, _ = fmt.Fprintln(c.output, "\nNo extra physical tenants yet. Add one with `c8run physical-tenants add <id>`.")
 	}
 	return nil
+}
+
+func effectiveTenantDisplay(tenants map[string]pt.Tenant, id string) (string, string) {
+	tenant, ok := tenants[id]
+	if !ok {
+		return "unknown", "unknown"
+	}
+	connectors := "yes"
+	if tenant.NoConnectors {
+		connectors = "no"
+	}
+	return tenant.Username, connectors
 }
 
 func statusLabel(running, active bool) string {
@@ -446,6 +464,7 @@ Physical tenant IDs use lowercase letters and digits only (max 64; max 8 with RD
 e.g. "sales" or "team2".
 Physical tenants are saved for the current OS user and applied on every ` + "`c8run start`" + `.
 Use ` + "`c8run start --physical-tenants a,b`" + ` to run with physical tenants for one run without saving them.
+Selected saved tenants retain their login and connectors settings; unsaved IDs use the start defaults.
 
 `
 
@@ -457,7 +476,7 @@ Requires Camunda 8.10 or newer.
 
 var tenantsCommandHelp = map[string]string{
 	"add":    "Usage: c8run physical-tenants add <id> [id...] [--username <name>] [--password-stdin] [--no-connectors]\nAdds physical tenants for the next start. Without --username, each physical tenant gets the same login as `c8run start`.\nWith --username, you are prompted for a password (or pass it on stdin with --password-stdin).\nEach physical tenant gets its own connectors runtime unless --no-connectors is set.\n",
-	"list":   "Usage: c8run physical-tenants list\nShows every physical tenant with its status, login, connectors and URLs.\n",
+	"list":   "Usage: c8run physical-tenants list\nShows every physical tenant with its status, login, connectors and URLs.\nActive tenants show startup settings; stopped or pending tenants show saved settings.\nActive tenants absent from saved configuration are marked 'active (not saved)'.\n",
 	"ls":     "Usage: c8run physical-tenants list\n",
 	"remove": "Usage: c8run physical-tenants remove <id> [id...] [--yes]\nRemoves physical tenants from the next start. Data stays in secondary storage; adding the ID again restores it.\n",
 	"rm":     "Usage: c8run physical-tenants remove <id> [id...] [--yes]\n",
