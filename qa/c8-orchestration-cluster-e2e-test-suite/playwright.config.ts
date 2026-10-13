@@ -183,7 +183,15 @@ const normalProjects = [
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
-    teardown: 'chromium-subset',
+    teardown: 'tasklist-e2e-subset',
+  },
+  {
+    // A teardown project runs in full whatever the file or grep filter, so a
+    // Tasklist-scoped run gets its own instead of sharing chromium-subset.
+    name: 'tasklist-e2e-subset',
+    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
   {
     name: 'identity-e2e',
