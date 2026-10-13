@@ -46,10 +46,10 @@ kubectl port-forward svc/kube-prometheus-stack-prometheus -n monitoring 9090:909
 # Then build the headline metrics report
 cd load-tests/loadtestctl
 uv run loadtestctl report <full-namespace-with-c8-prefix> --duration-seconds 1200 \
-  --queries report-queries-comparison.yaml > /tmp/results.json
+  --queries report-queries-comparison.yaml > /tmp/report.json
 ```
 
-Omit `--queries` for the full report. See `load-tests/loadtestctl/README.md` for all options.
+The values are under `.metrics` in `/tmp/report.json`. Omit `--queries` for the full report. See `load-tests/loadtestctl/README.md` for all options.
 
 ## Via GCS archive (namespace/Prometheus retention already expired)
 
