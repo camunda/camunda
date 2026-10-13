@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -247,6 +248,43 @@ public record PartitionGroupConfiguration(
       updatedMembers.remove(memberId);
     }
     return withMembers(updatedMembers);
+  }
+
+  /**
+   * Drops the partitions of {@code memberId} above the count this group routes requests over, once
+   * that routing is stable, i.e. {@code AllPartitions(n)}. Only a restore from a backup with fewer
+   * partitions leaves such partitions behind: while a scale up adds partitions the routing is
+   * unstable, and otherwise a member holds exactly the partitions the group routes over. Returns
+   * {@code this} if there is nothing to drop, the routing is not stable or the member is not part
+   * of the group.
+   */
+  public PartitionGroupConfiguration withoutUnroutedPartitions(final MemberId memberId) {
+    final var routedPartitionCount =
+        routingState
+            .map(RoutingState::requestHandling)
+            .filter(AllPartitions.class::isInstance)
+            .map(AllPartitions.class::cast)
+            .map(AllPartitions::partitionCount);
+    final var member = members.get(memberId);
+    if (routedPartitionCount.isEmpty() || member == null) {
+      return this;
+    }
+    final var unrouted =
+        member.partitions().keySet().stream()
+            .filter(partitionId -> partitionId > routedPartitionCount.get())
+            .toList();
+    if (unrouted.isEmpty()) {
+      return this;
+    }
+    return updateMember(
+        memberId,
+        broker -> {
+          var updated = broker;
+          for (final var partitionId : unrouted) {
+            updated = updated.removePartition(partitionId);
+          }
+          return updated;
+        });
   }
 
   /**

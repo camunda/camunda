@@ -43,16 +43,29 @@ public final class StaticConfigurationGenerator {
       final BrokerCfg brokerCfg,
       final Map<String, BrokerCfg> physicalTenantConfigs,
       final MemberId localMemberId) {
-    final var clusterCfg = brokerCfg.getCluster();
-    final var partitioningCfg = brokerCfg.getExperimental().getPartitioning();
-    final var replicationFactor = clusterCfg.getReplicationFactor();
-    final var partitionDistributor = getPartitionDistributor(partitioningCfg);
-    final var clusterMembers = getRaftGroupMembers(clusterCfg, partitioningCfg);
     final var partitionCountPerTenant =
         physicalTenantConfigs.entrySet().stream()
             .collect(
                 Collectors.toMap(
                     Entry::getKey, e -> e.getValue().getCluster().getPartitionsCount()));
+    return getStaticConfiguration(
+        brokerCfg, physicalTenantConfigs, partitionCountPerTenant, localMemberId);
+  }
+
+  /**
+   * The static configuration with the given partition count per physical tenant instead of the
+   * configured ones, e.g. the partition counts of the backups a fresh cluster is restored from.
+   */
+  public static StaticConfiguration getStaticConfiguration(
+      final BrokerCfg brokerCfg,
+      final Map<String, BrokerCfg> physicalTenantConfigs,
+      final Map<String, Integer> partitionCountPerTenant,
+      final MemberId localMemberId) {
+    final var clusterCfg = brokerCfg.getCluster();
+    final var partitioningCfg = brokerCfg.getExperimental().getPartitioning();
+    final var replicationFactor = clusterCfg.getReplicationFactor();
+    final var partitionDistributor = getPartitionDistributor(partitioningCfg);
+    final var clusterMembers = getRaftGroupMembers(clusterCfg, partitioningCfg);
     final var partitionIds = getSortedPartitionIds(partitionCountPerTenant);
     final var partitionConfig =
         physicalTenantConfigs.entrySet().stream()
