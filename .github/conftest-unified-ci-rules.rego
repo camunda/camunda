@@ -68,6 +68,9 @@ deny[msg] {
         job_id != "check-results"
         not startswith(job_id, "deploy-")
         not startswith(job_id, "utils-")
+
+        # temporary: Gradle CI jobs are non-blocking and must not gate check-results
+        not non_blocking_gradle_jobs[job_id]
     }
 
     jobs_that_actually_fail_checkresults := {x | x := input.jobs["check-results"].needs[_]}
@@ -138,6 +141,9 @@ deny[msg] {
 }
 
 ###########################   RULE HELPERS   ##################################
+
+# temporary: Gradle CI jobs run but do not block pull requests or merge groups
+non_blocking_gradle_jobs := {"gradle-compile-check", "gradle-dist-parity", "gradle-notify-failure"}
 
 get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
     jobs_without_timeoutminutes := { job_id |
@@ -232,6 +238,8 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         # dependent observer job natively instead of maintaining whitelist.
         job_id != "collect-stale-backports"
         job_id != "compute-matrix"
+        # temporary: main-only Slack notifier for the non-blocking Gradle jobs
+        job_id != "gradle-notify-failure"
         # static outputs only
         not is_scheduled_release_load_tests_versions_job(job_id)
 
@@ -266,6 +274,7 @@ get_jobs_not_needing_detectchanges(jobInput) = jobs_not_needing_detectchanges {
         # not enforced on Unified CI jobs that are part of change detection control flow structure
         job_id != "detect-changes"
         job_id != "check-results"
+        job_id != "gradle-notify-failure"
 
         # not enforced on Unified CI jobs running after "check-results" job
         not startswith(job_id, "deploy-")
@@ -328,6 +337,7 @@ get_jobs_without_monitor_as_first_step(jobInput) = result {
         job_id != "operate-fe-visual-regression-merge"
         job_id != "generate-db-versions"
         job_id != "generate-matrix"
+        job_id != "gradle-notify-failure"
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
         not job.uses
