@@ -28,6 +28,7 @@ import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.JobEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -111,7 +112,8 @@ public class JobHandler implements OrdinalIndexExportHandler<JobEntity, JobRecor
         .setErrorMessage(recordValue.getErrorMessage())
         .setErrorCode(recordValue.getErrorCode())
         .setCustomHeaders(recordValue.getCustomHeaders())
-        .setJobKind(recordValue.getJobKind().name());
+        .setJobKind(recordValue.getJobKind().name())
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue).orElse(null));
 
     // Skip setting flowNodeId for intents that may contain NO_CATCH_EVENT_FOUND sentinel
     // to preserve the existing value in ES (partial update pattern)
