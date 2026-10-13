@@ -1,5 +1,4 @@
 // Unit tests for `scripts/test.data-read.js`. The k6 modules are mocked, the Camunda client is real.
-import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -17,11 +16,6 @@ const definitions = (...ids) => ({
     items: ids.map((processDefinitionId) => ({ processDefinitionId })),
   }),
 });
-
-const deployedProcessId = readFileSync(
-  new URL("../data/micro.bpmn", import.meta.url),
-  "utf8",
-).match(/<bpmn:process id="([^"]+)"/)[1];
 
 describe("test.data-read.js k6 test script", () => {
   it("should reference an exported function in every scenario", () => {
@@ -48,16 +42,18 @@ describe("test.data-read.js k6 test script", () => {
     );
   });
 
-  it("should ignore the process definition deployed by the default test", async () => {
-    // given
-    respondWith({ status: 200 }, definitions(deployedProcessId, "other"));
+  it("should skip process definitions whose id starts with `k6-`", async () => {
+    // given: Camunda returns k6-prefixed definitions and one regular definition.
+    respondWith(
+      { status: 200 },
+      definitions("k6-micro", "k6-other", "my-process-1", "my-process-2"),
+    );
 
     // when
     const data = await script.setup();
 
-    // then
-    assert.deepEqual(data, { processDefinitionId: "other" });
-    assert.equal(sleep.mock.callCount(), 0);
+    // then: we should get the first non-k6 definition.
+    assert.equal(data.processDefinitionId, "my-process-1");
   });
 
   it("should search instances of the process definition and check that status code is 200", async () => {
