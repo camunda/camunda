@@ -14,6 +14,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.Secrets.AzureKeyVaultStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
@@ -239,6 +240,40 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     final var store = new FileStore();
     store.setPath(secretStoreDirectory.toString());
     unifiedConfig.getSecrets().getStores().getFile().put(SECRET_STORE_ID, store);
+    return this;
+  }
+
+  /**
+   * Configures an Azure Key Vault secret store addressing {@code vaultUrl}, mapping each reference
+   * to a Key Vault secret name under {@code pathPrefix}. The broker builds the store through the
+   * production {@code fromConfig} path, so an integration test pointing this at an emulator must
+   * first install an emulator-trusting client through {@code
+   * AzureKeyVaultSecretStore.overrideClientForTesting} — the production client validates the chain
+   * and would reject the emulator's self-signed certificate.
+   *
+   * @param vaultUrl the Key Vault URL the store addresses
+   * @param pathPrefix the prefix every reference name carries to form the Key Vault secret name
+   * @return itself for chaining
+   */
+  public TestStandaloneBroker withAzureKeyVaultSecretStore(
+      final String vaultUrl, final String pathPrefix) {
+    return withAzureKeyVaultSecretStore(vaultUrl, pathPrefix, null);
+  }
+
+  /**
+   * The same, in container (bundle) mode: every reference is a JSON key inside the one Key Vault
+   * secret named {@code containerSecretName} (under {@code pathPrefix}), rather than a Key Vault
+   * secret of its own. A {@code null} {@code containerSecretName} selects one-by-one mode.
+   */
+  public TestStandaloneBroker withAzureKeyVaultSecretStore(
+      final String vaultUrl, final String pathPrefix, final String containerSecretName) {
+    final var store = new AzureKeyVaultStore();
+    store.setVaultUrl(vaultUrl);
+    store.setPathPrefix(pathPrefix);
+    if (containerSecretName != null) {
+      store.setContainerSecretName(containerSecretName);
+    }
+    unifiedConfig.getSecrets().getStores().getAzure().put(SECRET_STORE_ID, store);
     return this;
   }
 

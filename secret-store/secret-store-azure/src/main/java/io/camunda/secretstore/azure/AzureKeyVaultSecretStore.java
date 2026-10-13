@@ -22,6 +22,7 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,17 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
   private static final Logger LOG = LoggerFactory.getLogger(AzureKeyVaultSecretStore.class);
 
   private final AzureSecretResolver resolver;
+
+  /**
+   * Test-only seam. When set, {@link #fromConfig} builds its {@link SecretClient} from this factory
+   * instead of the production credential- and TLS-validating client. An integration test uses it to
+   * drive the real {@code fromConfig} and registry-building path — probe, resolver choice, cache
+   * and concurrency wiring included — against an emulator whose self-signed certificate the
+   * production client would reject. Never set outside tests; {@code null} (the default) is
+   * production building.
+   */
+  private static volatile @Nullable Function<AzureKeyVaultStoreConfig, SecretClient>
+      clientFactoryForTesting;
 
   /**
    * Creates a store using an already-built client, with no JSON container and the system clock.
@@ -116,6 +128,10 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
   }
 
   private static SecretClient buildClient(final AzureKeyVaultStoreConfig config) {
+    final var override = clientFactoryForTesting;
+    if (override != null) {
+      return override.apply(config);
+    }
     final var credentialBuilder = new DefaultAzureCredentialBuilder();
     if (config.managedIdentityClientId() != null) {
       // Pins a specific user-assigned managed identity so a per-tenant store authenticates as its
@@ -182,6 +198,17 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
     // Azure's SecretClient and the underlying HttpClient are not Closeable, unlike the GCP and AWS
     // SDK clients: there is no handle to release here. Idle HTTP connections are reclaimed by the
     // shared Netty/JDK connection pool on their own timeout. This no-op is deliberate.
+  }
+
+  /**
+   * Test-only seam: installs (or, with {@code null}, removes) a factory {@link #fromConfig} uses to
+   * build its {@link SecretClient} instead of the production credential- and TLS-validating one. It
+   * lets an integration test point the real {@code fromConfig} path at an emulator it trusts; see
+   * {@link #clientFactoryForTesting}. Not for production use.
+   */
+  public static void overrideClientForTesting(
+      final @Nullable Function<AzureKeyVaultStoreConfig, SecretClient> factory) {
+    clientFactoryForTesting = factory;
   }
 
   private static AzureSecretResolver buildResolver(

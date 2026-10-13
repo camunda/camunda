@@ -21,10 +21,37 @@
 
   <name>Zeebe QA Integration Tests</name>
 
+  <properties>
+    <!-- Community Azure Key Vault emulator for the Azure secret store full-stack IT. -->
+    <version.lowkey-vault>7.3.127</version.lowkey-vault>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-secret-store-azure</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-security-keyvault-secrets</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.nagyesta.lowkey-vault</groupId>
+      <artifactId>lowkey-vault-testcontainers</artifactId>
+      <version>${version.lowkey-vault}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.nagyesta.lowkey-vault</groupId>
+      <artifactId>lowkey-vault-client</artifactId>
+      <version>${version.lowkey-vault}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
