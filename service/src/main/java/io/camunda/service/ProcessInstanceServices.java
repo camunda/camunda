@@ -181,7 +181,7 @@ public final class ProcessInstanceServices
                     processInstanceSearchClient
                         .withSecurityContext(
                             securityContextProvider.provideSecurityContext(
-                                CamundaAuthentication.anonymous()))
+                                authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                         .searchProcessInstances(
                             processInstanceSearchQuery(
                                 q ->
