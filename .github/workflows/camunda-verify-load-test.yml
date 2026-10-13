@@ -24,7 +24,7 @@ jobs:
   verify:
     name: Verify
     runs-on: ubuntu-latest
-    # Worst case of verify-test.sh (~115 min with 2 k6 TestRuns), plus setup and final steps.
+    # Worst case of `loadtestctl verify` (~115 min with 2 k6 TestRuns), plus setup and final steps.
     timeout-minutes: 130
     permissions:
       contents: read
@@ -43,7 +43,7 @@ jobs:
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER }}
 
-      # Prometheus credentials are required in the verify-test.sh script below.
+      # Prometheus credentials are required by `loadtestctl verify` below.
       - name: Import Prometheus credentials
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -56,8 +56,13 @@ jobs:
             secret/data/products/qa/ci/common LDAP_QA_USER | PROMETHEUS_USER;
             secret/data/products/qa/ci/common LDAP_QA_PASSWORD | PROMETHEUS_PASSWORD;
 
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
       - name: Verify Load test
-        run: load-tests/docs/scripts/verify-test.sh "${NAMESPACE}"
+        env:
+          UV_PROJECT: load-tests/loadtestctl
+          PROMETHEUS_URL: https://ci-monitor.benchmark.camunda.cloud
+        run: uv run loadtestctl verify "${NAMESPACE}" --result-file "${GITHUB_OUTPUT}"
 
       - name: Observe build status
         if: always()
