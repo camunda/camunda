@@ -74,6 +74,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.function.LongSupplier;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
@@ -101,6 +102,7 @@ public final class CamundaBackgroundTaskManagerFactory {
   private AuditLogArchiverRepository auditLogArchiverRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private final InstantSource clock;
+  private final LongSupplier exportedPosition;
 
   public CamundaBackgroundTaskManagerFactory(
       final int partitionId,
@@ -112,7 +114,8 @@ public final class CamundaBackgroundTaskManagerFactory {
       final ExporterMetadata metadata,
       final ObjectMapper objectMapper,
       final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final LongSupplier exportedPosition) {
     this.partitionId = partitionId;
     this.exporterId = exporterId;
     this.config = config;
@@ -123,6 +126,7 @@ public final class CamundaBackgroundTaskManagerFactory {
     this.objectMapper = objectMapper;
     this.processCache = processCache;
     this.clock = clock;
+    this.exportedPosition = exportedPosition;
   }
 
   public CamundaBackgroundTaskManager build() {
@@ -201,6 +205,7 @@ public final class CamundaBackgroundTaskManagerFactory {
         listViewTemplate.getFullQualifiedName(),
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
+        exportedPosition,
         asyncClient,
         executor,
         logger);
@@ -254,6 +259,7 @@ public final class CamundaBackgroundTaskManagerFactory {
         listViewTemplate.getFullQualifiedName(),
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
+        exportedPosition,
         asyncClient,
         executor,
         logger);
