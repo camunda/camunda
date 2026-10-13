@@ -5,25 +5,30 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl;
+package io.camunda.zeebe.db.conformance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import java.io.File;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public final class DbTenantAwareKeyColumnFamilyTest {
+public abstract class AbstractDbTenantAwareKeyColumnFamilyTest {
+
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
 
   @TempDir public File temporaryFolder;
-  private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-      DefaultZeebeDbFactory.getDefaultFactory();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbTenantAwareKey<DbLong>, DbString> columnFamily;
   private ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbLong, DbLong>>, DbString>
@@ -40,7 +45,7 @@ public final class DbTenantAwareKeyColumnFamilyTest {
 
   @BeforeEach
   void beforeEach() throws Exception {
-    zeebeDb = dbFactory.createDb(temporaryFolder);
+    zeebeDb = factory().createDb(temporaryFolder);
 
     tenantKey = new DbString();
     firstKey = new DbLong();

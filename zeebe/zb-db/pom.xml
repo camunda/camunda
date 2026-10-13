@@ -58,6 +58,12 @@
     </dependency>
 
     <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-commons</artifactId>
     </dependency>
@@ -73,4 +79,20 @@
     </dependency>
 
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

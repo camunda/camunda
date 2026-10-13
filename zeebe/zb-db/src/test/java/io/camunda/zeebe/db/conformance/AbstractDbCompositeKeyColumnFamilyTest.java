@@ -5,13 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl;
+package io.camunda.zeebe.db.conformance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,11 +24,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public final class DbCompositeKeyColumnFamilyTest {
+public abstract class AbstractDbCompositeKeyColumnFamilyTest {
+
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-      DefaultZeebeDbFactory.getDefaultFactory();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbCompositeKey<DbString, DbLong>, DbString> columnFamily;
   private DbString firstKey;
@@ -35,7 +39,7 @@ public final class DbCompositeKeyColumnFamilyTest {
   @Before
   public void setup() throws Exception {
     final File pathName = temporaryFolder.newFolder();
-    zeebeDb = dbFactory.createDb(pathName);
+    zeebeDb = factory().createDb(pathName);
 
     firstKey = new DbString();
     secondKey = new DbLong();
