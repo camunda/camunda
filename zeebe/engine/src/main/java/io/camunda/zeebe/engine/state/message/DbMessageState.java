@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.metrics.CrossPartitionMessageStateMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -386,13 +387,31 @@ public final class DbMessageState implements MutableMessageState {
       final DirectBuffer correlationKey,
       final long holderProcessInstanceKey,
       final String tenantId) {
+    putCrossPartitionStartLock(
+        bpmnProcessId,
+        correlationKey,
+        holderProcessInstanceKey,
+        tenantId,
+        StorageOrdinalRelated.MAIN_INDEX);
+  }
+
+  @Override
+  public void putCrossPartitionStartLock(
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer correlationKey,
+      final long holderProcessInstanceKey,
+      final String tenantId,
+      final int storageOrdinal) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
     ensureNotNullOrEmpty("correlation key", correlationKey);
     ensureGreaterThan("holder process instance key", holderProcessInstanceKey, 0);
 
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
-    crossPartitionStartLock.setProcessInstanceKey(holderProcessInstanceKey).setTenantId(tenantId);
+    crossPartitionStartLock
+        .setProcessInstanceKey(holderProcessInstanceKey)
+        .setTenantId(tenantId)
+        .setStorageOrdinal(storageOrdinal);
     // upsert because cross-partition STARTED replies can be retried (P_B's success-only dedup
     // re-replies the same processInstanceKey); writing the same holder twice is a no-op overwrite
     // rather than an error.
@@ -412,7 +431,8 @@ public final class DbMessageState implements MutableMessageState {
                 key.first().getBuffer(),
                 key.second().getBuffer(),
                 lock.getProcessInstanceKey(),
-                BufferUtil.bufferAsString(lock.getTenantIdBuffer())));
+                BufferUtil.bufferAsString(lock.getTenantIdBuffer()),
+                lock.getStorageOrdinal()));
   }
 
   @Override
@@ -468,6 +488,23 @@ public final class DbMessageState implements MutableMessageState {
       final DirectBuffer correlationKey,
       final String tenantId,
       final long messageKey) {
+    putCrossPartitionStartHolderOrigin(
+        processInstanceKey,
+        bpmnProcessId,
+        correlationKey,
+        tenantId,
+        messageKey,
+        StorageOrdinalRelated.MAIN_INDEX);
+  }
+
+  @Override
+  public void putCrossPartitionStartHolderOrigin(
+      final long processInstanceKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer correlationKey,
+      final String tenantId,
+      final long messageKey,
+      final int storageOrdinal) {
     ensureGreaterThan("process instance key", processInstanceKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
     ensureNotNullOrEmpty("correlation key", correlationKey);
@@ -478,7 +515,8 @@ public final class DbMessageState implements MutableMessageState {
         .setBpmnProcessId(bpmnProcessId)
         .setCorrelationKey(correlationKey)
         .setTenantId(tenantId)
-        .setMessageKey(messageKey);
+        .setMessageKey(messageKey)
+        .setStorageOrdinal(storageOrdinal);
     // upsert because the cross-partition STARTED reply can be re-applied on retry; writing the same
     // holder origin twice is a no-op overwrite rather than an error.
     crossPartitionStartHolderOriginColumnFamily.upsert(

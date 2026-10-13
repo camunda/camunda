@@ -49,6 +49,7 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessorTest {
   private static final long HOLDER_KEY = Protocol.encodePartitionId(2, 7);
   private static final long RECORD_KEY = Protocol.encodePartitionId(1, 11);
   private static final long REQUEST_KEY = Protocol.encodePartitionId(1, 42);
+  private static final int STORAGE_ORDINAL = 1234;
 
   private MessageState messageState;
   private BpmnBufferedMessageStartEventBehavior bufferedBehavior;
@@ -102,6 +103,7 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessorTest {
     assertThat(holder.getProcessInstanceKey()).isEqualTo(HOLDER_KEY);
     assertThat(holder.getBpmnProcessId()).isEqualTo(PROCESS_ID);
     assertThat(holder.getCorrelationKey()).isEqualTo(CORRELATION_KEY);
+    assertThat(holder.getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
 
     // ... and the next buffered message for that correlation key is picked up
     verify(bufferedBehavior)
@@ -162,7 +164,8 @@ public final class MessageStartCorrelationKeyLockReleaseReleaseProcessorTest {
         .setProcessInstanceKey(holderProcessInstanceKey)
         .setBpmnProcessId(PROCESS_ID)
         .setCorrelationKey(CORRELATION_KEY)
-        .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .setStorageOrdinal(STORAGE_ORDINAL);
 
     final TypedRecord<MessageStartCorrelationKeyLockReleaseRecord> record = mock(TypedRecord.class);
     when(record.getKey()).thenReturn(RECORD_KEY);

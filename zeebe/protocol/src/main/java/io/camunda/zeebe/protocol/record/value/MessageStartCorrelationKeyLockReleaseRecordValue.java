@@ -63,11 +63,12 @@ public interface MessageStartCorrelationKeyLockReleaseRecordValue extends Record
    * Carries everything the release path needs without a further cross-partition lookup: the holder
    * instance key (its partition bits identify {@code P_B}), and the {@code bpmnProcessId} + {@code
    * correlationKey} + {@code tenantId} that identify the lock entry to release and seed the
-   * buffered-message rescan once the holder is gone.
+   * buffered-message rescan once the holder is gone, and the storage ordinal of the holder
+   * instance, so a consumer routing by ordinal can file each holder with its instance.
    */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableMessageStartLockReleaseHolderValue.Builder.class)
-  interface MessageStartLockReleaseHolderValue extends TenantOwned {
+  interface MessageStartLockReleaseHolderValue extends TenantOwned, StorageOrdinalRelated {
 
     /**
      * @return the key of the holder process instance whose liveness on {@code P_B} is being

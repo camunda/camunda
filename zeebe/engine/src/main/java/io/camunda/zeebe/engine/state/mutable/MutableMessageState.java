@@ -49,6 +49,25 @@ public interface MutableMessageState extends MessageState, StreamProcessorLifecy
       String tenantId);
 
   /**
+   * Same as {@link #putCrossPartitionStartLock(DirectBuffer, DirectBuffer, long, String)} and
+   * additionally stores the storage ordinal of the holder instance so the lock release records can
+   * carry it. The shorter overload stays for the released v1 applier; entries it writes keep
+   * ordinal 0 (main index), which is correct for instances that predate the ordinal.
+   *
+   * @param bpmnProcessId the lock entry's process id
+   * @param correlationKey the lock entry's correlation key
+   * @param holderProcessInstanceKey the instance holding the lock, created on {@code P_B}
+   * @param tenantId tenant of the holder, needed to pick up the next buffered message on release
+   * @param storageOrdinal storage ordinal of the holder instance
+   */
+  void putCrossPartitionStartLock(
+      DirectBuffer bpmnProcessId,
+      DirectBuffer correlationKey,
+      long holderProcessInstanceKey,
+      String tenantId,
+      int storageOrdinal);
+
+  /**
    * Removes the cross-partition message-start lock discriminator for {@code (bpmnProcessId,
    * correlationKey)}. Called on {@code P_K} when the pull-based release path learns the holder
    * instance has completed on {@code P_B}, together with {@link
@@ -89,6 +108,27 @@ public interface MutableMessageState extends MessageState, StreamProcessorLifecy
       DirectBuffer correlationKey,
       String tenantId,
       long messageKey);
+
+  /**
+   * Same as {@link #putCrossPartitionStartHolderOrigin(long, DirectBuffer, DirectBuffer, String,
+   * long)} and additionally stores the storage ordinal of the holder instance so the lock release
+   * records can carry it. The shorter overload stays for the released v1 applier; entries it writes
+   * keep ordinal 0 (main index), which is correct for instances that predate the ordinal.
+   *
+   * @param processInstanceKey the holder instance's process-instance key (the entry's key)
+   * @param bpmnProcessId the process id of the lock to release on {@code P_K}
+   * @param correlationKey the correlation key of the lock to release on {@code P_K}
+   * @param tenantId tenant of the holder, carried through to the {@code RELEASE}
+   * @param messageKey the buffered message's key; its partition bits address {@code P_K}
+   * @param storageOrdinal storage ordinal of the holder instance
+   */
+  void putCrossPartitionStartHolderOrigin(
+      long processInstanceKey,
+      DirectBuffer bpmnProcessId,
+      DirectBuffer correlationKey,
+      String tenantId,
+      long messageKey,
+      int storageOrdinal);
 
   /**
    * Removes the cross-partition message-start holder-origin entry for {@code processInstanceKey}. A
