@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated.MAIN_INDEX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
@@ -231,6 +232,54 @@ class JobExportHandlerTest {
     // then
     verify(jobWriter).create(jobDbModelCaptor.capture());
     assertThat(jobDbModelCaptor.getValue().businessId()).isEqualTo("order-123");
+  }
+
+  @Test
+  void shouldSetStorageOrdinal() {
+    // given
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withStorageOrdinal(1001)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(jobWriter).create(jobDbModelCaptor.capture());
+    assertThat(jobDbModelCaptor.getValue().storageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalIfMainIndex() {
+    // given
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withStorageOrdinal(MAIN_INDEX)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(jobWriter).create(jobDbModelCaptor.capture());
+    assertThat(jobDbModelCaptor.getValue().storageOrdinal()).isNull();
   }
 
   @Test

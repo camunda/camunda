@@ -46,6 +46,7 @@ public record JobDbModel(
     Long elementInstanceKey,
     String tenantId,
     int partitionId,
+    Integer storageOrdinal,
     OffsetDateTime creationTime,
     OffsetDateTime lastUpdateTime)
     implements Copyable<JobDbModel> {
@@ -90,6 +91,7 @@ public record JobDbModel(
         elementInstanceKey,
         tenantId,
         partitionId,
+        storageOrdinal,
         creationTime,
         lastUpdateTime);
   }
@@ -137,6 +139,7 @@ public record JobDbModel(
         .elementInstanceKey(elementInstanceKey)
         .tenantId(tenantId)
         .partitionId(partitionId)
+        .storageOrdinal(storageOrdinal)
         .creationTime(creationTime)
         .lastUpdateTime(lastUpdateTime);
   }
@@ -168,6 +171,7 @@ public record JobDbModel(
     private Long elementInstanceKey;
     private String tenantId;
     private int partitionId;
+    private Integer storageOrdinal;
     private OffsetDateTime creationTime;
     private OffsetDateTime lastUpdateTime;
 
@@ -312,6 +316,11 @@ public record JobDbModel(
       return this;
     }
 
+    public Builder storageOrdinal(final Integer storageOrdinal) {
+      this.storageOrdinal = storageOrdinal;
+      return this;
+    }
+
     public Builder creationTime(final OffsetDateTime value) {
       creationTime = value;
       return this;
@@ -350,6 +359,7 @@ public record JobDbModel(
           elementInstanceKey,
           tenantId,
           partitionId,
+          storageOrdinal,
           creationTime,
           lastUpdateTime);
     }
