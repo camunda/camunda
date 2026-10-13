@@ -104,7 +104,9 @@ Port-forwarded Prometheus, JSON:
 
 ```bash
 cd load-tests/loadtestctl
-uv run loadtestctl prometheus &
+# terminal 1: keep the port-forward running
+uv run loadtestctl prometheus
+# terminal 2
 uv run loadtestctl report c8-ck-baseline-20260814 --duration-seconds 1800
 ```
 
