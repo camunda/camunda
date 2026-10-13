@@ -154,30 +154,11 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullProcessInstance(processInstance, processInstanceKey);
     final ProcessInstanceRecord processInstanceRecord = processInstance.getValue();
 
-    final var authAndTenant =
-        cslCheck.checkAuthorizationAndTenant(
-            command,
-            RequiredAuthorization.of(
-                b ->
-                    b.resourceType(
-                            AuthzModelMapper.fromProtocol(
-                                AuthorizationResourceType.PROCESS_DEFINITION))
-                        .permissionType(
-                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
-                        .resourceId(processInstanceRecord.getBpmnProcessId())),
-            processInstanceRecord,
-            AuthorizationRejectionMapper.forbidden(
-                PermissionType.UPDATE_PROCESS_INSTANCE,
-                AuthorizationResourceType.PROCESS_DEFINITION),
-            processInstanceRecord.getTenantId(),
-            new Rejection(
-                RejectionType.NOT_FOUND,
-                ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(processInstanceKey)));
-    if (authAndTenant.isLeft()) {
-      final var rejection = authAndTenant.getLeft();
-      enrichRejectionCommand(command, processInstanceRecord);
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+    if (!isAuthorizedToUpdate(
+        command,
+        processInstanceRecord,
+        processInstanceRecord.getBpmnProcessId(),
+        processInstanceRecord.getTenantId())) {
       return;
     }
 
@@ -191,6 +172,15 @@ public class ProcessInstanceMigrationMigrateProcessor
             processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord.getTenantId());
 
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
+
+    if (!isAuthorizedToUpdate(
+        command,
+        processInstanceRecord,
+        BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId()),
+        targetProcessDefinition.getTenantId())) {
+      return;
+    }
+
     requireTargetProcessDefinitionNotDraining(targetProcessDefinition, targetProcessDefinitionKey);
     requireNoStartEventInstanceForTargetProcess(
         processInstance, targetProcessDefinition, messageState);
@@ -251,6 +241,45 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  /**
+   * Checks the UPDATE_PROCESS_INSTANCE permission on the given process definition and the tenant
+   * assignment. Writes the rejection and returns false if either check fails.
+   */
+  private boolean isAuthorizedToUpdate(
+      final TypedRecord<ProcessInstanceMigrationRecord> command,
+      final ProcessInstanceRecord processInstanceRecord,
+      final String bpmnProcessId,
+      final String tenantId) {
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(bpmnProcessId)),
+            processInstanceRecord,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            tenantId,
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(
+                    command.getValue().getProcessInstanceKey())));
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
+      enrichRejectionCommand(command, processInstanceRecord);
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return false;
+    }
+    return true;
   }
 
   /**
