@@ -63,6 +63,22 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/qa-engineering'
+  # The nightlies that triage scans, one per line: workflow file | version | test_type,
+  # where test_type is e2e, api_es or api_rdbms.
+  NIGHTLY_WORKFLOWS: |
+    c8-orchestration-cluster-nightly-8.7-e2e.yml|8.7|e2e
+    c8-orchestration-cluster-nightly-8.7-api-es.yml|8.7|api_es
+    c8-orchestration-cluster-nightly-8.8-e2e.yml|8.8|e2e
+    c8-orchestration-cluster-nightly-8.8-api-es.yml|8.8|api_es
+    c8-orchestration-cluster-nightly-8.9-e2e.yml|8.9|e2e
+    c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api_es
+    c8-orchestration-cluster-nightly-8.9-api-rdbms.yml|8.9|api_rdbms
+    c8-orchestration-cluster-nightly-8.10-api-es.yml|8.10|api_es
+    c8-orchestration-cluster-nightly-8.10-api-rdbms.yml|8.10|api_rdbms
+    c8-orchestration-cluster-nightly-8.10-e2e.yml|8.10|e2e
+    c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e
+    c8-orchestration-cluster-nightly-main-api-es.yml|main|api_es
+    c8-orchestration-cluster-nightly-main-api-rdbms.yml|main|api_rdbms
 
 jobs:
   triage:
@@ -124,25 +140,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Allowlist of nightly workflows to scan. Each entry: workflow file | version | test_type
-          # test_type in {e2e, api_es, api_rdbms}.
-          declare -a SCOPE=(
-            "c8-orchestration-cluster-nightly-8.7-e2e.yml|8.7|e2e"
-            "c8-orchestration-cluster-nightly-8.7-api-es.yml|8.7|api_es"
-            "c8-orchestration-cluster-nightly-8.8-e2e.yml|8.8|e2e"
-            "c8-orchestration-cluster-nightly-8.8-api-es.yml|8.8|api_es"
-            "c8-orchestration-cluster-nightly-8.9-e2e.yml|8.9|e2e"
-            "c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api_es"
-            "c8-orchestration-cluster-nightly-8.9-api-rdbms.yml|8.9|api_rdbms"
-            "c8-orchestration-cluster-nightly-8.10-api-es.yml|8.10|api_es"
-            "c8-orchestration-cluster-nightly-8.10-api-rdbms.yml|8.10|api_rdbms"
-            "c8-orchestration-cluster-nightly-8.10-e2e.yml|8.10|e2e"
-          )
-          SCOPE+=(
-            "c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e"
-            "c8-orchestration-cluster-nightly-main-api-es.yml|main|api_es"
-            "c8-orchestration-cluster-nightly-main-api-rdbms.yml|main|api_rdbms"
-          )
+          mapfile -t SCOPE < <(grep -v '^[[:space:]]*$' <<< "$NIGHTLY_WORKFLOWS")
 
           # Working files
           all_failures=/tmp/all_failures.jsonl
