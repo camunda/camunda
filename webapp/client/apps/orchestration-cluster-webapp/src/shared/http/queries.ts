@@ -43,8 +43,19 @@ import type {
 	ClusterVariable,
 	QueryClusterVariablesRequestBody,
 	QueryClusterVariablesResponseBody,
+	Tenant,
 	QueryTenantsRequestBody,
 	QueryTenantsResponseBody,
+	QueryUsersByTenantRequestBody,
+	QueryUsersByTenantResponseBody,
+	QueryGroupsByTenantRequestBody,
+	QueryGroupsByTenantResponseBody,
+	QueryRolesByTenantRequestBody,
+	QueryRolesByTenantResponseBody,
+	QueryClientsByTenantRequestBody,
+	QueryClientsByTenantResponseBody,
+	QueryMappingRulesByTenantRequestBody,
+	QueryMappingRulesByTenantResponseBody,
 	QueryGlobalTaskListenersRequestBody,
 	QueryGlobalTaskListenersResponseBody,
 	GlobalTaskListener,
@@ -105,6 +116,17 @@ const queryKeys = {
 	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
 		['getClusterVariable', variable] as const,
 	queryTenants: (body: QueryTenantsRequestBody) => ['queryTenants', body] as const,
+	getTenant: (tenantId: string) => ['getTenant', tenantId] as const,
+	queryUsersByTenant: (tenantId: string, body: QueryUsersByTenantRequestBody) =>
+		['queryUsersByTenant', tenantId, body] as const,
+	queryGroupsByTenant: (tenantId: string, body: QueryGroupsByTenantRequestBody) =>
+		['queryGroupsByTenant', tenantId, body] as const,
+	queryRolesByTenant: (tenantId: string, body: QueryRolesByTenantRequestBody) =>
+		['queryRolesByTenant', tenantId, body] as const,
+	queryClientsByTenant: (tenantId: string, body: QueryClientsByTenantRequestBody) =>
+		['queryClientsByTenant', tenantId, body] as const,
+	queryMappingRulesByTenant: (tenantId: string, body: QueryMappingRulesByTenantRequestBody) =>
+		['queryMappingRulesByTenant', tenantId, body] as const,
 	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
 		['searchGlobalTaskListeners', body] as const,
 	globalTaskListener: (id: string) => ['globalTaskListener', id] as const,
@@ -566,6 +588,78 @@ const queries = {
 				return response.json();
 			},
 		}),
+	getTenant: (tenantId: string) =>
+		queryOptions({
+			queryKey: queryKeys.getTenant(tenantId),
+			queryFn: async (): Promise<Tenant> => {
+				const {response, error} = await request(endpoints.getTenant({tenantId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUsersByTenant: (tenantId: string, body: QueryUsersByTenantRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryUsersByTenant(tenantId, body),
+			queryFn: async (): Promise<QueryUsersByTenantResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsersByTenant({tenantId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryGroupsByTenant: (tenantId: string, body: QueryGroupsByTenantRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryGroupsByTenant(tenantId, body),
+			queryFn: async (): Promise<QueryGroupsByTenantResponseBody> => {
+				const {response, error} = await request(endpoints.queryGroupsByTenant({tenantId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryRolesByTenant: (tenantId: string, body: QueryRolesByTenantRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryRolesByTenant(tenantId, body),
+			queryFn: async (): Promise<QueryRolesByTenantResponseBody> => {
+				const {response, error} = await request(endpoints.queryRolesByTenant({tenantId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClientsByTenant: (tenantId: string, body: QueryClientsByTenantRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryClientsByTenant(tenantId, body),
+			queryFn: async (): Promise<QueryClientsByTenantResponseBody> => {
+				const {response, error} = await request(endpoints.queryClientsByTenant({tenantId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMappingRulesByTenant: (tenantId: string, body: QueryMappingRulesByTenantRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryMappingRulesByTenant(tenantId, body),
+			queryFn: async (): Promise<QueryMappingRulesByTenantResponseBody> => {
+				const {response, error} = await request(endpoints.queryMappingRulesByTenant({tenantId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
 	getGlobalTaskListener: (id: string) =>
 		queryOptions({
 			queryKey: queryKeys.globalTaskListener(id),
