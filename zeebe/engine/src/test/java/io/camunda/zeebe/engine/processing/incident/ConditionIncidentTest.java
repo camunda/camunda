@@ -115,9 +115,121 @@ public final class ConditionIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'foo > 10' to be 'BOOLEAN', but was 'NULL'. \
+            Expected result of the condition expression 'foo > 10' of sequence flow 's2' \
+            to be 'BOOLEAN', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NOT_COMPARABLE] Can't compare '"bar"' with '10'""")
+        .hasBpmnProcessId(failingEvent.getValue().getBpmnProcessId())
+        .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
+        .hasElementId(failingEvent.getValue().getElementId())
+        .hasElementInstanceKey(failingEvent.getKey())
+        .hasVariableScopeKey(failingEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldCreateIncidentIfInclusiveGatewayConditionFailsToEvaluate() {
+    // given
+    final BpmnModelInstance inclusiveGatewayProcess =
+        Bpmn.createExecutableProcess("inclusive-process")
+            .startEvent()
+            .inclusiveGateway("inclusive")
+            .sequenceFlowId("inclusive-s1")
+            .conditionExpression("foo < 5")
+            .endEvent()
+            .moveToLastGateway()
+            .sequenceFlowId("inclusive-s2")
+            .conditionExpression("foo > 10")
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(inclusiveGatewayProcess).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("inclusive-process")
+            .withVariable("foo", "bar")
+            .create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> failingEvent =
+        RecordingExporter.processInstanceRecords()
+            .withElementType(BpmnElementType.INCLUSIVE_GATEWAY)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Expected result of the condition expression 'foo > 10' of sequence flow \
+            'inclusive-s2' to be 'BOOLEAN', but was 'NULL'. \
+            The evaluation reported the following warnings:
+            [NOT_COMPARABLE] Can't compare '"bar"' with '10'""")
+        .hasBpmnProcessId(failingEvent.getValue().getBpmnProcessId())
+        .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
+        .hasElementId(failingEvent.getValue().getElementId())
+        .hasElementInstanceKey(failingEvent.getKey())
+        .hasVariableScopeKey(failingEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldCreateIncidentIfConditionFailsDueToGenuineEvaluationFailure() {
+    // given: assert() fails because its condition isn't met, not because of a type mismatch, so
+    // this exercises evaluateExpressionAsEither's own isFailure() branch rather than typeCheck
+    final var process =
+        Bpmn.createExecutableProcess("process-assertion-failure")
+            .startEvent()
+            .exclusiveGateway("xor")
+            .sequenceFlowId("s1")
+            .conditionExpression("foo < 5")
+            .endEvent()
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .conditionExpression("assert(foo, foo > 100)")
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("process-assertion-failure")
+            .withVariable("foo", 5)
+            .create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> failingEvent =
+        RecordingExporter.processInstanceRecords()
+            .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Assertion failure on evaluate the expression 'assert(foo, foo > 100)': The \
+            condition is not fulfilled (condition expression of sequence flow 's2') \
+            The evaluation reported the following warnings:
+            [ASSERT_FAILURE] The condition is not fulfilled""")
         .hasBpmnProcessId(failingEvent.getValue().getBpmnProcessId())
         .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
         .hasElementId(failingEvent.getValue().getElementId())
