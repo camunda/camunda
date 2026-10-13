@@ -15,6 +15,7 @@ import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -72,6 +73,7 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
         new Builder()
             .jobKey(record.getKey())
             .partitionId(record.getPartitionId())
+            .storageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(value).orElse(null))
             .processInstanceKey(value.getProcessInstanceKey())
             .rootProcessInstanceKey(value.getRootProcessInstanceKey())
             .businessId(StringUtils.defaultIfEmpty(value.getBusinessId(), null))
