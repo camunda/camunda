@@ -92,6 +92,7 @@ public class CamundaExporter implements Exporter {
   private ClientAdapter clientAdapter;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
+  private volatile long lastFlushedPosition = -1;
   private final TargetIndexLocator indexLocator;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
@@ -155,7 +156,11 @@ public class CamundaExporter implements Exporter {
 
       writer = createBatchWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
+<<<<<<< HEAD
       metadata.setLastFlushedPosition(controller.getLastExportedRecordPosition());
+=======
+      lastFlushedPosition = controller.getLastExportedRecordPosition();
+>>>>>>> 633a49b98 (fix: promote restored incidents that are re-exported after a restore)
       taskManager.start();
       final long now = context.clock().millis();
       lastFlushTimestamp = now;
@@ -296,7 +301,8 @@ public class CamundaExporter implements Exporter {
                 metadata,
                 clientAdapter.objectMapper(),
                 provider.getProcessCache(),
-                context.clock())
+                context.clock(),
+                () -> lastFlushedPosition)
             .build();
   }
 
@@ -391,7 +397,11 @@ public class CamundaExporter implements Exporter {
     // If the synchronous flush fails then the exporter will be invoked with the same record again.
     lastFlushTimestamp = context.clock().millis();
     updateLastExportedPosition(lastPosition);
+<<<<<<< HEAD
     metadata.setLastFlushedPosition(Math.max(metadata.getLastFlushedPosition(), lastPosition));
+=======
+    lastFlushedPosition = Math.max(lastFlushedPosition, lastPosition);
+>>>>>>> 633a49b98 (fix: promote restored incidents that are re-exported after a restore)
   }
 
   private void updateLastExportedPosition(final long lastPosition) {
