@@ -33,11 +33,11 @@ uv run loadtestctl --help
 uv run loadtestctl verify <namespace> [options]
 ```
 
-It needs `kubectl` access to the cluster. Progress is logged to stderr, stdout only gets `status=success` or `status=failure`, and the exit code is `0` on success and `1` on failure. See `--help` for the timeouts and the Prometheus options.
+It needs `kubectl` access to the cluster. Progress is logged to stderr and the exit code is `0` on success and `1` on failure. The result is `status=success` or `status=failure`: in GitHub Actions it is appended to `$GITHUB_OUTPUT`, otherwise it is printed to stdout. See `--help` for the timeouts and the Prometheus options.
 
-[`load-tests/docs/scripts/verify-test.sh`](../docs/scripts/verify-test.sh) wraps it and appends the status line to `$GITHUB_OUTPUT` for GitHub Actions.
+Prometheus defaults to `http://localhost:9090` without authentication, for example through `kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090`. Use `--prometheus-url`, `--prometheus-user` and `--prometheus-password` for a remote one.
 
-Every option can also be set through an environment variable named `LOADTESTCTL_VERIFY_<OPTION>`, for example `LOADTESTCTL_VERIFY_WAIT_TIMEOUT`. The Prometheus options and the k6 metrics timeout are read from `PROMETHEUS_URL`, `PROMETHEUS_USER`, `PROMETHEUS_PASSWORD` and `K6_METRICS_TIMEOUT`, which the workflow provides. A flag on the command line overrides the variable. `uv run loadtestctl verify --help` lists the variable next to each option.
+Every option can also be set through an environment variable named `LOADTESTCTL_VERIFY_<OPTION>`, for example `LOADTESTCTL_VERIFY_WAIT_TIMEOUT`. The Prometheus options and the k6 metrics timeout are read from `PROMETHEUS_URL`, `PROMETHEUS_USER`, `PROMETHEUS_PASSWORD` and `K6_METRICS_TIMEOUT`, which the workflow sets. A flag on the command line overrides the variable. `uv run loadtestctl verify --help` lists the variable next to each option.
 
 ### report
 

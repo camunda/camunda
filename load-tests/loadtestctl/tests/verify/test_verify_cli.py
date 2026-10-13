@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -9,6 +10,12 @@ from loadtestctl.verify.context import VerifyError
 from .helpers import completed
 
 CLI = "loadtestctl.verify.cli"
+
+
+@pytest.fixture(autouse=True)
+def clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in ("GITHUB_OUTPUT", "PROMETHEUS_URL", "PROMETHEUS_USER", "PROMETHEUS_PASSWORD", "K6_METRICS_TIMEOUT"):
+        monkeypatch.delenv(name, raising=False)
 
 
 def run(argv: Sequence[str]) -> int:
@@ -44,6 +51,13 @@ def test_should_use_the_default_options() -> None:
     assert k6_metrics_timeout == 300
 
 
+def test_should_query_a_local_prometheus_without_authentication_by_default() -> None:
+    run_verify = run_verify_options(["c8-test"])
+
+    _, _, _, _, prometheus_url, prometheus_user, prometheus_password = run_verify.call_args.args
+    assert (prometheus_url, prometheus_user, prometheus_password) == ("http://localhost:9090", "", "")
+
+
 def test_should_read_prometheus_options_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PROMETHEUS_URL", "http://prom")
     monkeypatch.setenv("PROMETHEUS_USER", "u")
@@ -62,7 +76,7 @@ def test_should_use_the_defaults_for_empty_environment_variables(monkeypatch: py
     run_verify = run_verify_options(["c8-test"])
 
     _, _, _, k6_metrics_timeout, prometheus_url, *_ = run_verify.call_args.args
-    assert (k6_metrics_timeout, prometheus_url) == (300, "https://ci-monitor.benchmark.camunda.cloud")
+    assert (k6_metrics_timeout, prometheus_url) == (300, "http://localhost:9090")
 
 
 def test_should_validate_the_k6_metrics_timeout_of_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -83,6 +97,23 @@ def test_should_print_success_status_only_on_stdout(capsys: pytest.CaptureFixtur
 
     assert exit_code == 0
     assert capsys.readouterr().out == "status=success\n"
+
+
+def test_should_append_the_status_to_github_output(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    github_output = tmp_path / "output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(github_output))
+
+    with (
+        mock.patch(f"{CLI}.kubectl", return_value=completed()),
+        mock.patch(f"{CLI}.wait_for_pods", side_effect=VerifyError("boom")),
+    ):
+        exit_code = run(["c8-test"])
+
+    assert exit_code == 1
+    assert github_output.read_text() == "status=failure\n"
+    assert capsys.readouterr().out == ""
 
 
 def test_should_print_failure_status_when_a_check_fails(capsys: pytest.CaptureFixture[str]) -> None:

@@ -2,6 +2,7 @@ from functools import partial
 
 import click
 
+from loadtestctl import github
 from loadtestctl.report.cli import NamespaceType
 from loadtestctl.report.errors import ReportError
 from loadtestctl.report.prometheus import PrometheusClient
@@ -17,8 +18,6 @@ from .pods import wait_for_pods
 
 option = partial(click.option, show_envvar=True)
 
-DEFAULT_PROMETHEUS_URL = "https://ci-monitor.benchmark.camunda.cloud"
-
 VERIFY_HELP = (
     "Wait for the pods and k6 TestRuns of a load test to be healthy, for the client to be "
     "connected to the gateway, and for k6 to report metrics to Prometheus."
@@ -26,13 +25,19 @@ VERIFY_HELP = (
 
 VERIFY_EPILOG = """\b
 Output:
-  Progress is logged to stderr. Stdout only gets `status=success` or `status=failure`, and the exit code is
-  0 on success and 1 on failure.
+  Progress is logged to stderr. The result is `status=success` or `status=failure`, and the exit code is
+  0 on success and 1 on failure. In GitHub Actions the status is appended to $GITHUB_OUTPUT, otherwise it
+  is printed to stdout.
 
 \b
 Examples:
   loadtestctl verify c8-ck-baseline-20260814
-  loadtestctl verify c8-ck-baseline-20260814 --connectivity-timeout 1800 >> "$GITHUB_OUTPUT"
+  loadtestctl verify c8-ck-baseline-20260814 --connectivity-timeout 1800
+
+\b
+Prometheus:
+  Queries http://localhost:9090 without authentication by default, for example through
+  `kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090`.
 """
 
 
@@ -101,7 +106,7 @@ def run_verify(
 )
 @option(
     "--prometheus-url",
-    default=DEFAULT_PROMETHEUS_URL,
+    default="http://localhost:9090",
     envvar="PROMETHEUS_URL",
     show_default=True,
     show_envvar=True,
@@ -112,7 +117,7 @@ def run_verify(
     default="",
     envvar="PROMETHEUS_USER",
     show_envvar=True,
-    help="Basic auth user for Prometheus.",
+    help="Basic auth user for Prometheus. No authentication if empty.",
 )
 @option(
     "--prometheus-password",
@@ -145,10 +150,10 @@ def verify(
         )
     except (VerifyError, ReportError) as error:
         log(f"Error: {error}")
-        click.echo("status=failure")
+        github.output("status", "failure")
         raise click.exceptions.Exit(1) from error
     except Exception as error:
         log(f"Unexpected error: {error!r}")
-        click.echo("status=failure")
+        github.output("status", "failure")
         raise click.exceptions.Exit(1) from error
-    click.echo("status=success")
+    github.output("status", "success")
