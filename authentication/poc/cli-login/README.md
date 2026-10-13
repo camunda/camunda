@@ -1,6 +1,6 @@
 # PoC: CLI login via cluster discovery
 
-A CLI (think c8ctl) logs a user in with nothing but the cluster URL:
+A CLI (`c8poc`, standing in for c8ctl) logs a user in with nothing but the cluster URL:
 
 1. `GET <cluster>/.well-known/camunda-auth` (unauthenticated) returns the authentication method
    and, for OIDC, each provider's issuer with the **public client** the CLI should use.
@@ -56,18 +56,35 @@ Prerequisites: Java 21, Node 18+, a built distribution:
 ./mvnw install -pl dist -am -Dquickly -T1C
 ```
 
-Then, from this directory, in three terminals:
+Then, from this directory, in two terminals:
 
 ```sh
 ./start-keycloak.sh           # downloads Keycloak once, starts it on :18080 with the realm imported
 ./start-oc.sh                 # Orchestration Cluster on :8080 (OIDC, H2)
-node c8ctl-login.mjs http://localhost:8080 /v2/topology
 ```
 
-The browser opens the Keycloak login. Log in as `demo` / `demo`. The CLI prints the token claims
-and the topology response.
+Install the CLI once (puts `c8poc` on your `PATH`; undo with `npm rm -g c8ctl-login-poc`):
 
-Options: `--provider <id>` to skip the provider prompt, `--no-browser` to only print the login URL.
+```sh
+npm link
+```
+
+Then:
+
+```sh
+c8poc login http://localhost:8080   # opens the browser: log in as demo / demo
+c8poc whoami                        # cluster, user, issuer, client, token expiry
+c8poc topology                      # GET /v2/topology with the stored token
+c8poc api /v2/license               # GET any cluster path
+c8poc logout
+```
+
+`login` options: `--provider <id>` to skip the provider prompt, `--no-browser` to only print the
+login URL. Without `npm link`, run `node c8poc.mjs <command>` instead.
+
+The session (tokens, or basic credentials) is stored in `~/.c8poc/session.json` with mode 600;
+set `C8POC_HOME` to use another directory. An expired access token is refreshed with the refresh
+token before the next call.
 
 ## Keycloak setup (what the realm import does)
 
@@ -85,4 +102,4 @@ Keycloak admin console: http://localhost:18080 (`admin` / `admin`).
 ## Out of scope
 
 Physical tenants, linking from RFC 9728 protected-resource metadata, CIMD / dynamic client
-registration, device authorization grant in the CLI, token caching and refresh.
+registration, device authorization grant in the CLI, secure credential storage (OS keychain).

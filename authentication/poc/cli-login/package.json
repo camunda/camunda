@@ -1,0 +1,13 @@
+{
+  "name": "c8ctl-login-poc",
+  "version": "0.0.0",
+  "private": true,
+  "description": "PoC: c8ctl login via /.well-known/camunda-auth discovery",
+  "type": "module",
+  "bin": {
+    "c8poc": "./c8poc.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
