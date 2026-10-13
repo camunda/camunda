@@ -1,7 +1,9 @@
 ###
 # @name login-get
+# @no-cookie-jar
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/login
 Accept: application/json
+Cookie: X-CSRF-TOKEN=
 
 > {%
   client.test("Login GET should succeed", function () {
@@ -23,7 +25,6 @@ Accept: application/json
     console.log("CSRF token acquired");
   });
 %}
-
 
 ###
 # @name login-post
