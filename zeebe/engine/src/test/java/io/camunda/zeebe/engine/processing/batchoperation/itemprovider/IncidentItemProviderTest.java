@@ -82,22 +82,22 @@ class IncidentItemProviderTest {
         new SearchQueryResult.Builder<IncidentEntity>()
             .items(
                 List.of(
-                    mockIncidentEntity(11, 1, 1L),
-                    mockIncidentEntity(12, 1, 1L),
-                    mockIncidentEntity(21, 2, 1L),
-                    mockIncidentEntity(22, 2, 1L),
-                    mockIncidentEntity(31, 3, 3L)))
+                    mockIncidentEntity(11, 1, 1L, null),
+                    mockIncidentEntity(12, 1, 1L, null),
+                    mockIncidentEntity(21, 2, 1L, null),
+                    mockIncidentEntity(22, 2, 1L, null),
+                    mockIncidentEntity(31, 3, 3L, 123)))
             .total(10)
             .build();
     final var incidentResult2 =
         new SearchQueryResult.Builder<IncidentEntity>()
             .items(
                 List.of(
-                    mockIncidentEntity(32, 3, 3L),
-                    mockIncidentEntity(41, 4, null),
-                    mockIncidentEntity(42, 4, null),
-                    mockIncidentEntity(51, 5, null),
-                    mockIncidentEntity(52, 5, null)))
+                    mockIncidentEntity(32, 3, 3L, 123),
+                    mockIncidentEntity(41, 4, null, 456),
+                    mockIncidentEntity(42, 4, null, 456),
+                    mockIncidentEntity(51, 5, null, 456),
+                    mockIncidentEntity(52, 5, null, 456)))
             .total(10)
             .build();
     final var incidentResult3 =
@@ -114,16 +114,16 @@ class IncidentItemProviderTest {
     // then
     assertThat(resultPage.items())
         .containsExactly(
-            new Item(11, 1, 1L),
-            new Item(12, 1, 1L),
-            new Item(21, 2, 1L),
-            new Item(22, 2, 1L),
-            new Item(31, 3, 3L),
-            new Item(32, 3, 3L),
-            new Item(41, 4, null),
-            new Item(42, 4, null),
-            new Item(51, 5, null),
-            new Item(52, 5, null));
+            new Item(11, 1, 1L, null),
+            new Item(12, 1, 1L, null),
+            new Item(21, 2, 1L, null),
+            new Item(22, 2, 1L, null),
+            new Item(31, 3, 3L, 123),
+            new Item(32, 3, 3L, 123),
+            new Item(41, 4, null, 456),
+            new Item(42, 4, null, 456),
+            new Item(51, 5, null, 456),
+            new Item(52, 5, null, 456));
     assertThat(resultPage.isLastPage()).isFalse();
   }
 
@@ -188,11 +188,15 @@ class IncidentItemProviderTest {
   }
 
   private IncidentEntity mockIncidentEntity(
-      final long incidentKey, final long processInstanceKey, final Long rootProcessInstanceKey) {
+      final long incidentKey,
+      final long processInstanceKey,
+      final Long rootProcessInstanceKey,
+      final Integer storageOrdinal) {
     final var entity = mock(IncidentEntity.class);
     when(entity.incidentKey()).thenReturn(incidentKey);
     when(entity.processInstanceKey()).thenReturn(processInstanceKey);
     when(entity.rootProcessInstanceKey()).thenReturn(rootProcessInstanceKey);
+    when(entity.storageOrdinal()).thenReturn(storageOrdinal);
     return entity;
   }
 }
