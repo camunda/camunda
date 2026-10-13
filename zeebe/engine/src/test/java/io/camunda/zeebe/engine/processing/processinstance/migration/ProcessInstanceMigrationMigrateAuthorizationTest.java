@@ -13,12 +13,14 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -30,6 +32,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
+/**
+ * The gRPC gateway forwards the migrate request to the broker without authorization checks of its
+ * own, so the engine-level tests in this class also cover that route.
+ */
 public class ProcessInstanceMigrationMigrateAuthorizationTest {
   public static final String JOB_TYPE = "jobType";
   public static final String SOURCE_TASK = "sourceTask";
@@ -121,6 +127,13 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
         PermissionType.UPDATE_PROCESS_INSTANCE,
         AuthorizationResourceMatcher.ID,
         PROCESS_ID);
+    // Migration requires permission on both the source and the target process definition.
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.UPDATE_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
+        TARGET_PROCESS_ID);
 
     // when
     engine
@@ -163,6 +176,40 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectMigrationToTargetProcessDefinitionWithoutPermission() {
+    // given
+    final var processInstanceKey = createProcessInstance();
+    final var user = createUser();
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.UPDATE_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
+        PROCESS_ID);
+
+    // when
+    final var rejection = migrateTo(processInstanceKey, targetProcDefKey, user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason())
+        .startsWith(
+            "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
+  }
+
+  private Record<ProcessInstanceMigrationRecordValue> migrateTo(
+      final long processInstanceKey, final long targetKey, final String username) {
+    return engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetKey)
+        .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+        .expectRejection()
+        .migrate(username);
   }
 
   private UserRecordValue createUser() {
