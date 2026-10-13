@@ -26,6 +26,7 @@ public class StarterProperties {
   private int durationLimit = 0;
   private boolean startViaMessage = false;
   private String msgName = "msg";
+  private WorkloadModel workloadModel = WorkloadModel.OPEN;
 
   public String getProcessId() {
     return processId;
@@ -150,5 +151,37 @@ public class StarterProperties {
 
   public void setMsgName(final String msgName) {
     this.msgName = msgName;
+  }
+
+  public WorkloadModel getWorkloadModel() {
+    return workloadModel;
+  }
+
+  public void setWorkloadModel(final WorkloadModel workloadModel) {
+    this.workloadModel = workloadModel;
+  }
+
+  /**
+   * Maximum number of start requests awaiting a response: the rate per second for {@link
+   * WorkloadModel#CLOSED}, ten times that for {@link WorkloadModel#OPEN}.
+   */
+  public int getMaxInFlightRequests() {
+    final double factor = workloadModel == WorkloadModel.CLOSED ? 1 : 10;
+    return (int) Math.min(Integer.MAX_VALUE, Math.max(1, Math.ceil(getRatePerSecond() * factor)));
+  }
+
+  /** How the starter generates load. */
+  public enum WorkloadModel {
+    /**
+     * Requests are sent at the configured rate, even when earlier requests are still waiting for a
+     * response. The number of waiting requests is only capped at a high limit, to protect the
+     * starter when the cluster is slow.
+     */
+    OPEN,
+    /**
+     * The number of requests waiting for a response is capped at the configured rate per second. A
+     * slow cluster therefore lowers the achieved rate.
+     */
+    CLOSED
   }
 }
