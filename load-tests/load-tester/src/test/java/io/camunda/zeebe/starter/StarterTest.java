@@ -44,6 +44,7 @@ class StarterTest {
         registry,
         mock(PayloadReader.class),
         mock(ConnectionMonitor.class),
+        mock(StarterLivenessIndicator.class),
         mock(WebClient.Builder.class),
         new ObjectMapper(),
         mock(ApplicationContext.class));
