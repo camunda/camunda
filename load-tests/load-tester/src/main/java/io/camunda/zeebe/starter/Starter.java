@@ -49,6 +49,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -87,6 +88,8 @@ public class Starter implements CommandLineRunner {
 
   private Timer responseLatencyTimer;
   private Counter processInstancesStartedCounter;
+  private Counter processInstancesSubmittedCounter;
+  private Counter processInstancesSkippedCounter;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
@@ -127,6 +130,9 @@ public class Starter implements CommandLineRunner {
         Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName())
             .description(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getDescription())
             .register(registry);
+
+    processInstancesSubmittedCounter = registerSubmissionCounter("submitted");
+    processInstancesSkippedCounter = registerSubmissionCounter("skipped");
 
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
@@ -181,6 +187,13 @@ public class Starter implements CommandLineRunner {
     if (dataReadMeter != null) {
       dataReadMeter.close();
     }
+  }
+
+  private Counter registerSubmissionCounter(final String outcome) {
+    return Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getName())
+        .description(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getDescription())
+        .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
+        .register(registry);
   }
 
   private void setupDataAvailabilityMeter() {
@@ -240,6 +253,7 @@ public class Starter implements CommandLineRunner {
         Collections.unmodifiableMap(deserializeVariables(variablesString));
 
     final BooleanSupplier shouldContinue = createContinuationCondition();
+    final Semaphore inFlight = new Semaphore(starterCfg.getMaxInFlightRequests());
 
     return executorService.scheduleAtFixedRate(
         () -> {
@@ -248,13 +262,21 @@ public class Starter implements CommandLineRunner {
             return;
           }
 
+          if (!inFlight.tryAcquire()) {
+            processInstancesSkippedCounter.increment();
+            THROTTLED_LOGGER.debug(
+                "Skipping process instance creation, {} requests are already in flight",
+                starterCfg.getMaxInFlightRequests());
+            return;
+          }
+
+          final var startTime = System.nanoTime();
+          final CompletionStage<?> requestFuture;
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
             processInstancesStartedCounter.increment();
 
-            final var startTime = System.nanoTime();
-            final CompletionStage<?> requestFuture;
             if (starterCfg.isStartViaMessage()) {
               requestFuture = startInstanceByMessagePublishing(vars);
             } else if (starterCfg.isWithResults()) {
@@ -262,22 +284,27 @@ public class Starter implements CommandLineRunner {
             } else {
               requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
             }
-            requestFuture.whenComplete(
-                (noop, error) -> {
-                  final long durationNanos = System.nanoTime() - startTime;
-                  responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
-                  if (error instanceof final StatusRuntimeException statusRuntimeException) {
-                    if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
-                      THROTTLED_LOGGER.warn(
-                          "Error on creating new process instance with business key {}",
-                          businessKey.get(),
-                          error);
-                    }
-                  }
-                });
+            processInstancesSubmittedCounter.increment();
           } catch (final Exception e) {
+            inFlight.release();
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
+            return;
           }
+
+          requestFuture.whenComplete(
+              (noop, error) -> {
+                inFlight.release();
+                final long durationNanos = System.nanoTime() - startTime;
+                responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+                if (error instanceof final StatusRuntimeException statusRuntimeException) {
+                  if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
+                    THROTTLED_LOGGER.warn(
+                        "Error on creating new process instance with business key {}",
+                        businessKey.get(),
+                        error);
+                  }
+                }
+              });
         },
         0,
         intervalNanos,
