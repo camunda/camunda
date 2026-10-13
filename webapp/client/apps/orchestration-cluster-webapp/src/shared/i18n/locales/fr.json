@@ -457,7 +457,9 @@
 				"unassignModalTitle": "Retirer du locataire",
 				"unassignConfirmation": "Voulez-vous vraiment retirer <strong>{{id}}</strong> du locataire <strong>{{tenantId}}</strong> ?",
 				"unassignSuccess": "Retiré du locataire",
-				"unassignError": "Impossible de retirer du locataire"
+				"unassignError": "Impossible de retirer du locataire",
+				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
 			}
 		},
 		"tasklist": {

@@ -457,7 +457,9 @@
 				"unassignModalTitle": "Aus Mandant entfernen",
 				"unassignConfirmation": "Möchten Sie <strong>{{id}}</strong> wirklich aus dem Mandanten <strong>{{tenantId}}</strong> entfernen?",
 				"unassignSuccess": "Aus Mandant entfernt",
-				"unassignError": "Entfernen aus dem Mandanten fehlgeschlagen"
+				"unassignError": "Entfernen aus dem Mandanten fehlgeschlagen",
+				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
 			}
 		},
 		"tasklist": {

@@ -457,7 +457,9 @@
 				"unassignModalTitle": "Quitar del inquilino",
 				"unassignConfirmation": "¿Seguro que deseas quitar <strong>{{id}}</strong> del inquilino <strong>{{tenantId}}</strong>?",
 				"unassignSuccess": "Quitado del inquilino",
-				"unassignError": "No se pudo quitar del inquilino"
+				"unassignError": "No se pudo quitar del inquilino",
+				"changeNotConfirmed": "No se pudo confirmar que el cambio se aplicó",
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente."
 			}
 		},
 		"tasklist": {

@@ -457,7 +457,9 @@
 				"unassignModalTitle": "Remove from tenant",
 				"unassignConfirmation": "Are you sure you want to remove <strong>{{id}}</strong> from tenant <strong>{{tenantId}}</strong>?",
 				"unassignSuccess": "Removed from tenant",
-				"unassignError": "Failed to remove from the tenant"
+				"unassignError": "Failed to remove from the tenant",
+				"changeNotConfirmed": "Couldn't confirm the change took effect",
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
 			}
 		},
 		"tasklist": {
