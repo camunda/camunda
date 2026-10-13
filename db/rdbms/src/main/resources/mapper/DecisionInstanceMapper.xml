@@ -30,6 +30,7 @@
     di.PROCESS_INSTANCE_KEY,
     di.ROOT_PROCESS_INSTANCE_KEY,
     di.BUSINESS_ID,
+    di.STORAGE_ORDINAL,
     di.FLOW_NODE_INSTANCE_KEY,
     di.PROCESS_DEFINITION_ID,
     di.PROCESS_DEFINITION_KEY,
@@ -218,6 +219,7 @@
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
         name="rootProcessInstanceKey"/>
       <arg column="BUSINESS_ID" javaType="java.lang.String" name="businessId"/>
+      <arg column="STORAGE_ORDINAL" javaType="java.lang.Integer" name="storageOrdinal"/>
       <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"
         name="flowNodeInstanceKey"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
