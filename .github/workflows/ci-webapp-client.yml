@@ -2,7 +2,7 @@
 # test location: /webapp/client
 # called by: ci.yml
 # type: CI
-# owner: @camunda/engineering-operations
+# owner: @camunda/orchestration-cluster-webapps
 name: Webapp Client Jobs
 
 on:
@@ -13,6 +13,7 @@ env:
   TEST_PRODUCT: Orchestration Cluster Webapp
   TEST_OWNER: "@camunda/orchestration-cluster-webapps"
   CLIENT_DIR: webapp/client
+  APP_DIR: webapp/client/apps/orchestration-cluster-webapp
 
 jobs:
   typecheck:
@@ -186,12 +187,23 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   unit:
-    name: "Unit"
+    name: "Unit (${{ matrix.component }})"
     env:
       TEST_TYPE: Unit
+      TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: operate
+            owner: "@camunda/operate-admin-pod"
+          - component: tasklist
+            owner: "@camunda/employee-engagement-tasklist"
+          - component: shared
+            owner: "@camunda/orchestration-cluster-webapps"
     container:
       image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
@@ -218,13 +230,13 @@ jobs:
         env:
           # Capture failure screenshots even when CI contention delays web font loading.
           PW_TEST_SCREENSHOT_NO_FONTS_READY: "1"
-        run: npm run test:unit
+        run: npm run test:unit -w @camunda/orchestration-cluster-webapp -- --project '${{ matrix.component }}*'
       - name: Upload failure artifacts
         if: ${{ failure() }}
         uses: ./.github/actions/upload-artifact-with-retry
         with:
-          name: webapp-client-unit-artifacts
-          path: webapp/client/apps/orchestration-cluster-webapp/test-artifacts/**
+          name: webapp-client-unit-${{ matrix.component }}-artifacts
+          path: ${{ env.APP_DIR }}/test-artifacts/**
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: warn
@@ -233,7 +245,50 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "webapp-client/unit"
+          job_name: "webapp-client/unit-${{ matrix.component }}"
+          build_status: ${{ job.status }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  unit-packages:
+    name: "Unit (packages)"
+    env:
+      TEST_TYPE: Unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions: {} # GITHUB_TOKEN unused in this job
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: ${{ env.CLIENT_DIR }}
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "6"
+      - name: Unit tests
+        run: npm run test:unit -w packages --if-present
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "webapp-client/unit-packages"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -241,12 +296,25 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   integration:
-    name: "Integration"
+    name: "Integration (${{ matrix.component }})"
     env:
       TEST_TYPE: Integration
+      TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {} # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: admin
+            owner: "@camunda/operate-admin-pod"
+          - component: operate
+            owner: "@camunda/operate-admin-pod"
+          - component: tasklist
+            owner: "@camunda/employee-engagement-tasklist"
+          - component: shared
+            owner: "@camunda/orchestration-cluster-webapps"
     container:
       image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
@@ -270,20 +338,20 @@ jobs:
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Integration tests
-        run: npm run test:integration -w @camunda/orchestration-cluster-webapp
+        run: npm run test:integration -w @camunda/orchestration-cluster-webapp -- test/integration/${{ matrix.component }}/
       - name: Upload Playwright report
         if: always()
         uses: ./.github/actions/upload-artifact-with-retry
         with:
-          name: webapp-client-integration-report
-          path: webapp/client/apps/orchestration-cluster-webapp/playwright-report/
+          name: webapp-client-integration-${{ matrix.component }}-report
+          path: ${{ env.APP_DIR }}/playwright-report/
           retention-days: 30
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "webapp-client/integration"
+          job_name: "webapp-client/integration-${{ matrix.component }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -291,12 +359,23 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   a11y:
-    name: "Accessibility"
+    name: "Accessibility (${{ matrix.component }})"
     env:
       TEST_TYPE: Accessibility
+      TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: operate
+            owner: "@camunda/operate-admin-pod"
+          - component: tasklist
+            owner: "@camunda/employee-engagement-tasklist"
+          - component: shared
+            owner: "@camunda/orchestration-cluster-webapps"
     container:
       image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
@@ -322,20 +401,20 @@ jobs:
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Accessibility tests
-        run: npm run test:a11y -w @camunda/orchestration-cluster-webapp
+        run: npm run test:a11y -w @camunda/orchestration-cluster-webapp -- test/a11y/${{ matrix.component }}/
       - name: Upload Playwright report
         if: always()
         uses: ./.github/actions/upload-artifact-with-retry
         with:
-          name: webapp-client-a11y-report
-          path: webapp/client/apps/orchestration-cluster-webapp/playwright-report/
+          name: webapp-client-a11y-${{ matrix.component }}-report
+          path: ${{ env.APP_DIR }}/playwright-report/
           retention-days: 30
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "webapp-client/a11y"
+          job_name: "webapp-client/a11y-${{ matrix.component }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -343,12 +422,25 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   visual:
-    name: "Visual Regression"
+    name: "Visual Regression (${{ matrix.component }})"
     env:
       TEST_TYPE: Visual Regression
+      TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 21
     permissions: {} # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: admin
+            owner: "@camunda/operate-admin-pod"
+          - component: operate
+            owner: "@camunda/operate-admin-pod"
+          - component: tasklist
+            owner: "@camunda/employee-engagement-tasklist"
+          - component: shared
+            owner: "@camunda/orchestration-cluster-webapps"
     container:
       image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
@@ -372,20 +464,20 @@ jobs:
       - name: Build frontend
         run: npm run build:visual-regression -w @camunda/orchestration-cluster-webapp
       - name: Visual regression tests
-        run: npm run test:visual -w @camunda/orchestration-cluster-webapp
+        run: npm run test:visual -w @camunda/orchestration-cluster-webapp -- test/visual/${{ matrix.component }}/
       - name: Upload Playwright report
         if: always()
         uses: ./.github/actions/upload-artifact-with-retry
         with:
-          name: webapp-client-visual-report
-          path: webapp/client/apps/orchestration-cluster-webapp/playwright-report/
+          name: webapp-client-visual-${{ matrix.component }}-report
+          path: ${{ env.APP_DIR }}/playwright-report/
           retention-days: 30
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "webapp-client/visual"
+          job_name: "webapp-client/visual-${{ matrix.component }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
