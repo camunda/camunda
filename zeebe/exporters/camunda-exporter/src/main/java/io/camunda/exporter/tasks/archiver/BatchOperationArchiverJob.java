@@ -12,6 +12,7 @@ import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.zeebe.util.FunctionUtil;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -72,11 +73,13 @@ public class BatchOperationArchiverJob implements ArchiverJob {
 
   private CompletableFuture<Integer> moveBatch(final String finishDate, final List<String> ids) {
     return repository
-        .moveDocuments(
+        .moveDocumentsById(
             batchOperationTemplate.getFullQualifiedName(),
             batchOperationTemplate.getFullQualifiedName() + finishDate,
             BatchOperationTemplate.ID,
             ids,
+            Map.of(),
+            Map.of(),
             executor)
         .thenApplyAsync(ok -> ids.size(), executor);
   }

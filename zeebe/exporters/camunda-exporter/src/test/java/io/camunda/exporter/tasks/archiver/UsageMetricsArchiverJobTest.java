@@ -16,6 +16,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.junit.jupiter.api.Test;
@@ -193,14 +194,23 @@ final class UsageMetricsArchiverJobTest {
     }
 
     @Override
-    public CompletableFuture<Void> moveDocuments(
+    public CompletableFuture<Void> moveDocumentsById(
         final String sourceIndexName,
         final String destinationIndexName,
         final String idFieldName,
         final List<String> ids,
+        final Map<String, String> inclusionFilters,
+        final Map<String, String> exclusionFilters,
         final Executor executor) {
       moves.add(
-          new DocumentMove(sourceIndexName, destinationIndexName, idFieldName, ids, executor));
+          new DocumentMove(
+              sourceIndexName,
+              destinationIndexName,
+              idFieldName,
+              ids,
+              inclusionFilters,
+              exclusionFilters,
+              executor));
       return CompletableFuture.completedFuture(null);
     }
 
@@ -209,6 +219,18 @@ final class UsageMetricsArchiverJobTest {
         String destinationIndexName,
         String idFieldName,
         List<String> ids,
-        Executor executor) {}
+        Map<String, String> inclusionFilters,
+        Map<String, String> exclusionFilters,
+        Executor executor) {
+
+      DocumentMove(
+          final String sourceIndexName,
+          final String destinationIndexName,
+          final String idFieldName,
+          final List<String> ids,
+          final Executor executor) {
+        this(sourceIndexName, destinationIndexName, idFieldName, ids, Map.of(), Map.of(), executor);
+      }
+    }
   }
 }

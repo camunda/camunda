@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.archiver;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -53,6 +54,27 @@ final class TestRepository extends NoopArchiverRepository {
   }
 
   @Override
+  public CompletableFuture<Void> moveDocumentsById(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final String idFieldName,
+      final List<String> ids,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final Executor executor) {
+    moves.add(
+        new DocumentMove(
+            sourceIndexName,
+            destinationIndexName,
+            idFieldName,
+            ids,
+            inclusionFilters,
+            exclusionFilters,
+            executor));
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
   public CompletableFuture<Void> moveDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
@@ -68,5 +90,16 @@ final class TestRepository extends NoopArchiverRepository {
       String destinationIndexName,
       String idFieldName,
       List<String> ids,
-      Executor executor) {}
+      Map<String, String> inclusionFilters,
+      Map<String, String> exclusionFilters,
+      Executor executor) {
+    public DocumentMove(
+        final String sourceIndexName,
+        final String destinationIndexName,
+        final String idFieldName,
+        final List<String> ids,
+        final Executor executor) {
+      this(sourceIndexName, destinationIndexName, idFieldName, ids, Map.of(), Map.of(), executor);
+    }
+  }
 }
