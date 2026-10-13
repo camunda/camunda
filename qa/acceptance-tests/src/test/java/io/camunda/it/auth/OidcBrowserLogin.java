@@ -46,8 +46,22 @@ final class OidcBrowserLogin {
       final String username,
       final String password)
       throws Exception {
-    final var app = new Browser();
-    final var keycloak = new Browser();
+    try (final var app = new Browser();
+        final var keycloak = new Browser()) {
+      return loginAndReadUsername(
+          app, keycloak, restAddress, pathPrefix, registrationId, username, password);
+    }
+  }
+
+  private static String loginAndReadUsername(
+      final Browser app,
+      final Browser keycloak,
+      final URI restAddress,
+      final String pathPrefix,
+      final String registrationId,
+      final String username,
+      final String password)
+      throws Exception {
 
     // the app answers the login start with a redirect to the IdP and remembers the request
     final var authorizationRedirect =
@@ -93,12 +107,14 @@ final class OidcBrowserLogin {
   static boolean isLoginServed(
       final URI restAddress, final String pathPrefix, final String registrationId)
       throws Exception {
-    return new Browser()
-            .send(
-                get(restAddress, pathPrefix + "/oauth2/authorization/" + registrationId),
-                BodyHandlers.discarding())
-            .statusCode()
-        == 302;
+    try (final var browser = new Browser()) {
+      return browser
+              .send(
+                  get(restAddress, pathPrefix + "/oauth2/authorization/" + registrationId),
+                  BodyHandlers.discarding())
+              .statusCode()
+          == 302;
+    }
   }
 
   private static HttpRequest.Builder get(final URI restAddress, final String path) {
@@ -113,7 +129,7 @@ final class OidcBrowserLogin {
    * A browser stand-in that replays the cookies a server set, by name only. The JDK cookie manager
    * does not send Keycloak's login cookies back over plain HTTP.
    */
-  private static final class Browser {
+  private static final class Browser implements AutoCloseable {
     private final HttpClient client =
         HttpClient.newBuilder().followRedirects(Redirect.NEVER).build();
     private final Map<String, String> cookies = new LinkedHashMap<>();
@@ -130,6 +146,11 @@ final class OidcBrowserLogin {
       final var response = client.send(request.build(), handler);
       response.headers().allValues("set-cookie").forEach(this::store);
       return response;
+    }
+
+    @Override
+    public void close() {
+      client.close();
     }
 
     private void store(final String setCookie) {
