@@ -19,6 +19,7 @@ dependencies {
   api(libs.org.awaitility.awaitility)
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-util"))
+  implementation(libs.io.camunda.security.library.api)
   implementation(libs.org.slf4j.slf4j.api)
 
   testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
