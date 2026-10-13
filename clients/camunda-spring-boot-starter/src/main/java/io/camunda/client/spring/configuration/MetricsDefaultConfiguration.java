@@ -15,9 +15,11 @@
  */
 package io.camunda.client.spring.configuration;
 
+import io.camunda.client.metrics.ClientMetricsBinder;
 import io.camunda.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.client.metrics.JobWorkerMetricsFactory;
 import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.metrics.NoopClientMetricsBinder;
 import io.camunda.client.metrics.NoopJobWorkerMetricsFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -34,5 +36,11 @@ public class MetricsDefaultConfiguration {
   @ConditionalOnMissingBean
   public JobWorkerMetricsFactory jobWorkerMetricsFactory() {
     return new NoopJobWorkerMetricsFactory();
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public ClientMetricsBinder clientMetricsBinder() {
+    return new NoopClientMetricsBinder();
   }
 }

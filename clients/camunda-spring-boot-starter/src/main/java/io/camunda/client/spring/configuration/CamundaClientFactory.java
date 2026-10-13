@@ -22,6 +22,8 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
+import io.camunda.client.metrics.ClientMetricsBinder;
+import io.camunda.client.metrics.NoopClientMetricsBinder;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
 import java.util.List;
@@ -62,6 +64,7 @@ public class CamundaClientFactory {
   private final List<AsyncExecChainHandler> chainHandlers;
   private final ObjectProvider<CamundaClientExecutorService> executorService;
   private final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier;
+  private final ClientMetricsBinder clientMetricsBinder;
 
   public CamundaClientFactory(
       final CredentialsProviderConfiguration credentialsProviderConfiguration,
@@ -70,12 +73,31 @@ public class CamundaClientFactory {
       final List<AsyncExecChainHandler> chainHandlers,
       final ObjectProvider<CamundaClientExecutorService> executorService,
       final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier) {
+    this(
+        credentialsProviderConfiguration,
+        jsonMapper,
+        interceptors,
+        chainHandlers,
+        executorService,
+        jobExceptionHandlerSupplier,
+        new NoopClientMetricsBinder());
+  }
+
+  public CamundaClientFactory(
+      final CredentialsProviderConfiguration credentialsProviderConfiguration,
+      final ObjectProvider<JsonMapper> jsonMapper,
+      final List<ClientInterceptor> interceptors,
+      final List<AsyncExecChainHandler> chainHandlers,
+      final ObjectProvider<CamundaClientExecutorService> executorService,
+      final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier,
+      final ClientMetricsBinder clientMetricsBinder) {
     this.credentialsProviderConfiguration = credentialsProviderConfiguration;
     this.jsonMapper = jsonMapper;
     this.interceptors = interceptors;
     this.chainHandlers = chainHandlers;
     this.executorService = executorService;
     this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
+    this.clientMetricsBinder = clientMetricsBinder;
   }
 
   public CamundaClient createClient(
@@ -110,11 +132,13 @@ public class CamundaClientFactory {
             jobExceptionHandlerSupplier.getIfAvailable(
                 () -> context -> JobExceptionHandler.createDefault()));
 
-    return CamundaClient.newClientBuilder()
-        .withConfiguration(configuration)
-        // the resolved Spring properties are authoritative; don't let client-level environment
-        // variables override them (matching the single-client path)
-        .applyEnvironmentVariableOverrides(false)
+    return clientMetricsBinder
+        .bind(
+            CamundaClient.newClientBuilder()
+                .withConfiguration(configuration)
+                // the resolved Spring properties are authoritative; don't let client-level
+                // environment variables override them (matching the single-client path)
+                .applyEnvironmentVariableOverrides(false))
         .build();
   }
 }

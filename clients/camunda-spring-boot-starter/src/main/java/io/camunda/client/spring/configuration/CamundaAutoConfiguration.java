@@ -21,6 +21,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
+import io.camunda.client.metrics.ClientMetricsBinder;
 import io.camunda.client.spring.bean.CamundaClientRegistry;
 import io.camunda.client.spring.bean.DefaultCamundaClientRegistry;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
@@ -145,14 +146,16 @@ public class CamundaAutoConfiguration {
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
       final ObjectProvider<CamundaClientExecutorService> executorService,
-      final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier) {
+      final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier,
+      final ClientMetricsBinder clientMetricsBinder) {
     return new CamundaClientFactory(
         credentialsProviderConfiguration,
         jsonMapper,
         interceptors,
         chainHandlers,
         executorService,
-        jobExceptionHandlerSupplier);
+        jobExceptionHandlerSupplier,
+        clientMetricsBinder);
   }
 
   /**
