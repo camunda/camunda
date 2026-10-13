@@ -14,6 +14,9 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {createEndpointMock} from './mock-endpoint';
 
+// Tenant endpoint URLs percent-encode path parameters, which would turn ':tenantId' into a literal
+const toPathParams = (url: string) => url.replace(/%3A(\w+)/g, ':$1');
+
 const mockQueryUserTasksEndpoint = createEndpointMock({
 	endpoint: endpoints.queryUserTasks.getUrl(),
 	method: endpoints.queryUserTasks.method,
@@ -352,7 +355,7 @@ const mockGetGlobalClusterVariableEndpoint = createEndpointMock({
 });
 
 const mockGetTenantClusterVariableEndpoint = createEndpointMock({
-	endpoint: endpoints.getTenantClusterVariable.getUrl({tenantId: ':tenantId', name: ':name'}),
+	endpoint: toPathParams(endpoints.getTenantClusterVariable.getUrl({tenantId: ':tenantId', name: ':name'})),
 	method: endpoints.getTenantClusterVariable.method,
 });
 
@@ -362,7 +365,7 @@ const mockCreateGlobalClusterVariableEndpoint = createEndpointMock({
 });
 
 const mockCreateTenantClusterVariableEndpoint = createEndpointMock({
-	endpoint: endpoints.createTenantClusterVariable.getUrl({tenantId: ':tenantId'}),
+	endpoint: toPathParams(endpoints.createTenantClusterVariable.getUrl({tenantId: ':tenantId'})),
 	method: endpoints.createTenantClusterVariable.method,
 });
 
@@ -379,6 +382,66 @@ const mockDeleteGlobalClusterVariableEndpoint = createEndpointMock({
 const mockQueryTenantsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryTenants.getUrl(),
 	method: endpoints.queryTenants.method,
+});
+
+const mockGetTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.getTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.getTenant.method,
+});
+
+const mockCreateTenantEndpoint = createEndpointMock({
+	endpoint: endpoints.createTenant.getUrl(),
+	method: endpoints.createTenant.method,
+});
+
+const mockUpdateTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.updateTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.updateTenant.method,
+});
+
+const mockDeleteTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.deleteTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.deleteTenant.method,
+});
+
+const mockQueryUsersByTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.queryUsersByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryUsersByTenant.method,
+});
+
+const mockQueryGroupsByTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.queryGroupsByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryGroupsByTenant.method,
+});
+
+const mockQueryRolesByTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.queryRolesByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryRolesByTenant.method,
+});
+
+const mockQueryMappingRulesByTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.queryMappingRulesByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryMappingRulesByTenant.method,
+});
+
+const mockQueryClientsByTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.queryClientsByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryClientsByTenant.method,
+});
+
+const mockAssignUserToTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.assignUserToTenant.getUrl({tenantId: ':tenantId', username: ':username'})),
+	method: endpoints.assignUserToTenant.method,
+});
+
+const mockAssignClientToTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.assignClientToTenant.getUrl({tenantId: ':tenantId', clientId: ':clientId'})),
+	method: endpoints.assignClientToTenant.method,
+});
+
+const mockUnassignUserFromTenantEndpoint = createEndpointMock({
+	endpoint: toPathParams(endpoints.unassignUserFromTenant.getUrl({tenantId: ':tenantId', username: ':username'})),
+	method: endpoints.unassignUserFromTenant.method,
 });
 const mockSearchGlobalTaskListenersEndpoint = createEndpointMock({
 	endpoint: endpoints.searchGlobalTaskListeners.getUrl(),
@@ -585,6 +648,18 @@ export {
 	mockUpdateGlobalClusterVariableEndpoint,
 	mockDeleteGlobalClusterVariableEndpoint,
 	mockQueryTenantsEndpoint,
+	mockGetTenantEndpoint,
+	mockCreateTenantEndpoint,
+	mockUpdateTenantEndpoint,
+	mockDeleteTenantEndpoint,
+	mockQueryUsersByTenantEndpoint,
+	mockQueryGroupsByTenantEndpoint,
+	mockQueryRolesByTenantEndpoint,
+	mockQueryMappingRulesByTenantEndpoint,
+	mockQueryClientsByTenantEndpoint,
+	mockAssignUserToTenantEndpoint,
+	mockAssignClientToTenantEndpoint,
+	mockUnassignUserFromTenantEndpoint,
 	mockSearchGlobalTaskListenersEndpoint,
 	mockGetGlobalTaskListenerEndpoint,
 	mockCreateGlobalTaskListenerEndpoint,
