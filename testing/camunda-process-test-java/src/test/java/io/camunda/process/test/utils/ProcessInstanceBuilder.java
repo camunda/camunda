@@ -42,6 +42,7 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   private String tenantId;
   private Set<String> tags;
   private String businessId;
+  private Integer storageOrdinal;
 
   @Override
   public Long getProcessInstanceKey() {
@@ -126,6 +127,16 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   @Override
   public String getBusinessId() {
     return businessId;
+  }
+
+  @Override
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public ProcessInstanceBuilder setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
+    return this;
   }
 
   public ProcessInstanceBuilder setBusinessId(final String businessId) {

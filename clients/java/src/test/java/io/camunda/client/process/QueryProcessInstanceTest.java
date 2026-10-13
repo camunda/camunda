@@ -483,6 +483,30 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   }
 
   @Test
+  void shouldMapStorageOrdinalFromResult() {
+    // given
+    final ProcessInstanceResult result = new ProcessInstanceResult().storageOrdinal(3);
+
+    // when
+    final ProcessInstance processInstance = new ProcessInstanceImpl(result);
+
+    // then
+    assertThat(processInstance.getStorageOrdinal()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldMapNullStorageOrdinalFromResult() {
+    // given
+    final ProcessInstanceResult result = new ProcessInstanceResult();
+
+    // when
+    final ProcessInstance processInstance = new ProcessInstanceImpl(result);
+
+    // then
+    assertThat(processInstance.getStorageOrdinal()).isNull();
+  }
+
+  @Test
   void shouldThrowWhenSettingBatchOperationKeyAfterBatchOperationIdInProcessInstanceFilter() {
     // when / then
     assertThatThrownBy(
