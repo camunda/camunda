@@ -307,6 +307,13 @@
       - enable-native-access=ALL-UNNAMED: suppresses restricted method warnings from jffi (JDK 17+)
     -->
     <jvm.module.opens>--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED --enable-native-access=ALL-UNNAMED</jvm.module.opens>
+    <!--
+      Additional JVM arguments for the forked test JVMs (surefire/failsafe), appended to the argLine
+      after jvm.module.opens. Empty by default; CI jobs can set it with -Djvm.test.extra.args=...
+      (e.g. to cap the heap of each fork). Note that a plain -DargLine=... has no effect, as argLine
+      is set explicitly in the surefire/failsafe plugin configuration.
+    -->
+    <jvm.test.extra.args></jvm.test.extra.args>
 
     <!--
       you can use the following to disable specific check plugins. this can also be used to skip the
@@ -2551,7 +2558,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
           <configuration>
-            <argLine>${jvm.module.opens}</argLine>
+            <argLine>${jvm.module.opens} ${jvm.test.extra.args}</argLine>
             <!-- by default, exclude tests with dedicated CI jobs -->
             <excludedGroups>performance, randomized, slow, strace, io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory, io.camunda.zeebe.test.util.junit.SlowTest, ${failsafe.excluded.nightly}</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
@@ -2596,7 +2603,7 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>${plugin.version.failsafe}</version>
           <configuration>
-            <argLine>${jvm.module.opens}</argLine>
+            <argLine>${jvm.module.opens} ${jvm.test.extra.args}</argLine>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
