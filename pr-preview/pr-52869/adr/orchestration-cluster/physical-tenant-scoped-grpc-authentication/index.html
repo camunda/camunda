@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/orchestration-cluster/physical-tenant-scoped-grpc-authentication/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-52869/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/orchestration-cluster/physical-tenant-scoped-grpc-authentication/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/orchestration-cluster/physical-tenant-scoped-grpc-authentication/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/orchestration-cluster/physical-tenant-scoped-grpc-authentication/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Orchestration Cluster","item":"https://camunda.github.io/camunda/pr-preview/pr-52869/adr/orchestration-cluster/"},{"@type":"ListItem","position":2,"name":"ADR-0006: Physical-Tenant-Scoped gRPC Authentication","item":"https://camunda.github.io/camunda/pr-preview/pr-52869/adr/orchestration-cluster/physical-tenant-scoped-grpc-authentication"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-52869/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-52869/assets/js/runtime~main.4108c7db.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-52869/assets/js/main.84feef7c.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-52869/assets/js/runtime~main.7d1b5e2d.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-52869/assets/js/main.bd658c1f.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -80,15 +80,20 @@ dependency direction stays <code>gateway → authentication</code>.</li>
 <p>Each handler is constructed from its PT&#x27;s config:</p>
 <ul>
 <li class="">
-<p><strong>OIDC</strong> → <code>new AuthenticationHandler.Oidc(decoder, claimsProvider, oidcConfig)</code> where <strong>all three
-arguments are that PT&#x27;s</strong>: the decoder from
-<code>ScopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig)</code>, <code>oidcConfig</code> = that PT&#x27;s
-<code>OidcConfiguration</code>, and <code>claimsProvider</code> = that PT&#x27;s <code>OidcClaimsProvider</code>. This is the key reason
-the per-PT unit is a handler, not a decoder:</p>
+<p><strong>OIDC</strong> → <code>new AuthenticationHandler.Oidc(decoder, claimsProvider, oidcConfig, claimConfigsByIssuer)</code> where <strong>all four arguments are that PT&#x27;s</strong>: the decoder from
+<code>ScopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig)</code>, <code>oidcConfig</code> = that PT&#x27;s default
+slot <code>OidcConfiguration</code>, <code>claimConfigsByIssuer</code> = that PT&#x27;s providers keyed by <code>issuer-uri</code> (the
+default slot, then each assigned <code>providers.oidc.&lt;id&gt;</code>), and <code>claimsProvider</code> = that PT&#x27;s
+<code>OidcClaimsProvider</code>. This is the key reason the per-PT unit is a handler, not a decoder:</p>
 <ul>
-<li class="">The handler derives its <code>OidcPrincipalLoader</code> / <code>OidcGroupsExtractor</code> and prefer-username /
-groups-claim behavior from <code>oidcConfig</code> at construction time, so a PT on a different IdP (with
-different username/client-id/groups claim names) needs its own handler.</li>
+<li class="">The handler derives its <code>OidcPrincipalLoader</code> / <code>OidcGroupsExtractor</code> and prefer-username
+behavior per provider at construction time, and picks the set matching the token&#x27;s <code>iss</code>,
+falling back to <code>oidcConfig</code>. A provider without its own <code>groups-claim</code>, <code>username-claim</code>,
+<code>client-id-claim</code> or <code>prefer-username-claim</code> uses the PT&#x27;s value for that claim, and the
+groups mode (token groups or Camunda groups) always comes from the PT&#x27;s <code>oidcConfig</code>, so it
+matches the broker and the Groups API. A PT on a different IdP (with different
+username/client-id/groups claim names) therefore needs its own handler, and a PT with several
+providers resolves each token with the claim names of the provider that issued it.</li>
 <li class="">The handler invokes <code>claimsProvider</code> between <code>JwtDecoder.decode(...)</code> and
 <code>OidcPrincipalLoader.load(...)</code> to augment claims from the IdP&#x27;s <code>/userinfo</code> endpoint
 (<a class="" href="/camunda/pr-preview/pr-52869/identity/adr/userinfo-claim-augmentation-for-bearer-tokens/">identity ADR-0006</a> —
@@ -185,7 +190,9 @@ share a single input (the header), and the authentication step is cleanly gated 
 <li class="">Single/default-PT deployments are unchanged (everything resolves to the one <code>default</code> PT).</li>
 <li class=""><code>EndpointManager</code>&#x27;s partition-group routing is unchanged — it still reads the PT id from the
 <code>Context</code>; only the producer of that value changes (the merged interceptor instead of the removed
-<code>PhysicalTenantInterceptor</code>).</li>
+<code>PhysicalTenantInterceptor</code>). The same PT id also selects the security config <code>EndpointManager</code>
+uses to build the broker request&#x27;s authorization claims, so groups and token claims follow the
+targeted PT&#x27;s settings rather than the <code>default</code> PT&#x27;s.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives Considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives Considered" title="Direct link to Alternatives Considered" translate="no">​</a></h2>
 <ol>
