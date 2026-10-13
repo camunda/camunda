@@ -14,6 +14,7 @@ metadata:
 
     app.kubernetes.io/component: zeebe-broker
 
+    camunda.io/broker-generation: numbered
 apiVersion: v1
 data:
   startup.sh: |
@@ -23,17 +24,23 @@ data:
     echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
 
     if [ "$ZEEBE_RESTORE" = "true" ]; then
-      if [ "${ZEEBE_RESTORE_FROM_BACKUP_ID:-}" ]; then
-        exec restore --backupId="${ZEEBE_RESTORE_FROM_BACKUP_ID}"
-      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ] && [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
-        exec restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}" --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
-      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ]; then
-        exec restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}"
-      elif [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
-        exec restore --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
-      else
-        exec restore
+      RESTORE_ARGS=()
+      if [ "${ZEEBE_RESTORE_ALL_TENANTS:-}" = "true" ]; then
+        RESTORE_ARGS+=("--allTenants")
       fi
+      if [ "${ZEEBE_RESTORE_TENANT_ID:-}" ]; then
+        RESTORE_ARGS+=("--tenantId=${ZEEBE_RESTORE_TENANT_ID}")
+      fi
+      if [ "${ZEEBE_RESTORE_FROM_BACKUP_ID:-}" ]; then
+        RESTORE_ARGS+=("--backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}")
+      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ] && [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
+        RESTORE_ARGS+=("--from=${ZEEBE_RESTORE_FROM_TIMESTAMP}" "--to=${ZEEBE_RESTORE_TO_TIMESTAMP}")
+      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ]; then
+        RESTORE_ARGS+=("--from=${ZEEBE_RESTORE_FROM_TIMESTAMP}")
+      elif [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
+        RESTORE_ARGS+=("--to=${ZEEBE_RESTORE_TO_TIMESTAMP}")
+      fi
+      exec restore "${RESTORE_ARGS[@]}"
     else
       exec camunda
     fi
@@ -78,6 +85,7 @@ data:
         # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
         # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
         node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
+        name: c8-golden-main-none-physical-tenants-zeebe
         size: "3"
         replication-factor: "3"
         partition-count: "3"
@@ -86,6 +94,13 @@ data:
           - camunda-0.${K8S_SERVICE_NAME}:26502
           - camunda-1.${K8S_SERVICE_NAME}:26502
           - camunda-2.${K8S_SERVICE_NAME}:26502
+        network:
+          advertised-host: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+          host: 0.0.0.0
+          command-api:
+            port: 26501
+          internal-api:
+            port: 26502
     
       api:
         grpc:
@@ -117,10 +132,7 @@ data:
             audiences:
               - "orchestration"
               - "orchestration-api"
-              - "web-modeler-api"
-            authorization-uri: "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
-            jwk-set-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
-            token-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
+            issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
             redirect-uri: "http://localhost:8080/sso-callback"
             authenticationRefreshInterval: "PT30S"
           method: "oidc"
@@ -212,19 +224,6 @@ data:
           enable: true
           multitenancy:
             enabled: false
-    
-        # zeebe.broker.network
-        network:
-          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
-          host: 0.0.0.0
-          commandApi:
-            port: 26501
-          internalApi:
-            port: 26502
-    
-        # zeebe.broker.cluster
-        cluster:
-          clusterName: c8-golden-main-none-physical-tenants-zeebe
     
   application.yml: |
     # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
