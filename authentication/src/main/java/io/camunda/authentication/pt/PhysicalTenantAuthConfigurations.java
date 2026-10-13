@@ -222,14 +222,25 @@ public final class PhysicalTenantAuthConfigurations {
   }
 
   /**
-   * The default slot without its provider fields. {@code groups-claim} (the tenant's groups mode)
-   * and {@code user-info-augmentation} also apply to the tenant's named providers, so they are
-   * kept; without a {@code client-id} CSL's {@code flatten} does not treat the slot as a provider.
+   * The default slot without its provider fields. {@code groups-claim} (the tenant's groups mode),
+   * {@code user-info-augmentation} and the principal claims also apply to the tenant's named
+   * providers, so they are kept; without a {@code client-id} CSL's {@code flatten} does not treat
+   * the slot as a provider.
    */
   private static OidcConfiguration withoutProvider(final OidcConfiguration defaultSlot) {
     final OidcConfiguration tenantSettings = new OidcConfiguration();
     tenantSettings.setGroupsClaim(defaultSlot.getGroupsClaim());
     tenantSettings.setUserInfoAugmentation(defaultSlot.getUserInfoAugmentation());
+    // copy only the claims that are set, so the tenant's providers still inherit the others
+    if (defaultSlot.isUsernameClaimSet()) {
+      tenantSettings.setUsernameClaim(defaultSlot.getUsernameClaim());
+    }
+    if (defaultSlot.isClientIdClaimSet()) {
+      tenantSettings.setClientIdClaim(defaultSlot.getClientIdClaim());
+    }
+    if (defaultSlot.isPreferUsernameClaimSet()) {
+      tenantSettings.setPreferUsernameClaim(defaultSlot.isPreferUsernameClaim());
+    }
     return tenantSettings;
   }
 

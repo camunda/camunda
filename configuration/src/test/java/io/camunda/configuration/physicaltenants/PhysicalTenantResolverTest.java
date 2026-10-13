@@ -15,6 +15,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -573,6 +574,41 @@ class PhysicalTenantResolverTest {
         .doesNotContainKey("claiming");
     assertThat(resolver.forPhysicalTenant("tenanta").getData().getExporters())
         .containsKey("claiming");
+  }
+
+  @Test
+  void shouldKeepThePrincipalClaimsWhenTheDefaultSlotIsNotAssigned() {
+    // given a tenant that overrides the username claim and is assigned only a named provider
+    final Map<String, Object> properties = new HashMap<>();
+    properties.put("camunda.security.authentication.method", "oidc");
+    properties.put("camunda.security.authentication.oidc.client-id", "keycloak-client");
+    properties.put(
+        "camunda.security.authentication.oidc.issuer-uri", "https://keycloak.example.com");
+    properties.put("camunda.security.authentication.oidc.client-id-claim", "azp");
+    properties.put("camunda.security.authentication.providers.oidc.okta.client-id", "okta-client");
+    properties.put(
+        "camunda.security.authentication.providers.oidc.okta.issuer-uri",
+        "https://okta.example.com");
+    properties.put(
+        "camunda.physical-tenants.tenanta.security.authentication.oidc.username-claim", "upn");
+    properties.put(
+        "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]", "okta");
+    properties.put(
+        "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+        "tenanta");
+    setProperties(properties, "tenanta");
+
+    // when
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then the gRPC handler of the tenant resolves the okta claims with the tenant's claims
+    final var tenantA = resolver.forPhysicalTenant("tenanta").getSecurity().getAuthentication();
+    assertThat(tenantA.getOidc().getClientId()).isNull();
+    assertThat(tenantA.getOidc().isPreferUsernameClaimSet()).isFalse();
+    assertThat(
+            OidcPrincipalClaims.resolve(
+                tenantA.getProviders().getOidc().get("okta"), tenantA.getOidc()))
+        .isEqualTo(new OidcPrincipalClaims("upn", "azp", false));
   }
 
   @Test

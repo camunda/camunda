@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.toMap;
 
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
@@ -81,11 +82,31 @@ public final class PhysicalTenantOidcProviders {
   }
 
   /**
-   * Builds a {@link LazyTokenClaimsConverter} per registration from its configured username and
-   * client-id claims.
+   * The default slot ({@code authentication.oidc.*}) of every non-default physical tenant, with the
+   * tenant's own merged settings. Its claims apply to each provider of the tenant that does not set
+   * its own.
+   */
+  public static Map<String, OidcConfiguration> defaultSlotsByPhysicalTenant(
+      final Environment environment) {
+    final Map<String, OidcConfiguration> slotsByTenant = new LinkedHashMap<>();
+    PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment)
+        .forEach(
+            (tenantId, authentication) -> {
+              if (!DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)) {
+                slotsByTenant.put(tenantId, authentication.getOidc());
+              }
+            });
+    return Collections.unmodifiableMap(slotsByTenant);
+  }
+
+  /**
+   * Builds a {@link LazyTokenClaimsConverter} per registration from its username, client-id and
+   * prefer-username claims. A provider uses the claims of {@code defaultSlot} for each claim that
+   * it does not set.
    */
   public static Map<String, LazyTokenClaimsConverter> tokenClaimsConverters(
       final Map<String, OidcConfiguration> providers,
+      final OidcConfiguration defaultSlot,
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
     return providers.entrySet().stream()
@@ -94,11 +115,11 @@ public final class PhysicalTenantOidcProviders {
                 toMap(
                     Map.Entry::getKey,
                     entry -> {
-                      final var config = entry.getValue();
+                      final var claims = OidcPrincipalClaims.resolve(entry.getValue(), defaultSlot);
                       return new LazyTokenClaimsConverter(
-                          config.getUsernameClaim(),
-                          config.getClientIdClaim(),
-                          config.isPreferUsernameClaim(),
+                          claims.usernameClaim(),
+                          claims.clientIdClaim(),
+                          claims.preferUsernameClaim(),
                           membershipPort,
                           membershipResolutionContextPropagator);
                     }),
@@ -111,11 +132,14 @@ public final class PhysicalTenantOidcProviders {
    * normalizes these claim values to strings before conversion.
    */
   public static Map<String, List<String>> identityClaimsByRegistrationId(
-      final Map<String, OidcConfiguration> providers) {
+      final Map<String, OidcConfiguration> providers, final OidcConfiguration defaultSlot) {
     return providers.entrySet().stream()
         .collect(
             collectingAndThen(
-                toMap(Map.Entry::getKey, entry -> identityClaims(entry.getValue())),
+                toMap(
+                    Map.Entry::getKey,
+                    entry ->
+                        identityClaims(OidcPrincipalClaims.resolve(entry.getValue(), defaultSlot))),
                 Collections::unmodifiableMap));
   }
 
@@ -125,7 +149,11 @@ public final class PhysicalTenantOidcProviders {
    * before conversion.
    */
   public static List<String> identityClaims(final OidcConfiguration config) {
-    return Stream.of(config.getUsernameClaim(), config.getClientIdClaim())
+    return identityClaims(OidcPrincipalClaims.resolve(config, config));
+  }
+
+  private static List<String> identityClaims(final OidcPrincipalClaims claims) {
+    return Stream.of(claims.usernameClaim(), claims.clientIdClaim())
         .filter(Objects::nonNull)
         .toList();
   }
