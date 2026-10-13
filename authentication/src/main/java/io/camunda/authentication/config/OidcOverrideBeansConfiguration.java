@@ -327,24 +327,71 @@ public class OidcOverrideBeansConfiguration {
       final AdditionalJwkSetUrisByRegistrationId additionalJwkSetUrisByRegistrationId,
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator,
-      final Environment environment) {
+      final Environment environment,
+      final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings) {
     return new ProviderAwareOidcUserAuthenticationConverter(
         authorizedClientRepository,
         oidcAccessTokenDecoderFactory,
         tokenClaimsConverter,
         request,
         additionalJwkSetUrisByRegistrationId,
-        buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository),
-        PhysicalTenantOidcProviders.tokenClaimsConvertersByRegistrationId(
-            environment, membershipPort, membershipResolutionContextPropagator),
-        buildIdentityClaimsByRegistrationId(environment));
+        buildPreferIdTokenClaimsByRegistrationId(
+            oidcProviderRepository.getOidcAuthenticationConfigurations()),
+        PhysicalTenantOidcProviders.tokenClaimsConverters(
+            PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment),
+            membershipPort,
+            membershipResolutionContextPropagator),
+        buildIdentityClaimsByRegistrationId(environment),
+        physicalTenantOidcSettings);
+  }
+
+  /**
+   * Resolves the OIDC settings of every non-default physical tenant once, for both the ID-token
+   * decoder factory and the user authentication converter.
+   */
+  @Bean
+  public PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings(
+      final Environment environment,
+      final MembershipPort membershipPort,
+      final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
+    final Map<String, PhysicalTenantOidcSettings> settingsByTenant = new LinkedHashMap<>();
+    PhysicalTenantOidcProviders.providersByPhysicalTenant(environment)
+        .forEach(
+            (physicalTenantId, providers) -> {
+              final var validatorFactory = newTokenValidatorFactory(cslProperties, providers);
+              settingsByTenant.put(
+                  physicalTenantId,
+                  new PhysicalTenantOidcSettings(
+                      validatorFactory,
+                      buildIdTokenDecoderFactory(validatorFactory, providers),
+                      additionalJwkSetUris(providers),
+                      buildPreferIdTokenClaimsByRegistrationId(providers),
+                      PhysicalTenantOidcProviders.tokenClaimsConverters(
+                          providers, membershipPort, membershipResolutionContextPropagator),
+                      PhysicalTenantOidcProviders.identityClaimsByRegistrationId(providers)));
+            });
+    return new PhysicalTenantOidcSettingsRegistry(settingsByTenant);
+  }
+
+  private static AdditionalJwkSetUrisByRegistrationId additionalJwkSetUris(
+      final Map<String, OidcConfiguration> providers) {
+    final Map<String, List<String>> byRegistrationId = new LinkedHashMap<>();
+    providers.forEach(
+        (registrationId, config) -> {
+          final var uris = config.getAdditionalJwkSetUris();
+          if (uris != null && uris.stream().anyMatch(OidcOverrideBeansConfiguration::hasText)) {
+            byRegistrationId.put(registrationId, uris);
+          }
+        });
+    return new AdditionalJwkSetUrisByRegistrationId(byRegistrationId);
   }
 
   private Map<String, List<String>> buildIdentityClaimsByRegistrationId(
       final Environment environment) {
     final Map<String, List<String>> identityClaims =
         new LinkedHashMap<>(
-            PhysicalTenantOidcProviders.identityClaimsByRegistrationId(environment));
+            PhysicalTenantOidcProviders.identityClaimsByRegistrationId(
+                PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment)));
     // The root default slot is not a named provider, so normalize its URI-valued identity claims
     // (e.g. iss) under the default registration id too, matching the scoped registrations.
     identityClaims.put(
@@ -357,6 +404,14 @@ public class OidcOverrideBeansConfiguration {
   public TokenValidatorFactory tokenValidatorFactory(
       final CamundaSecurityLibraryProperties cslProperties,
       final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository) {
+    return newTokenValidatorFactory(
+        cslProperties,
+        oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations());
+  }
+
+  private static TokenValidatorFactory newTokenValidatorFactory(
+      final CamundaSecurityLibraryProperties cslProperties,
+      final Map<String, OidcConfiguration> providers) {
     // SaaS validators stay in the host. The CSL factory composes the base validator chain
     // (timestamp + optional audience) and tacks on the host's SaaS validators via extras.
     final List<OAuth2TokenValidator<Jwt>> extraValidators = new ArrayList<>();
@@ -365,22 +420,37 @@ public class OidcOverrideBeansConfiguration {
       extraValidators.add(new ClusterValidator(cslProperties.getSaas().getClusterId()));
     }
     return new TokenValidatorFactory(
-        oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations(),
-        cslProperties.getAuthentication().getOidc().getClockSkew(),
-        extraValidators);
+        providers, cslProperties.getAuthentication().getOidc().getClockSkew(), extraValidators);
   }
 
+  /**
+   * ID-token decoder factory shared by every oauth2Login chain. Spring caches decoders by
+   * registration id, and a registration id can be shared by the root and several physical tenants
+   * with different issuers, so the decoder factory of the request's physical tenant is used. The
+   * default tenant and requests outside any tenant use the root factory.
+   */
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
       final TokenValidatorFactory tokenValidatorFactory,
-      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository) {
+      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository,
+      final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings) {
+    final var rootFactory =
+        buildIdTokenDecoderFactory(
+            tokenValidatorFactory,
+            oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations());
+    return clientRegistration -> {
+      final var settings = physicalTenantOidcSettings.current();
+      final var factory = settings == null ? rootFactory : settings.idTokenDecoderFactory();
+      return factory.createDecoder(clientRegistration);
+    };
+  }
+
+  private JwtDecoderFactory<ClientRegistration> buildIdTokenDecoderFactory(
+      final TokenValidatorFactory tokenValidatorFactory,
+      final Map<String, OidcConfiguration> oidcAuthenticationConfigurations) {
     final var decoderFactory = new OidcIdTokenDecoderFactory();
     decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
 
-    final Map<String, OidcConfiguration> oidcAuthenticationConfigurations =
-        oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations();
-    // The decoder factory is a single bean applied to every oauth2Login chain, so it resolves each
-    // registration's configured id_token JWS algorithm by registrationId.
     final Map<String, JwsAlgorithm> algorithmByRegistrationId =
         oidcAuthenticationConfigurations.entrySet().stream()
             .collect(
@@ -400,9 +470,9 @@ public class OidcOverrideBeansConfiguration {
     return value;
   }
 
-  private Map<String, Boolean> buildPreferIdTokenClaimsByRegistrationId(
-      final OidcProviderConfigurationPort oidcProviderRepository) {
-    return oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
+  private static Map<String, Boolean> buildPreferIdTokenClaimsByRegistrationId(
+      final Map<String, OidcConfiguration> providers) {
+    return providers.entrySet().stream()
         .filter(entry -> entry.getValue().isPreferIdTokenClaims())
         .collect(toMap(Map.Entry::getKey, entry -> Boolean.TRUE));
   }

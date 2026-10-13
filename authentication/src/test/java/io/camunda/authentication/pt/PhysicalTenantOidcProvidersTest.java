@@ -9,13 +9,7 @@ package io.camunda.authentication.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.api.context.MembershipResolutionContextPropagator;
-import io.camunda.security.core.port.out.MembershipPort;
-import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.env.MockEnvironment;
 
 /**
@@ -28,78 +22,78 @@ import org.springframework.mock.env.MockEnvironment;
  * oidc}, the default slot) must stay absent from the derived maps so interactive root login keeps
  * the default converter.
  */
-@ExtendWith(MockitoExtension.class)
 class PhysicalTenantOidcProvidersTest {
 
   private static final String ROOT_PREFIX = "camunda.security.authentication.oidc";
   private static final String SCOPED_PREFIX =
       "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.auth0";
 
-  @Mock private MembershipPort membershipPort;
-
   @Test
-  void shouldFlattenScopedProviderWithoutRootRegistration() {
+  void shouldResolveScopedProviderForItsTenantWithoutRootRegistration() {
     // given
     final var environment = rootKeycloakWithScopedAuth0();
 
     // when
-    final var providers = PhysicalTenantOidcProviders.providersByRegistrationId(environment);
+    final var providers =
+        PhysicalTenantOidcProviders.providersByPhysicalTenant(environment).get("tenanta");
 
     // then
     assertThat(providers).containsOnlyKeys("auth0");
     // the scoped provider keeps its own claim, not the root "preferred_username"
     assertThat(providers.get("auth0").getUsernameClaim()).isEqualTo("iss");
-    // the root default slot is not a named provider, so the root keeps the default converter
-    assertThat(providers).doesNotContainKey("oidc");
   }
 
   @Test
-  void shouldBuildScopedTokenClaimsConverterOnlyForScopedRegistration() {
-    // given
-    final var environment = rootKeycloakWithScopedAuth0();
-
-    // when
-    final var converters =
-        PhysicalTenantOidcProviders.tokenClaimsConvertersByRegistrationId(
-            environment, membershipPort, MembershipResolutionContextPropagator.identity());
-
-    // then
-    assertThat(converters).containsOnlyKeys("auth0");
-    assertThat(converters.get("auth0")).isNotNull();
-  }
-
-  @Test
-  void shouldCollectScopedIdentityClaimsForUriNormalization() {
-    // given
-    final var environment = rootKeycloakWithScopedAuth0();
-
-    // when
-    final var identityClaims =
-        PhysicalTenantOidcProviders.identityClaimsByRegistrationId(environment);
-
-    // then
-    assertThat(identityClaims)
-        .containsOnlyKeys("auth0")
-        .containsEntry("auth0", List.of("iss", "https://camunda.com/claims/client_id"));
-  }
-
-  @Test
-  void shouldReturnEmptyMapsWhenOnlyRootProviderConfigured() {
+  void shouldNotResolveTenantProvidersWhenOnlyRootProviderConfigured() {
     // given
     final var environment = rootKeycloakOnly();
 
+    // when / then
+    assertThat(PhysicalTenantOidcProviders.providersByPhysicalTenant(environment)).isEmpty();
+    assertThat(PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment)).isEmpty();
+  }
+
+  @Test
+  void shouldKeepRootSettingsOfNamedProviderForDefaultTenantWhenATenantOverridesIt() {
+    // given
+    final var environment = rootKeycloakOnly();
+    environment.setProperty(
+        "camunda.security.authentication.providers.oidc.okta.client-id", "okta-client");
+    environment.setProperty(
+        "camunda.security.authentication.providers.oidc.okta.username-claim", "root_user");
+    environment.setProperty(
+        "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.okta.username-claim",
+        "user_a");
+
     // when
-    final var providers = PhysicalTenantOidcProviders.providersByRegistrationId(environment);
-    final var converters =
-        PhysicalTenantOidcProviders.tokenClaimsConvertersByRegistrationId(
-            environment, membershipPort, MembershipResolutionContextPropagator.identity());
-    final var identityClaims =
-        PhysicalTenantOidcProviders.identityClaimsByRegistrationId(environment);
+    final var defaultTenantProviders =
+        PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment);
 
     // then
-    assertThat(providers).isEmpty();
-    assertThat(converters).isEmpty();
-    assertThat(identityClaims).isEmpty();
+    assertThat(defaultTenantProviders.get("okta").getUsernameClaim()).isEqualTo("root_user");
+    // the root default slot is not a named provider, so the root keeps the default converter
+    assertThat(defaultTenantProviders).doesNotContainKey("oidc");
+  }
+
+  @Test
+  void shouldKeepDistinctSettingsForTenantsSharingARegistrationId() {
+    // given
+    final var environment = rootKeycloakOnly();
+    environment.setProperty(
+        "camunda.physical-tenants.tenanta.security.authentication.oidc.issuer-uri",
+        "http://idp-a.local/realms/a");
+    environment.setProperty(
+        "camunda.physical-tenants.tenantb.security.authentication.oidc.issuer-uri",
+        "http://idp-b.local/realms/b");
+
+    // when
+    final var providers = PhysicalTenantOidcProviders.providersByPhysicalTenant(environment);
+
+    // then
+    assertThat(providers.get("tenanta").get("oidc").getIssuerUri())
+        .isEqualTo("http://idp-a.local/realms/a");
+    assertThat(providers.get("tenantb").get("oidc").getIssuerUri())
+        .isEqualTo("http://idp-b.local/realms/b");
   }
 
   private static MockEnvironment rootKeycloakOnly() {

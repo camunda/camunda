@@ -58,7 +58,10 @@ class OidcOverrideBeansConfigurationIdTokenDecoderTest {
 
     final var configuration = new OidcOverrideBeansConfiguration(null);
     final JwtDecoderFactory<ClientRegistration> decoderFactory =
-        configuration.idTokenDecoderFactory(tokenValidatorFactory, oidcProviderConfigurationPort);
+        configuration.idTokenDecoderFactory(
+            tokenValidatorFactory,
+            oidcProviderConfigurationPort,
+            new PhysicalTenantOidcSettingsRegistry(Map.of()));
 
     // Build a fresh ClientRegistration with the same registrationId but a different object
     // identity — this is exactly what PT scoped chains do at runtime.
@@ -89,7 +92,10 @@ class OidcOverrideBeansConfigurationIdTokenDecoderTest {
 
     final var configuration = new OidcOverrideBeansConfiguration(null);
     final JwtDecoderFactory<ClientRegistration> decoderFactory =
-        configuration.idTokenDecoderFactory(tokenValidatorFactory, oidcProviderConfigurationPort);
+        configuration.idTokenDecoderFactory(
+            tokenValidatorFactory,
+            oidcProviderConfigurationPort,
+            new PhysicalTenantOidcSettingsRegistry(Map.of()));
 
     // Two distinct instances — same registrationId, different objects
     final var instanceOne = buildRegistration(registrationId);
@@ -113,7 +119,10 @@ class OidcOverrideBeansConfigurationIdTokenDecoderTest {
         new TokenValidatorFactory(Map.of(), Duration.ofSeconds(60), List.of());
     final var configuration = new OidcOverrideBeansConfiguration(null);
     final JwtDecoderFactory<ClientRegistration> decoderFactory =
-        configuration.idTokenDecoderFactory(tokenValidatorFactory, oidcProviderConfigurationPort);
+        configuration.idTokenDecoderFactory(
+            tokenValidatorFactory,
+            oidcProviderConfigurationPort,
+            new PhysicalTenantOidcSettingsRegistry(Map.of()));
     final var scopedRegistration = buildRegistration("scoped");
 
     // when / then — without the RS256 default the resolver returns null and
