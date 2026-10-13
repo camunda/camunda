@@ -136,9 +136,17 @@ load-tester:
     initial-delay: ${OPTIMIZE_INITIAL_DELAY:10s}
     request-timeout: ${OPTIMIZE_REQUEST_TIMEOUT:30s}
 
-# Starter-profile override: only the starter has a liveness indicator.
+# Starter-profile override: only the starter has a liveness indicator and a separate client for
+# queries.
+# The query client inherits all other settings from camunda.client.*.
 ---
 spring.config.activate.on-profile: starter
+camunda:
+  clients:
+    main:
+      primary: true
+    query:
+      primary: false
 management:
   endpoint:
     health:
