@@ -21,11 +21,14 @@ import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistribut
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -835,6 +838,72 @@ final class BulkIndexRequestTest {
               value ->
                   assertThat((Map<String, Object>) value)
                       .doesNotContainKeys("metadata", "kind", "secretReferences"));
+    }
+
+    @Test
+    void shouldIndexVariableRecordWithoutMetadataOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.VARIABLE,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(redactedVariable()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that variable records are NOT serialized with metadata on previous version,"
+                  + " and still without storageOrdinal")
+          .allSatisfy(
+              value ->
+                  assertThat((Map<String, Object>) value)
+                      .doesNotContainKeys("metadata", "storageOrdinal"));
+    }
+
+    @Test
+    void shouldIndexVariableRecordWithMetadataOnCurrentVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.VARIABLE,
+              r -> r.withBrokerVersion(VersionUtil.getVersion()).withValue(redactedVariable()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that variable records are serialized with metadata on current version")
+          .allSatisfy(
+              value ->
+                  assertThat((Map<String, Object>) value)
+                      .containsEntry("metadata", Map.of("protectionModes", List.of("REDACT"))));
+    }
+
+    private static VariableRecord redactedVariable() {
+      return new VariableRecord()
+          .setName(new UnsafeBuffer("name".getBytes()))
+          .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("1")))
+          .setScopeKey(1)
+          .setProcessInstanceKey(2)
+          .setProcessDefinitionKey(3)
+          .setMetadata(
+              new VariableMetadataRecord().setProtectionModes(List.of(ProtectionMode.REDACT)));
     }
 
     @Test
