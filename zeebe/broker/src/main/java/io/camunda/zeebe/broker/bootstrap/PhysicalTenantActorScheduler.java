@@ -14,15 +14,25 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
 
 /**
  * The actor scheduler dedicated to a physical tenant, together with the registry that tags its
- * actor metrics with the tenant. Closing it stops the scheduler and discards the registry.
+ * actor metrics with the tenant and the executor that runs its expression evaluations. Closing it
+ * stops the executor and the scheduler and discards the registry.
  *
  * @param meterRegistry the tagging registry, or {@code null} if actor metrics are disabled
+ * @param expressionEvaluationExecutor runs the tenant's FEEL evaluations on as many threads as the
+ *     tenant has CPU-bound actor threads, so evaluations cannot take CPU from other tenants
  */
-record PhysicalTenantActorScheduler(ActorScheduler scheduler, @Nullable MeterRegistry meterRegistry)
+record PhysicalTenantActorScheduler(
+    ActorScheduler scheduler,
+    @Nullable MeterRegistry meterRegistry,
+    ExecutorService expressionEvaluationExecutor)
     implements AutoCloseable {
 
   /**
@@ -47,13 +57,27 @@ record PhysicalTenantActorScheduler(ActorScheduler scheduler, @Nullable MeterReg
             .setIoBoundActorThreadCount(pool.getIoThreadCount())
             .build();
     scheduler.start();
-    return new PhysicalTenantActorScheduler(scheduler, meterRegistry);
+    final var expressionEvaluationExecutor =
+        Executors.newFixedThreadPool(
+            pool.getCpuThreadCount(), expressionEvaluationThreadFactory(physicalTenantId));
+    return new PhysicalTenantActorScheduler(scheduler, meterRegistry, expressionEvaluationExecutor);
+  }
+
+  private static ThreadFactory expressionEvaluationThreadFactory(final String physicalTenantId) {
+    final var threadNumber = new AtomicInteger();
+    return runnable -> {
+      final var thread =
+          new Thread(runnable, physicalTenantId + "-feel-" + threadNumber.getAndIncrement());
+      thread.setDaemon(true);
+      return thread;
+    };
   }
 
   /** Blocks until the scheduler threads have stopped. */
   @Override
   public void close() {
     try {
+      expressionEvaluationExecutor.shutdownNow();
       scheduler.close();
     } catch (final Exception e) {
       throw new IllegalStateException("Failed to stop physical tenant actor scheduler", e);

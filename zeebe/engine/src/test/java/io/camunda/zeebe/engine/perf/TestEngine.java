@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -106,7 +107,8 @@ public final class TestEngine {
                             SearchClientsProxy.noop(),
                             new BrokerRequestAuthorizationConverter(
                                 EngineSecurityConfigurations.defaultConfig()),
-                            new SecretStoreRegistry(Map.of()))
+                            new SecretStoreRegistry(Map.of()),
+                            Executors.newVirtualThreadPerTaskExecutor())
                         .withListener(
                             new ProcessingExporterTransistor(
                                 testStreams.getLogStream(

@@ -40,6 +40,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import org.agrona.concurrent.SnowflakeIdGenerator;
@@ -80,6 +81,12 @@ public interface BrokerStartupContext {
    * dedicated scheduler if one was registered, otherwise the broker-wide scheduler.
    */
   ActorSchedulingService getPartitionActorSchedulingService(String physicalTenantId);
+
+  /**
+   * Returns the executor on which the given physical tenant evaluates expressions: the one of its
+   * dedicated scheduler if one was registered, otherwise a broker-wide one.
+   */
+  ExecutorService getExpressionEvaluationExecutor(String physicalTenantId);
 
   void addPhysicalTenantActorScheduler(
       String physicalTenantId, PhysicalTenantActorScheduler scheduler);

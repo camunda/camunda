@@ -125,6 +125,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
 public final class EngineProcessors {
@@ -140,7 +141,8 @@ public final class EngineProcessors {
       final JobStreamer jobStreamer,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final ExecutorService expressionEvaluationExecutor) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -304,7 +306,8 @@ public final class EngineProcessors {
             cslCheck,
             tenantCheck,
             secretStoreRegistry,
-            secretResolutionScheduler);
+            secretResolutionScheduler,
+            expressionEvaluationExecutor);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -694,7 +697,8 @@ public final class EngineProcessors {
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry,
-      final SecretResolutionScheduler secretResolutionScheduler) {
+      final SecretResolutionScheduler secretResolutionScheduler,
+      final ExecutorService expressionEvaluationExecutor) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -716,7 +720,8 @@ public final class EngineProcessors {
         cslCheck,
         tenantCheck,
         secretStoreRegistry,
-        secretResolutionScheduler);
+        secretResolutionScheduler,
+        expressionEvaluationExecutor);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(

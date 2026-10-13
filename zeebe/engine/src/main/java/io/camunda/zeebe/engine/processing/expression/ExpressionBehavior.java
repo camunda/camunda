@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 public class ExpressionBehavior {
 
@@ -31,6 +32,7 @@ public class ExpressionBehavior {
       final NamespacedEvaluationContext namespaceFullClusterContext,
       final ExpressionLanguage expressionLanguage,
       final Duration expressionEvaluationTimeout,
+      final ExecutorService expressionEvaluationExecutor,
       final VariableState variableState,
       final ReferencedSecretCollector referencedSecretCollector) {
     this.referencedSecretCollector = referencedSecretCollector;
@@ -41,7 +43,10 @@ public class ExpressionBehavior {
     // The collector records references resolved from trusted sources so they can be reported.
     clusterExpressionProcessor =
         new ExpressionProcessor(
-                expressionLanguage, namespaceFullClusterContext, expressionEvaluationTimeout)
+                expressionLanguage,
+                namespaceFullClusterContext,
+                expressionEvaluationTimeout,
+                expressionEvaluationExecutor)
             .withSecretReferenceContext(referencedSecretCollector);
     this.variableState = variableState;
   }

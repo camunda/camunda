@@ -85,6 +85,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,6 +117,9 @@ public final class ZeebePartitionFactory {
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
   private final SecretStoreRegistry secretStoreRegistry;
 
+  // The tenant's FEEL evaluation executor, shared across its partitions.
+  private final ExecutorService expressionEvaluationExecutor;
+
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -135,7 +139,8 @@ public final class ZeebePartitionFactory {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final ExecutorService expressionEvaluationExecutor) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -155,6 +160,7 @@ public final class ZeebePartitionFactory {
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
     this.secretStoreRegistry = secretStoreRegistry;
+    this.expressionEvaluationExecutor = expressionEvaluationExecutor;
   }
 
   public ZeebePartition constructPartition(
@@ -302,7 +308,8 @@ public final class ZeebePartitionFactory {
           jobStreamer,
           searchClientsProxy,
           brokerRequestAuthorizationConverter,
-          secretStoreRegistry);
+          secretStoreRegistry,
+          expressionEvaluationExecutor);
     };
   }
 }

@@ -53,6 +53,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -82,6 +84,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
   private Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory =
       ActorScheduler::newActorScheduler;
+  private final ExecutorService defaultExpressionEvaluationExecutor =
+      Executors.newVirtualThreadPerTaskExecutor();
   private final Map<String, PhysicalTenantActorScheduler> physicalTenantActorSchedulers =
       new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
@@ -143,6 +147,14 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public ActorSchedulerBuilder newActorSchedulerBuilder() {
     return actorSchedulerBuilderFactory.get();
+  }
+
+  @Override
+  public ExecutorService getExpressionEvaluationExecutor(final String physicalTenantId) {
+    final var dedicated = physicalTenantActorSchedulers.get(physicalTenantId);
+    return dedicated != null
+        ? dedicated.expressionEvaluationExecutor()
+        : defaultExpressionEvaluationExecutor;
   }
 
   @Override

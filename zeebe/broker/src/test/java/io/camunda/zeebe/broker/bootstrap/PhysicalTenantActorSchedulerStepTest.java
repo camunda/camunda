@@ -95,6 +95,36 @@ final class PhysicalTenantActorSchedulerStepTest {
   }
 
   @Test
+  void shouldRunExpressionEvaluationsOnDedicatedPlatformThreads() throws Exception {
+    // given
+    startup();
+
+    // when
+    final var executor = context.getExpressionEvaluationExecutor(TENANT_ID);
+    final var thread = executor.submit(Thread::currentThread).get(10, TimeUnit.SECONDS);
+
+    // then
+    assertThat(thread.isVirtual()).isFalse();
+    assertThat(thread.getName()).startsWith(TENANT_ID + "-feel-");
+  }
+
+  @Test
+  void shouldStopExpressionEvaluationExecutorOnShutdown() {
+    // given
+    startup();
+    final var executor = context.getExpressionEvaluationExecutor(TENANT_ID);
+
+    // when
+    final ActorFuture<BrokerStartupContext> shutdownFuture = CONCURRENCY_CONTROL.createFuture();
+    sut.shutdownInternal(context, CONCURRENCY_CONTROL, shutdownFuture);
+
+    // then
+    assertThat(shutdownFuture).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(executor.isShutdown()).isTrue();
+    assertThat(context.getExpressionEvaluationExecutor(TENANT_ID)).isNotSameAs(executor);
+  }
+
+  @Test
   void shouldStopDedicatedSchedulerOnShutdown() {
     // given
     startup();

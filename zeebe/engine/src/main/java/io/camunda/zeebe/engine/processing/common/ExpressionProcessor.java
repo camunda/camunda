@@ -42,7 +42,7 @@ public final class ExpressionProcessor {
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
 
-  private static final ExecutorService VIRTUAL_THREAD_EXECUTOR =
+  private static final ExecutorService DEFAULT_EVALUATION_EXECUTOR =
       Executors.newVirtualThreadPerTaskExecutor();
   private static final List<ResultType> INTERVAL_RESULT_TYPES =
       List.of(ResultType.DURATION, ResultType.PERIOD, ResultType.STRING);
@@ -56,14 +56,32 @@ public final class ExpressionProcessor {
   private final ExpressionLanguage expressionLanguage;
   private final ScopedEvaluationContext scopedEvaluationContext;
   private final Duration expressionEvaluationTimeout;
+  private final ExecutorService evaluationExecutor;
 
   public ExpressionProcessor(
       final ExpressionLanguage expressionLanguage,
       final ScopedEvaluationContext scopedEvaluationContext,
       final Duration expressionEvaluationTimeout) {
+    this(
+        expressionLanguage,
+        scopedEvaluationContext,
+        expressionEvaluationTimeout,
+        DEFAULT_EVALUATION_EXECUTOR);
+  }
+
+  /**
+   * @param evaluationExecutor runs the expression evaluations; the calling thread blocks until the
+   *     evaluation completes or times out
+   */
+  public ExpressionProcessor(
+      final ExpressionLanguage expressionLanguage,
+      final ScopedEvaluationContext scopedEvaluationContext,
+      final Duration expressionEvaluationTimeout,
+      final ExecutorService evaluationExecutor) {
     this.expressionLanguage = expressionLanguage;
     this.scopedEvaluationContext = scopedEvaluationContext;
     this.expressionEvaluationTimeout = expressionEvaluationTimeout;
+    this.evaluationExecutor = evaluationExecutor;
   }
 
   /**
@@ -101,7 +119,8 @@ public final class ExpressionProcessor {
         expressionLanguage,
         CombinedEvaluationContext.withContexts(
             scopedEvaluationContext, this.scopedEvaluationContext),
-        expressionEvaluationTimeout);
+        expressionEvaluationTimeout,
+        evaluationExecutor);
   }
 
   /**
@@ -132,7 +151,8 @@ public final class ExpressionProcessor {
     return new ExpressionProcessor(
         expressionLanguage,
         new SecretReferenceEvaluationContext(scopedEvaluationContext, collector),
-        expressionEvaluationTimeout);
+        expressionEvaluationTimeout,
+        evaluationExecutor);
   }
 
   /**
@@ -725,8 +745,7 @@ public final class ExpressionProcessor {
       final long variableScopeKey,
       final ExpressionLabel label) {
     final Future<EvaluationResult> future =
-        VIRTUAL_THREAD_EXECUTOR.submit(
-            () -> expressionLanguage.evaluateExpression(expression, context));
+        evaluationExecutor.submit(() -> expressionLanguage.evaluateExpression(expression, context));
 
     final EvaluationResult result;
     try {

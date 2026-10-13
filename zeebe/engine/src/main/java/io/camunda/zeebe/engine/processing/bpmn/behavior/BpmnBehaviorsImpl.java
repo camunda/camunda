@@ -47,6 +47,7 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import java.time.InstantSource;
+import java.util.concurrent.ExecutorService;
 import org.jspecify.annotations.Nullable;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
@@ -103,7 +104,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry,
-      final SecretResolutionScheduler secretResolutionScheduler) {
+      final SecretResolutionScheduler secretResolutionScheduler,
+      final ExecutorService expressionEvaluationExecutor) {
 
     this.storageOrdinalProvider = storageOrdinalProvider;
 
@@ -126,13 +128,15 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new ExpressionProcessor(
             expressionLanguage,
             CombinedEvaluationContext.withContexts(processVariableContext, bpmnClusterContext),
-            config.getExpressionEvaluationTimeout());
+            config.getExpressionEvaluationTimeout(),
+            expressionEvaluationExecutor);
 
     expressionBehavior =
         new ExpressionBehavior(
             endpointClusterContext,
             expressionLanguage,
             config.getExpressionEvaluationTimeout(),
+            expressionEvaluationExecutor,
             processingState.getVariableState(),
             referencedSecretCollector);
 

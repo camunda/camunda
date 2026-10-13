@@ -101,6 +101,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -384,7 +385,8 @@ public final class EngineRule extends ExternalResource {
                         jobStreamer,
                         searchClientsProxy,
                         brokerRequestAuthorizationConverter,
-                        secretStoreRegistry)
+                        secretStoreRegistry,
+                        Executors.newVirtualThreadPerTaskExecutor())
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

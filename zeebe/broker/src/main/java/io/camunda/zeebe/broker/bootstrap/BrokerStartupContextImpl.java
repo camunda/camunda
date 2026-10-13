@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -65,6 +67,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Supplier<ActorSchedulerBuilder> actorSchedulerBuilderFactory;
   private final Map<String, PhysicalTenantActorScheduler> physicalTenantActorSchedulers =
       new ConcurrentHashMap<>();
+  private final ExecutorService defaultExpressionEvaluationExecutor =
+      Executors.newVirtualThreadPerTaskExecutor();
   private final BrokerHealthCheckService healthCheckService;
   private final ClusterServicesImpl clusterServices;
   private final BrokerClient brokerClient;
@@ -174,6 +178,14 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public ActorSchedulingService getPartitionActorSchedulingService(final String physicalTenantId) {
     final var dedicated = physicalTenantActorSchedulers.get(physicalTenantId);
     return dedicated != null ? dedicated.scheduler() : actorScheduler;
+  }
+
+  @Override
+  public ExecutorService getExpressionEvaluationExecutor(final String physicalTenantId) {
+    final var dedicated = physicalTenantActorSchedulers.get(physicalTenantId);
+    return dedicated != null
+        ? dedicated.expressionEvaluationExecutor()
+        : defaultExpressionEvaluationExecutor;
   }
 
   @Override
