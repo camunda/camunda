@@ -147,6 +147,7 @@ public final class EngineRule extends ExternalResource {
         // if you need it enabled, use #withIdentitySetup
         cfg.setEnableIdentitySetup(false);
         cfg.setEnableRpaReexportMigration(false);
+        cfg.setEnableProcessDefinitionRestore(false);
       };
   private SearchClientsProxy searchClientsProxy;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
