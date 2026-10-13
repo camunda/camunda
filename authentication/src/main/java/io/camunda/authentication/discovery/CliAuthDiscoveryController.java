@@ -76,7 +76,12 @@ public class CliAuthDiscoveryController {
           final var issuer = configuration.getIssuerUri();
           if (cliClient != null && issuer != null) {
             providers.add(
-                new Provider(registrationId, issuer, cliClient.clientId(), cliClient.scopes()));
+                new Provider(
+                    registrationId,
+                    issuer,
+                    cliClient.clientId(),
+                    cliClient.scopes(),
+                    cliClient.redirectUri()));
           }
         });
     return providers;

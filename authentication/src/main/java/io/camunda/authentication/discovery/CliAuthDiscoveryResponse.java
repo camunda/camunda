@@ -20,5 +20,9 @@ public record CliAuthDiscoveryResponse(int version, String method, List<Provider
   public static final int VERSION = 1;
 
   public record Provider(
-      String id, String issuer, @JsonProperty("client_id") String clientId, List<String> scopes) {}
+      String id,
+      String issuer,
+      @JsonProperty("client_id") String clientId,
+      List<String> scopes,
+      @JsonProperty("redirect_uri") String redirectUri) {}
 }
