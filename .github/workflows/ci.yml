@@ -228,7 +228,7 @@ jobs:
     if: >-
       github.event_name != 'schedule' &&
       needs.detect-changes.outputs.gradle-changes == 'true'
-    name: "Gradle / Test Classes"
+    name: "Gradle / Compile Check"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 30
