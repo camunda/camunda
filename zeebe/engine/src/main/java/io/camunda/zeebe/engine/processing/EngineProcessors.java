@@ -918,7 +918,7 @@ public final class EngineProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_DEFINITION_RESTORE,
         ProcessDefinitionRestoreIntent.START,
-        new ProcessDefinitionRestoreStartProcessor(writers));
+        new ProcessDefinitionRestoreStartProcessor(writers, processingState.getProcessState()));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_DEFINITION_RESTORE,
         ProcessDefinitionRestoreIntent.CONTINUE,

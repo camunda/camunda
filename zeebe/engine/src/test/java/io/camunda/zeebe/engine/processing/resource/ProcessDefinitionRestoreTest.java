@@ -258,6 +258,52 @@ public class ProcessDefinitionRestoreTest {
   }
 
   @Test
+  public void shouldIgnoreCommittedStartWhenRestoreAlreadyRan() {
+    // given - the cleanup already ran once, so the partition-local flag is set
+    engine.stop();
+    engine.withEngineConfig(cfg -> cfg.setEnableProcessDefinitionRestore(true));
+    engine.start();
+    final var finishedRecord =
+        RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
+            .getFirst();
+
+    // when - a START committed before a leader change is still unprocessed on recovery
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.command()
+            .processDefinitionRestore(
+                ProcessDefinitionRestoreIntent.START, new ProcessDefinitionRestoreRecord()));
+    engine.start();
+
+    final var markerKey =
+        engine
+            .deployment()
+            .withXmlResource(simpleProcess(Strings.newRandomValidBpmnId()))
+            .deploy()
+            .getKey();
+    final var markerRecord =
+        RecordingExporter.deploymentRecords(
+                io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATED)
+            .filter(r -> r.getKey() == markerKey)
+            .getFirst();
+
+    // then - the redundant START is skipped, so the run is not started a second time
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= markerRecord.getPosition())
+                .withValueType(
+                    io.camunda.zeebe.protocol.record.ValueType.PROCESS_DEFINITION_RESTORE)
+                .asList()
+                .stream()
+                .filter(
+                    r ->
+                        r.getPosition() > finishedRecord.getPosition()
+                            && r.getIntent() == ProcessDefinitionRestoreIntent.STARTED)
+                .toList())
+        .isEmpty();
+  }
+
+  @Test
   public void shouldNotScheduleRestoreWhenFlagDisabled() {
     // given - a stray definition, restore left at its EngineRule-forced default (disabled)
     final var v1 = deploy(simpleProcess(Strings.newRandomValidBpmnId()));
