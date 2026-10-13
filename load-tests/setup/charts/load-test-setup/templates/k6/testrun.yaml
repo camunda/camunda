@@ -10,7 +10,7 @@ metadata:
   labels:
     app.kubernetes.io/component: k6
 spec:
-  parallelism: 1
+  parallelism: {{ $test.parallelism | default 1 }}
   script:
     configMap:
       name: k6-scripts
@@ -93,8 +93,13 @@ spec:
             key: zeebeGrpcAddress
             name: load-test-credentials
 
+      {{- range $name, $value := $test.env }}
+      - name: {{ $name }}
+        value: {{ $value | quote }}
+      {{- end }}
+
     resources:
-      {{- toYaml $root.Values.k6.resources | nindent 6 }}
+      {{- toYaml ($test.resources | default $root.Values.k6.resources) | nindent 6 }}
 
     nodeSelector:
       {{- if $root.Values.topologyZone }}

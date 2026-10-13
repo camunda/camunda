@@ -158,7 +158,10 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
   `stable-87/Makefile`).
 * `dmn`: deploys `k6/data/small_decision.dmn` and evaluates it through
   `/v2/decision-definitions/evaluation` with a ramping arrival rate. Disabled by
-  default.
+  default; the `dmn` scenario (see `common.mk`) enables it alone and sizes it for
+  6667 evaluations/s. The load profile comes from the `DMN_RATE`, `DMN_RAMP_UP`,
+  `DMN_DURATION`, `DMN_PRE_ALLOCATED_VUS` and `DMN_MAX_VUS` variables, set
+  through `k6.tests.dmn.env`.
 
 ### How to add a new test?
 

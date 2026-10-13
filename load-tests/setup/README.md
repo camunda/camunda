@@ -446,6 +446,7 @@ make typical   # 50 instances/s, 6 workers, typical_process BPMN
 make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
 make max       # 300 instances/s (500 with secondary_storage=none) — maximum stress, also disables consistency check overhead
 make archiver  # Multi-instance archiver scenario (no workers)
+make dmn       # 6667 DMN evaluations/s through k6, no BPMN load, RF1 in-memory brokers (main only)
 ```
 
 You can also pass `scenario=` directly to combine with additional overrides:

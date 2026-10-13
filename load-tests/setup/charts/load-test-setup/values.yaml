@@ -512,6 +512,11 @@ postgresql:
         max_client_conn: "1000"
 
 k6:
+  # Each test renders one k6-operator `TestRun`. Besides `enabled` and `script`, a test accepts:
+  # * `parallelism`: number of k6 runner pods sharing the load (default: 1). k6 splits the
+  #   arrival rate and the VUs of the script between them.
+  # * `resources`: runner resources, replacing `k6.resources` for this test only.
+  # * `env`: extra environment variables passed to the script (name: value).
   tests:
     default:
       enabled: true
@@ -522,9 +527,10 @@ k6:
     data-read:
       enabled: true
       script: test.data-read.js
-
+    # Evaluates a decision through `/v2/decision-definitions/evaluation`. Enabled by the `dmn`
+    # scenario (see `common.mk`), which also sizes it for a high throughput.
     dmn:
-      enabled: true
+      enabled: false
       script: test.dmn.js
 
   prometheus:

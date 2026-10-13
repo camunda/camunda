@@ -25,7 +25,8 @@ var update = flag.Bool("update-golden", false,
 //
 // Workload, when set, selects a Makefile workload profile (scenario=<workload>).
 // Workload scenarios render the combined load-test-setup chart — workload flags
-// pass through the parent chart to the load-tester subchart.
+// pass through the parent chart to the load-tester subchart. RenderPlatform also
+// renders the platform chart with the workload, for workloads that change it.
 //
 // SetupTarget, when set, names an alternative Makefile target for rendering the
 // load-test-setup chart only — used to test opt-in chart features that have a
@@ -58,6 +59,7 @@ type scenario struct {
 	Optimize            bool
 	Stable              bool
 	Workload            string // "" = default profile; e.g. "max", "realistic"
+	RenderPlatform      bool   // Workload scenarios only: also render the platform chart
 	SetupTarget         string // named make target for template-load-test-setup variants
 	PhysicalTenantCount int
 	PlatformOnly        bool
@@ -107,6 +109,12 @@ var defaultScenarios = []scenario{
 	// The max rate depends on the storage (500 PI/s for none, 300 otherwise), see common.mk.
 	{Name: "max-none", Storage: "none", Optimize: false, Stable: false, Workload: "max"},
 	{Name: "realistic", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "realistic"},
+	// The dmn workload replaces the BPMN load with the k6 `dmn` test and layers its own platform
+	// overlay, which only main ships (see newLoadTest.sh). The filter keeps what the workload
+	// changes: the k6 tests, the (absent) load-tester and the orchestration cluster.
+	{Name: "dmn", Storage: "none", Optimize: false, Stable: false, Workload: "dmn", RenderPlatform: true,
+		PathFilter:   []string{"templates/k6", "charts/load-tester", "templates/orchestration"},
+		OnlyVersions: []string{"main"}},
 	// SetupTarget scenarios render only the load-test-setup chart via a named
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.
@@ -209,6 +217,9 @@ func TestGoldenFiles(t *testing.T) {
 			defer ns.Cleanup()
 
 			if s.Workload != "" {
+				if s.RenderPlatform {
+					renderAndAssert(t, s.Version, s.Name, "platform", ns, "template", s.Workload, s.PathFilter)
+				}
 				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", s.Workload, s.PathFilter)
 				return
 			}

@@ -200,6 +200,13 @@ cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      
 cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
 
+# Platform files of the `dmn` scenario (see common.mk). Only main provides them; the scenario
+# fails fast on a namespace scaffolded without them.
+if [[ -f "$VERSION_DIR/values/camunda-platform-values-dmn.yaml" ]]; then
+  cp -v "$VERSION_DIR/values/camunda-platform-values-dmn.yaml"                  "$TARGET_DIRECTORY/"
+  cp -v "$VERSION_DIR/values/camunda-platform-dmn-override-values.yaml"         "$TARGET_DIRECTORY/"
+fi
+
 # Don't configure Elasticsearch unless specifically enabled (secondary storage,
 # or via Optimize)
 elasticsearchEnabled=false

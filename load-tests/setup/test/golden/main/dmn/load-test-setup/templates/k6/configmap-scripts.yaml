@@ -1,0 +1,484 @@
+---
+# Source: load-test-setup/templates/k6/configmap-scripts.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-scripts
+  labels:
+    app.kubernetes.io/component: k6
+data:
+  lib.camunda.js: |
+    /* Client for the Camunda API, including its authentication.
+     *
+     * Expose the Camunda API endpoints via convenient functions to be used during tests.
+     * Create the client in the test script at module level: that code runs once per VU, so each VU
+     * has its own instance.
+     */
+    import http from "k6/http";
+    import { sleep } from "k6";
+  
+    export class Client {
+      constructor() {
+        this.#ensureEnvVars();
+        this.baseURL = __ENV.CAMUNDA_BASE_URL;
+        // Empty token. The first request fetches the actual token.
+        this.token = { accessToken: null, renewalDate: 0 };
+      }
+  
+      get(endpoint, params) {
+        return this.request("GET", endpoint, undefined, params);
+      }
+  
+      post(endpoint, payload, params) {
+        return this.request("POST", endpoint, payload, params);
+      }
+  
+      /**
+       * Send an authenticated JSON request to a Camunda endpoint, renewing the token if needed.
+       *
+       * @param {string} method - HTTP method.
+       * @param {string} endpoint - Path appended to the base URL. Also used as the `name` tag, so that
+       *   metrics are grouped per endpoint.
+       * @param {*} [payload] - Request body. Serialized as JSON, unless `params.multipart` is true: the
+       *   payload is then passed to k6 as is, and k6 encodes the `http.file()` values as
+       *   multipart/form-data.
+       * @param {object} [params] - k6 request params, merged into the default ones. Its `headers` and
+       *   `tags` take precedence over the default headers and tags.
+       * @param {boolean} [params.multipart=false] - Send the payload as multipart/form-data.
+       * @returns {import("k6/http").RefinedResponse} The k6 response.
+       */
+      request(method, endpoint, payload, { multipart = false, ...params } = {}) {
+        this.#renewToken();
+  
+        const contentTypeHeader = multipart
+          ? {}
+          : { "Content-Type": "application/json" };
+  
+        // Create a new k6 params object based on the passed parameters and default values.
+        const mergedParams = {
+          ...params,
+          headers: {
+            ...contentTypeHeader,
+            Authorization: `Bearer ${this.token.accessToken}`,
+            ...params.headers,
+          },
+          tags: { name: endpoint, ...params.tags },
+        };
+  
+        let body = null;
+        if (payload !== undefined) {
+          // Do not build a `FormData` here: it can use **way** more memory than
+          // the plain object that k6 encodes.
+          body = multipart ? payload : JSON.stringify(payload);
+        }
+  
+        return http.request(method, this.baseURL + endpoint, body, mergedParams);
+      }
+  
+      // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/create-deployment/
+      deploy(name, resourceContent) {
+        return this.post(
+          "/v2/deployments",
+          { resources: http.file(resourceContent, name) },
+          { multipart: true },
+        );
+      }
+  
+      // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/evaluate-decision/
+      decisionDefinitionEvaluation(decisionDefinitionId, variables = {}) {
+        return this.post("/v2/decision-definitions/evaluation", {
+          decisionDefinitionId: decisionDefinitionId,
+          variables: variables,
+        });
+      }
+  
+      // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/search-process-definitions/
+      searchProcessDefinitions() {
+        return this.post("/v2/process-definitions/search", {
+          sort: [
+            {
+              field: "processDefinitionKey",
+              order: "ASC",
+            },
+          ],
+          page: {
+            limit: 10,
+          },
+        });
+      }
+  
+      // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-process-instances/
+      searchProcessInstances(processDefinitionId) {
+        return this.post("/v2/process-instances/search", {
+          sort: [{ field: "startDate", order: "DESC" }],
+          filter: {
+            processDefinitionId: processDefinitionId,
+            $or: [{ state: "ACTIVE" }, { hasIncident: true }],
+          },
+          page: {
+            limit: 100,
+          },
+        });
+      }
+  
+      // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-topology/
+      topology() {
+        return this.get("/v2/topology");
+      }
+  
+      /* Wait for Camunda to be ready. Intended to be called from `setup()`. */
+      waitUntilReady() {
+        const waitTime = 10; // seconds
+        while (true) {
+          try {
+            const response = this.topology();
+            if (response.status !== 200) {
+              throw new Error(
+                `Camunda topology endpoint returned status: ${response.status}`,
+              );
+            }
+            break;
+          } catch (e) {
+            console.error(
+              `Error waiting for Camunda to be ready (will retry in ${waitTime}s).`,
+              e,
+            );
+            sleep(waitTime);
+          }
+        }
+        console.log("Camunda seems to be ready ✅");
+      }
+  
+      #ensureEnvVars() {
+        const vars = [
+          "CAMUNDA_BASE_URL",
+          "CAMUNDA_CLIENT_ID",
+          "CAMUNDA_CLIENT_SECRET",
+          "CAMUNDA_OAUTH_URL",
+          "CAMUNDA_TOKEN_AUDIENCE",
+        ];
+  
+        const missing = vars.filter((name) => {
+          const value = __ENV[name];
+          if (value === undefined || value === "") {
+            console.error(`Environment variable ${name} is not defined or empty.`);
+            return true;
+          }
+          return false;
+        });
+  
+        if (missing.length > 0) {
+          throw Error(`Missing environment variables: ${missing.join(", ")}`);
+        }
+      }
+  
+      #fetchToken() {
+        const tokenURL = __ENV.CAMUNDA_OAUTH_URL;
+        console.debug(`Fetching authentication token from: ${tokenURL}`);
+  
+        const payload = {
+          grant_type: "client_credentials",
+          audience: __ENV.CAMUNDA_TOKEN_AUDIENCE,
+          client_id: __ENV.CAMUNDA_CLIENT_ID,
+          client_secret: __ENV.CAMUNDA_CLIENT_SECRET,
+        };
+  
+        const params = {
+          tags: { name: "token-request" },
+        };
+  
+        console.debug(
+          `Requesting token from ${tokenURL} using client ID=${payload.client_id}`,
+        );
+        const response = http.post(tokenURL, payload, params);
+        if (response.status != 200) {
+          throw new Error(
+            `unable to fetch token, got HTTP status=${response.status}, body=${response.body}`,
+          );
+        }
+  
+        const accessToken = response.json("access_token");
+  
+        // Stagger token renewal.
+        const expiresIn = response.json("expires_in");
+        const renewalJitterSeconds = 1 + Math.floor(Math.random() * 60);
+        const renewIn = expiresIn - renewalJitterSeconds;
+  
+        this.token.accessToken = accessToken;
+        this.token.renewalDate = Date.now() + renewIn * 1000;
+  
+        console.log(
+          `Authentication token fetched successfully; expire in ${expiresIn}s, will renew in ${renewIn}s`,
+        );
+      }
+  
+      #renewToken() {
+        if (this.token.renewalDate > Date.now()) {
+          return;
+        }
+  
+        console.debug("Token will expire soon, will renew now.");
+        try {
+          this.#fetchToken();
+        } catch (e) {
+          console.error(`Error while renewing the token.`, e);
+          // Known limitation: during an OAuth outage, each VU retries and sleeps 1s per call
+          // until the old token expires, which can cause dropped iterations.
+          sleep(1);
+          // Without a previous token, requests would send "Bearer null".
+          if (this.token.accessToken === null) {
+            throw e;
+          }
+        }
+      }
+    }
+  lib.data.js: |
+    /* Load static resources from a data directory.
+     *
+     * The `open()` function is relative to the location of the script, unless the path it tries to open is absolute.
+     *
+     * By default, it tries to open a file in the `../data` directory (which is convenient when testing locally with `k6 run`).
+     *
+     * When run from within Kubernetes, the DATA_DIR environment variable is explicitly configured to where the data files are mounted in.
+     *
+     * To override the DATA_DIR environment variable:
+     *
+     * * Either set it before calling `k6`: `DATA_DIR=/path/to/data k6 run ...`
+     * * Or use the `-e` option to set it for the test: `k6 run -e DATA_DIR=/path/to/data ...`
+     *
+     */
+    const DATA_DIR = __ENV.DATA_DIR || "../data";
+  
+    /* Read the file `name` from the data directory and return its content as a string.
+     *
+     * k6 only allows reading files in the `init` context, once per-VU: call this at module level. */
+    export function loadData(name) {
+      const path = `${DATA_DIR}/${name}`;
+      console.log(`Loading data file ${path}...`);
+      return open(path);
+    }
+  test.data-read.js: |
+    import { check, sleep } from "k6";
+  
+    import { Client } from "./lib.camunda.js";
+  
+    // Module-level code runs once per VU, so each VU has its own client.
+    const client = new Client();
+  
+    // Ignore process definitions that are created by k6 itself: they are not
+    // relevant for these tests as they are not expected to create any process
+    // instances.
+    const IGNORED_PREFIX = "k6-";
+  
+    /* Tests reading data from Camunda, which requires a secondary storage.
+     * This test is disabled when running with `secondary_storage=none`. */
+    export const options = {
+      // Give enough time for Camunda to be ready and for a process definition to
+      // exist before continuing with the test.
+      setupTimeout: "20m",
+      scenarios: {
+        /* Search for process instances.
+         * Run a basic search for process instances at a low rate. */
+        searchProcessInstances: {
+          exec: "searchProcessInstances",
+          executor: "constant-arrival-rate",
+          duration: "60d", // As long as the longest benchmark we run
+          rate: 1,
+          timeUnit: "1s",
+          preAllocatedVUs: 10,
+          maxVUs: 100,
+        },
+      },
+    };
+  
+    export function setup() {
+      client.waitUntilReady();
+  
+      // Process definition to search process instances for. Retries until one exists.
+      const waitTime = 10; // seconds
+      let processDefinitionId;
+      while (processDefinitionId === undefined) {
+        const response = client.searchProcessDefinitions();
+        if (response.status == 200) {
+          const items = response
+            .json()
+            .items.filter((i) => !i.processDefinitionId.startsWith(IGNORED_PREFIX));
+          if (items.length > 0) {
+            processDefinitionId = items[0].processDefinitionId;
+            break;
+          }
+          console.info(
+            `No process definition found yet (will retry in ${waitTime}s).`,
+          );
+        } else {
+          console.error(
+            `Unable to list process definitions (will retry in ${waitTime}s), got HTTP status=${response.status}`,
+          );
+        }
+        sleep(waitTime);
+      }
+      console.log(
+        `Will search process instances from process definition ${processDefinitionId}.`,
+      );
+  
+      return { processDefinitionId };
+    }
+  
+    export function searchProcessInstances(data) {
+      const response = client.searchProcessInstances(data.processDefinitionId);
+      check(response, { "status is 200": (r) => r.status === 200 });
+    }
+  test.default.js: |
+    import { check } from "k6";
+  
+    import { Client } from "./lib.camunda.js";
+    import { loadData } from "./lib.data.js";
+  
+    // Module-level code runs once per VU, so each VU has its own client.
+    const client = new Client();
+  
+    const FILENAME = "micro.bpmn";
+    const bpmn = loadData(FILENAME);
+  
+    export const options = {
+      // Give enough time for Camunda to be ready before continuing with the test.
+      setupTimeout: "15m",
+      scenarios: {
+        /* Poll the topology endpoint to check whether the cluster is alive.
+         * This is very basic, but should also work almost all the time. */
+        topology: {
+          exec: "checkTopology",
+          executor: "constant-arrival-rate",
+          duration: "60d",
+          rate: 10,
+          timeUnit: "1s",
+          preAllocatedVUs: 10,
+          maxVUs: 100,
+        },
+        deploy: {
+          exec: "deploy",
+          executor: "constant-arrival-rate",
+          duration: "60d",
+          rate: 1,
+          timeUnit: "1s",
+          preAllocatedVUs: 1,
+          maxVUs: 20,
+        },
+      },
+    };
+  
+    export function setup() {
+      client.waitUntilReady();
+    }
+  
+    export function checkTopology() {
+      const response = client.topology();
+      check(response, { "status is 200": (r) => r.status === 200 });
+    }
+  
+    export function deploy() {
+      /* Sanity check of the `/v2/deployments` API, not a load test: the same
+       * unchanged resource is deployed on purpose, so Zeebe deduplicates it. */
+      const response = client.deploy(FILENAME, bpmn);
+      check(response, { "status is 200": (r) => r.status === 200 });
+    }
+  test.dmn.js: |
+    import { check, sleep } from "k6";
+  
+    import { Client } from "./lib.camunda.js";
+    import { loadData } from "./lib.data.js";
+  
+    // Module-level code runs once per VU, so each VU has its own client.
+    const client = new Client();
+  
+    const DMN_RESOURCE_NAME = "small_decision";
+    const DMN_FILENAME = `${DMN_RESOURCE_NAME}.dmn`;
+    const dmn = loadData(DMN_FILENAME);
+  
+    // Matches the first rule of the decision table, so every evaluation produces an output.
+    const DMN_VARIABLES = { category: "a" };
+  
+    // The load profile is configurable through environment variables (see `k6.tests.dmn.env` in
+    // the chart values), so a scenario can push the throughput without changing the script.
+    // When the test runs with `parallelism > 1`, k6 splits the rate and the VUs between the runners:
+    // these values are the totals for the whole test.
+    const DMN_RATE = parseInt(__ENV.DMN_RATE || "1");
+    const DMN_RAMP_UP = __ENV.DMN_RAMP_UP || "1m";
+    const DMN_DURATION = __ENV.DMN_DURATION || "60d";
+    const DMN_PRE_ALLOCATED_VUS = parseInt(__ENV.DMN_PRE_ALLOCATED_VUS || "1");
+    const DMN_MAX_VUS = parseInt(__ENV.DMN_MAX_VUS || "20");
+  
+    export const options = {
+      // Give enough time for Camunda to be ready before continuing with the test.
+      setupTimeout: "15m",
+      scenarios: {
+        evaluateDMN: {
+          exec: "evaluateDMN",
+          // Ramp up to the target rate, so the cluster flow control adapts gradually instead of
+          // rejecting a sudden burst, then hold it.
+          executor: "ramping-arrival-rate",
+          startRate: 0,
+          timeUnit: "1s",
+          stages: [
+            { target: DMN_RATE, duration: DMN_RAMP_UP },
+            { target: DMN_RATE, duration: DMN_DURATION },
+          ],
+          preAllocatedVUs: DMN_PRE_ALLOCATED_VUS,
+          maxVUs: DMN_MAX_VUS,
+        },
+      },
+    };
+  
+    export function setup() {
+      client.waitUntilReady();
+  
+      const retryInterval = 5; // seconds
+      let setupDone = false;
+  
+      // Deploy the DMN file and wait for the decision definition evaluation to be ready.
+      while (!setupDone) {
+        try {
+          console.log(`Deploying DMN file: ${DMN_FILENAME}...`);
+  
+          let response = client.deploy(DMN_FILENAME, dmn);
+          if (response.status !== 200) {
+            throw new Error(
+              `Deploy DMN file ${DMN_FILENAME} failed. Status: ${response.status}, Body: ${response.body}`,
+            );
+          }
+  
+          console.log(`DMN file ${DMN_FILENAME} deployed successfully.`);
+  
+          console.log(`Evaluating decision definition: ${DMN_RESOURCE_NAME}...`);
+          response = client.decisionDefinitionEvaluation(
+            DMN_RESOURCE_NAME,
+            DMN_VARIABLES,
+          );
+          if (response.status !== 200) {
+            throw new Error(
+              `Decision definition evaluation ${DMN_RESOURCE_NAME} failed. Status: ${response.status}, Body: ${response.body}`,
+            );
+          }
+  
+          console.log("Decision definition evaluation is ready.");
+          setupDone = true;
+        } catch (e) {
+          console.error(
+            `Failed to setup test. Retrying in ${retryInterval}s...`,
+            e,
+          );
+          sleep(retryInterval);
+          continue;
+        }
+      }
+  
+      console.log("Setup completed successfully, will start the tests now.");
+    }
+  
+    export function evaluateDMN() {
+      const response = client.decisionDefinitionEvaluation(
+        DMN_RESOURCE_NAME,
+        DMN_VARIABLES,
+      );
+      check(response, { "status is 200": (r) => r.status === 200 });
+    }
