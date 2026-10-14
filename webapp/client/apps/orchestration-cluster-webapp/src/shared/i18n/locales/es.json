@@ -1622,7 +1622,6 @@
 					"enterDateRange": "Introduzca un intervalo de fechas",
 					"openModal": "Abrir el diálogo de intervalo de fechas",
 					"datePlaceholder": "AAAA-MM-DD",
-					"timePlaceholder": "hh:mm:ss",
 					"fromDate": "Fecha de inicio",
 					"toDate": "Fecha de fin",
 					"fromTime": "Hora de inicio",
@@ -1630,6 +1629,22 @@
 					"timeZone": "Zona horaria: {{timeZone}}",
 					"cancel": "Cancelar",
 					"apply": "Aplicar"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Introduzca una fecha y hora",
+					"timeZone": "Zona horaria: {{timeZone}}",
+					"invalidDateTime": "Introduzca una fecha y hora con el formato YYYY-MM-DD HH:mm:ss",
+					"from": "Desde",
+					"to": "Hasta",
+					"time": "Hora",
+					"quickRanges": "Rangos rápidos",
+					"selectQuickRange": "Seleccionar un rango rápido",
+					"lastMinutes_one": "Último {{count}} minuto",
+					"lastMinutes_other": "Últimos {{count}} minutos",
+					"lastHours_one": "Última {{count}} hora",
+					"lastHours_other": "Últimas {{count}} horas",
+					"lastDays_one": "Último {{count}} día",
+					"lastDays_other": "Últimos {{count}} días"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "es igual a",

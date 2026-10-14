@@ -24,14 +24,7 @@ import {formatDate} from '#/operate/shared/DateRangeField/formatDate';
 import {DateInput} from './DateInput';
 import {TimeInput} from './TimeInput';
 import {parseCompleteDate} from './dateValidation';
-
-const getTimeZoneLabel = () => {
-	const {timeZone} = Intl.DateTimeFormat().resolvedOptions();
-	const offset = new Intl.DateTimeFormat(undefined, {timeZoneName: 'longOffset'})
-		.formatToParts(new Date())
-		.find(({type}) => type === 'timeZoneName')?.value;
-	return offset === undefined ? timeZone : `${timeZone} (${offset})`;
-};
+import {getTimeZoneLabel} from '../../getTimeZoneLabel';
 
 const defaultTime = {
 	from: '00:00:00',
@@ -100,7 +93,7 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, titl
 							<DialogBody>
 								<div className="flex flex-col gap-6 sm:flex-row sm:items-start">
 									<Calendar
-										className="-mt-2"
+										className="p-0"
 										mode="range"
 										numberOfMonths={1}
 										fixedWeeks

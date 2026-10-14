@@ -1634,7 +1634,6 @@
 					"enterDateRange": "Enter date range",
 					"openModal": "Open date range modal",
 					"datePlaceholder": "YYYY-MM-DD",
-					"timePlaceholder": "hh:mm:ss",
 					"fromDate": "From date",
 					"toDate": "To date",
 					"fromTime": "From time",
@@ -1642,6 +1641,22 @@
 					"timeZone": "Time zone: {{timeZone}}",
 					"cancel": "Cancel",
 					"apply": "Apply"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Enter a date and time",
+					"timeZone": "Time zone: {{timeZone}}",
+					"invalidDateTime": "Enter a date and time as YYYY-MM-DD HH:mm:ss",
+					"from": "From",
+					"to": "To",
+					"time": "Time",
+					"quickRanges": "Quick ranges",
+					"selectQuickRange": "Select a quick range",
+					"lastMinutes_one": "Last {{count}} minute",
+					"lastMinutes_other": "Last {{count}} minutes",
+					"lastHours_one": "Last {{count}} hour",
+					"lastHours_other": "Last {{count}} hours",
+					"lastDays_one": "Last {{count}} day",
+					"lastDays_other": "Last {{count}} days"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "equals",

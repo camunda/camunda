@@ -1622,7 +1622,6 @@
 					"enterDateRange": "Datumsbereich eingeben",
 					"openModal": "Datumsbereich-Dialog öffnen",
 					"datePlaceholder": "JJJJ-MM-TT",
-					"timePlaceholder": "hh:mm:ss",
 					"fromDate": "Von-Datum",
 					"toDate": "Bis-Datum",
 					"fromTime": "Von-Uhrzeit",
@@ -1630,6 +1629,22 @@
 					"timeZone": "Zeitzone: {{timeZone}}",
 					"cancel": "Abbrechen",
 					"apply": "Anwenden"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Datum und Uhrzeit eingeben",
+					"timeZone": "Zeitzone: {{timeZone}}",
+					"invalidDateTime": "Datum und Uhrzeit im Format YYYY-MM-DD HH:mm:ss eingeben",
+					"from": "Von",
+					"to": "Bis",
+					"time": "Uhrzeit",
+					"quickRanges": "Schnellauswahl",
+					"selectQuickRange": "Schnellauswahl wählen",
+					"lastMinutes_one": "Letzte {{count}} Minute",
+					"lastMinutes_other": "Letzte {{count}} Minuten",
+					"lastHours_one": "Letzte {{count}} Stunde",
+					"lastHours_other": "Letzte {{count}} Stunden",
+					"lastDays_one": "Letzter {{count}} Tag",
+					"lastDays_other": "Letzte {{count}} Tage"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "ist gleich",
