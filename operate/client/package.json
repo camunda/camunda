@@ -21,9 +21,7 @@
     "@floating-ui/react-dom": "2.1.8",
     "@lezer/highlight": "1.2.3",
     "@monaco-editor/react": "4.7.0",
-    "@tanstack/eslint-plugin-query": "5.104.0",
     "@tanstack/react-query": "5.104.0",
-    "@tanstack/react-query-devtools": "5.104.0",
     "@tanstack/react-virtual": "3.14.5",
     "@uiw/react-codemirror": "4.25.11",
     "bpmn-js": "18.31.0",
@@ -54,7 +52,7 @@
     "remark-gfm": "4.0.1",
     "styled-components": "6.5.0",
     "tiny-svg": "4.1.4",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   },
   "scripts": {
     "start": "vite",
@@ -79,6 +77,8 @@
     "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.62.1",
+    "@tanstack/eslint-plugin-query": "5.104.0",
+    "@tanstack/react-query-devtools": "5.104.0",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
