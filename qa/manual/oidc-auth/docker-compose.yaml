@@ -33,6 +33,6 @@ services:
       keycloak:
         condition: service_healthy
     environment:
-      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/${SCENARIO:-multi-idp}.yaml
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/${CONFIG:-multi-idp}.yaml
     volumes:
       - ./config:/config:ro

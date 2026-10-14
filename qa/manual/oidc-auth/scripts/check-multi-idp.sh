@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Scenario 1 (#65633), M2M part. Run with SCENARIO=multi-idp.
+# Scenario 1 (#65633), M2M part. Run with CONFIG=multi-idp.
 #
 # Each M2M client is admin only by its client_id claim, which comes from the global
 # client-id-claim. If a named provider does not inherit it, the principal is the token's subject,

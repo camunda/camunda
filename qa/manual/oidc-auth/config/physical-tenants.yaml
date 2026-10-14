@@ -1,4 +1,4 @@
-# Scenarios 2 and 4: physical tenants with separate IdPs.
+# Scenarios 2 and 3: physical tenants with separate IdPs.
 #
 # - default: its default slot uses idp-root. It also sees the named providers partnera and
 #   partnerb.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Scenarios 2 and 4, M2M part. Run with SCENARIO=physical-tenants.
+# Scenarios 2 and 3, M2M part. Run with CONFIG=physical-tenants.
 #
 # Each M2M client is admin only on its own tenant, and only by the client-id claim that tenant
 # configures. A token from an IdP that a tenant does not assign must be rejected with 401 or
@@ -21,7 +21,7 @@ expect "tenantb: idp-b token deploys over REST" 200 "$(rest_deploy tenantb "$b")
 expect "tenantb: idp-b token deploys over gRPC" OK "$(grpc_deploy tenantb "$b")"
 
 echo
-echo "Scenario 4: a tenant rejects tokens from IdPs it does not assign"
+echo "Scenario 3: a tenant rejects tokens from IdPs it does not assign"
 expect "tenanta: idp-b token rejected over REST" 401 "$(rest_deploy tenanta "$b")"
 expect "tenanta: idp-b token rejected over gRPC" Unauthenticated "$(grpc_deploy tenanta "$b")"
 expect "tenanta: idp-root token rejected over REST" 401 "$(rest_deploy tenanta "$root")"

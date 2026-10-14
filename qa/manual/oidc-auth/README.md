@@ -10,6 +10,16 @@ the build.
 Camunda uses the network of the Keycloak container. Thus the browser and Camunda use the same
 issuer URL, and you do not need a hosts entry.
 
+## Scenarios
+
+| # |                             What it checks                              | Physical tenants |      `CONFIG`      |           Script            |
+|---|-------------------------------------------------------------------------|------------------|--------------------|-----------------------------|
+| 1 | Named providers use the global claims, as in 8.9                        | no               | `multi-idp`        | `check-multi-idp.sh`        |
+| 2 | Each physical tenant reads tokens and logins with its own OIDC settings | yes              | `physical-tenants` | `check-physical-tenants.sh` |
+| 3 | A physical tenant rejects tokens from IdPs that it does not assign      | yes              | `physical-tenants` | `check-physical-tenants.sh` |
+
+Scenarios 2 and 3 use the same config and the same script.
+
 ## Accounts
 
 Each realm has the same accounts:
@@ -27,18 +37,18 @@ Keycloak admin console: `http://localhost:18080/admin`, `admin` / `admin`.
 cd qa/manual/oidc-auth
 
 # Scenario 1: no physical tenants, two named providers
-SCENARIO=multi-idp docker compose up -d --wait
+CONFIG=multi-idp docker compose up -d --wait
 ./scripts/check-multi-idp.sh
 
-# Scenarios 2 and 4: physical tenants
+# Scenarios 2 and 3: physical tenants
 docker compose down -v
-SCENARIO=physical-tenants docker compose up -d --wait
+CONFIG=physical-tenants docker compose up -d --wait
 ./scripts/check-physical-tenants.sh
 
 # Compare with another version. Always use "down -v" first: an older version cannot start on
 # the data of a newer one.
 docker compose down -v
-CAMUNDA_VERSION=8.10.3 SCENARIO=physical-tenants docker compose up -d --wait
+CAMUNDA_VERSION=8.10.3 CONFIG=physical-tenants docker compose up -d --wait
 ```
 
 The scripts wait until Camunda is ready. `docker compose up --wait` does not wait for it.
@@ -90,9 +100,9 @@ Config: [`config/physical-tenants.yaml`](config/physical-tenants.yaml).
 On 8.10.3, the M2M token of `idp-a` gets 403 on `tenanta` over REST, because `partnera` does not
 use the tenant's `client-id-claim`.
 
-## Scenario 4: a tenant rejects tokens from IdPs that it does not assign ([#65501](https://github.com/camunda/camunda/issues/65501))
+## Scenario 3: a tenant rejects tokens from IdPs that it does not assign ([#65501](https://github.com/camunda/camunda/issues/65501))
 
-Same config as scenario 2. Run `./scripts/check-physical-tenants.sh`. The scenario 4 checks send
+Same config as scenario 2. Run `./scripts/check-physical-tenants.sh`. The scenario 3 checks send
 tokens from `idp-b` and `idp-root` to `tenanta`, and from `idp-a` and `idp-root` to `tenantb`.
 
 |      |      8.10.4       |                                            8.10.3                                             |
