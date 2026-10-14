@@ -520,14 +520,40 @@ test.describe('Process Definition Draining Deletion API', () => {
     const processDefinitionId = uniquePrefixedId('draining-repeat');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
-    instancesToCancel.push(instance.processInstanceKey);
-    await findUserTask(request, instance.processInstanceKey, 'CREATED');
+
+    // Deletion is routed round-robin across partitions, and a partition with no
+    // running instance finalizes its delete at once rather than staying
+    // DRAINING. One instance per partition keeps every partition draining, so
+    // the repeat is rejected whichever partition serves it — with a single
+    // instance the others answer 404 (already finalized) or 200 (not draining).
+    const instanceCount = 3 * (await partitionsCount(request));
+    const instances = await createInstances(
+      processDefinitionId,
+      1,
+      instanceCount,
+    );
+    instancesToCancel.push(
+      ...instances.map((instance) => instance.processInstanceKey),
+    );
+    await expectProcessInstanceCount(
+      request,
+      {processDefinitionId},
+      instanceCount,
+    );
 
     await drainProcessDefinition(request, processDefinitionKey);
 
-    const second = await deleteProcessDefinition(request, processDefinitionKey);
-    expect(second.status()).toBe(409);
+    // DRAINING reaches each partition asynchronously over the shared deployment
+    // distribution queue, so a repeat issued before it lands everywhere can
+    // still be accepted; the rejection is stable once every partition holds it.
+    await expect(async () => {
+      const second = await deleteProcessDefinition(
+        request,
+        processDefinitionKey,
+      );
+      expect(second.status()).toBe(409);
+    }).toPass(defaultAssertionOptions);
+
     await expectProcessDefinitionState(
       request,
       processDefinitionKey,
