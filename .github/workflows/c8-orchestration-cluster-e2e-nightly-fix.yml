@@ -9,6 +9,14 @@
 ---
 name: C8 Orchestration Cluster Nightly Fix Agent
 
+# The run title carries the dispatched version, because the `serialize` job
+# below identifies sibling agents by it: `gh run list` exposes displayTitle, not
+# the dispatch inputs. It also makes the Actions list readable, where every run
+# was previously titled by the workflow name alone.
+run-name: >-
+  fix orchestration ${{ inputs.version }}
+  — ${{ inputs.triage_run_url }}
+
 on:
   workflow_dispatch:
     inputs:
@@ -58,8 +66,84 @@ permissions:
   pull-requests: write
 
 jobs:
+  serialize:
+    # One fix agent per version at a time.
+    #
+    # Triage groups a night's failures by version, so a single triage run
+    # dispatches at most one agent per version. What this guards is everything
+    # else: a re-run of triage, a manual dispatch landing on top of a nightly
+    # one, or a second triage pass while a 100-minute agent is still working.
+    # Two agents on the same version would both branch from main, neither able
+    # to see the other's PR, and produce overlapping fixes for the same specs.
+    #
+    # NOT GitHub's `concurrency:` key: it keeps at most ONE pending run per
+    # group and cancels the rest, even with cancel-in-progress: false. The
+    # dispatcher has already written the version into its ledger as dispatched,
+    # so a cancelled run would silently lose those failures for the day. The
+    # queue is explicit instead: every run starts, each waits its turn.
+    name: Wait for sibling agents (${{ github.event.inputs.version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 130
+    permissions:
+      actions: read
+    steps:
+      - name: Wait for in-flight agents of this version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ github.event.inputs.version }}
+          SELF_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          # Wait only on runs with a LOWER run id. That makes the queue a total
+          # order, so it cannot deadlock (no two runs ever wait on each other)
+          # and cannot starve (every run has finitely many predecessors).
+          #
+          # Match the run title, because `gh run list` exposes displayTitle but
+          # not the dispatch inputs. run-name renders
+          # "fix orchestration <version> — <triage_run_url>", so the version is
+          # the third token. The trailing space in the prefix matters: a bare
+          # contains("8.10") would also match a hypothetical "8.10.1".
+          prefix="fix orchestration ${VERSION} "
+
+          # Status is filtered in jq, NOT with --status: that flag takes a
+          # single value, so `--status in_progress --status queued` silently
+          # keeps only the last one and the gate sees no in-progress sibling at
+          # all. `!= "completed"` is also the safer test — it counts a run that
+          # is queued, waiting or pending approval, each of which will become
+          # in_progress and would otherwise race us. A cancelled run reports
+          # completed, so it correctly stops blocking.
+          deadline=$(( $(date +%s) + 120 * 60 ))
+
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            ahead=$(gh run list \
+                      --workflow c8-orchestration-cluster-e2e-nightly-fix.yml \
+                      --limit 100 --json databaseId,displayTitle,status \
+                      --jq "[.[] | select(.status != \"completed\")
+                                 | select(.databaseId < ${SELF_RUN_ID})
+                                 | select(.displayTitle | startswith(\"${prefix}\"))]
+                            | length" 2>/dev/null || echo "")
+
+            # An empty result means the API call failed, not that the queue is
+            # clear. Treating that as 0 would let every agent through during a
+            # GitHub wobble — exactly when they all start at once — so retry.
+            if [ -z "$ahead" ]; then
+              echo "::warning::could not read the run queue, retrying"
+            elif [ "$ahead" -eq 0 ]; then
+              echo "queue clear for ${VERSION}"
+              exit 0
+            else
+              echo "waiting: ${ahead} older ${VERSION} agent(s) still running"
+            fi
+            sleep 60
+          done
+
+          echo "::warning::serialize gate timed out after 120m — proceeding anyway. The agent's own open-PR check is still a guard against duplicates, it is just no longer race-free."
+
   fix:
     name: Fix nightly failures (${{ github.event.inputs.version }})
+    needs: [serialize]
     runs-on: ubuntu-latest
     # 100 (not 60): the Live Docker Verify loop (AGENTS.md) can build a full
     # Camunda distribution from source for RDBMS-flagged failures, mirroring
