@@ -14,23 +14,29 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * The system partition is a metadata-only Raft group replicated on every broker of the cluster,
  * including brokers of control zones which host no data partitions. It does not run an engine,
- * exporters or a state database; it only replicates cluster coordination records.
+ * exporters or a state database; it only replicates cluster coordination data.
  *
  * <p>It lives in its own partition group, so its Raft messaging subjects ({@code
  * system-partition-0-*}) and data directory ({@code <data>/system/partitions/0}) never collide with
@@ -47,15 +53,23 @@ public final class SystemPartition {
   private final RaftPartition raftPartition;
   private final FileBasedSnapshotStore snapshotStore;
   private final MeterRegistry meterRegistry;
-  private volatile SystemPartitionSnapshotter snapshotter;
+  private final Duration snapshotPeriod;
+  private final SystemKeyValueStore keyValueStore = new SystemKeyValueStore();
+  // listeners added before start, handed to the role controller when it is created
+  private final List<SystemPartitionListener> pendingListeners = new ArrayList<>();
+  private volatile SystemPartitionStateMachine stateMachine;
+  private volatile SystemPartitionSnapshotDirector snapshotDirector;
+  private volatile SystemPartitionRoleController roleController;
 
   SystemPartition(
       final RaftPartition raftPartition,
       final FileBasedSnapshotStore snapshotStore,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final Duration snapshotPeriod) {
     this.raftPartition = raftPartition;
     this.snapshotStore = snapshotStore;
     this.meterRegistry = meterRegistry;
+    this.snapshotPeriod = snapshotPeriod;
   }
 
   /**
@@ -68,17 +82,58 @@ public final class SystemPartition {
   }
 
   /**
-   * Restores the state from the latest snapshot and snapshots it once the partition commits. Must
-   * be called after {@link #bootstrap(PartitionManagementService)} completed.
+   * Recovers the key-value store from the latest snapshot, then starts applying the committed log
+   * to it, snapshotting it periodically, and reacting to role transitions. Must be called after
+   * {@link #bootstrap(PartitionManagementService)} completed.
    */
-  public ActorFuture<Void> startSnapshotter(final ActorSchedulingService scheduler) {
-    snapshotter = new SystemPartitionSnapshotter(raftPartition, snapshotStore);
-    return scheduler.submitActor(snapshotter);
+  public synchronized void start(final ActorSchedulingService scheduler) {
+    final var stateController =
+        new SystemPartitionStateController(
+            snapshotStore,
+            new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
+            keyValueStore);
+    final var recoveredPosition = stateController.recover();
+    stateMachine = new SystemPartitionStateMachine(raftPartition, keyValueStore, recoveredPosition);
+    snapshotDirector =
+        new SystemPartitionSnapshotDirector(
+            stateController, stateMachine, raftPartition, snapshotPeriod);
+    roleController =
+        new SystemPartitionRoleController(raftPartition, stateMachine, pendingListeners);
+    pendingListeners.clear();
+    scheduler.submitActor(stateMachine);
+    scheduler.submitActor(snapshotDirector);
+    scheduler.submitActor(roleController);
   }
 
-  /** Returns the state restored from the latest snapshot, or empty before the snapshotter ran. */
+  /**
+   * Adds a listener of this broker's role transitions, which hands out the key-value writer while
+   * this broker is the leader. A listener added while this broker is the leader is notified right
+   * away.
+   */
+  public synchronized void addListener(final SystemPartitionListener listener) {
+    if (roleController == null) {
+      pendingListeners.add(listener);
+    } else {
+      roleController.addListener(listener);
+    }
+  }
+
+  public synchronized void removeListener(final SystemPartitionListener listener) {
+    if (roleController == null) {
+      pendingListeners.remove(listener);
+    } else {
+      roleController.removeListener(listener);
+    }
+  }
+
+  /** Returns the reader of the key-value store as replicated to this broker. */
+  public SystemKeyValueReader keyValueReader() {
+    return keyValueStore;
+  }
+
+  /** Returns the state as of the latest applied entry, or empty before the partition started. */
   public Optional<SystemPartitionState> state() {
-    return Optional.ofNullable(snapshotter).map(SystemPartitionSnapshotter::state);
+    return Optional.ofNullable(stateMachine).map(SystemPartitionStateMachine::state);
   }
 
   public Optional<PersistedSnapshot> latestSnapshot() {
@@ -93,8 +148,12 @@ public final class SystemPartition {
     return snapshotStore;
   }
 
-  SystemPartitionSnapshotter snapshotter() {
-    return snapshotter;
+  /** Returns the actors started by {@link #start(ActorSchedulingService)}, if any. */
+  List<Actor> actors() {
+    return Stream.of(roleController, snapshotDirector, stateMachine)
+        .filter(Objects::nonNull)
+        .<Actor>map(a -> a)
+        .toList();
   }
 
   MeterRegistry meterRegistry() {

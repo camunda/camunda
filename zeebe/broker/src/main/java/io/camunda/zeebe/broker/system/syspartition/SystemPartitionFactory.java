@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.broker.system.syspartition;
 
-import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
+import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.SchedulingHints;
@@ -50,34 +51,38 @@ public final class SystemPartitionFactory {
             brokerCfg.getCluster().getNodeId(),
             partitionId,
             directory,
-            SystemPartitionSnapshotter.FILE_INFO_PROVIDER,
+            SystemPartitionStateController.FILE_INFO_PROVIDER,
             meterRegistry);
-    // System records carry their own positions rather than the contiguous positions of a data
-    // partition's log stream, so the Zeebe entry validator does not apply.
+    // Entries carry contiguous positions like those of data partitions, which the validator checks.
     final var raftPartition =
         new RaftPartitionFactory(brokerCfg)
             .createRaftPartition(
                 SystemPartition.metadata(brokerCfg),
                 directory,
                 meterRegistry,
-                new NoopEntryValidator(),
+                new ZeebeEntryValidator(),
                 brokerCfg.getCluster().getSystemPartition().getLogSegmentSize().toBytes());
 
     return scheduler
         .submitActor(snapshotStore, SchedulingHints.ioBound())
-        .thenApply(ok -> new SystemPartition(raftPartition, snapshotStore, meterRegistry));
+        .thenApply(
+            ok ->
+                new SystemPartition(
+                    raftPartition,
+                    snapshotStore,
+                    meterRegistry,
+                    brokerCfg.getCluster().getSystemPartition().getSnapshotPeriod()));
   }
 
   public static ActorFuture<Void> close(
       final SystemPartition systemPartition, final ConcurrencyControl concurrencyControl) {
     final ActorFuture<Void> result = concurrencyControl.createFuture();
-    final var snapshotter = systemPartition.snapshotter();
-    if (snapshotter == null) {
+    final var actors = systemPartition.actors().stream().map(Actor::closeAsync).toList();
+    if (actors.isEmpty()) {
       closeRaftAndStore(systemPartition, concurrencyControl, result);
     } else {
       concurrencyControl.runOnCompletion(
-          snapshotter.closeAsync(),
-          (ok, error) -> closeRaftAndStore(systemPartition, concurrencyControl, result));
+          actors, error -> closeRaftAndStore(systemPartition, concurrencyControl, result));
     }
     return result;
   }

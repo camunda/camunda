@@ -61,8 +61,7 @@ final class SystemPartitionStep extends AbstractBrokerStartupStep {
                       LOG.error("Failed to bootstrap the system partition", bootstrapError);
                     } else {
                       LOG.info("Bootstrapped the system partition");
-                      systemPartition.startSnapshotter(
-                          brokerStartupContext.getActorSchedulingService());
+                      systemPartition.start(brokerStartupContext.getActorSchedulingService());
                     }
                   });
           startupFuture.complete(brokerStartupContext);
