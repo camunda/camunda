@@ -32,11 +32,12 @@ on:
         required: false
 
 permissions:
-  # read, not write: the only step that mutated repository contents was the
-  # `--delete-branch` on `gh pr close`, which is deliberately gone (the branch is
-  # what lets triage reopen the PR). What is left only reads the checkout and
-  # updates PR metadata.
-  contents: read
+  # write, and only for one reason: `--delete-branch` on `gh pr close` deletes a
+  # ref, which is a contents mutation. It was briefly reduced to read while the
+  # sweeper kept branches so triage could reopen them; triage now restores the
+  # branch from the PR's head commit instead, so deleting is safe again and this
+  # has to go back. Nothing else here writes contents.
+  contents: write
   pull-requests: write
 
 env:
@@ -117,16 +118,19 @@ jobs:
 
               close_comment=$(printf '%s\n\n%s\n\n%s' \
                 "Closed by close-stale-fix-prs workflow: bot PRs are closed daily before triage. Add the \`do-not-close\` label to hold this PR across the daily reset, or re-trigger the fix agent to start fresh." \
-                "The branch is kept, so tonight's triage may reopen this PR rather than open a duplicate." \
+                "The branch is deleted, but tonight's triage can still reopen this PR: it restores the branch from the PR's own head commit first." \
                 "<!-- ${STALE_CLOSE_MARKER} at=$(date -u +%FT%TZ) v=1 -->")
 
-              # NO --delete-branch. The branch still carries the in-progress
-              # fix, and keeping it is what lets tonight's triage reopen this
-              # PR instead of opening one that re-derives the same change.
-              # `gh pr reopen` fails outright once the head ref is gone, so
-              # deleting it here would make the reopen path impossible.
+              # --delete-branch is back: triage no longer needs the branch to
+              # survive. `gh pr reopen` does need a live head ref, but the
+              # commits remain reachable as refs/pull/<n>/head, so the reopen
+              # path recreates the branch at the PR's recorded head commit
+              # first (.github/scripts/nightly-fix-reopen.sh:restore_branch).
+              # Keeping branches instead would leave every unmerged fix branch
+              # lying around with nothing reaping them.
               gh pr close "$number" \
                 --repo "$REPO" \
+                --delete-branch \
                 --comment "$close_comment" \
                 || echo "::warning::Failed to close #$number"
             fi
