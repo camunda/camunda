@@ -10,11 +10,13 @@ package io.camunda.operate.webapp.rest.validation;
 import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.EnumSet;
@@ -30,11 +32,15 @@ public class CreateRequestOperationValidator {
 
   private final VariableReader variableReader;
   private final OperationReader operationReader;
+  private final FlowNodeInstanceReader flowNodeInstanceReader;
 
   public CreateRequestOperationValidator(
-      final VariableReader variableReader, final OperationReader operationReader) {
+      final VariableReader variableReader,
+      final OperationReader operationReader,
+      final FlowNodeInstanceReader flowNodeInstanceReader) {
     this.variableReader = variableReader;
     this.operationReader = operationReader;
+    this.flowNodeInstanceReader = flowNodeInstanceReader;
   }
 
   public void validate(final CreateOperationRequestDto request, final String processInstanceId) {
@@ -50,6 +56,18 @@ public class CreateRequestOperationValidator {
           String.format(
               "ScopeId, variable name, and variable value must be defined for %s operation on processInstanceId=%s.",
               request.getOperationType(), processInstanceId));
+    }
+
+    if (isVariableOperation(request)
+        && !scopeBelongsToProcessInstance(request.getVariableScopeId(), processInstanceId)) {
+      throw new InvalidRequestException(
+          String.format(
+              "Cannot %s variable \"%s\" in scope \"%s\" of processInstanceId=%s: "
+                  + "scope does not belong to this process instance.",
+              request.getOperationType(),
+              request.getVariableName(),
+              request.getVariableScopeId(),
+              processInstanceId));
     }
 
     if (request.getOperationType().equals(ADD_VARIABLE)) {
@@ -81,6 +99,23 @@ public class CreateRequestOperationValidator {
         || request.getVariableName() == null
         || request.getVariableName().isEmpty()
         || request.getVariableValue() == null;
+  }
+
+  private boolean scopeBelongsToProcessInstance(
+      final String variableScopeId, final String processInstanceId) {
+    final long scopeKey;
+    try {
+      scopeKey = Long.parseLong(variableScopeId);
+    } catch (final NumberFormatException e) {
+      return false;
+    }
+    final long processInstanceKey = Long.parseLong(processInstanceId);
+    if (scopeKey == processInstanceKey) {
+      return true;
+    }
+    return flowNodeInstanceReader.getAllFlowNodeInstances(processInstanceKey).stream()
+        .map(FlowNodeInstanceEntity::getKey)
+        .anyMatch(key -> key == scopeKey);
   }
 
   private boolean variableAlreadyExists(
