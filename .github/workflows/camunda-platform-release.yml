@@ -802,6 +802,10 @@ jobs:
         if: always()
         run: |
           echo "### Release Notes shadow run: ${{ steps.gen-changelog-shadow.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Release Notes apply dry run: ${{ steps.apply-dry-run-shadow.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.apply-dry-run-shadow.outcome }}" = "failure" ]; then
+            echo "::warning::The release-notes apply dry run failed, so no label/comment comparison was produced."
+          fi
 
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
