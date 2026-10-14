@@ -103,15 +103,19 @@ public class CreateRequestOperationValidator {
 
   private boolean scopeBelongsToProcessInstance(
       final String variableScopeId, final String processInstanceId) {
-    if (variableScopeId.equals(processInstanceId)) {
+    final long scopeKey;
+    try {
+      scopeKey = Long.parseLong(variableScopeId);
+    } catch (final NumberFormatException e) {
+      return false;
+    }
+    final long processInstanceKey = Long.parseLong(processInstanceId);
+    if (scopeKey == processInstanceKey) {
       return true;
     }
-    return flowNodeInstanceReader
-        .getAllFlowNodeInstances(Long.parseLong(processInstanceId))
-        .stream()
+    return flowNodeInstanceReader.getAllFlowNodeInstances(processInstanceKey).stream()
         .map(FlowNodeInstanceEntity::getKey)
-        .map(String::valueOf)
-        .anyMatch(variableScopeId::equals);
+        .anyMatch(key -> key == scopeKey);
   }
 
   private boolean variableAlreadyExists(
