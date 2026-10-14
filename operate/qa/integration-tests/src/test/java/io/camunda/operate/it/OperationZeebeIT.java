@@ -52,6 +52,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -308,23 +309,18 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     // when
     // we call RESOLVE_INCIDENT operation on the second instance, targeting the incident of the
     // first one
-    postOperationWithOKResponse(
+    // then
+    // the request is rejected
+    postOperation(
         processInstanceKey,
         new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT)
-            .setIncidentId(otherIncidentId));
+            .setIncidentId(otherIncidentId),
+        HttpStatus.SC_BAD_REQUEST);
 
-    // and execute the operation
-    executeOneBatch();
-    searchTestRule.refreshSerchIndexes();
-
-    // then
-    // the operation of the second instance failed
+    // and no operation was created for the second instance
     final ListViewProcessInstanceDto processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
-    assertThat(processInstance.getOperations()).hasSize(1);
-    assertThat(processInstance.getOperations().get(0).getType())
-        .isEqualTo(OperationType.RESOLVE_INCIDENT);
-    assertThat(processInstance.getOperations().get(0).getState()).isEqualTo(OperationState.FAILED);
+    assertThat(processInstance.getOperations()).isEmpty();
 
     // and the incident of the first instance was not touched
     final ListViewProcessInstanceDto otherProcessInstance =
