@@ -52,6 +52,26 @@ final class StorageCapabilityGuardsTest {
   }
 
   @Test
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  void shouldFailClearlyWhenFactoryDeclaresNoCapabilities() {
+    // given a backend that forgot to implement capabilities()
+    final var factory = mock(ZeebeDbFactory.class);
+
+    // when - then
+    assertThatThrownBy(
+            () ->
+                new StateControllerImpl(
+                    factory,
+                    mock(ConstructableSnapshotStore.class),
+                    Path.of("runtime"),
+                    index -> java.util.Optional.empty(),
+                    db -> null,
+                    mock(ConcurrencyControl.class)))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("must declare its StorageCapabilities");
+  }
+
+  @Test
   void shouldRejectZeebeDbStepWithoutFileSnapshots() {
     // when - then
     assertThatThrownBy(() -> new ZeebeDbPartitionTransitionStep(NONE))

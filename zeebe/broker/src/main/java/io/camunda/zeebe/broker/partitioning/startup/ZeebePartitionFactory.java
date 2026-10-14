@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
@@ -216,7 +218,14 @@ public final class ZeebePartitionFactory {
     context.setClusterConfigurationService(clusterConfigurationService);
 
     final PartitionTransition newTransitionBehavior =
-        new PartitionTransitionImpl(generateTransitionSteps(zeebeFactory.capabilities()));
+        new PartitionTransitionImpl(
+            generateTransitionSteps(
+                requireNonNull(
+                    zeebeFactory.capabilities(),
+                    () ->
+                        zeebeFactory.getClass().getName()
+                            + " must declare its StorageCapabilities, but capabilities() returned"
+                            + " null")));
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
   }
