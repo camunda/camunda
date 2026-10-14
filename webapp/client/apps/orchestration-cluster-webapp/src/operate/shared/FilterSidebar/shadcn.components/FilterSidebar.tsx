@@ -58,7 +58,7 @@ const FilterSidebar: React.FC<Props> = ({children, localStorageKey, onResetClick
 					<Button
 						variant="ghost"
 						size="sm"
-						className="w-full justify-start"
+						className="w-full"
 						disabled={isResetButtonDisabled}
 						type="reset"
 						onClick={onResetClick}

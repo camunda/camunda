@@ -42,7 +42,12 @@ const getDefinitions = (onRemoveCustom: () => void): OptionalFilterDefinition<Fi
 		keys: [],
 		label: 'Custom filter',
 		type: 'custom',
-		render: () => <div>custom content</div>,
+		render: (removeButton) => (
+			<div>
+				custom content
+				{removeButton}
+			</div>
+		),
 		onRemove: onRemoveCustom,
 	},
 ];

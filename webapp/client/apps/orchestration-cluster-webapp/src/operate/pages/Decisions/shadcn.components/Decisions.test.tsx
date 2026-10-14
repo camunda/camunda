@@ -213,7 +213,7 @@ describe('<Decisions />', () => {
 		expect(screen.router.state.location.search).toMatchObject({failed: false});
 	});
 
-	it('should vertically center the remove button on the filter input', async ({worker}) => {
+	it('should place the remove button in the label row without overlapping the filter input', async ({worker}) => {
 		// The test stylesheet has no Tailwind preflight, so inputs would otherwise render content-box
 		const borderBox = document.head.appendChild(document.createElement('style'));
 		borderBox.textContent = '*, ::before, ::after {box-sizing: border-box;}';
@@ -228,7 +228,7 @@ describe('<Decisions />', () => {
 		const input = screen.getByLabelText('Business ID', {exact: true}).element().getBoundingClientRect();
 		const button = screen.getByRole('button', {name: 'Remove Business ID filter'}).element().getBoundingClientRect();
 
-		expect(input.top + input.height / 2 - (button.top + button.height / 2)).toBe(0);
+		expect(button.bottom).toBeLessThanOrEqual(input.top);
 	});
 
 	it('should remove active optional filters when resetting', async ({worker}) => {
