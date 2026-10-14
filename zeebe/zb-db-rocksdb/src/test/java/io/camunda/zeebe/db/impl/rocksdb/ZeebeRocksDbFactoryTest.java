@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
@@ -307,7 +308,7 @@ final class ZeebeRocksDbFactoryTest {
     key.wrapString("foo");
     value.wrapString("bar");
 
-    try (final var db = factory.createDb(path, false)) {
+    try (final var db = factory.createDb(path, CloseMode.FLUSH)) {
       final var column =
           db.createColumnFamily(
               DefaultColumnFamily.DEFAULT, db.createContext(), new DbString(), new DbString());

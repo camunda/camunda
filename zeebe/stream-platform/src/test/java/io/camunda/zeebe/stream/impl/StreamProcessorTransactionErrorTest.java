@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 
+import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
@@ -98,8 +99,8 @@ final class StreamProcessorTransactionErrorTest {
     }
 
     @Override
-    public ZeebeDb<ZbColumnFamilies> createDb(final File pathName, final boolean avoidFlush) {
-      return new ErrorProneZeebeDb(delegate.createDb(pathName), commitException);
+    public ZeebeDb<ZbColumnFamilies> createDb(final File pathName, final CloseMode closeMode) {
+      return new ErrorProneZeebeDb(delegate.createDb(pathName, closeMode), commitException);
     }
 
     @Override
