@@ -498,6 +498,68 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
         .isEqualTo("ScopeId must be specified in the request.");
   }
 
+  @Test
+  public void shouldNotReturnVariableOfOtherProcessInstance() throws Exception {
+    // given
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .serviceTask("task")
+            .zeebeJobType("task")
+            .endEvent()
+            .done();
+    deployProcess(process, processId + ".bpmn");
+    final Long processInstanceA =
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"ownVar\": \"ownValue\"}");
+    final Long processInstanceB =
+        ZeebeTestUtil.startProcessInstance(
+            camundaClient, processId, "{\"secretVar\": \"secretValue\"}");
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceA);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceB);
+    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceA, "ownVar");
+    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceB, "secretVar");
+
+    // when
+    final MvcResult mvcResult =
+        mockMvc
+            .perform(
+                get(
+                    getVariableURL(
+                        processInstanceA, String.format("%d-secretVar", processInstanceB))))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    // then
+    assertThat(mvcResult.getResponse().getContentAsString()).doesNotContain("secretValue");
+  }
+
+  @Test
+  public void shouldReturnVariableOfOwnProcessInstance() throws Exception {
+    // given
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .serviceTask("task")
+            .zeebeJobType("task")
+            .endEvent()
+            .done();
+    deployProcess(process, processId + ".bpmn");
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"ownVar\": \"ownValue\"}");
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "ownVar");
+
+    // when
+    final VariableDto variable =
+        getOneVariable(processInstanceKey, String.format("%d-ownVar", processInstanceKey));
+
+    // then
+    assertThat(variable.getName()).isEqualTo("ownVar");
+    assertThat(variable.getValue()).isEqualTo("\"ownValue\"");
+  }
+
   private void assertVariable(
       final List<VariableDto> variables, final String name, final String value) {
     assertThat(variables)
