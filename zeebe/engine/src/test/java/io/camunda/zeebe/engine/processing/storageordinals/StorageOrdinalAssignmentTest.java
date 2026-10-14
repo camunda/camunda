@@ -16,13 +16,16 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -37,6 +40,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
@@ -1776,6 +1780,248 @@ public final class StorageOrdinalAssignmentTest {
     final var processEventTriggering = records.get(records.size() - 1);
     assertThat(((ProcessEventRecordValue) processEventTriggering.getValue()).getStorageOrdinal())
         .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToCancelRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("cancel-records-process")
+                .startEvent()
+                .userTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("cancel-records-process").create();
+
+    // when
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    final var canceling =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCELING)
+            .withRecordKey(processInstanceKey)
+            .getFirst();
+    final var terminateElement =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.TERMINATE_ELEMENT)
+            .onlyCommands()
+            .withRecordKey(processInstanceKey)
+            .getFirst();
+    assertThat(canceling.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    assertThat(terminateElement.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToRejectedCancelCommand() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("cancel-rejection-child")
+                .startEvent()
+                .userTask()
+                .endEvent()
+                .done())
+        .deploy();
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("cancel-rejection-parent")
+                .startEvent()
+                .callActivity("callActivity", c -> c.zeebeProcessId("cancel-rejection-child"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long parentKey =
+        engine.processInstance().ofBpmnProcessId("cancel-rejection-parent").create();
+    final long childKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(parentKey)
+            .withBpmnProcessId("cancel-rejection-child")
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    // when
+    final var rejection =
+        engine.processInstance().withInstanceKey(childKey).expectRejection().cancel();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason()).contains("Cancel the root process instance");
+    assertThat(rejection.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToSuspendRejectedWhileCancelInProgress() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("suspend-rejection-process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("suspend-rejection-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("suspend-rejection-process").create();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine.writeRecords(
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.CANCEL, new ProcessInstanceRecord())
+            .key(processInstanceKey),
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.SUSPEND, new ProcessInstanceRecord())
+            .key(processInstanceKey));
+
+    // then
+    final var rejection =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SUSPEND)
+            .onlyCommandRejections()
+            .withRecordKey(processInstanceKey)
+            .getFirst();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason()).contains("a cancel request is already in progress");
+    assertThat(rejection.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToRejectedResumeCommand() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("resume-rejection-process")
+                .startEvent()
+                .userTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("resume-rejection-process").create();
+
+    // when
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectResumeRejection()
+            .resume();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToSuspendAndResumeRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("suspend-resume-records-process")
+                .startEvent()
+                .parallelGateway("fork")
+                .serviceTask("task", t -> t.zeebeJobType("suspend-resume-job"))
+                .endEvent("end-1")
+                .moveToNode("fork")
+                .serviceTask("side-task", t -> t.zeebeJobType("suspend-resume-side-job"))
+                .endEvent("end-2")
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("suspend-resume-records-process").create();
+    // the buffered command completes the side task, so the job of "task" stays active to be resumed
+    final var activated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("side-task")
+            .getFirst();
+    engine.jobs().withType("suspend-resume-job").activate();
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+    engine.writeRecords(
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, activated.getValue())
+            .key(activated.getKey()));
+    RecordingExporter.records()
+        .withValueType(ValueType.BUFFERED_COMMAND)
+        .withIntent(BufferedCommandIntent.BUFFERED)
+        .filter(
+            r ->
+                ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
+                    == processInstanceKey)
+        .getFirst();
+
+    // when
+    final var resumed = engine.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    // then
+    final var processInstanceRecords =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(r -> r.getIntent() == ProcessInstanceIntent.RESUMED)
+            .withIntents(
+                ProcessInstanceIntent.SUSPENDING,
+                ProcessInstanceIntent.SUSPENDED,
+                ProcessInstanceIntent.RESUMING,
+                ProcessInstanceIntent.RESUME_JOBS,
+                ProcessInstanceIntent.COMPLETE_RESUMING,
+                ProcessInstanceIntent.RESUMED)
+            .asList();
+    assertThat(processInstanceRecords)
+        .extracting(r -> r.getIntent())
+        .contains(
+            ProcessInstanceIntent.SUSPENDING,
+            ProcessInstanceIntent.SUSPENDED,
+            ProcessInstanceIntent.RESUMING,
+            ProcessInstanceIntent.RESUME_JOBS,
+            ProcessInstanceIntent.COMPLETE_RESUMING,
+            ProcessInstanceIntent.RESUMED);
+    assertThat(processInstanceRecords)
+        .extracting(r -> r.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    final var jobRecords =
+        RecordingExporter.jobRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(r -> r.getIntent() == JobIntent.RESUMED)
+            .withIntents(JobIntent.SUSPENDED, JobIntent.RESUMED)
+            .asList();
+    assertThat(jobRecords)
+        .extracting(r -> r.getIntent())
+        .contains(JobIntent.SUSPENDED, JobIntent.RESUMED);
+    assertThat(jobRecords)
+        .extracting(r -> r.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    // the BUFFERED record is written by the suspension gate on another path and is not asserted
+    final var bufferedCommandRecords =
+        RecordingExporter.records()
+            .limit(r -> r.getPosition() >= resumed.getPosition())
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .filter(
+                r ->
+                    ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
+                        == processInstanceKey)
+            .filter(
+                r ->
+                    r.getIntent() == BufferedCommandIntent.DRAIN
+                        || r.getIntent() == BufferedCommandIntent.DRAINED)
+            .asList();
+    assertThat(bufferedCommandRecords)
+        .extracting(r -> r.getIntent())
+        .contains(BufferedCommandIntent.DRAIN, BufferedCommandIntent.DRAINED);
+    assertThat(bufferedCommandRecords)
+        .extracting(r -> ((BufferedCommandRecordValue) r.getValue()).getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
   }
 
   private long adHocSubProcessInstanceKeyOf(final long processInstanceKey) {
