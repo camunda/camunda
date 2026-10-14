@@ -10,8 +10,8 @@ package io.camunda.configuration.physicaltenants;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.configuration.NodeIdProvider.Type;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.cluster.NodeIdProvider.Type;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;

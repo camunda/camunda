@@ -8,43 +8,43 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
-import io.camunda.configuration.Azure;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
-import io.camunda.configuration.EngineMappings.InputMode;
-import io.camunda.configuration.EngineMappings.OutputMode;
-import io.camunda.configuration.EngineStorageOrdinals;
-import io.camunda.configuration.Export;
-import io.camunda.configuration.Exporter;
 import io.camunda.configuration.ExporterArgsMergers;
-import io.camunda.configuration.Filesystem;
-import io.camunda.configuration.Filter;
-import io.camunda.configuration.FixedPartition;
-import io.camunda.configuration.Gcs;
-import io.camunda.configuration.Interceptor;
-import io.camunda.configuration.InternalApi;
-import io.camunda.configuration.KeyStore;
-import io.camunda.configuration.Limit;
-import io.camunda.configuration.Membership;
-import io.camunda.configuration.Metrics;
-import io.camunda.configuration.NodeIdProvider.Type;
-import io.camunda.configuration.Partitioning;
-import io.camunda.configuration.PrimaryStorage;
-import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.Processing;
-import io.camunda.configuration.Rdbms;
-import io.camunda.configuration.S3;
-import io.camunda.configuration.SasToken;
-import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.Ssl;
-import io.camunda.configuration.Throttle;
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.Write;
-import io.camunda.configuration.Zone;
+import io.camunda.configuration.api.grpc.Interceptor;
+import io.camunda.configuration.api.grpc.Ssl;
+import io.camunda.configuration.api.rest.Filter;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
+import io.camunda.configuration.cluster.Membership;
+import io.camunda.configuration.cluster.NodeIdProvider.Type;
+import io.camunda.configuration.cluster.Partitioning;
+import io.camunda.configuration.cluster.Zone;
+import io.camunda.configuration.cluster.network.CommandApi;
+import io.camunda.configuration.cluster.network.InternalApi;
+import io.camunda.configuration.cluster.partitioning.FixedPartition;
+import io.camunda.configuration.data.Export;
+import io.camunda.configuration.data.Exporter;
+import io.camunda.configuration.data.PrimaryStorage;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.backup.Azure;
+import io.camunda.configuration.data.primarystorage.backup.Filesystem;
+import io.camunda.configuration.data.primarystorage.backup.Gcs;
+import io.camunda.configuration.data.primarystorage.backup.S3;
+import io.camunda.configuration.data.primarystorage.backup.azure.SasToken;
+import io.camunda.configuration.data.secondarystorage.Rdbms;
+import io.camunda.configuration.monitoring.Metrics;
+import io.camunda.configuration.processing.engine.EngineMappings.InputMode;
+import io.camunda.configuration.processing.engine.EngineMappings.OutputMode;
+import io.camunda.configuration.processing.engine.EngineStorageOrdinals;
+import io.camunda.configuration.processing.flowcontrol.Limit;
+import io.camunda.configuration.processing.flowcontrol.Write;
+import io.camunda.configuration.processing.flowcontrol.write.Throttle;
+import io.camunda.configuration.security.KeyStore;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
@@ -1211,7 +1211,7 @@ public class BrokerBasedPropertiesOverride {
   private static void applyRdbmsExtensionPropertyConfiguration(
       final io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration
           extensionProperties,
-      final io.camunda.configuration.ExtensionProperties source) {
+      final io.camunda.configuration.data.ExtensionProperties source) {
     extensionProperties.setToolNameProperty(source.getToolNameProperty());
     extensionProperties.setInboundConnectorTypeProperty(source.getInboundConnectorTypeProperty());
     extensionProperties.setToolPropertiesPrefix(source.getToolPropertiesPrefix());

@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rollingupdate;
 
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 
 public class OpensearchRollingUpdateIT extends SecondaryStorageRollingUpdateIT {

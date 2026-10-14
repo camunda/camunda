@@ -8,8 +8,8 @@
 package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.configuration.data.SecondaryStorage;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

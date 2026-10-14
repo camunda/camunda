@@ -10,13 +10,13 @@ package io.camunda.configuration.beanoverrides;
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SchemaManagerRetry;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.secondarystorage.documentbased.SchemaManagerRetry;
 import io.camunda.search.schema.config.SchemaManagerConfiguration.SchemaManagerRetryConfiguration;
 import java.util.Set;
 import org.springframework.beans.BeanUtils;

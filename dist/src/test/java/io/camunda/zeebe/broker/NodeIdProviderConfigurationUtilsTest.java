@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.NodeIdProvider.S3;
+import io.camunda.configuration.cluster.NodeIdProvider.S3;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;

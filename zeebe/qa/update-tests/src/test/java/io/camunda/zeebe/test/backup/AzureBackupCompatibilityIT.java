@@ -8,7 +8,7 @@
 package io.camunda.zeebe.test.backup;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import java.util.Map;

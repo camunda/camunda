@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker;
 
 import io.camunda.configuration.Cluster;
-import io.camunda.configuration.NodeIdProvider.S3;
-import io.camunda.configuration.Partitioning.Scheme;
+import io.camunda.configuration.cluster.NodeIdProvider.S3;
+import io.camunda.configuration.cluster.Partitioning.Scheme;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.RepositoryNodeIdProvider;

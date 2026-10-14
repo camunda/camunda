@@ -11,7 +11,7 @@ import static io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers.*;
 import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.Zone;
+import io.camunda.configuration.cluster.Zone;
 import io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers.AddZoneScenario;
 import io.camunda.zeebe.management.cluster.AddZoneRequest;
 import io.camunda.zeebe.management.cluster.BrokerId;

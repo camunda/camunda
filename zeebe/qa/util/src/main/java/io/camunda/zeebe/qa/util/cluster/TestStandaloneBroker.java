@@ -11,14 +11,14 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.StandaloneCamunda;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.configuration.EngineJob;
-import io.camunda.configuration.NodeIdProvider.Type;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
+import io.camunda.configuration.cluster.NodeIdProvider.Type;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.processing.engine.EngineJob;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
@@ -400,7 +400,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
           final var exporter =
               data.getExporters()
                   .computeIfAbsent(
-                      RECORDING_EXPORTER_ID, ignored -> new io.camunda.configuration.Exporter());
+                      RECORDING_EXPORTER_ID,
+                      ignored -> new io.camunda.configuration.data.Exporter());
           exporter.setClassName(RecordingExporter.class.getName());
         });
   }
@@ -426,7 +427,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         data -> {
           final var unifiedExporter =
               data.getExporters()
-                  .computeIfAbsent(id, ignored -> new io.camunda.configuration.Exporter());
+                  .computeIfAbsent(id, ignored -> new io.camunda.configuration.data.Exporter());
           unifiedExporter.setClassName(tempExporterCfg.getClassName());
           unifiedExporter.setJarPath(tempExporterCfg.getJarPath());
           if (exporterMutators.containsKey(id)) {

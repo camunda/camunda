@@ -8,10 +8,10 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.ExporterArgsMergers;
 import io.camunda.configuration.ExporterCollisionTracker;
-import io.camunda.configuration.SecondaryStorage;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger.ExporterIsolationClaim;

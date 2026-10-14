@@ -9,8 +9,8 @@ package io.camunda.application.commons.pt;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.cluster.SecondaryStorageReadiness;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;

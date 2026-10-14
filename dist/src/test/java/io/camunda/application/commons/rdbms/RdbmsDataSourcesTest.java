@@ -15,8 +15,8 @@ import static org.mockito.Mockito.times;
 
 import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.configuration.Rdbms;
-import io.camunda.configuration.RdbmsConnectionPool;
+import io.camunda.configuration.data.secondarystorage.Rdbms;
+import io.camunda.configuration.data.secondarystorage.rdbms.RdbmsConnectionPool;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;

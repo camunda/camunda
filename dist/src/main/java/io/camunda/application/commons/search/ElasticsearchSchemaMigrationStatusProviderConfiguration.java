@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.search.schema.ElasticsearchSchemaMigrationStatusProvider;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.zeebe.util.VersionUtil;

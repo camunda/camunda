@@ -11,10 +11,11 @@ package io.camunda.authentication.clusteradmin;
  * A generic OIDC access-token claim matcher for cluster-admin authorization: a client is granted
  * cluster-admin access when the token's claim {@code name} matches {@code value}.
  *
- * <p>Intentionally duplicated from {@code io.camunda.configuration.ClusterAdminClaim} — {@code
- * authentication} cannot depend on {@code configuration} (see {@code ClusterAdminUser} for the same
- * constraint), so this module binds {@code camunda.security.cluster-admin.oidc.claims}
- * independently. Keep the two in sync.
+ * <p>Intentionally duplicated from {@code
+ * io.camunda.configuration.security.clusteradmin.ClusterAdminClaim} — {@code authentication} cannot
+ * depend on {@code configuration} (see {@code ClusterAdminUser} for the same constraint), so this
+ * module binds {@code camunda.security.cluster-admin.oidc.claims} independently. Keep the two in
+ * sync.
  *
  * @param name the claim name (a JSONPath into the token claims)
  * @param value the value the claim must equal (scalar) or contain (list)
