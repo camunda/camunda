@@ -52,26 +52,27 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
  *       no-op.
  *   <li><b>Holder-origin entry on {@code P_B}.</b> Records, keyed by the holder instance key, the
  *       lock coordinates ({@code bpmnProcessId}, {@code correlationKey}, {@code tenantId}) plus the
- *       {@code messageKey} whose partition bits address {@code P_K}, so that when the holder later
- *       completes or terminates on {@code P_B} it can push a {@code RELEASE} to {@code P_K} without
- *       re-deriving those coordinates from the completing element's context (the completing context
- *       is unreliable under migration - the holder may since run a different process id).
- *       Discriminated to {@code P_B} by the holder instance key's partition bits: the PI was
- *       created on {@code P_B}, so {@code decodePartitionId(processInstanceKey) == partitionId}
- *       there, whereas on {@code P_K} the same reply carries a PI key that decodes to {@code P_B}
- *       and is skipped - the mirror of the discriminator used by the lock write below. Written only
- *       when the holder carries a correlation key: without one there is no correlation-key lock on
- *       {@code P_K} to release. The write is {@code upsert} and therefore idempotent under a
- *       re-applied {@code STARTED} reply.
+ *       holder's storage ordinal and the {@code messageKey} whose partition bits address {@code
+ *       P_K}, so that when the holder later completes or terminates on {@code P_B} it can push a
+ *       {@code RELEASE} to {@code P_K} without re-deriving those coordinates from the completing
+ *       element's context (the completing context is unreliable under migration - the holder may
+ *       since run a different process id). Discriminated to {@code P_B} by the holder instance
+ *       key's partition bits: the PI was created on {@code P_B}, so {@code
+ *       decodePartitionId(processInstanceKey) == partitionId} there, whereas on {@code P_K} the
+ *       same reply carries a PI key that decodes to {@code P_B} and is skipped - the mirror of the
+ *       discriminator used by the lock write below. Written only when the holder carries a
+ *       correlation key: without one there is no correlation-key lock on {@code P_K} to release.
+ *       The write is {@code upsert} and therefore idempotent under a re-applied {@code STARTED}
+ *       reply.
  *   <li><b>Cross-partition holder-instance discriminator on {@code P_K}.</b> Marks the local
  *       correlation-key lock entry that the {@link MessageStartEventSubscriptionCorrelatedApplier}
  *       wrote when the reply processor emitted {@code CORRELATED}, recording the holder instance's
- *       {@code (processInstanceKey, tenantId)}. Only written when the lock entry exists locally: on
- *       {@code P_B} the lock entry never exists ({@code CORRELATED} runs on {@code P_K}), so this
- *       is skipped there; on {@code P_K} the start-reply processor writes {@code CORRELATED} before
- *       {@code STARTED}, so the entry is present. The lock-entry presence is the natural
- *       discriminator and avoids needing routing info inside the applier. The write itself is
- *       {@code upsert} and therefore idempotent under retry.
+ *       {@code (processInstanceKey, tenantId, storageOrdinal)}. Only written when the lock entry
+ *       exists locally: on {@code P_B} the lock entry never exists ({@code CORRELATED} runs on
+ *       {@code P_K}), so this is skipped there; on {@code P_K} the start-reply processor writes
+ *       {@code CORRELATED} before {@code STARTED}, so the entry is present. The lock-entry presence
+ *       is the natural discriminator and avoids needing routing info inside the applier. The write
+ *       itself is {@code upsert} and therefore idempotent under retry.
  * </ul>
  *
  * <p>The lock-entry presence + holder-instance discriminator together encode the lock-release
@@ -129,7 +130,8 @@ final class MessageStartProcessInstanceStartedV2Applier
           value.getBpmnProcessIdBuffer(),
           correlationKey,
           value.getTenantId(),
-          value.getMessageKey());
+          value.getMessageKey(),
+          value.getStorageOrdinal());
     }
 
     if (correlationKey.capacity() > 0
@@ -140,7 +142,8 @@ final class MessageStartProcessInstanceStartedV2Applier
           value.getBpmnProcessIdBuffer(),
           correlationKey,
           value.getProcessInstanceKey(),
-          value.getTenantId());
+          value.getTenantId(),
+          value.getStorageOrdinal());
     }
   }
 }

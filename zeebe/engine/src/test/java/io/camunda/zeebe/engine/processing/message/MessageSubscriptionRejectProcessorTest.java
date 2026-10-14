@@ -283,6 +283,26 @@ public final class MessageSubscriptionRejectProcessorTest {
     assertThat(value.getProcessInstanceKey()).isEqualTo(-1L);
   }
 
+  @Test
+  public void shouldKeepStorageOrdinalOnRejectedEvent() {
+    // given
+    final MessageSubscriptionRecord subscription =
+        subscription().setElementInstanceKey(7L).setStorageOrdinal(1234);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
+    awaitFirstByElement(7L, MessageSubscriptionIntent.CREATED);
+
+    // when
+    rule.writeCommand(MessageSubscriptionIntent.REJECT, subscription.setMessageKey(42L));
+
+    // then: the REJECTED event reuses the command value, so the ordinal stamped on the
+    // process-instance side must survive
+    assertThat(
+            awaitFirstByElement(7L, MessageSubscriptionIntent.REJECTED)
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(1234);
+  }
+
   private Record<MessageSubscriptionRecord> awaitFirstByElement(
       final long elementInstanceKey, final MessageSubscriptionIntent intent) {
     return awaitAndGet(

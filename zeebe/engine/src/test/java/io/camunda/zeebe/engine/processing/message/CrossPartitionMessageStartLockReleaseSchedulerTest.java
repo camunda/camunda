@@ -75,7 +75,8 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
                     new UnsafeBuffer(lock.bpmnProcessId.getBytes()),
                     new UnsafeBuffer(lock.correlationKey.getBytes()),
                     lock.holderProcessInstanceKey,
-                    lock.tenantId);
+                    lock.tenantId,
+                    lock.storageOrdinal);
               }
               return null;
             })
@@ -151,6 +152,26 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
         .sendDirectCorrelationKeyLockReleaseQuery(eq(2), queryCaptor.capture());
     assertThat(Protocol.decodePartitionId(queryCaptor.getValue().getRequestKey()))
         .isEqualTo(LOCAL_PARTITION);
+  }
+
+  @Test
+  void shouldCarryLockStorageOrdinalOnQueryHolders() {
+    // given a lock whose holder instance carries a non-zero storage ordinal
+    final int storageOrdinal = 1234;
+    addLock("wf", "ck", holderKeyOnPartition(2, 1), storageOrdinal);
+
+    // when
+    scheduler.run();
+
+    // then the query holder carries the lock's storage ordinal
+    final var queryCaptor =
+        ArgumentCaptor.forClass(MessageStartCorrelationKeyLockReleaseRecord.class);
+    verify(mockCommandSender)
+        .sendDirectCorrelationKeyLockReleaseQuery(eq(2), queryCaptor.capture());
+    assertThat(queryCaptor.getValue().getHolders())
+        .singleElement()
+        .extracting(holder -> holder.getStorageOrdinal())
+        .isEqualTo(storageOrdinal);
   }
 
   @Test
@@ -256,7 +277,15 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
 
   private void addLock(
       final String bpmnProcessId, final String correlationKey, final long holderKey) {
-    locks.add(new Lock(bpmnProcessId, correlationKey, holderKey, "<default>"));
+    addLock(bpmnProcessId, correlationKey, holderKey, 0);
+  }
+
+  private void addLock(
+      final String bpmnProcessId,
+      final String correlationKey,
+      final long holderKey,
+      final int storageOrdinal) {
+    locks.add(new Lock(bpmnProcessId, correlationKey, holderKey, "<default>", storageOrdinal));
   }
 
   private static long holderKeyOnPartition(final int partition, final long sequence) {
@@ -267,5 +296,6 @@ public final class CrossPartitionMessageStartLockReleaseSchedulerTest {
       String bpmnProcessId,
       String correlationKey,
       long holderProcessInstanceKey,
-      String tenantId) {}
+      String tenantId,
+      int storageOrdinal) {}
 }

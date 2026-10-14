@@ -639,6 +639,135 @@ public final class StorageOrdinalAssignmentTest {
   }
 
   @Test
+  public void shouldAssignConfiguredOrdinalToDeletedMessageSubscriptionRecords() {
+    // given: an instance waiting at an intermediate message catch event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("message-subscription-delete-process")
+                .startEvent()
+                .intermediateCatchEvent("message-catch")
+                .message(m -> m.name("ordinal-delete-message").zeebeCorrelationKeyExpression("key"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("message-subscription-delete-process")
+            .withVariable("key", "correlation-key-delete")
+            .create();
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then: the DELETE command and the DELETED event rebuilt from state carry the ordinal on both
+    // sides
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("ordinal-delete-message")
+                .limit(r -> r.getIntent() == ProcessMessageSubscriptionIntent.DELETED)
+                .asList())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("ordinal-delete-message")
+                .limit(r -> r.getIntent() == MessageSubscriptionIntent.DELETED)
+                .asList())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToMigratedMessageSubscriptionRecords() {
+    // given: an instance waiting in a task with a message boundary event, and a target definition
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("message-migration-source-process")
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("boundary1")
+                    .message(
+                        m ->
+                            m.name("ordinal-migration-message")
+                                .zeebeCorrelationKeyExpression("key1"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("message-migration-target-process")
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary2")
+                    .message(
+                        m ->
+                            m.name("ordinal-migration-message")
+                                .zeebeCorrelationKeyExpression("key2"))
+                    .endEvent()
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(p -> "message-migration-target-process".equals(p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow()
+            .getProcessDefinitionKey();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("message-migration-source-process")
+            .withVariable("key1", "correlation-key-migrate")
+            .create();
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .addMappingInstruction("boundary1", "boundary2")
+        .migrate();
+
+    // then: the MIGRATE command built by the migration behavior and the MIGRATED events rebuilt
+    // from state carry the ordinal on both sides
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("ordinal-migration-message")
+                .limit(r -> r.getIntent() == ProcessMessageSubscriptionIntent.MIGRATED)
+                .asList())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("ordinal-migration-message")
+                .limit(r -> r.getIntent() == MessageSubscriptionIntent.MIGRATED)
+                .asList())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
   public void shouldAssignConfiguredOrdinalToConditionalSubscriptionRecords() {
     // given: a conditional boundary event whose condition is already fulfilled at subscription
     // time, so the subscription is created and immediately triggered

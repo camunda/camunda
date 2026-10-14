@@ -348,7 +348,8 @@ public class SubscriptionCommandSender {
       final long elementInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer messageName,
-      final String tenantId) {
+      final String tenantId,
+      final int storageOrdinal) {
     return handleFollowUpCommandBasedOnPartition(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -356,6 +357,7 @@ public class SubscriptionCommandSender {
         new ProcessMessageSubscriptionRecord()
             .setSubscriptionPartitionId(senderPartition)
             .setProcessInstanceKey(processInstanceKey)
+            .setStorageOrdinal(storageOrdinal)
             .setElementInstanceKey(elementInstanceKey)
             .setProcessDefinitionKey(processDefinitionKey)
             .setMessageKey(-1)
@@ -601,7 +603,8 @@ public class SubscriptionCommandSender {
         .setProcessInstanceKey(holder.getProcessInstanceKey())
         .setBpmnProcessId(holder.getBpmnProcessId())
         .setCorrelationKey(holder.getCorrelationKey())
-        .setTenantId(holder.getTenantId());
+        .setTenantId(holder.getTenantId())
+        .setStorageOrdinal(holder.getStorageOrdinal());
     return handleFollowUpCommandBasedOnPartition(
         Protocol.decodePartitionId(requestKey),
         ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,

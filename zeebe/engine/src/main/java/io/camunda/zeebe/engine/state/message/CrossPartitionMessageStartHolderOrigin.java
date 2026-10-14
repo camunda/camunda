@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 
@@ -30,7 +32,11 @@ import org.agrona.DirectBuffer;
  *       buffered the message and holds the lock). The push path synthesizes the {@code RELEASE}'s
  *       partition-addressing envelope from these bits;
  *   <li>the {@code tenantId} — carried through to the {@code RELEASE} so the lock lookup on {@code
- *       P_K} stays tenant-scoped.
+ *       P_K} stays tenant-scoped;
+ *   <li>the {@code storageOrdinal} of the holder instance, stamped on the holder of the {@code
+ *       PUSHED} event and the pushed {@code RELEASE} so a consumer routing by ordinal can file them
+ *       with that instance. Entries written before the ordinal was persisted read back as 0, the
+ *       main index.
  * </ul>
  *
  * <p>The buffers returned by the getters are backed by the shared column-family read buffer; copy
@@ -44,13 +50,16 @@ public final class CrossPartitionMessageStartHolderOrigin extends UnpackedObject
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
+  private final IntegerProperty storageOrdinalProp =
+      new IntegerProperty("storageOrdinal", StorageOrdinalRelated.MAIN_INDEX);
 
   public CrossPartitionMessageStartHolderOrigin() {
-    super(4);
+    super(5);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(messageKeyProp);
+        .declareProperty(messageKeyProp)
+        .declareProperty(storageOrdinalProp);
   }
 
   public DirectBuffer getBpmnProcessIdBuffer() {
@@ -92,6 +101,19 @@ public final class CrossPartitionMessageStartHolderOrigin extends UnpackedObject
 
   public CrossPartitionMessageStartHolderOrigin setMessageKey(final long messageKey) {
     messageKeyProp.setValue(messageKey);
+    return this;
+  }
+
+  /**
+   * @return the storage ordinal of the holder instance; 0 for entries written before the ordinal
+   *     was persisted (released V1 STARTED applier), which is the main index
+   */
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public CrossPartitionMessageStartHolderOrigin setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

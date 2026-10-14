@@ -108,11 +108,13 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
    * (its only remover otherwise). Appends {@link
    * MessageStartCorrelationKeyLockReleaseIntent#PUSHED}, keyed by the holder process-instance key
    * the entry is stored under; the same applier the push path uses removes it. Skipped when no
-   * entry exists, so holders that already pushed add no record.
+   * entry exists, so holders that already pushed add no record. The holder's storage ordinal is
+   * taken from the origin entry, the same source the push path uses.
    */
   private void cleanUpOriginIfLeftover(final MessageStartLockReleaseHolderValue holder) {
     final long holderKey = holder.getProcessInstanceKey();
-    if (messageState.getCrossPartitionStartHolderOrigin(holderKey) == null) {
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(holderKey);
+    if (origin == null) {
       return;
     }
     final var pushed = new MessageStartCorrelationKeyLockReleaseRecord().setRequestKey(-1L);
@@ -121,7 +123,8 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
         .setProcessInstanceKey(holderKey)
         .setBpmnProcessId(holder.getBpmnProcessId())
         .setCorrelationKey(holder.getCorrelationKey())
-        .setTenantId(holder.getTenantId());
+        .setTenantId(holder.getTenantId())
+        .setStorageOrdinal(origin.getStorageOrdinal());
     stateWriter.appendFollowUpEvent(
         holderKey, MessageStartCorrelationKeyLockReleaseIntent.PUSHED, pushed);
   }

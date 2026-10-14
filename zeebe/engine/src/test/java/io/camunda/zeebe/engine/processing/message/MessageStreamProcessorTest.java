@@ -290,7 +290,8 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getElementInstanceKey()),
             eq(subscription.getProcessDefinitionKey()),
             any(DirectBuffer.class),
-            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+            anyInt());
   }
 
   @Test
