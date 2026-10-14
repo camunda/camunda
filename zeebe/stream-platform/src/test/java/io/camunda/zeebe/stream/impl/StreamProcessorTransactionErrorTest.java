@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -111,6 +112,11 @@ final class StreamProcessorTransactionErrorTest {
     @Override
     public ZeebeDb<ZbColumnFamilies> openSnapshotOnlyDb(final File path) {
       return delegate.openSnapshotOnlyDb(path);
+    }
+
+    @Override
+    public StorageCapabilities capabilities() {
+      return delegate.capabilities();
     }
   }
 
