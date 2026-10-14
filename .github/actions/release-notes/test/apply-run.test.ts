@@ -55,6 +55,7 @@ test('compares the generator plan with the zcl labels and reports it', async (t)
   assert.match(result.markdown, /Generator only \(zcl missed\) \| 1 \|/);
   assert.match(result.markdown, /zcl only \(generator missed\) \| 1 \|/);
   assert.equal(result.warnings.length, 0);
+  assert.equal(result.compared, true);
   assert.equal((result.divergence as { issues: { zclOnly: number[] } }).issues.zclOnly[0], 5);
 });
 
@@ -65,6 +66,7 @@ test('real apply is refused until it exists', async (t) => {
 test('a failed generate step skips the comparison with a warning, not a failure', async (t) => {
   const result = await runApply({ inputDir: inputDir(t), dryRun: true, generateOutcome: 'failure' }, deps());
 
+  assert.equal(result.compared, false);
   assert.match(result.markdown, /Skipped: .*generate step.*failure/);
   assert.equal(result.warnings.length, 1);
   assert.equal(result.divergence, undefined);
@@ -128,6 +130,7 @@ test('an empty zcl baseline warns and shows the generator plan only', async (t) 
     deps({ labelled: async () => ({ issues: new Set(), pullRequests: new Set() }) }),
   );
 
+  assert.equal(result.compared, false);
   assert.match(result.markdown, /nothing to compare with/);
   assert.equal(result.warnings.length, 1);
 });
