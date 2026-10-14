@@ -107,8 +107,9 @@ function parseGeneratorFiles(raw) {
     if (labels.version !== comments.version) {
         throw new Error(`labels.json and comments.json are for different versions (${labels.version} and ${comments.version}).`);
     }
-    if (!Array.isArray(labels.issues) || !Array.isArray(labels.pullRequests)) {
-        throw new Error('labels.json must hold an "issues" and a "pullRequests" array.');
+    const isNumbers = (value) => Array.isArray(value) && value.every((item) => typeof item === 'number');
+    if (!isNumbers(labels.issues) || !isNumbers(labels.pullRequests)) {
+        throw new Error('labels.json must hold an "issues" and a "pullRequests" array of numbers.');
     }
     if (!Array.isArray(comments.entries) || !comments.entries.every(isCommentEntry)) {
         throw new Error('comments.json must hold an "entries" array of { issueNumber, prNumbers, relationKind, text, marker }.');
@@ -224,7 +225,7 @@ function planApply(files, observed) {
         hints[number] ??= hintFor(number, 'the generator plans no comment for it');
     return {
         version: labels.version,
-        baselineEmpty: observed.zclIssues.size === 0 && observed.zclPullRequests.size === 0,
+        baselineEmpty: observed.zclIssues.size === 0,
         issues,
         pullRequests,
         operations,
@@ -279,7 +280,7 @@ function renderReport(plan) {
             `(${plan.pullRequests.both} in both). Counts only, because zcl labels few PRs.`, '');
         const diverges = plan.issues.generatorOnly.length + plan.issues.zclOnly.length > 0;
         if (!diverges)
-            lines.push('No divergence.', '');
+            lines.push('No issue divergence.', '');
         lines.push(...bucket('Generator only', plan.issues.generatorOnly, plan.hints));
         lines.push(...bucket('zcl only', plan.issues.zclOnly, plan.hints));
     }
