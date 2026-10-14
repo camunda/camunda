@@ -129,8 +129,6 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
   private CompletableFuture<DocumentBatch<DocType, SearchAfterFieldType>> getNextBatch(
       final int batchSizeForBatch) {
-    // as we allow an externally controllable batch size we will sanity check this before we use it
-    verifyBatchSize(batchSizeForBatch);
     try {
       return batchSupplier.supply(getLastSearchPosition(), batchSizeForBatch);
     } catch (final Exception ex) {
@@ -254,7 +252,10 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
   private static void verifyBatchSize(final int batchSize) {
     if (batchSize > MAX_BATCH_SIZE) {
-      throw new IllegalArgumentException("Batch size must be less than " + MAX_BATCH_SIZE);
+      throw new IllegalArgumentException("Batch size cannot be greater than " + MAX_BATCH_SIZE);
+    }
+    if (batchSize <= 0) {
+      throw new IllegalArgumentException("Batch size must be greater than zero");
     }
   }
 
@@ -309,7 +310,9 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     }
 
     public Builder<DocType, SearchAfterFieldType> minBatchSize(final int minBatchSize) {
-      verifyBatchSize(minBatchSize);
+      if (minBatchSize <= 0) {
+        throw new IllegalArgumentException("Min batch size must be greater than 0");
+      }
       this.minBatchSize = minBatchSize;
       return this;
     }
@@ -378,6 +381,15 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     }
 
     public CompletableFuture<PipelineStats> buildAndExecute() {
+      final var currentBatchSize = batchSize.get();
+      if (minBatchSize > currentBatchSize) {
+        throw new IllegalArgumentException(
+            "Min batch ("
+                + minBatchSize
+                + ") is greater than batch size ("
+                + currentBatchSize
+                + ")");
+      }
       final var pipeline = new AsyncDocumentPipeline<>(this);
       return pipeline.execute();
     }
