@@ -58,9 +58,11 @@ sets no claims. Provider `beta` (`idp-b`) sets only `username-claim: tenant_user
 | Browser login with `alpha` | `alice` | the token's `sub`, and the web apps deny access                   | `alice`       |
 | Browser login with `beta`  | `alice` | `idp-b-alice`                                                     | `idp-b-alice` |
 
-8.9 ignores all claim settings of a named provider and uses only the global claims, so `beta`
-logs in as `alice`. 8.10 uses the claims that a named provider sets, and the global claims for the
-others.
+New in 8.10: a named provider can override the global `username-claim`, `client-id-claim` and
+`prefer-username-claim`. 8.9 binds these settings but does not use them, so `beta` logs in as
+`alice` there. Since 8.10.4, a claim that the provider does not set comes from the global slot.
+The docs for 8.9 and 8.10 describe only the global claims; camunda/camunda-docs#10357 adds the
+override.
 
 For the browser login, open `http://localhost:8080/operate` and select the provider. For a fast
 check without a browser, run `./scripts/login.sh "" alpha`.
