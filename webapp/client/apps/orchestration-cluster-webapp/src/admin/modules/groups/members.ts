@@ -81,6 +81,26 @@ function toMemberRow(kind: MemberKind, item: MembersResponse['items'][number]): 
 	return (MEMBER_KIND_CONFIG[kind].toRow as (item: MembersResponse['items'][number]) => MemberRow)(item);
 }
 
+function toOptimisticMember(kind: MemberKind, id: string): MembersResponse['items'][number] | undefined {
+	if (kind === 'users') {
+		return {username: id};
+	}
+	if (kind === 'clients') {
+		return {clientId: id};
+	}
+	return undefined;
+}
+
+function compareMembersById(
+	kind: MemberKind,
+	a: MembersResponse['items'][number],
+	b: MembersResponse['items'][number],
+) {
+	const idA = toMemberRow(kind, a).id;
+	const idB = toMemberRow(kind, b).id;
+	return idA < idB ? -1 : idA > idB ? 1 : 0;
+}
+
 function getAssignRequest(kind: MemberKind, groupId: string, id: string) {
 	return MEMBER_KIND_CONFIG[kind].assign(groupId, id);
 }
@@ -93,5 +113,14 @@ function getMembersQueryKeyPrefix(groupId: string, kind: MemberKind) {
 	return ['groupMembers', groupId, kind] as const;
 }
 
-export {MEMBER_KINDS, getAssignRequest, getMembersQuery, getMembersQueryKeyPrefix, getUnassignRequest, toMemberRow};
+export {
+	MEMBER_KINDS,
+	compareMembersById,
+	getAssignRequest,
+	getMembersQuery,
+	getMembersQueryKeyPrefix,
+	getUnassignRequest,
+	toMemberRow,
+	toOptimisticMember,
+};
 export type {MemberKind, MemberPage, MemberRow, MembersResponse};

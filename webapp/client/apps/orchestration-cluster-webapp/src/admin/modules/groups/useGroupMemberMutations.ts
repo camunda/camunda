@@ -10,11 +10,13 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {toast} from '@camunda/design-system';
 import {
+	compareMembersById,
 	getAssignRequest,
 	getMembersQuery,
 	getMembersQueryKeyPrefix,
 	getUnassignRequest,
 	toMemberRow,
+	toOptimisticMember,
 	type MemberKind,
 	type MemberPage,
 	type MembersResponse,
@@ -22,10 +24,10 @@ import {
 import {request} from '#/shared/http/request';
 import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {mapQueryError} from '#/shared/http/mapQueryError';
-import {removeFromListCaches} from '#/shared/http/patchListCaches';
+import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
 import {waitUntilReady} from '#/shared/http/waitUntilReady';
 
-type MemberChange = {kind: MemberKind; id: string};
+type MembersChange = {kind: MemberKind; ids: string[]};
 type Direction = 'assign' | 'unassign';
 
 function useGroupMemberMutations(groupId: string) {
@@ -39,25 +41,36 @@ function useGroupMemberMutations(groupId: string) {
 
 	const mutate =
 		(direction: Direction) =>
-		async ({kind, id}: MemberChange) => {
+		async ({kind, ids}: MembersChange) => {
 			const activeLists = getActiveLists(kind);
 			const buildRequest = direction === 'assign' ? getAssignRequest : getUnassignRequest;
-			const {error} = await request(buildRequest(kind, groupId, id));
-			if (error !== null) {
-				throw mapQueryError(error);
+			const outcomes = await Promise.all(
+				ids.map(async (id) => {
+					const {error} = await request(buildRequest(kind, groupId, id));
+					return {id, error: error === null ? null : mapQueryError(error)};
+				}),
+			);
+
+			const succeeded = outcomes.filter(({error}) => error === null).map(({id}) => id);
+			const failed = outcomes.flatMap(({id, error}) => (error === null ? [] : [{id, error}]));
+			const [firstFailure] = failed;
+			if (succeeded.length === 0 && firstFailure !== undefined) {
+				throw firstFailure.error;
 			}
-			return {kind, id, activeLists};
+			return {kind, ids: succeeded, failed, activeLists};
 		};
 
 	const reconcile = async (
 		direction: Direction,
-		{kind, activeLists}: Awaited<ReturnType<ReturnType<typeof mutate>>>,
+		{kind, ids, activeLists}: Awaited<ReturnType<ReturnType<typeof mutate>>>,
 	) => {
 		const confirmations = await Promise.all(
 			activeLists.map(({queryKey, totalItems}) =>
 				waitUntilReady(queryClient, getMembersQuery(kind, groupId, queryKey[3] as MemberPage), {
 					isReady: (data) =>
-						direction === 'assign' ? data.page.totalItems > totalItems : data.page.totalItems < totalItems,
+						direction === 'assign'
+							? data.page.totalItems >= totalItems + ids.length
+							: data.page.totalItems <= totalItems - ids.length,
 				}),
 			),
 		);
@@ -72,7 +85,25 @@ function useGroupMemberMutations(groupId: string) {
 	const assign = useMutation({
 		mutationFn: mutate('assign'),
 		onSuccess: (result) => {
-			toast.success(t(`admin.groups.members.${result.kind}.assigned`, {id: result.id}));
+			for (const id of result.ids) {
+				const item = toOptimisticMember(result.kind, id);
+				if (item !== undefined) {
+					patchListCaches(queryClient, {
+						queryKeyPrefix: getMembersQueryKeyPrefix(groupId, result.kind),
+						item,
+						getId: (member: MembersResponse['items'][number]) => toMemberRow(result.kind, member).id,
+						compare: (a, b) => compareMembersById(result.kind, a, b),
+						canInsert: (_member, queryKey, itemCount) =>
+							isFirstPageWithRoom((queryKey[3] as MemberPage).page, itemCount),
+					});
+				}
+				toast.success(t(`admin.groups.members.${result.kind}.assigned`, {id}));
+			}
+			for (const {error} of result.failed) {
+				void getErrorMessage(error).then((description) =>
+					toast.error(t('admin.groups.members.assignFailed'), {description}),
+				);
+			}
 			void reconcile('assign', result);
 		},
 		onError: async (error) => {
@@ -81,14 +112,16 @@ function useGroupMemberMutations(groupId: string) {
 	});
 
 	const unassign = useMutation({
-		mutationFn: mutate('unassign'),
+		mutationFn: ({kind, id}: {kind: MemberKind; id: string}) => mutate('unassign')({kind, ids: [id]}),
 		onSuccess: (result) => {
-			removeFromListCaches(queryClient, {
-				queryKeyPrefix: getMembersQueryKeyPrefix(groupId, result.kind),
-				id: result.id,
-				getId: (item: MembersResponse['items'][number]) => toMemberRow(result.kind, item).id,
-			});
-			toast.success(t(`admin.groups.members.${result.kind}.removed`, {id: result.id}));
+			for (const id of result.ids) {
+				removeFromListCaches(queryClient, {
+					queryKeyPrefix: getMembersQueryKeyPrefix(groupId, result.kind),
+					id,
+					getId: (item: MembersResponse['items'][number]) => toMemberRow(result.kind, item).id,
+				});
+				toast.success(t(`admin.groups.members.${result.kind}.removed`, {id}));
+			}
 			void reconcile('unassign', result);
 		},
 		onError: async (error) => {
