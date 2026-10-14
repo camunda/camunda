@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.util;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.google.common.base.Stopwatch;
+import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +31,6 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(AsyncDocumentPipeline.class);
   private static final int MAX_BATCH_SIZE = 10_000;
 
-  private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
   private static final List<Class<? extends Throwable>> DEFAULT_RETRYABLE_EXCEPTIONS =
       List.of(
           SocketTimeoutException.class, ElasticsearchException.class, OpenSearchException.class);
@@ -41,7 +41,6 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   private final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor;
   private final Executor executor;
   private final Logger logger;
-  private final int minBatchSize;
   private final int maxRetryAttempts;
   private final int retryDelayMs;
   private final List<Class<? extends Throwable>> retryableExceptions;
@@ -55,7 +54,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   private final AtomicLong totalRead = new AtomicLong(0L);
   private final AtomicLong totalProcessed = new AtomicLong(0L);
   private final AtomicInteger retryCount = new AtomicInteger(0);
-  private final AtomicInteger currentBatchSize;
+  private final AdaptiveBatchSize currentBatchSize;
   private final AtomicLong totalTimeTakenMs = new AtomicLong(0);
 
   private AsyncDocumentPipeline(final Builder<DocType, SearchAfterFieldType> builder) {
@@ -63,7 +62,6 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     batchProcessor = builder.batchProcessor;
     executor = builder.executor;
     logger = builder.logger;
-    minBatchSize = builder.minBatchSize;
     maxRetryAttempts = builder.maxRetryAttempts;
     retryDelayMs = builder.retryDelayMs;
     retryableExceptions = builder.retryableExceptions;
@@ -95,7 +93,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
   CompletableFuture<Integer> processNextBatch() {
     final Stopwatch stopwatch = Stopwatch.createStarted();
-    final var batchSizeForBatch = currentBatchSize.get();
+    final var batchSizeForBatch = currentBatchSize.current();
     return getNextBatch(batchSizeForBatch)
         .thenComposeAsync(
             batch -> {
@@ -169,7 +167,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
               + "retrying the batch (attempt {}/{}). Next batch size {}. Error: {}",
           retryCount.get(),
           maxRetryAttempts,
-          currentBatchSize.get(),
+          currentBatchSize.current(),
           ex.getMessage());
 
       // Whilst this is crude, we exploit the fact the ES/OS visibility is
@@ -192,19 +190,15 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   }
 
   private void adjustBatchSize(final Throwable ex) {
-    if (currentBatchSize.get() <= minBatchSize) {
+    if (currentBatchSize.atMinimumSize()) {
       return;
     }
-
     if (shouldReduceBatchSize(ex)) {
-      final var prevSize = currentBatchSize.get();
-      final var nextBatchSize =
-          (int) Math.max(minBatchSize, prevSize * BATCH_SIZE_REDUCTION_FACTOR);
-      currentBatchSize.set(nextBatchSize);
+      final var prevSize = currentBatchSize.reduce();
       logger.warn(
           "Adjusting doc pipeline batch size from: {} to {} due to: {}",
           prevSize,
-          nextBatchSize,
+          currentBatchSize.current(),
           ex.getMessage());
     }
   }
@@ -276,8 +270,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     private final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor;
     private final Executor executor;
     private Logger logger = DEFAULT_LOGGER;
-    private AtomicInteger batchSize = new AtomicInteger(2500);
-    private int minBatchSize = 1;
+    private AdaptiveBatchSize batchSize = new AdaptiveBatchSize(2500, 1);
     private int maxRetryAttempts = 3;
     private int retryDelayMs = 1_000;
     private final List<Class<? extends Throwable>> retryableExceptions =
@@ -308,19 +301,12 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     }
 
     public Builder<DocType, SearchAfterFieldType> minBatchSize(final int minBatchSize) {
-      if (minBatchSize <= 0) {
-        throw new IllegalArgumentException("Min batch size must be greater than 0");
-      }
-      verifyMinBatchSize(minBatchSize, batchSize.get());
-      this.minBatchSize = minBatchSize;
-      return this;
+      return batchSize(new AdaptiveBatchSize(batchSize.getConfiguredBatchSize(), minBatchSize));
     }
 
     public Builder<DocType, SearchAfterFieldType> batchSize(final int batchSize) {
-      verifyBatchSize(batchSize);
-      verifyMinBatchSize(minBatchSize, batchSize);
-      this.batchSize = new AtomicInteger(batchSize);
-      return this;
+      return batchSize(
+          new AdaptiveBatchSize(batchSize, this.batchSize.getConfiguredMinBatchSize()));
     }
 
     /**
@@ -329,9 +315,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
      * @param batchSize the mutable atomic integer to track batch size with
      * @return the builder
      */
-    public Builder<DocType, SearchAfterFieldType> batchSize(final AtomicInteger batchSize) {
-      verifyBatchSize(batchSize.get());
-      verifyMinBatchSize(minBatchSize, batchSize.get());
+    public Builder<DocType, SearchAfterFieldType> batchSize(final AdaptiveBatchSize batchSize) {
       this.batchSize = batchSize;
       return this;
     }
@@ -406,6 +390,61 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
       if (batchSize <= 0) {
         throw new IllegalArgumentException("Batch size must be greater than zero");
       }
+    }
+  }
+
+  public static class AdaptiveBatchSize {
+    private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
+
+    private final int configuredBatchSize;
+    private final int configuredMinBatchSize;
+    private final AtomicInteger currentBatchSize;
+
+    public AdaptiveBatchSize(final int batchSize, final int minBatchSize) {
+      if (batchSize > MAX_BATCH_SIZE) {
+        throw new IllegalArgumentException("Batch size cannot be greater than " + MAX_BATCH_SIZE);
+      }
+      if (batchSize <= 0) {
+        throw new IllegalArgumentException("Batch size must be greater than zero");
+      }
+      if (minBatchSize <= 0) {
+        throw new IllegalArgumentException("Min batch size must be greater than 0");
+      }
+      if (minBatchSize > batchSize) {
+        throw new IllegalArgumentException(
+            "Min batch (" + minBatchSize + ") is greater than batch size (" + batchSize + ")");
+      }
+      configuredBatchSize = batchSize;
+      configuredMinBatchSize = minBatchSize;
+      currentBatchSize = new AtomicInteger(configuredBatchSize);
+    }
+
+    public int current() {
+      return currentBatchSize.get();
+    }
+
+    public int getConfiguredBatchSize() {
+      return configuredBatchSize;
+    }
+
+    public int getConfiguredMinBatchSize() {
+      return configuredMinBatchSize;
+    }
+
+    public void reset() {
+      currentBatchSize.set(configuredBatchSize);
+    }
+
+    public boolean atMinimumSize() {
+      return current() <= configuredMinBatchSize;
+    }
+
+    public int reduce() {
+      final var prevSize = currentBatchSize.get();
+      final var nextBatchSize =
+          (int) Math.max(configuredMinBatchSize, prevSize * BATCH_SIZE_REDUCTION_FACTOR);
+      currentBatchSize.set(nextBatchSize);
+      return prevSize;
     }
   }
 
