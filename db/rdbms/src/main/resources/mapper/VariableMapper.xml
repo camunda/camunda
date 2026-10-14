@@ -173,6 +173,14 @@
     SELECT * FROM dual
   </insert>
 
+  <insert id="insertProtectionModes" parameterType="io.camunda.db.rdbms.sql.VariableMapper$ProtectionModeDto">
+    INSERT INTO ${prefix}VARIABLE_PROTECTION_MODES (VAR_KEY, PROTECTION_MODE)
+    VALUES (
+      #{variableKey},
+      #{mode, typeHandler=io.camunda.db.rdbms.sql.typehandler.ProtectionModeTypeHandler}
+    )
+  </insert>
+
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">
       UPDATE ${prefix}VARIABLE
       SET TYPE         = #{type},

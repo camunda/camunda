@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.read.domain.VariableDbQuery;
 import io.camunda.db.rdbms.read.domain.VariableNameDbQuery;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.domain.VariableDbModel.ProtectionModeDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.util.ObjectBuilder;
@@ -37,6 +38,9 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
    */
   void insertLookupIfNotExists(ProcessDefinitionVariableNameLookupDbModel model);
 
+  /** Inserts one protection mode for the variable. */
+  void insertProtectionModes(ProtectionModeDto protectionMode);
+
   /** Returns all variable names recorded for the given process definition key. */
   List<String> findLookupVariableNames(@Param("processDefinitionKey") long processDefinitionKey);
 
@@ -48,6 +52,8 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
 
   /** Deletes all lookup entries for the given process definition keys. */
   void deleteLookupByProcessDefinitionKeys(List<Long> processDefinitionKeys, int limit);
+
+  record ProtectionModeDto(Long variableKey, ProtectionModeDbModel mode) {}
 
   record MigrateToProcessDto(Long variableKey, String processDefinitionId) {
 
