@@ -18,6 +18,7 @@ const mockProcesses = [
     tenantId: '<default>',
     processDefinitionKey: '0',
     hasStartForm: false,
+    state: 'ACTIVE',
   },
   {
     name: null,
@@ -28,6 +29,7 @@ const mockProcesses = [
     tenantId: '<default>',
     processDefinitionKey: '1',
     hasStartForm: false,
+    state: 'ACTIVE',
   },
 ] satisfies Array<ProcessDefinition>;
 
