@@ -155,7 +155,8 @@ public final class RestoreValidator
     final var store =
         requireNonNull(backupStore, "Backup store must be configured to load backups");
     final var restoredPartitionCount = backupPartitionCount(store, ids[ids.length - 1]);
-
+    // A database that already holds exported positions has to belong to the partitions of the
+    // backup. One without any is restored from scratch, so the backup alone decides.
     final var exportedPositions =
         exportedPositionSupplier == null
             ? Map.<Integer, Long>of()
