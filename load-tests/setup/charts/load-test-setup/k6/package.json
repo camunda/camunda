@@ -10,6 +10,6 @@
     "test": "node --disable-warning=ExperimentalWarning --experimental-test-module-mocks --import ./tests/register-k6-stubs.js --experimental-test-coverage --test-coverage-include='scripts/*.js' --test 'tests/*.test.js'"
   },
   "devDependencies": {
-    "prettier": "3.9.9"
+    "prettier": "3.9.10"
   }
 }
