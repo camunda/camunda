@@ -350,12 +350,15 @@ public final class ProcessInstanceModificationModifyProcessor
       final DeployedProcess process,
       final ElementInstance processInstance) {
     final var value = command.getValue();
+    final long processInstanceKey = value.getProcessInstanceKey();
     final var activateInstructions = value.getActivateInstructions();
     final var terminateInstructions = value.getTerminateInstructions();
 
     return validateElementExists(process, activateInstructions)
         .flatMap(valid -> validateElementSupported(process, activateInstructions))
-        .flatMap(valid -> validateElementInstanceExists(process, terminateInstructions))
+        .flatMap(
+            valid ->
+                validateElementInstanceExists(process, terminateInstructions, processInstanceKey))
         .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
         .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
         .flatMap(valid -> validateAncestorKeys(process, value))
@@ -593,13 +596,19 @@ public final class ProcessInstanceModificationModifyProcessor
 
   private Either<Rejection, ?> validateElementInstanceExists(
       final DeployedProcess process,
-      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions,
+      final long processInstanceKey) {
 
     final List<Long> unknownElementInstanceKeys =
         terminateInstructions.stream()
             .map(ProcessInstanceModificationTerminateInstructionValue::getElementInstanceKey)
             .distinct()
-            .filter(instanceKey -> elementInstanceState.getInstance(instanceKey) == null)
+            .filter(
+                instanceKey -> {
+                  final var instance = elementInstanceState.getInstance(instanceKey);
+                  return instance == null
+                      || instance.getValue().getProcessInstanceKey() != processInstanceKey;
+                })
             .toList();
 
     if (unknownElementInstanceKeys.isEmpty()) {
