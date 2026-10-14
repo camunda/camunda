@@ -495,6 +495,66 @@ const mockQueryGroupsEndpoint = createEndpointMock({
 	method: endpoints.queryGroups.method,
 });
 
+const mockGetGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.getGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.getGroup.method,
+});
+
+const mockCreateGroupEndpoint = createEndpointMock({
+	endpoint: endpoints.createGroup.getUrl(),
+	method: endpoints.createGroup.method,
+});
+
+const mockUpdateGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.updateGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.updateGroup.method,
+});
+
+const mockDeleteGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.deleteGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.deleteGroup.method,
+});
+
+const mockQueryUsersByGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryUsersByGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.queryUsersByGroup.method,
+});
+
+const mockQueryClientsByGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryClientsByGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.queryClientsByGroup.method,
+});
+
+const mockQueryRolesByGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryRolesByGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.queryRolesByGroup.method,
+});
+
+const mockQueryMappingRulesByGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryMappingRulesByGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.queryMappingRulesByGroup.method,
+});
+
+const mockAssignUserToGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignUserToGroup.getUrl({groupId: ':groupId', username: ':username'})),
+	method: endpoints.assignUserToGroup.method,
+});
+
+const mockUnassignUserFromGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignUserFromGroup.getUrl({groupId: ':groupId', username: ':username'})),
+	method: endpoints.unassignUserFromGroup.method,
+});
+
+const mockAssignGroupToRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignGroupToRole.getUrl({roleId: ':roleId', groupId: ':groupId'})),
+	method: endpoints.assignGroupToRole.method,
+});
+
+const mockUnassignGroupFromRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignGroupFromRole.getUrl({roleId: ':roleId', groupId: ':groupId'})),
+	method: endpoints.unassignGroupFromRole.method,
+});
+
 export {
 	mockCreateCancellationBatchOperationEndpoint,
 	mockCreateMigrationBatchOperationEndpoint,
@@ -577,6 +637,18 @@ export {
 	mockCreateUserEndpoint,
 	mockUpdateUserEndpoint,
 	mockDeleteUserEndpoint,
+	mockGetGroupEndpoint,
+	mockCreateGroupEndpoint,
+	mockUpdateGroupEndpoint,
+	mockDeleteGroupEndpoint,
+	mockQueryUsersByGroupEndpoint,
+	mockQueryClientsByGroupEndpoint,
+	mockQueryRolesByGroupEndpoint,
+	mockQueryMappingRulesByGroupEndpoint,
+	mockAssignUserToGroupEndpoint,
+	mockUnassignUserFromGroupEndpoint,
+	mockAssignGroupToRoleEndpoint,
+	mockUnassignGroupFromRoleEndpoint,
 	mockQueryClusterVariablesEndpoint,
 	mockGetGlobalClusterVariableEndpoint,
 	mockGetTenantClusterVariableEndpoint,

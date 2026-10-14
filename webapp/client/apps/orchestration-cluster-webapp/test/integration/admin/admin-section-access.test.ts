@@ -11,12 +11,14 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryGroupsEndpoint,
 	mockQueryMappingRulesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryGroupsResponse} from '#/shared-test-modules/api-mocks/groups';
 import {createQueryMappingRulesResponse} from '#/shared-test-modules/api-mocks/mapping-rules';
 
 test.beforeEach(({network}) => {
@@ -59,6 +61,8 @@ test.describe('Admin section access', () => {
 		notFoundPage,
 		network,
 	}) => {
+		network.use(mockQueryGroupsEndpoint({successResponse: HttpResponse.json(createQueryGroupsResponse())}));
+
 		await adminIndexPage.gotoSection('groups');
 
 		await expect(adminIndexPage.sectionHeading('Groups')).toBeVisible();
