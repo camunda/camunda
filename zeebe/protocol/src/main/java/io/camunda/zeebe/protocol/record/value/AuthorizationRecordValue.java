@@ -50,4 +50,10 @@ public interface AuthorizationRecordValue extends RecordValue {
     /** Returns the resourceIds of this permission */
     Set<String> getResourceIds();
   }
+
+  /** The policy version the record was written with, 0 if it is not part of a policy update. */
+  @Value.Default
+  default long getPolicyVersion() {
+    return 0;
+  }
 }
