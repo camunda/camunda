@@ -49,6 +49,14 @@ export async function runApply(inputs: ApplyInputs, deps: ApplyDeps): Promise<Ap
 
   const plan = planApply(files, { zclIssues: labelled.issues, zclPullRequests: labelled.pullRequests, issueFacts });
   const warnings = plan.baselineEmpty ? [`No issues carry version:${plan.version}, so there was nothing to compare with.`] : [];
+  const unread = wanted.filter((number) => !issueFacts.has(number));
+  if (unread.length > 0) {
+    warnings.push(`The state of ${unread.length} of ${wanted.length} issues could not be read (${unread.slice(0, 5).map((number) => `#${number}`).join(', ')}${unread.length > 5 ? ', …' : ''}), so the comment comparison is incomplete.`);
+  }
+  const truncated = [...issueFacts].filter(([, state]) => state.commentsTruncated).map(([number]) => number);
+  if (truncated.length > 0) {
+    warnings.push(`${truncated.length} issues have more comments than were read (${truncated.slice(0, 5).map((number) => `#${number}`).join(', ')}${truncated.length > 5 ? ', …' : ''}), so an existing comment may be missed.`);
+  }
   return { markdown: renderReport(plan), divergence: plan, warnings };
 }
 
