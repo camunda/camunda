@@ -976,7 +976,7 @@ jobs:
           -D forkCount=3
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=16
-          -D argLine="@{argLine} -Xmx4g"
+          -D jvm.test.extra.args=-Xmx4g
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
