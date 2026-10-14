@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
@@ -66,6 +67,34 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8, 9), 9));
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  void shouldUseCustomExecutor() {
+    // given
+    final var executorInvocations = new AtomicInteger();
+    final Executor countingExecutor =
+        task -> {
+          executorInvocations.incrementAndGet();
+          task.run();
+        };
+    final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+    when(batchProcessor.process(any())).then(returnBatchSize());
+
+    // when
+    final var future =
+        AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
+            .minBatchSize(1)
+            .batchSize(3)
+            .executor(countingExecutor)
+            .buildAndExecute();
+
+    // then
+    assertThat(future)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting("totalDocumentsRead", "totalDocumentsProcessed")
+        .containsExactly(10L, 10L);
+    assertThat(executorInvocations).hasPositiveValue();
   }
 
   @Test
