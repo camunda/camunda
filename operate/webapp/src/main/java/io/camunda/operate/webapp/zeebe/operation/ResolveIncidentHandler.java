@@ -16,7 +16,6 @@ import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
-import java.util.Objects;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -44,8 +43,9 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
       return;
     }
 
-    if (!Objects.equals(operation.getProcessInstanceKey(), incident.getProcessInstanceKey())) {
-      // The incident must belong to this process instance (null-safe: fail closed).
+    // The incident must belong to this process instance (fail closed on missing keys).
+    if (operation.getProcessInstanceKey() == null
+        || !operation.getProcessInstanceKey().equals(incident.getProcessInstanceKey())) {
       failOperation(
           operation,
           String.format(
