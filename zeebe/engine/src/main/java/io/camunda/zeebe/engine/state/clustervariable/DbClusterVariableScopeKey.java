@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.clustervariable;
 
 import io.camunda.zeebe.db.DbKey;
+import io.camunda.zeebe.db.KeyStructure;
 import io.camunda.zeebe.db.impl.DbEnumValue;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
@@ -37,6 +38,13 @@ public class DbClusterVariableScopeKey implements DbKey {
     } else {
       scopeKey.wrapBuffer(emptyScopeKey);
     }
+  }
+
+  @Override
+  public void describe(final KeyStructure structure) {
+    scope.describe(structure);
+    // not serialized for the GLOBAL scope, see write()
+    structure.omittableString("scopeKey");
   }
 
   @Override

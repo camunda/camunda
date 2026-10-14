@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.DbKey;
+import io.camunda.zeebe.db.KeyStructure;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -21,6 +22,11 @@ public final class DbNullKey implements DbKey {
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     // do nothing
+  }
+
+  @Override
+  public void describe(final KeyStructure structure) {
+    // no components
   }
 
   @Override
