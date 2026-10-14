@@ -164,5 +164,10 @@ public class ResolveIncidentHandlerTest {
     final ArgumentCaptor<OperationEntity> captor = ArgumentCaptor.forClass(OperationEntity.class);
     verify(batchOperationWriter).updateOperation(captor.capture());
     assertThat(captor.getValue().getState()).isEqualTo(OperationState.FAILED);
+    assertThat(captor.getValue().getErrorMessage())
+        .isEqualTo(
+            String.format(
+                "No incident %s found for process instance %s.",
+                incidentKey, operationProcessInstanceKey));
   }
 }
