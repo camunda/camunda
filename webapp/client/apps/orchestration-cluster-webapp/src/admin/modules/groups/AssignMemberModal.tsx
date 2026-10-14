@@ -6,13 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
-import {useQuery} from '@tanstack/react-query';
+import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {X} from '@camunda/design-system/icons';
 import {
 	Button,
-	Combobox,
 	Dialog,
 	DialogBody,
 	DialogContent,
@@ -21,89 +19,55 @@ import {
 	DialogTitle,
 	Input,
 	Label,
-	type ComboboxOption,
+	MultiSelect,
 } from '@camunda/design-system';
 import type {MemberKind} from './members';
 import {useGroupMemberMutations} from './useGroupMemberMutations';
-import {queries} from '#/shared/http/queries';
-
-const CANDIDATE_LIMIT = 20;
-const CANDIDATE_SEARCH_DEBOUNCE = 300;
-
-type Candidates = {options: ComboboxOption[]; isError: boolean};
-
-function useCandidates(kind: MemberKind, isOidc: boolean, searchTerm: string): Candidates {
-	const filterValue = searchTerm === '' ? undefined : {$like: `*${searchTerm}*`};
-	const page = {from: 0, limit: CANDIDATE_LIMIT};
-
-	const users = useQuery({
-		...queries.queryUsers({filter: filterValue ? {username: filterValue} : {}, page}),
-		enabled: kind === 'users' && !isOidc,
-	});
-	const roles = useQuery({
-		...queries.queryRoles({filter: filterValue ? {roleId: filterValue} : {}, page}),
-		enabled: kind === 'roles',
-	});
-	const mappingRules = useQuery({
-		...queries.queryMappingRules({filter: filterValue ? {mappingRuleId: filterValue} : {}, page}),
-		enabled: kind === 'mappingRules',
-	});
-
-	switch (kind) {
-		case 'users':
-			return {
-				options: (users.data?.items ?? []).map(({username}) => ({value: username, label: username})),
-				isError: users.isError,
-			};
-		case 'roles':
-			return {
-				options: (roles.data?.items ?? []).map(({roleId}) => ({value: roleId, label: roleId})),
-				isError: roles.isError,
-			};
-		case 'mappingRules':
-			return {
-				options: (mappingRules.data?.items ?? []).map(({mappingRuleId}) => ({
-					value: mappingRuleId,
-					label: mappingRuleId,
-				})),
-				isError: mappingRules.isError,
-			};
-		case 'clients':
-			return {options: [], isError: false};
-	}
-}
+import {useMemberCandidates} from './useMemberCandidates';
 
 type Props = {
 	isOpen: boolean;
 	groupId: string;
 	kind: MemberKind;
 	isOidc: boolean;
+	assignedIds: string[];
 	onClose: () => void;
 };
 
-const AssignMemberModal: React.FC<Props> = ({isOpen, groupId, kind, isOidc, onClose}) => {
+const AssignMemberModal: React.FC<Props> = ({isOpen, groupId, kind, isOidc, assignedIds, onClose}) => {
 	const {t} = useTranslation();
 	const {assign} = useGroupMemberMutations(groupId);
 	const [selectedId, setSelectedId] = useState('');
-	const [searchDraft, setSearchDraft] = useState('');
-	const [searchTerm, setSearchTerm] = useState('');
-	const {options, isError: isCandidatesError} = useCandidates(kind, isOidc, searchTerm);
-	// Delegated logins keep their users in the identity provider, so there is no local list to pick from.
+	const [selectedIds, setSelectedIds] = useState<string[]>([]);
+	const {options, isError: isCandidatesError, setSearch} = useMemberCandidates(kind, isOidc, assignedIds);
+
 	const entersIdAsText = kind === 'clients' || (kind === 'users' && isOidc);
 	const title = t(`admin.groups.members.${kind}.assign`);
 	const inputId = `assign-${kind}-input`;
 
-	useEffect(() => {
-		const timeoutId = setTimeout(() => setSearchTerm(searchDraft), CANDIDATE_SEARCH_DEBOUNCE);
-		return () => clearTimeout(timeoutId);
-	}, [searchDraft]);
+	// Selected members stay listed while a search narrows the candidates, so their chips keep a label.
+	const pickerOptions = [
+		...selectedIds.filter((id) => !options.some(({value}) => value === id)).map((id) => ({value: id, label: id})),
+		...options,
+	];
+	const idsToAssign = entersIdAsText ? [selectedId.trim()].filter((id) => id !== '') : selectedIds;
 
 	const handleSubmit = () => {
-		const id = selectedId.trim();
-		if (id === '') {
+		if (idsToAssign.length === 0) {
 			return;
 		}
-		assign.mutate({kind, id}, {onSuccess: onClose});
+		assign.mutate(
+			{kind, ids: idsToAssign},
+			{
+				onSuccess: ({failed}) => {
+					if (failed.length === 0) {
+						onClose();
+					} else {
+						setSelectedIds(failed.map(({id}) => id));
+					}
+				},
+			},
+		);
 	};
 
 	return (
@@ -153,13 +117,15 @@ const AssignMemberModal: React.FC<Props> = ({isOpen, groupId, kind, isOidc, onCl
 								onChange={(event) => setSelectedId(event.target.value)}
 							/>
 						) : (
-							<Combobox
+							<MultiSelect
 								id={inputId}
+								className="w-full"
+								aria-label={t(`admin.groups.members.${kind}.idLabel`)}
 								externalFiltering
-								options={options}
-								value={selectedId === '' ? undefined : selectedId}
-								onValueChange={(value) => setSelectedId(value ?? '')}
-								onInputChange={setSearchDraft}
+								options={pickerOptions}
+								value={selectedIds}
+								onValueChange={setSelectedIds}
+								onInputChange={setSearch}
 								placeholder={t(`admin.groups.members.${kind}.select`)}
 								searchPlaceholder={t(`admin.groups.members.${kind}.search`)}
 							/>
@@ -175,7 +141,7 @@ const AssignMemberModal: React.FC<Props> = ({isOpen, groupId, kind, isOidc, onCl
 					<Button type="button" variant="secondary" onClick={onClose}>
 						{t('admin.groups.cancel')}
 					</Button>
-					<Button type="button" loading={assign.isPending} disabled={selectedId.trim() === ''} onClick={handleSubmit}>
+					<Button type="button" loading={assign.isPending} disabled={idsToAssign.length === 0} onClick={handleSubmit}>
 						{title}
 					</Button>
 				</DialogFooter>

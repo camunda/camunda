@@ -339,7 +339,7 @@ test.describe('Admin group detail', () => {
 		await expect(adminGroupDetailPage.cell('jane.doe')).toBeVisible();
 	});
 
-	test('should assign a user to the group', async ({adminGroupDetailPage, network}) => {
+	test('should assign a user to the group', async ({adminGroupDetailPage, page, network}) => {
 		network.use(
 			mockQueryUsersEndpoint({
 				successResponse: HttpResponse.json(createPage([createUser({username: 'new.user'})])),
@@ -351,6 +351,7 @@ test.describe('Admin group detail', () => {
 		await adminGroupDetailPage.button('Assign user').click();
 		await adminGroupDetailPage.dialogCombobox.click();
 		await adminGroupDetailPage.option('new.user').click();
+		await page.keyboard.press('Escape');
 
 		network.use(
 			mockQueryUsersByGroupEndpoint({
@@ -381,7 +382,7 @@ test.describe('Admin group detail', () => {
 		await expect(adminGroupDetailPage.cell('john.smith')).toBeVisible();
 	});
 
-	test('should assign a role to the group', async ({adminGroupDetailPage, network}) => {
+	test('should assign a role to the group', async ({adminGroupDetailPage, page, network}) => {
 		network.use(
 			mockQueryRolesEndpoint({
 				successResponse: HttpResponse.json(createPage([{roleId: 'viewer', name: 'Viewer'}])),
@@ -393,6 +394,7 @@ test.describe('Admin group detail', () => {
 		await adminGroupDetailPage.button('Assign role').click();
 		await adminGroupDetailPage.dialogCombobox.click();
 		await adminGroupDetailPage.option('viewer').click();
+		await page.keyboard.press('Escape');
 
 		network.use(
 			mockQueryRolesByGroupEndpoint({

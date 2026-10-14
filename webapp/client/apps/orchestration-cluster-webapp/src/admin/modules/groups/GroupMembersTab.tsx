@@ -14,7 +14,7 @@ import {Button, DataTable, Skeleton, type DataTableColumn, type DataTableRowActi
 import {queries} from '#/shared/http/queries';
 import {AssignMemberModal} from './AssignMemberModal';
 import {RemoveMemberModal} from './RemoveMemberModal';
-import {getMembersQuery, toMemberRow, type MemberKind, type MemberRow} from './members';
+import {getMemberId, getMembersQuery, toMemberRow, type MemberKind, type MemberRow} from './members';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES} from './searchSchema';
 
 type Props = {
@@ -45,13 +45,13 @@ const GroupMembersTab: React.FC<Props> = ({groupId, kind, isOidc}) => {
 	if (!isPlaceholderData && data !== undefined && pageIndex > lastPageIndex) {
 		setPageIndex(lastPageIndex);
 	}
-	const usernames = useMemo(() => (data?.items ?? []).map((item) => toMemberRow(kind, item).id), [data, kind]);
+	const memberIds = useMemo(() => (data?.items ?? []).map((item) => getMemberId(kind, item)), [data, kind]);
 
 	// The group's users endpoint only returns usernames, so name and email come from a second lookup.
 	const enrichesUsers = kind === 'users' && !isOidc;
 	const {data: userDetails} = useQuery({
-		...queries.queryUsers({filter: {username: {$in: usernames}}, page: {limit: usernames.length}}),
-		enabled: enrichesUsers && usernames.length > 0,
+		...queries.queryUsers({filter: {username: {$in: memberIds}}, page: {limit: memberIds.length}}),
+		enabled: enrichesUsers && memberIds.length > 0,
 		placeholderData: keepPreviousData,
 	});
 	const isEnriching = enrichesUsers && memberIds.length > 0 && userDetails === undefined;
@@ -149,6 +149,7 @@ const GroupMembersTab: React.FC<Props> = ({groupId, kind, isOidc}) => {
 					groupId={groupId}
 					kind={kind}
 					isOidc={isOidc}
+					assignedIds={memberIds}
 					onClose={() => setIsAssignOpen(false)}
 				/>
 			)}
