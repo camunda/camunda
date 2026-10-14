@@ -80,7 +80,8 @@ public class BpmnCompensationSubscriptionBehaviour {
               .setProcessDefinitionKey(context.getProcessDefinitionKey())
               .setCompensableActivityId(elementId)
               .setCompensableActivityInstanceKey(context.getElementInstanceKey())
-              .setCompensableActivityScopeKey(context.getFlowScopeKey());
+              .setCompensableActivityScopeKey(context.getFlowScopeKey())
+              .setStorageOrdinal(context.getStorageOrdinal());
 
       getCompensationHandlerId(element).ifPresent(compensation::setCompensationHandlerId);
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.storageordinals;
 
+import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -1803,5 +1805,193 @@ public final class StorageOrdinalAssignmentTest {
             .setActivateElements(List.of(activateElements))
             .setCompletionConditionFulfilled(completionConditionFulfilled);
     engine.job().withKey(jobKey).withResult(jobResult).complete();
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToCompensationSubscriptionRecords() {
+    // given: a compensable task followed by a compensate-all throw event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("compensation-subscription-process")
+                .startEvent()
+                .serviceTask("A", t -> t.zeebeJobType("ordinal-compensable-a"))
+                .boundaryEvent(
+                    "compensation-boundary",
+                    b ->
+                        b.compensation(
+                            c -> c.serviceTask("undoA", t -> t.zeebeJobType("ordinal-undo-a"))))
+                .moveToActivity("A")
+                .intermediateThrowEvent(
+                    "compensation-throw",
+                    ic -> ic.compensateEventDefinition().compensateEventDefinitionDone())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("compensation-subscription-process").create();
+
+    // when: the compensable task completes, so the subscription is created and then triggered
+    engine.job().ofInstance(processInstanceKey).withType("ordinal-compensable-a").complete();
+
+    // then: the CREATED event carries the ordinal
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntent(CompensationSubscriptionIntent.CREATED)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    // and: the TRIGGERED event, appended from the stored subscription, inherits it
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntent(CompensationSubscriptionIntent.TRIGGERED)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    // when: the compensation handler completes
+    engine.job().ofInstance(processInstanceKey).withType("ordinal-undo-a").complete();
+
+    // then: the COMPLETED event inherits it as well
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntent(CompensationSubscriptionIntent.COMPLETED)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToDeletedCompensationSubscriptionRecords() {
+    // given: a compensable task that is never compensated, so the subscription is deleted when the
+    // process instance completes
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("compensation-deleted-process")
+                .startEvent()
+                .serviceTask("A", t -> t.zeebeJobType("ordinal-deleted-compensable-a"))
+                .boundaryEvent(
+                    "compensation-boundary",
+                    b ->
+                        b.compensation(
+                            c ->
+                                c.serviceTask(
+                                    "undoA", t -> t.zeebeJobType("ordinal-deleted-undo-a"))))
+                .moveToActivity("A")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("compensation-deleted-process").create();
+
+    // when
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-deleted-compensable-a")
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntent(CompensationSubscriptionIntent.DELETED)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToMigratedCompensationSubscriptionRecords() {
+    // given: an instance past its compensable task, and a target definition to migrate it to
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("compensation-migration-source-process")
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("ordinal-migration-a"))
+                    .boundaryEvent(
+                        "boundary1",
+                        b ->
+                            b.compensation(
+                                c ->
+                                    c.serviceTask(
+                                        "undoA", t -> t.zeebeJobType("ordinal-migration-undo-a"))))
+                    .moveToActivity("A")
+                    .serviceTask("B", t -> t.zeebeJobType("ordinal-migration-b"))
+                    .intermediateThrowEvent(
+                        "compensation-throw", ic -> ic.compensateEventDefinition().activityRef("A"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("compensation-migration-target-process")
+                    .startEvent()
+                    .serviceTask("C", t -> t.zeebeJobType("ordinal-migration-c"))
+                    .boundaryEvent(
+                        "boundary2",
+                        b ->
+                            b.compensation(
+                                c ->
+                                    c.serviceTask(
+                                        "undoC", t -> t.zeebeJobType("ordinal-migration-undo-c"))))
+                    .moveToActivity("C")
+                    .serviceTask("D", t -> t.zeebeJobType("ordinal-migration-d"))
+                    .intermediateThrowEvent(
+                        "compensation-throw", ic -> ic.compensateEventDefinition().activityRef("C"))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, "compensation-migration-target-process");
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("compensation-migration-source-process").create();
+    engine.job().ofInstance(processInstanceKey).withType("ordinal-migration-a").complete();
+    RecordingExporter.compensationSubscriptionRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withIntent(CompensationSubscriptionIntent.CREATED)
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("B", "D")
+        .addMappingInstruction("boundary1", "boundary2")
+        .migrate();
+
+    // then: the MIGRATED event, rebuilt from the stored subscription, carries the ordinal
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntent(CompensationSubscriptionIntent.MIGRATED)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    // when: the migrated subscription is triggered
+    engine.job().ofInstance(processInstanceKey).withType("ordinal-migration-b").complete();
+
+    // then: the TRIGGERED event still carries the ordinal
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntent(CompensationSubscriptionIntent.TRIGGERED)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
   }
 }
