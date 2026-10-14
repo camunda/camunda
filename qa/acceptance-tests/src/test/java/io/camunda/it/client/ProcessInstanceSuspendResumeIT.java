@@ -444,6 +444,42 @@ public class ProcessInstanceSuspendResumeIT {
   }
 
   @Test
+  void shouldMarkUserTasksSuspendedWhileSuspendedAndClearMarkersOnResume() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .userTask("userTask")
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(model, processId + ".bpmn")
+        .send()
+        .join();
+    waitForProcessesToBeDeployed(camundaClient, f -> f.processDefinitionId(processId), 1);
+
+    final long processInstanceKey =
+        startProcessInstance(camundaClient, processId).getProcessInstanceKey();
+    waitForUserTask(camundaClient, f -> f.processInstanceKey(processInstanceKey));
+
+    // when
+    camundaClient.newSuspendProcessInstanceCommand(processInstanceKey).send().join();
+
+    // then
+    waitForUserTask(camundaClient, f -> f.processInstanceKey(processInstanceKey).isSuspended(true));
+
+    // when
+    camundaClient.newResumeProcessInstanceCommand(processInstanceKey).send().join();
+
+    // then
+    waitForUserTask(
+        camundaClient, f -> f.processInstanceKey(processInstanceKey).isSuspended(false));
+  }
+
+  @Test
   void shouldRejectUserTaskCompleteWhileSuspendedAndAcceptAfterResume() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
