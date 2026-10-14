@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,8 +73,9 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
   public static <DocType, SearchAfterFieldType> Builder<DocType, SearchAfterFieldType> builder(
       final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier,
-      final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor) {
-    return new Builder<>(batchSupplier, batchProcessor);
+      final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor,
+      final Executor executor) {
+    return new Builder<>(batchSupplier, batchProcessor, executor);
   }
 
   CompletableFuture<PipelineStats> execute() {
@@ -265,7 +265,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   public static final class Builder<DocType, SearchAfterFieldType> {
     private final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier;
     private final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor;
-    private Executor executor = ForkJoinPool.commonPool();
+    private final Executor executor;
     private Logger logger = DEFAULT_LOGGER;
     private AtomicInteger batchSize = new AtomicInteger(2500);
     private int minBatchSize = 50;
@@ -286,14 +286,11 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
     private Builder(
         final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier,
-        final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor) {
+        final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor,
+        final Executor executor) {
       this.batchSupplier = batchSupplier;
       this.batchProcessor = batchProcessor;
-    }
-
-    public Builder<DocType, SearchAfterFieldType> executor(final Executor executor) {
       this.executor = executor;
-      return this;
     }
 
     public Builder<DocType, SearchAfterFieldType> logger(final Logger logger) {
