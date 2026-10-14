@@ -1168,6 +1168,7 @@
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Hay más de una versión seleccionada para la decisión \"{{name}}\"",
+					"ariaLabel": "Panel de decisión",
 					"selectSingleVersion": "Para ver una tabla de decisión o una expresión literal, seleccione una sola versión",
 					"multipleTenantsSelected": "La decisión \"{{name}}\" existe en más de un inquilino",
 					"selectSingleTenant": "Para ver una tabla de decisión o una expresión literal, seleccione un solo inquilino",
@@ -1613,7 +1614,22 @@
 				},
 				"optionalFiltersMenu": {
 					"moreFilters": "Más filtros",
-					"allFiltersAdded": "Ya se han añadido todos los filtros"
+					"allFiltersAdded": "Ya se han añadido todos los filtros",
+					"removeFilter": "Quitar"
+				},
+				"dateRangeField": {
+					"custom": "Personalizado",
+					"enterDateRange": "Introduzca un intervalo de fechas",
+					"openModal": "Abrir el diálogo de intervalo de fechas",
+					"datePlaceholder": "AAAA-MM-DD",
+					"timePlaceholder": "hh:mm:ss",
+					"fromDate": "Fecha de inicio",
+					"toDate": "Fecha de fin",
+					"fromTime": "Hora de inicio",
+					"toTime": "Hora de fin",
+					"timeZone": "Zona horaria: {{timeZone}}",
+					"cancel": "Cancelar",
+					"apply": "Aplicar"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "es igual a",

@@ -115,21 +115,15 @@ describe('<FilterSidebar />', () => {
 		await expect.element(screen.getByText('my filters')).not.toBeVisible();
 	});
 
-	it('should keep the reset filters button visible and usable when collapsed', async () => {
+	it('should not render the reset filters button when collapsed', async () => {
 		storeStateLocally('operate.panelStates', {isFiltersCollapsed: true});
-		const onResetClick = vi.fn();
 		const screen = await render(
-			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false} onResetClick={onResetClick}>
+			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
 				<div>my filters</div>
 			</FilterSidebar>,
 		);
 
-		const resetButton = screen.getByRole('button', {name: 'Reset filters'});
-		await expect.element(resetButton).toBeVisible();
-		expect(resetButton.element().querySelector('svg')).not.toBeNull();
-
-		await userEvent.click(resetButton);
-
-		expect(onResetClick).toHaveBeenCalledTimes(1);
+		await expect.element(screen.getByRole('button', {name: 'Expand Filter'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).not.toBeInTheDocument();
 	});
 });

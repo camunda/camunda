@@ -13,7 +13,7 @@ import {it} from '#/vitest-modules/test-extend';
 import {OptionalFiltersMenu} from './OptionalFiltersMenu';
 
 describe('<OptionalFiltersMenu />', () => {
-	it('should disable the combobox with a tooltip when all filters are visible', async () => {
+	it('should disable the button with a tooltip when all filters are visible', async () => {
 		const screen = await render(
 			<OptionalFiltersMenu
 				visibleFilters={['a', 'b']}
@@ -25,8 +25,8 @@ describe('<OptionalFiltersMenu />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByRole('combobox')).toBeDisabled();
-		await userEvent.hover(screen.getByRole('combobox'), {force: true});
+		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeDisabled();
+		await userEvent.hover(screen.getByRole('button', {name: 'More filters'}), {force: true});
 		await expect.element(screen.getByRole('tooltip')).toHaveTextContent('All filters are already added');
 	});
 
@@ -43,11 +43,11 @@ describe('<OptionalFiltersMenu />', () => {
 			/>,
 		);
 
-		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 
-		await expect.element(screen.getByRole('option', {name: 'Filter B'})).toHaveTextContent('Filter B');
-		await expect.element(screen.getByRole('option', {name: 'Filter C'})).toHaveTextContent('Filter C');
-		await expect.element(screen.getByRole('option', {name: 'Filter A'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('menuitem', {name: 'Filter B'})).toHaveTextContent('Filter B');
+		await expect.element(screen.getByRole('menuitem', {name: 'Filter C'})).toHaveTextContent('Filter C');
+		await expect.element(screen.getByRole('menuitem', {name: 'Filter A'})).not.toBeInTheDocument();
 	});
 
 	it('should call onFilterSelect with the selected filter id', async () => {
@@ -63,8 +63,8 @@ describe('<OptionalFiltersMenu />', () => {
 			/>,
 		);
 
-		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
-		await userEvent.click(screen.getByRole('option', {name: 'Filter B'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Filter B'}));
 
 		expect(onFilterSelect).toHaveBeenCalledWith('b');
 	});

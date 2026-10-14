@@ -42,24 +42,24 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 	it('should list all optional filters in the menu', async () => {
 		const screen = await render(<Harness />);
 
-		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 
-		await expect.element(screen.getByRole('option', {name: 'Decision instance key(s)'})).toBeVisible();
-		await expect.element(screen.getByRole('option', {name: 'Process instance key'})).toBeVisible();
-		await expect.element(screen.getByRole('option', {name: 'Business ID'})).toBeVisible();
-		await expect.element(screen.getByRole('option', {name: 'Evaluation date range'})).toBeVisible();
+		await expect.element(screen.getByRole('menuitem', {name: 'Decision instance key(s)'})).toBeVisible();
+		await expect.element(screen.getByRole('menuitem', {name: 'Process instance key'})).toBeVisible();
+		await expect.element(screen.getByRole('menuitem', {name: 'Business ID'})).toBeVisible();
+		await expect.element(screen.getByRole('menuitem', {name: 'Evaluation date range'})).toBeVisible();
 	});
 
 	it('should show a filter selected from the menu and hide it from the menu', async () => {
 		const screen = await render(<Harness />);
 
-		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
-		await userEvent.click(screen.getByRole('option', {name: 'Process instance key'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
 
 		await expect.element(screen.getByLabelText('Process instance key')).toBeVisible();
 
-		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
-		await expect.element(screen.getByRole('option', {name: 'Process instance key'})).not.toBeInTheDocument();
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await expect.element(screen.getByRole('menuitem', {name: 'Process instance key'})).not.toBeInTheDocument();
 	});
 
 	it('should show filters that are active in the initial values', async () => {
@@ -76,8 +76,8 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		async (initialValues) => {
 			const screen = await render(<Harness initialValues={initialValues} />);
 
-			await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
-			await expect.element(screen.getByRole('option', {name: 'Evaluation date range'})).not.toBeInTheDocument();
+			await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+			await expect.element(screen.getByRole('menuitem', {name: 'Evaluation date range'})).not.toBeInTheDocument();
 		},
 	);
 
@@ -124,8 +124,8 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 	it('should open the date range modal when selecting the evaluation date range', async () => {
 		const screen = await render(<Harness />);
 
-		await userEvent.click(screen.getByRole('combobox', {name: 'More filters'}));
-		await userEvent.click(screen.getByRole('option', {name: 'Evaluation date range'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Evaluation date range'}));
 
 		await expect.element(screen.getByTestId('date-range-modal')).toBeVisible();
 	});

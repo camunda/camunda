@@ -66,7 +66,7 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		await operatePreviewDecisionsPage.goto();
 
 		await expect(operatePreviewDecisionsPage.heading).toBeAttached();
-		await expect(operatePreviewDecisionsPage.moreFiltersCombobox).toBeVisible();
+		await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
 		await expect(operatePreviewDecisionsPage.decisionPanel).toBeVisible();
 		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no decision selected')).toBeVisible();
 		await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();

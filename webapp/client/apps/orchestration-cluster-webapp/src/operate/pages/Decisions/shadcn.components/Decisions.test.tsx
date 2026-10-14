@@ -75,7 +75,7 @@ describe('<Decisions />', () => {
 		);
 		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
 
-		await expect.element(screen.getByRole('combobox', {name: 'More filters'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
 		await expect.element(screen.getByText('There is no decision selected')).toBeVisible();
 		await expect.element(screen.getByText('Decision instances')).toBeVisible();
 	});

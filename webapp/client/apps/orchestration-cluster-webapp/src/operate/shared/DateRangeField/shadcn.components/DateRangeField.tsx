@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useTranslation} from 'react-i18next';
 import {Field, useField, useForm} from 'react-final-form';
 import {Calendar} from '@camunda/design-system/icons';
 import {IconTextInput} from '#/operate/shared/IconInput/shadcn.components/IconTextInput';
@@ -40,13 +41,14 @@ const DateRangeField: React.FC<Props> = ({
 	onModalClose,
 	onClick,
 }) => {
+	const {t} = useTranslation();
 	const form = useForm();
 	const fromDateTime = useField<string>(fromDateTimeKey).input.value;
 	const toDateTime = useField<string>(toDateTimeKey).input.value;
 
 	const getInputValue = () => {
 		if (isModalOpen) {
-			return 'Custom';
+			return t('operate.shared.dateRangeField.custom');
 		}
 		if (fromDateTime !== '' && toDateTime !== '') {
 			return formatInputValue(new Date(fromDateTime), new Date(toDateTime));
@@ -69,8 +71,8 @@ const DateRangeField: React.FC<Props> = ({
 					labelText={label}
 					value={getInputValue()}
 					title={getInputValue()}
-					placeholder="Enter date range"
-					buttonLabel="Open date range modal"
+					placeholder={t('operate.shared.dateRangeField.enterDateRange')}
+					buttonLabel={t('operate.shared.dateRangeField.openModal')}
 					onIconClick={handleClick}
 					onClick={handleClick}
 				/>

@@ -8,9 +8,10 @@
 
 import {useEffect, useState} from 'react';
 import type {FieldValidator} from 'final-form';
+import {useTranslation} from 'react-i18next';
 import {Field, useForm} from 'react-final-form';
 import {cn} from '#/shared/cn';
-import {Checkbox, IconButton, Label, Separator} from '@camunda/design-system';
+import {Button, Checkbox, Label, Separator, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
 import {X} from '@camunda/design-system/icons';
 import {OptionalFiltersMenu} from '#/operate/shared/OptionalFiltersMenu/shadcn.components/OptionalFiltersMenu';
 import {DateRangeField} from '#/operate/shared/DateRangeField/shadcn.components/DateRangeField';
@@ -52,6 +53,7 @@ const OptionalFiltersFormGroup = <Id extends string>({
 	onVisibleFilterChange,
 	getRemoveFilterLabel,
 }: Props<Id>) => {
+	const {t} = useTranslation();
 	const form = useForm();
 	const [openDateRangeFilter, setOpenDateRangeFilter] = useState<Id | undefined>();
 
@@ -149,25 +151,30 @@ const OptionalFiltersFormGroup = <Id extends string>({
 					<div key={definition.id} className="flex items-start gap-1">
 						<div className="min-w-0 flex-1">{renderFilter(definition)}</div>
 						<div className={cn('flex items-center', definition.type === 'checkbox' ? 'self-center' : 'mt-6 h-9')}>
-							<IconButton
-								variant="ghost"
-								size="sm"
-								icon={X}
-								label={getRemoveFilterLabel(definition.label)}
-								tooltipSide="top"
-								onClick={() => {
-									onVisibleFilterChange((currentVisibleFilters) =>
-										currentVisibleFilters.filter((visibleFilter) => visibleFilter !== definition.id),
-									);
-									definition.keys.forEach((key) => {
-										form.change(key, undefined);
-									});
-									if (definition.type === 'custom') {
-										definition.onRemove?.();
-									}
-									form.submit();
-								}}
-							/>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="ghost"
+										size="icon-sm"
+										aria-label={getRemoveFilterLabel(definition.label)}
+										onClick={() => {
+											onVisibleFilterChange((currentVisibleFilters) =>
+												currentVisibleFilters.filter((visibleFilter) => visibleFilter !== definition.id),
+											);
+											definition.keys.forEach((key) => {
+												form.change(key, undefined);
+											});
+											if (definition.type === 'custom') {
+												definition.onRemove?.();
+											}
+											form.submit();
+										}}
+									>
+										<X aria-hidden />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent side="top">{t('operate.shared.optionalFiltersMenu.removeFilter')}</TooltipContent>
+							</Tooltip>
 						</div>
 					</div>
 				))}

@@ -1180,6 +1180,7 @@
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "There is more than one version selected for decision \"{{name}}\"",
+					"ariaLabel": "Decision Panel",
 					"selectSingleVersion": "To see a decision table or a literal expression, select a single version",
 					"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one tenant",
 					"selectSingleTenant": "To see a decision table or a literal expression, select a single tenant",
@@ -1625,7 +1626,22 @@
 				},
 				"optionalFiltersMenu": {
 					"moreFilters": "More filters",
-					"allFiltersAdded": "All filters are already added"
+					"allFiltersAdded": "All filters are already added",
+					"removeFilter": "Remove"
+				},
+				"dateRangeField": {
+					"custom": "Custom",
+					"enterDateRange": "Enter date range",
+					"openModal": "Open date range modal",
+					"datePlaceholder": "YYYY-MM-DD",
+					"timePlaceholder": "hh:mm:ss",
+					"fromDate": "From date",
+					"toDate": "To date",
+					"fromTime": "From time",
+					"toTime": "To time",
+					"timeZone": "Time zone: {{timeZone}}",
+					"cancel": "Cancel",
+					"apply": "Apply"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "equals",
