@@ -9,6 +9,7 @@ package io.camunda.zeebe.db.impl;
 
 import io.camunda.zeebe.db.ContainsForeignKeys;
 import io.camunda.zeebe.db.DbKey;
+import io.camunda.zeebe.db.KeyStructure;
 import java.util.Collection;
 import java.util.Collections;
 import org.agrona.DirectBuffer;
@@ -53,6 +54,21 @@ public record DbTenantAwareKey<WrappedKey extends DbKey>(
         wrappedKey.wrap(buffer, offset, length);
         final var wrappedKeyLength = wrappedKey.getLength();
         tenantKey.wrap(buffer, offset + wrappedKeyLength, length - wrappedKeyLength);
+      }
+      default -> throw new IllegalStateException("Unexpected value: " + placementType);
+    }
+  }
+
+  @Override
+  public void describe(final KeyStructure structure) {
+    switch (placementType) {
+      case PREFIX -> {
+        tenantKey.describe(structure);
+        wrappedKey.describe(structure);
+      }
+      case SUFFIX -> {
+        wrappedKey.describe(structure);
+        tenantKey.describe(structure);
       }
       default -> throw new IllegalStateException("Unexpected value: " + placementType);
     }
