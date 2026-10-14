@@ -1,9 +1,12 @@
 """Shared state and helpers of the verification checks."""
 
+import os
 import subprocess
 import sys
 import time
 from collections.abc import Callable
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from dataclasses import field
 
@@ -16,6 +19,33 @@ class VerifyError(Exception):
 
 def log(message: str) -> None:
     print(message, file=sys.stderr, flush=True)
+
+
+def github_actions() -> bool:
+    return os.environ.get("GITHUB_ACTIONS") == "true"
+
+
+def log_error(message: str) -> None:
+    """Log an error, as an annotation when running in GitHub Actions."""
+    if github_actions():
+        escaped = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        log(f"::error::{escaped}")
+    else:
+        log(f"Error: {message}")
+
+
+@contextmanager
+def group(title: str) -> Iterator[None]:
+    """Log what is written inside as a collapsed group when running in GitHub Actions."""
+    if not github_actions():
+        log(title)
+        yield
+        return
+    log(f"::group::{title}")
+    try:
+        yield
+    finally:
+        log("::endgroup::")
 
 
 def kubectl(*args: str, merge_stderr: bool = False) -> subprocess.CompletedProcess[str]:

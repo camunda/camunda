@@ -2,8 +2,10 @@
 
 from .context import Context
 from .context import VerifyError
+from .context import group
 from .context import kubectl
 from .context import log
+from .context import log_error
 
 
 def wait_for_pods(ctx: Context, label: str, description: str) -> None:
@@ -23,17 +25,20 @@ def wait_for_pods(ctx: Context, label: str, description: str) -> None:
             ctx.namespace,
             merge_stderr=True,
         )
-        log(result.stdout.rstrip())
+        with group("⇒ kubectl wait output"):
+            log(result.stdout.rstrip())
         if result.returncode == 0:
             log(f"{description} are ready in {ctx.namespace}")
             return
 
-        log(f"Not all {description} are ready in {ctx.namespace}")
+        log_error(f"Not all {description} are ready in {ctx.namespace}")
+        if attempt < ctx.wait_retries:
+            log(f"Pod wasn't ready yet. Retrying in {ctx.retry_delay}s...")
         pods = kubectl("get", "pod", "--no-headers", "-o", "wide", "-n", ctx.namespace)
-        log(pods.stdout.rstrip())
+        with group("Pods status"):
+            log(pods.stdout.rstrip())
         delete_out_of_cpu_pods(ctx, pods.stdout)
         if attempt < ctx.wait_retries:
-            log(f"Pods weren't ready yet. Retrying in {ctx.retry_delay}s...")
             ctx.sleep(ctx.retry_delay)
 
     raise VerifyError(f"Not all {description} are ready in {ctx.namespace} after {ctx.wait_retries} attempts")

@@ -13,6 +13,7 @@ from .context import Context
 from .context import VerifyError
 from .context import kubectl
 from .context import log
+from .context import log_error
 from .k6 import verify_metrics
 from .k6 import wait_for_testruns
 from .pods import wait_for_pods
@@ -145,10 +146,10 @@ def verify(
             prometheus_password,
         )
     except (VerifyError, ReportError) as error:
-        log(f"Error: {error}")
+        log_error(str(error))
         status = "failure"
     except Exception as error:  # noqa: BLE001
-        log(f"Unexpected error: {error!r}")
+        log_error(f"Unexpected error: {error!r}")
         status = "failure"
 
     report_result(status, result_file)

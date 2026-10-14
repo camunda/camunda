@@ -8,6 +8,7 @@ from urllib.request import urlopen
 
 from .context import Context
 from .context import VerifyError
+from .context import group
 from .context import log
 
 APP_CONNECTED_PATTERN = re.compile(r"^app_connected\s+(\S+)", re.MULTILINE)
@@ -52,16 +53,20 @@ def read_app_connected(ctx: Context, metrics_port: int) -> float | None:
 def verify_connected(ctx: Context, metrics_port: int, timeout: int) -> None:
     """Wait until `app_connected >= 1`, which confirms that the client received the topology, i.e. it authenticated
     and connected successfully, regardless of REST or gRPC."""
+    max_attempts = max(1, timeout // ctx.retry_delay)
     deadline = ctx.clock() + timeout
     attempt = 0
     while ctx.clock() < deadline:
         attempt += 1
-        log(f"Checking clients connectivity (attempt {attempt}, {max(0, deadline - ctx.clock()):.0f}s left)")
-        app_connected = read_app_connected(ctx, metrics_port)
-        if app_connected is not None and app_connected >= 1:
+        with group(f"⇒ connectivity checks {attempt}/{max_attempts}"):
+            log(f"Checking clients connectivity (attempt {attempt}, {max(0, deadline - ctx.clock()):.0f}s left)")
+            app_connected = read_app_connected(ctx, metrics_port)
+            connected = app_connected is not None and app_connected >= 1
+            if not connected:
+                log(f"Namespace {ctx.namespace}: waiting for gateway connectivity")
+        if connected:
             log(f"Namespace {ctx.namespace}: client connected to gateway (app.connected={app_connected:g})")
             return
-        log(f"Namespace {ctx.namespace}: waiting for gateway connectivity")
         ctx.sleep(min(ctx.retry_delay, max(0, deadline - ctx.clock())))
 
     raise VerifyError(

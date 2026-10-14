@@ -10,6 +10,7 @@ from loadtestctl.report.prometheus import PrometheusClient
 
 from .context import Context
 from .context import VerifyError
+from .context import group
 from .context import kubectl
 from .context import log
 from .pods import wait_for_pods
@@ -49,7 +50,8 @@ def wait_for_testruns(ctx: Context) -> None:
     for attempt in range(1, max_attempts + 1):
         log(f"Waiting for k6 TestRuns to be healthy (attempt {attempt}/{max_attempts})...")
         testruns = list_testruns(ctx)
-        log("\n".join(f"{name} {stage}" for name, stage in testruns.items()))
+        with group("⇒ k6 TestRuns status"):
+            log("\n".join(f"{name} {stage}" for name, stage in testruns.items()))
 
         if "error" in testruns.values():
             raise VerifyError(f"A k6 TestRun in {ctx.namespace} is unhealthy")
@@ -89,12 +91,16 @@ def verify_metrics(ctx: Context, new_client: Callable[[], PrometheusClient], tim
     client = new_client()
 
     query = f'sum(k6_http_reqs_total{{namespace="{ctx.namespace}", expected_response="true"}})'
+    max_attempts = max(1, timeout // ctx.retry_delay)
     deadline = ctx.clock() + timeout
     attempt = 0
     while ctx.clock() < deadline:
         attempt += 1
-        log(f"Checking k6 metrics (attempt {attempt}, {max(0, deadline - ctx.clock()):.0f}s left)")
-        http_reqs = query_value(client, query)
+        with group(f"⇒ k6 metrics checks {attempt}/{max_attempts}"):
+            log(f"Checking k6 metrics (attempt {attempt}, {max(0, deadline - ctx.clock()):.0f}s left)")
+            http_reqs = query_value(client, query)
+            if http_reqs < 1:
+                log(f"Namespace {ctx.namespace}: waiting for k6 metrics")
         if http_reqs >= 1:
             log(f"Namespace {ctx.namespace}: k6 reports metrics (k6_http_reqs_total={http_reqs:g})")
             return
