@@ -32,6 +32,10 @@ class OperatePreviewDecisionsPage extends BasePage {
 		return this.page.getByRole('region', {name: 'Decision Panel'});
 	}
 
+	get decisionViewer() {
+		return this.page.getByTestId('decision-viewer');
+	}
+
 	get instancesTable() {
 		return this.page.getByTestId('decision-instances-table');
 	}
