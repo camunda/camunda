@@ -32,7 +32,11 @@ on:
         required: false
 
 permissions:
-  contents: write
+  # read, not write: the only step that mutated repository contents was the
+  # `--delete-branch` on `gh pr close`, which is deliberately gone (the branch is
+  # what lets triage reopen the PR). What is left only reads the checkout and
+  # updates PR metadata.
+  contents: read
   pull-requests: write
 
 env:
