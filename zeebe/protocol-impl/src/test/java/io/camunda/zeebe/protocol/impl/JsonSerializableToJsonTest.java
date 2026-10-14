@@ -1412,7 +1412,8 @@ final class JsonSerializableToJsonTest {
                   .setMessageKey(3L)
                   .setCorrelationKey(wrapString("test-key"))
                   .setBusinessId(wrapString("test-business-id"))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .setStorageOrdinal(6);
             },
         """
                 {
@@ -1427,7 +1428,8 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "storageOrdinal": 6
                 }
                 """
       },
@@ -1457,7 +1459,8 @@ final class JsonSerializableToJsonTest {
                   "correlationKey": "",
                   "businessId": "",
                   "variables": {},
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "storageOrdinal": 0
                 }
                 """
       },

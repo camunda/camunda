@@ -33,6 +33,7 @@ final class MessageStartProcessInstanceRequestRecordTest {
     assertThat(record.getStartEventId()).isEmpty();
     assertThat(record.getMessageStartEventSubscriptionKey()).isEqualTo(-1L);
     assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(record.getStorageOrdinal()).isZero();
     assertThat(record.getMessageTtl()).isEqualTo(0L);
     assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(record.getVariables()).isEmpty();
@@ -55,6 +56,7 @@ final class MessageStartProcessInstanceRequestRecordTest {
             .setVariables(
                 new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{\"orderId\":\"order-42\"}")))
             .setProcessInstanceKey(2251799813685300L)
+            .setStorageOrdinal(1234)
             .setMessageDeadline(1_000_000L)
             .setMessageTtl(60_000L)
             .setTenantId("acme");
@@ -75,6 +77,7 @@ final class MessageStartProcessInstanceRequestRecordTest {
     assertThat(copy.getMessageStartEventSubscriptionKey())
         .isEqualTo(original.getMessageStartEventSubscriptionKey());
     assertThat(copy.getProcessInstanceKey()).isEqualTo(original.getProcessInstanceKey());
+    assertThat(copy.getStorageOrdinal()).isEqualTo(original.getStorageOrdinal());
     assertThat(copy.getMessageDeadline()).isEqualTo(original.getMessageDeadline());
     assertThat(copy.getMessageTtl()).isEqualTo(original.getMessageTtl());
     assertThat(copy.getTenantId()).isEqualTo(original.getTenantId());

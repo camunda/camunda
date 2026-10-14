@@ -32,6 +32,19 @@ public interface MutableMessageStartProcessInstanceDedupState
       long processDefinitionKey, long messageKey, long processInstanceKey, long deletionDeadline);
 
   /**
+   * Same as {@link #put(long, long, long, long)} and additionally stores the storage ordinal of the
+   * created instance, so a dedup hit can reply with the ordinal {@code P_K} needs for its
+   * CORRELATED event. The four-argument overload stays for the released v1 applier; rows it writes
+   * keep ordinal 0 (main index), which is correct for instances that predate the ordinal.
+   */
+  void put(
+      long processDefinitionKey,
+      long messageKey,
+      long processInstanceKey,
+      long deletionDeadline,
+      int storageOrdinal);
+
+  /**
    * Deletes the entry for the given {@code (processDefinitionKey, messageKey)}. Called by the
    * scheduled sweeper once the deletion deadline has passed.
    */

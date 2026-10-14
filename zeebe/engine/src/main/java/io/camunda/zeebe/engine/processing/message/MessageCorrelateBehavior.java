@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubs
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
@@ -303,7 +304,8 @@ public final class MessageCorrelateBehavior {
                 messageData.variables(),
                 messageData.correlationKey(),
                 messageData.tenantId(),
-                subscription.subscriptionKey()));
+                subscription.subscriptionKey(),
+                subscription.storageOrdinal()));
   }
 
   /**
@@ -460,7 +462,8 @@ public final class MessageCorrelateBehavior {
         .setVariables(messageData.variables())
         .setTenantId(messageData.tenantId())
         .setMessageDeadline(messageData.messageDeadline())
-        .setMessageTtl(messageData.messageTtl());
+        .setMessageTtl(messageData.messageTtl())
+        .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
     stateWriter.appendFollowUpEvent(
         messageData.messageKey(), MessageStartProcessInstanceRequestIntent.REQUESTED, askRecord);

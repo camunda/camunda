@@ -58,6 +58,27 @@ final class MessageStartProcessInstanceDedupStateTest {
   }
 
   @Test
+  void shouldStoreAndReadStorageOrdinal() {
+    // given
+    state.put(10L, 20L, 30L, 5_000L, 1234);
+
+    // when
+    final var entry = state.get(10L, 20L);
+
+    // then
+    assertThat(entry.getStorageOrdinal()).isEqualTo(1234);
+  }
+
+  @Test
+  void shouldDefaultStorageOrdinalToMainIndexForRowsWrittenWithoutOne() {
+    // given a row written through the legacy overload (released v1 applier)
+    state.put(10L, 20L, 30L, 5_000L);
+
+    // then
+    assertThat(state.get(10L, 20L).getStorageOrdinal()).isZero();
+  }
+
+  @Test
   void shouldKeyEntriesByProcessDefinitionAndMessageKey() {
     // given
     state.put(10L, 20L, 100L, 1_000L);

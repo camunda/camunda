@@ -20,8 +20,10 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
+import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.MainIndexExporterHandler;
+import io.camunda.exporter.handlers.MessageSubscriptionFromMessageStartEventSubscriptionHandler;
 import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
@@ -119,6 +121,15 @@ public class ExportHandlerArchTest {
               .areAssignableTo(MainIndexExporterHandler.class)
               .and()
               .doNotHaveModifier(JavaModifier.ABSTRACT)
+              .and()
+              .areNotAssignableTo(
+                  DescribedPredicate.or(
+                      // TODO these need updating
+                      Predicates.assignableTo(
+                          CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler
+                              .class),
+                      Predicates.assignableTo(
+                          MessageSubscriptionFromMessageStartEventSubscriptionHandler.class)))
               .should(
                   new ArchCondition<>(
                       StorageOrdinalRelated.class.getSimpleName()

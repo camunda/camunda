@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -155,7 +156,8 @@ public final class MessageStreamProcessorTest {
             anyBoolean(),
             eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
             any(),
-            anyLong());
+            anyLong(),
+            anyInt());
   }
 
   @Test
@@ -319,7 +321,8 @@ public final class MessageStreamProcessorTest {
             any(),
             any(),
             eq(DEFAULT_TENANT),
-            anyLong());
+            anyLong(),
+            anyInt());
   }
 
   @Test
@@ -366,7 +369,8 @@ public final class MessageStreamProcessorTest {
             any(),
             any(),
             eq(DEFAULT_TENANT),
-            anyLong());
+            anyLong(),
+            anyInt());
 
     verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -379,7 +383,8 @@ public final class MessageStreamProcessorTest {
             any(),
             any(),
             eq(DEFAULT_TENANT),
-            anyLong());
+            anyLong(),
+            anyInt());
   }
 
   @Test
@@ -483,7 +488,8 @@ public final class MessageStreamProcessorTest {
             any(DirectBuffer.class),
             eq(firstSubscription.getCorrelationKeyBuffer()),
             eq(DEFAULT_TENANT),
-            anyLong());
+            anyLong(),
+            anyInt());
 
     verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -496,7 +502,8 @@ public final class MessageStreamProcessorTest {
             any(DirectBuffer.class),
             eq(secondSubscription.getCorrelationKeyBuffer()),
             eq(DEFAULT_TENANT),
-            anyLong());
+            anyLong(),
+            anyInt());
   }
 
   private void assertAllMessagesReceived(final MessageSubscriptionRecord subscription) {
@@ -525,7 +532,8 @@ public final class MessageStreamProcessorTest {
             any(),
             eq(subscription.getCorrelationKeyBuffer()),
             eq(DEFAULT_TENANT),
-            anyLong());
+            anyLong(),
+            anyInt());
 
     verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -538,7 +546,8 @@ public final class MessageStreamProcessorTest {
             any(),
             eq(subscription.getCorrelationKeyBuffer()),
             eq(DEFAULT_TENANT),
-            anyLong());
+            anyLong(),
+            anyInt());
   }
 
   private MessageSubscriptionRecord messageSubscription() {
