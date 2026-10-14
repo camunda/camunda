@@ -3,7 +3,7 @@
 A local setup to test the OIDC and physical tenant auth fixes of 8.10.4 by hand. It is not part of
 the build.
 
-- One Keycloak on `http://localhost:18080` with the realms `idp-root`, `idp-a` and `idp-b`.
+- One Keycloak on `http://localhost:18080` with the realms `idp-root`, `idp-a`, `idp-b` and `idp-c`.
 - One Camunda on `http://localhost:8080` (REST and web apps) and `localhost:26500` (gRPC), with
   in-memory H2.
 
@@ -60,20 +60,25 @@ The check scripts need `curl` and Docker. They run `grpcurl` in a container.
 
 Config: [`config/multi-idp.yaml`](config/multi-idp.yaml). The default slot sets only
 `username-claim: preferred_username` and `client-id-claim: client_id`. Provider `alpha` (`idp-a`)
-sets no claims. Provider `beta` (`idp-b`) sets only `username-claim: tenant_user`.
+sets no claims. Provider `beta` (`idp-b`) sets only `username-claim: tenant_user`. Provider `gamma`
+(`idp-c`) sets only `client-id-claim: tenant_client`.
 
-|           Check            | 8.9.23  |                              8.10.3                               |    8.10.4     |
-|----------------------------|---------|-------------------------------------------------------------------|---------------|
-| `check-multi-idp.sh`, REST | 200     | 403 for alpha, 400 for beta ("clientId claim (<not configured>)") | 200           |
-| `check-multi-idp.sh`, gRPC | OK      | OK                                                                | OK            |
-| Browser login with `alpha` | `alice` | the token's `sub`, and the web apps deny access                   | `alice`       |
-| Browser login with `beta`  | `alice` | `idp-b-alice`                                                     | `idp-b-alice` |
+|           Check            |         8.9.23          |                              8.10.3                               |    8.10.4     |
+|----------------------------|-------------------------|-------------------------------------------------------------------|---------------|
+| `check-multi-idp.sh`, REST | 200                     | 403 for alpha, 400 for beta ("clientId claim (<not configured>)") | 200           |
+| `check-multi-idp.sh`, gRPC | OK                      | OK                                                                | OK            |
+| `gamma` M2M, REST and gRPC | 403, `PermissionDenied` | not run                                                           | 200, OK       |
+| Browser login with `alpha` | `alice`                 | the token's `sub`, and the web apps deny access                   | `alice`       |
+| Browser login with `beta`  | `alice`                 | `idp-b-alice`                                                     | `idp-b-alice` |
 
 New in 8.10: a named provider can override the global `username-claim`, `client-id-claim` and
 `prefer-username-claim`. 8.9 binds these settings but does not use them, so `beta` logs in as
 `alice` there. Since 8.10.4, a claim that the provider does not set comes from the global slot.
 The docs for 8.9 and 8.10 describe only the global claims; [camunda/camunda-docs#10357](https://github.com/camunda/camunda-docs/pull/10357) adds the
 override.
+
+8.9 also ignores the `client-id-claim` of `gamma`, so its two checks fail on 8.9.23. This is
+expected.
 
 For the browser login, open `http://localhost:8080/operate` and select the provider. For a fast
 check without a browser, run `./scripts/login.sh "" alpha`.
@@ -88,6 +93,44 @@ Manual checks:
   over gRPC and over REST.
 - Upgrade: start with `CAMUNDA_VERSION=8.9.23`, then 8.10.4. M2M and login with `alpha` work on
   both.
+
+### Upgrade from 8.9
+
+By default the stack keeps the secondary storage in memory. The overlay
+[`config/persistent-h2.yaml`](config/persistent-h2.yaml) writes it to the data volume, so it
+survives when compose recreates the container with another version. Do not run
+`docker compose down` between the versions, it removes the volume.
+
+```bash
+docker compose down -v
+export CONFIG=multi-idp OVERLAY=persistent-h2
+CAMUNDA_VERSION=8.9.23 docker compose up -d --wait
+./scripts/check-multi-idp.sh                          # gamma fails, as expected on 8.9
+c8ctl run scripts/process.bpmn --profile s1-alpha
+c8ctl list pi --profile s1-alpha --state COMPLETED
+
+CAMUNDA_VERSION=8.10.4 docker compose up -d --wait    # recreates only camunda, keeps the data
+./scripts/check-multi-idp.sh                          # all checks pass
+c8ctl list pi --profile s1-alpha --state COMPLETED    # the instance from 8.9.23 is still there
+```
+
+A version cannot start on the data of a newer version. To go back, run `docker compose down -v`.
+
+### c8ctl profiles
+
+c8ctl uses only REST. Add `/v2` to the base URL, and use the tenant path for a physical tenant:
+
+```bash
+c8ctl add profile s1-alpha --baseUrl http://localhost:8080/v2 \
+  --clientId idp-a-m2m --clientSecret idp-a-m2m-secret \
+  --oAuthUrl http://localhost:18080/realms/idp-a/protocol/openid-connect/token
+c8ctl add profile s2-tenanta --baseUrl http://localhost:8080/physical-tenants/tenanta/v2 \
+  --clientId idp-a-m2m --clientSecret idp-a-m2m-secret \
+  --oAuthUrl http://localhost:18080/realms/idp-a/protocol/openid-connect/token
+
+c8ctl run scripts/process.bpmn --profile s1-alpha
+c8ctl list pi --profile s1-alpha --state COMPLETED    # the test process completes at once
+```
 
 ## Scenario 2: each physical tenant uses its own OIDC settings ([#65607](https://github.com/camunda/camunda/issues/65607), [#65633](https://github.com/camunda/camunda/issues/65633), [#65582](https://github.com/camunda/camunda/issues/65582))
 

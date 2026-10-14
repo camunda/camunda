@@ -1,0 +1,7 @@
+# Overlay for upgrade tests with CONFIG=multi-idp: H2 writes to the data volume, so the secondary
+# storage survives when compose recreates the container with another CAMUNDA_VERSION.
+camunda:
+  data:
+    secondary-storage:
+      rdbms:
+        url: jdbc:h2:file:/usr/local/camunda/data/h2/camunda;MODE=PostgreSQL
