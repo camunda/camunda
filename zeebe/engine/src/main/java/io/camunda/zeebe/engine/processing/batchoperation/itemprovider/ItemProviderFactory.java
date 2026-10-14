@@ -89,6 +89,9 @@ public class ItemProviderFactory {
 
   private ProcessInstanceItemProvider forModifyProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // Narrows rather than replaces: a caller-supplied state is ANDed with ACTIVE. The REST layer
+    // rejects a top-level state other than ACTIVE (see ProcessInstanceRequestValidator); states
+    // inside orFilters are not validated, so an impossible branch yields no items.
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
         metrics,
@@ -101,6 +104,7 @@ public class ItemProviderFactory {
 
   private ProcessInstanceItemProvider forMigrateProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // See forModifyProcessInstance.
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
         metrics,
@@ -113,6 +117,7 @@ public class ItemProviderFactory {
 
   private IncidentItemProvider forResolveIncident(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // See forModifyProcessInstance.
     return new IncidentItemProvider(
         searchClientsProxy,
         metrics,

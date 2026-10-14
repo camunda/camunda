@@ -503,8 +503,7 @@ paths:
       summary: Resolve related incidents (batch)
       description: |
         Resolves multiple instances of process instances.
-        Since only process instances with ACTIVE state can have unresolved incidents, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only incidents of ACTIVE process instances are resolved. The given filter only narrows the batch.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -521,7 +520,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -552,8 +553,7 @@ paths:
       summary: Migrate process instances (batch)
       description: |
         Migrate multiple process instances.
-        Since only process instances with ACTIVE state can be migrated, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only ACTIVE process instances are migrated. The given filter only narrows the batch.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -570,7 +570,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -601,8 +603,7 @@ paths:
       summary: Modify process instances (batch)
       description: |
         Modify multiple process instances.
-        Since only process instances with ACTIVE state can be modified, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only ACTIVE process instances are modified. The given filter only narrows the batch.
         In contrast to single modification operation, it is not possible to add variable instructions or modify by element key.
         It is only possible to use the element id of the source and target.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
@@ -621,7 +622,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:

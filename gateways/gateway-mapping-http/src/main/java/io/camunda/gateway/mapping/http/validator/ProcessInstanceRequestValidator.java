@@ -57,6 +57,8 @@ public class ProcessInstanceRequestValidator {
 
   private static final List<String> CANCELLABLE_PROCESS_INSTANCE_STATES =
       List.of(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name());
+  private static final List<String> ACTIVE_ONLY_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.ACTIVE.name());
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
       final ProcessInstanceCreationInstruction request) {
@@ -154,23 +156,46 @@ public class ProcessInstanceRequestValidator {
       final ProcessInstanceFilter filter) {
     return validate(
         violations ->
-            Stream.concat(
-                    Stream.of(filter), Stream.ofNullable(filter.orFilters()).flatMap(List::stream))
-                .flatMap(f -> f.stateOperations().stream())
-                .filter(
-                    operation ->
-                        operation.operator() == Operator.EQUALS
-                            || operation.operator() == Operator.IN)
-                .flatMap(operation -> operation.values().stream())
-                .filter(state -> !CANCELLABLE_PROCESS_INSTANCE_STATES.contains(state))
-                .distinct()
-                .forEach(
-                    state ->
-                        violations.add(
-                            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                                "state",
-                                toProtocolStateName(state),
-                                "one of " + CANCELLABLE_PROCESS_INSTANCE_STATES))));
+            validateProcessInstanceStateFilter(
+                filter, CANCELLABLE_PROCESS_INSTANCE_STATES, true, violations));
+  }
+
+  /** Rejects an explicitly named top-level state other than ACTIVE. */
+  public static Optional<ProblemDetail> validateResolveIncidentBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, false, violations));
+  }
+
+  /**
+   * Rejects explicitly named top-level states outside {@code allowedStates}. States inside
+   * orFilters are only checked when {@code validateOrFilters} is set; otherwise they are narrowed
+   * by the item provider, so a conflicting branch yields no items instead of a 400.
+   */
+  private static void validateProcessInstanceStateFilter(
+      final ProcessInstanceFilter filter,
+      final List<String> allowedStates,
+      final boolean validateOrFilters,
+      final List<String> violations) {
+    Stream.concat(
+            Stream.of(filter),
+            validateOrFilters
+                ? Stream.ofNullable(filter.orFilters()).flatMap(List::stream)
+                : Stream.<ProcessInstanceFilter>empty())
+        .flatMap(f -> f.stateOperations().stream())
+        .filter(
+            operation ->
+                operation.operator() == Operator.EQUALS || operation.operator() == Operator.IN)
+        .flatMap(operation -> operation.values().stream())
+        .filter(state -> !allowedStates.contains(state))
+        .distinct()
+        .forEach(
+            state ->
+                violations.add(
+                    ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                        "state", toProtocolStateName(state), "one of " + allowedStates)));
   }
 
   // The API calls CANCELED instances TERMINATED; report the value the caller actually sent.
@@ -207,6 +232,10 @@ public class ProcessInstanceRequestValidator {
           final var filter =
               SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
           filter.ifLeft(violations::addAll);
+          filter.ifRight(
+              f ->
+                  validateProcessInstanceStateFilter(
+                      f, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, false, violations));
 
           final var migrationPlan = request.getMigrationPlan();
           if (migrationPlan == null) {
@@ -284,6 +313,10 @@ public class ProcessInstanceRequestValidator {
           final var filter =
               SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
           filter.ifLeft(violations::addAll);
+          filter.ifRight(
+              f ->
+                  validateProcessInstanceStateFilter(
+                      f, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, false, violations));
           if (request.getMoveInstructions() == null || request.getMoveInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
           } else {
