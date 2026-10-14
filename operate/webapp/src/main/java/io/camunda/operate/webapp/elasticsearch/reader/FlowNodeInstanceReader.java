@@ -132,7 +132,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       return getMetadataByFlowNodeId(
           processInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
     } else if (request.getFlowNodeInstanceId() != null) {
-      return getMetadataByFlowNodeInstanceId(request.getFlowNodeInstanceId());
+      return getMetadataByFlowNodeInstanceId(processInstanceId, request.getFlowNodeInstanceId());
     }
     return null;
   }
@@ -653,9 +653,11 @@ public class FlowNodeInstanceReader extends AbstractReader
     }
   }
 
-  private FlowNodeMetadataDto getMetadataByFlowNodeInstanceId(final String flowNodeInstanceId) {
+  private FlowNodeMetadataDto getMetadataByFlowNodeInstanceId(
+      final String processInstanceId, final String flowNodeInstanceId) {
 
-    final FlowNodeInstanceEntity flowNodeInstance = getFlowNodeInstanceEntity(flowNodeInstanceId);
+    final FlowNodeInstanceEntity flowNodeInstance =
+        getFlowNodeInstanceEntity(processInstanceId, flowNodeInstanceId);
 
     final FlowNodeMetadataDto result = new FlowNodeMetadataDto();
     result.setInstanceMetadata(buildInstanceMetadata(flowNodeInstance));
@@ -824,9 +826,12 @@ public class FlowNodeInstanceReader extends AbstractReader
     return null;
   }
 
-  private FlowNodeInstanceEntity getFlowNodeInstanceEntity(final String flowNodeInstanceId) {
+  private FlowNodeInstanceEntity getFlowNodeInstanceEntity(
+      final String processInstanceId, final String flowNodeInstanceId) {
     final FlowNodeInstanceEntity flowNodeInstance;
-    final TermQueryBuilder flowNodeInstanceIdQ = termQuery(ID, flowNodeInstanceId);
+    final QueryBuilder flowNodeInstanceIdQ =
+        joinWithAnd(
+            termQuery(ID, flowNodeInstanceId), termQuery(PROCESS_INSTANCE_KEY, processInstanceId));
     final SearchRequest request =
         ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
             .source(new SearchSourceBuilder().query(constantScoreQuery(flowNodeInstanceIdQ)));
