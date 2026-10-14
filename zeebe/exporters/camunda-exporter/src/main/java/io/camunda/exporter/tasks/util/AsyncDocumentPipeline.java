@@ -175,10 +175,9 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
       // around 2 second, and incrementing delay (default=1000ms) should give a
       // fighting chance to complete in the next attempt. If not will fail and
       // the next retry should take this over the full 2-second refresh interval
-      final int retryDelayMs = this.retryDelayMs * retryCount.get();
+      final long delayMs = ((long) retryDelayMs) * retryCount.get();
       return CompletableFuture.supplyAsync(
-          () -> null,
-          CompletableFuture.delayedExecutor(retryDelayMs, TimeUnit.MILLISECONDS, executor));
+          () -> null, CompletableFuture.delayedExecutor(delayMs, TimeUnit.MILLISECONDS, executor));
     }
     // reset retry count so the next batch starts with fresh retries
     retryCount.set(0);
