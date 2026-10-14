@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Keep Maven authoritative while evaluating a parallel Gradle build | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Keep Maven authoritative while evaluating a parallel Gradle build | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Carlo Sana"><meta data-rh="true" property="og:description" content="DRI: Carlo Sana"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-52869/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-52869/adr/gradle/gradle-experimental-ci-integration/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-52869/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-52869/assets/js/runtime~main.7d1b5e2d.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-52869/assets/js/main.46dcd3a8.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-52869/assets/js/runtime~main.86cb796f.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-52869/assets/js/main.2c0e6cda.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -171,12 +171,16 @@ failing integration test therefore neither triggers the alert nor hides a real G
 <p>This gives early signal and confidence while observing the experiment. The exact wiring of the
 notification is an implementation detail and can change without changing this decision.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="temporary-soft-integration">Temporary soft integration<a href="#temporary-soft-integration" class="hash-link" aria-label="Direct link to Temporary soft integration" title="Direct link to Temporary soft integration" translate="no">​</a></h2>
-<p>For the first weeks after the Gradle build lands, the D4 checks are not enforced. The
-<code>Gradle / Test Classes</code> and <code>Gradle / Distribution Parity</code> jobs still run as described in D4, but
-they are not part of <code>check-results</code>, so they never block a pull request or merge group. A failure
-on a push to <code>main</code> sends a Slack notification to the Gradle build notifications channel.
-The soft period ends, and the D4 behavior above applies in full, when the team agrees the build is
-stable enough to enforce it. Gradle stays opt-in for contributors until then.</p>
+<p>D4 describes the target state. The PR that introduces the Gradle build can be merged before that
+state is reached. For the first weeks after the Gradle build lands, the D4 checks are not enforced
+and run as a separate, non-blocking workflow (<code>gradle-ci.yml</code>, job <code>Gradle / Compile Check</code>) outside
+Unified CI. Unified CI is not designed for non-blocking jobs, and workflows that are not yet
+inclusion-worthy live in separate workflows until they are. The workflow is not part of
+<code>check-results</code>, so it never blocks a pull request or merge group. A failure on a push to <code>main</code>
+sends a Slack notification to the Gradle build notifications channel.</p>
+<p>This is temporary. The soft period ends when the team agrees the build is stable enough to enforce
+it. The checks then move into Unified CI and <code>check-results</code>, and the D4 behavior applies in full.
+Gradle stays opt-in for contributors until then.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deferred-work">Deferred work<a href="#deferred-work" class="hash-link" aria-label="Direct link to Deferred work" title="Direct link to Deferred work" translate="no">​</a></h2>
 <p>The following work is intentionally excluded from this change:</p>
 <ul>
