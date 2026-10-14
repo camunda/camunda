@@ -203,7 +203,8 @@ public final class ProcessInstanceResumeProcessor
         new BufferedCommandRecord()
             .setProcessInstanceKey(command.getKey())
             .setProcessDefinitionKey(value.getProcessDefinitionKey())
-            .setTenantId(value.getTenantId()));
+            .setTenantId(value.getTenantId())
+            .setStorageOrdinal(value.getStorageOrdinal()));
 
     // the request is answered as soon as resuming has started (or restarted): draining the
     // buffer spans several command batches, and RESUMED is written only once it is empty
@@ -223,5 +224,6 @@ public final class ProcessInstanceResumeProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 }

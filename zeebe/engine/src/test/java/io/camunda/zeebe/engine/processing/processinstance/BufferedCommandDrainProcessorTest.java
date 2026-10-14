@@ -40,6 +40,7 @@ public final class BufferedCommandDrainProcessorTest {
 
   private static final long PROCESS_INSTANCE_KEY = 100L;
   private static final long BUFFERED_COMMAND_KEY = 200L;
+  private static final int STORAGE_ORDINAL = 1234;
 
   private MutableProcessingState processingState;
 
@@ -129,6 +130,53 @@ public final class BufferedCommandDrainProcessorTest {
         .appendFollowUpCommand(anyLong(), eq(ProcessInstanceIntent.RESUME_JOBS), any());
   }
 
+  @Test
+  void shouldStampOrdinalFromInstanceWhenDrainCarriesNone() {
+    // given
+    processingState
+        .getElementInstanceState()
+        .newInstance(
+            PROCESS_INSTANCE_KEY,
+            new ProcessInstanceRecord()
+                .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+                .setStorageOrdinal(STORAGE_ORDINAL),
+            ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    bufferCompleteElementCommand();
+
+    // when
+    processor.processRecord(drainCommand());
+
+    // then - instance in state is the source, DRAIN value carries no ordinal
+    final var drainedValue = ArgumentCaptor.forClass(BufferedCommandRecord.class);
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            eq(BUFFERED_COMMAND_KEY), eq(BufferedCommandIntent.DRAINED), drainedValue.capture());
+    assertThat(drainedValue.getValue().getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
+
+    final var nextDrainValue = ArgumentCaptor.forClass(BufferedCommandRecord.class);
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(PROCESS_INSTANCE_KEY), eq(BufferedCommandIntent.DRAIN), nextDrainValue.capture());
+    assertThat(nextDrainValue.getValue().getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
+  }
+
+  @Test
+  void shouldFallBackToDrainOrdinalWhenInstanceIsGone() {
+    // given - no element instance in state, buffer empty
+
+    // when
+    processor.processRecord(drainCommand(STORAGE_ORDINAL));
+
+    // then - DRAIN value fallback is used since the instance is gone
+    final var resumeJobsValue = ArgumentCaptor.forClass(ProcessInstanceRecord.class);
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(PROCESS_INSTANCE_KEY),
+            eq(ProcessInstanceIntent.RESUME_JOBS),
+            resumeJobsValue.capture());
+    assertThat(resumeJobsValue.getValue().getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
+  }
+
   private void bufferCompleteElementCommand() {
     final var command =
         new BufferedCommandRecord()
@@ -142,9 +190,15 @@ public final class BufferedCommandDrainProcessorTest {
   }
 
   private MockTypedRecord<BufferedCommandRecord> drainCommand() {
+    return drainCommand(0);
+  }
+
+  private MockTypedRecord<BufferedCommandRecord> drainCommand(final int storageOrdinal) {
     return new MockTypedRecord<>(
         PROCESS_INSTANCE_KEY,
         new RecordMetadata(),
-        new BufferedCommandRecord().setProcessInstanceKey(PROCESS_INSTANCE_KEY));
+        new BufferedCommandRecord()
+            .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+            .setStorageOrdinal(storageOrdinal));
   }
 }
