@@ -83,7 +83,7 @@ export type Operation =
 
 export interface ApplyPlan {
   readonly version: string;
-  /** Nothing carries the label, so there is nothing to compare with. */
+  /** No issue carries the label, so there is nothing to compare with. */
   readonly baselineEmpty: boolean;
   readonly issues: {
     readonly both: readonly number[];
@@ -124,8 +124,9 @@ export function parseGeneratorFiles(raw: { labels: string; comments: string; cha
   if (labels.version !== comments.version) {
     throw new Error(`labels.json and comments.json are for different versions (${labels.version} and ${comments.version}).`);
   }
-  if (!Array.isArray(labels.issues) || !Array.isArray(labels.pullRequests)) {
-    throw new Error('labels.json must hold an "issues" and a "pullRequests" array.');
+  const isNumbers = (value: unknown): boolean => Array.isArray(value) && value.every((item) => typeof item === 'number');
+  if (!isNumbers(labels.issues) || !isNumbers(labels.pullRequests)) {
+    throw new Error('labels.json must hold an "issues" and a "pullRequests" array of numbers.');
   }
   if (!Array.isArray(comments.entries) || !comments.entries.every(isCommentEntry)) {
     throw new Error('comments.json must hold an "entries" array of { issueNumber, prNumbers, relationKind, text, marker }.');
@@ -249,7 +250,7 @@ export function planApply(files: GeneratorFiles, observed: Observed): ApplyPlan 
 
   return {
     version: labels.version,
-    baselineEmpty: observed.zclIssues.size === 0 && observed.zclPullRequests.size === 0,
+    baselineEmpty: observed.zclIssues.size === 0,
     issues,
     pullRequests,
     operations,
@@ -316,7 +317,7 @@ export function renderReport(plan: ApplyPlan): string {
       '',
     );
     const diverges = plan.issues.generatorOnly.length + plan.issues.zclOnly.length > 0;
-    if (!diverges) lines.push('No divergence.', '');
+    if (!diverges) lines.push('No issue divergence.', '');
     lines.push(...bucket('Generator only', plan.issues.generatorOnly, plan.hints));
     lines.push(...bucket('zcl only', plan.issues.zclOnly, plan.hints));
   }

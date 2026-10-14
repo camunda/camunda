@@ -247,7 +247,29 @@ test('a clean comparison says there is no divergence', () => {
     observed({ zclIssues: new Set([1]), zclPullRequests: new Set([101]) }),
   );
 
-  assert.match(renderReport(plan), /No divergence/);
+  assert.match(renderReport(plan), /No issue divergence/);
+});
+
+test('a lone zcl-labelled pull request is not an issue baseline', () => {
+  const plan = planApply(files(), observed({ zclIssues: new Set(), zclPullRequests: new Set([101]) }));
+
+  assert.equal(plan.baselineEmpty, true);
+  assert.match(renderReport(plan), /nothing to compare with/);
+});
+
+test('matching issues are not called divergent while pull request counts differ', () => {
+  const plan = planApply(
+    files({
+      labels: { schemaVersion: '2.0.0', version: VERSION, issues: [1], pullRequests: [101, 102] },
+      comments: { schemaVersion: '2.0.0', version: VERSION, entries: [entry(1, [101], 'closing')] },
+    }),
+    observed({ zclIssues: new Set([1]), zclPullRequests: new Set([101]) }),
+  );
+
+  const markdown = renderReport(plan);
+
+  assert.match(markdown, /No issue divergence\./);
+  assert.match(markdown, /the generator plans 2, zcl labelled 1 \(1 in both\)/);
 });
 
 test('an empty baseline renders a warning instead of a comparison', () => {
@@ -321,6 +343,8 @@ test('parseGeneratorFiles names a labels.json or comments.json of the wrong shap
   const badEntries = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, entries: [{ issueNumber: 'x' }] });
 
   assert.throws(() => parseGeneratorFiles({ labels: noIssues, comments }), /labels\.json must hold/);
+  const stringIssues = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, issues: ['1'], pullRequests: [] });
+  assert.throws(() => parseGeneratorFiles({ labels: stringIssues, comments }), /array of numbers/);
   assert.throws(() => parseGeneratorFiles({ labels, comments: badEntries }), /comments\.json must hold/);
 });
 
