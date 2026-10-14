@@ -45,7 +45,7 @@ The scripts wait until Camunda is ready. `docker compose up --wait` does not wai
 
 The check scripts need `curl` and Docker. They run `grpcurl` in a container.
 
-## Scenario 1: named providers use the global claims (#65633)
+## Scenario 1: named providers use the global claims ([#65633](https://github.com/camunda/camunda/issues/65633))
 
 Config: [`config/multi-idp.yaml`](config/multi-idp.yaml). The default slot sets only
 `username-claim: preferred_username` and `client-id-claim: client_id`. Provider `alpha` (`idp-a`)
@@ -61,13 +61,13 @@ sets no claims. Provider `beta` (`idp-b`) sets only `username-claim: tenant_user
 New in 8.10: a named provider can override the global `username-claim`, `client-id-claim` and
 `prefer-username-claim`. 8.9 binds these settings but does not use them, so `beta` logs in as
 `alice` there. Since 8.10.4, a claim that the provider does not set comes from the global slot.
-The docs for 8.9 and 8.10 describe only the global claims; camunda/camunda-docs#10357 adds the
+The docs for 8.9 and 8.10 describe only the global claims; [camunda/camunda-docs#10357](https://github.com/camunda/camunda-docs/pull/10357) adds the
 override.
 
 For the browser login, open `http://localhost:8080/operate` and select the provider. For a fast
 check without a browser, run `./scripts/login.sh "" alpha`.
 
-## Scenario 2: each physical tenant uses its own OIDC settings (#65607, #65633)
+## Scenario 2: each physical tenant uses its own OIDC settings ([#65607](https://github.com/camunda/camunda/issues/65607), [#65633](https://github.com/camunda/camunda/issues/65633))
 
 Config: [`config/physical-tenants.yaml`](config/physical-tenants.yaml).
 
@@ -83,14 +83,14 @@ Config: [`config/physical-tenants.yaml`](config/physical-tenants.yaml).
    - `http://localhost:8080/physical-tenants/tenantb/operate`
    - `http://localhost:8080/operate`
 3. Check the username in the web app and on `/physical-tenants/<tenant>/v2/authentication/me`.
-4. For camunda/camunda-security-library#720, log in to the tenants in a different order, each in a new private window: `tenantb`,
+4. For [camunda/camunda-security-library#720](https://github.com/camunda/camunda-security-library/issues/720), log in to the tenants in a different order, each in a new private window: `tenantb`,
    then `default`, then `tenanta`. The usernames must not change with the order. `tenantb` and
    `default` use the same registration id `oidc` with different issuers.
 
 On 8.10.3, the M2M token of `idp-a` gets 403 on `tenanta` over REST, because `partnera` does not
 use the tenant's `client-id-claim`.
 
-## Scenario 4: a tenant rejects tokens from IdPs that it does not assign (#65501)
+## Scenario 4: a tenant rejects tokens from IdPs that it does not assign ([#65501](https://github.com/camunda/camunda/issues/65501))
 
 Same config as scenario 2. Run `./scripts/check-physical-tenants.sh`. The scenario 4 checks send
 tokens from `idp-b` and `idp-root` to `tenanta`, and from `idp-a` and `idp-root` to `tenantb`.
