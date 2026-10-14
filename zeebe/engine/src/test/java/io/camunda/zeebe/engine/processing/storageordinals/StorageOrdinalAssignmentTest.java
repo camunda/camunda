@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -648,17 +649,63 @@ public final class StorageOrdinalAssignmentTest {
   }
 
   @Test
-  public void shouldKeepDeploymentScopedStartEventSubscriptionsOnMainIndex() {
-    // given: a definition with a signal start event and a conditional start event
+  public void shouldMarkDeploymentScopedSignalStartEventSubscriptionAsNotOrdinalControlled() {
+    // given: a definition with a signal start event, which belongs to the definition, not an
+    // instance, so it is not ordinal-controlled
     final var deployment =
         engine
             .deployment()
             .withXmlResource(
-                Bpmn.createExecutableProcess("start-subscriptions-process")
+                Bpmn.createExecutableProcess("signal-start-subscription-process")
                     .startEvent("signal-start")
                     .signal("ordinal-definition-signal")
                     .endEvent()
-                    .moveToProcess("start-subscriptions-process")
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // then: the subscription opened for the definition carries no instance ordinal
+    final var signalStartSubscription =
+        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .withCatchEventId("signal-start")
+            .getFirst()
+            .getValue();
+    assertThat(signalStartSubscription.getCatchEventInstanceKey()).isEqualTo(-1L);
+    assertThat(signalStartSubscription.getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+
+    // when: a new version replaces the definition, the old subscription is closed
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("signal-start-subscription-process")
+                .startEvent()
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then: the DELETED event, appended from the stored subscription, is also not
+    // ordinal-controlled
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  // the conditional start path still reports the main index; it is switched to -1 separately
+  @Test
+  public void shouldKeepDeploymentScopedConditionalStartEventSubscriptionOnMainIndex() {
+    // given: a definition with a conditional start event
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("conditional-start-subscription-process")
                     .startEvent("conditional-start")
                     .condition(c -> c.condition("=x > 10"))
                     .endEvent()
@@ -667,16 +714,7 @@ public final class StorageOrdinalAssignmentTest {
     final long processDefinitionKey =
         deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
 
-    // then: the start-event subscriptions opened for the definition carry no instance ordinal
-    final var signalStartSubscription =
-        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
-            .withProcessDefinitionKey(processDefinitionKey)
-            .withCatchEventId("signal-start")
-            .getFirst()
-            .getValue();
-    assertThat(signalStartSubscription.getCatchEventInstanceKey()).isEqualTo(-1L);
-    assertThat(signalStartSubscription.getStorageOrdinal()).isZero();
-
+    // then: the subscription opened for the definition carries no instance ordinal
     final var conditionalStartSubscription =
         RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
             .withProcessDefinitionKey(processDefinitionKey)
@@ -686,24 +724,17 @@ public final class StorageOrdinalAssignmentTest {
     assertThat(conditionalStartSubscription.getProcessInstanceKey()).isEqualTo(-1L);
     assertThat(conditionalStartSubscription.getStorageOrdinal()).isZero();
 
-    // when: a new version replaces the definition, the old subscriptions are closed
+    // when: a new version replaces the definition, the old subscription is closed
     engine
         .deployment()
         .withXmlResource(
-            Bpmn.createExecutableProcess("start-subscriptions-process")
+            Bpmn.createExecutableProcess("conditional-start-subscription-process")
                 .startEvent()
                 .endEvent()
                 .done())
         .deploy();
 
-    // then: the DELETED events, appended from the stored subscriptions, keep ordinal 0 as well
-    assertThat(
-            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
-                .withProcessDefinitionKey(processDefinitionKey)
-                .getFirst()
-                .getValue()
-                .getStorageOrdinal())
-        .isZero();
+    // then: the DELETED event, appended from the stored subscription, keeps ordinal 0 as well
     assertThat(
             RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.DELETED)
                 .withProcessDefinitionKey(processDefinitionKey)
@@ -711,6 +742,70 @@ public final class StorageOrdinalAssignmentTest {
                 .getValue()
                 .getStorageOrdinal())
         .isZero();
+  }
+
+  @Test
+  public void shouldMarkLegacySignalStartEventSubscriptionAsNotOrdinalControlledWhenClosed() {
+    // given: a definition with a signal start event
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("legacy-signal-start-process")
+                    .startEvent("signal-start")
+                    .signal("legacy-definition-signal")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    final var created =
+        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+
+    // and: a start subscription row as it was persisted before the ordinal existed, with the
+    // default ordinal 0 persisted
+    final var legacyKey = created.getKey() + 100_000L;
+    final var legacySubscription =
+        new SignalSubscriptionRecord()
+            .setSignalName(BufferUtil.wrapString(created.getValue().getSignalName()))
+            .setProcessDefinitionKey(created.getValue().getProcessDefinitionKey())
+            .setBpmnProcessId(BufferUtil.wrapString(created.getValue().getBpmnProcessId()))
+            .setCatchEventId(BufferUtil.wrapString(created.getValue().getCatchEventId()))
+            .setTenantId(created.getValue().getTenantId())
+            .setCatchEventInstanceKey(-1L)
+            .setProcessInstanceKey(-1L)
+            .setStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX);
+    // the engine only applies a written event to state on replay, so stop and restart it around
+    // the write, as the neighbouring concurrent-timer tests do
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .signalSubscription(SignalSubscriptionIntent.CREATED, legacySubscription)
+            .key(legacyKey));
+    // starting the engine re-exports the whole partition log, so clear the previously seen records
+    RecordingExporter.reset();
+    engine.start();
+
+    // when: a new version replaces the definition, closing the legacy subscription
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("legacy-signal-start-process")
+                .startEvent()
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then: the DELETED event derives -1 instead of the persisted 0
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+                .withRecordKey(legacyKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
   }
 
   @Test

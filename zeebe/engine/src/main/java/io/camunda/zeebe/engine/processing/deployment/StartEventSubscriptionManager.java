@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionReco
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -153,9 +154,13 @@ public class StartEventSubscriptionManager {
   private void closeSignalStartEventSubscriptions(final DeployedProcess deployedProcess) {
     signalSubscriptionState.visitStartEventSubscriptionsByProcessDefinitionKey(
         deployedProcess.getKey(),
-        subscription ->
-            stateWriter.appendFollowUpEvent(
-                subscription.getKey(), SignalSubscriptionIntent.DELETED, subscription.getRecord()));
+        subscription -> {
+          final var record = subscription.getRecord();
+          // Start event subscriptions belong to the definition, not to an instance, enforce here
+          record.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+          stateWriter.appendFollowUpEvent(
+              subscription.getKey(), SignalSubscriptionIntent.DELETED, record);
+        });
   }
 
   private DeployedProcess findPreviousVersionOfProcess(
@@ -258,7 +263,8 @@ public class StartEventSubscriptionManager {
                   .setProcessDefinitionKey(processDefinition.getKey())
                   .setBpmnProcessId(processDefinition.getBpmnProcessId())
                   .setCatchEventId(startEvent.getId())
-                  .setTenantId(processDefinition.getTenantId());
+                  .setTenantId(processDefinition.getTenantId())
+                  .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
               final var subscriptionKey = keyGenerator.nextKey();
               stateWriter.appendFollowUpEvent(
