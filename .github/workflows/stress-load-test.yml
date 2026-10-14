@@ -43,9 +43,6 @@ on:
         default: true
         required: false
     outputs:
-      results-json:
-        description: 'JSON object {name: number, ...} from this variant''s metrics snapshot. Non-matrix callers only — see workflow description.'
-        value: ${{ jobs.collect-metrics.outputs.results-json }}
       soak-end-epoch:
         description: 'Unix epoch seconds when this variant''s soak period ended. Non-matrix callers only.'
         value: ${{ jobs.soak.outputs.soak_end_epoch }}
@@ -186,7 +183,7 @@ jobs:
   # Upload this variant's metrics as its own artifact for the caller's aggregate-metrics job to
   # re-read. Matrix job outputs are not reliably fanned out per-leg via `needs.<job>.outputs` (the
   # value returned is undefined/arbitrary across legs), so the artifact is the source of truth —
-  # not the workflow_call `results-json`/`soak-end-epoch` outputs above. The artifact name is
+  # not the workflow_call `soak-end-epoch` output above. The artifact name is
   # built from name, which the caller uses to map each downloaded artifact to a variant.
   upload-variant-metrics:
     name: Upload variant metrics artifact
@@ -194,18 +191,22 @@ jobs:
     needs: [ collect-metrics, soak ]
     if: always() && needs.collect-metrics.result == 'success'
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      actions: read
     steps:
+      - name: Download collected metrics
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: load-test-results-c8-${{ inputs.name }}
       - name: Write variant metrics manifest
         env:
-          RESULTS_JSON: ${{ needs.collect-metrics.outputs.results-json }}
           SOAK_END_EPOCH: ${{ needs.soak.outputs.soak_end_epoch }}
         run: |
           jq -n \
             --arg namespace "${NAMESPACE}" \
             --argjson soakEndEpoch "${SOAK_END_EPOCH:-0}" \
-            --argjson results "${RESULTS_JSON:-null}" \
-            '{namespace: $namespace, soakEndEpoch: $soakEndEpoch, results: ($results // {})}' \
+            --slurpfile results results.json \
+            '{namespace: $namespace, soakEndEpoch: $soakEndEpoch, results: ($results[0] // {})}' \
             > stress-result.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
