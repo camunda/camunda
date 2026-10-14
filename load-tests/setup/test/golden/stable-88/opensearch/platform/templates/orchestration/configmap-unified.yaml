@@ -261,7 +261,6 @@ data:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:
-                type: "opensearch"
                 url: "http://opensearch:9200"
                 awsEnabled: false
               history:
