@@ -209,3 +209,14 @@ test('should match the decisions page snapshot with a selected decision definiti
 	await expect(page.getByText('Invoice Amount')).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });
+
+test('should match the decisions page with the filter sidebar collapsed', async ({
+	operatePreviewDecisionsPage,
+	page,
+}) => {
+	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+	await page.getByRole('button', {name: 'Collapse Filter'}).click();
+	await expect(page.getByTestId('collapsed-panel')).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
