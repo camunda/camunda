@@ -142,8 +142,8 @@ public class ZeebeAgentInstanceImportService
       final AgentInstanceDto.AgentMetricsDto metrics = new AgentInstanceDto.AgentMetricsDto();
       metrics.setInputTokens(zeebeMetrics.getInputTokens());
       metrics.setOutputTokens(zeebeMetrics.getOutputTokens());
-      metrics.setCacheReadTokens(zeebeMetrics.getCacheReadTokenCount());
-      metrics.setCacheCreationTokens(zeebeMetrics.getCacheCreationTokenCount());
+      metrics.setCacheReadTokenCount(zeebeMetrics.getCacheReadTokenCount());
+      metrics.setCacheCreationTokenCount(zeebeMetrics.getCacheCreationTokenCount());
       metrics.setModelCalls(zeebeMetrics.getModelCalls());
       metrics.setToolCalls(zeebeMetrics.getToolCalls());
       agentDto.setMetrics(metrics);
@@ -182,7 +182,7 @@ public class ZeebeAgentInstanceImportService
       if (m != null) {
         totalInputTokens += m.getInputTokens();
         totalOutputTokens += m.getOutputTokens();
-        totalCacheTokens += m.getCacheReadTokens() + m.getCacheCreationTokens();
+        totalCacheTokens += m.getCacheReadTokenCount() + m.getCacheCreationTokenCount();
         totalModelCalls += m.getModelCalls();
         totalToolCalls += m.getToolCalls();
       }

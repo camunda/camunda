@@ -197,8 +197,8 @@ public interface ZeebeProcessInstanceScriptFactory {
           if (a.metrics != null) {
             if (a.metrics.inputTokens != null) { totalInput += a.metrics.inputTokens; }
             if (a.metrics.outputTokens != null) { totalOutput += a.metrics.outputTokens; }
-            if (a.metrics.cacheReadTokens != null) { totalCache += a.metrics.cacheReadTokens; }
-            if (a.metrics.cacheCreationTokens != null) { totalCache += a.metrics.cacheCreationTokens; }
+            if (a.metrics.cacheReadTokenCount != null) { totalCache += a.metrics.cacheReadTokenCount; }
+            if (a.metrics.cacheCreationTokenCount != null) { totalCache += a.metrics.cacheCreationTokenCount; }
             if (a.metrics.modelCalls != null) { totalModel += a.metrics.modelCalls; }
             if (a.metrics.toolCalls != null) { totalTool += a.metrics.toolCalls; }
           }

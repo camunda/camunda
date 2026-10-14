@@ -251,8 +251,8 @@ class ZeebeAgentInstanceImportServiceTest {
             .findFirst()
             .orElseThrow()
             .getMetrics();
-    assertThat(m.getCacheReadTokens()).isEqualTo(1000L);
-    assertThat(m.getCacheCreationTokens()).isEqualTo(20L);
+    assertThat(m.getCacheReadTokenCount()).isEqualTo(1000L);
+    assertThat(m.getCacheCreationTokenCount()).isEqualTo(20L);
     assertThat(instance.getAgentTotalInputTokens()).isEqualTo(300L);
     assertThat(instance.getAgentTotalOutputTokens()).isEqualTo(125L);
     assertThat(instance.getAgentTotalTokens()).isEqualTo(300L + 125L + 1000L + 20L + 5L);
