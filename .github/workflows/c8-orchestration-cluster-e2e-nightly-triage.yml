@@ -766,10 +766,22 @@ jobs:
           FIX_AGENT_REF:             ${{ github.ref_name }}
           SEND_SLACK_NOTIFICATION:   ${{ github.event_name == 'schedule' || github.event.inputs.send_slack_notification == 'true' }}
           DANGER_FORCE_REDISPATCH:   ${{ inputs.danger_force_redispatch || 'false' }}
+          # Reopen-instead-of-recreate (.github/scripts/nightly-fix-reopen.sh).
+          # Repository variables are not in a step's environment automatically,
+          # so without this wiring REOPEN_CLOSED_PRS can never be anything but
+          # its default and the whole reopen path is dead code.
+          REOPEN_CLOSED_PRS:         ${{ vars.REOPEN_CLOSED_PRS || 'false' }}
+          REOPEN_WINDOW_DAYS:        ${{ vars.REOPEN_WINDOW_DAYS || '7' }}
+          REOPEN_MAX_BEHIND:         ${{ vars.REOPEN_MAX_BEHIND || '150' }}
+          REOPEN_CAP:                ${{ vars.REOPEN_CAP || '3' }}
         run: |
           set -euo pipefail
 
+          # shellcheck source=.github/scripts/nightly-fix-reopen.sh
+          . "${GITHUB_WORKSPACE}/.github/scripts/nightly-fix-reopen.sh"
+
           echo '[]' > /tmp/fix_agent_runs.json
+          reopened_rows=()
 
           # ---------------------------------------------------------------------------
           # Load (or initialise) ledger from the nightly-triage-state branch.
@@ -875,6 +887,51 @@ jobs:
               if [ "$(echo "$specs" | jq 'length')" -eq 0 ]; then
                 echo "Version $version: all failing tests tracked by open product bugs — skipping"
                 continue
+              fi
+            fi
+
+            # ── Reopen a sweeper-closed PR rather than re-deriving its work ──
+            # close-stale-fix-prs closes yesterday's unmerged fix PR before this
+            # triage runs, and no longer deletes its branch — so that PR still
+            # carries the in-progress fix. Reopening it beats opening a new one
+            # that re-derives the same change, and the agent is told below to
+            # reuse an open PR on this version's branch slot once it exists.
+            #
+            # Every gate in nightly-fix-reopen.sh is a reason NOT to (a human
+            # close, a vanished branch, a branch far behind main, the reopen
+            # cap), and each falls back to the agent opening a fresh PR.
+            if [ "$REOPEN_CLOSED_PRS" = "true" ] \
+               && ! open_pr_exists "fix/nightly-${version}-"; then
+              # Spec files only — overlap on a shared helper or page object would
+              # match almost any fix PR for this version and adopt unrelated work.
+              #
+              # The suite-root prefix is re-added on purpose: triage strips
+              # "qa/c8-orchestration-cluster-e2e-test-suite/" from .file above,
+              # while `gh pr view --json files` reports repo-relative paths.
+              # Comparing the two forms directly would never match, and the
+              # reopen path would silently never fire.
+              version_specs=$(echo "$specs" | jq -c '
+                [ .[].file
+                  | select(test("\\.spec\\.[jt]s$"))
+                  | "qa/c8-orchestration-cluster-e2e-test-suite/" + . ]
+                | unique')
+              reopen_pick_out=$(reopen_pick "fix/nightly-${version}-" "$version_specs" || true)
+              if [ -n "$reopen_pick_out" ]; then
+                cand_n=$(printf '%s' "$reopen_pick_out" | cut -f1)
+                cand_branch=$(printf '%s' "$reopen_pick_out" | cut -f2)
+                cand_rc=$(printf '%s' "$reopen_pick_out" | cut -f3)
+                reopen_body=$(printf '%s\n\n%s\n%s\n%s\n\n%s' \
+                  "Reopened by the C8 Orchestration Cluster nightly triage — \`${version}\` is still failing on spec file(s) this PR already touches, so the fix agent appends here instead of opening a duplicate." \
+                  "- Triage run: ${TRIAGE_RUN_URL:-n/a}" \
+                  "- Dispatched into this PR: $(echo "$specs" | jq 'length') failure(s)" \
+                  "- Reopen $((cand_rc + 1)) of ${REOPEN_CAP}" \
+                  "<!-- triage-reopened version=${version} triage_run=${TRIAGE_RUN_URL:-} -->")
+                if reopen_commit "$cand_n" "$reopen_body"; then
+                  reopened_rows+=("${version}: reopened #${cand_n} (${cand_branch})")
+                  echo "Reopened PR #${cand_n} (${cand_branch}) for ${version}"
+                else
+                  echo "::warning::gh pr reopen failed for #${cand_n} — the agent will open a fresh PR"
+                fi
               fi
             fi
 
