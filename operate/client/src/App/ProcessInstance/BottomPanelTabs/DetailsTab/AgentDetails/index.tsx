@@ -42,6 +42,7 @@ import {ConversationMessage} from './ConversationMessage';
 import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
 import {AvailableTools} from './AvailableTools';
+import {getTotalTokens} from './getTotalTokens';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   UNKNOWN: 'Unknown',
@@ -126,6 +127,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   const statusLabel =
     STATUS_LABELS[agentInstance.status] ?? agentInstance.status;
   const {metrics, limits, definition} = agentInstance;
+  const totalTokens = getTotalTokens(metrics);
 
   const remainingAgentsCount =
     agentInstances.length < totalAgentsCount
@@ -184,7 +186,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
                 {metrics.modelCalls.toLocaleString()} model calls
               </Tag>
               <Tag type="gray" size="sm">
-                {(metrics.inputTokens + metrics.outputTokens).toLocaleString()}
+                {totalTokens.toLocaleString()}
                 &nbsp;tokens
               </Tag>
             </SectionTitle>
