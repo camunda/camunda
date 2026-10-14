@@ -771,6 +771,10 @@ jobs:
           # so without this wiring REOPEN_CLOSED_PRS can never be anything but
           # its default and the whole reopen path is dead code.
           REOPEN_CLOSED_PRS:         ${{ vars.REOPEN_CLOSED_PRS || 'false' }}
+          # Observation mode for the rollout: every gate is evaluated and logged,
+          # but reopen_commit is skipped, so a week of evidence can be collected
+          # before REOPEN_CLOSED_PRS is ever flipped on.
+          REOPEN_DRY_RUN:            ${{ vars.REOPEN_DRY_RUN || 'false' }}
           REOPEN_WINDOW_DAYS:        ${{ vars.REOPEN_WINDOW_DAYS || '7' }}
           REOPEN_MAX_BEHIND:         ${{ vars.REOPEN_MAX_BEHIND || '150' }}
           REOPEN_CAP:                ${{ vars.REOPEN_CAP || '3' }}
@@ -900,7 +904,7 @@ jobs:
             # Every gate in nightly-fix-reopen.sh is a reason NOT to (a human
             # close, a vanished branch, a branch far behind main, the reopen
             # cap), and each falls back to the agent opening a fresh PR.
-            if [ "$REOPEN_CLOSED_PRS" = "true" ] \
+            if { [ "$REOPEN_CLOSED_PRS" = "true" ] || [ "$REOPEN_DRY_RUN" = "true" ]; } \
                && ! open_pr_exists "fix/nightly-${version}-"; then
               # Spec files only — overlap on a shared helper or page object would
               # match almost any fix PR for this version and adopt unrelated work.
@@ -915,7 +919,22 @@ jobs:
                   | select(test("\\.spec\\.[jt]s$"))
                   | "qa/c8-orchestration-cluster-e2e-test-suite/" + . ]
                 | unique')
-              reopen_pick_out=$(reopen_pick "fix/nightly-${version}-" "$version_specs" || true)
+              # A workflow-level dispatch carries no specs, so version_specs is
+              # "[]" — which reopen_pick documents as "skip the overlap gate".
+              # Here that would match on the branch slot alone and could adopt an
+              # unrelated stale test-fix PR, so refuse instead: with nothing to
+              # match on there is no PR this dispatch can claim, and
+              # workflow-level fixes use ci/ branches anyway.
+              if [ "$version_specs" = "[]" ]; then
+                echo "    reopen: skip ${version} — dispatch carries no spec files to match on"
+                reopen_pick_out=""
+              else
+                reopen_pick_out=$(reopen_pick "fix/nightly-${version}-" "$version_specs" || true)
+              fi
+              if [ -n "$reopen_pick_out" ] && [ "$REOPEN_DRY_RUN" = "true" ]; then
+                echo "    reopen: DRY RUN — would reopen #$(printf '%s' "$reopen_pick_out" | cut -f1) for ${version}; not committing"
+                reopen_pick_out=""
+              fi
               if [ -n "$reopen_pick_out" ]; then
                 cand_n=$(printf '%s' "$reopen_pick_out" | cut -f1)
                 cand_branch=$(printf '%s' "$reopen_pick_out" | cut -f2)
