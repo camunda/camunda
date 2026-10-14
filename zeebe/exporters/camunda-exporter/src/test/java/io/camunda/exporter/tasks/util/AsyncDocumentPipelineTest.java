@@ -171,6 +171,86 @@ class AsyncDocumentPipelineTest {
 
   @Test
   void shouldFailIfNonRecoverableErrorOccursReadingBatches() {
+    final BatchSupplier<Integer, Integer> batchSupplier = mock(BatchSupplier.class);
+    when(batchSupplier.supply(any(), anyInt())).thenThrow(new RuntimeException("simulated error"));
+
+    final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+
+    final var builder =
+        AsyncDocumentPipeline.builder(batchSupplier, batchProcessor)
+            .minBatchSize(1)
+            .batchSize(3)
+            .maxRetryAttempts(2);
+
+    final var future = builder.buildAndExecute();
+    assertThat(future)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .havingRootCause()
+        .withMessage("simulated error");
+
+    verify(batchSupplier).supply(any(), anyInt());
+    verifyNoInteractions(batchProcessor);
+  }
+
+  @ParameterizedTest
+  @MethodSource("retryableErrors")
+  void shouldRetryIfRecoverableErrorOccursReadingBatches(final Throwable retryableError) {
+    final BatchSupplier<Integer, Integer> batchSupplier = mock(BatchSupplier.class);
+
+    when(batchSupplier.supply(any(), anyInt()))
+        .thenReturn(CompletableFuture.failedFuture(retryableError))
+        .thenReturn(CompletableFuture.completedFuture(DocumentBatch.from(List.of(1, 2, 3), 3)))
+        .thenReturn(CompletableFuture.completedFuture(DocumentBatch.from(List.of(4, 5, 6), 6)))
+        .thenReturn(CompletableFuture.failedFuture(retryableError))
+        .thenReturn(CompletableFuture.completedFuture(DocumentBatch.from(List.of(7, 8, 9), 9)))
+        .thenReturn(CompletableFuture.completedFuture(DocumentBatch.from(List.of(10), 10)));
+
+    final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+    when(batchProcessor.process(any())).then(returnBatchSize());
+
+    final var retryRecorder = mock(Runnable.class);
+
+    final var builder =
+        AsyncDocumentPipeline.builder(batchSupplier, batchProcessor)
+            .minBatchSize(3)
+            .batchSize(3)
+            .addRetryableException(RetryableException.class)
+            .maxRetryAttempts(2)
+            .retryDelayMs(1)
+            .retryRecorder(retryRecorder);
+
+    final var future = builder.buildAndExecute();
+    assertThat(future)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting("totalDocumentsRead", "totalDocumentsProcessed")
+        .containsExactly(10L, 10L);
+
+    final var inOrder = Mockito.inOrder(batchSupplier, batchProcessor, retryRecorder);
+    // first retry
+    inOrder.verify(batchSupplier).supply(null, 3);
+    inOrder.verify(retryRecorder).run();
+
+    inOrder.verify(batchSupplier).supply(null, 3);
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2, 3), 3));
+
+    inOrder.verify(batchSupplier).supply(3, 3);
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(4, 5, 6), 6));
+
+    // second retry
+    inOrder.verify(batchSupplier).supply(6, 3);
+    inOrder.verify(retryRecorder).run();
+
+    inOrder.verify(batchSupplier).supply(6, 3);
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8, 9), 9));
+
+    inOrder.verify(batchSupplier).supply(9, 3);
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  void shouldFailIfNonRecoverableErrorOccursProcessingBatches() {
     final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
     when(batchProcessor.process(any())).thenThrow(new RuntimeException("simulated error"));
 
@@ -194,7 +274,7 @@ class AsyncDocumentPipelineTest {
 
   @ParameterizedTest
   @MethodSource("retryableErrors")
-  void shouldRetryIfRecoverableErrorOccursReadingBatches(final Throwable retryableError) {
+  void shouldRetryIfRecoverableErrorOccursProcessingBatches(final Throwable retryableError) {
     final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
 
     when(batchProcessor.process(any()))
