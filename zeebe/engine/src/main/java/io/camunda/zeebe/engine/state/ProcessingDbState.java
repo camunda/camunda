@@ -90,6 +90,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutablePolicyUpdateState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -105,6 +106,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.policy.DbPolicyUpdateState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.engine.state.secretreference.DbSecretReferenceState;
@@ -159,6 +161,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableRoutingState routingState;
   private final MutableTenantState tenantState;
   private final MutableRoleState roleState;
+  private final MutablePolicyUpdateState policyUpdateState;
   private final MutableGroupState groupState;
   private final MutableMappingRuleState mappingRuleState;
   private final MutableBatchOperationState batchOperationState;
@@ -237,6 +240,7 @@ public class ProcessingDbState implements MutableProcessingState {
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
     roleState = new DbRoleState(zeebeDb, transactionContext);
+    policyUpdateState = new DbPolicyUpdateState(zeebeDb, transactionContext);
     groupState = new DbGroupState(zeebeDb, transactionContext, config);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
     mappingRuleState = new DbMappingRuleState(zeebeDb, transactionContext);
@@ -434,6 +438,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableRoleState getRoleState() {
     return roleState;
+  }
+
+  @Override
+  public MutablePolicyUpdateState getPolicyUpdateState() {
+    return policyUpdateState;
   }
 
   @Override

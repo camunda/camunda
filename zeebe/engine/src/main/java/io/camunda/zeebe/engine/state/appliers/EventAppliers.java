@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -158,6 +159,7 @@ public final class EventAppliers implements EventApplier {
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
     registerRoleAppliers(state);
+    registerPolicyUpdateAppliers(state);
     registerGroupAppliers(state);
     registerScalingAppliers(state);
     registerTenantAppliers(state);
@@ -998,6 +1000,16 @@ public final class EventAppliers implements EventApplier {
   private void registerClockAppliers(final MutableProcessingState state) {
     register(ClockIntent.PINNED, new ClockPinnedApplier(state.getClockState()));
     register(ClockIntent.RESETTED, new ClockResettedApplier(state.getClockState()));
+  }
+
+  private void registerPolicyUpdateAppliers(final MutableProcessingState state) {
+    register(
+        PolicyUpdateIntent.CHUNK_APPENDED,
+        new PolicyUpdateChunkAppendedApplier(state.getPolicyUpdateState()));
+    register(
+        PolicyUpdateIntent.ABORTED, new PolicyUpdateAbortedApplier(state.getPolicyUpdateState()));
+    register(
+        PolicyUpdateIntent.APPLIED, new PolicyUpdateAppliedApplier(state.getPolicyUpdateState()));
   }
 
   private void registerRoleAppliers(final MutableProcessingState state) {
