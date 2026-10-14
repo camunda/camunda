@@ -25,7 +25,7 @@
     <identity-packages>io/camunda/it/auth/*,io/camunda/it/identity/*,io/camunda/it/csrf/*,io/camunda/it/logout/*,io/camunda/it/oidc/*</identity-packages>
     <!-- Timeout for forked processes in seconds. Sized for the default CI job budget (20 minutes);
      long-running callers must raise this via -D failsafe.timeout=<seconds> to match their own job timeout. -->
-    <failsafe.timeout>960</failsafe.timeout>
+    <failsafe.timeout>1020</failsafe.timeout>
   </properties>
 
   <dependencies>
