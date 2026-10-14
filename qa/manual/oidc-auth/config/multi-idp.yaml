@@ -1,6 +1,6 @@
-# Scenario 1: no physical tenants, two IdPs as named providers, as the multi-IdP docs describe.
+# Scenario 1: no physical tenants, three IdPs as named providers, as the multi-IdP docs describe.
 # The default slot holds only the global claims. Provider "alpha" sets no claims, provider "beta"
-# sets only its own username-claim.
+# sets only its own username-claim, provider "gamma" sets only its own client-id-claim.
 camunda:
   data:
     secondary-storage:
@@ -29,11 +29,19 @@ camunda:
             client-secret: idp-b-login-secret
             redirect-uri: "{baseUrl}/sso-callback"
             username-claim: tenant_user
+          gamma:
+            issuer-uri: http://localhost:18080/realms/idp-c
+            client-id: camunda-login
+            client-secret: idp-c-login-secret
+            redirect-uri: "{baseUrl}/sso-callback"
+            client-id-claim: tenant_client
     authorizations:
       enabled: true
     initialization:
       mapping-rules: []
       default-roles:
         admin:
+          # usernames as Camunda resolves them: preferred_username (alpha, gamma), tenant_user (beta)
           users: [alice, idp-b-alice]
-          clients: [idp-a-m2m, idp-b-m2m]
+          # idp-c-app is the tenant_client claim of the idp-c M2M client, which gamma reads
+          clients: [idp-a-m2m, idp-b-m2m, idp-c-app]
