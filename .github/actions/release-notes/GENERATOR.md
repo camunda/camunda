@@ -648,8 +648,8 @@ generator only, zcl only. Pull requests are reported as counts only: zcl labels 
 of them (about 132 of 5,587 on 8.10.0), so a per-PR list would be noise.
 
 **Hints state facts.** For a divergent issue the report quotes the delivering PRs, the relation
-kind, the PR's `attributionSource` and `deliveryPath`, and the issue's state. It does not guess at
-a cause. Each bucket lists the first 20; `apply-divergence.json` (uploaded as a run artifact) holds
+kind, each PR's own `attributionSource` and `deliveryPath`, and the issue's state. When the generator
+has no entry for the issue, it says so. It does not guess at a cause. Each bucket lists the first 20; `apply-divergence.json` (uploaded as a run artifact) holds
 the full plan.
 
 **What it would do.** Labels not already present, and one comment per issue, using the legacy
@@ -657,15 +657,25 @@ weekly script's rule: closed issues only, never ones closed as not planned or as
 Skipped issues are counted by reason, so the effect of "closed only" is visible. An issue whose
 state could not be read is skipped, never commented on.
 
+**Existing comments.** The latest 100 comments of each issue are read (one batched query, which also
+gives the issue's state). An issue the legacy script already commented on for this version
+(`This has been released in version [<version>]`) or that already carries the generator's marker is
+skipped, so the plan never duplicates a comment. The report also compares the two sets: legacy
+commented and the generator agrees, generator would comment and legacy has not, legacy commented
+and the generator would not. The legacy script runs weekly, so right after a release the first
+count is usually zero; compare again after its next run.
+
 **A dry run must not look green when it compared nothing:**
 
-|                   Situation                    |                     Result                     |
-|------------------------------------------------|------------------------------------------------|
-| Generate step did not succeed                  | Skipped, warning names the outcome             |
-| `labels.json` / `comments.json` missing or bad | Skipped, warning names the file                |
-| Unknown `schemaVersion` major                  | Skipped (refused, not guessed at)              |
-| No issue carries the label                     | Warning, generator's plan shown, no comparison |
-| API failure (permission, retries exhausted)    | The step fails                                 |
+|                   Situation                    |                                Result                                |
+|------------------------------------------------|----------------------------------------------------------------------|
+| Generate step did not succeed                  | Skipped, warning names the outcome                                   |
+| `labels.json` / `comments.json` missing or bad | Skipped, warning names the file                                      |
+| `changelog.json` missing or unusable           | Compared; hints lose the PR attribution facts                        |
+| `dry-run` not exactly `true` or `false`        | The step fails                                                       |
+| Unknown `schemaVersion` major                  | Skipped (refused, not guessed at)                                    |
+| No issue carries the label                     | Warning, generator's plan shown, no comparison                       |
+| API failure (permission, retries exhausted)    | The step fails; the job summary and a warning name the apply outcome |
 
 ---
 
