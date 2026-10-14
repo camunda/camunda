@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.group;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -22,13 +23,25 @@ public class PersistedGroup extends UnpackedObject
   private final StringProperty groupIdProp = new StringProperty("groupId");
   private final StringProperty descriptionProp = new StringProperty("description");
   private final StringProperty nameProp = new StringProperty("name");
+  private final BooleanProperty deletedProp = new BooleanProperty("deleted", false);
 
   public PersistedGroup() {
-    super(4);
+    super(5);
     declareProperty(groupKeyProp)
         .declareProperty(groupIdProp)
         .declareProperty(descriptionProp)
-        .declareProperty(nameProp);
+        .declareProperty(nameProp)
+        .declareProperty(deletedProp);
+  }
+
+  /** Whether this version of the group is a tombstone, that is, the group is deleted. */
+  public boolean isDeleted() {
+    return deletedProp.getValue();
+  }
+
+  public PersistedGroup setDeleted(final boolean deleted) {
+    deletedProp.setValue(deleted);
+    return this;
   }
 
   @Override

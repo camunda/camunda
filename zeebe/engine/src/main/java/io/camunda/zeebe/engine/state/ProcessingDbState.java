@@ -242,7 +242,9 @@ public class ProcessingDbState implements MutableProcessingState {
     policyUpdateState = new DbPolicyUpdateState(zeebeDb, transactionContext);
     roleState =
         new DbRoleState(zeebeDb, transactionContext, () -> policyUpdateState.getCurrentVersion());
-    groupState = new DbGroupState(zeebeDb, transactionContext, config);
+    groupState =
+        new DbGroupState(
+            zeebeDb, transactionContext, config, () -> policyUpdateState.getCurrentVersion());
     tenantState =
         new DbTenantState(zeebeDb, transactionContext, () -> policyUpdateState.getCurrentVersion());
     mappingRuleState = new DbMappingRuleState(zeebeDb, transactionContext);

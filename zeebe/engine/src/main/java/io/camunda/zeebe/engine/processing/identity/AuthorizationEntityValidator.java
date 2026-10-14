@@ -73,7 +73,8 @@ public class AuthorizationEntityValidator {
         record.getResourceType());
     switch (record.getOwnerType()) {
       case GROUP:
-        if (localGroupEnabled && groupState.get(record.getOwnerId()).isEmpty()) {
+        if (localGroupEnabled
+            && groupState.get(record.getOwnerId(), record.getPolicyVersion()).isEmpty()) {
           LOG.debug("Owner group '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
@@ -114,7 +115,8 @@ public class AuthorizationEntityValidator {
     if (!record.getResourceId().equals("*")) {
       switch (record.getResourceType()) {
         case GROUP:
-          if (localGroupEnabled && groupState.get(record.getResourceId()).isEmpty()) {
+          if (localGroupEnabled
+              && groupState.get(record.getResourceId(), record.getPolicyVersion()).isEmpty()) {
             LOG.debug("Resource group '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(

@@ -13,6 +13,8 @@ import com.google.common.cache.LoadingCache;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
@@ -25,31 +27,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.LongSupplier;
 
+/**
+ * Stores every version of a group under the key (groupId, policyVersion). A read returns the latest
+ * version that is not newer than the visible version, and a tombstone means no group.
+ *
+ * <p>The name cache maps a visible version and a name to the IDs of the groups with that name. The
+ * cache is derived from state, and every write invalidates it, so it never returns a stale mapping.
+ */
 public class DbGroupState implements MutableGroupState {
 
-  private final DbString groupId;
+  private final DbString groupId = new DbString();
+  private final DbLong policyVersion = new DbLong();
+  private final DbCompositeKey<DbString, DbLong> versionedKey =
+      new DbCompositeKey<>(groupId, policyVersion);
   private final PersistedGroup persistedGroup = new PersistedGroup();
-  private final ColumnFamily<DbString, PersistedGroup> groupColumnFamily;
+  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedGroup> groupColumnFamily;
+  private final LongSupplier currentVersion;
 
-  /**
-   * Caches group name → list of group IDs sharing that name. The value is always a pure function of
-   * persisted state: the loader scans the groups column family on a miss, and every mutation that
-   * can change the mapping invalidates the affected name(s). This keeps the cache consistent across
-   * broker restarts (the loader repopulates from state) and avoids the in-memory-only staleness
-   * that an incrementally maintained map would suffer.
-   */
-  private final LoadingCache<String, Set<String>> groupIdsByName;
+  private final LoadingCache<NameKey, Set<String>> groupIdsByName;
 
   public DbGroupState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final EngineConfiguration config) {
-
-    groupId = new DbString();
+      final EngineConfiguration config,
+      final LongSupplier currentVersion) {
+    this.currentVersion = currentVersion;
     groupColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.GROUPS, transactionContext, groupId, new PersistedGroup());
+            ZbColumnFamilies.GROUPS, transactionContext, versionedKey, new PersistedGroup());
 
     groupIdsByName =
         CacheBuilder.newBuilder()
@@ -57,81 +64,115 @@ public class DbGroupState implements MutableGroupState {
             .build(
                 new CacheLoader<>() {
                   @Override
-                  public Set<String> load(final String name) {
-                    // On a miss, scan all groups once and populate every name so subsequent lookups
-                    // of other names are served from cache without another scan.
-                    final Map<String, Set<String>> allEntries = scanAllGroupIdsByName();
-                    groupIdsByName.putAll(allEntries);
-                    return allEntries.getOrDefault(name, Set.of());
+                  public Set<String> load(final NameKey key) {
+                    // On a miss, scan the groups visible at the version once, and populate every
+                    // name of that version so that lookups of other names need no further scan.
+                    final Map<String, Set<String>> allEntries =
+                        scanAllGroupIdsByName(key.version());
+                    allEntries.forEach(
+                        (name, ids) -> groupIdsByName.put(new NameKey(key.version(), name), ids));
+                    return allEntries.getOrDefault(key.name(), Set.of());
                   }
                 });
   }
 
   @Override
   public void create(final GroupRecord group) {
-    groupId.wrapString(group.getGroupId());
-    persistedGroup.wrap(group);
-    groupColumnFamily.insert(groupId, persistedGroup);
-
-    groupIdsByName.invalidate(group.getName());
+    write(group, false);
   }
 
   @Override
   public void update(final GroupRecord group) {
-    groupId.wrapString(group.getGroupId());
-    final var persistedGroup = groupColumnFamily.get(groupId);
-    if (persistedGroup == null) {
-      return;
-    }
-
-    final String oldName = persistedGroup.getName();
-    persistedGroup.wrap(group);
-    groupColumnFamily.update(groupId, persistedGroup);
-
-    groupIdsByName.invalidate(oldName);
-    groupIdsByName.invalidate(group.getName());
+    write(group, false);
   }
 
   @Override
-  public void delete(final String groupId) {
+  public void delete(final GroupRecord group) {
+    write(group, true);
+  }
+
+  @Override
+  public Optional<PersistedGroup> get(final String groupId, final long commandVersion) {
+    final long visible = visibleVersion(commandVersion);
     this.groupId.wrapString(groupId);
-
-    final var existingGroup = groupColumnFamily.get(this.groupId);
-    if (existingGroup != null) {
-      groupIdsByName.invalidate(existingGroup.getName());
-    }
-
-    groupColumnFamily.deleteExisting(this.groupId);
+    policyVersion.wrapLong(visible);
+    final var found = new PersistedGroup[1];
+    groupColumnFamily.whileTrueReverse(
+        versionedKey,
+        (key, value) -> {
+          if (!value.getGroupId().equals(groupId)) {
+            return false;
+          }
+          if (key.second().getValue() > visible) {
+            return true;
+          }
+          if (!value.isDeleted()) {
+            found[0] = copyOf(value);
+          }
+          return false;
+        });
+    return Optional.ofNullable(found[0]);
   }
 
   @Override
-  public Optional<PersistedGroup> get(final String groupId) {
-    this.groupId.wrapString(groupId);
-    final var persistedGroup = groupColumnFamily.get(this.groupId, PersistedGroup::new);
-    return Optional.ofNullable(persistedGroup);
-  }
-
-  @Override
-  public List<PersistedGroup> findByIdOrName(final String value) {
-    final var byId = get(value);
+  public List<PersistedGroup> findByIdOrName(final String value, final long commandVersion) {
+    final var byId = get(value, commandVersion);
     if (byId.isPresent()) {
       return List.of(byId.get());
     }
 
+    final long visible = visibleVersion(commandVersion);
     final List<PersistedGroup> matchingGroups = new ArrayList<>();
-    for (final String groupId : groupIdsByName.getUnchecked(value)) {
-      get(groupId).ifPresent(matchingGroups::add);
+    for (final String id : groupIdsByName.getUnchecked(new NameKey(visible, value))) {
+      get(id, commandVersion).ifPresent(matchingGroups::add);
     }
     return matchingGroups;
   }
 
-  private Map<String, Set<String>> scanAllGroupIdsByName() {
+  private void write(final GroupRecord group, final boolean deleted) {
+    groupId.wrapString(group.getGroupId());
+    policyVersion.wrapLong(group.getPolicyVersion());
+    persistedGroup.wrap(group);
+    persistedGroup.setDeleted(deleted);
+    groupColumnFamily.upsert(versionedKey, persistedGroup);
+    groupIdsByName.invalidateAll();
+  }
+
+  private long visibleVersion(final long commandVersion) {
+    return Math.max(currentVersion.getAsLong(), commandVersion);
+  }
+
+  /** Maps each name to the IDs of the visible, non-deleted groups with that name. */
+  private Map<String, Set<String>> scanAllGroupIdsByName(final long version) {
+    final Map<String, PersistedGroup> visible = new HashMap<>();
+    final Map<String, Long> visibleVersions = new HashMap<>();
+    groupColumnFamily.whileTrue(
+        (key, value) -> {
+          final long entryVersion = key.second().getValue();
+          if (entryVersion <= version
+              && entryVersion > visibleVersions.getOrDefault(value.getGroupId(), -1L)) {
+            visibleVersions.put(value.getGroupId(), entryVersion);
+            visible.put(value.getGroupId(), copyOf(value));
+          }
+          return true;
+        });
+
     final Map<String, Set<String>> idsByName = new HashMap<>();
-    groupColumnFamily.forEach(
-        group ->
-            idsByName
-                .computeIfAbsent(group.getName(), k -> new LinkedHashSet<>())
-                .add(group.getGroupId()));
+    visible.values().stream()
+        .filter(group -> !group.isDeleted())
+        .forEach(
+            group ->
+                idsByName
+                    .computeIfAbsent(group.getName(), k -> new LinkedHashSet<>())
+                    .add(group.getGroupId()));
     return idsByName;
   }
+
+  private static PersistedGroup copyOf(final PersistedGroup group) {
+    final var copy = new PersistedGroup();
+    copy.copyFrom(group);
+    return copy;
+  }
+
+  private record NameKey(long version, String name) {}
 }

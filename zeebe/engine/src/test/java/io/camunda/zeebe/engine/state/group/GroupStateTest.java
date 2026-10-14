@@ -115,7 +115,7 @@ public class GroupStateTest {
     groupState.create(groupRecord);
 
     // when
-    groupState.delete(groupId);
+    groupState.delete(new GroupRecord().setGroupId(groupId));
 
     // then
     final var group = groupState.get(groupId);
@@ -230,7 +230,7 @@ public class GroupStateTest {
         .containsExactly("id2");
 
     // when the last group is deleted
-    groupState.delete("id2");
+    groupState.delete(new GroupRecord().setGroupId("id2"));
 
     // then the name no longer resolves
     assertThat(groupState.findByIdOrName(sharedName)).isEmpty();

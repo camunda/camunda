@@ -66,7 +66,7 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
-    final var persistedRecord = groupState.get(groupId);
+    final var persistedRecord = groupState.get(groupId, record.getPolicyVersion());
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
           "Expected to update group with ID '%s', but a group with this ID does not exist."

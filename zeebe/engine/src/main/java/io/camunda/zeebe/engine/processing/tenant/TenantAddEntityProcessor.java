@@ -107,7 +107,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityType, entityId)) {
+    if (!isEntityPresent(entityType, entityId, record.getPolicyVersion())) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return;
     }
@@ -161,11 +161,12 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
         .orElseGet(() -> Either.left(TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantId)));
   }
 
-  private boolean isEntityPresent(final EntityType entityType, final String entityId) {
+  private boolean isEntityPresent(
+      final EntityType entityType, final String entityId, final long policyVersion) {
     final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
     final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
     return switch (entityType) {
-      case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
+      case GROUP -> !localGroupEnabled || groupState.get(entityId, policyVersion).isPresent();
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
       case CLIENT -> true;
       case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();

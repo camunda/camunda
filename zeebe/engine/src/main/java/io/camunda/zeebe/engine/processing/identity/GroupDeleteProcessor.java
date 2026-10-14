@@ -78,7 +78,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
-    final var persistedRecord = groupState.get(groupId);
+    final var persistedRecord = groupState.get(groupId, record.getPolicyVersion());
     if (persistedRecord.isEmpty()) {
       final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
