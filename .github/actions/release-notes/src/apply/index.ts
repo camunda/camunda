@@ -49,6 +49,9 @@ export interface GeneratorFiles {
 export interface IssueState {
   readonly closed: boolean;
   readonly stateReason: string | null;
+  /** Bodies of the issue's latest comments, matched against the legacy script's
+   *  text and the generator's marker. */
+  readonly comments: readonly string[];
 }
 
 export interface Observed {
@@ -63,7 +66,9 @@ export type SkipReason =
   | 'issue still open'
   | 'closed as not planned'
   | 'closed as duplicate'
-  | 'issue state unknown';
+  | 'issue state unknown'
+  | 'already commented by the legacy script'
+  | 'already commented by the generator';
 
 export type Operation =
   | { readonly type: 'add-label'; readonly target: 'issue' | 'pull_request'; readonly number: number }
@@ -94,6 +99,16 @@ export interface ApplyPlan {
     readonly zclOnly: number;
   };
   readonly operations: readonly Operation[];
+  /** How the comments the generator would post line up with the ones the legacy
+   *  script already posted for this version, over the issues whose state was read. */
+  readonly comments: {
+    /** Eligible for a generator comment and already commented by the legacy script. */
+    readonly both: readonly number[];
+    /** Eligible for a generator comment; the legacy script has not commented. */
+    readonly generatorOnly: readonly number[];
+    /** Commented by the legacy script; the generator would not comment. */
+    readonly legacyOnly: readonly number[];
+  };
   /** Facts about each divergent issue, keyed by issue number. */
   readonly hints: Readonly<Record<number, string>>;
 }
@@ -109,15 +124,40 @@ export function parseGeneratorFiles(raw: { labels: string; comments: string; cha
   if (labels.version !== comments.version) {
     throw new Error(`labels.json and comments.json are for different versions (${labels.version} and ${comments.version}).`);
   }
-  const changelog =
-    raw.changelog === undefined
-      ? []
-      : parseJson<{ prs: ChangelogPr[] }>('changelog.json', raw.changelog).prs.map((pr) => ({
-          number: pr.number,
-          attributionSource: pr.attributionSource,
-          deliveryPath: pr.deliveryPath,
-        }));
-  return { labels, comments, changelog };
+  if (!Array.isArray(labels.issues) || !Array.isArray(labels.pullRequests)) {
+    throw new Error('labels.json must hold an "issues" and a "pullRequests" array.');
+  }
+  if (!Array.isArray(comments.entries) || !comments.entries.every(isCommentEntry)) {
+    throw new Error('comments.json must hold an "entries" array of { issueNumber, prNumbers, relationKind, text, marker }.');
+  }
+  return { labels, comments, changelog: parseChangelogHints(raw.changelog) };
+}
+
+function isCommentEntry(entry: unknown): entry is CommentEntry {
+  const candidate = entry as Partial<CommentEntry> | null;
+  return typeof candidate?.issueNumber === 'number' && Array.isArray(candidate.prNumbers) && typeof candidate.marker === 'string';
+}
+
+/** changelog.json only adds facts to hints, so one that is missing, unreadable
+ *  or the wrong shape costs the hints, not the comparison. */
+function parseChangelogHints(text: string | undefined): readonly ChangelogPr[] {
+  if (text === undefined) return [];
+  try {
+    const prs = (JSON.parse(text) as { prs?: unknown }).prs;
+    if (!Array.isArray(prs)) return [];
+    return prs.map((pr: ChangelogPr) => ({ number: pr.number, attributionSource: pr.attributionSource, deliveryPath: pr.deliveryPath }));
+  } catch {
+    return [];
+  }
+}
+
+/** `dry-run` is the one switch between rehearsing and writing, so anything but
+ *  an exact "true" or "false" is an error rather than a guess. */
+export function parseDryRun(raw: string): boolean {
+  const value = raw.trim();
+  if (value === '' || value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error(`dry-run must be "true" or "false", got "${raw}".`);
 }
 
 function parseJson<T>(name: string, text: string): T {
@@ -164,11 +204,24 @@ export function planApply(files: GeneratorFiles, observed: Observed): ApplyPlan 
         : { type: 'add-label', target: 'pull_request', number },
     );
   }
-  for (const entry of comments.entries) {
+  // The marker is keyed on the issue, so a repeated issue publishes only its last entry.
+  const entryByIssue = new Map(comments.entries.map((entry) => [entry.issueNumber, entry]));
+  const legacyText = `This has been released in version [${labels.version}]`;
+  const hasComment = (number: number, needle: string): boolean => observed.issueFacts.get(number)?.comments.some((body) => body.includes(needle)) ?? false;
+  const eligible = new Set<number>();
+  for (const entry of entryByIssue.values()) {
     const skipReason = commentSkipReason(observed.issueFacts.get(entry.issueNumber));
+    if (!skipReason) eligible.add(entry.issueNumber);
+    const alreadyCommented: SkipReason | undefined = !eligible.has(entry.issueNumber)
+      ? skipReason
+      : hasComment(entry.issueNumber, legacyText)
+        ? 'already commented by the legacy script'
+        : hasComment(entry.issueNumber, entry.marker)
+          ? 'already commented by the generator'
+          : undefined;
     operations.push(
-      skipReason
-        ? { type: 'skip', what: 'comment', number: entry.issueNumber, reason: skipReason }
+      alreadyCommented
+        ? { type: 'skip', what: 'comment', number: entry.issueNumber, reason: alreadyCommented }
         : {
             type: 'create-comment',
             issueNumber: entry.issueNumber,
@@ -179,16 +232,20 @@ export function planApply(files: GeneratorFiles, observed: Observed): ApplyPlan 
     );
   }
 
-  const entryByIssue = new Map(comments.entries.map((entry) => [entry.issueNumber, entry]));
+  const legacyCommented = sorted([...observed.issueFacts.keys()].filter((number) => hasComment(number, legacyText)));
+  const commentComparison = {
+    both: legacyCommented.filter((number) => eligible.has(number)),
+    generatorOnly: sorted([...eligible].filter((number) => !hasComment(number, legacyText))),
+    legacyOnly: legacyCommented.filter((number) => !eligible.has(number)),
+  };
+
   const prFacts = new Map(changelog.map((pr) => [pr.number, pr]));
   const hints: Record<number, string> = {};
-  for (const number of [...issues.generatorOnly, ...issues.zclOnly]) {
-    const entry = entryByIssue.get(number);
-    hints[number] = [
-      entry ? deliveringPrs(entry, prFacts) : "no PR in the generator's range is attributed to it",
-      describeState(observed.issueFacts.get(number)),
-    ].join(' · ');
-  }
+  const hintFor = (number: number, withoutEntry: string): string =>
+    [entryByIssue.has(number) ? deliveringPrs(entryByIssue.get(number)!, prFacts) : withoutEntry, describeState(observed.issueFacts.get(number))].join(' · ');
+  for (const number of issues.generatorOnly) hints[number] = hintFor(number, 'the generator has no comment entry for it');
+  for (const number of issues.zclOnly) hints[number] = hintFor(number, "the generator's labels.json does not list it");
+  for (const number of commentComparison.legacyOnly) hints[number] ??= hintFor(number, 'the generator plans no comment for it');
 
   return {
     version: labels.version,
@@ -196,6 +253,7 @@ export function planApply(files: GeneratorFiles, observed: Observed): ApplyPlan 
     issues,
     pullRequests,
     operations,
+    comments: commentComparison,
     hints,
   };
 }
@@ -209,11 +267,14 @@ function commentSkipReason(state: IssueState | undefined): SkipReason | undefine
   return undefined;
 }
 
+/** Every delivering PR with its own attribution and delivery path, so no fact is
+ *  quoted for a PR it does not belong to. */
 function deliveringPrs(entry: CommentEntry, prFacts: ReadonlyMap<number, ChangelogPr>): string {
-  const first = prFacts.get(entry.prNumbers[0]!);
-  const prs = entry.prNumbers.map((number) => `#${number}`).join(', ');
-  const detail = [entry.relationKind, ...(first ? [`attribution ${first.attributionSource}`, `delivery ${first.deliveryPath}`] : [])];
-  return `via PR ${prs} (${detail.join('; ')})`;
+  const prs = entry.prNumbers.map((number) => {
+    const facts = prFacts.get(number);
+    return facts ? `#${number} (attribution ${facts.attributionSource}; delivery ${facts.deliveryPath})` : `#${number}`;
+  });
+  return `${entry.relationKind}, via PR ${prs.join(', ')}`;
 }
 
 function describeState(state: IssueState | undefined): string {
@@ -228,7 +289,7 @@ const plural = (count: number, noun: string): string => `${count} ${noun}${count
  *  version and the comment text come from files, not from this code. */
 export function renderReport(plan: ApplyPlan): string {
   const version = escapeHtml(plan.version);
-  const label = `\`version:${version}\``;
+  const label = inlineCode(`version:${plan.version}`);
   const labelOps = plan.operations.filter((operation) => operation.type === 'add-label');
   const labelledIssues = labelOps.filter((operation) => operation.target === 'issue').length;
   const labelledPullRequests = labelOps.length - labelledIssues;
@@ -260,6 +321,7 @@ export function renderReport(plan: ApplyPlan): string {
     lines.push(...bucket('zcl only', plan.issues.zclOnly, plan.hints));
   }
 
+  lines.push(...renderCommentComparison(plan));
   lines.push('#### Would do (nothing written)', '');
   lines.push(
     `- Label ${plural(labelledIssues, 'issue')} and ${plural(labelledPullRequests, 'pull request')} with ${label}` +
@@ -285,6 +347,31 @@ export function renderDegradedReport(reason: string): string {
   return `### Release-notes apply (dry run)\n\n⚠ Skipped: ${escapeHtml(reason)}\n`;
 }
 
+function renderCommentComparison(plan: ApplyPlan): string[] {
+  const { both, generatorOnly, legacyOnly } = plan.comments;
+  const lines = [
+    '| Comments (issues whose state was read) | Count |',
+    '|---|---|',
+    `| Legacy script commented, generator agrees | ${both.length} |`,
+    `| Generator would comment, legacy has not | ${generatorOnly.length} |`,
+    `| Legacy commented, generator would not | ${legacyOnly.length} |`,
+    '',
+  ];
+  if (both.length + legacyOnly.length === 0) {
+    lines.push('The legacy script runs weekly, so at release time it has usually not commented yet; compare again after its next run.', '');
+  }
+  return [...lines, ...bucket('Legacy commented, generator would not', legacyOnly, plan.hints)];
+}
+
+/** A code span shows its content literally, so it is neither HTML-escaped nor
+ *  allowed to hold a backtick run that would close it. */
+function inlineCode(text: string): string {
+  const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
+  const ticks = '`'.repeat(longest + 1);
+  const pad = text.startsWith('`') || text.endsWith('`') ? ' ' : '';
+  return `${ticks}${pad}${text}${pad}${ticks}`;
+}
+
 function bucket(title: string, numbers: readonly number[], hints: Readonly<Record<number, string>>): string[] {
   if (numbers.length === 0) return [];
   const shown = numbers.slice(0, DIVERGENCE_LIST_CAP);
@@ -299,16 +386,24 @@ function countSkips(plan: ApplyPlan, what: 'label' | 'comment', reason?: SkipRea
   return plan.operations.filter((operation) => operation.type === 'skip' && operation.what === what && (!reason || operation.reason === reason)).length;
 }
 
+const COMMENT_SKIP_REASONS: readonly SkipReason[] = [
+  'issue still open',
+  'closed as not planned',
+  'closed as duplicate',
+  'issue state unknown',
+  'already commented by the legacy script',
+  'already commented by the generator',
+];
+
 function describeComments(plan: ApplyPlan): string {
   const comments = plan.operations.filter((operation) => operation.type === 'create-comment');
   const closing = comments.filter((operation) => operation.relationKind === 'closing').length;
-  const skipped = (['issue still open', 'closed as not planned', 'closed as duplicate', 'issue state unknown'] as const)
-    .map((reason) => [countSkips(plan, 'comment', reason), reason] as const)
+  const skipped = COMMENT_SKIP_REASONS.map((reason) => [countSkips(plan, 'comment', reason), reason] as const)
     .filter(([count]) => count > 0)
     .map(([count, reason]) => `${count} ${reason.replace(/^issue /, '')}`);
   return (
     `Comment on ${plural(comments.length, 'issue')}: ${closing} "Released in" and ${comments.length - closing} "Partially delivered".` +
-    (skipped.length > 0 ? ` Skipped: ${skipped.join(', ')}.` : '')
+    (skipped.length > 0 ? ` Skipped issues: ${skipped.join(', ')}.` : '')
   );
 }
 

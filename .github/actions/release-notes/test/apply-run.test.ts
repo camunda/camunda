@@ -34,9 +34,9 @@ function deps(overrides: Partial<ApplyDeps> = {}): ApplyDeps & { requested: { la
       requested.label = label;
       return { issues: new Set([1, 5]), pullRequests: new Set([10]) };
     },
-    issueFacts: async (numbers) => {
+    issueStates: async (numbers) => {
       requested.facts = [...numbers];
-      return new Map(numbers.map((number) => [number, { closed: true, stateReason: 'COMPLETED' }]));
+      return new Map(numbers.map((number) => [number, { closed: true, stateReason: 'COMPLETED', comments: [] }]));
     },
     ...overrides,
   };
@@ -77,6 +77,22 @@ test('a missing file skips with a warning that names it', async (t) => {
 
   assert.match(result.markdown, /Skipped: .*labels\.json/);
   assert.equal(result.warnings.length, 1);
+});
+
+test('a labels.json of the wrong shape skips with a warning instead of failing the step', async (t) => {
+  const directory = inputDir(t, { 'labels.json': { schemaVersion: '2.0.0', version: VERSION, issues: 'nope' } });
+
+  const result = await runApply({ inputDir: directory, dryRun: true, generateOutcome: 'success' }, deps());
+
+  assert.match(result.markdown, /Skipped: .*labels\.json must hold/);
+  assert.equal(result.warnings.length, 1);
+});
+
+test('an unusable changelog.json does not cost the comparison', async (t) => {
+  const result = await runApply({ inputDir: inputDir(t, { 'changelog.json': '{nope' }), dryRun: true, generateOutcome: 'success' }, deps());
+
+  assert.match(result.markdown, /Both agree/);
+  assert.equal(result.warnings.length, 0);
 });
 
 test('an unknown schema version is refused, not guessed at', async (t) => {
