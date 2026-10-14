@@ -325,6 +325,12 @@ final class SegmentsManager implements AutoCloseable {
     nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
   }
 
+  /**
+   * Returns the segments from the one containing the given index up to the last segment at the time
+   * of the call. Segments created afterwards are not included, even while the returned map is
+   * iterated. A flush relies on this: a segment created while flushing may hold records which were
+   * appended after the flush already flushed the previous segment.
+   */
   SortedMap<Long, Segment> getTailSegments(final long index) {
     // First look for a segment that contains the index
     final var segment = getSegment(index);
@@ -333,7 +339,8 @@ final class SegmentsManager implements AutoCloseable {
     }
     // Then use its first index to get the tail map. We can't get the tail map directly using the
     // given index, because it may be in the middle of a segment.
-    return Collections.unmodifiableSortedMap(segments.tailMap(segment.index(), true)); // inclusive
+    return Collections.unmodifiableSortedMap(
+        segments.subMap(segment.index(), true, segments.lastKey(), true)); // inclusive
   }
 
   private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {

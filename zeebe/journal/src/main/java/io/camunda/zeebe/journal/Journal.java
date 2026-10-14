@@ -123,6 +123,16 @@ public interface Journal extends AutoCloseable {
   void flush() throws FlushException;
 
   /**
+   * Returns the index up to which all records are known to be flushed to the persistent storage. It
+   * may lag behind what is actually flushed, e.g. while a flush is in progress, but it never leads
+   * it. Truncating the journal lowers it.
+   *
+   * @return the last flushed index, lower than {@link #getFirstIndex()} if no record is known to be
+   *     flushed
+   */
+  long getLastFlushedIndex();
+
+  /**
    * Opens a new {@link JournalReader} for a consumer that reads on the same thread that writes to
    * this journal. Records it returns point directly into the journal, and stay valid until the next
    * call on the reader.

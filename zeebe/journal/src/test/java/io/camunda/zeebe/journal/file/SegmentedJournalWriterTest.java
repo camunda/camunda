@@ -82,6 +82,23 @@ final class SegmentedJournalWriterTest {
   }
 
   @Test
+  void shouldNotRaiseLastFlushedIndexOnDeleteAfter() throws FlushException {
+    // given - records up to index 2 are flushed, but not those after
+    writer.append(1, journalFactory.entry());
+    writer.append(2, journalFactory.entry());
+    writer.flush();
+    writer.append(3, journalFactory.entry());
+    writer.append(4, journalFactory.entry());
+
+    // when
+    writer.deleteAfter(3, false);
+
+    // then - deleting records flushes nothing, so record 3 must not be reported as flushed
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2L);
+  }
+
+  @Test
   void shouldResetLastFlushedIndexOnReset() throws FlushException {
     // given
     writer.append(1, journalFactory.entry());
