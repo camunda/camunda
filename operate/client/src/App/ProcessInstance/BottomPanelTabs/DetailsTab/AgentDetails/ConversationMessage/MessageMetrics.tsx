@@ -8,8 +8,9 @@
 
 import type {AgentInstanceHistoryItemMetrics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Tag, Tooltip} from '@carbon/react';
-import {memo} from 'react';
+import {Fragment, memo} from 'react';
 import styled from 'styled-components';
+import {getTotalTokens} from '../getTotalTokens';
 
 const MetricsContainer = styled.div`
   display: flex;
@@ -34,35 +35,42 @@ type Props = {
 const MessageMetrics: React.FC<Props> = memo(function MessageMetrics({
   metrics,
 }) {
-  if (
-    metrics === null ||
-    (metrics.inputTokens === null &&
-      metrics.outputTokens === null &&
-      metrics.durationMs === null)
-  ) {
+  if (metrics === null) {
     return null;
   }
 
-  const totalTokensMetric =
-    (metrics.inputTokens ?? 0) + (metrics.outputTokens ?? 0);
-  const inputTooltip = `Input: ${formatToken(metrics.inputTokens)} ${metrics.cacheReadTokenCount !== null ? `(${formatToken(metrics.cacheReadTokenCount)} cached)` : ''}`;
-  const outputTooltip = `Output: ${formatToken(metrics.outputTokens)} ${metrics.reasoningTokenCount !== null ? `(${formatToken(metrics.reasoningTokenCount)} reasoning)` : ''}`;
-  const cacheWriteTooltip =
-    metrics.cacheCreationTokenCount !== null
-      ? `Cache write: ${formatToken(metrics.cacheCreationTokenCount)}`
-      : '';
+  const hasTokenMetrics =
+    metrics.inputTokens !== null ||
+    metrics.outputTokens !== null ||
+    metrics.cacheReadTokenCount !== null ||
+    metrics.cacheCreationTokenCount !== null;
+
+  if (!hasTokenMetrics && metrics.durationMs === null) {
+    return null;
+  }
+
+  const totalTokensMetric = getTotalTokens(metrics);
+  const tooltipLines = [
+    `Input: ${formatToken(metrics.inputTokens)}`,
+    metrics.cacheReadTokenCount !== null &&
+      `Cache read: ${formatToken(metrics.cacheReadTokenCount)}`,
+    metrics.cacheCreationTokenCount !== null &&
+      `Cache write: ${formatToken(metrics.cacheCreationTokenCount)}`,
+    `Output: ${formatToken(metrics.outputTokens)}${metrics.reasoningTokenCount !== null ? ` (${formatToken(metrics.reasoningTokenCount)} reasoning)` : ''}`,
+  ].filter((line) => line !== false);
 
   return (
     <MetricsContainer>
-      {(metrics.inputTokens !== null || metrics.outputTokens !== null) && (
+      {hasTokenMetrics && (
         <Tooltip
           description={
             <>
-              {inputTooltip}
-              <br />
-              {outputTooltip}
-              <br />
-              {cacheWriteTooltip}
+              {tooltipLines.map((line, index) => (
+                <Fragment key={line}>
+                  {index > 0 && <br />}
+                  {line}
+                </Fragment>
+              ))}
             </>
           }
           align="bottom"
