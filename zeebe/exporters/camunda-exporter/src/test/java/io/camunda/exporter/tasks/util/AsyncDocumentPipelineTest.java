@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.startsWith;
@@ -43,6 +44,15 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 
 class AsyncDocumentPipelineTest {
+
+  @Test
+  void shouldThrowExceptionIfBatchSizeTooLarge() {
+    assertThatThrownBy(
+            () ->
+                AsyncDocumentPipeline.builder(batchSupplier(1, 10), mock(BatchProcessor.class))
+                    .batchSize(10_001))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 
   @Test
   void shouldProcessInBatches() {
