@@ -575,8 +575,10 @@ jobs:
           test is not optional: a branch for another version, or a \`ci/\` branch, is not yours to
           push to.
             - If one exists: \`git fetch origin <branch> && git checkout <branch>\`, then
-              \`git fetch origin main && git merge --no-edit origin/main\` — triage may have REOPENED
-              a PR opened on an earlier night, so its branch can be behind main. If that merge
+              \`git fetch origin ${TARGET_REF} && git merge --no-edit origin/${TARGET_REF}\` — triage
+              may have REOPENED a PR opened on an earlier night, so its branch can be behind its
+              base. Merge ${TARGET_REF}, never main: this PR is opened against ${TARGET_REF}, and
+              for a stable version merging main would drag next-version commits into it. If that merge
               conflicts and you cannot resolve it confidently within the scope of this fix, do NOT
               force it: \`git merge --abort\`, say so in your summary, and cut a new branch instead.
               Read the branch's own diff before re-fixing anything — it may already address one of
