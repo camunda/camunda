@@ -83,7 +83,13 @@ jobs:
     # queue is explicit instead: every run starts, each waits its turn.
     name: Wait for sibling agents (${{ github.event.inputs.version }})
     runs-on: ubuntu-latest
-    timeout-minutes: 130
+    # Cumulative waiting budget, not a per-predecessor one: a fix agent runs
+    # for up to 100 minutes, so a run that is third in the queue has to sit
+    # through two of them. At 130 it would have been killed mid-queue while
+    # the gate was still working correctly. Near the 360-minute ceiling for
+    # hosted runners, which bounds a queue that has grown absurd: the gate
+    # then fails and `fix` is skipped, rather than releasing a blocked agent.
+    timeout-minutes: 350
     permissions:
       actions: read
     steps:
@@ -114,16 +120,43 @@ jobs:
           # is queued, waiting or pending approval, each of which will become
           # in_progress and would otherwise race us. A cancelled run reports
           # completed, so it correctly stops blocking.
-          deadline=$(( $(date +%s) + 120 * 60 ))
+          #
+          # The listing is filtered by a separate jq invocation rather than
+          # `gh --jq`, so that the title prefix can be passed with --arg.
+          # `version` is a free-form dispatch input: interpolated into jq
+          # source, a value containing a quote would break every poll (holding
+          # the gate open for the whole budget) and a crafted fragment could
+          # change what the gate counts.
+          filter='[.[] | select(.status != "completed")
+                       | select(.databaseId < $self)
+                       | select(.displayTitle | startswith($prefix))]
+                  | length'
+
+          # The budget bounds a STALLED queue, not a busy one. Measured from
+          # this run's own start it would not serialize three runs queued
+          # together: the third would give up while the second was still
+          # legitimately working. It is therefore reset on every observed
+          # departure, so the gate only gives up when nothing ahead of it has
+          # finished for a full budget — longer than a fix agent's own
+          # 100-minute ceiling. The job's timeout-minutes is the hard cap on
+          # total waiting; exceeding it fails the gate rather than releasing a
+          # still-blocked agent.
+          stall_budget=$(( 120 * 60 ))
+          deadline=$(( $(date +%s) + stall_budget ))
+          prev_ahead=""
 
           while [ "$(date +%s)" -lt "$deadline" ]; do
-            ahead=$(gh run list \
-                      --workflow c8-orchestration-cluster-e2e-nightly-fix.yml \
-                      --limit 100 --json databaseId,displayTitle,status \
-                      --jq "[.[] | select(.status != \"completed\")
-                                 | select(.databaseId < ${SELF_RUN_ID})
-                                 | select(.displayTitle | startswith(\"${prefix}\"))]
-                            | length" 2>/dev/null || echo "")
+            runs=$(gh run list \
+                     --workflow c8-orchestration-cluster-e2e-nightly-fix.yml \
+                     --limit 100 --json databaseId,displayTitle,status \
+                     2>/dev/null || echo "")
+            ahead=""
+            if [ -n "$runs" ]; then
+              ahead=$(printf '%s' "$runs" \
+                        | jq --arg prefix "$prefix" \
+                             --argjson self "$SELF_RUN_ID" \
+                             "$filter" 2>/dev/null || echo "")
+            fi
 
             # An empty result means the API call failed, not that the queue is
             # clear. Treating that as 0 would let every agent through during a
@@ -134,12 +167,16 @@ jobs:
               echo "queue clear for ${VERSION}"
               exit 0
             else
+              if [ -n "$prev_ahead" ] && [ "$ahead" -lt "$prev_ahead" ]; then
+                deadline=$(( $(date +%s) + stall_budget ))
+              fi
+              prev_ahead="$ahead"
               echo "waiting: ${ahead} older ${VERSION} agent(s) still running"
             fi
             sleep 60
           done
 
-          echo "::warning::serialize gate timed out after 120m — proceeding anyway. The agent's own open-PR check is still a guard against duplicates, it is just no longer race-free."
+          echo "::warning::serialize gate saw no older ${VERSION} agent finish for 120m — proceeding anyway. The agent's own open-PR check is still a guard against duplicates, it is just no longer race-free."
 
   fix:
     name: Fix nightly failures (${{ github.event.inputs.version }})
