@@ -27,6 +27,7 @@
 /.github/dependency-review-config.json                   @camunda/engineering-operations
 /.github/actions/release-notes/**                        @camunda/engineering-operations
 /.github/workflows/release-notes*                        @camunda/engineering-operations
+/.github/workflows/gradle-ci.yml                          @camunda/engineering-operations
 
 # Gradle build (parallel path to Maven)
 /build.gradle.kts                                        @camunda/orchestration-cluster
