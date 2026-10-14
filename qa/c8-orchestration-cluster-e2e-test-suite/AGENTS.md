@@ -310,6 +310,17 @@ evidence: every retry attempt in `results.json` failed (a `failed → passed` re
 with a wait/retry); and the failure reproduces across both tasklist modes / DBs that share the flow,
 or has failed on consecutive nights. If it looks intermittent → flakiness fix, not a product bug.
 
+**Judge each variant separately, and let the worst one decide.** The same test runs under several
+variants per version — ES cluster topology (`all-in-one` vs `profiles`), tasklist mode (`v1`/`v2`),
+and DB — and each uploads its own `results.json`. Read every variant's report that exists before
+ruling on Gate A; never let one variant's verdict stand for the others. A `failed → passed` retry in
+one variant does **not** clear Gate A if another variant shows `failed → failed`: the deterministic
+variant alone proves the failure is deterministic, and you must go on to Gate B. Variants are
+*expected* to disagree when they exercise different code paths — a single-partition cluster can only
+reach the states a multi-partition cluster's routing sometimes avoids — so a disagreement is a lead
+for Gate B (which change made these topologies diverge?), never a reason to discard the failing one
+as noise. State in the PR body which variants you checked and what each one showed.
+
 **Gate B — Pin it to a recent product change.** Identify the owning module (table below) and find
 the breaking change. You are already inside the `camunda/camunda` checkout (on `${TARGET_REF}`), so
 run `git` from the current directory — do not reference `$ws_dir` (it is not set in your shell):
@@ -830,8 +841,13 @@ if [ "$HAS_E2E" = "true" ] && [ -n "$E2E_RUN_ID" ]; then
 fi
 
 if [ "$HAS_API_ES" = "true" ] && [ -n "$API_ES_RUN_ID" ]; then
+  # The trailing -* is REQUIRED: the ES API nightly runs the suite twice, under
+  # two cluster topologies, and uploads one report per topology
+  # (json-report-nightly-api-<safe_version>-all-in-one and -profiles).
+  # Without the wildcard this pattern matches NOTHING and the 2>/dev/null
+  # swallows it, leaving you with an empty api-es/ and no ES evidence at all.
   gh run download "$API_ES_RUN_ID" --repo "$REPO" \
-    --pattern "json-report-nightly-api-${SAFE_VERSION}" \
+    --pattern "json-report-nightly-api-${SAFE_VERSION}-*" \
     --dir /tmp/nightly-artifacts/api-es 2>/dev/null || true
 fi
 
@@ -855,9 +871,20 @@ Resulting layout:
   e2e-v1-html/   html-report-nightly-e2e-<safe_version>-v1/...   ← contains screenshots
   e2e-v2/        json-report-nightly-e2e-<safe_version>-v2/results.json
   e2e-v2-html/   html-report-nightly-e2e-<safe_version>-v2/...
-  api-es/        json-report-nightly-api-<safe_version>/results.json
+  api-es/        json-report-nightly-api-<safe_version>-all-in-one/results.json
+  api-es/        json-report-nightly-api-<safe_version>-profiles/results.json
   api-rdbms/     json-report-nightly-api-rdbms-<safe_version>-<db>/results.json
 ```
+
+**The ES API suite runs under two cluster topologies, and you get one report for
+each**: `all-in-one` is a single-partition cluster, `profiles` is
+multi-partition. They are not duplicates — a test can legitimately pass in one
+and fail in the other, because partition count changes which code path answers
+(a request routed round-robin can land on a partition in a different state).
+Read **both** before drawing any conclusion from either, and see Gate A in
+`## Product-Bug Escalation`. For RDBMS the topology is already baked into the
+`database` field of `/tmp/test_specs.json` (e.g. `"MSSQL 2025-profiles"`), so
+that pattern needs no wildcard.
 
 Screenshots from Playwright's HTML report live under
 `html-report/.../data/*.png`. You can read PNGs directly — use them as the
