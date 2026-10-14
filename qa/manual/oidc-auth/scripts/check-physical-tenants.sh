@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Scenarios 2 and 3, M2M part. Run with CONFIG=physical-tenants.
+# Scenarios 2 and 3, M2M part. Run with CONFIG=physical-tenants, and once more with
+# OVERLAY=default-groups-claim for the second gRPC groups case.
 #
 # Each M2M client is admin only on its own tenant, and only by the client-id claim that tenant
 # configures. A token from an IdP that a tenant does not assign must be rejected with 401 or
@@ -11,6 +12,7 @@ wait_ready
 root="$(token idp-root idp-root-m2m)"
 a="$(token idp-a idp-a-m2m)"
 b="$(token idp-b idp-b-m2m)"
+b_group="$(token idp-b idp-b-grp)"
 
 echo "Scenario 2: each tenant reads tokens with its own claims"
 expect "default: idp-root token deploys over REST" 200 "$(rest_deploy "" "$root")"
@@ -19,6 +21,9 @@ expect "tenanta: idp-a token deploys over REST (claim from tenant slot)" 200 "$(
 expect "tenanta: idp-a token deploys over gRPC (claim from tenant slot)" OK "$(grpc_deploy tenanta "$a")"
 expect "tenantb: idp-b token deploys over REST" 200 "$(rest_deploy tenantb "$b")"
 expect "tenantb: idp-b token deploys over gRPC" OK "$(grpc_deploy tenantb "$b")"
+# REST still reads groups with the default tenant's groups-claim, so it returns 403 here.
+known "tenantb: idp-b group-only admin deploys over REST" "#65597" "$(rest_deploy tenantb "$b_group")"
+expect "tenantb: idp-b group-only admin deploys over gRPC (groups from tenant)" OK "$(grpc_deploy tenantb "$b_group")"
 
 echo
 echo "Scenario 3: a tenant rejects tokens from IdPs it does not assign"

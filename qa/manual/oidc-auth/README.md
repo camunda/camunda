@@ -24,10 +24,11 @@ Scenarios 2 and 3 use the same config and the same script.
 
 Each realm has the same accounts:
 
-|                      Account                      |                        Use                        |                        Extra claim                         |
-|---------------------------------------------------|---------------------------------------------------|------------------------------------------------------------|
-| user `alice` / `alice`                            | browser login, through the client `camunda-login` | `tenant_user` = `<realm>-alice`, for example `idp-a-alice` |
-| client `<realm>-m2m`, secret `<realm>-m2m-secret` | M2M tokens                                        | `tenant_client` = `<realm>-app`                            |
+|                      Account                      |                        Use                        |                           Extra claim                            |
+|---------------------------------------------------|---------------------------------------------------|------------------------------------------------------------------|
+| user `alice` / `alice`                            | browser login, through the client `camunda-login` | `tenant_user` = `<realm>-alice`, for example `idp-a-alice`       |
+| client `<realm>-grp`, secret `<realm>-grp-secret` | M2M tokens for the groups checks                  | `groups` = `["grp-admins"]`, `tenant_client` = `<realm>-grp-app` |
+| client `<realm>-m2m`, secret `<realm>-m2m-secret` | M2M tokens                                        | `tenant_client` = `<realm>-app`                                  |
 
 Keycloak admin console: `http://localhost:18080/admin`, `admin` / `admin`.
 
@@ -88,7 +89,7 @@ Manual checks:
 - Upgrade: start with `CAMUNDA_VERSION=8.9.23`, then 8.10.4. M2M and login with `alpha` work on
   both.
 
-## Scenario 2: each physical tenant uses its own OIDC settings ([#65607](https://github.com/camunda/camunda/issues/65607), [#65633](https://github.com/camunda/camunda/issues/65633))
+## Scenario 2: each physical tenant uses its own OIDC settings ([#65607](https://github.com/camunda/camunda/issues/65607), [#65633](https://github.com/camunda/camunda/issues/65633), [#65582](https://github.com/camunda/camunda/issues/65582))
 
 Config: [`config/physical-tenants.yaml`](config/physical-tenants.yaml).
 
@@ -110,6 +111,34 @@ Config: [`config/physical-tenants.yaml`](config/physical-tenants.yaml).
 
 On 8.10.3, the M2M token of `idp-a` gets 403 on `tenanta` over REST, because `partnera` does not
 use the tenant's `client-id-claim`.
+
+### Groups over gRPC ([#65582](https://github.com/camunda/camunda/issues/65582))
+
+On 8.10.3, gRPC used the `groups-claim` setting of the `default` tenant for every tenant. Only
+`tenantb` sets `groups-claim: groups`, and `idp-b-grp` is admin on `tenantb` only through its
+group `grp-admins`. Run the script twice:
+
+```bash
+CONFIG=physical-tenants docker compose up -d --wait
+./scripts/check-physical-tenants.sh
+docker compose down -v
+OVERLAY=default-groups-claim CONFIG=physical-tenants docker compose up -d --wait
+./scripts/check-physical-tenants.sh
+```
+
+[`config/default-groups-claim.yaml`](config/default-groups-claim.yaml) adds `groups-claim` to the
+`default` tenant. Then `default` reads groups from the token, and `tenanta` does not.
+
+|                                   Check                                    | 8.10.4 |       8.10.3       |
+|----------------------------------------------------------------------------|--------|--------------------|
+| Without overlay: `idp-b-grp` deploys on `tenantb` over gRPC                | OK     | `PermissionDenied` |
+| With overlay: `idp-a-m2m` deploys on `tenanta` over gRPC                   | OK     | `Internal` (NPE)   |
+| Without overlay: `idp-b-grp` deploys on `tenantb` over REST (`KNOWN` line) | 403    | 403                |
+
+REST still reads groups with the `groups-claim` of the `default` tenant. This is the open bug
+[#65597](https://github.com/camunda/camunda/issues/65597), not part of 8.10.4. The script prints
+this check as `KNOWN` and does not count it as a failure. With the overlay, REST returns 200,
+because then the `default` tenant also reads the `groups` claim.
 
 Manual checks:
 

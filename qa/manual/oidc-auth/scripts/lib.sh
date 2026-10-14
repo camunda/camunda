@@ -83,6 +83,12 @@ expect() {
   fi
 }
 
+# known <description> <issue> <actual>: prints a result for a known open bug. It does not count
+# as a failure, so the script stays green until the bug is fixed.
+known() {
+  printf 'KNOWN %-70s %s, open bug %s\n' "$1" "$3" "$2"
+}
+
 finish() {
   echo
   if [ "$FAILURES" -eq 0 ]; then echo "All checks passed."; else echo "$FAILURES check(s) failed."; fi

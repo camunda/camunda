@@ -5,6 +5,7 @@
 #   its own default slot, which partnera must inherit.
 # - tenantb: is assigned only its own default slot, which uses idp-b and its own claims. The
 #   registration id "oidc" is the same as on the default tenant, but the issuer is different.
+#   Only tenantb reads groups from the token.
 camunda:
   data:
     secondary-storage:
@@ -88,6 +89,8 @@ camunda:
             client-secret: idp-b-login-secret
             username-claim: tenant_user
             client-id-claim: tenant_client
+            # only this tenant reads groups from the token; the default tenant does not
+            groups-claim: groups
           providers:
             assigned: [oidc]
         initialization:
@@ -96,3 +99,5 @@ camunda:
             admin:
               users: [idp-b-alice]
               clients: [idp-b-app]
+              # idp-b-grp is admin only through the group in its token
+              groups: [grp-admins]

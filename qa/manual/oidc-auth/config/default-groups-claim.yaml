@@ -1,0 +1,9 @@
+# Overlay for scenario 2, gRPC groups case 1: the default tenant reads groups from the token, and
+# tenanta does not. Use it together with physical-tenants.yaml, see README.md.
+camunda:
+  physical-tenants:
+    default:
+      security:
+        authentication:
+          oidc:
+            groups-claim: groups
