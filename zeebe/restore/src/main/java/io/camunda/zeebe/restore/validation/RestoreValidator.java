@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,40 +155,54 @@ public final class RestoreValidator
     final var store =
         requireNonNull(backupStore, "Backup store must be configured to load backups");
     final var restoredPartitionCount = backupPartitionCount(store, ids[ids.length - 1]);
-    if (exportedPositionSupplier != null) {
-      // A database that already holds exported positions has to belong to the partitions of the
-      // backup. One without any is restored from scratch, so the backup alone decides.
-      final var exportedPartitionCount = availableExportedPositions(exportedPositionSupplier);
-      if (!exportedPartitionCount.isEmpty()) {
-        verifyPartitionCountsAgree(
-            ids[ids.length - 1], restoredPartitionCount, exportedPartitionCount.size());
-      }
+
+    final var exportedPositions =
+        exportedPositionSupplier == null
+            ? Map.<Integer, Long>of()
+            : availableExportedPositions(exportedPositionSupplier);
+
+    if (!exportedPositions.isEmpty()) {
+      verifyPartitionCountsAgree(
+          ids[ids.length - 1], restoredPartitionCount, exportedPositions.size());
     }
+
     return awaitResult(
             FuturesUtil.parTraverse(
                 IntStream.rangeClosed(1, restoredPartitionCount).boxed().toList(),
-                partition -> verifyBackupsExist(store, partition, ids)))
+                partition ->
+                    verifyBackupsExist(store, partition, ids, exportedPositions.get(partition))))
         .stream()
         .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
 
   private CompletableFuture<Entry<Integer, long[]>> verifyBackupsExist(
-      final BackupStore store, final int partitionId, final long[] backupIds) {
-    return FuturesUtil.traverseIgnoring(
+      final BackupStore store,
+      final int partitionId,
+      final long[] backupIds,
+      final @Nullable Long exportedPosition) {
+
+    return FuturesUtil.parTraverse(
             Arrays.stream(backupIds).boxed().toList(),
-            backupId -> verifyBackupExists(store, partitionId, backupId),
-            Runnable::run)
-        .thenApply(ignored -> Map.entry(partitionId, backupIds));
+            backupId ->
+                verifyBackupExists(store, partitionId, backupId)
+                    .thenApply(status -> Map.entry(backupId, status)))
+        .thenApply(
+            backups -> {
+              if (exportedPosition != null) {
+                verifyExportedPositionCovered(partitionId, exportedPosition, backups);
+              }
+              return Map.entry(partitionId, backupIds);
+            });
   }
 
-  private CompletableFuture<Void> verifyBackupExists(
+  private CompletableFuture<BackupStatus> verifyBackupExists(
       final BackupStore store, final int partitionId, final long backupId) {
     final var searchPattern =
         new BackupIdentifierWildcardImpl(
             Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(backupId));
     return store
         .list(searchPattern)
-        .thenAccept(
+        .thenApply(
             statuses ->
                 statuses.stream()
                     .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
@@ -197,6 +212,71 @@ public final class RestoreValidator
                             new NoSuchElementException(
                                 "No completed backup found for partition %d with backup id %d"
                                     .formatted(partitionId, backupId))));
+  }
+
+  private void verifyExportedPositionCovered(
+      final int partitionId,
+      final long exportedPosition,
+      final List<Entry<Long, BackupStatus>> backups) {
+
+    final var effectiveExportedPosition = exportedPosition < 0 ? 1L : exportedPosition;
+
+    final var descriptors =
+        backups.stream()
+            .map(
+                backup ->
+                    Map.entry(
+                        backup.getKey(),
+                        backup
+                            .getValue()
+                            .descriptor()
+                            .orElseThrow(
+                                () ->
+                                    new IllegalStateException(
+                                        ("Cannot restore: backup %d for partition %d has no "
+                                                + "descriptor, so its coverage of RDBMS exported "
+                                                + "position %d cannot be verified.")
+                                            .formatted(
+                                                backup.getKey(),
+                                                partitionId,
+                                                effectiveExportedPosition)))))
+            .toList();
+
+    final var coveringBackup =
+        descriptors.stream()
+            .filter(backup -> backup.getValue().checkpointPosition() >= effectiveExportedPosition)
+            .min(Comparator.comparingLong(backup -> backup.getValue().checkpointPosition()))
+            .orElseThrow(
+                () -> {
+                  final var latest =
+                      descriptors.stream()
+                          .max(
+                              Comparator.comparingLong(
+                                  backup -> backup.getValue().checkpointPosition()))
+                          .orElseThrow();
+
+                  return new IllegalStateException(
+                      ("Cannot restore: backup %d for partition %d has checkpoint position %d, "
+                              + "below the RDBMS exported position %d.")
+                          .formatted(
+                              latest.getKey(),
+                              partitionId,
+                              latest.getValue().checkpointPosition(),
+                              effectiveExportedPosition));
+                });
+
+    final var firstLogPosition = coveringBackup.getValue().firstLogPosition();
+
+    if (firstLogPosition.isPresent() && firstLogPosition.getAsLong() > effectiveExportedPosition) {
+      throw new IllegalStateException(
+          "Cannot restore: backup %d for partition %d starts at log position %d, "
+              .concat("after the RDBMS exported position %d.")
+              .formatted(
+                  coveringBackup.getKey(),
+                  partitionId,
+                  firstLogPosition.getAsLong(),
+                  effectiveExportedPosition));
+    }
   }
 
   private Map<Integer, long[]> resolveRdbmsRangeBackups(final RestoreRequest request) {

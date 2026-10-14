@@ -152,13 +152,31 @@ final class RestoreValidatorResolverTest {
   }
 
   private void stubBackupExists(final int partitionId, final long backupId) {
+    stubBackupWithPositions(partitionId, backupId, 1, 1L, 100L);
+  }
+
+  private void stubBackupWithPositions(
+      final int partitionId,
+      final long backupId,
+      final int partitionCount,
+      final long firstLogPosition,
+      final long checkpointPosition) {
     final var pattern =
         new BackupIdentifierWildcardImpl(
             Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(backupId));
+    final var descriptor =
+        new BackupDescriptorImpl(
+            Optional.empty(),
+            OptionalLong.of(firstLogPosition),
+            checkpointPosition,
+            partitionCount,
+            "8.10.0",
+            CHECKPOINT_TIMESTAMP,
+            CheckpointType.SCHEDULED_BACKUP);
     final var status =
         new BackupStatusImpl(
             new BackupIdentifierImpl(0, partitionId, backupId),
-            Optional.empty(),
+            Optional.of(descriptor),
             BackupStatusCode.COMPLETED,
             Optional.empty(),
             Optional.empty(),
@@ -677,6 +695,75 @@ final class RestoreValidatorResolverTest {
 
       // then
       assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
+    @Test
+    void shouldRejectExplicitBackupWhenCheckpointIsBeforeExportedPosition() {
+      // given
+      stubBackupPartitionCount(42L, 1);
+      stubBackupWithPositions(1, 42L, 1, 50L, 100L);
+      final var validator = new RestoreValidator(1, backupStore, partitionId -> 150L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(42L));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Cannot restore: backup 42 for partition 1 has checkpoint position 100, "
+                  + "below the RDBMS exported position 150.");
+    }
+
+    @Test
+    void shouldRejectExplicitBackupWhenFirstLogPositionIsAfterExportedPosition() {
+      // given
+      stubBackupPartitionCount(42L, 1);
+      stubBackupWithPositions(1, 42L, 1, 151L, 200L);
+      final var validator = new RestoreValidator(1, backupStore, partitionId -> 150L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(42L));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Cannot restore: backup 42 for partition 1 starts at log position 151, "
+                  + "after the RDBMS exported position 150.");
+    }
+
+    @Test
+    void shouldRestoreExplicitBackupWhenItCoversExportedPosition() {
+      // given
+      stubBackupPartitionCount(42L, 1);
+      stubBackupWithPositions(1, 42L, 1, 100L, 200L);
+      final var validator = new RestoreValidator(1, backupStore, partitionId -> 150L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(42L));
+
+      // then
+      assertValid(result, Map.of(1, new long[] {42L}), false);
+    }
+
+    @Test
+    void shouldRejectExplicitBackupWhenAnyPartitionDoesNotCoverExportedPosition() {
+      // given - partition 1 covers the exported position, but partition 2 starts after it
+      stubBackupPartitionCount(42L, 2);
+      stubBackupWithPositions(1, 42L, 2, 100L, 200L);
+      stubBackupWithPositions(2, 42L, 2, 151L, 200L);
+      final var validator = new RestoreValidator(2, backupStore, partitionId -> 150L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(42L));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("partition 2")
+          .hasMessageContaining("starts at log position 151")
+          .hasMessageContaining("exported position 150");
     }
 
     @Test
