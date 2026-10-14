@@ -545,12 +545,11 @@ class AsyncDocumentPipelineTest {
     final var retryRecorder = mock(Runnable.class);
     final var logger = mock(Logger.class);
 
-    final var batchSize = new AtomicInteger(10);
+    final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(10, 2);
 
     final var builder =
         AsyncDocumentPipeline.builder(batchSupplier(5, 16), batchProcessor, Runnable::run)
             .addBatchReductionException(BatchReductionException.class)
-            .minBatchSize(2)
             .batchSize(batchSize)
             .maxRetryAttempts(4)
             .retryDelayMs(1)
@@ -571,7 +570,7 @@ class AsyncDocumentPipelineTest {
 
     verifyNoInteractions(retryRecorder);
 
-    assertThat(batchSize.get()).isEqualTo(5);
+    assertThat(batchSize.current()).isEqualTo(5);
   }
 
   @Test
