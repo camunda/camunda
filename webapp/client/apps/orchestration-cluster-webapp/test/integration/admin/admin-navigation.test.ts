@@ -11,13 +11,16 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryRolesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryRolesResponse} from '#/shared-test-modules/api-mocks/roles';
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, adminRolesPage}) => {
+	await adminRolesPage.mockClientConfig();
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser()),
@@ -27,6 +30,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockQueryRolesEndpoint({
+			successResponse: HttpResponse.json(createQueryRolesResponse({items: []})),
 		}),
 	);
 });

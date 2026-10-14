@@ -9,42 +9,19 @@
 import {useMutation, useQueryClient, type QueryKey} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {toast} from '@camunda/design-system';
-import {
-	problemDetailResponseSchema,
-	type CreateUserRequestBody,
-	type QueryUsersRequestBody,
-	type UpdateUserRequestBody,
-	type User,
+import type {
+	CreateUserRequestBody,
+	QueryUsersRequestBody,
+	UpdateUserRequestBody,
+	User,
 } from '@camunda/camunda-api-zod-schemas/8.11';
-import {request, requestErrorSchema} from '#/shared/http/request';
+import {request} from '#/shared/http/request';
+import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
 import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
-
-async function getErrorMessage(error: unknown): Promise<string | undefined> {
-	if (error instanceof Error) {
-		return error.message;
-	}
-
-	const requestError = requestErrorSchema.safeParse(error);
-	if (!requestError.success) {
-		return undefined;
-	}
-
-	if (requestError.data.variant === 'network-error') {
-		return requestError.data.networkError.message;
-	}
-
-	const {response} = requestError.data;
-	const problemDetails = await response
-		.json()
-		.then((body: unknown) => problemDetailResponseSchema.safeParse(body))
-		.catch(() => undefined);
-
-	return problemDetails?.success ? problemDetails.data.detail : response.statusText || undefined;
-}
 
 function compareUsersBySort(a: User, b: User, queryKey: QueryKey): number {
 	const body = queryKey[1] as QueryUsersRequestBody | undefined;
