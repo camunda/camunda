@@ -245,7 +245,16 @@ async function listenOnLoopback(handler, addresses, fixedPort) {
         servers.push(server);
         port = await listen(server, port, address);
       }
-      return { port, close: () => servers.forEach((s) => s.close()) };
+      // A browser keeps connections to the page open (and preconnects ones it never uses), which
+      // would keep the CLI running until the tab is closed: drop them once the login is decided.
+      return {
+        port,
+        close: () =>
+          servers.forEach((s) => {
+            s.close();
+            s.closeAllConnections();
+          }),
+      };
     } catch (e) {
       servers.forEach((s) => s.close());
       if (e.code !== "EADDRINUSE" || fixedPort || attempt >= BIND_ATTEMPTS) {
@@ -825,3 +834,6 @@ try {
   console.error("✖", e.message);
   process.exit(1);
 }
+// Nothing may outlive a command (e.g. a connection the browser still holds open) - but let
+// stdout drain first: writes to a pipe are asynchronous on macOS.
+process.stdout.write("", () => process.exit(process.exitCode ?? 0));
