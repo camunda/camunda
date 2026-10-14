@@ -21,12 +21,14 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.domain.VariableDbModel.ProtectionModeDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -76,6 +78,52 @@ class VariableWriterTest {
     verify(executionQueue, never())
         .executeInQueue(
             argThat(item -> item.contextType() == ContextType.PROCESS_DEF_VAR_NAME_LOOKUP));
+  }
+
+  @Test
+  void shouldQueueProtectionModesInsertsForProtectedVariable() {
+    // given
+    when(model.variableKey()).thenReturn(123L);
+    when(truncatedModel.variableKey()).thenReturn(123L);
+    when(truncatedModel.protectionModes()).thenReturn(Set.of(ProtectionModeDbModel.REDACT));
+
+    // when
+    writer.create(model);
+
+    // then
+    verify(executionQueue)
+        .executeInQueue(
+            argThat(
+                queueItem ->
+                    queueItem.contextType() == ContextType.VARIABLE
+                        && queueItem.statementType() == WriteStatementType.INSERT
+                        && queueItem.order() > 0
+                        && queueItem
+                            .statementId()
+                            .equals("io.camunda.db.rdbms.sql.VariableMapper.insertProtectionModes")
+                        && queueItem
+                            .parameter()
+                            .equals(
+                                new VariableMapper.ProtectionModeDto(
+                                    123L, ProtectionModeDbModel.REDACT))));
+  }
+
+  @Test
+  void shouldNotQueueProtectionModesInsertsForUnprotectedVariable() {
+    // given
+    when(model.variableKey()).thenReturn(123L);
+    when(truncatedModel.variableKey()).thenReturn(123L);
+    when(truncatedModel.protectionModes()).thenReturn(Set.of());
+
+    // when
+    writer.create(model);
+
+    // then
+    verify(executionQueue, never())
+        .executeInQueue(
+            argThat(
+                queueItem ->
+                    queueItem.statementId().endsWith("VariableMapper.insertProtectionModes")));
   }
 
   @Test
