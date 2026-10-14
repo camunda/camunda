@@ -21,7 +21,7 @@ import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,13 +29,16 @@ import org.slf4j.LoggerFactory;
 @JsonInclude(Include.NON_DEFAULT)
 public final class ExporterMetadata {
   private static final Logger LOGGER = LoggerFactory.getLogger(ExporterMetadata.class);
-  private static final AtomicLongFieldUpdater<ExporterMetadata> INCIDENT_POSITION_SETTER =
-      AtomicLongFieldUpdater.newUpdater(ExporterMetadata.class, "lastIncidentUpdatePosition");
-  private static final int UNSET_POSITION = -1;
-
+  // private static final AtomicLongFieldUpdater<ExporterMetadata> INCIDENT_POSITION_SETTER =
+  //    AtomicLongFieldUpdater.newUpdater(ExporterMetadata.class, "lastIncidentUpdatePosition");
+  private static final long UNSET_POSITION = -1;
+  private static final int MAIN_ORDINAL = 0;
   @JsonIgnore private final ObjectWriter objectWriter;
   @JsonIgnore private final ObjectReader objectReader;
-  private volatile long lastIncidentUpdatePosition = UNSET_POSITION;
+
+  private final Map<Integer, Long> lastIncidentUpdatePositions = new ConcurrentHashMap<>();
+
+  // private final long lastIncidentUpdatePosition = UNSET_POSITION;
   private Map<TaskImplementation, Long> firstUserTaskKeys =
       new HashMap<>() {
         {
@@ -51,14 +54,25 @@ public final class ExporterMetadata {
     objectReader = objectMapper.readerForUpdating(this);
   }
 
+  @JsonIgnore
   public long getLastIncidentUpdatePosition() {
-    return lastIncidentUpdatePosition;
+    return lastIncidentUpdatePositions.getOrDefault(MAIN_ORDINAL, UNSET_POSITION);
   }
 
   public void setLastIncidentUpdatePosition(final long newLastIncidentUpdatePosition) {
-    INCIDENT_POSITION_SETTER.updateAndGet(
-        this,
-        prev -> updateLastIncidentUpdatePositionMonotonic(newLastIncidentUpdatePosition, prev));
+    lastIncidentUpdatePositions.compute(
+        MAIN_ORDINAL,
+        (ordinal, prev) ->
+            updateLastIncidentUpdatePositionMonotonic(newLastIncidentUpdatePosition, prev));
+  }
+
+  public Map<Integer, Long> getLastIncidentUpdatePositions() {
+    return lastIncidentUpdatePositions;
+  }
+
+  public void setLastIncidentUpdatePositions(final Map<Integer, Long> positions) {
+    lastIncidentUpdatePositions.clear();
+    lastIncidentUpdatePositions.putAll(positions);
   }
 
   public long getFirstUserTaskKey(final TaskImplementation implementation) {
@@ -114,7 +128,7 @@ public final class ExporterMetadata {
   @Override
   public int hashCode() {
     return Objects.hash(
-        lastIncidentUpdatePosition, firstUserTaskKeys, firstProcessMessageSubscriptionKey);
+        lastIncidentUpdatePositions, firstUserTaskKeys, firstProcessMessageSubscriptionKey);
   }
 
   @Override
@@ -126,7 +140,7 @@ public final class ExporterMetadata {
       return false;
     }
     final ExporterMetadata that = (ExporterMetadata) o;
-    return lastIncidentUpdatePosition == that.lastIncidentUpdatePosition
+    return Objects.equals(lastIncidentUpdatePositions, that.lastIncidentUpdatePositions)
         && firstUserTaskKeys == that.firstUserTaskKeys
         && firstProcessMessageSubscriptionKey == that.firstProcessMessageSubscriptionKey;
   }
@@ -135,7 +149,7 @@ public final class ExporterMetadata {
   public String toString() {
     return "ExporterMetadata{"
         + "lastIncidentUpdatePosition="
-        + lastIncidentUpdatePosition
+        + lastIncidentUpdatePositions
         + ", firstUserTaskKeys="
         + firstUserTaskKeys
         + ", firstProcessMessageSubscriptionKey="
@@ -144,8 +158,8 @@ public final class ExporterMetadata {
   }
 
   private long updateLastIncidentUpdatePositionMonotonic(
-      final long newLastIncidentUpdatePosition, final long prev) {
-    if (prev > newLastIncidentUpdatePosition) {
+      final long newLastIncidentUpdatePosition, final Long prev) {
+    if (prev != null && prev > newLastIncidentUpdatePosition) {
       LOGGER.warn(
           """
           Expected to update the last incident update position {} to a greater value, but got {}; \
