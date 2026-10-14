@@ -16,6 +16,11 @@ Dashboards are stored as JSON files in the [grafana](grafana) folder. You can ed
 1. Either directly through Grafana, which creates a pull request automatically on your behalf (see below).
 2. Or by manually editing the JSON files.
 
+> [!TIP]
+> Starting from Camunda 8.10, Grafana dashboards are stored using the
+> [Grafana data model v2](https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/view-dashboard-json-model/),
+> which require Grafana >= 12.
+
 ### Editing a dashboard through Grafana
 
 Only [Grafana in the benchmark environment](https://dashboard.benchmark.camunda.cloud/dashboards) supports
