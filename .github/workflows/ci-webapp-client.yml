@@ -2,7 +2,7 @@
 # test location: /webapp/client
 # called by: ci.yml
 # type: CI
-# owner: @camunda/engineering-operations
+# owner: @camunda/orchestration-cluster-webapps
 name: Webapp Client Jobs
 
 on:
@@ -13,6 +13,7 @@ env:
   TEST_PRODUCT: Orchestration Cluster Webapp
   TEST_OWNER: "@camunda/orchestration-cluster-webapps"
   CLIENT_DIR: webapp/client
+  APP_DIR: webapp/client/apps/orchestration-cluster-webapp
 
 jobs:
   typecheck:
@@ -186,12 +187,25 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   unit:
-    name: "Unit"
+    name: "Unit (${{ matrix.component }})"
     env:
       TEST_TYPE: Unit
+      TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: admin
+            owner: "@camunda/operate-admin-pod"
+          - component: operate
+            owner: "@camunda/operate-admin-pod"
+          - component: tasklist
+            owner: "@camunda/employee-engagement-tasklist"
+          - component: shared
+            owner: "@camunda/orchestration-cluster-webapps"
     container:
       image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
@@ -218,13 +232,13 @@ jobs:
         env:
           # Capture failure screenshots even when CI contention delays web font loading.
           PW_TEST_SCREENSHOT_NO_FONTS_READY: "1"
-        run: npm run test:unit
+        run: npm run test:unit -w @camunda/orchestration-cluster-webapp -- --project '${{ matrix.component }}*'
       - name: Upload failure artifacts
         if: ${{ failure() }}
         uses: ./.github/actions/upload-artifact-with-retry
         with:
-          name: webapp-client-unit-artifacts
-          path: webapp/client/apps/orchestration-cluster-webapp/test-artifacts/**
+          name: webapp-client-unit-${{ matrix.component }}-artifacts
+          path: ${{ env.APP_DIR }}/test-artifacts/**
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: warn
@@ -233,85 +247,23 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "webapp-client/unit"
+          job_name: "webapp-client/unit-${{ matrix.component }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  integration:
-    name: "Integration [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
+  unit-packages:
+    name: "Unit (packages)"
     env:
-      TEST_TYPE: Integration
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions: {} # GITHUB_TOKEN unused in this job
-    strategy:
-      fail-fast: false
-      matrix:
-        shardIndex: [1, 2]
-        shardTotal: [2]
-    # Lets the merge job assert it downloaded every shard.
-    outputs:
-      shard-total: ${{ steps.shard-total.outputs.value }}
-    container:
-      image: mcr.microsoft.com/playwright:v1.63.0
-      options: --user 1001:1000
-    defaults:
-      run:
-        working-directory: ${{ env.CLIENT_DIR }}
-    steps:
-      # First so the merge job learns the shard count even if tests fail.
-      - name: Publish shard total
-        id: shard-total
-        working-directory: ${{ github.workspace }}
-        run: echo "value=${{ matrix.shardTotal }}" >> "$GITHUB_OUTPUT"
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Print metadata
-        uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 26
-      - name: Install dependencies
-        uses: ./.github/actions/npm-ci-with-retry
-        with:
-          directory: ${{ env.CLIENT_DIR }}
-      - name: Build frontend
-        run: npm run build -w @camunda/orchestration-cluster-webapp
-      - name: Integration tests
-        run: npm run test:integration -w @camunda/orchestration-cluster-webapp -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-      - name: Upload blob report
-        if: ${{ !cancelled() }}
-        uses: ./.github/actions/upload-artifact-with-retry
-        with:
-          name: webapp-client-integration-blob-report-${{ matrix.shardIndex }}
-          path: webapp/client/apps/orchestration-cluster-webapp/blob-report/
-          retention-days: "1"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          job_name: "webapp-client/integration-${{ matrix.shardIndex }}"
-          build_status: ${{ job.status }}
-          detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  integration-merge:
-    if: ${{ !cancelled() }}
-    needs: [integration]
-    name: "Integration - Merge Reports"
-    env:
-      TEST_TYPE: Integration
+      TEST_TYPE: Unit
     runs-on: ubuntu-latest
     timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0
+      options: --user 1001:1000
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -331,70 +283,103 @@ jobs:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
           timeout_minutes: "6"
-      - name: Download blob reports
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          path: webapp/client/apps/orchestration-cluster-webapp/all-blob-reports
-          pattern: webapp-client-integration-blob-report-*
-          merge-multiple: true
-      # Merge and upload before the completeness check, so a partial report is
-      # still available to triage. The check below still fails the job.
-      - name: Merge into HTML Report
-        run: npm exec -w @camunda/orchestration-cluster-webapp -- playwright merge-reports --reporter html ./all-blob-reports
-      - name: Upload HTML report
-        if: ${{ !cancelled() }}
-        uses: ./.github/actions/upload-artifact-with-retry
-        with:
-          name: webapp-client-integration-report
-          path: webapp/client/apps/orchestration-cluster-webapp/playwright-report/
-          retention-days: 30
-      # `pattern:` merges whatever shards exist, so a failed upload would be
-      # silently merged over and report a green, incomplete run (INC-7913).
-      # Playwright's blob name includes a filter hash, so only the zero-padded
-      # shard suffix is stable enough to match on.
-      - name: Verify all shard reports were downloaded
-        if: ${{ !cancelled() }}
-        working-directory: webapp/client/apps/orchestration-cluster-webapp
-        env:
-          EXPECTED_SHARDS: ${{ needs.integration.outputs.shard-total }}
-        run: |
-          if [ -z "$EXPECTED_SHARDS" ]; then
-            echo "::error::Expected shard count unavailable; cannot verify the merged report is complete."
-            exit 1
-          fi
-          width=${#EXPECTED_SHARDS}
-          missing=""
-          for index in $(seq 1 "$EXPECTED_SHARDS"); do
-            padded=$(printf "%0${width}d" "$index")
-            if ! ls all-blob-reports/*-"${padded}".zip >/dev/null 2>&1; then
-              missing="${missing} ${index}"
-            fi
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::Missing blob report for shard(s):${missing} of $EXPECTED_SHARDS." \
-              "Those test results are absent, so the merged report is incomplete."
-            echo "Downloaded files:"
-            find all-blob-reports -type f
-            exit 1
-          fi
+      - name: Unit tests
+        run: npm run test:unit -w packages --if-present
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "webapp-client/integration-merge"
+          job_name: "webapp-client/unit-packages"
           build_status: ${{ job.status }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  integration:
+    name: "Integration (${{ matrix.component }})"
+    env:
+      TEST_TYPE: Integration
+      TEST_OWNER: ${{ matrix.owner }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {} # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: admin
+            owner: "@camunda/operate-admin-pod"
+          - component: operate
+            owner: "@camunda/operate-admin-pod"
+          - component: tasklist
+            owner: "@camunda/employee-engagement-tasklist"
+          - component: shared
+            owner: "@camunda/orchestration-cluster-webapps"
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: ${{ env.CLIENT_DIR }}
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
+      - name: Build frontend
+        run: npm run build -w @camunda/orchestration-cluster-webapp
+      - name: Integration tests
+        run: npm run test:integration -w @camunda/orchestration-cluster-webapp -- test/integration/${{ matrix.component }}/
+      - name: Upload Playwright report
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: webapp-client-integration-${{ matrix.component }}-report
+          path: ${{ env.APP_DIR }}/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "webapp-client/integration-${{ matrix.component }}"
+          build_status: ${{ job.status }}
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   a11y:
-    name: "Accessibility"
+    name: "Accessibility (${{ matrix.component }})"
     env:
       TEST_TYPE: Accessibility
+      TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: admin
+            owner: "@camunda/operate-admin-pod"
+          - component: operate
+            owner: "@camunda/operate-admin-pod"
+          - component: tasklist
+            owner: "@camunda/employee-engagement-tasklist"
+          - component: shared
+            owner: "@camunda/orchestration-cluster-webapps"
     container:
       image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
@@ -420,20 +405,20 @@ jobs:
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Accessibility tests
-        run: npm run test:a11y -w @camunda/orchestration-cluster-webapp
+        run: npm run test:a11y -w @camunda/orchestration-cluster-webapp -- test/a11y/${{ matrix.component }}/
       - name: Upload Playwright report
         if: always()
         uses: ./.github/actions/upload-artifact-with-retry
         with:
-          name: webapp-client-a11y-report
-          path: webapp/client/apps/orchestration-cluster-webapp/playwright-report/
+          name: webapp-client-a11y-${{ matrix.component }}-report
+          path: ${{ env.APP_DIR }}/playwright-report/
           retention-days: 30
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "webapp-client/a11y"
+          job_name: "webapp-client/a11y-${{ matrix.component }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -441,12 +426,25 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   visual:
-    name: "Visual Regression"
+    name: "Visual Regression (${{ matrix.component }})"
     env:
       TEST_TYPE: Visual Regression
+      TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 21
     permissions: {} # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: admin
+            owner: "@camunda/operate-admin-pod"
+          - component: operate
+            owner: "@camunda/operate-admin-pod"
+          - component: tasklist
+            owner: "@camunda/employee-engagement-tasklist"
+          - component: shared
+            owner: "@camunda/orchestration-cluster-webapps"
     container:
       image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
@@ -470,20 +468,20 @@ jobs:
       - name: Build frontend
         run: npm run build:visual-regression -w @camunda/orchestration-cluster-webapp
       - name: Visual regression tests
-        run: npm run test:visual -w @camunda/orchestration-cluster-webapp
+        run: npm run test:visual -w @camunda/orchestration-cluster-webapp -- test/visual/${{ matrix.component }}/
       - name: Upload Playwright report
         if: always()
         uses: ./.github/actions/upload-artifact-with-retry
         with:
-          name: webapp-client-visual-report
-          path: webapp/client/apps/orchestration-cluster-webapp/playwright-report/
+          name: webapp-client-visual-${{ matrix.component }}-report
+          path: ${{ env.APP_DIR }}/playwright-report/
           retention-days: 30
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "webapp-client/visual"
+          job_name: "webapp-client/visual-${{ matrix.component }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
