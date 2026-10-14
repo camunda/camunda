@@ -1,10 +1,10 @@
-# description: Nightly frontend SBOM vulnerability scan using Snyk.
+# description: Nightly frontend dependency vulnerability scan using Snyk.
 #              Reports failures to #team-orchestration-cluster-webapps on Slack.
 # type: CI
 # owner: @camunda/orchestration-cluster-webapps
 ---
-name: Frontend SBOM Snyk Nightly
-run-name: Frontend SBOM Snyk (${{ inputs.branch }})
+name: Frontend Snyk Nightly
+run-name: Frontend Snyk (${{ inputs.branch }})
 
 on:
   workflow_call:
@@ -45,8 +45,8 @@ env:
   SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
 
 jobs:
-  identity-fe-sbom-snyk:
-    name: "Identity / Front End - Snyk SBOM (${{ inputs.branch }})"
+  identity-fe-snyk:
+    name: "Identity / Front End - Snyk (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}
@@ -74,13 +74,14 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
-      - uses: ./.github/actions/frontend-sbom-snyk
+      - name: Scan frontend dependencies
+        uses: ./.github/actions/frontend-snyk-test
         env:
           SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
         with:
           directory: identity/client
-          sbom-file: identity/client/dist/cyclonedx/bom.json
           project-name: Identity frontend
+          artifact-name: snyk-report-identity-${{ inputs.branch }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -91,8 +92,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  operate-fe-sbom-snyk:
-    name: "Operate / Front End - Snyk SBOM (${{ inputs.branch }})"
+  operate-fe-snyk:
+    name: "Operate / Front End - Snyk (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}
@@ -120,14 +121,14 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
-      - name: Generate and scan frontend SBOM
-        uses: ./.github/actions/frontend-sbom-snyk
+      - name: Scan frontend dependencies
+        uses: ./.github/actions/frontend-snyk-test
         env:
           SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
         with:
           directory: operate/client
-          sbom-file: operate/client/build/cyclonedx/bom.json
           project-name: Operate frontend
+          artifact-name: snyk-report-operate-${{ inputs.branch }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -138,9 +139,9 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  tasklist-fe-sbom-snyk:
+  tasklist-fe-snyk:
     if: inputs.branch == 'stable/8.8' || inputs.branch == 'stable/8.9'
-    name: "Tasklist / Front End - Snyk SBOM (${{ inputs.branch }})"
+    name: "Tasklist / Front End - Snyk (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}
@@ -168,14 +169,14 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
-      - name: Generate and scan frontend SBOM
-        uses: ./.github/actions/frontend-sbom-snyk
+      - name: Scan frontend dependencies
+        uses: ./.github/actions/frontend-snyk-test
         env:
           SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
         with:
           directory: tasklist/client
-          sbom-file: tasklist/client/build/cyclonedx/bom.json
           project-name: Tasklist frontend
+          artifact-name: snyk-report-tasklist-${{ inputs.branch }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -186,8 +187,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  optimize-fe-sbom-snyk:
-    name: "Optimize / Front End - Snyk SBOM (${{ inputs.branch }})"
+  optimize-fe-snyk:
+    name: "Optimize / Front End - Snyk (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}
@@ -206,14 +207,6 @@ jobs:
           ref: ${{ inputs.branch }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - name: "Parse pom.xml for versions"
-        id: "pom_info"
-        uses: YunaBraska/java-info-action@085d09be3659b484e0a6d0c95aac6612687ce8d9 # 3.0.13
-        with:
-          work-dir: ./parent
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
-        with:
-          directory: optimize/client
       - name: Import Snyk token from Vault
         id: snyk-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -224,16 +217,15 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
-      - name: Generate and scan frontend SBOM
-        uses: ./.github/actions/frontend-sbom-snyk
+      - name: Scan frontend dependencies
+        uses: ./.github/actions/frontend-snyk-test
         env:
           SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
         with:
           directory: optimize/client
-          package-manager: yarn
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-          sbom-file: optimize/client/dist/cyclonedx/bom.json
+          lockfile: yarn.lock
           project-name: Optimize frontend
+          artifact-name: snyk-report-optimize-${{ inputs.branch }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -253,10 +245,10 @@ jobs:
       TEST_TYPE: Tool
       TEST_PRODUCT: Camunda
     needs:
-      - identity-fe-sbom-snyk
-      - operate-fe-sbom-snyk
-      - tasklist-fe-sbom-snyk
-      - optimize-fe-sbom-snyk
+      - identity-fe-snyk
+      - operate-fe-snyk
+      - tasklist-fe-snyk
+      - optimize-fe-snyk
     if: always() && inputs['notify-on-failure'] && github.event_name != 'workflow_dispatch' && contains(needs.*.result, 'failure')
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -282,10 +274,10 @@ jobs:
           BRANCH: ${{ inputs.branch }}
         run: |
           branch="${BRANCH}"
-          identity="${{ needs.identity-fe-sbom-snyk.result }}"
-          operate="${{ needs.operate-fe-sbom-snyk.result }}"
-          tasklist="${{ needs.tasklist-fe-sbom-snyk.result }}"
-          optimize="${{ needs.optimize-fe-sbom-snyk.result }}"
+          identity="${{ needs.identity-fe-snyk.result }}"
+          operate="${{ needs.operate-fe-snyk.result }}"
+          tasklist="${{ needs.tasklist-fe-snyk.result }}"
+          optimize="${{ needs.optimize-fe-snyk.result }}"
 
           icon() { [[ "$1" == "success" ]] && echo ":white_check_mark:" || echo ":x:"; }
 
@@ -307,12 +299,12 @@ jobs:
           token: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           payload: |
             channel: "C0A0SKKTXD0"
-            text: "Frontend SBOM Snyk Nightly — failures detected on ${{ inputs.branch }}"
+            text: "Frontend Snyk Nightly — failures detected on ${{ inputs.branch }}"
             blocks:
               - type: "header"
                 text:
                   type: "plain_text"
-                  text: "Frontend SBOM Snyk Nightly — failures detected on ${{ inputs.branch }}"
+                  text: "Frontend Snyk Nightly — failures detected on ${{ inputs.branch }}"
               - type: "section"
                 text:
                   type: "mrkdwn"
