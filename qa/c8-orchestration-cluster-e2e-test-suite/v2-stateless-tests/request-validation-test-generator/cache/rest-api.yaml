@@ -2054,12 +2054,7 @@ paths:
       summary: Create a batch operation to resolve incidents of process instances
       description: |
         Resolves multiple instances of process instances.
-        Only process instances with ACTIVE state can have unresolved incidents. A given state filter
-        is narrowed to ACTIVE. Requesting a top-level `state` other than ACTIVE through the `$eq` or
-        `$in` operators is rejected with a 400. States inside `$or` branches are not validated; they
-        are narrowed to ACTIVE, so a branch that can never match ACTIVE yields no items.
-        Other top-level state operators (`$neq`, `$exists`, `$like`) are applied as given, and the
-        batch remains limited to ACTIVE instances.
+        Only incidents of ACTIVE process instances are resolved. The given filter only narrows the batch.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: false
@@ -2076,7 +2071,9 @@ paths:
                 $ref: '#/components/schemas/BatchOperationCreatedResult'
         '400':
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -2097,12 +2094,7 @@ paths:
       summary: Create a batch operation to migrate process instances
       description: |
         Migrate multiple instances of process instances.
-        Only ACTIVE process instances can be migrated. A given state filter is narrowed to ACTIVE.
-        Requesting a top-level `state` other than ACTIVE through the `$eq` or `$in` operators is
-        rejected with a 400. States inside `$or` branches are not validated; they are narrowed to
-        ACTIVE, so a branch that can never match ACTIVE yields no items.
-        Other top-level state operators (`$neq`, `$exists`, `$like`) are applied as given, and the
-        batch remains limited to ACTIVE instances.
+        Only ACTIVE process instances are migrated. The given filter only narrows the batch.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -2119,7 +2111,9 @@ paths:
                 $ref: '#/components/schemas/BatchOperationCreatedResult'
         '400':
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -2140,12 +2134,7 @@ paths:
       summary: Create a batch operation to modify process instances
       description: |
         Modify multiple process instances.
-        Only ACTIVE process instances can be modified. A given state filter is narrowed to ACTIVE.
-        Requesting a top-level `state` other than ACTIVE through the `$eq` or `$in` operators is
-        rejected with a 400. States inside `$or` branches are not validated; they are narrowed to
-        ACTIVE, so a branch that can never match ACTIVE yields no items.
-        Other top-level state operators (`$neq`, `$exists`, `$like`) are applied as given, and the
-        batch remains limited to ACTIVE instances.
+        Only ACTIVE process instances are modified. The given filter only narrows the batch.
         In contrast to single modification operation, it is not possible to add variable instructions or modify by element key.
         It is only possible to use the element id of the source and target.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
@@ -2164,7 +2153,9 @@ paths:
                 $ref: '#/components/schemas/BatchOperationCreatedResult'
         '400':
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
