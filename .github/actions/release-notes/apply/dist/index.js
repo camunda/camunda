@@ -42,9 +42,9 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const node_fs_1 = __nccwpck_require__(24);
 const core = __importStar(__nccwpck_require__(93));
+const index_1 = __nccwpck_require__(596);
 const run_1 = __nccwpck_require__(913);
 const reader_1 = __nccwpck_require__(473);
-const resolve_1 = __nccwpck_require__(940);
 /**
  * The `apply` entrypoint, dry-run only: compares the generator's plan with
  * what zcl labelled and writes the report to the job summary. Read-only
@@ -56,14 +56,13 @@ async function run() {
         throw new Error(`GITHUB_REPOSITORY must be set to "owner/repo", got "${process.env.GITHUB_REPOSITORY ?? ''}".`);
     const token = core.getInput('token', { required: true });
     const inputDir = core.getInput('input-dir') || '.';
-    const graphql = new resolve_1.GithubGraphqlResolver(token, owner, repo);
     const result = await (0, run_1.runApply)({
         inputDir,
-        dryRun: core.getInput('dry-run') !== 'false',
+        dryRun: (0, index_1.parseDryRun)(core.getInput('dry-run')),
         generateOutcome: core.getInput('generate-outcome'),
     }, {
         labelled: (label) => (0, reader_1.fetchLabelledNumbers)(token, owner, repo, label),
-        issueFacts: (numbers) => graphql.fetchIssueFacts(numbers),
+        issueStates: (numbers) => (0, reader_1.fetchIssueStates)(token, owner, repo, numbers),
     });
     for (const warning of result.warnings)
         core.warning(warning);
@@ -83,6 +82,7 @@ run().catch((err) => core.setFailed(err instanceof Error ? err.message : String(
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DIVERGENCE_LIST_CAP = exports.SUPPORTED_SCHEMA_MAJOR = void 0;
 exports.parseGeneratorFiles = parseGeneratorFiles;
+exports.parseDryRun = parseDryRun;
 exports.planApply = planApply;
 exports.renderReport = renderReport;
 exports.renderDegradedReport = renderDegradedReport;
@@ -107,14 +107,42 @@ function parseGeneratorFiles(raw) {
     if (labels.version !== comments.version) {
         throw new Error(`labels.json and comments.json are for different versions (${labels.version} and ${comments.version}).`);
     }
-    const changelog = raw.changelog === undefined
-        ? []
-        : parseJson('changelog.json', raw.changelog).prs.map((pr) => ({
-            number: pr.number,
-            attributionSource: pr.attributionSource,
-            deliveryPath: pr.deliveryPath,
-        }));
-    return { labels, comments, changelog };
+    if (!Array.isArray(labels.issues) || !Array.isArray(labels.pullRequests)) {
+        throw new Error('labels.json must hold an "issues" and a "pullRequests" array.');
+    }
+    if (!Array.isArray(comments.entries) || !comments.entries.every(isCommentEntry)) {
+        throw new Error('comments.json must hold an "entries" array of { issueNumber, prNumbers, relationKind, text, marker }.');
+    }
+    return { labels, comments, changelog: parseChangelogHints(raw.changelog) };
+}
+function isCommentEntry(entry) {
+    const candidate = entry;
+    return typeof candidate?.issueNumber === 'number' && Array.isArray(candidate.prNumbers) && typeof candidate.marker === 'string';
+}
+/** changelog.json only adds facts to hints, so one that is missing, unreadable
+ *  or the wrong shape costs the hints, not the comparison. */
+function parseChangelogHints(text) {
+    if (text === undefined)
+        return [];
+    try {
+        const prs = JSON.parse(text).prs;
+        if (!Array.isArray(prs))
+            return [];
+        return prs.map((pr) => ({ number: pr.number, attributionSource: pr.attributionSource, deliveryPath: pr.deliveryPath }));
+    }
+    catch {
+        return [];
+    }
+}
+/** `dry-run` is the one switch between rehearsing and writing, so anything but
+ *  an exact "true" or "false" is an error rather than a guess. */
+function parseDryRun(raw) {
+    const value = raw.trim();
+    if (value === '' || value === 'true')
+        return true;
+    if (value === 'false')
+        return false;
+    throw new Error(`dry-run must be "true" or "false", got "${raw}".`);
 }
 function parseJson(name, text) {
     try {
@@ -153,10 +181,24 @@ function planApply(files, observed) {
             ? { type: 'skip', what: 'label', number, reason: 'already labelled' }
             : { type: 'add-label', target: 'pull_request', number });
     }
-    for (const entry of comments.entries) {
+    // The marker is keyed on the issue, so a repeated issue publishes only its last entry.
+    const entryByIssue = new Map(comments.entries.map((entry) => [entry.issueNumber, entry]));
+    const legacyText = `This has been released in version [${labels.version}]`;
+    const hasComment = (number, needle) => observed.issueFacts.get(number)?.comments.some((body) => body.includes(needle)) ?? false;
+    const eligible = new Set();
+    for (const entry of entryByIssue.values()) {
         const skipReason = commentSkipReason(observed.issueFacts.get(entry.issueNumber));
-        operations.push(skipReason
-            ? { type: 'skip', what: 'comment', number: entry.issueNumber, reason: skipReason }
+        if (!skipReason)
+            eligible.add(entry.issueNumber);
+        const alreadyCommented = !eligible.has(entry.issueNumber)
+            ? skipReason
+            : hasComment(entry.issueNumber, legacyText)
+                ? 'already commented by the legacy script'
+                : hasComment(entry.issueNumber, entry.marker)
+                    ? 'already commented by the generator'
+                    : undefined;
+        operations.push(alreadyCommented
+            ? { type: 'skip', what: 'comment', number: entry.issueNumber, reason: alreadyCommented }
             : {
                 type: 'create-comment',
                 issueNumber: entry.issueNumber,
@@ -165,22 +207,28 @@ function planApply(files, observed) {
                 marker: entry.marker,
             });
     }
-    const entryByIssue = new Map(comments.entries.map((entry) => [entry.issueNumber, entry]));
+    const legacyCommented = sorted([...observed.issueFacts.keys()].filter((number) => hasComment(number, legacyText)));
+    const commentComparison = {
+        both: legacyCommented.filter((number) => eligible.has(number)),
+        generatorOnly: sorted([...eligible].filter((number) => !hasComment(number, legacyText))),
+        legacyOnly: legacyCommented.filter((number) => !eligible.has(number)),
+    };
     const prFacts = new Map(changelog.map((pr) => [pr.number, pr]));
     const hints = {};
-    for (const number of [...issues.generatorOnly, ...issues.zclOnly]) {
-        const entry = entryByIssue.get(number);
-        hints[number] = [
-            entry ? deliveringPrs(entry, prFacts) : "no PR in the generator's range is attributed to it",
-            describeState(observed.issueFacts.get(number)),
-        ].join(' · ');
-    }
+    const hintFor = (number, withoutEntry) => [entryByIssue.has(number) ? deliveringPrs(entryByIssue.get(number), prFacts) : withoutEntry, describeState(observed.issueFacts.get(number))].join(' · ');
+    for (const number of issues.generatorOnly)
+        hints[number] = hintFor(number, 'the generator has no comment entry for it');
+    for (const number of issues.zclOnly)
+        hints[number] = hintFor(number, "the generator's labels.json does not list it");
+    for (const number of commentComparison.legacyOnly)
+        hints[number] ??= hintFor(number, 'the generator plans no comment for it');
     return {
         version: labels.version,
         baselineEmpty: observed.zclIssues.size === 0 && observed.zclPullRequests.size === 0,
         issues,
         pullRequests,
         operations,
+        comments: commentComparison,
         hints,
     };
 }
@@ -196,11 +244,14 @@ function commentSkipReason(state) {
         return 'closed as duplicate';
     return undefined;
 }
+/** Every delivering PR with its own attribution and delivery path, so no fact is
+ *  quoted for a PR it does not belong to. */
 function deliveringPrs(entry, prFacts) {
-    const first = prFacts.get(entry.prNumbers[0]);
-    const prs = entry.prNumbers.map((number) => `#${number}`).join(', ');
-    const detail = [entry.relationKind, ...(first ? [`attribution ${first.attributionSource}`, `delivery ${first.deliveryPath}`] : [])];
-    return `via PR ${prs} (${detail.join('; ')})`;
+    const prs = entry.prNumbers.map((number) => {
+        const facts = prFacts.get(number);
+        return facts ? `#${number} (attribution ${facts.attributionSource}; delivery ${facts.deliveryPath})` : `#${number}`;
+    });
+    return `${entry.relationKind}, via PR ${prs.join(', ')}`;
 }
 function describeState(state) {
     if (!state)
@@ -214,7 +265,7 @@ const plural = (count, noun) => `${count} ${noun}${count === 1 ? '' : 's'}`;
  *  version and the comment text come from files, not from this code. */
 function renderReport(plan) {
     const version = (0, gha_1.escapeHtml)(plan.version);
-    const label = `\`version:${version}\``;
+    const label = inlineCode(`version:${plan.version}`);
     const labelOps = plan.operations.filter((operation) => operation.type === 'add-label');
     const labelledIssues = labelOps.filter((operation) => operation.target === 'issue').length;
     const labelledPullRequests = labelOps.length - labelledIssues;
@@ -232,6 +283,7 @@ function renderReport(plan) {
         lines.push(...bucket('Generator only', plan.issues.generatorOnly, plan.hints));
         lines.push(...bucket('zcl only', plan.issues.zclOnly, plan.hints));
     }
+    lines.push(...renderCommentComparison(plan));
     lines.push('#### Would do (nothing written)', '');
     lines.push(`- Label ${plural(labelledIssues, 'issue')} and ${plural(labelledPullRequests, 'pull request')} with ${label}` +
         ` (${countSkips(plan, 'label')} already carry it).`);
@@ -244,6 +296,29 @@ function renderReport(plan) {
 }
 function renderDegradedReport(reason) {
     return `### Release-notes apply (dry run)\n\n⚠ Skipped: ${(0, gha_1.escapeHtml)(reason)}\n`;
+}
+function renderCommentComparison(plan) {
+    const { both, generatorOnly, legacyOnly } = plan.comments;
+    const lines = [
+        '| Comments (issues whose state was read) | Count |',
+        '|---|---|',
+        `| Legacy script commented, generator agrees | ${both.length} |`,
+        `| Generator would comment, legacy has not | ${generatorOnly.length} |`,
+        `| Legacy commented, generator would not | ${legacyOnly.length} |`,
+        '',
+    ];
+    if (both.length + legacyOnly.length === 0) {
+        lines.push('The legacy script runs weekly, so at release time it has usually not commented yet; compare again after its next run.', '');
+    }
+    return [...lines, ...bucket('Legacy commented, generator would not', legacyOnly, plan.hints)];
+}
+/** A code span shows its content literally, so it is neither HTML-escaped nor
+ *  allowed to hold a backtick run that would close it. */
+function inlineCode(text) {
+    const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
+    const ticks = '`'.repeat(longest + 1);
+    const pad = text.startsWith('`') || text.endsWith('`') ? ' ' : '';
+    return `${ticks}${pad}${text}${pad}${ticks}`;
 }
 function bucket(title, numbers, hints) {
     if (numbers.length === 0)
@@ -258,15 +333,22 @@ function bucket(title, numbers, hints) {
 function countSkips(plan, what, reason) {
     return plan.operations.filter((operation) => operation.type === 'skip' && operation.what === what && (!reason || operation.reason === reason)).length;
 }
+const COMMENT_SKIP_REASONS = [
+    'issue still open',
+    'closed as not planned',
+    'closed as duplicate',
+    'issue state unknown',
+    'already commented by the legacy script',
+    'already commented by the generator',
+];
 function describeComments(plan) {
     const comments = plan.operations.filter((operation) => operation.type === 'create-comment');
     const closing = comments.filter((operation) => operation.relationKind === 'closing').length;
-    const skipped = ['issue still open', 'closed as not planned', 'closed as duplicate', 'issue state unknown']
-        .map((reason) => [countSkips(plan, 'comment', reason), reason])
+    const skipped = COMMENT_SKIP_REASONS.map((reason) => [countSkips(plan, 'comment', reason), reason])
         .filter(([count]) => count > 0)
         .map(([count, reason]) => `${count} ${reason.replace(/^issue /, '')}`);
     return (`Comment on ${plural(comments.length, 'issue')}: ${closing} "Released in" and ${comments.length - closing} "Partially delivered".` +
-        (skipped.length > 0 ? ` Skipped: ${skipped.join(', ')}.` : ''));
+        (skipped.length > 0 ? ` Skipped issues: ${skipped.join(', ')}.` : ''));
 }
 /** A fence longer than any backtick run inside, so the content cannot close it. */
 function fence(content) {
@@ -284,6 +366,7 @@ function fence(content) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fetchLabelledNumbers = fetchLabelledNumbers;
+exports.fetchIssueStates = fetchIssueStates;
 const github_1 = __nccwpck_require__(631);
 const PAGE_SIZE = 100;
 /** Everything carrying `label`, closed or open, in one paginated listing
@@ -304,6 +387,43 @@ async function fetchLabelledNumbers(token, owner, repo, label, sleepImpl) {
         if (result.data.length < PAGE_SIZE)
             return { issues, pullRequests };
     }
+}
+/** Comment bodies make a response heavy, so this batch is smaller than the 100 the
+ *  resolver uses for scalar fields. */
+const STATE_BATCH_SIZE = 25;
+/** The latest comments read per issue; the legacy script itself looks at one page of 100. */
+const COMMENTS_READ = 100;
+/** What the plan needs about each issue, in batched queries: whether it is closed
+ *  and why, and its latest comments. An issue GitHub does not know is left out,
+ *  which the planner reads as "state unknown". Any other error throws. */
+async function fetchIssueStates(token, owner, repo, numbers, sleepImpl) {
+    const states = new Map();
+    for (let start = 0; start < numbers.length; start += STATE_BATCH_SIZE) {
+        const batch = numbers.slice(start, start + STATE_BATCH_SIZE);
+        const fields = batch.map((number, i) => `i${i}: issue(number: ${number}) { closed stateReason comments(last: ${COMMENTS_READ}) { nodes { body } } }`);
+        const body = JSON.stringify({
+            query: 'query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { ' + fields.join(' ') + ' } }',
+            variables: { owner, name: repo },
+        });
+        const result = await (0, github_1.fetchJsonWithRetry)(`${github_1.GITHUB_API}/graphql`, { method: 'POST', headers: (0, github_1.githubHeaders)(token, { json: true }), body }, sleepImpl);
+        if (!result.ok)
+            throw new Error(`GitHub GraphQL HTTP ${result.status} reading issue states.`);
+        const failure = result.data.errors?.find((error) => error.type !== 'NOT_FOUND');
+        if (failure)
+            throw new Error(`GitHub GraphQL error reading issue states: ${failure.message ?? failure.type}`);
+        const repository = result.data.data?.repository ?? {};
+        batch.forEach((number, i) => {
+            const node = repository[`i${i}`];
+            if (!node)
+                return;
+            states.set(number, {
+                closed: node.closed ?? false,
+                stateReason: node.stateReason ?? null,
+                comments: (node.comments?.nodes ?? []).map((comment) => comment.body ?? ''),
+            });
+        });
+    }
+    return states;
 }
 
 
@@ -336,10 +456,10 @@ async function runApply(inputs, deps) {
         return skipped(error instanceof Error ? error.message : String(error));
     }
     const labelled = await deps.labelled(`version:${files.labels.version}`);
-    // State is read for the generator's issues (comment rule) and for zcl-only
-    // ones (hint), once each, in batches.
+    // State and comments are read for the generator's issues (comment rule) and for
+    // zcl-only ones (hint), once each, in batches.
     const wanted = [...new Set([...files.labels.issues, ...labelled.issues])];
-    const issueFacts = await deps.issueFacts(wanted);
+    const issueFacts = await deps.issueStates(wanted);
     const plan = (0, index_1.planApply)(files, { zclIssues: labelled.issues, zclPullRequests: labelled.pullRequests, issueFacts });
     const warnings = plan.baselineEmpty ? [`No issues carry version:${plan.version}, so there was nothing to compare with.`] : [];
     return { markdown: (0, index_1.renderReport)(plan), divergence: plan, warnings };
@@ -569,664 +689,6 @@ function githubHeaders(token, opts = {}) {
 function repoApiUrl(owner, repo) {
     return `${exports.GITHUB_API}/repos/${owner}/${repo}`;
 }
-
-
-/***/ }),
-
-/***/ 883:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.SECTION_HEADING = exports.OPT_OUT_PHRASE = void 0;
-exports.stripHtmlComments = stripHtmlComments;
-exports.stripCode = stripCode;
-exports.parseRefs = parseRefs;
-exports.extractSection = extractSection;
-exports.isOptOutTicked = isOptOutTicked;
-/**
- * Pure, section-scoped reference parser, shared verbatim with the generator
- * — no IO, no repo awareness. Cross-repo detection and issue-vs-PR
- * classification belong to the Resolver, not here.
- */
-/** The template's opt-out phrase. Kept as an exported constant so the PR template
- *  and the parser cannot drift (enforced by the repo-constant grep in CI). */
-exports.OPT_OUT_PHRASE = 'this pr does not need a linked issue';
-/** The section whose refs the gate evaluates. */
-exports.SECTION_HEADING = 'Related issues';
-// GitHub's closing keywords + our custom "completes". Case-insensitive.
-const CLOSING = /^(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|completes?)$/i;
-const RELATES = /^relate[sd]?\s+to$/i;
-const BACKPORT = /^backport\s+of$/i;
-// Optional keyword prefix shared by both ref shapes.
-const KW = String.raw `(?:\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?|completes?|relate[sd]?\s+to|backport\s+of)\b[\s:]+)?`;
-const OWNER_REPO = String.raw `([A-Za-z0-9][\w.-]*\/[A-Za-z0-9][\w.-]*)`;
-// "closes #12", "camunda/other#7", bare "#12".
-const SHORTHAND = new RegExp(KW + `(?:${OWNER_REPO})?#(\\d+)`, 'gi');
-// Full GitHub URLs: ".../owner/repo/issues/12" or ".../pull/12".
-const URL = new RegExp(KW + String.raw `https?:\/\/github\.com\/${OWNER_REPO}\/(?:issues|pull)\/(\d+)`, 'gi');
-function kindOf(keyword) {
-    if (keyword && BACKPORT.test(keyword))
-        return 'backport';
-    if (keyword && RELATES.test(keyword))
-        return 'contributor';
-    if (keyword && CLOSING.test(keyword))
-        return 'closing';
-    return 'contributor'; // bare "#N"
-}
-/** Strips before any parsing — the PR template's own instructional
- *  `<!-- closes #1234 -->` block is invisible in the rendered body, and a
- *  PR that leaves the boilerplate untouched must not be attributed to it. */
-function stripHtmlComments(text) {
-    return text.replace(/<!--[\s\S]*?-->/g, '');
-}
-/** A reviewer citing an example (`` `closes #1234` `` in prose, or a fenced
- *  snippet) must not be mistaken for the author's own ref or opt-out tick. */
-function stripCode(text) {
-    return text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
-}
-/** Extract every reference from the given text (already scoped by the caller). */
-function parseRefs(text) {
-    text = stripCode(stripHtmlComments(text));
-    const refs = [];
-    const seen = new Set(); // dedupe by match offset
-    const push = (match, repo, num) => {
-        if (seen.has(match.index))
-            return;
-        seen.add(match.index);
-        const keyword = match[1] ? match[1].toLowerCase().replace(/\s+/g, ' ') : null;
-        refs.push({
-            raw: match[0].trim(),
-            number: Number(num),
-            repo: repo ?? null,
-            keyword,
-            kind: kindOf(keyword),
-            index: match.index,
-        });
-    };
-    for (const match of text.matchAll(URL))
-        push(match, match[2] ?? null, match[3]);
-    for (const match of text.matchAll(SHORTHAND))
-        push(match, match[2] ?? null, match[3]);
-    return refs.sort((first, second) => first.index - second.index);
-}
-/** Everything after the matching heading up to the next heading (or EOF), or null if absent. */
-function extractSection(body, heading = exports.SECTION_HEADING) {
-    const lines = stripHtmlComments(body).split(/\r?\n/);
-    const headingRe = new RegExp(`^#{1,6}\\s+${escapeRe(heading)}\\s*$`, 'i');
-    const start = lines.findIndex((line) => headingRe.test(line.trim()));
-    if (start < 0)
-        return null;
-    const rest = lines.slice(start + 1);
-    const end = rest.findIndex((line) => /^#{1,6}\s+\S/.test(line.trim()));
-    return (end < 0 ? rest : rest.slice(0, end)).join('\n');
-}
-/** True when the opt-out checkbox is present and ticked. */
-function isOptOutTicked(body) {
-    const re = new RegExp(String.raw `^\s*[-*]\s*\[x\]\s*.*${escapeRe(exports.OPT_OUT_PHRASE)}`, 'im');
-    return re.test(stripCode(stripHtmlComments(body)));
-}
-function escapeRe(literal) {
-    return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-
-/***/ }),
-
-/***/ 940:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.GithubGraphqlResolver = exports.RetriesExhaustedError = exports.RATE_LIMITED_ERROR_TYPE = void 0;
-const github_1 = __nccwpck_require__(631);
-const warm_1 = __nccwpck_require__(579);
-const GRAPHQL_URL = 'https://api.github.com/graphql';
-/** `associatedPullRequests` walks branch history per commit; `pullRequest(number:)`
- *  is a direct lookup — an order of magnitude cheaper, so the two can't share
- *  a batch size. 100 commit aliases 502s at ~11s server-side timeout; 25 is
- *  the size that doesn't. */
-const COMMIT_BATCH_SIZE = 25;
-/** A direct lookup — 100 aliases return in under a second. */
-const PR_METADATA_BATCH_SIZE = 100;
-exports.RATE_LIMITED_ERROR_TYPE = 'RATE_LIMITED';
-/** A field-level error, not a null field — the rest of the batch still comes back. */
-const NOT_FOUND_ERROR_TYPE = 'NOT_FOUND';
-/** Thrown when every retry failed for a reason a SMALLER request might
- *  survive. A malformed response fails identically at any size — bisecting
- *  that would replace one clear error with a storm of requests. */
-class RetriesExhaustedError extends Error {
-}
-exports.RetriesExhaustedError = RetriesExhaustedError;
-/** The one `associatedPullRequests` selection both query shapes share.
- *  `headRefName`/`mergeCommit` feed range membership, decided before any PR
- *  metadata fetch, and are free on a connection already selected. */
-const prConnection = (afterArg = '') => `associatedPullRequests(first: 10${afterArg}) { nodes { number baseRefName headRefName state mergeCommit { oid } } pageInfo { hasNextPage endCursor } }`;
-function assertField(value, description) {
-    if (value === null || value === undefined)
-        throw new Error(`Malformed GraphQL response: missing ${description}`);
-    return value;
-}
-/** One commit's `associatedPullRequests` page, from whichever query shape produced it. */
-function readPrPage(commit, sha) {
-    const connection = assertField(commit.associatedPullRequests, `associatedPullRequests on commit ${sha}`);
-    return {
-        nodes: assertField(connection.nodes, `associatedPullRequests.nodes on commit ${sha}`),
-        pageInfo: assertField(connection.pageInfo, `associatedPullRequests.pageInfo on commit ${sha}`),
-    };
-}
-/** GraphQL's `author.login` omits the `[bot]` suffix REST always includes;
- *  every bot-identity set in this package is keyed on the REST convention. */
-function normalizeAuthorLogin(author) {
-    if (!author?.login)
-        return undefined;
-    return author.__typename === 'Bot' && !author.login.endsWith('[bot]') ? `${author.login}[bot]` : author.login;
-}
-class GithubGraphqlResolver {
-    token;
-    owner;
-    repo;
-    fetchImpl;
-    sleepImpl;
-    constructor(token, owner, repo, fetchImpl = fetch, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
-        this.token = token;
-        this.owner = owner;
-        this.repo = repo;
-        this.fetchImpl = fetchImpl;
-        this.sleepImpl = sleepImpl;
-    }
-    /** The one "batch N values into a multi-alias `repository()` query" shape
-     *  `mapCommitBatch`, `classifyRefs`, `fetchIssueFacts`, and `fetchMetadataBatch`
-     *  each built separately — only the variable type, alias prefix, and
-     *  per-item field selection actually differ between them. */
-    buildBatchQuery(items, opts) {
-        const varDecls = items.map((_, i) => `$v${i}: ${opts.varType}`).join(', ');
-        const body = items.map((_, i) => `${opts.aliasPrefix}${i}: ${opts.field(`$v${i}`)}`).join('\n');
-        const query = `query($owner: String!, $name: String!, ${varDecls}) {
-      repository(owner: $owner, name: $name) {
-        ${body}
-      }
-    }`;
-        const variables = { owner: this.owner, name: this.repo };
-        items.forEach((item, i) => (variables[`v${i}`] = item));
-        return { query, variables };
-    }
-    async mapCommitsToPrs(shas) {
-        const results = [];
-        for (let i = 0; i < shas.length; i += COMMIT_BATCH_SIZE) {
-            results.push(...(await this.mapCommitBatchBisecting(shas.slice(i, i + COMMIT_BATCH_SIZE))));
-        }
-        return results;
-    }
-    /** ponytail: bisect on failure rather than tuning COMMIT_BATCH_SIZE harder
-     *  — COMMIT_BATCH_SIZE is the fast path, this is the ceiling. Floors at one
-     *  commit, where a failure is real. */
-    async mapCommitBatchBisecting(shas) {
-        try {
-            return await this.mapCommitBatch(shas);
-        }
-        catch (error) {
-            // Only retry-exhausted can plausibly be fixed by asking for less.
-            if (!(error instanceof RetriesExhaustedError) || shas.length <= 1)
-                throw error;
-            const half = Math.ceil(shas.length / 2);
-            return [
-                ...(await this.mapCommitBatchBisecting(shas.slice(0, half))),
-                ...(await this.mapCommitBatchBisecting(shas.slice(half))),
-            ];
-        }
-    }
-    /** Same-repo numbers in bulk via `issueOrPullRequest` — the REST classifier
-     *  this replaces costs one round trip per reference, enough to trip the
-     *  secondary rate limit on a large minor. Cross-repo refs stay with REST,
-     *  which classifies those without an API call at all. */
-    async classifyRefs(numbers) {
-        const out = new Map();
-        for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
-            const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
-            const { query, variables } = this.buildBatchQuery(batch, {
-                varType: 'Int!',
-                aliasPrefix: 'r',
-                field: (ref) => `issueOrPullRequest(number: ${ref}) { __typename ... on Issue { title } ... on PullRequest { title } }`,
-            });
-            const repository = await this.requestRepository(query, variables, true);
-            batch.forEach((number, j) => {
-                const node = repository[`r${j}`];
-                if (!node) { // missing: deleted, transferred, or never existed — a REST 404 for the same number
-                    out.set(number, { target: 'missing', title: null });
-                    return;
-                }
-                out.set(number, {
-                    target: node.__typename === 'PullRequest' ? 'pullRequest' : 'issue',
-                    title: node.title ?? null,
-                });
-            });
-        }
-        return out;
-    }
-    /** What only the ISSUE knows: labels, and its own close event. Same
-     *  batching/NOT_FOUND tolerance as `classifyRefs`. `timelineItems(last: 1)`
-     *  is the LAST close — the one that matters for reopened-then-reclosed. */
-    async fetchIssueFacts(numbers) {
-        const out = new Map();
-        for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
-            const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
-            const { query, variables } = this.buildBatchQuery(batch, {
-                varType: 'Int!',
-                aliasPrefix: 'i',
-                field: (ref) => `issue(number: ${ref}) { closed stateReason labels(first: 20) { nodes { name } pageInfo { hasNextPage } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`,
-            });
-            const repository = await this.requestRepository(query, variables, true);
-            batch.forEach((number, j) => {
-                const node = repository[`i${j}`];
-                if (!node)
-                    return;
-                const closer = node.timelineItems?.nodes?.[0]?.closer;
-                // A PR in another repo can close an issue here (camunda/camunda-docs#4852
-                // closes camunda/camunda#26937) — its number means nothing in our numbering.
-                const sameRepo = closer?.repository?.nameWithOwner === `${this.owner}/${this.repo}`;
-                out.set(number, {
-                    closed: node.closed ?? false,
-                    stateReason: node.stateReason ?? null,
-                    closerPrNumber: closer?.__typename === 'PullRequest' && sameRepo ? (closer.number ?? null) : null,
-                    labels: (node.labels?.nodes ?? []).map((label) => label.name),
-                    labelsTruncated: node.labels?.pageInfo?.hasNextPage ?? false,
-                });
-            });
-        }
-        return out;
-    }
-    async fetchPrMetadata(numbers, speculative = false) {
-        const results = [];
-        for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
-            results.push(...(await this.fetchMetadataBatch(numbers.slice(i, i + PR_METADATA_BATCH_SIZE), speculative)));
-        }
-        return results;
-    }
-    async mapCommitBatch(shas) {
-        const { query, variables } = this.buildBatchQuery(shas, {
-            varType: 'GitObjectID!',
-            aliasPrefix: 'c',
-            field: (ref) => `object(oid: ${ref}) { ... on Commit { ${prConnection()} } }`,
-        });
-        const repository = await this.requestRepository(query, variables);
-        const mappings = [];
-        for (const [i, sha] of shas.entries()) {
-            const commit = assertField(repository[`c${i}`], `repository.c${i} (commit ${sha})`);
-            mappings.push({ sha, associatedPrs: await this.drainAssociatedPrs(sha, commit) });
-        }
-        return mappings;
-    }
-    /** Follows `pageInfo.hasNextPage` so a many-PR commit is never truncated.
-     *  Filters to MERGED: the field has no `states` arg and otherwise returns
-     *  every PR whose branch history contains the commit — every PR opened
-     *  against the base branch afterward, for a commit already on it. */
-    async drainAssociatedPrs(sha, firstPage) {
-        let page = readPrPage(firstPage, sha);
-        const all = [...page.nodes];
-        while (page.pageInfo.hasNextPage) {
-            const query = `query($owner: String!, $name: String!, $sha: GitObjectID!, $after: String) {
-        repository(owner: $owner, name: $name) {
-          c: object(oid: $sha) { ... on Commit { ${prConnection(', after: $after')} } }
-        }
-      }`;
-            const repository = await this.requestRepository(query, { owner: this.owner, name: this.repo, sha, after: page.pageInfo.endCursor });
-            const commit = assertField(repository.c, `repository.c (commit ${sha})`);
-            page = readPrPage(commit, sha);
-            all.push(...page.nodes);
-        }
-        return all
-            .filter((node) => node.state === 'MERGED')
-            .map((node) => ({
-            number: node.number,
-            baseRefName: node.baseRefName,
-            headRefName: node.headRefName,
-            mergeCommitOid: node.mergeCommit?.oid ?? null,
-        }));
-    }
-    /** `speculative`: a number scraped from a merge subject is only a guess,
-     *  and `pullRequest(number:)` NOT_FOUNDs for it — absent here (rather than
-     *  a thrown error) is what sends the commit to the `associatedPullRequests`
-     *  fallback instead of aborting the release. */
-    async fetchMetadataBatch(numbers, speculative = false) {
-        const { query, variables } = this.buildBatchQuery(numbers, {
-            varType: 'Int!',
-            aliasPrefix: 'pr',
-            field: (ref) => `pullRequest(number: ${ref}) { number title body mergedAt baseRefName headRefName mergeCommit { oid } author { login __typename } labels(first: 20) { nodes { name } pageInfo { hasNextPage } } closingIssuesReferences(first: 20) { nodes { number repository { nameWithOwner } } pageInfo { hasNextPage } } }`,
-        });
-        const repository = await this.requestRepository(query, variables, speculative);
-        return numbers.flatMap((number, i) => {
-            const node = repository[`pr${i}`];
-            if (speculative && (node === null || node === undefined))
-                return [];
-            const pr = assertField(node, `repository.pr${i} (PR #${number})`);
-            // An OPEN pull request is a non-null node but an unconfirmed guess all
-            // the same — as absent as NOT_FOUND above, not a reason to abort.
-            if (speculative && pr.mergedAt == null)
-                return [];
-            const truncatedFields = [];
-            if (pr.labels?.pageInfo?.hasNextPage)
-                truncatedFields.push('labels');
-            if (pr.closingIssuesReferences?.pageInfo?.hasNextPage)
-                truncatedFields.push('closingIssuesReferences');
-            return [{
-                    number: assertField(pr.number, `number on PR #${number}`),
-                    title: assertField(pr.title, `title on PR #${number}`),
-                    baseRefName: assertField(pr.baseRefName, `baseRefName on PR #${number}`),
-                    headRefName: assertField(pr.headRefName, `headRefName on PR #${number}`),
-                    mergeCommitOid: pr.mergeCommit?.oid ?? null,
-                    body: pr.body ?? '',
-                    authorLogin: normalizeAuthorLogin(pr.author),
-                    mergedAt: assertField(pr.mergedAt, `mergedAt on PR #${number}`),
-                    labels: assertField(pr.labels?.nodes, `labels.nodes on PR #${number}`).map((label) => label.name),
-                    closingIssuesReferences: assertField(pr.closingIssuesReferences?.nodes, `closingIssuesReferences.nodes on PR #${number}`)
-                        .filter((issue) => (0, warm_1.isOwnRepo)(assertField(issue.repository?.nameWithOwner, `repository.nameWithOwner on closing issue #${issue.number} of PR #${number}`), `${this.owner}/${this.repo}`))
-                        .map((issue) => issue.number),
-                    ...(truncatedFields.length > 0 ? { truncatedFields } : {}),
-                }];
-        });
-    }
-    async requestRepository(query, variables, tolerateNotFound = false) {
-        const data = await this.request(query, variables, tolerateNotFound);
-        return assertField(data.repository, 'repository');
-    }
-    /** One GraphQL request, retrying a throttled or transiently failed one with
-     *  backoff. Never logs the token, headers, or the raw response. */
-    async request(query, variables, tolerateNotFound = false) {
-        for (let attempt = 0;; attempt++) {
-            // fetch rejects on a socket-level failure instead of returning a
-            // Response — routed through waitForRetry so it stays bisectable.
-            let res;
-            try {
-                res = await this.fetchImpl(GRAPHQL_URL, {
-                    method: 'POST',
-                    headers: (0, github_1.githubHeaders)(this.token, { json: true }),
-                    body: JSON.stringify({ query, variables }),
-                });
-            }
-            catch (error) {
-                const detail = error instanceof Error ? error.message : String(error);
-                await this.waitForRetry(null, attempt, `request never completed: ${detail}`);
-                continue;
-            }
-            if (!res.ok) {
-                if (!(await (0, github_1.retryableStatus)(res)))
-                    throw new Error(`GitHub GraphQL API returned HTTP ${res.status}`);
-                await this.waitForRetry(res, attempt, `HTTP ${res.status}`);
-                continue;
-            }
-            // A 200 with an empty/truncated body throws SyntaxError from JSON.parse
-            // — as transient as the status codes above, so retried the same way.
-            let payload;
-            try {
-                payload = (await res.json());
-            }
-            catch {
-                await this.waitForRetry(res, attempt, 'unparseable response body');
-                continue;
-            }
-            if (payload.errors?.some((error) => error.type === exports.RATE_LIMITED_ERROR_TYPE)) {
-                await this.waitForRetry(null, attempt, 'secondary rate limit');
-                continue;
-            }
-            // A batch containing deleted numbers gets a NOT_FOUND per alias plus every
-            // alias that DID resolve — only the caller expecting absences opts in;
-            // a missing commit SHA stays fatal.
-            const fatal = tolerateNotFound
-                ? (payload.errors ?? []).filter((error) => error.type !== NOT_FOUND_ERROR_TYPE)
-                : (payload.errors ?? []);
-            if (fatal.length) {
-                throw new Error(`GitHub GraphQL error: ${fatal.map((error) => error.message).join('; ')}`);
-            }
-            return assertField(payload.data, 'data');
-        }
-    }
-    /** Sleeps before the next attempt, or throws once the cap is reached — the
-     *  one place that decides a retry loop is over. */
-    async waitForRetry(res, attempt, cause) {
-        if (attempt >= github_1.MAX_RETRIES - 1) {
-            throw new RetriesExhaustedError(`GitHub GraphQL request kept failing (${cause}) past ${github_1.MAX_RETRIES} attempts.`);
-        }
-        await this.sleepImpl((0, github_1.backoffMs)(res, attempt));
-    }
-}
-exports.GithubGraphqlResolver = GithubGraphqlResolver;
-
-
-/***/ }),
-
-/***/ 579:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isOwnRepo = isOwnRepo;
-exports.prewarmNumbers = prewarmNumbers;
-exports.backportTargets = backportTargets;
-exports.buildPipelineResolver = buildPipelineResolver;
-const parser_1 = __nccwpck_require__(883);
-const resolver_1 = __nccwpck_require__(306);
-/** A full-URL ref to this repo parses with `repo` set, so `null` alone misses it. */
-function isOwnRepo(repo, ownRepo) {
-    return repo === null || repo.toLowerCase() === ownRepo.toLowerCase();
-}
-/** Every own-repo number the pipeline might resolve for these bodies — section
- *  refs plus full-body refs, each capped by the policy the resolver applies. */
-function prewarmNumbers(bodies, ownRepo) {
-    const wanted = new Set();
-    for (const body of bodies) {
-        const section = (0, parser_1.extractSection)(body);
-        for (const refs of [section ? (0, parser_1.parseRefs)(section) : [], (0, parser_1.parseRefs)(body)]) {
-            for (const ref of (0, resolver_1.prioritizeAndCap)(refs)) {
-                if (isOwnRepo(ref.repo, ownRepo))
-                    wanted.add(ref.number);
-            }
-        }
-    }
-    return wanted;
-}
-/** The own-repo PRs these bodies are backports of, deduped — the same marker
- *  the pipeline's hop follows. A cross-repo marker never resolves here. */
-function backportTargets(bodies, ownRepo) {
-    const targets = new Set();
-    for (const body of bodies) {
-        const marker = (0, parser_1.parseRefs)(body).find((ref) => ref.kind === 'backport');
-        if (marker && isOwnRepo(marker.repo, ownRepo))
-            targets.add(marker.number);
-    }
-    return [...targets];
-}
-/** `originals` holds the backport originals fetched in bulk; anything absent
- *  (not prefetched, or not a merged PR) still goes to REST. */
-function buildPipelineResolver(rest, warmRefs, ownRepo, originals = new Map()) {
-    // Cross-repo refs are never pre-warmed — the REST path classifies those without an API call.
-    const sameRepoNumber = (ref) => (isOwnRepo(ref.repo, ownRepo) ? ref.number : null);
-    return {
-        async resolveRefs(refs) {
-            const capped = (0, resolver_1.prioritizeAndCap)(refs); // same cap/priority as the REST resolver — imported, not restated
-            const cold = capped.filter((ref) => {
-                const number = sameRepoNumber(ref);
-                return number === null || !warmRefs.has(number);
-            });
-            const fresh = cold.length > 0 ? await rest.resolve(cold) : [];
-            // Keyed by position, not number: a body can cite the same issue twice,
-            // and keying by number would collapse the two occurrences into one.
-            const freshByPosition = new Map(fresh.map((ref) => [ref.index, ref]));
-            return capped
-                .map((ref) => {
-                const number = sameRepoNumber(ref);
-                const warm = number === null ? undefined : warmRefs.get(number);
-                if (warm)
-                    return { ...ref, target: warm.target, crossRepo: false };
-                return freshByPosition.get(ref.index) ?? { ...ref, target: 'missing', crossRepo: !isOwnRepo(ref.repo, ownRepo) };
-            })
-                .sort((first, second) => first.index - second.index);
-        },
-        fetchOriginalPull: async (number, repo) => (isOwnRepo(repo, ownRepo) ? originals.get(number) : undefined) ?? rest.fetchOriginalPull(number, repo),
-        fetchIssueTitle: async (number) => warmRefs.get(number)?.title ?? rest.fetchIssueTitle(number),
-    };
-}
-
-
-/***/ }),
-
-/***/ 306:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.GithubResolver = void 0;
-exports.prioritizeAndCap = prioritizeAndCap;
-const github_1 = __nccwpck_require__(631);
-/** Bounds the worst case — a body stuffed with hundreds of `#N` shorthands
- *  on `pull_request_target` — to a fixed cost. */
-const MAX_REFS = 20;
-/** Caps fan-out even after dedup + the cap above. */
-const CONCURRENCY = 5;
-/** Lower sorts first. Closing/backport refs decide the gate's verdict, so they
- *  must survive the MAX_REFS cap ahead of merely-informational refs. */
-function priorityOf(ref) {
-    if (ref.kind === 'closing')
-        return 0;
-    if (ref.kind === 'backport')
-        return 1;
-    return 2;
-}
-/**
- * The refs a caller will actually classify, capped and priority-sorted so a
- * dropped ref is always the least consequential one. Exported so the gate
- * and the generator apply the SAME cap — a copied `MAX_REFS` would let them
- * drift apart the moment either changed.
- */
-function prioritizeAndCap(refs) {
-    return [...refs].sort((first, second) => priorityOf(first) - priorityOf(second)).slice(0, MAX_REFS);
-}
-/**
- * GitHub-API resolver: the only part of the pipeline that touches the network.
- * Classifies each ref as issue vs PR vs missing and flags cross-repo refs —
- * GitHub's issues API returns PRs too (a PR is an issue with a `pull_request`
- * field), so one lookup per number classifies both.
- *
- * ponytail: plain fetch (Node 24 global) over octokit for this one endpoint.
- * Transient responses retry via `fetchWithRetry` (../github) since PRs are
- * processed serially — one un-retried 5xx would abort the whole job.
- */
-class GithubResolver {
-    token;
-    owner;
-    repo;
-    sleepImpl;
-    repoUrl;
-    headers;
-    /** `classify` and `fetchIssueTitle` hit the same `/issues/N` endpoint, so a
-     *  title seen while classifying serves the later fetchIssueTitle call. */
-    titlesByNumber = new Map();
-    constructor(token, owner, repo, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
-        this.token = token;
-        this.owner = owner;
-        this.repo = repo;
-        this.sleepImpl = sleepImpl;
-        this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
-        this.headers = (0, github_1.githubHeaders)(token);
-    }
-    /** Resolve every ref: deduped, capped at MAX_REFS, bounded to CONCURRENCY
-     *  in flight — defense against a body engineered to fan out unbounded
-     *  concurrent requests through the gate's token. */
-    async resolve(refs) {
-        const capped = prioritizeAndCap(refs);
-        const cache = new Map();
-        const classifyCached = (ref) => {
-            const key = `${ref.repo ?? ''}#${ref.number}`;
-            let promise = cache.get(key);
-            if (!promise) {
-                promise = this.classify(ref);
-                cache.set(key, promise);
-            }
-            return promise;
-        };
-        const results = [];
-        for (let i = 0; i < capped.length; i += CONCURRENCY) {
-            const batch = capped.slice(i, i + CONCURRENCY);
-            const classified = await Promise.all(batch.map(classifyCached));
-            batch.forEach((ref, index) => {
-                const { target, crossRepo } = classified[index];
-                results.push({ ...ref, target, crossRepo });
-            });
-        }
-        return results.sort((first, second) => first.index - second.index); // body order for messages — priority sort only controlled the cap
-    }
-    /** A same-repo pull request's body, for backport-hop validation, or null if
-     *  it doesn't exist. Cross-repo (`Backport of owner/other#N`) resolves to
-     *  null: #N there would name an unrelated PR in THIS repo. */
-    async fetchPullBody(number, repo) {
-        if (this.isCrossRepo(repo))
-            return null;
-        const pull = await this.fetchPull(number);
-        return pull?.body ?? null;
-    }
-    /** Same as {@link fetchPullBody} but the full fields, for the generator's
-     *  backport hop (attribution + inherit-original title/mergedAt). */
-    async fetchOriginalPull(number, repo) {
-        if (this.isCrossRepo(repo))
-            return null;
-        return this.fetchPull(number);
-    }
-    /** The fields the gate evaluates for one same-repo pull request, or null if
-     *  it doesn't exist. Fetched fresh rather than trusted from the webhook
-     *  payload, since `workflow_run` carries no `pull_request` object at all
-     *  and a stale trigger run must not evaluate an out-of-date body. */
-    async fetchPull(number) {
-        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/pulls/${number}`, { headers: this.headers }, this.sleepImpl);
-        if (res.status === 404)
-            return null;
-        if (!res.ok)
-            throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
-        const { data } = res;
-        return {
-            body: data.body ?? '',
-            title: data.title ?? '',
-            authorLogin: data.user?.login,
-            mergedAt: data.merged_at ?? undefined,
-        };
-    }
-    /** The live title of a same-repo issue, or null if it doesn't exist — the
-     *  generator shows this customer-facing wording, not the PR's dev title. */
-    async fetchIssueTitle(number) {
-        const cached = this.titlesByNumber.get(number);
-        if (cached !== undefined)
-            return cached;
-        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/issues/${number}`, { headers: this.headers }, this.sleepImpl);
-        if (res.status === 404) {
-            this.titlesByNumber.set(number, null);
-            return null;
-        }
-        if (!res.ok)
-            throw new Error(`GitHub API ${res.status} fetching issue #${number}`);
-        const title = res.data.title ?? null;
-        this.titlesByNumber.set(number, title);
-        return title;
-    }
-    /** A ref points at a different repo than the one being gated (case-insensitive). */
-    isCrossRepo(repo) {
-        return repo !== null && repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
-    }
-    /** Classify one (repo, number) pair — the part of a ref that actually needs
-     *  an API call. Keyed independently of the ParsedRef's own fields (raw,
-     *  keyword, kind, index) so `resolve()` can cache and reuse it across every
-     *  ref that shares the same repo/number. */
-    async classify(ref) {
-        if (this.isCrossRepo(ref.repo))
-            return { target: 'missing', crossRepo: true };
-        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/issues/${ref.number}`, { headers: this.headers }, this.sleepImpl);
-        if (res.status === 404)
-            return { target: 'missing', crossRepo: false };
-        if (!res.ok)
-            throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
-        this.titlesByNumber.set(ref.number, res.data.title ?? null);
-        return { target: res.data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
-    }
-}
-exports.GithubResolver = GithubResolver;
 
 
 /***/ }),
