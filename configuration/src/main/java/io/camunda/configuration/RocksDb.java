@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_MEMORY_MINIMUM;
 import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
@@ -84,6 +85,13 @@ public class RocksDb {
    * of 0.1 means 10% of total system memory will be allocated to RocksDB.
    */
   private double memoryFraction = 0.1;
+
+  /**
+   * Configures the minimum memory to allocate to RocksDB when using the 'FRACTION' memory
+   * allocation strategy. If memoryFraction of total system memory is less than this value, this
+   * value is allocated instead. Defaults to 0, which disables the minimum.
+   */
+  private DataSize memoryMinimum = DataSize.ofBytes(DEFAULT_MEMORY_MINIMUM);
 
   /**
    * Configures the maximum fraction of total system memory that RocksDB is allowed to use, as a
@@ -209,6 +217,14 @@ public class RocksDb {
 
   public void setMemoryFraction(final double memoryFraction) {
     this.memoryFraction = memoryFraction;
+  }
+
+  public DataSize getMemoryMinimum() {
+    return memoryMinimum;
+  }
+
+  public void setMemoryMinimum(final DataSize memoryMinimum) {
+    this.memoryMinimum = memoryMinimum;
   }
 
   public double getMaxMemoryFraction() {

@@ -125,6 +125,7 @@ final class PhysicalTenantOverridePolicyValidation {
               "data.primary-storage.rocks-db.memory-limit",
               "data.primary-storage.rocks-db.memory-allocation-strategy",
               "data.primary-storage.rocks-db.memory-fraction",
+              "data.primary-storage.rocks-db.memory-minimum",
               // safety cap on the same shared memory pool as memory-fraction above, not a
               // per-partition setting
               "data.primary-storage.rocks-db.max-memory-fraction",

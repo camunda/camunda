@@ -43,16 +43,26 @@ public sealed interface RocksDbResources {
         yield new Shared(memoryLimit, runtime.partitionCount());
       }
       case FRACTION -> {
-        final var memoryLimit = Math.round(runtime.hostMemory() * config.getMemoryFraction());
+        final var memoryLimit =
+            fractionMemoryLimit(
+                runtime.hostMemory(), config.getMemoryFraction(), config.getMemoryMinimum());
         LOG.atInfo()
             .addArgument(config.getMemoryFraction())
             .addArgument(prettyPrint(runtime.hostMemory()))
+            .addArgument(prettyPrint(config.getMemoryMinimum()))
             .addArgument(prettyPrint(memoryLimit))
             .addArgument(runtime.partitionCount())
-            .log("RocksDB memory set to {} of host memory {}, sharing {} between {} partitions");
+            .log(
+                "RocksDB memory set to {} of host memory {} with a minimum of {}, sharing {}"
+                    + " between {} partitions");
         yield new Shared(memoryLimit, runtime.partitionCount());
       }
     };
+  }
+
+  static long fractionMemoryLimit(
+      final long hostMemory, final double memoryFraction, final long memoryMinimum) {
+    return Math.max(Math.round(hostMemory * memoryFraction), memoryMinimum);
   }
 
   /** Write buffer budget for a single partition's DB, after splitting any shared budget. */
