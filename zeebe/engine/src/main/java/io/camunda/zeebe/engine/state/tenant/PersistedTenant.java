@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.tenant;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -20,13 +21,25 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
   private final StringProperty tenantIdProp = new StringProperty("tenantId");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty descriptionProp = new StringProperty("description", "");
+  private final BooleanProperty deletedProp = new BooleanProperty("deleted", false);
 
   public PersistedTenant() {
-    super(4);
+    super(5);
     declareProperty(tenantKeyProp);
     declareProperty(tenantIdProp);
     declareProperty(nameProp);
     declareProperty(descriptionProp);
+    declareProperty(deletedProp);
+  }
+
+  /** Whether this version of the tenant is a tombstone, that is, the tenant is deleted. */
+  public boolean isDeleted() {
+    return deletedProp.getValue();
+  }
+
+  public PersistedTenant setDeleted(final boolean deleted) {
+    deletedProp.setValue(deleted);
+    return this;
   }
 
   public PersistedTenant copy() {

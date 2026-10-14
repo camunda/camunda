@@ -156,7 +156,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private Either<String, PersistedTenant> getPersistedTenant(final TenantRecord record) {
     final var tenantId = record.getTenantId();
     return tenantState
-        .getTenantById(tenantId)
+        .getTenantById(tenantId, record.getPolicyVersion())
         .<Either<String, PersistedTenant>>map(Either::right)
         .orElseGet(() -> Either.left(TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantId)));
   }

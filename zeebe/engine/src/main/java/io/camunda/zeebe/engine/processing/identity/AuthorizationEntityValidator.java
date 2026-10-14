@@ -91,7 +91,7 @@ public class AuthorizationEntityValidator {
         }
         break;
       case ROLE:
-        if (roleState.getRole(record.getOwnerId()).isEmpty()) {
+        if (roleState.getRole(record.getOwnerId(), record.getPolicyVersion()).isEmpty()) {
           LOG.debug("Owner role '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
@@ -132,7 +132,7 @@ public class AuthorizationEntityValidator {
           }
           break;
         case ROLE:
-          if (roleState.getRole(record.getResourceId()).isEmpty()) {
+          if (roleState.getRole(record.getResourceId(), record.getPolicyVersion()).isEmpty()) {
             LOG.debug("Resource role '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(

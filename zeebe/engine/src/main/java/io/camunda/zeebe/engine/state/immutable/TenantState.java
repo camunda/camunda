@@ -21,5 +21,14 @@ public interface TenantState {
   void forEachTenant(final Function<String, Boolean> callback);
 
   /** Retrieves a tenant record by its ID. */
-  Optional<PersistedTenant> getTenantById(String tenantId);
+  /** Returns the tenant visible to a command outside of a policy update. */
+  default Optional<PersistedTenant> getTenantById(final String tenantId) {
+    return getTenantById(tenantId, 0);
+  }
+
+  /**
+   * Returns the tenant visible to a command of the given policy version. The command sees the
+   * current version and its own version, so a policy update reads its own writes.
+   */
+  Optional<PersistedTenant> getTenantById(String tenantId, long commandVersion);
 }
