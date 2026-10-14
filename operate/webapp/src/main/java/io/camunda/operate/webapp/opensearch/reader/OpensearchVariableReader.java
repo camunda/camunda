@@ -71,9 +71,17 @@ public class OpensearchVariableReader implements VariableReader {
   }
 
   @Override
-  public VariableDto getVariable(final String id) {
+  public VariableDto getVariable(final String processInstanceId, final String id) {
     final var searchRequest =
-        searchRequestBuilder(variableTemplate).query(withTenantCheck(ids(id)));
+        searchRequestBuilder(variableTemplate)
+            .query(
+                constantScore(
+                    withTenantCheck(
+                        and(
+                            ids(id),
+                            term(
+                                ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
+                                processInstanceId)))));
     final var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
     if (hits.total().value() != 1) {
       throw new NotFoundException(String.format("Variable with id %s not found.", id));
