@@ -114,6 +114,20 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
     this.userIdMigrationService = userIdMigrationService;
   }
 
+  /**
+   * Keeps Spring Boot from mapping {@link AuthenticationCookieFilter} onto {@code /*}, which it
+   * does for any {@code Filter} bean. The filter belongs only in the OAuth2 chain, where {@link
+   * #configureWebSecurity} adds it.
+   */
+  @Bean
+  public FilterRegistrationBean<AuthenticationCookieFilter> authenticationCookieFilterRegistration(
+      final AuthenticationCookieFilter filter) {
+    final FilterRegistrationBean<AuthenticationCookieFilter> registration =
+        new FilterRegistrationBean<>(filter);
+    registration.setEnabled(false);
+    return registration;
+  }
+
   @Bean
   public AuthenticationCookieFilter authenticationCookieFilter(final HttpSecurity http)
       throws Exception {
