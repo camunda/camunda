@@ -41,15 +41,29 @@ done
 
 slug() { printf '%s' "$1" | tr '/.' '__'; }
 
+# `gh api <path>` and `gh api -X POST <path>` both occur, so find the first
+# argument after `api` that is neither a flag nor a flag's value.
+if [ "$1" = "api" ]; then
+  skip_next=0
+  for ((i = 1; i < ${#args[@]}; i++)); do
+    if [ "$skip_next" = 1 ]; then skip_next=0; continue; fi
+    case "${args[i]}" in
+      -X|--jq|--json|-f|-F|--state) skip_next=1 ;;
+      --*|-*) ;;
+      *) path="${args[i]}"; break ;;
+    esac
+  done
+fi
+
 case "$1 $2" in
   "pr list")    name="prlist_${state}" ;;
   "pr view")    number="$3"; name="pr_${number}_$(slug "$want_json")" ;;
   "pr reopen"|"pr edit"|"pr comment") exit 0 ;;
   "api "*|"api")
-    path="$2"
     case "$path" in
       *"/timeline"*) name="timeline_$(printf '%s' "$path" | sed -E 's#.*/issues/([0-9]+)/.*#\1#')" ;;
       *"/git/ref/heads/"*) [ -f "${FIXTURES}/ref_$(slug "${path##*/heads/}")" ] && exit 0 || exit 1 ;;
+      *"/git/refs") [ -f "${FIXTURES}/refs_create_fails" ] && exit 1 || exit 0 ;;
       *"/compare/"*) name="compare_$(slug "${path##*...}")" ;;
       *) exit 1 ;;
     esac
@@ -66,6 +80,7 @@ EOF
 candidate() {
   cat > "${FIXTURES}/prlist_closed.json" <<EOF
 [{"number": 1, "headRefName": "fix/nightly-8.10-flaky",
+  "headRefOid": "c0ffee1234abcd",
   "closedAt": "$(date -u +%FT%TZ)", "mergedAt": null,
   "labels": [{"name": "failing-test-fix"}, {"name": "auto-closed-stale"}]}]
 EOF
@@ -75,8 +90,9 @@ EOF
   echo '{"comments": []}' > "${FIXTURES}/pr_1_comments.json"
   echo '{"files": [{"path": "qa/c8-orchestration-cluster-e2e-test-suite/tests/a.spec.ts"}]}' \
     > "${FIXTURES}/pr_1_files.json"
-  : > "${FIXTURES}/ref_fix_nightly-8_10-flaky"
-  echo '{"behind_by": 3}' > "${FIXTURES}/compare_fix_nightly-8_10-flaky.json"
+  # NO ref_ fixture: the sweeper deletes the branch on close, so "branch gone"
+  # is the normal state of a candidate. reopen_commit restores it.
+  echo '{"behind_by": 3}' > "${FIXTURES}/compare_c0ffee1234abcd.json"
   closed_by "github-actions[bot]"
 }
 
@@ -101,7 +117,7 @@ pick() {
   pick
 
   # then
-  [[ "$output" == *$'1\tfix/nightly-8.10-flaky\t0'* ]]
+  [[ "$output" == *$'1\tfix/nightly-8.10-flaky\tc0ffee1234abcd\t0'* ]]
 }
 
 @test "should reopen a PR closed by the qa-processes app" {
@@ -209,22 +225,10 @@ pick() {
   [[ "$output" != *$'1\tfix'* ]]
 }
 
-@test "should refuse when the head branch is gone" {
-  # given — gh pr reopen hard-fails without a head ref
-  candidate
-  rm "${FIXTURES}/ref_fix_nightly-8_10-flaky"
-
-  # when
-  pick
-
-  # then
-  [[ "$output" == *"head branch"* ]]
-}
-
 @test "should refuse a branch too far behind main" {
   # given
   candidate
-  echo '{"behind_by": 500}' > "${FIXTURES}/compare_fix_nightly-8_10-flaky.json"
+  echo '{"behind_by": 500}' > "${FIXTURES}/compare_c0ffee1234abcd.json"
 
   # when
   pick
@@ -267,4 +271,40 @@ pick() {
 
   # then
   [[ "$output" == *$'1\tfix/nightly-8.10-flaky'* ]]
+}
+
+@test "should restore the deleted branch before reopening" {
+  # given — the branch is gone, which is the normal state after the sweeper
+  candidate
+
+  # when
+  run bash -c ". '$SCRIPT'; reopen_commit 1 fix/nightly-8.10-flaky c0ffee1234abcd body"
+
+  # then — restoring the ref is what makes `gh pr reopen` possible at all
+  [ "$status" -eq 0 ]
+}
+
+@test "should refuse to reopen when the branch cannot be restored" {
+  # given
+  candidate
+  : > "${FIXTURES}/refs_create_fails"
+
+  # when
+  run bash -c ". '$SCRIPT'; reopen_commit 1 fix/nightly-8.10-flaky c0ffee1234abcd body"
+
+  # then — half-restoring would leave a PR that cannot be reopened anyway
+  [ "$status" -ne 0 ]
+}
+
+@test "should refuse a candidate with no recorded head commit" {
+  # given — nothing to restore the branch to
+  candidate
+  jq '.[0].headRefOid = ""' "${FIXTURES}/prlist_closed.json" > "${FIXTURES}/tmp.json"
+  mv "${FIXTURES}/tmp.json" "${FIXTURES}/prlist_closed.json"
+
+  # when
+  pick
+
+  # then
+  [[ "$output" == *"no recorded head commit"* ]]
 }
