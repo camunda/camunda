@@ -12,7 +12,7 @@ import java.util.Objects;
 
 public class ThrottleCfg {
   private boolean enabled = false;
-  private int acceptableBacklog = 100_000;
+  private int acceptableBacklog = 50_000;
   private int minimumLimit = 100;
   private Duration resolution = Duration.ofSeconds(15);
 
