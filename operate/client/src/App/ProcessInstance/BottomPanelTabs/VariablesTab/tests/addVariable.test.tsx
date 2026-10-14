@@ -15,6 +15,8 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockVariables} from './index.setup';
 import {createVariable} from 'modules/testUtils';
 import {VariablesTab} from '../index';
+import {http, HttpResponse} from 'msw';
+import {mockServer} from 'modules/mock-server/node';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementInstances/updateElementInstanceVariables';
 
@@ -571,21 +573,31 @@ describe('Add variable', () => {
     });
 
     mockUpdateElementInstanceVariables(':1').withDelay(null);
-    mockSearchVariables().withSuccess({
-      items: [
-        createVariable({
-          name: 'largeVariable',
-          value: '"truncated-preview"',
-          isTruncated: true,
-        }),
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+    const searchRequestBodies: unknown[] = [];
+    mockServer.use(
+      http.post(
+        '/v2/variables/search',
+        async ({request}) => {
+          searchRequestBodies.push(await request.json());
+          return HttpResponse.json({
+            items: [
+              createVariable({
+                name: 'largeVariable',
+                value: '"truncated-preview"',
+                isTruncated: true,
+              }),
+            ],
+            page: {
+              totalItems: 1,
+              startCursor: null,
+              endCursor: null,
+              hasMoreTotalItems: false,
+            },
+          });
+        },
+        {once: true},
+      ),
+    );
     mockSearchJobs().withSuccess({
       items: [],
       page: {
@@ -605,5 +617,10 @@ describe('Add variable', () => {
         isDismissable: true,
       });
     });
+
+    expect(searchRequestBodies[0]).toMatchObject({
+      filter: {name: 'largeVariable'},
+    });
+    expect(searchRequestBodies[0]).not.toHaveProperty('filter.value');
   });
 });
