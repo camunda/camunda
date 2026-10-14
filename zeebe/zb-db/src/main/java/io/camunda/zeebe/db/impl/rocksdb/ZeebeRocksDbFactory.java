@@ -112,9 +112,7 @@ public final class ZeebeRocksDbFactory<
     final var snapshotOnlyOptions =
         new Options(options.dbOptions(), options.cfOptions())
             // only open existing databases
-            .setCreateIfMissing(false)
-            // this can slow down open significantly if there are many SST files
-            .setSkipCheckingSstFileSizesOnDbOpen(true);
+            .setCreateIfMissing(false);
     managedResources.add(snapshotOnlyOptions);
 
     try {
