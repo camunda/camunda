@@ -36036,6 +36036,927 @@
       ],
       "title": "Cross-Partition Message-Start: Reliability & Self-Heal",
       "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 37
+      },
+      "id": 820,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Worst liveness state of each broker as reported by any broker running the system partition's tick-tock failure detector. Requires camunda.cluster.system-partition.failure-detector.type=tick-tock.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "text"
+              },
+              "custom": {
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "text",
+                      "index": 0,
+                      "text": "UNKNOWN"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 1,
+                      "text": "HEALTHY"
+                    },
+                    "2": {
+                      "color": "orange",
+                      "index": 2,
+                      "text": "SUSPECT"
+                    },
+                    "3": {
+                      "color": "red",
+                      "index": 3,
+                      "text": "DEAD"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 38
+          },
+          "id": 811,
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "max by (broker) (zeebe_system_partition_failure_detector_broker_state{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"})",
+              "instant": false,
+              "legendFormat": "{{broker}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Liveness per broker (worst view)",
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Liveness state of every observed broker, per observing broker. Every broker derives the state from the same committed ticks, so rows for the same observed broker should agree.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "text"
+              },
+              "custom": {
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "text",
+                      "index": 0,
+                      "text": "UNKNOWN"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 1,
+                      "text": "HEALTHY"
+                    },
+                    "2": {
+                      "color": "orange",
+                      "index": 2,
+                      "text": "SUSPECT"
+                    },
+                    "3": {
+                      "color": "red",
+                      "index": 3,
+                      "text": "DEAD"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 45
+          },
+          "id": 812,
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "max by (pod, broker_id, broker) (zeebe_system_partition_failure_detector_broker_state{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"})",
+              "instant": false,
+              "legendFormat": "{{pod}} {{broker_id}} sees {{broker}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Liveness as seen by each broker",
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Raft role of each broker in the system partition. The leader puts the ticks.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "text"
+              },
+              "custom": {
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "text",
+                      "index": 0,
+                      "text": "INACTIVE"
+                    },
+                    "1": {
+                      "color": "blue",
+                      "index": 1,
+                      "text": "FOLLOWER"
+                    },
+                    "2": {
+                      "color": "yellow",
+                      "index": 2,
+                      "text": "CANDIDATE"
+                    },
+                    "3": {
+                      "color": "green",
+                      "index": 3,
+                      "text": "LEADER"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 55
+          },
+          "id": 813,
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "max by (pod, broker_id) (atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=\"system\", partition=\"0\"})",
+              "instant": false,
+              "legendFormat": "{{pod}} {{broker_id}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "System partition leader",
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Spread between the worst and best state reported for each broker across observers. Should be 0, briefly above while a tick propagates.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 55
+          },
+          "id": 814,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "max by (broker) (zeebe_system_partition_failure_detector_broker_state{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) - min by (broker) (zeebe_system_partition_failure_detector_broker_state{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"})",
+              "instant": false,
+              "legendFormat": "{{broker}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Observer disagreement",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Ticks committed since each broker was last seen, as reported by each observer. 1 is normal: a tock is committed with the next tick.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 63
+          },
+          "id": 815,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "max by (pod, broker_id, broker) (zeebe_system_partition_failure_detector_missed_ticks{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"})",
+              "instant": false,
+              "legendFormat": "{{pod}} {{broker_id}} sees {{broker}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Missed ticks",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Ticks applied per second on each broker. Matches 1 / tick-interval while the system partition commits; drops to 0 during an election or without quorum.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 63
+          },
+          "id": 816,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "max by (pod, broker_id) (deriv(zeebe_system_partition_failure_detector_tick{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))",
+              "instant": false,
+              "legendFormat": "{{pod}} {{broker_id}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Tick rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "How many ticks each broker is behind the most advanced broker.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 71
+          },
+          "id": 817,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "scalar(max(zeebe_system_partition_failure_detector_tick{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"})) - max by (pod, broker_id) (zeebe_system_partition_failure_detector_tick{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"})",
+              "instant": false,
+              "legendFormat": "{{pod}} {{broker_id}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Tick lag",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Tocks per second the system partition leader received, by sending broker.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 71
+          },
+          "id": 818,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (pod, broker_id, broker) (rate(zeebe_system_partition_failure_detector_tocks_received_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))",
+              "instant": false,
+              "legendFormat": "{{pod}} {{broker_id}} from {{broker}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Tocks received by leader",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Time from the leader putting a tick until it is committed.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 79
+          },
+          "id": 819,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.99, sum by (le, pod, broker_id) (rate(zeebe_system_partition_failure_detector_tick_commit_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
+              "instant": false,
+              "legendFormat": "p99 {{pod}} {{broker_id}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.50, sum by (le, pod, broker_id) (rate(zeebe_system_partition_failure_detector_tick_commit_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
+              "instant": false,
+              "legendFormat": "p50 {{pod}} {{broker_id}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Tick commit latency",
+          "type": "timeseries"
+        }
+      ],
+      "title": "System Partition Failure Detector",
+      "type": "row"
     }
   ],
   "preload": false,
