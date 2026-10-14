@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.syspartition.SystemPartition;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -119,6 +120,11 @@ public interface BrokerStartupContext {
   void addJobStreamService(String physicalTenantId, JobStreamService service);
 
   void removeJobStreamService(String physicalTenantId);
+
+  /** Returns the system partition, or {@code null} if it is disabled. */
+  SystemPartition getSystemPartition();
+
+  void setSystemPartition(SystemPartition systemPartition);
 
   /** Returns all currently registered partition managers, keyed by physical tenant ID. */
   Map<String, PartitionManager> getPartitionManagers();

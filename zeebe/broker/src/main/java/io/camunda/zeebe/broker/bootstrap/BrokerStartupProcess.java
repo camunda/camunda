@@ -56,6 +56,8 @@ public final class BrokerStartupProcess {
 
     result.add(new MonitoringServerStep());
 
+    result.add(new SystemPartitionStep());
+
     result.add(new ApiMessagingServiceStep());
     result.add(new RequestIdGeneratorStep());
     result.add(new RebalanceCoordinatorStep());
@@ -120,6 +122,7 @@ public final class BrokerStartupProcess {
         bsc.getPartitionManagers().get(PartitionManagerImpl.DEFAULT_GROUP_NAME),
         bsc.getPartitionManagers(),
         bsc.getBrokerAdminService(PartitionManagerImpl.DEFAULT_GROUP_NAME),
-        bsc.getApiMessagingService());
+        bsc.getApiMessagingService(),
+        bsc.getSystemPartition());
   }
 }

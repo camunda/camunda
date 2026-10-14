@@ -170,6 +170,9 @@ public class Cluster implements Cloneable {
 
   private boolean receiveOnLegacySubject = true;
 
+  /** Experimental metadata-only Raft group replicated on every broker. */
+  @NestedConfigurationProperty private SystemPartition systemPartition = new SystemPartition();
+
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
   }
@@ -338,6 +341,14 @@ public class Cluster implements Cloneable {
     this.partitioning = partitioning;
   }
 
+  public SystemPartition getSystemPartition() {
+    return systemPartition;
+  }
+
+  public void setSystemPartition(final SystemPartition systemPartition) {
+    this.systemPartition = systemPartition;
+  }
+
   public boolean isReceiveOnLegacySubject() {
     return receiveOnLegacySubject;
   }
@@ -402,6 +413,8 @@ public class Cluster implements Cloneable {
         + ", zone='"
         + zone
         + '\''
+        + ", systemPartition="
+        + systemPartition
         + '}';
   }
 

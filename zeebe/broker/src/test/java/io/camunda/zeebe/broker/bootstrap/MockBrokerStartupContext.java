@@ -36,6 +36,7 @@ import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.syspartition.SystemPartition;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -58,6 +59,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public class MockBrokerStartupContext implements BrokerStartupContext {
+  private SystemPartition systemPartition;
 
   private BrokerInfo brokerInfo = mock(BrokerInfo.class);
   private BrokerCfg brokerConfiguration = mock(BrokerCfg.class);
@@ -303,6 +305,16 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public void removeBrokerAdminService(final String physicalTenantId) {
     brokerAdminServices.remove(physicalTenantId);
+  }
+
+  @Override
+  public SystemPartition getSystemPartition() {
+    return systemPartition;
+  }
+
+  @Override
+  public void setSystemPartition(final SystemPartition systemPartition) {
+    this.systemPartition = systemPartition;
   }
 
   @Override
