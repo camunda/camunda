@@ -137,6 +137,7 @@ jobs:
           # source, a value containing a quote would break every poll (holding
           # the gate open for the whole budget) and a crafted fragment could
           # change what the gate counts.
+          # shellcheck disable=SC2016
           filter='[.[] | select(.status != "completed")
                        | select(.startedAt < $self_started
                                 or (.startedAt == $self_started
