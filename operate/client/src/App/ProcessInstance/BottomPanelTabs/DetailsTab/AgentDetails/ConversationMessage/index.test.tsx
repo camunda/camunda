@@ -202,6 +202,62 @@ describe('<ConversationMessage />', () => {
   });
 
   it.each([
+    ['blank', ' \n\t '],
+    ['missing', undefined],
+    ['null', null],
+    ['non-string', 42],
+  ])('should hide reasoning with %s text', (_description, text) => {
+    render(
+      <ConversationMessage
+        actor="ASSISTANT"
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              'camunda.agenticai.content.type': 'reasoning',
+              payload: {
+                id: 'provider-reasoning-id',
+                encrypted_content: 'opaque-provider-payload',
+              },
+              ...(text === undefined ? {} : {text}),
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText('Thinking')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/opaque-provider-payload/),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('should preserve the final answer when reasoning is hidden', () => {
+    render(
+      <ConversationMessage
+        actor="ASSISTANT"
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              'camunda.agenticai.content.type': 'reasoning',
+              payload: {encrypted_content: 'opaque-provider-payload'},
+            },
+          },
+          {contentType: 'TEXT', text: 'Final assistant answer'},
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Final assistant answer')).toBeVisible();
+    expect(screen.queryByText('Thinking')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/opaque-provider-payload/),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each([
     ['missing discriminator', {text: 'Fallback content'}],
     [
       'wrong discriminator',
@@ -215,26 +271,6 @@ describe('<ConversationMessage />', () => {
       {
         '@type': 'camunda.aiagent.model.thinking',
         text: 'Fallback content',
-      },
-    ],
-    [
-      'blank text',
-      {
-        'camunda.agenticai.content.type': 'reasoning',
-        text: ' \n\t ',
-      },
-    ],
-    [
-      'missing text',
-      {
-        'camunda.agenticai.content.type': 'reasoning',
-      },
-    ],
-    [
-      'non-string text',
-      {
-        'camunda.agenticai.content.type': 'reasoning',
-        text: 42,
       },
     ],
     ['array value', ['reasoning', 'Fallback content']],
