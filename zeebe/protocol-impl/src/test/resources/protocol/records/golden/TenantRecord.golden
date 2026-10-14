@@ -38,14 +38,17 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>(ENTITY_TYPE_KEY, EntityType.class, EntityType.UNSPECIFIED);
 
+  private final LongProperty policyVersionProp = new LongProperty("policyVersion", 0);
+
   public TenantRecord() {
-    super(6);
+    super(7);
     declareProperty(tenantKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(nameProp)
         .declareProperty(descriptionProp)
         .declareProperty(entityIdProp)
         .declareProperty(entityTypeProp);
+    declareProperty(policyVersionProp);
   }
 
   public TenantRecord copy() {
@@ -141,5 +144,15 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
   @JsonIgnore
   public DirectBuffer getNameBuffer() {
     return nameProp.getValue();
+  }
+
+  @Override
+  public long getPolicyVersion() {
+    return policyVersionProp.getValue();
+  }
+
+  public TenantRecord setPolicyVersion(final long policyVersion) {
+    policyVersionProp.setValue(policyVersion);
+    return this;
   }
 }

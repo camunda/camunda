@@ -25,14 +25,17 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
+  private final LongProperty policyVersionProp = new LongProperty("policyVersion", 0);
+
   public RoleRecord() {
-    super(6);
+    super(7);
     declareProperty(roleKeyProp)
         .declareProperty(roleIdProp)
         .declareProperty(nameProp)
         .declareProperty(descriptionProp)
         .declareProperty(entityIdProp)
         .declareProperty(entityTypeProp);
+    declareProperty(policyVersionProp);
   }
 
   @Override
@@ -97,6 +100,16 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
 
   public RoleRecord setEntityType(final EntityType entityType) {
     entityTypeProp.setValue(entityType);
+    return this;
+  }
+
+  @Override
+  public long getPolicyVersion() {
+    return policyVersionProp.getValue();
+  }
+
+  public RoleRecord setPolicyVersion(final long policyVersion) {
+    policyVersionProp.setValue(policyVersion);
     return this;
   }
 }

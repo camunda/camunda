@@ -29,13 +29,16 @@ public class MappingRuleRecord extends UnifiedRecordValue implements MappingRule
   private final StringProperty claimValueProp = new StringProperty(CLAIM_VALUE_KEY, "");
   private final StringProperty nameProp = new StringProperty(NAME_KEY, "");
 
+  private final LongProperty policyVersionProp = new LongProperty("policyVersion", 0);
+
   public MappingRuleRecord() {
-    super(5);
+    super(6);
     declareProperty(mappingRuleKeyProp)
         .declareProperty(mappingRuleIdProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp);
+    declareProperty(policyVersionProp);
   }
 
   @Override
@@ -85,6 +88,16 @@ public class MappingRuleRecord extends UnifiedRecordValue implements MappingRule
 
   public MappingRuleRecord setMappingRuleId(final String mappingRuleId) {
     mappingRuleIdProp.setValue(mappingRuleId);
+    return this;
+  }
+
+  @Override
+  public long getPolicyVersion() {
+    return policyVersionProp.getValue();
+  }
+
+  public MappingRuleRecord setPolicyVersion(final long policyVersion) {
+    policyVersionProp.setValue(policyVersion);
     return this;
   }
 }
