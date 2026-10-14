@@ -11,6 +11,8 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.google.common.base.Stopwatch;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -220,10 +222,17 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     // with completable futures we can often end up with fairly nested exceptions
     // so we want to be careful to unwrap it and check all causes
     var current = thr;
+    final var visited = Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>());
     do {
+      if (visited.contains(current)) {
+        // there's a loop and we've already checked everything
+        // so no point looping again
+        return false;
+      }
       if (isInstanceFromList(current, exceptions)) {
         return true;
       }
+      visited.add(current);
       current = current.getCause();
     } while (current != null);
 
