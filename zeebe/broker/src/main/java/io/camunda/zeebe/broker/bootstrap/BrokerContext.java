@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.syspartition.SystemPartition;
 import java.util.Map;
 
 /** Context for components/actors managed directly by the Broker */
@@ -42,4 +43,7 @@ public interface BrokerContext {
   BrokerAdminService getBrokerAdminService();
 
   ManagedMessagingService getApiMessagingService();
+
+  /** Returns the system partition, or {@code null} if it is disabled. */
+  SystemPartition getSystemPartition();
 }

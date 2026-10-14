@@ -13,6 +13,7 @@ import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.storage.log.DelayedFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher;
+import io.atomix.raft.zeebe.EntryValidator;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
@@ -67,11 +68,33 @@ public final class RaftPartitionFactory {
       final PartitionMetadata partitionMetadata,
       final Path partitionDirectory,
       final MeterRegistry partitionMeterRegistry) {
+    return createRaftPartition(
+        partitionMetadata, partitionDirectory, partitionMeterRegistry, new ZeebeEntryValidator());
+  }
+
+  public RaftPartition createRaftPartition(
+      final PartitionMetadata partitionMetadata,
+      final Path partitionDirectory,
+      final MeterRegistry partitionMeterRegistry,
+      final EntryValidator entryValidator) {
+    return createRaftPartition(
+        partitionMetadata,
+        partitionDirectory,
+        partitionMeterRegistry,
+        entryValidator,
+        brokerCfg.getData().getLogSegmentSizeInBytes());
+  }
+
+  public RaftPartition createRaftPartition(
+      final PartitionMetadata partitionMetadata,
+      final Path partitionDirectory,
+      final MeterRegistry partitionMeterRegistry,
+      final EntryValidator entryValidator,
+      final long segmentSize) {
     final var storageConfig = new RaftStorageConfig();
     final var partitionConfig = new RaftPartitionConfig();
 
     final var maxMessageSize = brokerCfg.getNetwork().getMaxMessageSizeInBytes();
-    final var segmentSize = brokerCfg.getData().getLogSegmentSizeInBytes();
     if (segmentSize < maxMessageSize) {
       throw new IllegalArgumentException(
           String.format(
@@ -90,7 +113,7 @@ public final class RaftPartitionFactory {
         brokerCfg.getExperimental().getRaft().getSegmentPreallocationStrategy().segmentAllocator());
 
     partitionConfig.setStorageConfig(storageConfig);
-    partitionConfig.setEntryValidator(new ZeebeEntryValidator());
+    partitionConfig.setEntryValidator(entryValidator);
     partitionConfig.setMaxAppendBatchSize(
         (int) brokerCfg.getExperimental().getMaxAppendBatchSizeInBytes());
     partitionConfig.setMaxAppendsPerFollower(

@@ -87,6 +87,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
   private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
   private @Nullable String zone;
+  private SystemPartitionCfg systemPartition = new SystemPartitionCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -274,6 +275,14 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   public void setMessageCompression(final CompressionAlgorithm messageCompression) {
     this.messageCompression = messageCompression;
+  }
+
+  public SystemPartitionCfg getSystemPartition() {
+    return systemPartition;
+  }
+
+  public void setSystemPartition(final SystemPartitionCfg systemPartition) {
+    this.systemPartition = systemPartition;
   }
 
   public ConfigManagerCfg getConfigManager() {
