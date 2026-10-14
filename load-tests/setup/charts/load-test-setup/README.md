@@ -162,6 +162,14 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
   6667 evaluations/s. The load profile comes from the `DMN_RATE`, `DMN_RAMP_UP`,
   `DMN_DURATION`, `DMN_PRE_ALLOCATED_VUS` and `DMN_MAX_VUS` variables, set
   through `k6.tests.dmn.env`.
+* `dmn-large`: deploys a ~48 MiB synthetic decision graph (12 decisions, 8478
+  rules) and evaluates it with input vectors that hit every rule, in a random
+  but complete order, checking the returned `rate`. Both files are too large for
+  a ConfigMap: an init container of each runner generates them with
+  `k6/generators/generate_tariff_dmn.py` (deterministic, ~2 s), see
+  `k6.tests.<name>.generator` in `values.yaml`. Disabled by default; the
+  `dmn-large` scenario enables it alone, with the same `DMN_*` variables (set
+  through `k6.tests.dmn-large.env`).
 
 ### How to add a new test?
 

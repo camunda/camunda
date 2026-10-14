@@ -246,4 +246,23 @@ describe("Client.decisionDefinitionEvaluation", () => {
       variables: { category: "a" },
     });
   });
+
+  it("should add the given tags to the request", () => {
+    // given
+    const client = new Client();
+
+    // when
+    client.decisionDefinitionEvaluation(
+      "my-decision",
+      {},
+      { tags: { target: "my-table" } },
+    );
+
+    // then
+    const [, , , params] = http.request.mock.calls[0].arguments;
+    assert.deepEqual(params.tags, {
+      name: "/v2/decision-definitions/evaluation",
+      target: "my-table",
+    });
+  });
 });

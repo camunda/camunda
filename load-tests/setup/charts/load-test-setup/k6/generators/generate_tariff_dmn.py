@@ -1,0 +1,917 @@
+#!/usr/bin/env python3
+"""Generate a large, synthetic DMN decision graph for benchmarks and tests.
+
+The model reproduces the *shape* of large real-world pricing DRGs, with fictional
+content (a freight tariff of an imaginary carrier):
+
+  * three large FIRST-hit tables (base rate + two adjustment layers) with the same
+    column counts, typeRefs and cell styles (long string OR-lists, exact integers,
+    numeric ranges, many "-" columns and a trailing catch-all rule),
+  * small factor tables, FEEL combiner tables (min(), if/then/else chains) and a
+    single top decision that requires the whole graph.
+
+Unlike a model exported from Camunda 7, every reference to a required decision is
+qualified (`<decisionId>.<output>`, or the bare decision id for a single-output
+decision) because the Camunda 8 engine (dmn-scala) only exposes the results of the
+*directly* required decisions that way.
+
+Every rule is reachable: for each rule the generator builds a "witness" input vector
+that matches this rule and none of the rules before it (FIRST hit policy), checks it
+with a Python evaluator of the generated tables, and writes it with the expected
+matched rule per decision and the expected top-level `rate` to a JSONL file.
+
+The output is deterministic for a given seed and target size, so every k6 runner regenerates the
+same files in an init container instead of shipping ~60 MB through the chart (see the `dmn-large`
+k6 test in values.yaml).
+
+Usage:
+  python3 generate_tariff_dmn.py --out /generated/freight_tariff_48mb.dmn \
+      --target-bytes 50331648 --random-vectors 2000
+"""
+
+import argparse
+import hashlib
+import json
+import random
+import sys
+from xml.sax.saxutils import escape
+
+# ---------------------------------------------------------------------------------------
+# Cell matchers: the FEEL text of an input entry plus a Python predicate to evaluate it
+# ---------------------------------------------------------------------------------------
+
+
+def fmt(x):
+    if isinstance(x, bool):
+        raise TypeError(x)
+    if isinstance(x, int):
+        return str(x)
+    if float(x).is_integer() and abs(x) < 1e16:
+        return str(int(x)) + (".0" if isinstance(x, float) else "")
+    return repr(round(x, 6))
+
+
+class AnyCell:
+    text = "-"
+
+    def match(self, _):
+        return True
+
+    def witness(self, background):
+        return background
+
+
+ANY = AnyCell()
+
+
+class StrIn:
+    def __init__(self, values, witness=None, sep=","):
+        assert values and len(set(values)) == len(values), values
+        self.values = list(values)
+        self.set = frozenset(values)
+        self.w = witness if witness is not None else values[0]
+        assert self.w in self.set
+        self.text = sep.join(f'"{v}"' for v in self.values)
+
+    def match(self, v):
+        return v in self.set
+
+    def witness(self, _):
+        return self.w
+
+
+class IntEq:
+    def __init__(self, n):
+        self.n = n
+        self.text = str(n)
+
+    def match(self, v):
+        return v == self.n
+
+    def witness(self, _):
+        return self.n
+
+
+class Range:
+    def __init__(self, lo, hi, integer=False):
+        assert lo <= hi
+        self.lo, self.hi, self.integer = lo, hi, integer
+        self.text = f"[{fmt(lo)}..{fmt(hi)}]"
+
+    def match(self, v):
+        return self.lo <= v <= self.hi
+
+    def witness(self, background):
+        # doubles: stay strictly inside, the bounds may be shared with the previous rule
+        inside = self.match(background) if self.integer else self.lo < background < self.hi
+        if inside:
+            return background
+        mid = (self.lo + self.hi) / 2
+        return int(mid) if self.integer else float(round(mid))
+
+
+# ---------------------------------------------------------------------------------------
+# Domain vocabulary (fictional)
+# ---------------------------------------------------------------------------------------
+
+SERVICES = ["SC101", "SC102", "SC103", "SC104", "SC105"]
+CONTRACT_TERMS = ["1Y", "2Y", "3Y"]
+CHANNELS = [f"CH{i:02d}" for i in range(1, 9)]
+BACKGROUND_CHANNELS = CHANNELS[:4]  # CH05..CH07 are reserved for channel-specific rules
+PROMO_CHANNELS = ["CH05", "CH06", "CH07"]
+PARTNERS = ["PRT_ALPHA", "PRT_BRAVO", "PRT_CHARLIE", "PRT_DELTA", "PRT_ECHO"]
+BOOKING_CHANNELS = ["STANDARD", "PROMO", "ENTERPRISE"]
+SHIPMENT_TYPES = ["1", "2", "3", "4", "5"]
+SEGMENTS = [str(i) for i in range(12)]
+FLEETS = ["FC1", "FC2", "FC3", "FC4", "FC5"]
+PACKAGING = ["PALLET", "CARTON", "CRATE", "DRUM", "LOOSE"]
+CARRIERS = ["NONE"] + [f"CR{i:02d}" for i in range(1, 10)]
+LIABILITY = ["Full Liability", "Limited Liability 1 Claim", "Limited Liability 2 Claims"]
+CLUSTERS = [str(i) for i in range(10)]
+REGIONS = ["NORTH", "SOUTH", "EAST", "WEST", "CENTRAL", "COASTAL"]
+HUBS = [f"HUB_{r}_{n:02d}_{'CORE' if n % 3 == 0 else 'SAT'}" for r in REGIONS for n in range(1, 13)]
+HANDLING_CATEGORIES = [
+    "Bulk Freight", "Express Parcel", "Cold Chain", "Hazardous Goods", "Oversized Cargo",
+    "Fragile Goods", "Retail Replenishment", "Ecommerce Returns", "Automotive Parts",
+    "Pharma Logistics", "Textile Shipments", "Consumer Electronics",
+]
+HANDLING_KEYS = [f"{c} Tier {n}" for c in HANDLING_CATEGORIES for n in range(1, 41)]
+HANDLING_MIXED = [f"Mixed Load {n}" for n in range(1, 21)]
+MODES = ["ROAD", "RAIL", "AIR", "SEA", "MULTI"]
+EQUIPMENT = ["FTL", "LTL", "PAR", "REF", "CNT"]
+UNLISTED_LANE = "LANE_ZN99_TO_ZN99_ROAD_FTL_V01"
+FLAGS = ["Fuel_Surcharge", "Remote_Area_Fee", "Hazmat_Fee", "Oversize_Fee", "Customs_Fee"]
+FLAG_OUTPUTS = ["includeFuelSurcharge", "includeRemoteAreaFee", "includeHazmatFee",
+                "includeOversizeFee", "includeCustomsFee"]
+DAYS_MAX = 3650
+DECLARED_MAX = 30000000000
+
+# ---------------------------------------------------------------------------------------
+# Decisions
+# ---------------------------------------------------------------------------------------
+
+D_BASE = "Tariff_Base_Rate"
+D_BASE_F = "Tariff_Base_Factor"
+D_A1 = "Tariff_Adj1_Rate"
+D_A1_F = "Tariff_Adj1_Factor"
+D_A1_FIN = "Tariff_Final_Adj1_Rate"
+D_A2 = "Tariff_Adj2_Rate"
+D_A2_FIN = "Tariff_Final_Adj2_Rate"
+D_A2_F = "Tariff_Adj2_Factor"
+D_FACTOR = "Tariff_Final_Factor"
+D_TOP = "Tariff_Rate"
+D_DISC = "Tariff_Volume_Discount"
+D_FLAGS = "Tariff_Surcharge_Flags"
+
+S, I, D = "string", "integer", "double"
+
+BASE_INPUTS = [
+    ("Service_Code", S), ("Contract_Term", S), ("Sales_Channel", S), ("Booking_Channel", S),
+    ("Shipment_Type", S), ("Handling_Segment", S), ("Lane_Code", S), ("Fleet_Cluster", S),
+    ("Origin_Hub", S), ("Account_Age_Years", I), ("Account_Segment", S),
+    ("Days_Since_Last_Shipment", D), ("Postal_Zone", S), ("Depot_Cluster", S),
+    ("Packaging_Type", S), ("Previous_Carrier", S), ("Declared_Value", D),
+]
+A1_INPUTS = BASE_INPUTS[:3] + [("Partner_Code", S)] + BASE_INPUTS[3:]
+A2_INPUTS = A1_INPUTS[:5] + [
+    ("Volume_Band", S), ("Region_Cluster", S), ("Industry_Cluster", S), ("Payment_Cluster", S),
+    ("Credit_Cluster", S), ("Seasonality_Cluster", S), ("Loyalty_Cluster", S),
+] + A1_INPUTS[5:]
+LIABILITY_INPUT = ("Liability_Option", S)
+
+EXTERNAL_VARIABLES = [v for v, _ in A2_INPUTS] + ["Liability_Option", "Volume_Discount"]
+
+
+def base_outputs(prefix):
+    return [(f"{prefix}_Rate", D), (f"{prefix}_Min_Rate", D), (f"{prefix}_Max_Rate", D),
+            (f"{prefix}_Fixed_Fee", I)] + [(f"{prefix}_Include_{f}", S) for f in FLAGS] + [
+               (f"{prefix}_Rate_ID", S), ("Comments", S)]
+
+
+def adj_outputs(p):
+    return [(f"{p}_Function", S)] + [(f"{p}_Value_{i}", D) for i in range(1, 6)] + [
+        (f"{p}_Min", D), (f"{p}_Max", D)] + [(f"{p}_Include_{f}", S) for f in FLAGS] + [
+               (f"{p}_ID", S), ("Comments", S)]
+
+
+class Table:
+    def __init__(self, decision_id, inputs, outputs, requires=()):
+        self.id = decision_id
+        self.inputs = inputs  # (expression text, typeRef, label)
+        self.outputs = outputs  # (name, typeRef)
+        self.requires = list(requires)
+        self.rules = []  # (cells, output texts, output values or None)
+
+    def add(self, cells, out_values=None, out_texts=None):
+        assert len(cells) == len(self.inputs), (self.id, len(cells), len(self.inputs))
+        if out_texts is None:
+            out_texts = [feel_literal(v, t) for v, (_, t) in zip(out_values, self.outputs)]
+        assert len(out_texts) == len(self.outputs)
+        self.rules.append((cells, out_texts, out_values))
+        return len(self.rules) - 1
+
+
+def feel_literal(v, type_ref):
+    if type_ref == S:
+        return f'"{v}"'
+    return fmt(v)
+
+
+def var_inputs(spec):
+    return [(name, t, name) for name, t in spec]
+
+
+def cells_for(spec, **cells):
+    names = [n for n, _ in spec]
+    unknown = set(cells) - set(names)
+    assert not unknown, unknown
+    return [cells.get(n, ANY) for n in names]
+
+
+# ---------------------------------------------------------------------------------------
+# Builders
+# ---------------------------------------------------------------------------------------
+
+
+def size_mixture(rng, buckets):
+    """buckets: [(weight, lo, hi)]"""
+    r = rng.random() * sum(w for w, _, _ in buckets)
+    for w, lo, hi in buckets:
+        if r < w:
+            return rng.randint(lo, hi)
+        r -= w
+    return rng.randint(buckets[-1][1], buckets[-1][2])
+
+
+def lane_universe(rng, count):
+    zones = [f"ZN{i:02d}" for i in range(1, 49)]
+    lanes = set()
+    while len(lanes) < count:
+        o, d = rng.sample(zones, 2)
+        lanes.add(f"LANE_{o}_TO_{d}_{rng.choice(MODES)}_{rng.choice(EQUIPMENT)}_V{rng.randint(1, 3):02d}")
+    lanes = sorted(lanes)
+    rng.shuffle(lanes)
+    return lanes
+
+
+def flag_values(rng, na_weight):
+    return [("NA" if rng.random() < na_weight else rng.choice(["Y", "N"])) for _ in FLAGS]
+
+
+AGE_VARIANTS_BASE = [
+    ([IntEq(n) for n in range(10)] + [Range(10, 40, True)], 8),
+    ([IntEq(n) for n in range(5)] + [Range(5, 40, True)], 2),
+    ([Range(0, 2, True), Range(3, 5, True), Range(6, 40, True)], 1),
+]
+DAYS_VARIANTS_BASE = [
+    ([Range(0, DAYS_MAX)], 3),
+    ([Range(0, 90), Range(90, DAYS_MAX)], 4),
+    ([Range(0, 30), Range(30, 180), Range(180, DAYS_MAX)], 3),
+]
+AGE_VARIANTS_A1 = [
+    [Range(0, 1, True), Range(2, 3, True), Range(4, 6, True), Range(7, 40, True)],
+    [Range(0, 5, True), Range(6, 40, True)],
+    [Range(0, 2, True), Range(3, 5, True), Range(6, 10, True), Range(11, 40, True)],
+    [IntEq(0), IntEq(1), Range(2, 40, True)],
+    [Range(0, 40, True)],
+]
+
+
+def weighted(rng, variants):
+    return rng.choices([v for v, _ in variants], weights=[w for _, w in variants])[0]
+
+
+def base_rate_group(rng, witness_lane, lane_pool, hub_lists, segment_sets):
+    """One lane group of the base table: same lane/hub list, split by age and recency."""
+    size = size_mixture(rng, [(60, 20, 80), (30, 80, 250), (10, 250, 454)])
+    lanes = [witness_lane] + rng.sample(lane_pool, size - 1)
+    rng.shuffle(lanes)
+    lane_cell = StrIn(lanes, witness=witness_lane, sep=rng.choice([",", ", "]))
+    hub_cell = StrIn(rng.choice(hub_lists))
+    service = rng.choice([["SC101"], ["SC102"], ["SC103"], ["SC101", "SC102"], ["SC104", "SC105"]])
+    service_cell = StrIn(service)
+    shipment_cell = ANY if rng.random() < 0.03 else StrIn(["2", "3", "4", "5"])
+    declared_cell = ANY if rng.random() < 0.03 else Range(0, DECLARED_MAX)
+    level = rng.uniform(0.45, 2.6)
+    max_rate = rng.choice([3.0, 5.0, 7.5])
+    fee = rng.choice([0, 0, 0, 25, 50])
+    flags = [rng.choice(["Y", "N", "N"]) for _ in FLAGS]
+    comment = rng.choice(["Standard tariff", "Standard tariff", "Contract tariff"])
+    ages = weighted(rng, AGE_VARIANTS_BASE)
+    days = weighted(rng, DAYS_VARIANTS_BASE)
+    rules = []
+    for ai, age in enumerate(ages):
+        segment_cell = StrIn(rng.choice(segment_sets))
+        for di, day in enumerate(days):
+            rate = round(level * (1 - 0.025 * ai) * (1.08 - 0.06 * di), 2)
+            cells = cells_for(
+                BASE_INPUTS, Service_Code=service_cell, Shipment_Type=shipment_cell,
+                Lane_Code=lane_cell, Origin_Hub=hub_cell, Account_Age_Years=age,
+                Account_Segment=segment_cell, Days_Since_Last_Shipment=day,
+                Declared_Value=declared_cell)
+            rules.append((cells, [max(rate, 0.15), 0.15, max_rate, fee] + flags + [None, comment]))
+    return rules
+
+
+def build_base(rng, target_bytes, fixed_bytes, lane_pool, witness_lanes, render_rule):
+    t = Table(D_BASE, var_inputs(BASE_INPUTS), base_outputs("Base"))
+    hub_lists = [rng.sample(HUBS, rng.randint(5, 30)) for _ in range(15)]
+    segment_sets = [["0"], ["1", "2", "3"], ["4", "5", "6", "7"], ["7", "8", "9", "10", "11"],
+                    ["0", "1", "2", "3", "4", "5", "6"], ["8", "9"]]
+    catch_all_cells = cells_for(BASE_INPUTS, Days_Since_Last_Shipment=Range(0, 100000),
+                                Declared_Value=Range(0, DECLARED_MAX))
+    catch_all_out = [0.0, 0.0, 0.0, 0] + ["N"] * len(FLAGS) + ["NO_TARIFF", "NO_TARIFF"]
+    # reserve room for the catch-all rule (rendered at the end with the final index)
+    catch_all_texts = [feel_literal(v, typ) for v, (_, typ) in zip(catch_all_out, t.outputs)]
+    reserve = len(render_rule(t, 99999, catch_all_cells, catch_all_texts))
+    total = fixed_bytes + reserve
+    groups = 0
+    while True:
+        assert groups < len(witness_lanes), "not enough witness lanes"
+        group = base_rate_group(rng, witness_lanes[groups], lane_pool, hub_lists, segment_sets)
+        groups += 1
+        for cells, out in group:
+            out[-2] = f"BR{len(t.rules) + 1:06d}"
+            idx = t.add(cells, out)
+            total += len(render_rule(t, idx, cells, t.rules[idx][1]))
+            if total >= target_bytes:
+                t.add(catch_all_cells, catch_all_out)
+                return t, groups
+
+
+def adj_rule_outputs(rng, function, na_weight, comment):
+    v = [0.0] * 5
+    if function == "F1":
+        v[0] = round(rng.choice([rng.uniform(-0.25, -0.02), rng.uniform(0.02, 0.6)]), 2)
+    elif function == "F2":
+        v[1] = round(rng.uniform(-0.3, 0.4), 2)
+    elif function == "F3":
+        v[2] = round(rng.uniform(0.2, 1.8), 2)
+    mn = rng.choice([0.0, 0.0, 0.1])
+    mx = rng.choice([5.0, 10.0, 40.0, 92.0])
+    return [function] + v + [mn, mx] + flag_values(rng, na_weight) + [None, comment]
+
+
+def build_adj1(rng, rule_target, lane_pool, lane_witnesses):
+    p = "Adj1"
+    t = Table(D_A1, var_inputs(A1_INPUTS), adj_outputs(p))
+    a1_lane = lambda: size_mixture(rng, [(70, 5, 40), (25, 40, 200), (5, 200, 674)])
+    # partner-specific overrides first (~2.5%)
+    partner_rules = max(len(PARTNERS), rule_target // 40)
+    for k in range(partner_rules):
+        partner = PARTNERS[k % len(PARTNERS)]
+        w = lane_witnesses.pop()
+        lanes = [w] + rng.sample(lane_pool, a1_lane() - 1)
+        rng.shuffle(lanes)
+        cells = cells_for(A1_INPUTS, Partner_Code=StrIn([partner]), Lane_Code=StrIn(lanes, witness=w),
+                          Account_Age_Years=Range(0, 40, True),
+                          Days_Since_Last_Shipment=Range(0, 10000),
+                          Declared_Value=Range(0, 300000000))
+        out = adj_rule_outputs(rng, "F3", 0.6, "Partner override")
+        out[-2] = f"A1_{len(t.rules) + 1:06d}"
+        t.add(cells, out)
+    # handling-segment groups
+    handling = list(HANDLING_KEYS)
+    rng.shuffle(handling)
+    hub_pool = list(HUBS)
+    g = 0
+    while len(t.rules) < rule_target - 1:
+        assert g < len(handling), "not enough handling keys"
+        key = handling[g]
+        g += 1
+        values = [key] + (rng.sample(HANDLING_MIXED, rng.randint(1, 10)) if rng.random() < 0.05 else [])
+        handling_cell = StrIn(values, witness=key)
+        rng.shuffle(hub_pool)
+        variants = rng.choice([1, 2, 2, 3])
+        hub_cells, start = [], 0
+        for _ in range(variants):
+            n = rng.randint(3, 12)
+            hub_cells.append(StrIn(hub_pool[start:start + n]))
+            start += n
+        if variants == 1 and rng.random() < 0.3:
+            hub_cells = [ANY]
+        lane_cell = ANY
+        if rng.random() < 0.33:
+            lane_cell = StrIn(rng.sample(lane_pool, a1_lane()))
+            lane_cell.w = rng.choice(lane_cell.values)
+        service_cell = ANY if rng.random() < 0.025 else StrIn(
+            rng.choice([["SC101"], ["SC102"], ["SC101", "SC103"]]))
+        ages = rng.choice(AGE_VARIANTS_A1)
+        days_cell = Range(0, rng.choice([DAYS_MAX, 1000]))
+        declared_cell = Range(0, rng.choice([DECLARED_MAX, 300000000]))
+        comment = rng.choice(["Lane discount", "Handling surcharge", "Seasonal loading",
+                              "Volume incentive"])
+        for hub_cell in hub_cells:
+            for age in ages:
+                segment_cell = StrIn(rng.sample(SEGMENTS, 7)) if rng.random() < 0.02 else ANY
+                function = rng.choices(["F1", "F2", "F3", "F4"], weights=[70, 15, 12, 3])[0]
+                cells = cells_for(A1_INPUTS, Service_Code=service_cell, Handling_Segment=handling_cell,
+                                  Lane_Code=lane_cell, Origin_Hub=hub_cell, Account_Age_Years=age,
+                                  Account_Segment=segment_cell,
+                                  Days_Since_Last_Shipment=days_cell, Declared_Value=declared_cell)
+                out = adj_rule_outputs(rng, function, 0.85, comment)
+                out[-2] = f"A1_{len(t.rules) + 1:06d}"
+                t.add(cells, out)
+    cells = cells_for(A1_INPUTS, Account_Age_Years=Range(0, 40, True),
+                      Days_Since_Last_Shipment=Range(0, 100000), Declared_Value=Range(0, DECLARED_MAX))
+    t.add(cells, ["F2", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 40.0] + ["NA"] * len(FLAGS) +
+          ["A1_DEFAULT", "Default adjustment"])
+    return t
+
+
+def build_adj2(rng, rule_target):
+    p = "Adj2"
+    t = Table(D_A2, var_inputs(A2_INPUTS), adj_outputs(p))
+    # channel-specific rules first
+    channel_rules = max(6, rule_target // 50)
+    seasonality = [["0", "1", "4"], ["5", "6"], ["2", "3"], ["7", "8", "9"]]
+    combos = [(c, s, a) for c in [PROMO_CHANNELS[:2], PROMO_CHANNELS[2:]] for s in seasonality
+              for a in range(11)]
+    rng.shuffle(combos)
+    for channel, season, age in combos[:channel_rules]:
+        cells = cells_for(A2_INPUTS, Service_Code=StrIn(["SC101"]), Sales_Channel=StrIn(channel),
+                          Seasonality_Cluster=StrIn(season), Shipment_Type=StrIn(["2", "3"]),
+                          Account_Age_Years=IntEq(age),
+                          Account_Segment=StrIn(["7", "8", "9", "10", "11", "1", "2", "0"]),
+                          Days_Since_Last_Shipment=Range(0, 1000),
+                          Declared_Value=Range(0, 3000000000))
+        out = adj_rule_outputs(rng, rng.choice(["F1", "F1", "F2"]), 0.7, "Channel promotion")
+        out[-2] = f"A2_{len(t.rules) + 1:06d}"
+        t.add(cells, out)
+    # disjoint grid: service x shipment type x fleet x age x segment
+    shipment_parts = [["1"], ["2", "3"], ["4", "5"], ["2", "3", "4"]]
+    fleet_parts = [["FC1"], ["FC2", "FC3"], ["FC4", "FC5"]]
+    ages = [IntEq(n) for n in range(11)] + [Range(11, 40, True)]
+    grid = []
+    for s in SERVICES:
+        sp = rng.choice([shipment_parts[:3], [shipment_parts[0], shipment_parts[3], ["5"]]])
+        for st in sp:
+            for fl in fleet_parts:
+                for ai, age in enumerate(ages):
+                    for seg in SEGMENTS:
+                        grid.append((s, st, fl, ai, age, seg))
+    rng.shuffle(grid)
+    grid = grid[:rule_target - 1 - len(t.rules)]
+    grid.sort(key=lambda r: (SERVICES.index(r[0]), r[1], r[2], r[3], int(r[5])))
+    for s, st, fl, ai, age, seg in grid:
+        function = rng.choices(["F1", "F2", "F3", "F4"], weights=[75, 15, 8, 2])[0]
+        cells = cells_for(A2_INPUTS, Service_Code=StrIn([s]), Shipment_Type=StrIn(st),
+                          Fleet_Cluster=StrIn(fl), Account_Age_Years=age,
+                          Account_Segment=StrIn([seg]), Days_Since_Last_Shipment=Range(0, 10000),
+                          Declared_Value=Range(0, DECLARED_MAX))
+        out = adj_rule_outputs(rng, function, 0.9, "Account adjustment")
+        out[-2] = f"A2_{len(t.rules) + 1:06d}"
+        t.add(cells, out)
+    cells = cells_for(A2_INPUTS, Account_Age_Years=Range(0, 40, True),
+                      Days_Since_Last_Shipment=Range(0, 100000), Declared_Value=Range(0, DECLARED_MAX))
+    t.add(cells, ["F2", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 40.0] + ["NA"] * len(FLAGS) +
+          ["A2_DEFAULT", "Default adjustment"])
+    return t
+
+
+def build_factor_tables():
+    base_f = Table(D_BASE_F, var_inputs(BASE_INPUTS + [LIABILITY_INPUT]),
+                   [("Base_Rate_Factor", D), ("Base_Rate_Factor_ID", S)])
+    for option, factor, fid in [(LIABILITY[0], 1.0, "BF01"), (LIABILITY[1], 0.9, "BF02"),
+                                (LIABILITY[2], 0.95, "BF03")]:
+        cells = cells_for(BASE_INPUTS + [LIABILITY_INPUT], Service_Code=StrIn(["SC101", "SC103"]),
+                          Account_Age_Years=Range(0, 40, True),
+                          Days_Since_Last_Shipment=Range(0, 100000),
+                          Declared_Value=Range(0, DECLARED_MAX), Liability_Option=StrIn([option]))
+        base_f.add(cells, [factor, fid])
+    base_f.add(cells_for(BASE_INPUTS + [LIABILITY_INPUT]), [1.0, "BF00"])
+
+    a1_f = Table(D_A1_F, var_inputs(A1_INPUTS + [LIABILITY_INPUT]),
+                 [("Adj1_Rate_Factor", D), ("Adj1_Rate_Factor_ID", S)])
+    a1_f.add(cells_for(A1_INPUTS + [LIABILITY_INPUT], Partner_Code=StrIn(PARTNERS),
+                       Account_Age_Years=Range(0, 40, True), Liability_Option=StrIn([LIABILITY[0]])),
+             [1.05, "A1F_0001"])
+    a1_f.add(cells_for(A1_INPUTS + [LIABILITY_INPUT], Account_Age_Years=Range(0, 40, True),
+                       Days_Since_Last_Shipment=Range(0, 100000),
+                       Declared_Value=Range(0, DECLARED_MAX)), [0.0, "A1F_0002"])
+
+    a2_f = Table(D_A2_F, var_inputs(A2_INPUTS + [LIABILITY_INPUT]),
+                 [("Adj2_Rate_Factor", D), ("Adj2_Rate_Factor_ID", S)])
+    a2_f.add(cells_for(A2_INPUTS + [LIABILITY_INPUT], Sales_Channel=StrIn(PROMO_CHANNELS),
+                       Account_Age_Years=Range(0, 40, True)), [0.97, "A2F_0001"])
+    a2_f.add(cells_for(A2_INPUTS + [LIABILITY_INPUT], Account_Age_Years=Range(0, 40, True),
+                       Days_Since_Last_Shipment=Range(0, 100000),
+                       Declared_Value=Range(0, DECLARED_MAX)), [0.0, "A2F_0002"])
+    return base_f, a1_f, a2_f
+
+
+def ref(decision, output=None):
+    return decision if output is None else f"{decision}.{output}"
+
+
+def build_combiners():
+    a1, base = D_A1, D_BASE
+    fin1 = Table(D_A1_FIN, [
+        (ref(a1, "Adj1_Function"), S, "Adj1_Function")] + [
+        (ref(a1, f"Adj1_Value_{i}"), D, f"Adj1_Value_{i}") for i in range(1, 6)] + [
+        (ref(a1, "Adj1_Min"), D, "Adj1_Min"), (ref(a1, "Adj1_Max"), D, "Adj1_Max"),
+        (ref(base, "Base_Rate"), D, "Base_Rate"), (ref(base, "Base_Min_Rate"), D, "Base_Min_Rate"),
+        (ref(base, "Base_Max_Rate"), D, "Base_Max_Rate")],
+        [("Final_Adj1_Rate", D), ("Final_Adj1_Min", D), ("Final_Adj1_Max", D),
+         ("Adj1_Value_3", D), ("Adj1_ID", S)], [base, a1])
+    n = len(fin1.inputs)
+    v = lambda i: ref(a1, f"Adj1_Value_{i}")
+    mx, mn = ref(a1, "Adj1_Max"), ref(a1, "Adj1_Min")
+    passthrough = [v(3), ref(a1, "Adj1_ID")]
+    fin1.add([StrIn(["F1"])] + [ANY] * (n - 1), out_texts=[
+        f"min(({ref(base, 'Base_Rate')}*(1-{v(1)})),{mx})", mn,
+        f"min(({ref(base, 'Base_Max_Rate')}*(1-{v(1)})),{mx})"] + passthrough)
+    fin1.add([StrIn(["F2"])] + [ANY] * (n - 1), out_texts=[
+        f"min(({ref(base, 'Base_Rate')}+{v(2)}),{mx})", mn,
+        f"min(({ref(base, 'Base_Max_Rate')}+{v(2)}),{mx})"] + passthrough)
+    fin1.add([StrIn(["F3"])] + [ANY] * (n - 1), out_texts=[v(3), mn, v(3)] + passthrough)
+    fin1.add([StrIn(["F4"])] + [ANY] * (n - 1), out_texts=["0", "0", "0"] + passthrough)
+
+    a2 = D_A2
+    fin2 = Table(D_A2_FIN, [
+        (ref(a2, "Adj2_Function"), S, "Adj2_Function")] + [
+        (ref(a2, f"Adj2_Value_{i}"), D, f"Adj2_Value_{i}") for i in range(1, 6)] + [
+        (ref(D_A1_FIN, "Final_Adj1_Rate"), D, "Final_Adj1_Rate"),
+        (ref(D_A1_FIN, "Final_Adj1_Min"), D, "Final_Adj1_Min"),
+        (ref(D_A1_FIN, "Final_Adj1_Max"), D, "Final_Adj1_Max"),
+        (ref(a2, "Adj2_Min"), D, "Adj2_Min"), (ref(a2, "Adj2_Max"), D, "Adj2_Max")],
+        [("Final_Adj2_Rate", D), ("Final_Adj2_Min", D), ("Final_Adj2_Max", D),
+         ("Adj2_Value_3", D), ("Adj2_ID", S)], [a2, D_A1_FIN])
+    n = len(fin2.inputs)
+    v = lambda i: ref(a2, f"Adj2_Value_{i}")
+    mx, mn = ref(a2, "Adj2_Max"), ref(a2, "Adj2_Min")
+    r1, rmax = ref(D_A1_FIN, "Final_Adj1_Rate"), ref(D_A1_FIN, "Final_Adj1_Max")
+    passthrough = [v(3), ref(a2, "Adj2_ID")]
+    fin2.add([StrIn(["F1"])] + [ANY] * (n - 1), out_texts=[
+        f"min(({r1}*(1-{v(1)})),{mx})", mn, f"min(({rmax}*(1-{v(1)})),{mx})"] + passthrough)
+    fin2.add([StrIn(["F2"])] + [ANY] * (n - 1), out_texts=[
+        f"min(({r1}+{v(2)}),{mx})", mn, f"min(({rmax}+{v(2)}),{mx})"] + passthrough)
+    fin2.add([StrIn(["F3"])] + [ANY] * (n - 1), out_texts=[v(3), mn, v(3)] + passthrough)
+    fin2.add([StrIn(["F4"])] + [ANY] * (n - 1), out_texts=["0", "0", "0"] + passthrough)
+
+    bf, f1, f2 = (ref(D_BASE_F, "Base_Rate_Factor"), ref(D_A1_F, "Adj1_Rate_Factor"),
+                  ref(D_A2_F, "Adj2_Rate_Factor"))
+    bid, id1, id2 = (ref(D_BASE_F, "Base_Rate_Factor_ID"), ref(D_A1_F, "Adj1_Rate_Factor_ID"),
+                     ref(D_A2_F, "Adj2_Rate_Factor_ID"))
+    factor = Table(D_FACTOR, [(bf, D, "Base_Rate_Factor"), (f1, D, "Adj1_Rate_Factor"),
+                              (f2, D, "Adj2_Rate_Factor"), (bid, S, "Base_Rate_Factor_ID"),
+                              (id1, S, "Adj1_Rate_Factor_ID"), (id2, S, "Adj2_Rate_Factor_ID")],
+                   [("Final_Factor", D), ("Base_Rate_Factor_ID", S), ("Adj1_Rate_Factor_ID", S),
+                    ("Adj2_Rate_Factor_ID", S)], [D_BASE_F, D_A1_F, D_A2_F])
+    factor.add([ANY] * 6, out_texts=[
+        f"if ({f2} != 0) then {f2} else if ({f1} != 0) then {f1} else {bf}", bid, id1, id2])
+
+    disc = Table(D_DISC, [("Volume_Discount", D, "Volume_Discount")], [("Volume_Discount", D)])
+    disc.add([ANY], out_texts=["Volume_Discount"])
+
+    flags = Table(D_FLAGS, [(ref(D_BASE, f"Base_Include_{f}"), S, f"Base_Include_{f}") for f in FLAGS] +
+                  [(ref(D_A1, f"Adj1_Include_{f}"), S, f"Adj1_Include_{f}") for f in FLAGS] +
+                  [(ref(D_A2, f"Adj2_Include_{f}"), S, f"Adj2_Include_{f}") for f in FLAGS],
+                  [(o, S) for o in FLAG_OUTPUTS] + [("Comments", S)], [D_A1, D_A2, D_BASE])
+    texts = []
+    for f in FLAGS:
+        b, x1, x2 = ref(D_BASE, f"Base_Include_{f}"), ref(D_A1, f"Adj1_Include_{f}"), ref(
+            D_A2, f"Adj2_Include_{f}")
+        texts.append(f'if ({x2} != "NA") then {x2} else if ({x1} != "NA") then {x1} else {b}')
+    flags.add([ANY] * len(flags.inputs), out_texts=texts + ['"Surcharge flags: last layer wins"'])
+
+    fac, f2r = ref(D_FACTOR, "Final_Factor"), ref(D_A2_FIN, "Final_Adj2_Rate")
+    v3_1, v3_2 = ref(D_A1_FIN, "Adj1_Value_3"), ref(D_A2_FIN, "Adj2_Value_3")
+    base_rate = ref(D_BASE, "Base_Rate")
+    keep = f"(1-{D_DISC}/100)"
+    rate = (f"if ({v3_2} != 0) then {keep}*({v3_2}*{fac}) "
+            f"else if ({v3_1} != 0) then {keep}*({v3_1}*{fac}) "
+            f"else if ({f2r} != 0) then {keep}*({f2r}*{fac}) "
+            f"else {keep}*({base_rate}*{fac})")
+    top_inputs = [(base_rate, D, "Base_Rate"), (ref(D_BASE, "Base_Rate_ID"), S, "Base_Rate_ID"),
+                  (v3_1, D, "Adj1_Value_3"), (v3_2, D, "Adj2_Value_3"), (f2r, D, "Final_Adj2_Rate"),
+                  (fac, D, "Final_Factor"), (ref(D_FACTOR, "Base_Rate_Factor_ID"), S, "Base_Rate_Factor_ID"),
+                  (ref(D_FACTOR, "Adj1_Rate_Factor_ID"), S, "Adj1_Rate_Factor_ID"),
+                  (ref(D_FACTOR, "Adj2_Rate_Factor_ID"), S, "Adj2_Rate_Factor_ID"),
+                  (D_DISC, D, "Volume_Discount")] + [
+                     (ref(D_FLAGS, o), S, o) for o in FLAG_OUTPUTS] + [
+                     (ref(D_A2_FIN, "Adj2_ID"), S, "Adj2_ID"), (ref(D_A1_FIN, "Adj1_ID"), S, "Adj1_ID")]
+    top_outputs = [("rate", D), ("Base_Rate", D), ("Final_Factor", D), ("Base_Rate_ID", S),
+                   ("Base_Rate_Factor_ID", S), ("Adj1_Rate_Factor_ID", S), ("Adj2_Rate_Factor_ID", S),
+                   ("Final_Adj2_Rate", D)] + [(o, S) for o in FLAG_OUTPUTS] + [
+                      ("Adj2_ID", S), ("Adj1_ID", S)]
+    # Camunda 8 only exposes the results of the directly required decisions, so Value_3 and the
+    # adjustment IDs reach the top decision through the Final_Adj tables. This keeps the same
+    # edges as the reference models, and so the same number of (re-)evaluated decisions.
+    top = Table(D_TOP, top_inputs, top_outputs, [D_BASE, D_FACTOR, D_A2_FIN, D_DISC, D_FLAGS, D_A1_FIN])
+    top.add([ANY] * len(top_inputs), out_texts=[rate, base_rate, fac, ref(D_BASE, "Base_Rate_ID")] +
+            [e for e, _, _ in top_inputs[6:9]] + [f2r] + [ref(D_FLAGS, o) for o in FLAG_OUTPUTS] +
+            [ref(D_A2_FIN, "Adj2_ID"), ref(D_A1_FIN, "Adj1_ID")])
+    assert len(top.rules[0][1]) == len(top_outputs)
+    return fin1, fin2, factor, disc, flags, top
+
+
+# ---------------------------------------------------------------------------------------
+# Rendering (Camunda Modeler layout: tabs, explicit closing tags, semantic ids)
+# ---------------------------------------------------------------------------------------
+
+
+def render_rule(t, idx, cells, out_texts):
+    width = len(t.inputs) + len(t.outputs)
+    counter = idx * width
+    parts = [f'\t\t\t<rule id="Rule_{t.id}_{idx}">\n']
+    for (_, _, label), c in zip(t.inputs, cells):
+        counter += 1
+        parts.append(f'\t\t\t\t<inputEntry id="{label}_Entry_{t.id}_{counter}">\n'
+                     f'\t\t\t\t\t<text>{escape(c.text)}</text>\n\t\t\t\t</inputEntry>\n')
+    for (name, _), text in zip(t.outputs, out_texts):
+        counter += 1
+        parts.append(f'\t\t\t\t<outputEntry id="{name}_Entry_{t.id}_{counter}">\n'
+                     f'\t\t\t\t\t<text>{escape(text)}</text>\n\t\t\t\t</outputEntry>\n')
+    parts.append('\t\t\t</rule>\n')
+    return "".join(parts)
+
+
+def render_decision_head(t):
+    parts = [f'\t<decision id="{t.id}" name="{t.id}">\n']
+    for k, r in enumerate(t.requires):
+        parts.append(f'\t\t<informationRequirement id="InformationRequirement_{t.id}_{k + 1}">\n'
+                     f'\t\t\t<requiredDecision href="#{r}"></requiredDecision>\n'
+                     f'\t\t</informationRequirement>\n')
+    parts.append(f'\t\t<decisionTable id="DecisionTable_{t.id}" hitPolicy="FIRST">\n')
+    for k, (expr, typ, label) in enumerate(t.inputs):
+        parts.append(f'\t\t\t<input id="Input_{t.id}_{k + 1}" label="{escape(label)}">\n'
+                     f'\t\t\t\t<inputExpression id="InputExpression_{t.id}_{k + 1}" typeRef="{typ}">\n'
+                     f'\t\t\t\t\t<text>{escape(expr)}</text>\n'
+                     f'\t\t\t\t</inputExpression>\n\t\t\t</input>\n')
+    for k, (name, typ) in enumerate(t.outputs):
+        parts.append(f'\t\t\t<output id="Output_{t.id}_{k + 1}" label="{name}" name="{name}" '
+                     f'typeRef="{typ}"></output>\n')
+    return "".join(parts)
+
+
+DECISION_TAIL = '\t\t</decisionTable>\n\t</decision>\n'
+
+HEADER = (
+    '<?xml version="1.0" encoding="UTF-8"?>\n'
+    '<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" '
+    'xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" '
+    'xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" '
+    'xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" '
+    'xmlns:modeler="http://camunda.org/schema/modeler/1.0" '
+    'id="Freight_Tariff_DRD" name="Freight Tariff Rating" '
+    'namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" '
+    'exporterVersion="5.37.0" modeler:executionPlatform="Camunda Cloud" '
+    'modeler:executionPlatformVersion="8.9.0">\n')
+
+LAYOUT = {  # decision -> (x, y); required decisions sit below the decisions that use them
+    D_TOP: (800, 80),
+    D_A2_FIN: (500, 260), D_FLAGS: (800, 260), D_FACTOR: (1100, 260),
+    D_A1_FIN: (500, 440),
+    D_A1: (200, 640), D_A2: (440, 640), D_BASE: (680, 640), D_DISC: (920, 640),
+    D_BASE_F: (1160, 640), D_A1_F: (1400, 640), D_A2_F: (1640, 640),
+}
+
+
+def render_di(tables):
+    parts = ['\t<dmndi:DMNDI>\n\t\t<dmndi:DMNDiagram id="DMNDiagram_Freight_Tariff">\n']
+    for t in tables:
+        x, y = LAYOUT[t.id]
+        parts.append(f'\t\t\t<dmndi:DMNShape id="DMNShape_{t.id}" dmnElementRef="{t.id}">\n'
+                     f'\t\t\t\t<dc:Bounds height="80" width="180" x="{x}" y="{y}"></dc:Bounds>\n'
+                     f'\t\t\t</dmndi:DMNShape>\n')
+    for t in tables:
+        tx, ty = LAYOUT[t.id]
+        for k, r in enumerate(t.requires):
+            sx, sy = LAYOUT[r]
+            parts.append(f'\t\t\t<dmndi:DMNEdge id="DMNEdge_{t.id}_{k + 1}" '
+                         f'dmnElementRef="InformationRequirement_{t.id}_{k + 1}">\n'
+                         f'\t\t\t\t<di:waypoint x="{sx + 90}" y="{sy}"></di:waypoint>\n'
+                         f'\t\t\t\t<di:waypoint x="{tx + 90}" y="{ty + 80}"></di:waypoint>\n'
+                         f'\t\t\t</dmndi:DMNEdge>\n')
+    parts.append('\t\t</dmndi:DMNDiagram>\n\t</dmndi:DMNDI>\n')
+    return "".join(parts)
+
+
+def render_table(t):
+    return render_decision_head(t) + "".join(
+        render_rule(t, i, cells, texts) for i, (cells, texts, _) in enumerate(t.rules)) + DECISION_TAIL
+
+
+# ---------------------------------------------------------------------------------------
+# Python evaluation of the generated graph (reference for the expected results)
+# ---------------------------------------------------------------------------------------
+
+
+class Matcher:
+    """FIRST-hit matcher with an index on the most selective string column."""
+
+    def __init__(self, t, key):
+        self.t = t
+        self.vars = [expr for expr, _, _ in t.inputs]
+        self.key = key
+        self.checks = []
+        self.by_value, wildcard = {}, []
+        k = self.vars.index(key) if key else None
+        for idx, (cells, _, _) in enumerate(t.rules):
+            checks = [(v, c) for v, c in zip(self.vars, cells) if c is not ANY]
+            checks.sort(key=lambda vc: 0 if isinstance(vc[1], StrIn) else 1)
+            self.checks.append(checks)
+            if k is not None:
+                c = cells[k]
+                if c is ANY:
+                    wildcard.append(idx)
+                else:
+                    for val in c.values:
+                        self.by_value.setdefault(val, []).append(idx)
+        self.wildcard = wildcard
+
+    def first(self, v):
+        if self.key is None:
+            candidates = range(len(self.t.rules))
+        else:
+            candidates = sorted(self.by_value.get(v[self.key], []) + self.wildcard)
+        for idx in candidates:
+            if all(c.match(v[var]) for var, c in self.checks[idx]):
+                return idx
+        return None
+
+
+def evaluate(m, v):
+    """Returns ({decisionId: 1-based matched rule}, rate) or raises if a table has no match."""
+    hit = {}
+    out = {}
+    for name in (D_BASE, D_BASE_F, D_A1, D_A1_F, D_A2, D_A2_F):
+        idx = m[name].first(v)
+        if idx is None:
+            raise ValueError(f"no rule of {name} matches {v}")
+        hit[name] = idx + 1
+        t = m[name].t
+        out[name] = dict(zip([n for n, _ in t.outputs], t.rules[idx][2]))
+    base, a1, a2 = out[D_BASE], out[D_A1], out[D_A2]
+
+    def layer(fn, value_1, value_2, value_3, mx, previous):
+        if fn == "F1":
+            return min(previous * (1 - value_1), mx)
+        if fn == "F2":
+            return min(previous + value_2, mx)
+        if fn == "F3":
+            return value_3
+        return 0
+
+    fin1 = layer(a1["Adj1_Function"], a1["Adj1_Value_1"], a1["Adj1_Value_2"], a1["Adj1_Value_3"],
+                 a1["Adj1_Max"], base["Base_Rate"])
+    fin2 = layer(a2["Adj2_Function"], a2["Adj2_Value_1"], a2["Adj2_Value_2"], a2["Adj2_Value_3"],
+                 a2["Adj2_Max"], fin1)
+    hit[D_A1_FIN] = ["F1", "F2", "F3", "F4"].index(a1["Adj1_Function"]) + 1
+    hit[D_A2_FIN] = ["F1", "F2", "F3", "F4"].index(a2["Adj2_Function"]) + 1
+    f_base = out[D_BASE_F]["Base_Rate_Factor"]
+    f1 = out[D_A1_F]["Adj1_Rate_Factor"]
+    f2 = out[D_A2_F]["Adj2_Rate_Factor"]
+    factor = f2 if f2 != 0 else f1 if f1 != 0 else f_base
+    keep = 1 - v["Volume_Discount"] / 100
+    if a2["Adj2_Value_3"] != 0:
+        x = a2["Adj2_Value_3"]
+    elif a1["Adj1_Value_3"] != 0:
+        x = a1["Adj1_Value_3"]
+    elif fin2 != 0:
+        x = fin2
+    else:
+        x = base["Base_Rate"]
+    for single in (D_FACTOR, D_DISC, D_FLAGS, D_TOP):
+        hit[single] = 1
+    return hit, keep * (x * factor)
+
+
+def background(rng, lanes):
+    return {
+        "Service_Code": rng.choice(SERVICES),
+        "Contract_Term": rng.choice(CONTRACT_TERMS),
+        "Sales_Channel": rng.choice(BACKGROUND_CHANNELS),
+        "Partner_Code": "DIRECT",
+        "Booking_Channel": rng.choice(BOOKING_CHANNELS),
+        "Volume_Band": rng.choice(CLUSTERS), "Region_Cluster": rng.choice(CLUSTERS),
+        "Industry_Cluster": rng.choice(CLUSTERS), "Payment_Cluster": rng.choice(CLUSTERS),
+        "Credit_Cluster": rng.choice(CLUSTERS), "Seasonality_Cluster": rng.choice(CLUSTERS),
+        "Loyalty_Cluster": rng.choice(CLUSTERS),
+        "Shipment_Type": rng.choice(SHIPMENT_TYPES),
+        "Handling_Segment": rng.choice(["General Cargo"] * 3 + HANDLING_KEYS + HANDLING_MIXED),
+        "Lane_Code": rng.choice(lanes),
+        "Fleet_Cluster": rng.choice(FLEETS),
+        "Origin_Hub": rng.choice(HUBS),
+        "Account_Age_Years": rng.randint(0, 40),
+        "Account_Segment": rng.choice(SEGMENTS),
+        "Days_Since_Last_Shipment": float(rng.randint(0, DAYS_MAX)),
+        "Postal_Zone": f"PZ{rng.randint(1, 400):03d}",
+        "Depot_Cluster": f"DEP{rng.randint(1, 60):02d}",
+        "Packaging_Type": rng.choice(PACKAGING),
+        "Previous_Carrier": rng.choice(CARRIERS),
+        "Declared_Value": float(rng.randint(1000, 5000000)),
+        "Liability_Option": rng.choice(LIABILITY),
+        "Volume_Discount": rng.choice([0.0, 0.0, 0.0, 2.5, 5.0, 7.5, 10.0]),
+    }
+
+
+CATCH_ALL_OVERRIDES = {
+    D_BASE: {"Lane_Code": UNLISTED_LANE},
+    D_A1: {"Partner_Code": "DIRECT", "Handling_Segment": "General Cargo"},
+    D_A2: {"Sales_Channel": "CH01", "Account_Segment": "12"},
+    D_BASE_F: {"Service_Code": "SC102"},
+    D_A1_F: {"Partner_Code": "DIRECT"},
+    D_A2_F: {"Sales_Channel": "CH01"},
+}
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--out", required=True, help="output .dmn path")
+    ap.add_argument("--target-bytes", type=int, default=48 * 1024 * 1024)
+    ap.add_argument("--adj1-rules", type=int, default=2000)
+    ap.add_argument("--adj2-rules", type=int, default=1400)
+    ap.add_argument("--random-vectors", type=int, default=2000,
+                    help="extra random (non-targeted) vectors appended to the vectors file")
+    ap.add_argument("--seed", type=int, default=20261014)
+    args = ap.parse_args()
+    rng = random.Random(args.seed)
+
+    lanes = lane_universe(rng, 9000)
+    base_witnesses, a1_witnesses, lane_pool = lanes[:1500], lanes[1500:1700], lanes[1700:]
+
+    a1 = build_adj1(rng, args.adj1_rules, lane_pool, list(a1_witnesses))
+    a2 = build_adj2(rng, args.adj2_rules)
+    base_f, a1_f, a2_f = build_factor_tables()
+    fin1, fin2, factor, disc, flags, top = build_combiners()
+
+    # file order follows the reference models: base, base factor, adj1, ..., flags
+    placeholder = Table(D_BASE, var_inputs(BASE_INPUTS), base_outputs("Base"))
+    order = [placeholder, base_f, a1, a1_f, fin1, a2, fin2, a2_f, factor, top, disc, flags]
+    fixed = len(HEADER) + len("</definitions>\n") + len(render_decision_head(placeholder)) + len(
+        DECISION_TAIL) + sum(len(render_table(t)) for t in order[1:]) + len(render_di(order))
+    base, groups = build_base(rng, args.target_bytes, fixed, lane_pool, base_witnesses, render_rule)
+    order[0] = base
+
+    with open(args.out, "w", encoding="utf-8") as f:
+        f.write(HEADER)
+        for t in order:
+            f.write(render_table(t))
+        f.write(render_di(order))
+        f.write("</definitions>\n")
+    with open(args.out, "rb") as f:
+        data = f.read()
+    size = len(data)
+
+    # ---- vectors: one witness per rule of every input-driven table, plus random traffic
+    matchers = {D_BASE: Matcher(base, "Lane_Code"), D_A1: Matcher(a1, "Handling_Segment"),
+                D_A2: Matcher(a2, "Service_Code"), D_BASE_F: Matcher(base_f, None),
+                D_A1_F: Matcher(a1_f, None), D_A2_F: Matcher(a2_f, None)}
+    vectors_path = args.out.rsplit(".", 1)[0] + ".vectors.jsonl"
+    coverage = {name: set() for name in [t.id for t in order]}
+    count = 0
+    with open(vectors_path, "w", encoding="utf-8") as f:
+        for t in (base, a1, a2, base_f, a1_f, a2_f):
+            last = len(t.rules) - 1
+            for idx, (cells, _, _) in enumerate(t.rules):
+                v = background(rng, lane_pool)
+                if idx == last and all(not isinstance(c, StrIn) for c in cells):
+                    v.update(CATCH_ALL_OVERRIDES[t.id])
+                for (var, _, _), c in zip(t.inputs, cells):
+                    v[var] = c.witness(v[var])
+                hit, rate = evaluate(matchers, v)
+                if hit[t.id] != idx + 1:
+                    sys.exit(f"rule {t.id}#{idx + 1} is not reachable: witness hits #{hit[t.id]}")
+                for name, r in hit.items():
+                    coverage[name].add(r)
+                f.write(json.dumps({"id": f"{t.id}#{idx + 1}", "variables": v, "expected": hit,
+                                    "rate": rate}) + "\n")
+                count += 1
+        for k in range(args.random_vectors):
+            v = background(rng, lane_pool)
+            hit, rate = evaluate(matchers, v)
+            f.write(json.dumps({"id": f"random#{k + 1}", "variables": v, "expected": hit,
+                                "rate": rate}) + "\n")
+            count += 1
+
+    missing = {t.id: len(t.rules) - len(coverage[t.id]) for t in order if len(coverage[t.id]) < len(t.rules)}
+    if missing:
+        sys.exit(f"uncovered rules: {missing}")
+
+    manifest = {
+        "file": args.out.rsplit("/", 1)[-1],
+        "bytes": size,
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "drg_id": "Freight_Tariff_DRD",
+        "top_decision": D_TOP,
+        "decisions": {t.id: {"rules": len(t.rules), "inputs": len(t.inputs), "outputs": len(t.outputs),
+                             "requires": t.requires} for t in order},
+        "rule_count": sum(len(t.rules) for t in order),
+        "base_lane_groups": groups,
+        "external_input_variables": EXTERNAL_VARIABLES,
+        "vectors": {"file": vectors_path.rsplit("/", 1)[-1], "count": count,
+                    "targeted": count - args.random_vectors, "random": args.random_vectors},
+        "seed": args.seed,
+    }
+    with open(args.out.rsplit(".", 1)[0] + ".manifest.json", "w") as f:
+        json.dump(manifest, f, indent=2)
+        f.write("\n")
+    print(json.dumps({k: manifest[k] for k in ("bytes", "sha256", "rule_count", "base_lane_groups",
+                                               "vectors")}))
+    print({t.id: len(t.rules) for t in order})
+
+
+if __name__ == "__main__":
+    main()

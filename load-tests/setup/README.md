@@ -447,6 +447,7 @@ make realistic # Realistic multi-instance benchmark (values from camunda-load-te
 make max       # 300 instances/s (500 with secondary_storage=none) — maximum stress, also disables consistency check overhead
 make archiver  # Multi-instance archiver scenario (no workers)
 make dmn       # 6667 DMN evaluations/s through k6, no BPMN load, RF1 in-memory brokers (main only)
+make dmn-large # ~48 MiB generated DMN, inputs covering every rule, RF3 brokers sized for it (main only)
 ```
 
 You can also pass `scenario=` directly to combine with additional overrides:
