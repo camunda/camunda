@@ -176,19 +176,17 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
     final var otherServiceTaskKey = getServiceTaskKey(otherProcessInstanceKey);
 
     // when
-    engine
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .modification()
-        .terminateElement(otherServiceTaskKey)
-        .expectRejection()
-        .modify(DEFAULT_USER.getUsername());
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .terminateElement(otherServiceTaskKey)
+            .expectRejection()
+            .modify(DEFAULT_USER.getUsername());
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceModificationRecords()
-                .onlyCommandRejections()
-                .getFirst())
+    Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             "Expected to modify instance of process '%s' but it contains one or more terminate instructions with an element instance that could not be found: '%d'"
