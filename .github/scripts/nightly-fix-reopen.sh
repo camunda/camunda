@@ -79,14 +79,14 @@ reopen_candidates() {
     || date -u -v-"${REOPEN_WINDOW_DAYS}"d +%FT%TZ 2>/dev/null) || return 0
   gh pr list --repo "$REPO" \
     --label "failing-test-fix" --state closed --limit 50 \
-    --json number,headRefName,closedAt,mergedAt,labels \
+    --json number,headRefName,headRefOid,closedAt,mergedAt,labels \
     --jq "[.[]
            | select(.mergedAt == null)
            | select(.closedAt >= \"${cutoff}\")
            | select(.headRefName | startswith(\"${prefix}\"))
            | select([.labels[].name] | index(\"${REOPEN_VETO_LABEL}\") | not)]
           | sort_by(.closedAt) | reverse
-          | .[] | \"\(.number)\t\(.headRefName)\"" 2>/dev/null || true
+          | .[] | \"\(.number)\t\(.headRefName)\t\(.headRefOid)\"" 2>/dev/null || true
 }
 
 # Did OUR sweeper close this, or did a person close it deliberately?
@@ -140,15 +140,32 @@ reopen_count() {
     --jq '[.[][] | select(.event == "reopened")] | length' 2>/dev/null || echo 999
 }
 
-# `gh pr reopen` fails outright when the head ref is gone. The sweeper never
-# deletes branches, but cleanup-stale-refs.yml exists and humans tidy up.
 branch_alive() {
   gh api "repos/${REPO}/git/ref/heads/${1}" >/dev/null 2>&1
 }
 
-# Commits on main the branch does not have. Works on any ref regardless of PR
-# state, unlike `gh pr view --json mergeable`, which GitHub does not keep fresh
-# for a CLOSED PR (it returns UNKNOWN or a stale value).
+# Recreate a deleted head branch at the PR's recorded head commit, so the PR can
+# be reopened. `gh pr reopen` needs a LIVE head ref and fails without one —
+# verified on a throwaway PR: close --delete-branch, reopen → "Could not open
+# the pull request"; recreate the ref at the same SHA, reopen → succeeds, with
+# the diff intact. The commits themselves are never lost: GitHub keeps them
+# reachable as refs/pull/<n>/head for the life of the PR, which is where the
+# recorded head SHA still resolves.
+#
+# A no-op when the branch still exists. Non-zero only if the ref could not be
+# created, which the caller treats as "do not reopen".
+restore_branch() {
+  local branch="$1" sha="$2"
+  branch_alive "$branch" && return 0
+  [ -n "$sha" ] || return 1
+  gh api -X POST "repos/${REPO}/git/refs" \
+    -f ref="refs/heads/${branch}" -f sha="$sha" >/dev/null 2>&1
+}
+
+# Commits on main that this ref does not have. Takes a SHA as readily as a
+# branch name, which matters because the branch is usually GONE by the time we
+# look: the sweeper deletes it on close. `gh pr view --json mergeable` is no
+# substitute — GitHub does not keep it fresh for a closed PR.
 behind_by() {
   gh api "repos/${REPO}/compare/main...${1}" --jq '.behind_by // 99999' \
     2>/dev/null || echo 99999
@@ -178,19 +195,22 @@ spec_overlap() {
 # skip the overlap gate — used where the PR carries fp= coverage markers that
 # the caller matches instead).
 reopen_pick() {
-  local prefix="$1" specs_json="${2:-[]}" n branch rc bb ov
+  local prefix="$1" specs_json="${2:-[]}" n branch sha rc bb ov
   # Dry run evaluates every gate and logs the trace; only the caller's
   # reopen_commit is withheld.
   [ "$REOPEN_CLOSED_PRS" = "true" ] || [ "$REOPEN_DRY_RUN" = "true" ] || return 0
 
-  while IFS=$'\t' read -r n branch; do
+  while IFS=$'\t' read -r n branch sha; do
     [ -z "${n:-}" ] && continue
     if ! closed_by_sweeper "$n"; then
       echo "    reopen: skip #${n} — closed by a human, or who closed it is unreadable" >&2
       continue
     fi
-    if ! branch_alive "$branch"; then
-      echo "    reopen: skip #${n} — head branch ${branch} is gone" >&2
+    # The branch being gone is NOT a disqualifier: the sweeper deletes it on
+    # close, and reopen_commit recreates it from this SHA. Only a missing SHA
+    # is fatal, because then there is nothing to restore it to.
+    if [ -z "${sha:-}" ]; then
+      echo "    reopen: skip #${n} — no recorded head commit to restore the branch to" >&2
       continue
     fi
     rc=$(reopen_count "$n")
@@ -198,7 +218,8 @@ reopen_pick() {
       echo "    reopen: skip #${n} — already reopened ${rc}x (cap ${REOPEN_CAP}); it needs a human, not another round" >&2
       continue
     fi
-    bb=$(behind_by "$branch")
+    # Measured on the SHA, not the branch name — the branch is normally deleted.
+    bb=$(behind_by "$sha")
     if [ "${bb:-99999}" -gt "$REOPEN_MAX_BEHIND" ]; then
       echo "    reopen: skip #${n} — ${bb} commits behind main (max ${REOPEN_MAX_BEHIND})" >&2
       continue
@@ -213,18 +234,23 @@ reopen_pick() {
     else
       echo "    reopen: #${n} (${branch}) is a candidate" >&2
     fi
-    printf '%s\t%s\t%s\n' "$n" "$branch" "$rc"
+    printf '%s\t%s\t%s\t%s\n' "$n" "$branch" "$sha" "$rc"
     return 0
   done < <(reopen_candidates "$prefix")
   return 0
 }
 
-# Commit the reopen: reopen, swap the labels, comment. Prints nothing; returns
-# non-zero if the reopen itself failed, so the caller can fall back to a fresh
-# PR. Label and comment failures are non-fatal — the PR is open either way.
-# $1 number, $2 body of the comment.
+# Commit the reopen: restore the head branch, reopen, swap the labels, comment.
+# Returns non-zero if the branch could not be restored or the reopen failed, so
+# the caller falls back to a fresh PR. Label and comment failures are non-fatal
+# — the PR is open either way.
+# $1 number, $2 branch, $3 head sha, $4 body of the comment.
 reopen_commit() {
-  local n="$1" body="$2"
+  local n="$1" branch="$2" sha="$3" body="$4"
+  if ! restore_branch "$branch" "$sha"; then
+    echo "    reopen: could not restore ${branch} at ${sha:0:12} for #${n}" >&2
+    return 1
+  fi
   gh pr reopen "$n" --repo "$REPO" >/dev/null 2>&1 || return 1
   gh pr edit "$n" --repo "$REPO" \
     --remove-label "$STALE_CLOSED_LABEL" --add-label "$REOPENED_LABEL" >/dev/null 2>&1 || true
