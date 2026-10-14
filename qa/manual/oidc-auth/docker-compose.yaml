@@ -26,7 +26,7 @@ services:
       retries: 60
 
   camunda:
-    image: camunda/camunda:${CAMUNDA_VERSION:-8.10-SNAPSHOT}
+    image: camunda/camunda:${CAMUNDA_VERSION:-8.10.4}
     container_name: oidc-auth-camunda
     network_mode: service:keycloak
     depends_on:

@@ -77,6 +77,17 @@ override.
 For the browser login, open `http://localhost:8080/operate` and select the provider. For a fast
 check without a browser, run `./scripts/login.sh "" alpha`.
 
+Manual checks:
+
+- Web apps: log in with `alpha`, then with `beta`. Operate, Tasklist and Admin open with the
+  expected user. After logout, the next visit asks for a login again.
+- Real client: use the Java client or `c8ctl` with the client credentials of `idp-a-m2m`
+  (secret `idp-a-m2m-secret`, token URL
+  `http://localhost:18080/realms/idp-a/protocol/openid-connect/token`). Deploy and start a process
+  over gRPC and over REST.
+- Upgrade: start with `CAMUNDA_VERSION=8.9.23`, then 8.10.4. M2M and login with `alpha` work on
+  both.
+
 ## Scenario 2: each physical tenant uses its own OIDC settings ([#65607](https://github.com/camunda/camunda/issues/65607), [#65633](https://github.com/camunda/camunda/issues/65633))
 
 Config: [`config/physical-tenants.yaml`](config/physical-tenants.yaml).
@@ -100,6 +111,14 @@ Config: [`config/physical-tenants.yaml`](config/physical-tenants.yaml).
 On 8.10.3, the M2M token of `idp-a` gets 403 on `tenanta` over REST, because `partnera` does not
 use the tenant's `client-id-claim`.
 
+Manual checks:
+
+- Sessions are per tenant. Each tenant sets its own cookie, `camunda-session-physical-tenants-<id>`.
+  After a login on `tenanta`, `tenantb` asks for its own login. A logout on `tenanta` keeps you
+  logged in on `tenantb`.
+- Real client: use the Java client (`physicalTenantId`) or `c8ctl` on `tenanta` with `idp-a-m2m`
+  and on `tenantb` with `idp-b-m2m`. Deploy and start a process over gRPC and over REST.
+
 ## Scenario 3: a tenant rejects tokens from IdPs that it does not assign ([#65501](https://github.com/camunda/camunda/issues/65501))
 
 Same config as scenario 2. Run `./scripts/check-physical-tenants.sh`. The scenario 3 checks send
@@ -109,6 +128,18 @@ tokens from `idp-b` and `idp-root` to `tenanta`, and from `idp-a` and `idp-root`
 |------|-------------------|-----------------------------------------------------------------------------------------------|
 | REST | 401               | 401                                                                                           |
 | gRPC | `Unauthenticated` | `PermissionDenied`: the token passes authentication, and only the missing permissions stop it |
+
+Manual checks:
+
+- `http://localhost:8080/physical-tenants/tenanta/operate` sends you directly to `idp-a`, because
+  `partnera` is the only login of `tenanta`. `tenantb` sends you directly to `idp-b`.
+- A login with a provider that the tenant does not assign, for example
+  `/physical-tenants/tenanta/oauth2/authorization/partnerb`, returns 500 ("Invalid Client
+  Registration") and does not send you to the IdP.
+- After a login on `tenantb`, `/physical-tenants/tenanta/v2/authentication/me` returns 401 in the
+  same browser.
+- Real client: use the Java client or `c8ctl` on `tenanta` with the credentials of `idp-b-m2m`.
+  Every command fails with `Unauthenticated` (gRPC) or 401 (REST), not with a permission error.
 
 ## Clean up
 
