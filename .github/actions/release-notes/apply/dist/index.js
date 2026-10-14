@@ -67,6 +67,7 @@ async function run() {
     for (const warning of result.warnings)
         core.warning(warning);
     await core.summary.addRaw(result.markdown).write();
+    core.setOutput('compared', String(result.compared));
     if (result.divergence)
         (0, node_fs_1.writeFileSync)(`${inputDir}/apply-divergence.json`, JSON.stringify(result.divergence, null, 2));
 }
@@ -540,10 +541,10 @@ async function runApply(inputs, deps) {
     if (truncated.length > 0) {
         warnings.push(`${truncated.length} issues have more comments than were read (${truncated.slice(0, 5).map((number) => `#${number}`).join(', ')}${truncated.length > 5 ? ', …' : ''}), so an existing comment may be missed.`);
     }
-    return { markdown: (0, index_1.renderReport)(plan), divergence: plan, warnings };
+    return { markdown: (0, index_1.renderReport)(plan), compared: !plan.baselineEmpty, divergence: plan, warnings };
 }
 function skipped(reason) {
-    return { markdown: (0, index_1.renderDegradedReport)(reason), warnings: [`Apply dry run skipped: ${reason}`] };
+    return { markdown: (0, index_1.renderDegradedReport)(reason), compared: false, warnings: [`Apply dry run skipped: ${reason}`] };
 }
 function readInput(directory, name) {
     try {
