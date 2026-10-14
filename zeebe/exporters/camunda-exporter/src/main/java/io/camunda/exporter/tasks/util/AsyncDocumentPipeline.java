@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(AsyncDocumentPipeline.class);
+  private static final int MAX_BATCH_SIZE = 10_000;
 
   private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
   private static final List<Class<? extends Throwable>> DEFAULT_RETRYABLE_EXCEPTIONS =
@@ -126,6 +127,8 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
   private CompletableFuture<DocumentBatch<DocType, SearchAfterFieldType>> getNextBatch(
       final int batchSizeForBatch) {
+    // as we allow an externally controllable batch size we will sanity check this before we use it
+    verifyBatchSize(batchSizeForBatch);
     try {
       return batchSupplier.supply(getLastSearchPosition(), batchSizeForBatch);
     } catch (final Exception ex) {
@@ -240,6 +243,12 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     return stats;
   }
 
+  private static void verifyBatchSize(final int batchSize) {
+    if (batchSize > MAX_BATCH_SIZE) {
+      throw new IllegalArgumentException("Batch size must be less than " + MAX_BATCH_SIZE);
+    }
+  }
+
   public record DocumentBatch<D, T>(List<D> documents, T searchAfter) {
     public static <D, T> DocumentBatch<D, T> empty() {
       return new DocumentBatch<>(List.of(), null);
@@ -294,11 +303,13 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     }
 
     public Builder<DocType, SearchAfterFieldType> minBatchSize(final int minBatchSize) {
+      verifyBatchSize(minBatchSize);
       this.minBatchSize = minBatchSize;
       return this;
     }
 
     public Builder<DocType, SearchAfterFieldType> batchSize(final int batchSize) {
+      verifyBatchSize(batchSize);
       this.batchSize.set(batchSize);
       return this;
     }
@@ -310,6 +321,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
      * @return the builder
      */
     public Builder<DocType, SearchAfterFieldType> batchSize(final AtomicInteger batchSize) {
+      verifyBatchSize(batchSize.get());
       this.batchSize = batchSize;
       return this;
     }
