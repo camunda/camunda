@@ -10,7 +10,9 @@ package io.camunda.exporter.tasks.util;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -37,6 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.slf4j.Logger;
 
 class AsyncDocumentPipelineTest {
 
@@ -263,6 +266,7 @@ class AsyncDocumentPipelineTest {
         .then(returnBatchSize());
 
     final var retryRecorder = mock(Runnable.class);
+    final var logger = mock(Logger.class);
 
     final var builder =
         AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
@@ -270,7 +274,8 @@ class AsyncDocumentPipelineTest {
             .batchSize(4)
             .maxRetryAttempts(2)
             .retryDelayMs(1)
-            .retryRecorder(retryRecorder);
+            .retryRecorder(retryRecorder)
+            .logger(logger);
 
     final var future = builder.buildAndExecute();
     assertThat(future)
@@ -278,9 +283,10 @@ class AsyncDocumentPipelineTest {
         .extracting("totalDocumentsRead", "totalDocumentsProcessed")
         .containsExactly(16L, 10L);
 
-    final var inOrder = Mockito.inOrder(batchProcessor, retryRecorder);
+    final var inOrder = Mockito.inOrder(batchProcessor, retryRecorder, logger);
     // first retry
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2, 3, 4), 4));
+    verifyRetryLogged(inOrder.verify(logger));
     inOrder.verify(retryRecorder).run();
 
     // should now be using smaller batch size
@@ -289,6 +295,7 @@ class AsyncDocumentPipelineTest {
 
     // second retry
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(5, 6), 6));
+    verifyRetryLogged(inOrder.verify(logger));
     inOrder.verify(retryRecorder).run();
 
     // again batch size has been reduced
@@ -308,6 +315,7 @@ class AsyncDocumentPipelineTest {
         .thenReturn(CompletableFuture.failedFuture(new SocketTimeoutException()));
 
     final var retryRecorder = mock(Runnable.class);
+    final var logger = mock(Logger.class);
 
     final var builder =
         AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
@@ -315,7 +323,8 @@ class AsyncDocumentPipelineTest {
             .batchSize(8)
             .maxRetryAttempts(4)
             .retryDelayMs(1)
-            .retryRecorder(retryRecorder);
+            .retryRecorder(retryRecorder)
+            .logger(logger);
 
     final var future = builder.buildAndExecute();
     assertThat(future)
@@ -323,14 +332,18 @@ class AsyncDocumentPipelineTest {
         .withThrowableThat()
         .withRootCauseInstanceOf(SocketTimeoutException.class);
 
-    final var inOrder = Mockito.inOrder(batchProcessor, retryRecorder);
+    final var inOrder = Mockito.inOrder(batchProcessor, retryRecorder, logger);
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2, 3, 4, 5, 6, 7, 8), 8));
+    verifyRetryLogged(inOrder.verify(logger));
     inOrder.verify(retryRecorder).run();
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2, 3, 4), 4));
+    verifyRetryLogged(inOrder.verify(logger));
     inOrder.verify(retryRecorder).run();
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2), 2));
+    verifyRetryLogged(inOrder.verify(logger, never()));
     inOrder.verify(retryRecorder).run();
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2), 2));
+    verifyRetryLogged(inOrder.verify(logger, never()));
     inOrder.verify(retryRecorder).run();
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2), 2));
 
@@ -345,6 +358,7 @@ class AsyncDocumentPipelineTest {
         .thenReturn(CompletableFuture.failedFuture(new BatchReductionException()));
 
     final var retryRecorder = mock(Runnable.class);
+    final var logger = mock(Logger.class);
 
     final var batchSize = new AtomicInteger(10);
 
@@ -355,7 +369,8 @@ class AsyncDocumentPipelineTest {
             .batchSize(batchSize)
             .maxRetryAttempts(4)
             .retryDelayMs(1)
-            .retryRecorder(retryRecorder);
+            .retryRecorder(retryRecorder)
+            .logger(logger);
 
     final var future = builder.buildAndExecute();
     assertThat(future)
@@ -366,6 +381,8 @@ class AsyncDocumentPipelineTest {
     verify(batchProcessor)
         .process(DocumentBatch.from(List.of(5, 6, 7, 8, 9, 10, 11, 12, 13, 14), 14));
     verifyNoMoreInteractions(batchProcessor);
+
+    verifyRetryLogged(verify(logger));
 
     verifyNoInteractions(retryRecorder);
 
@@ -523,6 +540,10 @@ class AsyncDocumentPipelineTest {
       final DocumentBatch<?, ?> batch = inv.getArgument(0);
       return CompletableFuture.completedFuture(batch.documents().size());
     };
+  }
+
+  private static void verifyRetryLogged(final Logger logger) {
+    logger.warn(startsWith("Adjusting doc pipeline batch size"), any(Object[].class));
   }
 
   static class RetryableException extends RuntimeException {}
