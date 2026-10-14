@@ -32,8 +32,12 @@ final class SystemPartitionStateMachine extends Actor {
   // callers waiting for an entry to be applied, by its position
   private final TreeMap<Long, List<CompletableActorFuture<Void>>> appliedWaiters = new TreeMap<>();
 
+  private final CompletableActorFuture<Void> replayed = new CompletableActorFuture<>();
+
   private RaftLogReader reader;
   private long appliedPosition;
+  // the position of the last entry this broker had committed when it started
+  private long replayEndPosition;
 
   SystemPartitionStateMachine(
       final RaftPartition raftPartition,
@@ -71,10 +75,19 @@ final class SystemPartitionStateMachine extends Actor {
     return applied;
   }
 
+  /**
+   * Returns a future completed once every entry this broker had committed when it started is
+   * applied; entries applied after are committed while this broker runs.
+   */
+  ActorFuture<Void> awaitReplayed() {
+    return replayed;
+  }
+
   @Override
   protected void onActorStarting() {
     // reads only committed entries, so it works the same on the leader and on followers
     reader = raftPartition.getServer().openReader();
+    replayEndPosition = lastCommittedPosition();
     raftPartition.getServer().addCommitListener(commitListener);
   }
 
@@ -94,6 +107,9 @@ final class SystemPartitionStateMachine extends Actor {
         .values()
         .forEach(waiters -> waiters.forEach(w -> w.completeExceptionally(closed)));
     appliedWaiters.clear();
+    if (!replayed.isDone()) {
+      replayed.completeExceptionally(closed);
+    }
   }
 
   private void applyCommitted() {
@@ -115,8 +131,26 @@ final class SystemPartitionStateMachine extends Actor {
       keyValueStore.apply(entry.data());
       appliedPosition = entry.highestPosition();
     }
+    if (!replayed.isDone() && appliedPosition >= replayEndPosition) {
+      replayed.complete(null);
+    }
     final var reached = appliedWaiters.headMap(appliedPosition, true);
     reached.values().forEach(waiters -> waiters.forEach(w -> w.complete(null)));
     reached.clear();
+  }
+
+  /** Returns the position of the last committed entry in the log, or 0 if none. */
+  private long lastCommittedPosition() {
+    try (final var committedReader = raftPartition.getServer().openReader()) {
+      committedReader.seekToAsqn(Long.MAX_VALUE);
+      long lastPosition = 0;
+      while (committedReader.hasNext()) {
+        final var entry = committedReader.next();
+        if (entry.isApplicationEntry()) {
+          lastPosition = entry.getApplicationEntry().highestPosition();
+        }
+      }
+      return lastPosition;
+    }
   }
 }
