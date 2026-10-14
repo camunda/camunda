@@ -148,8 +148,8 @@ class ZeebeAgentInstanceImportIT extends AbstractBrokerlessZeebeCCSMIT {
         .satisfies(
             pi -> {
               final AgentInstanceDto.AgentMetricsDto m = pi.getAgentInstances().get(0).getMetrics();
-              assertThat(m.getCacheReadTokens()).isEqualTo(4000L);
-              assertThat(m.getCacheCreationTokens()).isEqualTo(300L);
+              assertThat(m.getCacheReadTokenCount()).isEqualTo(4000L);
+              assertThat(m.getCacheCreationTokenCount()).isEqualTo(300L);
               assertThat(pi.getAgentTotalInputTokens()).isEqualTo(512L);
               assertThat(pi.getAgentTotalOutputTokens()).isEqualTo(128L);
               assertThat(pi.getAgentTotalTokens()).isEqualTo(512L + 4000L + 300L + 128L);

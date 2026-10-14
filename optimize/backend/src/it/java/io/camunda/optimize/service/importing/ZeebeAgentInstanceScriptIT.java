@@ -255,8 +255,8 @@ class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
     updatedAgent.setStatus("THINKING");
     updatedAgent.setLastUpdatedDate(OffsetDateTime.parse("2024-01-01T10:00:03+00:00"));
     final AgentMetricsDto metrics = metrics();
-    metrics.setCacheReadTokens(1000L);
-    metrics.setCacheCreationTokens(50L);
+    metrics.setCacheReadTokenCount(1000L);
+    metrics.setCacheCreationTokenCount(50L);
     updatedAgent.setMetrics(metrics);
     updated.setAgentInstances(List.of(updatedAgent));
     importProcessInstances(List.of(updated));
@@ -267,8 +267,8 @@ class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
         .satisfies(
             saved -> {
               final AgentMetricsDto savedMetrics = saved.getAgentInstances().get(0).getMetrics();
-              assertThat(savedMetrics.getCacheReadTokens()).isEqualTo(1000L);
-              assertThat(savedMetrics.getCacheCreationTokens()).isEqualTo(50L);
+              assertThat(savedMetrics.getCacheReadTokenCount()).isEqualTo(1000L);
+              assertThat(savedMetrics.getCacheCreationTokenCount()).isEqualTo(50L);
               assertThat(saved.getAgentTotalInputTokens()).isEqualTo(100L);
               assertThat(saved.getAgentTotalOutputTokens()).isEqualTo(200L);
               assertThat(saved.getAgentTotalTokens()).isEqualTo(100L + 1000L + 50L + 200L);
@@ -288,8 +288,8 @@ class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
     final AgentInstanceDto siblingAgent = createdAgent(AGENT_ID_2);
     siblingAgent.setStatus("THINKING");
     final AgentMetricsDto siblingMetrics = metrics();
-    siblingMetrics.setCacheReadTokens(1000L);
-    siblingMetrics.setCacheCreationTokens(50L);
+    siblingMetrics.setCacheReadTokenCount(1000L);
+    siblingMetrics.setCacheCreationTokenCount(50L);
     siblingAgent.setMetrics(siblingMetrics);
     sibling.setAgentInstances(List.of(siblingAgent));
     importProcessInstances(List.of(sibling));
@@ -459,7 +459,7 @@ class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
       if (m != null) {
         totalInput += m.getInputTokens();
         totalOutput += m.getOutputTokens();
-        totalCache += m.getCacheReadTokens() + m.getCacheCreationTokens();
+        totalCache += m.getCacheReadTokenCount() + m.getCacheCreationTokenCount();
         totalModel += m.getModelCalls();
         totalTool += m.getToolCalls();
       }
@@ -480,7 +480,7 @@ class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
         .forEach(
             agent ->
                 ((ObjectNode) agent.path("metrics"))
-                    .remove(List.of("cacheReadTokens", "cacheCreationTokens")));
+                    .remove(List.of("cacheReadTokenCount", "cacheCreationTokenCount")));
     databaseIntegrationTestExtension.addEntryWithRawIndex(
         databaseIntegrationTestExtension
             .getIndexNameService()
