@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
+import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -129,7 +130,7 @@ public final class ExporterRule implements TestRule {
       final Function<RecordExporter, RecordExporter> recordExporter) {
     final var stream = streams.getLogStream(STREAM_NAME);
     final var runtimeFolder = streams.createRuntimeFolder(stream);
-    capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile(), false));
+    capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile(), CloseMode.FLUSH));
 
     final var descriptorsWithInitializationInfo =
         exporterDescriptors.stream()

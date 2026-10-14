@@ -18,10 +18,17 @@ import java.io.File;
  */
 public interface ZeebeDbFactory<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue> {
 
-  ZeebeDb<ColumnFamilyNames> createDb(final File pathName, final boolean avoidFlush);
-
   /**
    * Creates a zeebe database in the given directory.
+   *
+   * @param pathName the path where the database should be created
+   * @param closeMode how much work the database may do when it is closed
+   * @return the created zeebe database
+   */
+  ZeebeDb<ColumnFamilyNames> createDb(final File pathName, final CloseMode closeMode);
+
+  /**
+   * Creates a zeebe database in the given directory, closing it with {@link CloseMode#FAST}.
    *
    * @param pathName the path where the database should be created
    * @return the created zeebe database
