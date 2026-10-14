@@ -324,6 +324,26 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  public void shouldRejectVariableOperationWithScopeOfOtherProcessInstance() throws Exception {
+    // given
+    final long instanceA = startDemoProcessInstance();
+    final long instanceB = startDemoProcessInstance();
+    final CreateOperationRequestDto request =
+        new CreateOperationRequestDto(OperationType.ADD_VARIABLE)
+            .setVariableName("injected")
+            .setVariableValue("\"value\"")
+            .setVariableScopeId(String.valueOf(instanceB));
+
+    // when the operation is created for instance A with a scope of instance B
+    postOperation(instanceA, request, 400);
+    executeOneBatch();
+
+    // then the other instance has no such variable
+    final List<VariableDto> variablesOfB = getVariables(instanceB, instanceB);
+    assertThat(variablesOfB).extracting(VariableDto::getName).doesNotContain("injected");
+  }
+
+  @Test
   public void testUpdateVariableOnProcessInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
