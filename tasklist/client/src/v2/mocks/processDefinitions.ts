@@ -27,6 +27,7 @@ function getProcessDefinitionMock(
     resourceName: `process${id}.bpmn`,
     versionTag: `v1`,
     hasStartForm: false,
+    state: 'ACTIVE',
     ...customFields,
   };
 }
