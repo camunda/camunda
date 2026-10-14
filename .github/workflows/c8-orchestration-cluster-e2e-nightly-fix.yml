@@ -160,6 +160,58 @@ jobs:
           owner: camunda
           repositories: camunda
 
+      # The ownership-routing runbook lives in camunda/eng-kit-memory. A missing
+      # runbook must not stop the fix agent, so these steps may fail; the agent
+      # then routes with .codeowners only and the job summary says so.
+      - name: Generate eng-kit-memory read token
+        id: memory-token
+        continue-on-error: true
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: eng-kit-memory
+          read-only: true
+
+      # Before the global insteadOf rewrite below, which would send the camunda-only
+      # token for this repository too.
+      - name: Check out the ownership-routing runbook
+        id: memory
+        if: steps.memory-token.outcome == 'success'
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: camunda/eng-kit-memory
+          token: ${{ steps.memory-token.outputs.token }}
+          path: eng-kit-memory
+          persist-credentials: false
+          sparse-checkout: |
+            skills
+            memory/teams
+
+      - name: Record the routing runbook version
+        id: routing
+        env:
+          MEMORY_OUTCOME: ${{ steps.memory.outcome }}
+        run: |
+          set -euo pipefail
+          if [ "$MEMORY_OUTCOME" = "success" ]; then
+            {
+              echo "dir=${GITHUB_WORKSPACE}/eng-kit-memory"
+              echo "sha=$(git -C eng-kit-memory rev-parse HEAD)"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::camunda/eng-kit-memory could not be read, so the fix agent routes with .codeowners only"
+            { echo "dir="; echo "sha="; } >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Configure git with GitHub App token
         env:
           TOKEN: ${{ steps.github-token.outputs.token }}
@@ -228,6 +280,9 @@ jobs:
           # uses for the same reason.
           git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md \
             > /tmp/nightly-fix-agent-manual.md
+          # Ownership routing reads main's .codeowners for the same reason: a stable
+          # branch can predate the current owners of the test areas.
+          git show origin/main:.codeowners > /tmp/nightly-fix-agent-codeowners
 
       - name: Create workspace
         run: |
@@ -280,6 +335,8 @@ jobs:
           REPO:                ${{ github.repository }}
           WORKSPACE_NAME:      ${{ steps.ws.outputs.name }}
           JOB_START_EPOCH:     ${{ steps.job_start.outputs.epoch }}
+          ROUTING_RUNBOOK_DIR: ${{ steps.routing.outputs.dir }}
+          ROUTING_RUNBOOK_SHA: ${{ steps.routing.outputs.sha }}
           # Minutes from JOB start (not from this step's own start) at which the
           # agent should self-stop, comfortably under the job's 100-minute
           # timeout-minutes above -- keep these two numbers' 15-minute gap in
@@ -382,6 +439,15 @@ jobs:
           for flakiness or any other reason. Use the default GH_TOKEN (qa-processes) to file/search
           issues FIRST; ONLY if a call fails (e.g. a repo other than camunda/camunda) retry it once
           with GH_TOKEN="\$GH_PAT". Always qa-processes first; the PAT is a backup.
+
+          OWNERSHIP ROUTING: name the owning team of every root-cause group as the "### Ownership routing"
+          section of the manual describes. Main's .codeowners is at /tmp/nightly-fix-agent-codeowners.
+          $(if [ -n "$ROUTING_RUNBOOK_DIR" ]; then
+            echo "The routing runbook is checked out read-only at ${ROUTING_RUNBOOK_DIR}"
+            echo "(camunda/eng-kit-memory at ${ROUTING_RUNBOOK_SHA}). Never write to it."
+          else
+            echo "The routing runbook is not available in this run: route with .codeowners only, as that section says."
+          fi)
 
           When done (or if no fix is possible), write /tmp/fix-meta.json and stop.
           EOF
@@ -540,6 +606,7 @@ jobs:
           TARGET_REF:     ${{ steps.target.outputs.ref }}
           TRIAGE_RUN_URL: ${{ github.event.inputs.triage_run_url }}
           REPO:           ${{ github.repository }}
+          ROUTING_RUNBOOK_SHA: ${{ steps.routing.outputs.sha }}
         run: |
           set -euo pipefail
           {
@@ -642,6 +709,32 @@ jobs:
                   + (if (.root_cause // "") != "" then "\n  - \(.root_cause)" else "" end)' \
                   /tmp/fix-meta.json || true
               fi
+            fi
+
+            # The owning team of each root-cause group, from the routing runbook.
+            echo ""
+            echo "### :compass: Ownership routing"
+            echo ""
+            if [ -z "${ROUTING_RUNBOOK_SHA:-}" ]; then
+              echo "Runbook: not available (camunda/eng-kit-memory could not be read), so only \`.codeowners\` was used."
+            else
+              echo "Runbook: camunda/eng-kit-memory@${ROUTING_RUNBOOK_SHA}"
+            fi
+            echo ""
+            if [ "$(jq '.routing // [] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)" -eq 0 ]; then
+              echo "The agent recorded no routing."
+            else
+              jq -r '.routing[] |
+                (if (.team // "") != ""
+                   then "- **\(.team)** (`\(.github_handle // "")`), \(.tier // "tier?")"
+                   else "- **Unresolved**, \(.tier // "tier?")"
+                     + (if ((.candidates // []) | length) > 0 then ", candidates: \(.candidates | join(", "))" else "" end) end)
+                + (if ((.tests // []) | length) > 0 then "\n  - Tests: \(.tests | join("; "))"
+                   else "\n  - Job: \(.job // "?")" end)
+                + ((.reasoning // []) | map("\n  - \(.)") | join(""))
+                + (if ((.sources // []) | length) > 0 then "\n  - Sources: \(.sources | join("; "))" else "" end)
+                + (if ((.gaps // []) | length) > 0 then "\n  - Gaps: \(.gaps | join("; "))" else "" end)' \
+                /tmp/fix-meta.json || true
             fi
 
             if [ -n "${TRIAGE_RUN_URL:-}" ]; then
@@ -773,6 +866,19 @@ jobs:
           # itself doesn't record which, so don't assert a specific cause.
           if [ "$unaddressed_count" -gt 0 ]; then
             summary="${summary}"$'\n'"• :hourglass_flowing_sand: ${unaddressed_count} test(s) not triaged — see job summary"
+          fi
+
+          # Team names only: this names the owner, it does not notify them.
+          if [ -f /tmp/fix-meta.json ]; then
+            while IFS= read -r route; do
+              [ -n "$route" ] && summary="${summary}"$'\n'"${route}"
+            done < <(jq -r '.routing // [] | .[] |
+              "• :compass: " +
+              (if (.team // "") != "" then "owner: *\(.team)* (\(.tier // "tier?"))"
+               else "owner unresolved (\(.tier // "tier?"))"
+                 + (if ((.candidates // []) | length) > 0 then ", candidates: \(.candidates | join(", "))" else "" end) end)
+              + (if ((.tests // []) | length) > 0 then " — \(.tests | length) test(s)"
+                 else " — job \(.job // "?")" end)' /tmp/fix-meta.json 2>/dev/null || true)
           fi
 
           text="${icon} *${VERSION}* fix agent — ${summary}"$'\n'"<${RUN_URL}|Agent run ↗>"
