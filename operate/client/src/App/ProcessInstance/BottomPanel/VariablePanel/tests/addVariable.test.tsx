@@ -17,6 +17,8 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockvariables} from './index.setup';
 import {VariablePanel} from '../index';
+import {http, HttpResponse} from 'msw';
+import {mockServer} from 'modules/mock-server/node';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementInstances/updateElementInstanceVariables';
 
@@ -620,16 +622,26 @@ describe('Add variable', () => {
     mockUpdateElementInstanceVariables(':1').withDelay(
       null as unknown as never,
     );
-    mockSearchVariables().withSuccess({
-      items: [
-        createVariable({
-          name: 'largeVariable',
-          value: '"truncated-preview"',
-          isTruncated: true,
-        }),
-      ],
-      page: {totalItems: 1},
-    });
+    const searchRequestBodies: unknown[] = [];
+    mockServer.use(
+      http.post(
+        '/v2/variables/search',
+        async ({request}) => {
+          searchRequestBodies.push(await request.json());
+          return HttpResponse.json({
+            items: [
+              createVariable({
+                name: 'largeVariable',
+                value: '"truncated-preview"',
+                isTruncated: true,
+              }),
+            ],
+            page: {totalItems: 1},
+          });
+        },
+        {once: true},
+      ),
+    );
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     await user.click(screen.getByRole('button', {name: /save/i}));
@@ -641,5 +653,10 @@ describe('Add variable', () => {
         isDismissable: true,
       });
     });
+
+    expect(searchRequestBodies[0]).toMatchObject({
+      filter: {name: 'largeVariable'},
+    });
+    expect(searchRequestBodies[0]).not.toHaveProperty('filter.value');
   });
 });

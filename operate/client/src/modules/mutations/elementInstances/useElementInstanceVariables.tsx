@@ -52,6 +52,7 @@ function useElementInstanceVariables(
           },
           retry: true,
           retryDelay: 1000,
+          staleTime: 0,
         });
       } else {
         await queryClient.fetchQuery({
