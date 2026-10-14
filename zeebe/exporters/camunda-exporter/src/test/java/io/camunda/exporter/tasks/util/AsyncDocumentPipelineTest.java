@@ -373,6 +373,31 @@ class AsyncDocumentPipelineTest {
   }
 
   @Test
+  void shouldFailWhenEncounteringExceptionWithCauseLoop() {
+    final BatchSupplier<Integer, Integer> batchSupplier = mock(BatchSupplier.class);
+    final var exception1 = mock(RuntimeException.class);
+    final var exception2 = mock(RuntimeException.class);
+    when(exception1.getCause()).thenReturn(exception2);
+    when(exception2.getCause()).thenReturn(exception1);
+
+    when(batchSupplier.supply(any(), anyInt())).thenThrow(exception1);
+
+    final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+
+    final var builder =
+        AsyncDocumentPipeline.builder(batchSupplier, batchProcessor, Runnable::run)
+            .minBatchSize(1)
+            .batchSize(3)
+            .maxRetryAttempts(2);
+
+    final var future = builder.buildAndExecute();
+    assertThat(future).failsWithin(Duration.ofSeconds(5));
+
+    verify(batchSupplier).supply(any(), anyInt());
+    verifyNoInteractions(batchProcessor);
+  }
+
+  @Test
   void shouldReduceBatchSizeAndRetryIfSocketTimeoutExceptionOccurs() {
     final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
 
