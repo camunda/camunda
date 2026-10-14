@@ -13,9 +13,11 @@ import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -141,6 +143,22 @@ public class BusinessValueTargetRepositoryES implements BusinessValueTargetRepos
               targets.size()));
     }
     return targets;
+  }
+
+  @Override
+  public void deleteByIds(final List<String> documentIds) {
+    if (documentIds == null || documentIds.isEmpty()) {
+      return;
+    }
+    final String index = esClient.addPrefixesToIndices(BUSINESS_VALUE_TARGET_INDEX_NAME).get(0);
+    final BulkRequest bulkRequest =
+        BulkRequest.of(
+            b ->
+                b.operations(
+                    documentIds.stream()
+                        .map(id -> BulkOperation.of(o -> o.delete(d -> d.id(id).index(index))))
+                        .toList()));
+    esClient.doBulkRequest(bulkRequest, BUSINESS_VALUE_TARGET_INDEX_NAME, false);
   }
 
   @Override

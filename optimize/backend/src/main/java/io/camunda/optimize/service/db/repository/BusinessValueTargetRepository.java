@@ -34,6 +34,17 @@ public interface BusinessValueTargetRepository {
    */
   List<BusinessValueTargetDto> readByTenants(Collection<String> tenantIds);
 
+  /**
+   * Deletes the target documents with the given ids in a single bulk request, as built by {@link
+   * #documentId(String, String)}. A null or empty collection issues no request, matching {@code
+   * bulkUpsert}.
+   *
+   * <p>The list is expected to be bounded by the caller — {@link #scanAll()} already caps what any
+   * reconciliation pass can hand over — so no chunking happens here, mirroring {@code
+   * ProcessInstanceRepository#deleteByIds}.
+   */
+  void deleteByIds(List<String> documentIds);
+
   static String documentId(final String tenantId, final String processDefinitionKey) {
     if (StringUtils.isBlank(tenantId)) {
       throw new IllegalArgumentException(
