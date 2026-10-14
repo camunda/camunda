@@ -35,12 +35,25 @@ bpmn() {
 
 # rest_deploy <tenant or ""> <token>: deploys a process over REST and prints the HTTP status.
 rest_deploy() {
-  local prefix="" id file
+  local prefix=""
   [ -n "$1" ] && prefix="/physical-tenants/$1"
-  id="rest_${1:-default}_$RANDOM"
+  rest_deploy_path "$prefix" "$2"
+}
+
+# rest_deploy_path <path prefix> <token>: like rest_deploy, with the path prefix sent as written.
+rest_deploy_path() {
+  local id file
+  id="rest_$RANDOM"
   file="$(bpmn "$id")"
-  curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $2" \
-    -F "resources=@$file;filename=$id.bpmn" "$CAMUNDA$prefix/v2/deployments"
+  curl -s -o /dev/null -w '%{http_code}' --path-as-is -H "Authorization: Bearer $2" \
+    -F "resources=@$file;filename=$id.bpmn" "$CAMUNDA$1/v2/deployments"
+}
+
+# rest_topology_path <path prefix> <token>: reads the topology, with the path prefix sent as
+# written, and prints the HTTP status. Any authenticated principal may read it.
+rest_topology_path() {
+  curl -s -o /dev/null -w '%{http_code}' --path-as-is -H "Authorization: Bearer $2" \
+    "$CAMUNDA$1/v2/topology"
 }
 
 # grpc_deploy <tenant or ""> <token>: deploys a process over gRPC and prints the gRPC status.

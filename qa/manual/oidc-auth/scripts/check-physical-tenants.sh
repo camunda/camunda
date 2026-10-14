@@ -31,4 +31,10 @@ expect "tenantb: idp-a token rejected over gRPC" Unauthenticated "$(grpc_deploy 
 expect "tenantb: idp-root token rejected over REST" 401 "$(rest_deploy tenantb "$root")"
 expect "tenantb: idp-root token rejected over gRPC" Unauthenticated "$(grpc_deploy tenantb "$root")"
 
+echo
+echo "Scenario 3: a tenant token does not reach the default tenant through an encoded path"
+expect "default: idp-b token rejected (topology)" 401 "$(rest_topology_path "" "$b")"
+expect "default: idp-b token on /%70hysical-tenants/tenantb rejected (topology)" 400 "$(rest_topology_path "/%70hysical-tenants/tenantb" "$b")"
+expect "default: idp-b token on /%70hysical-tenants/tenantb rejected (deploy)" 400 "$(rest_deploy_path "/%70hysical-tenants/tenantb" "$b")"
+
 finish

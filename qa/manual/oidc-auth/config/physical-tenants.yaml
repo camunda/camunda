@@ -1,7 +1,6 @@
 # Scenarios 2 and 3: physical tenants with separate IdPs.
 #
-# - default: its default slot uses idp-root. It also sees the named providers partnera and
-#   partnerb.
+# - default: is assigned only its own default slot, which uses idp-root.
 # - tenanta: is assigned only partnera (idp-a). It overrides the username and client-id claims in
 #   its own default slot, which partnera must inherit.
 # - tenantb: is assigned only its own default slot, which uses idp-b and its own claims. The
@@ -46,6 +45,12 @@ camunda:
           users: [alice]
           clients: [idp-root-m2m]
   physical-tenants:
+    default:
+      security:
+        authentication:
+          providers:
+            # only idp-root: tokens of idp-a and idp-b must not reach this tenant
+            assigned: [oidc]
     tenanta:
       data:
         secondary-storage:

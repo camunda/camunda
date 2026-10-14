@@ -92,11 +92,11 @@ Manual checks:
 
 Config: [`config/physical-tenants.yaml`](config/physical-tenants.yaml).
 
-|  Tenant   |                      Login                      |                             Claims                             | Expected username |
-|-----------|-------------------------------------------------|----------------------------------------------------------------|-------------------|
-| `default` | `oidc` (`idp-root`), and `partnera`, `partnerb` | `preferred_username`, `client_id`                              | `alice`           |
-| `tenanta` | only `partnera` (`idp-a`)                       | from the tenant's default slot: `tenant_user`, `tenant_client` | `idp-a-alice`     |
-| `tenantb` | only its own `oidc` slot (`idp-b`)              | `tenant_user`, `tenant_client`                                 | `idp-b-alice`     |
+|  Tenant   |                 Login                 |                             Claims                             | Expected username |
+|-----------|---------------------------------------|----------------------------------------------------------------|-------------------|
+| `default` | only its own `oidc` slot (`idp-root`) | `preferred_username`, `client_id`                              | `alice`           |
+| `tenanta` | only `partnera` (`idp-a`)             | from the tenant's default slot: `tenant_user`, `tenant_client` | `idp-a-alice`     |
+| `tenantb` | only its own `oidc` slot (`idp-b`)    | `tenant_user`, `tenant_client`                                 | `idp-b-alice`     |
 
 1. Run `./scripts/check-physical-tenants.sh`. The scenario 2 checks must pass.
 2. Log in with a browser on each tenant and open Operate and Tasklist:
@@ -118,16 +118,34 @@ Manual checks:
   logged in on `tenantb`.
 - Real client: use the Java client (`physicalTenantId`) or `c8ctl` on `tenanta` with `idp-a-m2m`
   and on `tenantb` with `idp-b-m2m`. Deploy and start a process over gRPC and over REST.
+- A tenant that changes its IdP needs its own secret
+  ([#65517](https://github.com/camunda/camunda/pull/65517)): remove the `client-secret` of
+  `tenantb` from `config/physical-tenants.yaml` and start again. Camunda does not start, and the
+  log says: "A physical tenant that changes 'issuer-uri' or 'token-uri' of a cluster OIDC provider
+  must set its own 'client-secret'". On 8.10.3, Camunda starts and sends the secret of `idp-root`
+  to `idp-b`.
 
-## Scenario 3: a tenant rejects tokens from IdPs that it does not assign ([#65501](https://github.com/camunda/camunda/issues/65501))
+## Scenario 3: a tenant rejects tokens from IdPs that it does not assign ([#65501](https://github.com/camunda/camunda/issues/65501), [#65527](https://github.com/camunda/camunda/pull/65527))
 
 Same config as scenario 2. Run `./scripts/check-physical-tenants.sh`. The scenario 3 checks send
-tokens from `idp-b` and `idp-root` to `tenanta`, and from `idp-a` and `idp-root` to `tenantb`.
+tokens from `idp-b` and `idp-root` to `tenanta`, from `idp-a` and `idp-root` to `tenantb`, and
+from `idp-b` to `default`.
 
 |      |      8.10.4       |                                            8.10.3                                             |
 |------|-------------------|-----------------------------------------------------------------------------------------------|
 | REST | 401               | 401                                                                                           |
 | gRPC | `Unauthenticated` | `PermissionDenied`: the token passes authentication, and only the missing permissions stop it |
+
+The last checks send the `idp-b` token to `default` through the percent-encoded path
+`/%70hysical-tenants/tenantb/...`. On 8.10.3, the security chain of `tenantb` accepts the token,
+but the request runs on `default`: the topology returns 200, and a deployment returns 403 only
+because the principal has no permissions there. On 8.10.4, both return 400.
+
+|                                                | 8.10.4 | 8.10.3 |
+|------------------------------------------------|--------|--------|
+| `default`, `idp-b` token, topology             | 401    | 401    |
+| `default` through the encoded path, topology   | 400    | 200    |
+| `default` through the encoded path, deployment | 400    | 403    |
 
 Manual checks:
 
