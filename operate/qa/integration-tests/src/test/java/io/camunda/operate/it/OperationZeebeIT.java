@@ -336,11 +336,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // when the operation is created for instance A with a scope of instance B
     postOperation(instanceA, request, 400);
-    executeOneBatch();
+    searchTestRule.refreshSerchIndexes();
 
-    // then the other instance has no such variable
-    final List<VariableDto> variablesOfB = getVariables(instanceB, instanceB);
-    assertThat(variablesOfB).extracting(VariableDto::getName).doesNotContain("injected");
+    // then no operation is created for instance A
+    assertThat(operationReader.getOperationsByProcessInstanceKey(instanceA)).isEmpty();
   }
 
   @Test
