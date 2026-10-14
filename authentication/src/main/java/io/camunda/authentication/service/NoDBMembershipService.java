@@ -7,13 +7,13 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.oidc.OidcClaimExtractor;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,13 +25,11 @@ import org.springframework.stereotype.Service;
 @ConditionalOnSecondaryStorageDisabled
 public class NoDBMembershipService implements MembershipPort {
 
-  private final OidcGroupsExtractor oidcGroupsExtractor;
-  private final boolean isGroupsClaimConfigured;
+  private final PhysicalTenantGroupsClaims groupsClaims;
 
-  public NoDBMembershipService(final CamundaSecurityLibraryProperties cslProperties) {
-    oidcGroupsExtractor =
-        new OidcGroupsExtractor(cslProperties.getAuthentication().getOidc().getGroupsClaim());
-    isGroupsClaimConfigured = cslProperties.getAuthentication().getOidc().isGroupsClaimConfigured();
+  public NoDBMembershipService(
+      final CamundaSecurityLibraryProperties cslProperties, final Environment environment) {
+    groupsClaims = new PhysicalTenantGroupsClaims(cslProperties, environment);
   }
 
   @Override
@@ -41,11 +39,12 @@ public class NoDBMembershipService implements MembershipPort {
 
   @Override
   public List<String> groupIds(final MembershipQuery query) {
-    if (!isGroupsClaimConfigured) {
+    final var tenantGroupsClaims = groupsClaims.current();
+    if (!tenantGroupsClaims.groupsClaimConfigured()) {
       return List.of();
     }
     return OidcClaimExtractor.extractOrFallback(
-            () -> oidcGroupsExtractor.extract(query.tokenClaims()),
+            () -> tenantGroupsClaims.extract(query.tokenClaims()),
             List.<String>of(),
             "membership.groupIds.noDb")
         .stream()
