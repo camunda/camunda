@@ -938,14 +938,15 @@ jobs:
               if [ -n "$reopen_pick_out" ]; then
                 cand_n=$(printf '%s' "$reopen_pick_out" | cut -f1)
                 cand_branch=$(printf '%s' "$reopen_pick_out" | cut -f2)
-                cand_rc=$(printf '%s' "$reopen_pick_out" | cut -f3)
+                cand_sha=$(printf '%s' "$reopen_pick_out" | cut -f3)
+                cand_rc=$(printf '%s' "$reopen_pick_out" | cut -f4)
                 reopen_body=$(printf '%s\n\n%s\n%s\n%s\n\n%s' \
                   "Reopened by the C8 Orchestration Cluster nightly triage — \`${version}\` is still failing on spec file(s) this PR already touches, so the fix agent appends here instead of opening a duplicate." \
                   "- Triage run: ${TRIAGE_RUN_URL:-n/a}" \
                   "- Dispatched into this PR: $(echo "$specs" | jq 'length') failure(s)" \
                   "- Reopen $((cand_rc + 1)) of ${REOPEN_CAP}" \
                   "<!-- triage-reopened version=${version} triage_run=${TRIAGE_RUN_URL:-} -->")
-                if reopen_commit "$cand_n" "$reopen_body"; then
+                if reopen_commit "$cand_n" "$cand_branch" "$cand_sha" "$reopen_body"; then
                   reopened_rows+=("${version}: reopened #${cand_n} (${cand_branch})")
                   echo "Reopened PR #${cand_n} (${cand_branch}) for ${version}"
                 else
