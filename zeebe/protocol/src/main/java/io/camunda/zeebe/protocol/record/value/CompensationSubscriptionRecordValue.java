@@ -22,7 +22,8 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableCompensationSubscriptionRecordValue.Builder.class)
-public interface CompensationSubscriptionRecordValue extends RecordValueWithVariables, TenantOwned {
+public interface CompensationSubscriptionRecordValue
+    extends RecordValueWithVariables, TenantOwned, StorageOrdinalRelated {
 
   /**
    * @return the key of the process instance
