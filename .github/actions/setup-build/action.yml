@@ -161,11 +161,17 @@ runs:
     if: >-
       steps.checks.outputs.is-fork != 'true' &&
       inputs.minimus == 'true'
-    uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_PASSWORD: ${{ fromJSON(steps.secrets.outputs.secrets).minimus-token }}
     with:
-      registry: reg.mini.dev
-      username: minimus
-      password: ${{ fromJSON(steps.secrets.outputs.secrets).minimus-token }}
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        printf '%s' "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
+          --username minimus --password-stdin
   - name: Setup Java
     # Retries setup-java through transient network/setup failures (INC-7417). The pin for
     # setup-java itself lives in that action, not here.
