@@ -504,6 +504,24 @@ jobs:
 
           Branch name to use: fix/nightly-${VERSION}-<short-slug> for test fixes,
           ci/<short-slug> for workflow-level fixes.
+
+          REUSE AN OPEN PR FOR THIS VERSION IF ONE EXISTS. Before cutting a branch, run
+          \`gh pr list --repo ${REPO} --label "failing-test-fix" --state open --json number,headRefName\`
+          and look for one whose \`headRefName\` STARTS WITH \`fix/nightly-${VERSION}-\`. The prefix
+          test is not optional: a branch for another version, or a \`ci/\` branch, is not yours to
+          push to.
+            - If one exists: \`git fetch origin <branch> && git checkout <branch>\`, then
+              \`git fetch origin main && git merge --no-edit origin/main\` — triage may have REOPENED
+              a PR opened on an earlier night, so its branch can be behind main. If that merge
+              conflicts and you cannot resolve it confidently within the scope of this fix, do NOT
+              force it: \`git merge --abort\`, say so in your summary, and cut a new branch instead.
+              Read the branch's own diff before re-fixing anything — it may already address one of
+              the failures you were dispatched for. Apply your fixes there, push, and do NOT open a
+              second PR; put that PR's number in /tmp/fix-meta.json.
+            - Otherwise: cut a new branch as named above.
+          Opening a second PR for a version that already has one is the duplication this check
+          exists to prevent — two PRs editing the same specs from the same base, neither aware of
+          the other.
           Commit + PR title prefix: 'test:' for test-only changes, 'ci:' for workflow-only
           changes, 'fix:' for other code changes (NEVER 'fix:' for test-only changes —
           commitlint rejects it).
