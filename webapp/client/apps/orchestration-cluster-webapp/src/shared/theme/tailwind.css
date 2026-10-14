@@ -25,6 +25,12 @@
 @source inline("[&_[data-slot=table-row]]:border-b-[var(--border)]");
 
 /*
+ * Same scanner limitation for the selected-row highlight in the DS SortableTable
+ * (nested `:has()` + attribute selector).
+ */
+@source inline("[&_tbody_tr:has([aria-checked=true])]:bg-[var(--accent-background-subtle)]");
+
+/*
  * Same scanner limitation for the compound arbitrary-variant candidates that
  * strip the DS DataTable's rounded border in Decisions' InstancesTable.tsx;
  * important is needed because the DS stylesheet's rounded-xl is unlayered.

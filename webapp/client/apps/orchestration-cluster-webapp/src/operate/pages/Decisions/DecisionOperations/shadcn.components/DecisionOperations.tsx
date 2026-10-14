@@ -10,13 +10,12 @@ import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useIsMutating, useMutation, useQueryClient} from '@tanstack/react-query';
 import {useRouter} from '@tanstack/react-router';
-import {Link} from '@camunda/design-system';
+import {DataTable, Link} from '@camunda/design-system';
 import {LoaderCircle} from '@camunda/design-system/icons';
 import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DangerButton} from '#/operate/shared/OperationItem/shadcn.components/DangerButton';
 import {OperationItems} from '#/operate/shared/OperationItems/shadcn.components/OperationItems';
 import {DeleteDefinitionModal} from '#/operate/shared/DeleteDefinitionModal/shadcn.components/DeleteDefinitionModal';
-import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {request, type RequestError} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
@@ -129,15 +128,10 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 					</div>
 				}
 				bodyContent={
-					<StructuredList
-						label={t('operate.decisions.definitionDeletion.details')}
-						headerColumns={[{cellContent: t('operate.decisions.definitionDeletion.drdName')}]}
-						rows={[
-							{
-								key: definition.decisionRequirementsKey,
-								columns: [{cellContent: definition.decisionRequirementsName ?? definition.decisionRequirementsId}],
-							},
-						]}
+					<DataTable
+						aria-label={t('operate.decisions.definitionDeletion.details')}
+						columns={[{id: 'drdName', header: t('operate.decisions.definitionDeletion.drdName'), accessorKey: 'name'}]}
+						data={[{name: definition.decisionRequirementsName || definition.decisionRequirementsId}]}
 					/>
 				}
 				onClose={() => setIsDeleteModalVisible(false)}

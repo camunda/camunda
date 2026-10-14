@@ -77,6 +77,12 @@ describe('<DecisionOperations />', () => {
 		await expect.element(screen.getByText('my-drd', {exact: true})).toBeVisible();
 	});
 
+	it('should use the DRD ID when its name is empty', async () => {
+		const screen = await renderOperations(createDecisionDefinition({decisionRequirementsName: ''}));
+		await userEvent.click(screen.getByRole('button', {name: ACTION_NAME}));
+		await expect.element(screen.getByText('my-drd', {exact: true})).toBeVisible();
+	});
+
 	it('should block further deletion while pending, then notify and clear only the deleted selection', async ({
 		worker,
 	}) => {
