@@ -1,0 +1,38 @@
+# Manual test setup for the OIDC and physical tenant auth fixes of 8.10.4. See README.md.
+#
+# Camunda shares the network of the Keycloak container. Thus the browser and Camunda both reach
+# Keycloak on http://localhost:18080, and the issuer in the tokens is the same for both.
+name: oidc-auth
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    container_name: oidc-auth-keycloak
+    command: start-dev --import-realm --http-port=18080
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "18080:18080" # Keycloak
+      - "8080:8080" # Camunda REST API and web apps
+      - "26500:26500" # Camunda gRPC
+      - "9600:9600" # Camunda management
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/18080 && printf 'GET /realms/idp-b HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  camunda:
+    image: camunda/camunda:${CAMUNDA_VERSION:-8.10-SNAPSHOT}
+    container_name: oidc-auth-camunda
+    network_mode: service:keycloak
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/${SCENARIO:-multi-idp}.yaml
+    volumes:
+      - ./config:/config:ro

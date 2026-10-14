@@ -1,0 +1,93 @@
+# Scenarios 2 and 4: physical tenants with separate IdPs.
+#
+# - default: its default slot uses idp-root. It also sees the named providers partnera and
+#   partnerb.
+# - tenanta: is assigned only partnera (idp-a). It overrides the username and client-id claims in
+#   its own default slot, which partnera must inherit.
+# - tenantb: is assigned only its own default slot, which uses idp-b and its own claims. The
+#   registration id "oidc" is the same as on the default tenant, but the issuer is different.
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:mem:default;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+        username: sa
+        password: ""
+  security:
+    authentication:
+      method: oidc
+      unprotected-api: false
+      oidc:
+        issuer-uri: http://localhost:18080/realms/idp-root
+        client-id: camunda-login
+        client-secret: idp-root-login-secret
+        redirect-uri: "{baseUrl}/sso-callback"
+        username-claim: preferred_username
+        client-id-claim: client_id
+      providers:
+        oidc:
+          partnera:
+            issuer-uri: http://localhost:18080/realms/idp-a
+            client-id: camunda-login
+            client-secret: idp-a-login-secret
+            redirect-uri: "{baseUrl}/sso-callback"
+          partnerb:
+            issuer-uri: http://localhost:18080/realms/idp-b
+            client-id: camunda-login
+            client-secret: idp-b-login-secret
+            redirect-uri: "{baseUrl}/sso-callback"
+    authorizations:
+      enabled: true
+    initialization:
+      mapping-rules: []
+      default-roles:
+        admin:
+          users: [alice]
+          clients: [idp-root-m2m]
+  physical-tenants:
+    tenanta:
+      data:
+        secondary-storage:
+          type: rdbms
+          rdbms:
+            url: jdbc:h2:mem:tenanta;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+            username: sa
+            password: ""
+      security:
+        authentication:
+          oidc:
+            username-claim: tenant_user
+            client-id-claim: tenant_client
+          providers:
+            assigned: [partnera]
+        initialization:
+          mapping-rules: []
+          default-roles:
+            admin:
+              users: [idp-a-alice]
+              clients: [idp-a-app]
+    tenantb:
+      data:
+        secondary-storage:
+          type: rdbms
+          rdbms:
+            url: jdbc:h2:mem:tenantb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+            username: sa
+            password: ""
+      security:
+        authentication:
+          oidc:
+            issuer-uri: http://localhost:18080/realms/idp-b
+            client-id: camunda-login
+            client-secret: idp-b-login-secret
+            username-claim: tenant_user
+            client-id-claim: tenant_client
+          providers:
+            assigned: [oidc]
+        initialization:
+          mapping-rules: []
+          default-roles:
+            admin:
+              users: [idp-b-alice]
+              clients: [idp-b-app]
