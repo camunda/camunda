@@ -182,8 +182,8 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
 
 **D6. Suspend walks the element instance tree depth-first (post-order), one element instance per
 command, and emits a user task event for every user task it visits.**
-`SuspensionBatchSuspendElementInstanceProcessor` handles a single command intent,
-`SuspensionBatch.SUSPEND_ELEMENT_INSTANCE`. Its cursor — `elementInstanceKey`, `parentKey`, and
+`ElementInstanceWalkSuspendElementInstanceProcessor` handles a single command intent,
+`ElementInstanceWalk.SUSPEND_ELEMENT_INSTANCE`. Its cursor — `elementInstanceKey`, `parentKey`, and
 `index` — is carried on the command, not persisted in state. For the element instance at
 `elementInstanceKey`, the command descends into the next child after `index` if one exists
 (writing only a follow-up command, no event); otherwise it runs the user-task visitor and writes

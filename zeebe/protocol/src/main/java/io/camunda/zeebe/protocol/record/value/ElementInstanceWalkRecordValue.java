@@ -21,8 +21,8 @@ import org.immutables.value.Value;
 
 /** A persisted continuation of depth-first traversal while a process instance is suspending. */
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableSuspensionBatchRecordValue.Builder.class)
-public interface SuspensionBatchRecordValue extends RecordValue, ProcessInstanceRelated {
+@ImmutableProtocol(builder = ImmutableElementInstanceWalkRecordValue.Builder.class)
+public interface ElementInstanceWalkRecordValue extends RecordValue, ProcessInstanceRelated {
 
   /**
    * @return the element instance to suspend.

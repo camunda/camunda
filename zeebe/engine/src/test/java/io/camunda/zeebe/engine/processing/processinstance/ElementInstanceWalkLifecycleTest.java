@@ -16,12 +16,12 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
-import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordStream;
@@ -34,10 +34,11 @@ import org.junit.Test;
 
 /**
  * Asserts the full record-order lifecycle of the post-order suspension walk ({@link
- * SuspensionBatchSuspendElementInstanceProcessor}), from {@code ProcessInstance.SUSPEND} through
- * {@code ProcessInstance.SUSPENDED}, across the element instance tree shapes the walk must handle.
+ * ElementInstanceWalkSuspendElementInstanceProcessor}), from {@code ProcessInstance.SUSPEND}
+ * through {@code ProcessInstance.SUSPENDED}, across the element instance tree shapes the walk must
+ * handle.
  */
-public final class SuspensionBatchLifecycleTest {
+public final class ElementInstanceWalkLifecycleTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -90,78 +91,81 @@ public final class SuspensionBatchLifecycleTest {
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDING),
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // descend into lower-keyed task
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
+                    .SUSPEND_ELEMENT_INSTANCE), // descend into lower-keyed task
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // lower-keyed task is a leaf
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // lower-keyed task is a leaf
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
             tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // lower-keyed task suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // lower-keyed task suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
                     .SUSPEND_ELEMENT_INSTANCE), // move straight to the higher-keyed task
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
             tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // higher-keyed task suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
+                    .ELEMENT_INSTANCE_SUSPENDED), // higher-keyed task suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // no sibling left, ascend to root
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
+                    .SUSPEND_ELEMENT_INSTANCE), // no sibling left, ascend to root
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDED));
 
     // every SUSPEND_ELEMENT_INSTANCE command and ELEMENT_INSTANCE_SUSPENDED event in the walk
     // shares the key of the first command, which is the process instance key
-    assertThat(suspensionBatchRecordKeys(processInstanceKey))
+    assertThat(elementInstanceWalkRecordKeys(processInstanceKey))
         .describedAs("Expect every walk record to share the process instance key")
         .containsOnly(processInstanceKey);
 
     // the cursor sequence: descend into the lower-keyed task, suspend it, move straight to the
     // other task (no detour back through the root), suspend it, ascend to the root, suspend it
-    final var cursors = suspensionBatchCursors(processInstanceKey);
+    final var cursors = elementInstanceWalkCursors(processInstanceKey);
     assertThat(cursors)
         .containsExactly(
-            tuple(SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE, processInstanceKey, -1L, -1L),
+            tuple(ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE, processInstanceKey, -1L, -1L),
             tuple(
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE,
                 taskKeys.get(0),
                 processInstanceKey,
                 -1L),
             tuple(
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED,
                 taskKeys.get(0),
                 processInstanceKey,
                 -1L),
             tuple(
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE,
                 taskKeys.get(1),
                 processInstanceKey,
                 -1L),
             tuple(
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED,
                 taskKeys.get(1),
                 processInstanceKey,
                 -1L),
             tuple(
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE,
                 processInstanceKey,
                 -1L,
                 taskKeys.get(1)),
             tuple(
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED,
                 processInstanceKey,
                 -1L,
                 taskKeys.get(1)));
@@ -174,7 +178,7 @@ public final class SuspensionBatchLifecycleTest {
                 + " second task directly, not the root")
         .isEqualTo(
             tuple(
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE,
                 taskKeys.get(1),
                 processInstanceKey,
                 -1L));
@@ -213,38 +217,38 @@ public final class SuspensionBatchLifecycleTest {
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDING),
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // descend into sub
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // descend into sub
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // descend into task
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // descend into task
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // task is a leaf
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // task is a leaf
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
             tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // task suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // task suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // continue at sub
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // continue at sub
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // sub suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // sub suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // continue at root
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // continue at root
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDED));
   }
 
@@ -279,50 +283,51 @@ public final class SuspensionBatchLifecycleTest {
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDING),
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // descend into the MI body
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // descend into the MI body
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
                     .SUSPEND_ELEMENT_INSTANCE), // descend into the first inner instance
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // first instance is a leaf
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // first instance is a leaf
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
             tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // first instance suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // first instance suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // move to the second instance
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // move to the second instance
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
             tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // second instance suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // second instance suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
                     .SUSPEND_ELEMENT_INSTANCE), // no sibling left, ascend to the MI body
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // MI body suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // MI body suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // no sibling left, ascend to root
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
+                    .SUSPEND_ELEMENT_INSTANCE), // no sibling left, ascend to root
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDED));
   }
 
@@ -360,54 +365,56 @@ public final class SuspensionBatchLifecycleTest {
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDING),
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // descend into ad-hoc subprocess
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
+                    .SUSPEND_ELEMENT_INSTANCE), // descend into ad-hoc subprocess
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
                     .SUSPEND_ELEMENT_INSTANCE), // descend into the inner instance wrapper
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // descend into the task
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // descend into the task
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // task is a leaf
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // task is a leaf
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
             tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // task suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // task suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
                     .SUSPEND_ELEMENT_INSTANCE), // continue at the inner instance wrapper
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
                     .ELEMENT_INSTANCE_SUSPENDED), // inner instance wrapper suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
                     .SUSPEND_ELEMENT_INSTANCE), // continue at the ad-hoc subprocess
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // ad-hoc subprocess suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
+                    .ELEMENT_INSTANCE_SUSPENDED), // ad-hoc subprocess suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // continue at root
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // continue at root
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDED));
   }
 
@@ -452,24 +459,25 @@ public final class SuspensionBatchLifecycleTest {
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDING),
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // descend into the call activity
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent
+                    .SUSPEND_ELEMENT_INSTANCE), // descend into the call activity
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // call activity is a leaf
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // call activity is a leaf
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // call activity suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // call activity suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // continue at root
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // continue at root
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDED));
   }
 
@@ -503,24 +511,24 @@ public final class SuspensionBatchLifecycleTest {
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDING),
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // descend into the timer
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // descend into the timer
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // timer is a leaf
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // timer is a leaf
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // timer suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // timer suspended
             tuple(
                 RecordType.COMMAND,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE), // continue at root
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE), // continue at root
             tuple(
                 RecordType.EVENT,
-                ValueType.SUSPENSION_BATCH,
-                SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
+                ValueType.ELEMENT_INSTANCE_WALK,
+                ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED), // root suspended
             tuple(RecordType.EVENT, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SUSPENDED));
   }
 
@@ -540,16 +548,16 @@ public final class SuspensionBatchLifecycleTest {
         .toList();
   }
 
-  private static List<Long> suspensionBatchRecordKeys(final long processInstanceKey) {
-    return suspensionBatchRecords(processInstanceKey).map(Record::getKey).toList();
+  private static List<Long> elementInstanceWalkRecordKeys(final long processInstanceKey) {
+    return elementInstanceWalkRecords(processInstanceKey).map(Record::getKey).toList();
   }
 
   /** Returns the (intent, elementInstanceKey, parentKey, index) cursor of each SB record. */
-  private static List<Tuple> suspensionBatchCursors(final long processInstanceKey) {
-    return suspensionBatchRecords(processInstanceKey)
+  private static List<Tuple> elementInstanceWalkCursors(final long processInstanceKey) {
+    return elementInstanceWalkRecords(processInstanceKey)
         .map(
             r -> {
-              final var value = (SuspensionBatchRecordValue) r.getValue();
+              final var value = (ElementInstanceWalkRecordValue) r.getValue();
               return tuple(
                   r.getIntent(),
                   value.getElementInstanceKey(),
@@ -559,17 +567,17 @@ public final class SuspensionBatchLifecycleTest {
         .toList();
   }
 
-  private static RecordStream suspensionBatchRecords(final long processInstanceKey) {
+  private static RecordStream elementInstanceWalkRecords(final long processInstanceKey) {
     return RecordingExporter.records()
         .limit(
             r ->
                 r.getValueType() == ValueType.PROCESS_INSTANCE
                     && r.getIntent() == ProcessInstanceIntent.SUSPENDED
                     && r.getKey() == processInstanceKey)
-        .filter(r -> r.getValueType() == ValueType.SUSPENSION_BATCH)
+        .filter(r -> r.getValueType() == ValueType.ELEMENT_INSTANCE_WALK)
         .filter(
             r ->
-                ((SuspensionBatchRecordValue) r.getValue()).getProcessInstanceKey()
+                ((ElementInstanceWalkRecordValue) r.getValue()).getProcessInstanceKey()
                     == processInstanceKey);
   }
 
@@ -580,8 +588,8 @@ public final class SuspensionBatchLifecycleTest {
               && (record.getIntent() == ProcessInstanceIntent.SUSPEND
                   || record.getIntent() == ProcessInstanceIntent.SUSPENDING
                   || record.getIntent() == ProcessInstanceIntent.SUSPENDED);
-      case SUSPENSION_BATCH ->
-          ((SuspensionBatchRecordValue) record.getValue()).getProcessInstanceKey()
+      case ELEMENT_INSTANCE_WALK ->
+          ((ElementInstanceWalkRecordValue) record.getValue()).getProcessInstanceKey()
               == processInstanceKey;
       case USER_TASK ->
           record.getIntent() == UserTaskIntent.SUSPENDED

@@ -79,6 +79,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -92,7 +93,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -3061,13 +3061,13 @@ final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////// SuspensionBatchRecord
+      //////////////////////////////// ElementInstanceWalkRecord
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "SuspensionBatchRecord",
+        "ElementInstanceWalkRecord",
         (Supplier<UnifiedRecordValue>)
             () ->
-                new SuspensionBatchRecord()
+                new ElementInstanceWalkRecord()
                     .setProcessInstanceKey(123L)
                     .setProcessDefinitionKey(234L)
                     .setElementInstanceKey(456L)
@@ -3086,8 +3086,8 @@ final class JsonSerializableToJsonTest {
                 """
       },
       {
-        "Empty SuspensionBatchRecord",
-        (Supplier<UnifiedRecordValue>) SuspensionBatchRecord::new,
+        "Empty ElementInstanceWalkRecord",
+        (Supplier<UnifiedRecordValue>) ElementInstanceWalkRecord::new,
         """
                 {
                   "processInstanceKey": -1,

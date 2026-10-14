@@ -99,6 +99,7 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.DocumentReferenceValue;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
@@ -140,7 +141,6 @@ import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
-import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -285,7 +285,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_BATCH, this::summarizeProcessInstanceBatch);
-    valueLoggers.put(ValueType.SUSPENSION_BATCH, this::summarizeSuspensionBatch);
+    valueLoggers.put(ValueType.ELEMENT_INSTANCE_WALK, this::summarizeElementInstanceWalk);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
     valueLoggers.put(
         ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
@@ -1098,8 +1098,8 @@ public class CompactRecordLogger {
     return result.append(formatTenant(value)).toString();
   }
 
-  String summarizeSuspensionBatch(final Record<?> record) {
-    final var value = (SuspensionBatchRecordValue) record.getValue();
+  String summarizeElementInstanceWalk(final Record<?> record) {
+    final var value = (ElementInstanceWalkRecordValue) record.getValue();
     return "PI:"
         + shortenKey(value.getProcessInstanceKey())
         + " EI:"

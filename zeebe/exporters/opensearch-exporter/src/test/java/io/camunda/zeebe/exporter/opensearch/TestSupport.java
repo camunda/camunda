@@ -152,7 +152,7 @@ final class TestSupport {
             ValueType.RESOURCE_REEXPORT,
             ValueType.SECRET_REFERENCE,
             ValueType.BUFFERED_COMMAND,
-            ValueType.SUSPENSION_BATCH,
+            ValueType.ELEMENT_INSTANCE_WALK,
             // internal engine-to-engine record, never exported by design
             ValueType.AGENT_HISTORY_BATCH);
     return EnumSet.complementOf(excludedValueTypes).stream();

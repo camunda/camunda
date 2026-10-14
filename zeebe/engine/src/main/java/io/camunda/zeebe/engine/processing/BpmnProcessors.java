@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCrea
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.processinstance.BufferedCommandDrainProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ElementInstanceWalkSuspendElementInstanceProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignProcessor;
@@ -37,7 +38,6 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModific
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeJobsProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspendProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.SuspensionBatchSuspendElementInstanceProcessor;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -66,7 +67,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -234,9 +234,9 @@ public final class BpmnProcessors {
             clock,
             suspensionMetrics));
     typedRecordProcessors.onCommand(
-        ValueType.SUSPENSION_BATCH,
-        SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE,
-        new SuspensionBatchSuspendElementInstanceProcessor(
+        ValueType.ELEMENT_INSTANCE_WALK,
+        ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE,
+        new ElementInstanceWalkSuspendElementInstanceProcessor(
             writers,
             keyGenerator,
             processingState.getElementInstanceState(),

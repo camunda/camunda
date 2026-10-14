@@ -26,12 +26,12 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -115,7 +115,7 @@ public final class ProcessInstanceSuspendProcessor
           processInstance.getKey(), ProcessInstanceIntent.SUSPENDING, value);
     }
     final int suspendedJobCount = closeSubscriptionsAndSuspendJobs(processInstance.getKey());
-    startSuspensionBatch(processInstance.getKey(), value);
+    startElementInstanceWalk(processInstance.getKey(), value);
     responseWriter.writeAcceptedResponseOnCommand(
         processInstance.getKey(), ProcessInstanceIntent.SUSPENDING, value, command);
     if (suspendedJobCount > 0) {
@@ -137,13 +137,13 @@ public final class ProcessInstanceSuspendProcessor
 
   /**
    * Starts the walk of the element instance tree; {@link
-   * SuspensionBatchSuspendElementInstanceProcessor} writes {@link ProcessInstanceIntent#SUSPENDED}
-   * once it is done.
+   * ElementInstanceWalkSuspendElementInstanceProcessor} writes {@link
+   * ProcessInstanceIntent#SUSPENDED} once it is done.
    */
-  private void startSuspensionBatch(
+  private void startElementInstanceWalk(
       final long processInstanceKey, final ProcessInstanceRecord value) {
-    final var batch =
-        new SuspensionBatchRecord()
+    final var walk =
+        new ElementInstanceWalkRecord()
             .setProcessInstanceKey(value.getProcessInstanceKey())
             .setProcessDefinitionKey(value.getProcessDefinitionKey())
             .setStorageOrdinal(value.getStorageOrdinal())
@@ -151,7 +151,7 @@ public final class ProcessInstanceSuspendProcessor
             .setParentKey(-1)
             .setIndex(-1);
     commandWriter.appendFollowUpCommand(
-        processInstanceKey, SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE, batch);
+        processInstanceKey, ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE, walk);
   }
 
   private boolean validateCommand(

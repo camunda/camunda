@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-public enum SuspensionBatchIntent implements ProcessInstanceRelatedIntent {
+public enum ElementInstanceWalkIntent implements ProcessInstanceRelatedIntent {
 
   /** Suspends one element instance, descending into its children first. */
   SUSPEND_ELEMENT_INSTANCE(0),
@@ -25,7 +25,7 @@ public enum SuspensionBatchIntent implements ProcessInstanceRelatedIntent {
 
   private final short value;
 
-  SuspensionBatchIntent(final int value) {
+  ElementInstanceWalkIntent(final int value) {
     this.value = (short) value;
   }
 

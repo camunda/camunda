@@ -54,17 +54,17 @@ final class IntentEncodingDecodingTest {
   }
 
   @Test
-  void shouldIdentifySuspensionBatchCommandsAndEvents() {
+  void shouldIdentifyElementInstanceWalkCommandsAndEvents() {
     // when
-    final Intent unknown = Intent.fromProtocolValue(ValueType.SUSPENSION_BATCH, (short) -1);
+    final Intent unknown = Intent.fromProtocolValue(ValueType.ELEMENT_INSTANCE_WALK, (short) -1);
     final Intent acknowledgement =
-        Intent.fromProtocolValue(ValueType.SUSPENSION_BATCH, "ELEMENT_INSTANCE_SUSPENDED");
+        Intent.fromProtocolValue(ValueType.ELEMENT_INSTANCE_WALK, "ELEMENT_INSTANCE_SUSPENDED");
 
     // then
-    assertThat(SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE.isEvent()).isFalse();
-    assertThat(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED.isEvent()).isTrue();
+    assertThat(ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE.isEvent()).isFalse();
+    assertThat(ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED.isEvent()).isTrue();
     assertThat(unknown).isSameAs(Intent.UNKNOWN);
-    assertThat(acknowledgement).isSameAs(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED);
+    assertThat(acknowledgement).isSameAs(ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED);
   }
 
   private static Stream<ParameterSet> parameters() {
@@ -173,7 +173,8 @@ final class IntentEncodingDecodingTest {
     result.addAll(
         buildParameterSets(SignalSubscriptionIntent.class, SignalSubscriptionIntent::from));
     result.addAll(buildParameterSets(TenantIntent.class, TenantIntent::from));
-    result.addAll(buildParameterSets(SuspensionBatchIntent.class, SuspensionBatchIntent::from));
+    result.addAll(
+        buildParameterSets(ElementInstanceWalkIntent.class, ElementInstanceWalkIntent::from));
     result.addAll(buildParameterSets(TimerIntent.class, TimerIntent::from));
     result.addAll(buildParameterSets(UsageMetricIntent.class, UsageMetricIntent::from));
     result.addAll(buildParameterSets(UserIntent.class, UserIntent::from));

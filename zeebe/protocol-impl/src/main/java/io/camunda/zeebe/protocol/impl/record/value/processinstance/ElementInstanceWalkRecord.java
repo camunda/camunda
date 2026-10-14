@@ -10,10 +10,10 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 
-public final class SuspensionBatchRecord extends UnifiedRecordValue
-    implements SuspensionBatchRecordValue {
+public final class ElementInstanceWalkRecord extends UnifiedRecordValue
+    implements ElementInstanceWalkRecordValue {
 
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1L);
@@ -38,7 +38,7 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
 
   private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
 
-  public SuspensionBatchRecord() {
+  public ElementInstanceWalkRecord() {
     super(6);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
@@ -53,7 +53,7 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
     return processInstanceKeyProperty.getValue();
   }
 
-  public SuspensionBatchRecord setProcessInstanceKey(final long processInstanceKey) {
+  public ElementInstanceWalkRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
     return this;
   }
@@ -63,7 +63,7 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
     return processDefinitionKeyProperty.getValue();
   }
 
-  public SuspensionBatchRecord setProcessDefinitionKey(final long processDefinitionKey) {
+  public ElementInstanceWalkRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProperty.setValue(processDefinitionKey);
     return this;
   }
@@ -73,7 +73,7 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
     return elementInstanceKeyProperty.getValue();
   }
 
-  public SuspensionBatchRecord setElementInstanceKey(final long elementInstanceKey) {
+  public ElementInstanceWalkRecord setElementInstanceKey(final long elementInstanceKey) {
     elementInstanceKeyProperty.setValue(elementInstanceKey);
     return this;
   }
@@ -83,7 +83,7 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
     return parentKeyProperty.getValue();
   }
 
-  public SuspensionBatchRecord setParentKey(final long parentKey) {
+  public ElementInstanceWalkRecord setParentKey(final long parentKey) {
     parentKeyProperty.setValue(parentKey);
     return this;
   }
@@ -93,7 +93,7 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
     return indexProperty.getValue();
   }
 
-  public SuspensionBatchRecord setIndex(final long index) {
+  public ElementInstanceWalkRecord setIndex(final long index) {
     indexProperty.setValue(index);
     return this;
   }
@@ -103,7 +103,7 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
     return storageOrdinalProperty.getValue();
   }
 
-  public SuspensionBatchRecord setStorageOrdinal(final int storageOrdinal) {
+  public ElementInstanceWalkRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
     return this;
   }

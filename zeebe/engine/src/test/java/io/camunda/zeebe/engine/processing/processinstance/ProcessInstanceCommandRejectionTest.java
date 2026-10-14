@@ -17,9 +17,9 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -670,7 +670,8 @@ public final class ProcessInstanceCommandRejectionTest {
 
     // then
     final var rejectedCommand =
-        RecordingExporter.suspensionBatchRecords(SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE)
+        RecordingExporter.elementInstanceWalkRecords(
+                ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE)
             .onlyCommandRejections()
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();

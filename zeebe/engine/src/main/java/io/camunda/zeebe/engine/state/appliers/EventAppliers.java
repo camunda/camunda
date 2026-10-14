@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
@@ -77,7 +78,6 @@ import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
@@ -113,7 +113,7 @@ public final class EventAppliers implements EventApplier {
     register(ProcessInstanceResultIntent.COMPLETED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.TERMINATED, NOOP_EVENT_APPLIER);
-    register(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED, NOOP_EVENT_APPLIER);
+    register(ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED, NOOP_EVENT_APPLIER);
 
     registerProcessAppliers(state);
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));
