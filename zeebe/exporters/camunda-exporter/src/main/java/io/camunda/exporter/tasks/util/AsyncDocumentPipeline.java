@@ -317,7 +317,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
     public Builder<DocType, SearchAfterFieldType> batchSize(final int batchSize) {
       verifyBatchSize(batchSize);
-      this.batchSize.set(batchSize);
+      this.batchSize = new AtomicInteger(batchSize);
       return this;
     }
 
