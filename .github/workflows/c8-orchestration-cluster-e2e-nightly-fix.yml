@@ -102,9 +102,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Wait only on runs with a LOWER run id. That makes the queue a total
-          # order, so it cannot deadlock (no two runs ever wait on each other)
-          # and cannot starve (every run has finitely many predecessors).
+          # Wait only on runs AHEAD of us, ordered by when the current attempt
+          # started (`startedAt` is run_started_at, which GitHub resets on every
+          # re-run), with the run id breaking same-second ties.
+          #
+          # Ordering on the run id alone would be wrong for a re-run: a re-run
+          # keeps its original, LOWER run id, so it would see no predecessor and
+          # start immediately beside a newer agent already past this gate.
+          # Ordering on the attempt's start puts a re-run at the back of the
+          # queue, where it belongs. Still a total order, so the queue can
+          # neither deadlock (no two runs ever wait on each other) nor starve
+          # (every run has finitely many predecessors). A run never counts
+          # itself: its own startedAt equals self_started and its id is not
+          # less than its own.
           #
           # Match the run title, because `gh run list` exposes displayTitle but
           # not the dispatch inputs. run-name renders
@@ -128,7 +138,9 @@ jobs:
           # the gate open for the whole budget) and a crafted fragment could
           # change what the gate counts.
           filter='[.[] | select(.status != "completed")
-                       | select(.databaseId < $self)
+                       | select(.startedAt < $self_started
+                                or (.startedAt == $self_started
+                                    and .databaseId < $self))
                        | select(.displayTitle | startswith($prefix))]
                   | length'
 
@@ -144,16 +156,30 @@ jobs:
           stall_budget=$(( 120 * 60 ))
           deadline=$(( $(date +%s) + stall_budget ))
           prev_ahead=""
+          self_started=""
 
           while [ "$(date +%s)" -lt "$deadline" ]; do
-            runs=$(gh run list \
-                     --workflow c8-orchestration-cluster-e2e-nightly-fix.yml \
-                     --limit 100 --json databaseId,displayTitle,status \
-                     2>/dev/null || echo "")
+            # Read once: this attempt's own start, which the queue is ordered on.
+            # While it is unreadable `ahead` stays empty, which the retry branch
+            # below already treats as a reason to wait rather than proceed.
+            if [ -z "$self_started" ]; then
+              self_started=$(gh run view "${SELF_RUN_ID}" \
+                               --json startedAt --jq '.startedAt' \
+                               2>/dev/null || echo "")
+            fi
+
+            runs=""
+            if [ -n "$self_started" ]; then
+              runs=$(gh run list \
+                       --workflow c8-orchestration-cluster-e2e-nightly-fix.yml \
+                       --limit 100 --json databaseId,displayTitle,status,startedAt \
+                       2>/dev/null || echo "")
+            fi
             ahead=""
             if [ -n "$runs" ]; then
               ahead=$(printf '%s' "$runs" \
                         | jq --arg prefix "$prefix" \
+                             --arg self_started "$self_started" \
                              --argjson self "$SELF_RUN_ID" \
                              "$filter" 2>/dev/null || echo "")
             fi
