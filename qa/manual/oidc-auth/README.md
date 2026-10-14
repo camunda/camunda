@@ -70,6 +70,7 @@ sets no claims. Provider `beta` (`idp-b`) sets only `username-claim: tenant_user
 | `gamma` M2M, REST and gRPC | 403, `PermissionDenied` | not run                                                           | 200, OK       |
 | Browser login with `alpha` | `alice`                 | the token's `sub`, and the web apps deny access                   | `alice`       |
 | Browser login with `beta`  | `alice`                 | `idp-b-alice`                                                     | `idp-b-alice` |
+| Browser login with `gamma` | `alice`                 | not run                                                           | `alice`       |
 
 New in 8.10: a named provider can override the global `username-claim`, `client-id-claim` and
 `prefer-username-claim`. 8.9 binds these settings but does not use them, so `beta` logs in as
