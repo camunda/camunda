@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -345,5 +346,77 @@ class ProcessInstanceStartMeterTest {
                 .timer()
                 .totalTime(TimeUnit.MILLISECONDS))
         .isGreaterThan(1);
+  }
+
+  @Test
+  void shouldQueryAtMostBatchSizeOldestInstances() {
+    // given - more pending instances than fit on a single availability-check batch (2500)
+    final int batchSize = 2500;
+    final int pendingCount = batchSize + 100;
+    final AtomicReference<List<Long>> queriedKeys = new AtomicReference<>();
+    availabilityChecker =
+        (list) -> {
+          queriedKeys.compareAndSet(null, List.copyOf(list));
+          return CompletableFuture.completedFuture(List.of());
+        };
+
+    // the oldest instances get the smallest start time; newer instances get larger start times
+    for (int i = 0; i < pendingCount; i++) {
+      processInstanceStartMeter.recordProcessInstanceStart(Protocol.encodePartitionId(1, i + 1), i);
+    }
+
+    // when
+    processInstanceStartMeter.start();
+
+    // then - only the oldest batchSize keys are queried
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(queriedKeys.get()).isNotNull());
+
+    final var expectedOldestKeys =
+        java.util.stream.LongStream.range(0, batchSize)
+            .mapToObj(i -> Protocol.encodePartitionId(1, (int) i + 1))
+            .toList();
+    assertThat(queriedKeys.get())
+        .hasSize(batchSize)
+        .containsExactlyInAnyOrderElementsOf(expectedOldestKeys);
+  }
+
+  @Test
+  void shouldRunNextCheckImmediatelyWhenBatchIsFull() throws InterruptedException {
+    // given - an interval long enough that waiting it out between checks would be observable
+    final Duration interval = Duration.ofMillis(500);
+    processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            System::nanoTime,
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            interval,
+            (list) -> availabilityChecker.findAvailableInstances(list));
+
+    final int batchSize = 2500;
+    // five checks cannot all complete within one second if each waited a full 500ms interval
+    final CountDownLatch invocations = new CountDownLatch(5);
+    availabilityChecker =
+        (list) -> {
+          invocations.countDown();
+          return CompletableFuture.completedFuture(List.of());
+        };
+
+    // more than one full batch stays pending, so every check sees a full page; recent start times
+    // keep the instances from being cleaned up as stale between checks
+    final long now = System.nanoTime();
+    for (int i = 0; i <= batchSize; i++) {
+      processInstanceStartMeter.recordProcessInstanceStart(
+          Protocol.encodePartitionId(1, i + 1), now + i);
+    }
+
+    // when
+    processInstanceStartMeter.start();
+
+    // then - the checks run back-to-back instead of once per interval
+    assertThat(invocations.await(1, TimeUnit.SECONDS))
+        .describedAs("a full batch must trigger the next check immediately")
+        .isTrue();
   }
 }

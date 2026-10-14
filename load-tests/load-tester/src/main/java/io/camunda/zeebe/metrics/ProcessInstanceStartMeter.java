@@ -13,6 +13,7 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,6 +27,15 @@ import org.slf4j.LoggerFactory;
 public class ProcessInstanceStartMeter implements AutoCloseable {
   private static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
+
+  /**
+   * Maximum number of pending process instance keys sent per availability check. A search returns
+   * at most one page of instances, so sending more keys than fit on a page only inflates the query
+   * cost (see https://github.com/camunda/camunda/issues/65373) without answering them. This must
+   * match the page limit of the availability-checker query in the Starter.
+   */
+  private static final int AVAILABILITY_CHECK_BATCH_SIZE = 2500;
+
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
   private final Map<Long, PiCreationResult> startedInstances;
   private final ScheduledExecutorService piCheckExecutorService;
@@ -114,10 +124,23 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
       return;
     }
 
-    LOG.debug("Current instances awaiting {}", startedInstances.size());
+    // Query only the oldest instances that fit on a single search page. A search answers at
+    // most one page, so the remaining newer keys would only inflate the query cost (see
+    // https://github.com/camunda/camunda/issues/65373) without confirming them. The oldest
+    // instances have been pending the longest and are the most likely to be available.
+    final var oldestKeys =
+        startedInstances.values().stream()
+            .sorted(Comparator.comparingLong(PiCreationResult::startTimeNanos))
+            .limit(AVAILABILITY_CHECK_BATCH_SIZE)
+            .map(PiCreationResult::processInstanceKey)
+            .toList();
+    final boolean batchWasFull = oldestKeys.size() >= AVAILABILITY_CHECK_BATCH_SIZE;
+
+    LOG.debug(
+        "Current instances awaiting {}, checking {}", startedInstances.size(), oldestKeys.size());
     final var startQueryTime = clock.getNanos();
     availabilityChecker
-        .findAvailableInstances(List.copyOf(startedInstances.keySet()))
+        .findAvailableInstances(oldestKeys)
         .whenCompleteAsync(
             (availableInstances, error) -> {
               final var endQueryTime = clock.getNanos();
@@ -132,7 +155,9 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
               }
 
               cleanUpStaleInstances();
-              rescheduleCheck(duration);
+              // A full batch means more instances are pending than one check covers, so run
+              // the next check immediately instead of waiting for the interval.
+              rescheduleCheck(batchWasFull ? Long.MAX_VALUE : duration);
             },
             piCheckExecutorService);
   }
