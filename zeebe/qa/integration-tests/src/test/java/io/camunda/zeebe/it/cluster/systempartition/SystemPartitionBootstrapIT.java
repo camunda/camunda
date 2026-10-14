@@ -14,8 +14,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.syspartition.SystemPartition;
-import io.camunda.zeebe.broker.system.syspartition.SystemPartitionSnapshotter;
 import io.camunda.zeebe.broker.system.syspartition.SystemPartitionState;
+import io.camunda.zeebe.broker.system.syspartition.SystemPartitionStateController;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -101,7 +101,7 @@ final class SystemPartitionBootstrapIT {
         assertThat(files.map(file -> file.getFileName().toString()))
             .describedAs("state files of the system partition snapshot of %s", broker.nodeId())
             .filteredOn(name -> !name.equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME))
-            .containsExactly(SystemPartitionSnapshotter.STATE_FILE);
+            .containsExactly(SystemPartitionStateController.STATE_FILE);
       }
       assertThat(readState(snapshot)).isEqualTo(SystemPartitionState.initial());
     }
@@ -157,7 +157,7 @@ final class SystemPartitionBootstrapIT {
 
   private static SystemPartitionState readState(final PersistedSnapshot snapshot) throws Exception {
     return MAPPER.readValue(
-        snapshot.getPath().resolve(SystemPartitionSnapshotter.STATE_FILE).toFile(),
+        snapshot.getPath().resolve(SystemPartitionStateController.STATE_FILE).toFile(),
         SystemPartitionState.class);
   }
 
