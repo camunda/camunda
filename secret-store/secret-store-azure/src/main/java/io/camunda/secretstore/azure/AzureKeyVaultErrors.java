@@ -36,9 +36,13 @@ final class AzureKeyVaultErrors {
    * status it carries.
    *
    * @throws SecretStoreUnavailableException if {@code e} indicates a store-wide failure rather than
-   *     a per-secret one (e.g. throttling {@code 429}, or a {@code 5xx} service error)
+   *     a per-secret one (e.g. throttling {@code 429}, a {@code 5xx} service error, or a credential
+   *     that could not obtain a token and so carries no response at all)
    */
   static SecretErrorCode classify(final HttpResponseException e) {
+    if (e.getResponse() == null) {
+      throw storeUnavailable(e);
+    }
     return switch (e.getResponse().getStatusCode()) {
       case 404 -> NOT_FOUND;
       case 400 -> INVALID_REF;

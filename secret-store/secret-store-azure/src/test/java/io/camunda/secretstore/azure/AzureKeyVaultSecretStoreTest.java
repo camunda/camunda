@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.azure.core.exception.ClientAuthenticationException;
 import com.azure.core.exception.HttpResponseException;
 import com.azure.core.http.HttpResponse;
 import com.azure.core.http.rest.PagedIterable;
@@ -202,6 +203,30 @@ class AzureKeyVaultSecretStoreTest {
 
     // when / then
     assertThatThrownBy(() -> store.resolve(Set.of("secret")))
+        .isInstanceOf(SecretStoreUnavailableException.class);
+  }
+
+  @Test
+  void shouldSurfaceCredentialFailureAsStoreUnavailable() {
+    // given a credential that cannot obtain a token fails before any response exists
+    final var store = oneByOne("camunda-");
+    when(client.getSecret("camunda-secret"))
+        .thenThrow(new ClientAuthenticationException("invalid client secret", null));
+
+    // when / then
+    assertThatThrownBy(() -> store.resolve(Set.of("secret")))
+        .isInstanceOf(SecretStoreUnavailableException.class);
+  }
+
+  @Test
+  void shouldSurfaceCredentialFailureAsStoreUnavailableForContainerSecret() {
+    // given
+    final var store = new AzureKeyVaultSecretStore(client, "camunda-", "app-config", CLOCK);
+    when(client.getSecret("camunda-app-config"))
+        .thenThrow(new ClientAuthenticationException("invalid client secret", null));
+
+    // when / then
+    assertThatThrownBy(() -> store.resolve(Set.of("db-password")))
         .isInstanceOf(SecretStoreUnavailableException.class);
   }
 
