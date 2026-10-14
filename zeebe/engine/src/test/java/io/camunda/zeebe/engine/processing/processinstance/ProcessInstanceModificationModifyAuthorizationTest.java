@@ -37,6 +37,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
   public static final String JOB_TYPE = "jobType";
   public static final String SERVICE_TASK_ID = "serviceTask";
   private static final String PROCESS_ID = "processId";
+  private static final String OTHER_PROCESS_ID = "otherProcessId";
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
           UUID.randomUUID().toString(),
@@ -66,6 +67,13 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .withXmlResource(
             "process.bpmn",
             Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent()
+                .done())
+        .withXmlResource(
+            "otherProcess.bpmn",
+            Bpmn.createExecutableProcess(OTHER_PROCESS_ID)
                 .startEvent()
                 .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
                 .endEvent()
@@ -152,6 +160,66 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'MODIFY_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectTerminatingElementInstanceOfAnotherProcessInstance() {
+    // given two process instances
+    final var processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+    final var otherProcessInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(OTHER_PROCESS_ID)
+            .create(DEFAULT_USER.getUsername());
+    final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
+    final var otherServiceTaskKey = getServiceTaskKey(otherProcessInstanceKey);
+
+    // when
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .terminateElement(otherServiceTaskKey)
+            .expectRejection()
+            .modify(DEFAULT_USER.getUsername());
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to modify instance of process '%s' but it contains one or more terminate instructions with an element instance that could not be found: '%d'"
+                .formatted(PROCESS_ID, otherServiceTaskKey));
+
+    // the element instance of the other process instance is left untouched, while a legitimate
+    // termination in the addressed process instance still works
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(serviceTaskKey)
+        .modify(DEFAULT_USER.getUsername());
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(SERVICE_TASK_ID)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .limit(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED
+                            && r.getKey() == serviceTaskKey)
+                .withProcessInstanceKey(otherProcessInstanceKey)
+                .withElementId(SERVICE_TASK_ID)
+                .filter(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
+                            || r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .isEmpty();
   }
 
   private UserRecordValue createUser() {
