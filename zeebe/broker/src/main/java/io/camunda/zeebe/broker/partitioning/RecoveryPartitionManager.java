@@ -99,6 +99,9 @@ public final class RecoveryPartitionManager
   // Dedicated to the ephemeral open-and-close sanity check after restore: the restored partition
   // is not yet running as a ZeebePartition, so there is no shared factory/resources to reuse here.
   private static final RocksDbConfiguration SANITY_CHECK_DB_CONFIG = new RocksDbConfiguration();
+  // Deliberately bypasses the StorageCapabilities guards: this is a RocksDB-specific recovery
+  // check,
+  // so a future non-RocksDB backend must not be routed through it.
   private static final ZeebeRocksDbFactory<?> SANITY_CHECK_DB_FACTORY =
       new ZeebeRocksDbFactory<>(
           SANITY_CHECK_DB_CONFIG,
