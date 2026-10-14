@@ -10,7 +10,6 @@ package io.camunda.zeebe.db;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
-import java.util.Optional;
 
 /**
  * The zeebe database, to store key value pairs in different column families. The column families
@@ -51,8 +50,6 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & En
    * @param snapshotDir the directory where the snapshot should be stored
    */
   void createSnapshot(File snapshotDir);
-
-  Optional<String> getProperty(String propertyName);
 
   TransactionContext createContext();
 

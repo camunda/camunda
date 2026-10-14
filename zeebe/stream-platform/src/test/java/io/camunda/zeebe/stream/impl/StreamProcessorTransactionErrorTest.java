@@ -25,7 +25,6 @@ import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
-import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -138,11 +137,6 @@ final class StreamProcessorTransactionErrorTest {
     @Override
     public void createSnapshot(final File snapshotDir) {
       delegate.createSnapshot(snapshotDir);
-    }
-
-    @Override
-    public Optional<String> getProperty(final String propertyName) {
-      return delegate.getProperty(propertyName);
     }
 
     @Override

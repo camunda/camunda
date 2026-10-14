@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.test.util.jmh.JMHTestCase;
 import io.camunda.zeebe.test.util.junit.JMHTest;
 import java.util.Map;
@@ -97,8 +98,7 @@ public class LargeStateControllerPerformanceTest {
       //noinspection resource
       final var db = controller.recover().join();
 
-      //noinspection unchecked
-      return db.getProperty("rocksdb.estimate-live-data-size");
+      return ((ZeebeTransactionDb<?>) db).getProperty("rocksdb.estimate-live-data-size");
     }
   }
 }

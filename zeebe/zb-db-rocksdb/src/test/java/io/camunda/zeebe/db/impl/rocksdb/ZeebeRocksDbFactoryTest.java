@@ -420,8 +420,8 @@ final class ZeebeRocksDbFactoryTest {
                     new DbByte(),
                     new DbByte())),
         Named.of(
-            "isEmpty", db -> db.isEmpty(DefaultColumnFamily.DEFAULT, new NoOpTransactionContext())),
-        Named.of("getProperty", db -> db.getProperty("foo")));
+            "isEmpty",
+            db -> db.isEmpty(DefaultColumnFamily.DEFAULT, new NoOpTransactionContext())));
   }
 
   private static final class NoOpTransactionContext implements TransactionContext {
