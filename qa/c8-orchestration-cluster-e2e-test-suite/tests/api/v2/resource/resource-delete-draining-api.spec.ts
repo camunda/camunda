@@ -91,6 +91,53 @@ async function partitionsCount(request: APIRequestContext): Promise<number> {
   return (await res.json()).partitionsCount as number;
 }
 
+// A key carries the partition that minted it in its high bits. Definition keys
+// are minted on the deployment partition, which therefore serves every delete
+// of that definition.
+function partitionOf(key: string): number {
+  return Number(BigInt(key) >> 51n);
+}
+
+/**
+ * Starts instances until one lands on `partition`, returning all of them.
+ * Placement is round-robin and the offset is shared with the specs running in
+ * parallel, so a fixed instance count cannot guarantee the partition is covered.
+ */
+async function createInstancesUntilOn(
+  processDefinitionId: string,
+  partition: number,
+  maxAttempts: number,
+) {
+  const instances = [];
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const [instance] = await createInstances(processDefinitionId, 1, 1);
+    instances.push(instance!);
+    if (partitionOf(instance!.processInstanceKey) === partition) {
+      break;
+    }
+  }
+  return instances;
+}
+
+/**
+ * Starts one instance away from `partition`, cancelling any that land on it so
+ * that partition keeps none of the definition's running instances.
+ */
+async function createInstanceAwayFrom(
+  processDefinitionId: string,
+  partition: number,
+  maxAttempts: number,
+) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const [instance] = await createInstances(processDefinitionId, 1, 1);
+    if (partitionOf(instance!.processInstanceKey) !== partition) {
+      return instance!;
+    }
+    await cancelProcessInstance(instance!.processInstanceKey);
+  }
+  return undefined;
+}
+
 /**
  * Error messages of the incidents raised on instances of one definition, once
  * `expectedCount` of them exist.
@@ -514,35 +561,86 @@ test.describe('Process Definition Draining Deletion API', () => {
     expect(await instanceCountFor(request, processDefinitionId)).toBe(before);
   });
 
-  test('A repeated delete of an already draining definition is rejected', async ({
+  test('A repeated delete is rejected while the deployment partition still holds an instance', async ({
     request,
   }) => {
     const processDefinitionId = uniquePrefixedId('draining-repeat');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
 
-    // Both deletes go to the partition owning the definition key, and it rejects
-    // the repeat only while it still holds an instance of its own. Instances
-    // land round-robin, so three per partition make that certain.
-    const instanceCount = 3 * (await partitionsCount(request));
-    const instances = await createInstances(
+    // Every delete of this definition is served by the partition that minted its
+    // key, and that partition rejects a repeat only while it still holds an
+    // instance of its own.
+    const deploymentPartition = partitionOf(processDefinitionKey);
+    const instances = await createInstancesUntilOn(
       processDefinitionId,
-      1,
-      instanceCount,
+      deploymentPartition,
+      5 * (await partitionsCount(request)),
     );
     instancesToCancel.push(
       ...instances.map((instance) => instance.processInstanceKey),
     );
+    expect(
+      instances.map((instance) => partitionOf(instance.processInstanceKey)),
+    ).toContain(deploymentPartition);
     await expectProcessInstanceCount(
       request,
       {processDefinitionId},
-      instanceCount,
+      instances.length,
     );
 
     await drainProcessDefinition(request, processDefinitionKey);
 
     const second = await deleteProcessDefinition(request, processDefinitionKey);
     expect(second.status()).toBe(409);
+
+    await expectProcessDefinitionState(
+      request,
+      processDefinitionKey,
+      'DRAINING',
+    );
+  });
+
+  test('A repeated delete is accepted as a drain retry when the deployment partition holds no instance', async ({
+    request,
+  }) => {
+    const processDefinitionId = uniquePrefixedId('draining-repeat-retry');
+    const {processDefinitionKey} =
+      await deployUserTaskProcess(processDefinitionId);
+
+    // With no instance of its own the deployment partition finalizes its copy
+    // immediately, so the repeat is accepted as a retry of the drain the other
+    // partitions still owe (camunda#64850). Whether the same request should
+    // answer 200 here and 409 above is under discussion with the engine team;
+    // this asserts today's behaviour so a change to it is not silent.
+    const deploymentPartition = partitionOf(processDefinitionKey);
+    const partitions = await partitionsCount(request);
+    // A single-partition cluster cannot produce this case at all.
+    // eslint-disable-next-line playwright/no-skipped-test
+    test.skip(
+      partitions < 2,
+      'needs a partition other than the deployment one',
+    );
+    const instance = await createInstanceAwayFrom(
+      processDefinitionId,
+      deploymentPartition,
+      5 * partitions,
+    );
+    expect(
+      instance,
+      'no instance landed away from the deployment partition',
+    ).toBeDefined();
+    instancesToCancel.push(instance!.processInstanceKey);
+    await expectProcessInstanceCount(
+      request,
+      {processDefinitionId, state: 'ACTIVE'},
+      1,
+    );
+
+    await drainProcessDefinition(request, processDefinitionKey);
+
+    const second = await deleteProcessDefinition(request, processDefinitionKey);
+    expect(second.status()).toBe(200);
 
     await expectProcessDefinitionState(
       request,
