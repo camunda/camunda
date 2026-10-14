@@ -792,7 +792,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: apply-divergence-${{ inputs.releaseVersion }}
+          name: apply-divergence-${{ inputs.releaseVersion }}-${{ github.run_attempt }}
           path: release-notes-shadow/apply-divergence.json
           if-no-files-found: ignore
           retention-days: 30
@@ -800,11 +800,20 @@ jobs:
       # status; surface it here so a swallowed failure still shows up.
       - name: Report shadow-run outcome
         if: always()
+        env:
+          GENERATE_OUTCOME: ${{ steps.gen-changelog-shadow.outcome }}
+          APPLY_OUTCOME: ${{ steps.apply-dry-run-shadow.outcome }}
+          APPLY_COMPARED: ${{ steps.apply-dry-run-shadow.outputs.compared }}
         run: |
-          echo "### Release Notes shadow run: ${{ steps.gen-changelog-shadow.outcome }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Release Notes apply dry run: ${{ steps.apply-dry-run-shadow.outcome }}" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ steps.apply-dry-run-shadow.outcome }}" = "failure" ]; then
-            echo "::warning::The release-notes apply dry run failed, so no label/comment comparison was produced."
+          echo "### Release Notes shadow run: ${GENERATE_OUTCOME}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${APPLY_OUTCOME}" = "success" ] && [ "${APPLY_COMPARED}" = "true" ]; then
+            echo "### Release Notes apply dry run: compared" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${APPLY_OUTCOME}" = "success" ]; then
+            echo "### Release Notes apply dry run: no comparison (see its summary above)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::The release-notes apply dry run produced no comparison."
+          else
+            echo "### Release Notes apply dry run: ${APPLY_OUTCOME}" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::The release-notes apply dry run ${APPLY_OUTCOME}, so no label/comment comparison was produced."
           fi
 
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
