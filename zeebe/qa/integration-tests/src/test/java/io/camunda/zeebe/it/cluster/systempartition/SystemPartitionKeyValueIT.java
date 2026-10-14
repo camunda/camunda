@@ -48,7 +48,8 @@ import org.junit.jupiter.api.Test;
 final class SystemPartitionKeyValueIT {
 
   private static final Duration TIMEOUT = Duration.ofMinutes(1);
-  private static final SystemPartitionKeyType KEY = SystemPartitionKeyType.TEST;
+  // the cluster id is put once when the cluster is bootstrapped; tests overwrite it freely
+  private static final SystemPartitionKeyType KEY = SystemPartitionKeyType.CLUSTER_ID;
 
   @TestZeebe
   private final TestCluster cluster =
@@ -125,6 +126,7 @@ final class SystemPartitionKeyValueIT {
   @Test
   void shouldNotifyWatchersOnEveryBrokerOfChangedValues() {
     // given
+    awaitBootstrapValueOnEveryBroker();
     final var changes = watchOnEveryBroker();
     final var writer = leaderWriter();
     final var first = uniqueValue();
@@ -151,6 +153,7 @@ final class SystemPartitionKeyValueIT {
   @Test
   void shouldStopNotifyingUnwatchedListener() {
     // given
+    awaitBootstrapValueOnEveryBroker();
     final var reader = reader(brokerWithRole(Role.FOLLOWER));
     final var unwatchedChanges = new CopyOnWriteArrayList<String>();
     final var openChanges = new CopyOnWriteArrayList<String>();
@@ -227,6 +230,16 @@ final class SystemPartitionKeyValueIT {
                     .findFirst(),
             Optional::isPresent)
         .orElseThrow();
+  }
+
+  /** Waits until the value put when the cluster is bootstrapped no longer notifies watchers. */
+  private void awaitBootstrapValueOnEveryBroker() {
+    Awaitility.await("every broker applies the bootstrap value of the key")
+        .atMost(TIMEOUT)
+        .untilAsserted(
+            () ->
+                assertThat(cluster.brokers().values())
+                    .allSatisfy(broker -> assertThat(get(broker)).isPresent()));
   }
 
   private Map<String, List<String>> watchOnEveryBroker() {
