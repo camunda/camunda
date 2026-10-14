@@ -23,6 +23,12 @@
   <properties>
     <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
     <identity-packages>io/camunda/it/auth/*,io/camunda/it/identity/*,io/camunda/it/csrf/*,io/camunda/it/logout/*,io/camunda/it/oidc/*</identity-packages>
+<<<<<<< HEAD
+=======
+    <!-- Timeout for forked processes in seconds. Sized for the default CI job budget (20 minutes);
+     long-running callers must raise this via -D failsafe.timeout=<seconds> to match their own job timeout. -->
+    <failsafe.timeout>1020</failsafe.timeout>
+>>>>>>> 06db3bec (ci: raise acceptance tests failsafe fork timeout to 17 minutes)
   </properties>
 
   <dependencies>
