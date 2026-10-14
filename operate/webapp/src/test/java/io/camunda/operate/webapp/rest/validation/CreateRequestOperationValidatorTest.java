@@ -14,12 +14,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.List;
@@ -42,9 +44,21 @@ public class CreateRequestOperationValidatorTest {
 
   @Mock private OperationReader mockOperationReader;
 
+  @Mock private FlowNodeInstanceReader mockFlowNodeInstanceReader;
+
   @BeforeEach
   public void setup() {
-    underTest = new CreateRequestOperationValidator(mockVariableReader, mockOperationReader);
+    underTest =
+        new CreateRequestOperationValidator(
+            mockVariableReader, mockOperationReader, mockFlowNodeInstanceReader);
+  }
+
+  /** Makes {@code scopeId} a valid non-root scope of process instance {@code processInstanceId}. */
+  private void stubScopeBelongsToProcessInstance(
+      final String processInstanceId, final String scopeId) {
+    final var flowNodeInstance = new FlowNodeInstanceEntity().setKey(Long.parseLong(scopeId));
+    when(mockFlowNodeInstanceReader.getAllFlowNodeInstances(Long.parseLong(processInstanceId)))
+        .thenReturn(List.of(flowNodeInstance));
   }
 
   @Test
@@ -92,19 +106,19 @@ public class CreateRequestOperationValidatorTest {
   void shouldFailValidationWhenVariableAlreadyExists() {
     // given
     final var request = new CreateOperationRequestDto(ADD_VARIABLE);
-    request.setVariableScopeId("scope");
+    request.setVariableScopeId("456");
     request.setVariableName("name");
     request.setVariableValue("val");
+    stubScopeBelongsToProcessInstance("123", "456");
 
     // simulate existing variable
-    when(mockVariableReader.getVariableByName("123", "scope", "name"))
-        .thenReturn(new VariableDto());
+    when(mockVariableReader.getVariableByName("123", "456", "name")).thenReturn(new VariableDto());
 
     // when - then
     assertThatThrownBy(() -> underTest.validate(request, "123"))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage(
-            "Cannot add variable \"name\" in scope \"scope\" of processInstanceId=123: "
+            "Cannot add variable \"name\" in scope \"456\" of processInstanceId=123: "
                 + "a variable with this name already exists.");
 
     // shouldn't query for operations
@@ -121,23 +135,24 @@ public class CreateRequestOperationValidatorTest {
   void shouldFailValidationWhenOperationWithStateExists(final OperationState opState) {
     // given
     final var request = new CreateOperationRequestDto(ADD_VARIABLE);
-    request.setVariableScopeId("scope");
+    request.setVariableScopeId("456");
     request.setVariableName("name");
     request.setVariableValue("val");
+    stubScopeBelongsToProcessInstance("123", "456");
 
     // no existing variable
-    when(mockVariableReader.getVariableByName("123", "scope", "name")).thenReturn(null);
+    when(mockVariableReader.getVariableByName("123", "456", "name")).thenReturn(null);
 
     // simulate pending operation
     final var operation = new OperationDto().setState(opState);
-    when(mockOperationReader.getOperations(ADD_VARIABLE, "123", "scope", "name"))
+    when(mockOperationReader.getOperations(ADD_VARIABLE, "123", "456", "name"))
         .thenReturn(List.of(operation));
 
     // when - then
     assertThatThrownBy(() -> underTest.validate(request, "123"))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage(
-            "Cannot add variable \"name\" in scope \"scope\" of processInstanceId=123: "
+            "Cannot add variable \"name\" in scope \"456\" of processInstanceId=123: "
                 + "an ADD_VARIABLE operation for this variable already exists.");
   }
 
@@ -145,16 +160,17 @@ public class CreateRequestOperationValidatorTest {
   void shouldPassValidationWhenFailedAddVariableOperationExists() {
     // given
     final var request = new CreateOperationRequestDto(ADD_VARIABLE);
-    request.setVariableScopeId("scope");
+    request.setVariableScopeId("456");
     request.setVariableName("name");
     request.setVariableValue("val");
+    stubScopeBelongsToProcessInstance("123", "456");
 
     // no existing variable
-    when(mockVariableReader.getVariableByName("123", "scope", "name")).thenReturn(null);
+    when(mockVariableReader.getVariableByName("123", "456", "name")).thenReturn(null);
 
     // simulate failed operation exists
     final var failedOperation = new OperationDto().setState(OperationState.FAILED);
-    when(mockOperationReader.getOperations(ADD_VARIABLE, "123", "scope", "name"))
+    when(mockOperationReader.getOperations(ADD_VARIABLE, "123", "456", "name"))
         .thenReturn(List.of(failedOperation));
 
     // when - then
@@ -166,13 +182,50 @@ public class CreateRequestOperationValidatorTest {
       value = OperationType.class,
       names = {"ADD_VARIABLE", "UPDATE_VARIABLE"})
   void shouldPassValidationForValidVariableOperation(final OperationType operationType) {
-    // given
+    // given: scopeId is the process instance's own root scope
     final var request = new CreateOperationRequestDto(operationType);
-    request.setVariableScopeId("abc");
+    request.setVariableScopeId("123");
     request.setVariableName("var");
     request.setVariableValue("val");
 
+    if (operationType.equals(ADD_VARIABLE)) {
+      when(mockVariableReader.getVariableByName("123", "123", "var")).thenReturn(null);
+    }
+
     // when - then
     assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectUpdateVariableWhenScopeDoesNotBelongToProcessInstance() {
+    // given: the variable scope belongs to a foreign process instance
+    final var request = new CreateOperationRequestDto(UPDATE_VARIABLE);
+    request.setVariableScopeId("foreign-scope");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+
+    // when - then: the request is rejected
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage(
+            "Cannot UPDATE_VARIABLE variable \"name\" in scope \"foreign-scope\" of "
+                + "processInstanceId=123: scope does not belong to this process instance.");
+  }
+
+  @Test
+  void shouldRejectAddVariableWhenScopeDoesNotBelongToProcessInstance() {
+    // given: the variable scope belongs to a foreign process instance
+    final var request = new CreateOperationRequestDto(ADD_VARIABLE);
+    request.setVariableScopeId("foreign-scope");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage(
+            "Cannot ADD_VARIABLE variable \"name\" in scope \"foreign-scope\" of "
+                + "processInstanceId=123: scope does not belong to this process instance.");
+    verifyNoInteractions(mockVariableReader, mockOperationReader);
   }
 }
