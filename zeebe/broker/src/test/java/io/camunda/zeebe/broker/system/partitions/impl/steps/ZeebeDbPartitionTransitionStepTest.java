@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
@@ -47,7 +48,7 @@ class ZeebeDbPartitionTransitionStepTest {
     transitionContext.setStateController(stateController);
     transitionContext.setConcurrencyControl(new TestConcurrencyControl());
 
-    step = new ZeebeDbPartitionTransitionStep();
+    step = new ZeebeDbPartitionTransitionStep(new StorageCapabilities(true, true, true));
   }
 
   @ParameterizedTest

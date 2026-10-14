@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -73,7 +74,7 @@ class SnapshotDirectorPartitionTransitionStepTest {
     when(logStream.newLogStreamReader()).thenReturn(logstreamReader);
     when(logstreamReader.seekToEnd()).thenReturn(LAST_LOG_POSITION);
 
-    step = new SnapshotDirectorPartitionTransitionStep();
+    step = new SnapshotDirectorPartitionTransitionStep(new StorageCapabilities(true, true, true));
   }
 
   @ParameterizedTest

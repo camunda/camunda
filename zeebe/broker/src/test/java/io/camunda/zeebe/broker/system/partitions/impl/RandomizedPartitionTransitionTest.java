@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -151,7 +152,8 @@ public class RandomizedPartitionTransitionTest {
         };
 
     final var firstStep = new PausableStep(operations);
-    final var zeebeDbStep = new ZeebeDbPartitionTransitionStep();
+    final var zeebeDbStep =
+        new ZeebeDbPartitionTransitionStep(new StorageCapabilities(true, true, true));
 
     final var context = new TestPartitionTransitionContext();
     context.setStateController(new TestStateController(instanceTracker));
