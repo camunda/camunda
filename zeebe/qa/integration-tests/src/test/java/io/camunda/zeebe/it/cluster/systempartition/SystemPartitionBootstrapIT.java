@@ -24,6 +24,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import java.nio.file.Files;
 import java.time.Duration;
+import java.util.Set;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
@@ -103,7 +104,7 @@ final class SystemPartitionBootstrapIT {
             .filteredOn(name -> !name.equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME))
             .containsExactly(SystemPartitionStateController.STATE_FILE);
       }
-      assertThat(readState(snapshot)).isEqualTo(SystemPartitionState.initial());
+      assertThat(readState(snapshot).version()).isEqualTo(SystemPartitionState.CURRENT_VERSION);
     }
   }
 
@@ -114,6 +115,10 @@ final class SystemPartitionBootstrapIT {
     final var broker = cluster.brokers().get(MemberId.from("0"));
     final var snapshotBeforeRestart =
         systemPartition(broker).latestSnapshot().orElseThrow().getId();
+    final var keysBeforeRestart =
+        Awaitility.await("broker applies entries")
+            .atMost(TIMEOUT)
+            .until(() -> appliedKeys(broker), keys -> !keys.isEmpty());
 
     // when
     broker.stop();
@@ -123,14 +128,15 @@ final class SystemPartitionBootstrapIT {
     // then
     Awaitility.await("restarted broker restores the system partition state")
         .atMost(TIMEOUT)
-        .untilAsserted(
-            () ->
-                assertThat(systemPartition(broker).state())
-                    .contains(SystemPartitionState.initial()));
+        .untilAsserted(() -> assertThat(appliedKeys(broker)).containsAll(keysBeforeRestart));
     assertThat(systemPartition(broker).latestSnapshot())
         .describedAs("the snapshot taken before the restart is reused")
         .map(PersistedSnapshot::getId)
         .contains(snapshotBeforeRestart);
+  }
+
+  private Set<Long> appliedKeys(final TestStandaloneBroker broker) {
+    return systemPartition(broker).state().map(state -> state.entries().keySet()).orElse(Set.of());
   }
 
   private void awaitSingleLeader() {

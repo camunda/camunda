@@ -22,6 +22,7 @@ import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.InstantSource;
 
 /** Creates the Raft partition and snapshot store backing the {@link SystemPartition}. */
 public final class SystemPartitionFactory {
@@ -66,12 +67,20 @@ public final class SystemPartitionFactory {
     return scheduler
         .submitActor(snapshotStore, SchedulingHints.ioBound())
         .thenApply(
-            ok ->
-                new SystemPartition(
-                    raftPartition,
-                    snapshotStore,
-                    meterRegistry,
-                    brokerCfg.getCluster().getSystemPartition().getSnapshotPeriod()));
+            ok -> {
+              final var systemPartition =
+                  new SystemPartition(
+                      raftPartition,
+                      snapshotStore,
+                      meterRegistry,
+                      brokerCfg.getCluster().getSystemPartition().getSnapshotPeriod());
+              systemPartition.addListener(
+                  new ClusterIdentityInitializer(
+                      systemPartition.keyValueReader(),
+                      brokerCfg.getCluster().getClusterId(),
+                      InstantSource.system()));
+              return systemPartition;
+            });
   }
 
   public static ActorFuture<Void> close(

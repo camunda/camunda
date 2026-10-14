@@ -16,8 +16,13 @@ import java.util.Optional;
  * safely; an id must never be reused for a different key.
  */
 public enum SystemPartitionKeyType {
-  /** Placeholder until the store holds real cluster coordination data; used by tests. */
-  TEST(1);
+  /**
+   * The id identifying the cluster, set when the cluster is first bootstrapped and replaced only
+   * when a different one is configured.
+   */
+  CLUSTER_ID(1),
+  /** When the cluster was first bootstrapped, set once alongside {@link #CLUSTER_ID}. */
+  CLUSTER_CREATION_TIME(2);
 
   private final long id;
 
