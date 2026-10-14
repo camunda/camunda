@@ -162,7 +162,7 @@ jobs:
 
       # The ownership-routing runbook lives in camunda/eng-kit-memory. A missing
       # runbook must not stop the fix agent, so these steps may fail; the agent
-      # then skips routing and the job summary says so.
+      # then routes with .codeowners only and the job summary says so.
       - name: Generate eng-kit-memory read token
         id: memory-token
         continue-on-error: true
@@ -208,7 +208,7 @@ jobs:
               echo "sha=$(git -C eng-kit-memory rev-parse HEAD)"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::camunda/eng-kit-memory could not be read, so the fix agent skips ownership routing"
+            echo "::warning::camunda/eng-kit-memory could not be read, so the fix agent routes with .codeowners only"
             { echo "dir="; echo "sha="; } >> "$GITHUB_OUTPUT"
           fi
 
@@ -280,6 +280,9 @@ jobs:
           # uses for the same reason.
           git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md \
             > /tmp/nightly-fix-agent-manual.md
+          # Ownership routing reads main's .codeowners for the same reason: a stable
+          # branch can predate the current owners of the test areas.
+          git show origin/main:.codeowners > /tmp/nightly-fix-agent-codeowners
 
       - name: Create workspace
         run: |
@@ -437,14 +440,13 @@ jobs:
           issues FIRST; ONLY if a call fails (e.g. a repo other than camunda/camunda) retry it once
           with GH_TOKEN="\$GH_PAT". Always qa-processes first; the PAT is a backup.
 
-          OWNERSHIP ROUTING: $(if [ "$test_spec_count" -eq 0 ]; then
-            echo "not part of a workflow-level failure; skip it."
-          elif [ -n "$ROUTING_RUNBOOK_DIR" ]; then
-            echo "name the owning team of every root-cause group as the \"### Ownership routing\" section of"
-            echo "the manual describes. The routing runbook is checked out read-only at ${ROUTING_RUNBOOK_DIR}"
+          OWNERSHIP ROUTING: name the owning team of every root-cause group as the "### Ownership routing"
+          section of the manual describes. Main's .codeowners is at /tmp/nightly-fix-agent-codeowners.
+          $(if [ -n "$ROUTING_RUNBOOK_DIR" ]; then
+            echo "The routing runbook is checked out read-only at ${ROUTING_RUNBOOK_DIR}"
             echo "(camunda/eng-kit-memory at ${ROUTING_RUNBOOK_SHA}). Never write to it."
           else
-            echo "the routing runbook is not available in this run; skip the \"### Ownership routing\" section."
+            echo "The routing runbook is not available in this run: route with .codeowners only, as that section says."
           fi)
 
           When done (or if no fix is possible), write /tmp/fix-meta.json and stop.
@@ -714,17 +716,21 @@ jobs:
             echo "### :compass: Ownership routing"
             echo ""
             if [ -z "${ROUTING_RUNBOOK_SHA:-}" ]; then
-              echo "Not run: camunda/eng-kit-memory could not be read."
-            elif [ "$(jq '.routing // [] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)" -eq 0 ]; then
-              echo "The agent recorded no routing (runbook: camunda/eng-kit-memory@${ROUTING_RUNBOOK_SHA})."
+              echo "Runbook: not available (camunda/eng-kit-memory could not be read), so only \`.codeowners\` was used."
             else
               echo "Runbook: camunda/eng-kit-memory@${ROUTING_RUNBOOK_SHA}"
-              echo ""
+            fi
+            echo ""
+            if [ "$(jq '.routing // [] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)" -eq 0 ]; then
+              echo "The agent recorded no routing."
+            else
               jq -r '.routing[] |
                 (if (.team // "") != ""
                    then "- **\(.team)** (`\(.github_handle // "")`), \(.tier // "tier?")"
-                   else "- **Unresolved**, \(.tier // "tier?"), candidates: \((.candidates // []) | join(", "))" end)
-                + "\n  - Tests: \((.tests // []) | join("; "))"
+                   else "- **Unresolved**, \(.tier // "tier?")"
+                     + (if ((.candidates // []) | length) > 0 then ", candidates: \(.candidates | join(", "))" else "" end) end)
+                + (if ((.tests // []) | length) > 0 then "\n  - Tests: \(.tests | join("; "))"
+                   else "\n  - Job: \(.job // "?")" end)
                 + ((.reasoning // []) | map("\n  - \(.)") | join(""))
                 + (if ((.sources // []) | length) > 0 then "\n  - Sources: \(.sources | join("; "))" else "" end)
                 + (if ((.gaps // []) | length) > 0 then "\n  - Gaps: \(.gaps | join("; "))" else "" end)' \
@@ -869,8 +875,10 @@ jobs:
             done < <(jq -r '.routing // [] | .[] |
               "• :compass: " +
               (if (.team // "") != "" then "owner: *\(.team)* (\(.tier // "tier?"))"
-               else "owner unresolved (\(.tier // "tier?")), candidates: \((.candidates // []) | join(", "))" end)
-              + " — \((.tests // []) | length) test(s)"' /tmp/fix-meta.json 2>/dev/null || true)
+               else "owner unresolved (\(.tier // "tier?"))"
+                 + (if ((.candidates // []) | length) > 0 then ", candidates: \(.candidates | join(", "))" else "" end) end)
+              + (if ((.tests // []) | length) > 0 then " — \(.tests | length) test(s)"
+                 else " — job \(.job // "?")" end)' /tmp/fix-meta.json 2>/dev/null || true)
           fi
 
           text="${icon} *${VERSION}* fix agent — ${summary}"$'\n'"<${RUN_URL}|Agent run ↗>"

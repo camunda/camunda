@@ -1060,22 +1060,27 @@ Agent (no single spec to reproduce against).
 
 ### Ownership routing
 
-Only when the run's prompt says the routing runbook is available. Name the team that owns each
-root-cause group, so the Slack thread and the job summary say whose failure it is. Routing never
-notifies anyone and never holds up a fix: work on the fix first, and record the routing of a group
-as soon as its root cause is known.
+For test failures and workflow-level failures alike. Name the team that owns each root-cause
+group, so the Slack thread and the job summary say whose failure it is. A workflow-level failure is
+one group: the failed job. Routing never notifies anyone and never holds up a fix: work on the fix
+first, and record the routing of a group as soon as its root cause is known.
 
-1. **`.codeowners` first.** Look up every failing spec of the group in the repository-root
-   `.codeowners` (the last matching rule wins). If they all resolve to one team other than the suite
-   owner `@camunda/test-automation-team`, that team is the owner: tier `High`, source
-   `codeowners: <the matching rule>`. Do not read the runbook for that group.
-2. **Otherwise, follow `skills/route.md`** in the runbook directory, with these changes for the
-   nightly:
-   - The input is what you diagnosed: the spec paths, the error messages and the root cause. The
-     root cause outranks the area of the spec ("Root cause outranks surface symptom" in
-     `route.md`). A product bug routes to the team that owns the broken component.
+1. **`.codeowners` first.** Look up every failing spec of the group in
+   `/tmp/nightly-fix-agent-codeowners`, main's `.codeowners` (the last matching rule wins). Do not
+   use the workspace's copy: on a `stable/<version>` branch it can predate the current owners. If
+   the specs all resolve to one team other than the suite owner `@camunda/test-automation-team`,
+   that team is the owner: tier `High`, source `codeowners: <the matching rule>`. Do not read the
+   runbook for that group. A workflow-level failure has no failing spec, so it starts at step 2.
+2. **Otherwise, follow `skills/route.md`** in the runbook directory, when the prompt says the
+   runbook is available. When it is not, record the group with tier `None`, no candidates, and the
+   gap `routing runbook not available`. The changes for the nightly:
+   - The input is what you diagnosed: the spec paths, or for a workflow-level failure the failed
+     job, step and the file that owns it, plus the error messages and the root cause. The root
+     cause outranks the area of the spec ("Root cause outranks surface symptom" in `route.md`). A
+     product bug routes to the team that owns the broken component.
    - Discover the teams by listing `memory/teams/`, as `route.md` requires.
-   - The available signals are `team-entries`, `codeowners` and `git-history` (in the workspace).
+   - The available signals are `team-entries`, `codeowners` (main's copy above) and `git-history`
+     (in the workspace).
      `prior-questions`, `prior-incidents`, `handbook` and `glean` are not available here. Name one
      under `gaps` only when its absence lowered the tier.
    - Use the tiers of `route.md`. `Low`: no owner, up to three candidate slugs, best first. `None`:
@@ -1205,8 +1210,8 @@ having to open the issue to find out the bug is theirs.
 fingerprint marker to suppress re-dispatch while the issue is open; once the skip PR merges the test
 no longer runs, and when the issue is later closed the skip should be removed so the test runs again.
 
-**`routing`** — one entry per root-cause group, only when the routing runbook was available (see
-"Ownership routing" above):
+**`routing`** — one entry per root-cause group (see "Ownership routing" above). For a
+workflow-level failure, `tests` is `[]` and `job` names the failed job and step:
 
 ```json
 "routing": [
@@ -1224,10 +1229,11 @@ no longer runs, and when the issue is later closed the skip should be removed so
 ]
 ```
 
-`team`, `slug` and `github_handle` come from the frontmatter of the team entry. Leave them `""` for
-`Low` and `None`. `reasoning` follows the output contract of `route.md`: at least two bullets when
-the runbook was used, each quoting a literal phrase. The calling workflow shows `team` and `tier`
-in the Slack thread and the whole entry in the job summary.
+`team`, `slug` and `github_handle` come from the frontmatter of the team entry. Without the
+runbook, a `High` entry sets `team` and `github_handle` to the `.codeowners` handle and `slug` to
+`""`. Leave all three `""` for `Low` and `None`. `reasoning` follows the output contract of
+`route.md`: at least two bullets when the runbook was used, each quoting a literal phrase. The
+calling workflow shows `team` and `tier` in the Slack thread and the whole entry in the job summary.
 
 ## Unskip Verify Agent
 
@@ -1512,6 +1518,9 @@ Write to `/tmp/fix-meta.json`:
 ```json
 {"prs": [{"number": 123, "owner": "camunda", "repo": "camunda", "branch": "ci/...", "has_e2e": false, "has_api": false}], "category": "workflow-fix"}
 ```
+
+Add one `routing` entry for the failed job, as "Ownership routing" in the Nightly Fix Agent
+section describes, also when you open no PR.
 
 ### When — and only when — you cannot fix
 
