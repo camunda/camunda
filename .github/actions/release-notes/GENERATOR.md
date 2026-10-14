@@ -641,6 +641,10 @@ labelled, and reports the difference. It **never writes to GitHub**, and `dry-ru
 closed until a real executor exists (#57714).
 
 It runs in the shadow job right after the generate step, with the same read-only token.
+Its `compared` output is `false` when the comparison was skipped or no issue carried the label, and
+the shadow job's closing summary line and a warning annotation say so, so a skipped run does not
+read as a clean one. The report artifact is named `apply-divergence-<version>-<run attempt>`, so a
+job re-run uploads a fresh one.
 
 **What it compares.** The generator's issue set (`labels.json`) against every issue carrying
 `version:<version>`, read in one paginated listing. Issues land in three buckets: both agree,

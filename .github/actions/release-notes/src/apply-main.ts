@@ -29,6 +29,7 @@ async function run(): Promise<void> {
 
   for (const warning of result.warnings) core.warning(warning);
   await core.summary.addRaw(result.markdown).write();
+  core.setOutput('compared', String(result.compared));
   if (result.divergence) writeFileSync(`${inputDir}/apply-divergence.json`, JSON.stringify(result.divergence, null, 2));
 }
 

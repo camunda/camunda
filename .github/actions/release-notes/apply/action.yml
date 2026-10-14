@@ -22,6 +22,12 @@ inputs:
     description: Must be true. Any other value fails, because real apply is not implemented.
     required: false
     default: 'true'
+outputs:
+  compared:
+    description: >
+      'true' when the generator's plan was compared with what zcl and the legacy
+      script did; 'false' when the comparison was skipped (missing or bad files,
+      failed generate step) or showed only the generator's plan (no issue baseline).
 runs:
   using: node24
   main: dist/index.js

@@ -19,7 +19,10 @@ export interface ApplyDeps {
 
 export interface ApplyResult {
   readonly markdown: string;
-  /** The full plan for the run artifact; absent when nothing was compared. */
+  /** Whether the generator's plan was compared with an observed baseline. False
+   *  when the run was skipped or no issue carried the label. */
+  readonly compared: boolean;
+  /** The full plan for the run artifact; absent when the run was skipped. */
   readonly divergence?: object;
   readonly warnings: readonly string[];
 }
@@ -57,11 +60,11 @@ export async function runApply(inputs: ApplyInputs, deps: ApplyDeps): Promise<Ap
   if (truncated.length > 0) {
     warnings.push(`${truncated.length} issues have more comments than were read (${truncated.slice(0, 5).map((number) => `#${number}`).join(', ')}${truncated.length > 5 ? ', …' : ''}), so an existing comment may be missed.`);
   }
-  return { markdown: renderReport(plan), divergence: plan, warnings };
+  return { markdown: renderReport(plan), compared: !plan.baselineEmpty, divergence: plan, warnings };
 }
 
 function skipped(reason: string): ApplyResult {
-  return { markdown: renderDegradedReport(reason), warnings: [`Apply dry run skipped: ${reason}`] };
+  return { markdown: renderDegradedReport(reason), compared: false, warnings: [`Apply dry run skipped: ${reason}`] };
 }
 
 function readInput(directory: string, name: string): string {
