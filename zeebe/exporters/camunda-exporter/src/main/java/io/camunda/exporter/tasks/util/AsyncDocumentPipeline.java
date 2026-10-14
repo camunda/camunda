@@ -92,8 +92,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   CompletableFuture<Integer> processNextBatch() {
     final Stopwatch stopwatch = Stopwatch.createStarted();
     final var batchSizeForBatch = currentBatchSize.get();
-    return batchSupplier
-        .supply(getLastSearchPosition(), batchSizeForBatch)
+    return getNextBatch(batchSizeForBatch)
         .thenComposeAsync(
             batch -> {
               if (batch.isEmpty()) {
@@ -114,15 +113,24 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
                           finished.set(true);
                         }
                         return processed;
-                      })
-                  .exceptionallyCompose(this::batchFailed);
+                      });
             },
             executor)
+        .exceptionallyCompose(this::batchFailed)
         .whenCompleteAsync(
             (val, err) ->
                 totalTimeTakenMs.accumulateAndGet(
                     stopwatch.stop().elapsed(TimeUnit.MILLISECONDS), Long::sum),
             executor);
+  }
+
+  private CompletableFuture<DocumentBatch<DocType, SearchAfterFieldType>> getNextBatch(
+      final int batchSizeForBatch) {
+    try {
+      return batchSupplier.supply(getLastSearchPosition(), batchSizeForBatch);
+    } catch (final Exception ex) {
+      return CompletableFuture.failedFuture(ex);
+    }
   }
 
   private CompletableFuture<Integer> processBatch(
