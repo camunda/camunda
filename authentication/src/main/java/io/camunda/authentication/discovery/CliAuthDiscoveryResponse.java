@@ -39,6 +39,7 @@ public record CliAuthDiscoveryResponse(
       String id, @Nullable String name, @JsonProperty("discovery") String discoveryPath) {}
 
   /**
+   * @param name the provider's display name ({@code client-name}), for a client to offer it
    * @param audience the audiences the cluster accepts in access tokens from this issuer, so a
    *     client can tell a token it cannot use apart from a rejected one
    * @param resource the RFC 8707 resource indicator a client sends when the identity provider
@@ -47,6 +48,7 @@ public record CliAuthDiscoveryResponse(
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public record Provider(
       String id,
+      @Nullable String name,
       String issuer,
       @JsonProperty("client_id") String clientId,
       List<String> scopes,

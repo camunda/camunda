@@ -193,6 +193,7 @@ public class CliAuthDiscoveryController {
             providers.add(
                 new Provider(
                     registrationId,
+                    configuration.getClientName(),
                     issuer,
                     cliClient.clientId(),
                     cliClient.scopes(),
