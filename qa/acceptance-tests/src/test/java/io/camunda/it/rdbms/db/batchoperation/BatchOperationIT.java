@@ -789,22 +789,29 @@ public class BatchOperationIT {
   public void shouldFindAllBatchOperationsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
-    final BatchOperationType operationType = randomEnum(BatchOperationType.class);
-    createAndSaveRandomBatchOperations(
-        rdbmsService.createWriter(0), b -> b.operationType(operationType));
+    final var batchOperationKeys =
+        createAndSaveRandomBatchOperations(rdbmsService.createWriter(0), b -> b).stream()
+            .map(BatchOperationDbModel::batchOperationKey)
+            .toList();
 
     final var searchResult =
         rdbmsService
             .getBatchOperationReader()
             .search(
                 new BatchOperationQuery(
-                    new BatchOperationFilter.Builder().operationTypes(operationType.name()).build(),
+                    new BatchOperationFilter.Builder()
+                        .batchOperationKeyOperations(
+                            List.of(mapDefaultToOperation(batchOperationKeys)))
+                        .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isGreaterThanOrEqualTo(20);
-    assertThat(searchResult.items()).hasSize(5);
+    assertThat(searchResult.total()).isEqualTo(20);
+    assertThat(searchResult.items())
+        .hasSize(5)
+        .extracting(BatchOperationEntity::batchOperationKey)
+        .isSubsetOf(batchOperationKeys);
   }
 
   @TestTemplate
