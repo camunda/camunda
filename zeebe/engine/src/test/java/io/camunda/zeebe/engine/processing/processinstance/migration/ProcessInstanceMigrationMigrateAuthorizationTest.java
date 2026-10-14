@@ -202,6 +202,51 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
             "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
+  @Test
+  public void shouldBeAuthorizedToMigrateToNewVersionOfSameProcessWithSourcePermissionOnly() {
+    // given
+    final var processInstanceKey = createProcessInstance();
+    final var newVersionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                "processV2.bpmn",
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(TARGET_TASK, t -> t.zeebeJobType(JOB_TYPE))
+                    .endEvent()
+                    .done())
+            .deploy(DEFAULT_USER.getUsername())
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+    final var user = createUser();
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.UPDATE_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
+        PROCESS_ID);
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(newVersionKey)
+        .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+        .migrate(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceMigrationRecords(
+                    ProcessInstanceMigrationIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
   private Record<ProcessInstanceMigrationRecordValue> migrateTo(
       final long processInstanceKey, final long targetKey, final String username) {
     return engine
