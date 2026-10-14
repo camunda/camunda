@@ -66,7 +66,18 @@ extensions.configure<SpotlessExtension> {
 // Maven -Dquickly skips format checks; do the same for the per-module Spotless checks.
 tasks.withType<SpotlessCheck>().configureEach { skipWhen(quickly) }
 
-publishing { publications.create<MavenPublication>("maven") { from(components["java"]) } }
+publishing {
+  publications.create<MavenPublication>("maven") {
+    from(components["java"])
+    // The platforms from parent-conventions only pin versions at build time. Maven's ossrh flatten
+    // mode publishes no dependencyManagement, so drop the BOM imports Gradle would emit.
+    pom.withXml {
+      asNode().children().removeIf {
+        it is groovy.util.Node && it.name().toString().endsWith("dependencyManagement")
+      }
+    }
+  }
+}
 
 tasks.withType<Jar>().configureEach {
   manifest {
