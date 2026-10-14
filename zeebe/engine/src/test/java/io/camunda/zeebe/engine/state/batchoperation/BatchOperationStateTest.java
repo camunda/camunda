@@ -104,6 +104,29 @@ public class BatchOperationStateTest {
   }
 
   @Test
+  void shouldPersistStorageOrdinalOnCreate() {
+    // given
+    final var batchOperationKey = 1L;
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .processDefinitionIds("process")
+            .processDefinitionVersions(1)
+            .build();
+    final var record =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .setStorageOrdinal(1234);
+
+    // when
+    state.create(batchOperationKey, record);
+
+    // then
+    assertThat(state.get(batchOperationKey).get().getStorageOrdinal()).isEqualTo(1234);
+  }
+
+  @Test
   void shouldCreateBatchOperationForMigration() throws JsonProcessingException {
     // given
     final var batchOperationKey = 1L;
