@@ -22,4 +22,23 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="create_variable_protection_modes_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}VARIABLE_PROTECTION_MODES"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}VARIABLE_PROTECTION_MODES">
+      <column name="VAR_KEY" type="BIGINT">
+        <constraints primaryKey="true"
+          foreignKeyName="${prefix}FK_VARIABLE_PROTECTION_MODES_VARIABLE"
+          referencedTableName="${prefix}VARIABLE"
+          referencedColumnNames="VAR_KEY" deleteCascade="true"/>
+      </column>
+      <column name="PROTECTION_MODE" type="INTEGER">
+        <constraints primaryKey="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+
 </databaseChangeLog>
