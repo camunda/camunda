@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -57,6 +58,8 @@ public final class SystemPartition {
   private final SystemKeyValueStore keyValueStore = new SystemKeyValueStore();
   // listeners added before start, handed to the role controller when it is created
   private final List<SystemPartitionListener> pendingListeners = new ArrayList<>();
+  // actors built on top of the partition, started after its own
+  private final List<Actor> components = new ArrayList<>();
   private volatile SystemPartitionStateMachine stateMachine;
   private volatile SystemPartitionSnapshotDirector snapshotDirector;
   private volatile SystemPartitionRoleController roleController;
@@ -103,6 +106,32 @@ public final class SystemPartition {
     scheduler.submitActor(stateMachine);
     scheduler.submitActor(snapshotDirector);
     scheduler.submitActor(roleController);
+    components.forEach(scheduler::submitActor);
+  }
+
+  /**
+   * Adds an actor built on top of the partition, such as a failure detector. It is started by
+   * {@link #start(ActorSchedulingService)}, after the partition's own actors, and closed along with
+   * them. Must be called before {@link #start(ActorSchedulingService)}.
+   */
+  public synchronized void addComponent(final Actor component) {
+    if (stateMachine != null) {
+      throw new IllegalStateException("Expected to add components before the partition started");
+    }
+    components.add(component);
+  }
+
+  /**
+   * Returns a future completed once this broker applied every entry it had committed when the
+   * partition started. Values watched before replay is done may be historical. Must be called after
+   * {@link #start(ActorSchedulingService)}.
+   */
+  public ActorFuture<Void> awaitReplayed() {
+    final var started = stateMachine;
+    if (started == null) {
+      throw new IllegalStateException("Expected the system partition to be started");
+    }
+    return started.awaitReplayed();
   }
 
   /**
@@ -149,10 +178,13 @@ public final class SystemPartition {
   }
 
   /** Returns the actors started by {@link #start(ActorSchedulingService)}, if any. */
-  List<Actor> actors() {
-    return Stream.of(roleController, snapshotDirector, stateMachine)
+  synchronized List<Actor> actors() {
+    if (stateMachine == null) {
+      return List.of();
+    }
+    return Stream.concat(
+            components.stream(), Stream.<Actor>of(roleController, snapshotDirector, stateMachine))
         .filter(Objects::nonNull)
-        .<Actor>map(a -> a)
         .toList();
   }
 
