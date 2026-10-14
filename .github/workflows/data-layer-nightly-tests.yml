@@ -119,7 +119,6 @@ jobs:
           -D flaky.test.reportDir=failsafe-reports \
           -D failsafe.timeout=4800 \
           -D junit.jupiter.extensions.autodetection.enabled=true \
-          -D "argLine=--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED" \
           -pl qa/acceptance-tests \
           -D groups="dl-nightly" \
           -D failsafe.excludedGroups="" \
