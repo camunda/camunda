@@ -121,7 +121,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
       return;
     }
 
-    final long childKey = findChild(instanceToSuspend, value.getIndex());
+    final long childKey = findNextChildAfter(instanceToSuspend, value.getIndex());
     if (childKey != NO_KEY) {
       continueWithChild(command, childKey, instanceToSuspendKey);
     } else {
@@ -239,7 +239,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
       return;
     }
 
-    final long siblingKey = findChild(parent, suspendedChildKey);
+    final long siblingKey = findNextChildAfter(parent, suspendedChildKey);
     if (siblingKey != NO_KEY) {
       continueWithChild(command, siblingKey, parentKey);
     } else {
@@ -266,7 +266,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
    * Returns the key of the first child of {@code parent} after {@code afterKey}, or {@code -1} if
    * there is none. Starts at the first child when {@code afterKey} is {@code -1}.
    */
-  private long findChild(final ElementInstance parent, final long afterKey) {
+  private long findNextChildAfter(final ElementInstance parent, final long afterKey) {
     if (parent.getNumberOfActiveElementInstances() <= 0) {
       return NO_KEY;
     }
