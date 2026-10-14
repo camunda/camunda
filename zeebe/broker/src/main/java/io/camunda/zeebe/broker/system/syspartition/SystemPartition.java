@@ -14,10 +14,14 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -43,6 +47,7 @@ public final class SystemPartition {
   private final RaftPartition raftPartition;
   private final FileBasedSnapshotStore snapshotStore;
   private final MeterRegistry meterRegistry;
+  private volatile SystemPartitionSnapshotter snapshotter;
 
   SystemPartition(
       final RaftPartition raftPartition,
@@ -62,12 +67,34 @@ public final class SystemPartition {
     return raftPartition.bootstrap(managementService, snapshotStore);
   }
 
+  /**
+   * Restores the state from the latest snapshot and snapshots it once the partition commits. Must
+   * be called after {@link #bootstrap(PartitionManagementService)} completed.
+   */
+  public ActorFuture<Void> startSnapshotter(final ActorSchedulingService scheduler) {
+    snapshotter = new SystemPartitionSnapshotter(raftPartition, snapshotStore);
+    return scheduler.submitActor(snapshotter);
+  }
+
+  /** Returns the state restored from the latest snapshot, or empty before the snapshotter ran. */
+  public Optional<SystemPartitionState> state() {
+    return Optional.ofNullable(snapshotter).map(SystemPartitionSnapshotter::state);
+  }
+
+  public Optional<PersistedSnapshot> latestSnapshot() {
+    return snapshotStore.getLatestSnapshot();
+  }
+
   public RaftPartition raftPartition() {
     return raftPartition;
   }
 
   FileBasedSnapshotStore snapshotStore() {
     return snapshotStore;
+  }
+
+  SystemPartitionSnapshotter snapshotter() {
+    return snapshotter;
   }
 
   MeterRegistry meterRegistry() {

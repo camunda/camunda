@@ -569,6 +569,10 @@ public class BrokerBasedPropertiesOverride {
         .getCluster()
         .getSystemPartition()
         .setLogSegmentSize(cluster.getSystemPartition().getLogSegmentSize());
+    override
+        .getCluster()
+        .getSystemPartition()
+        .setSnapshotPeriod(cluster.getSystemPartition().getSnapshotPeriod());
 
     populateFromMembership(override, camunda);
     populateFromRaftProperties(override, camunda);
