@@ -59,7 +59,7 @@ public class OAuth2AuthenticationExceptionHandler implements AuthenticationFailu
     unauthorizedHandler.onAuthenticationFailure(request, response, exception);
   }
 
-  static String errorCode(final AuthenticationException exception) {
+  private static String errorCode(final AuthenticationException exception) {
     if (exception instanceof final OAuth2AuthenticationException e && e.getError() != null) {
       final String code = e.getError().getErrorCode();
       return code != null && LOGGABLE_ERROR_CODE.matcher(code).matches() ? code : "unknown";
