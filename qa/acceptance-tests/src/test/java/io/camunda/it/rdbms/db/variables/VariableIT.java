@@ -9,8 +9,11 @@ package io.camunda.it.rdbms.db.variables;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
+import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.countProtectionModes;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveRandomVariables;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVariable;
+import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVariables;
+import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.findProtectionModeCodes;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariablesAndReturnOne;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,6 +21,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.domain.VariableDbModel.ProtectionModeDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel.VariableDbModelBuilder;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
@@ -29,8 +33,10 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +62,79 @@ public class VariableIT {
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
     assertThat(instance.fullValue()).isNull();
     assertThat(instance.isPreview()).isFalse();
+  }
+
+  @TestTemplate
+  public void shouldSaveProtectionModes(final CamundaRdbmsTestApplication testApplication)
+      throws SQLException {
+    // given
+    final var protectedVariable =
+        createAndSaveVariable(
+            testApplication.getRdbmsService(),
+            b -> b.protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+
+    // when
+    final var modes = findProtectionModeCodes(testApplication, protectedVariable.variableKey());
+
+    // then
+    assertThat(modes).containsExactly(ProtectionModeDbModel.REDACT.getCode());
+  }
+
+  @TestTemplate
+  public void shouldSaveProtectionModesOfEachVariableInOneBatch(
+      final CamundaRdbmsTestApplication testApplication) throws SQLException {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var protectedVariable1 =
+        VariableFixtures.createRandomized(
+            b -> b.protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+    final var unprotectedVariable = VariableFixtures.createRandomized();
+    final var protectedVariable2 =
+        VariableFixtures.createRandomized(
+            b -> b.protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+
+    // when
+    createAndSaveVariables(
+        rdbmsService, List.of(protectedVariable1, unprotectedVariable, protectedVariable2));
+
+    // then
+    assertThat(findProtectionModeCodes(testApplication, protectedVariable1.variableKey()))
+        .containsExactly(ProtectionModeDbModel.REDACT.getCode());
+    assertThat(findProtectionModeCodes(testApplication, protectedVariable2.variableKey()))
+        .containsExactly(ProtectionModeDbModel.REDACT.getCode());
+    assertThat(findProtectionModeCodes(testApplication, unprotectedVariable.variableKey()))
+        .isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldNotSaveProtectionModesForUnprotectedVariable(
+      final CamundaRdbmsTestApplication testApplication) throws SQLException {
+    // given
+    final var variable = createAndSaveVariable(testApplication.getRdbmsService(), b -> b);
+
+    // when / then
+    assertThat(findProtectionModeCodes(testApplication, variable.variableKey())).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldDeleteProtectionModesWithVariable(
+      final CamundaRdbmsTestApplication testApplication) throws SQLException {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var protectedVariable =
+        createAndSaveVariable(
+            rdbmsService, b -> b.protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+    assertThat(findProtectionModeCodes(testApplication, protectedVariable.variableKey()))
+        .hasSize(1);
+
+    // when
+    rdbmsService
+        .createWriter(PARTITION_ID)
+        .getVariableWriter()
+        .deleteProcessInstanceRelatedData(List.of(protectedVariable.processInstanceKey()), 10);
+
+    // then
+    assertThat(countProtectionModes(testApplication, protectedVariable.variableKey())).isZero();
   }
 
   @TestTemplate
