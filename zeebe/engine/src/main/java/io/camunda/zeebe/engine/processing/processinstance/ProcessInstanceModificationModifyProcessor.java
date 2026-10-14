@@ -350,6 +350,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final DeployedProcess process,
       final ElementInstance processInstance) {
     final var value = command.getValue();
+    final long processInstanceKey = value.getProcessInstanceKey();
     final var activateInstructions = value.getActivateInstructions();
     final var terminateInstructions = value.getTerminateInstructions();
 
