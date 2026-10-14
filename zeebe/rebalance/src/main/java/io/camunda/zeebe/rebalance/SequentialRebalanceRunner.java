@@ -39,10 +39,11 @@ import org.slf4j.LoggerFactory;
  * the start of the run so that we have a fixed target to work towards.
  *
  * <p>A partition already led by its desired leader is completed as {@link
- * PartitionRebalanceOutcome#ALREADY_LEADER}. Every other partition is processed in order, and only
- * one transfer is ever in flight. Each transfer is handed to the partition's current leader, which
- * owns it from there: the coordinator learns of the outcome when that leader reports it back (or by
- * seeing leadership move in the topology), and moves on to the next partition.
+ * PartitionRebalanceOutcome#ALREADY_LEADER}. Every other partition is processed one at a time, in
+ * the order chosen by {@link TransferOrder} so that the transfers temporarily overload as few
+ * brokers as possible. Each transfer is handed to the partition's current leader, which owns it
+ * from there: the coordinator learns of the outcome when that leader reports it back (or by seeing
+ * leadership move in the topology), and moves on to the next partition.
  *
  * <pre>
  *   run()
@@ -69,7 +70,7 @@ import org.slf4j.LoggerFactory;
  *     |                             COMPLETED(PHYSICAL_TENANT_RECOVERING)  (as above, observed
  *     |                                                                     while waiting)
  *     |
- *     | one partition in flight at a time, in order
+ *     | one partition in flight at a time, least overloading first
  *     v
  *   TRANSFERRING ----------------------.
  *     |                                |
@@ -149,7 +150,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
     } else {
       publish(rebalance);
       observePlanned(rebalance);
-      transferFrom(rebalance, 0, completion);
+      transferNext(rebalance, completion);
     }
     return completion;
   }
@@ -166,16 +167,13 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
     }
   }
 
-  /** Process the first partition that the rebalance still has to transfer. */
-  private void transferFrom(
-      final RebalanceRun rebalance, final int fromIndex, final ActorFuture<Void> completion) {
-    for (int index = fromIndex; index < rebalance.partitionCount(); index++) {
-      if (rebalance.isCancelRequested() || rebalance.isAbandoned()) {
-        break;
-      }
-      if (rebalance.partition(index).progress() == PartitionRebalanceProgress.PENDING) {
+  /** Process the partition that the rebalance should transfer next, if any is still pending. */
+  private void transferNext(final RebalanceRun rebalance, final ActorFuture<Void> completion) {
+    if (!rebalance.isCancelRequested() && !rebalance.isAbandoned()) {
+      final var next = rebalance.nextToTransfer();
+      if (next.isPresent()) {
         rebalance.startPartition();
-        initiate(rebalance, index, completion);
+        initiate(rebalance, next.getAsInt(), completion);
         return;
       }
     }
@@ -265,7 +263,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
             return;
           }
           if (rebalance.isCancelRequested()) {
-            transferFrom(rebalance, index, completion);
+            transferNext(rebalance, completion);
             return;
           }
           if (resolveIfPhysicalTenantDisabled(rebalance, index, completion)) {
@@ -609,7 +607,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
     rebalance.updatePartition(index, partition -> partition.completed(outcome));
     observeTransferOutcome(rebalance.partition(index), outcome, rebalance.partitionElapsed());
     publish(rebalance);
-    transferFrom(rebalance, index + 1, completion);
+    transferNext(rebalance, completion);
   }
 
   /** Completes a partition with leadership having reached the desired leader. */
@@ -621,7 +619,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         PartitionRebalanceOutcome.TRANSFERRED,
         rebalance.partitionElapsed());
     publish(rebalance);
-    transferFrom(rebalance, index + 1, completion);
+    transferNext(rebalance, completion);
   }
 
   /** Completes a partition with leadership having moved to a member other than expected. */
@@ -636,7 +634,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         PartitionRebalanceOutcome.LEADER_CHANGED,
         rebalance.partitionElapsed());
     publish(rebalance);
-    transferFrom(rebalance, index + 1, completion);
+    transferNext(rebalance, completion);
   }
 
   private void observeTransferOutcome(
