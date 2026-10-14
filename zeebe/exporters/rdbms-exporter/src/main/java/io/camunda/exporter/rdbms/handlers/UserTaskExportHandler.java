@@ -53,7 +53,9 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
           UserTaskIntent.MIGRATED,
           UserTaskIntent.ASSIGNMENT_DENIED,
           UserTaskIntent.UPDATE_DENIED,
-          UserTaskIntent.COMPLETION_DENIED);
+          UserTaskIntent.COMPLETION_DENIED,
+          UserTaskIntent.SUSPENDED,
+          UserTaskIntent.RESUMED);
 
   private final UserTaskWriter userTaskWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -126,6 +128,8 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
                   .build());
       case UserTaskIntent.ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED ->
           userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.CREATED);
+      case UserTaskIntent.SUSPENDED -> userTaskWriter.updateSuspended(value.getUserTaskKey(), true);
+      case UserTaskIntent.RESUMED -> userTaskWriter.updateSuspended(value.getUserTaskKey(), false);
       default ->
           // All currently supported intents are handled explicitly above.
           // If new intent is added to EXPORTABLE_INTENTS but not handled here,

@@ -54,7 +54,9 @@ public class UserTaskHandler implements OrdinalIndexExportHandler<TaskEntity, Us
           UserTaskIntent.UPDATED,
           UserTaskIntent.ASSIGNMENT_DENIED,
           UserTaskIntent.UPDATE_DENIED,
-          UserTaskIntent.COMPLETION_DENIED);
+          UserTaskIntent.COMPLETION_DENIED,
+          UserTaskIntent.SUSPENDED,
+          UserTaskIntent.RESUMED);
   private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
       "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
   private final String indexName;
@@ -100,11 +102,17 @@ public class UserTaskHandler implements OrdinalIndexExportHandler<TaskEntity, Us
 
   @Override
   public void updateEntity(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    final var intent = (UserTaskIntent) record.getIntent();
     entity.setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()));
-    entity.setAction(record.getValue().getAction());
+    // SUSPENDED and RESUMED don't transition the user task, they pause and continue its lifecycle.
+    // They're written from the stored user task, whose action may already be reset, so exporting it
+    // could overwrite the action of the transition the task continues with after resuming.
+    if (intent != UserTaskIntent.SUSPENDED && intent != UserTaskIntent.RESUMED) {
+      entity.setAction(record.getValue().getAction());
+    }
     entity.setKey(record.getKey());
 
-    switch ((UserTaskIntent) record.getIntent()) {
+    switch (intent) {
       case UserTaskIntent.CREATED, UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED -> {
         entity.setState(TaskState.CREATED);
         entity.setCompletionTime(null);
@@ -120,6 +128,8 @@ public class UserTaskHandler implements OrdinalIndexExportHandler<TaskEntity, Us
       case UserTaskIntent.CANCELING -> entity.setState(TaskState.CANCELING);
       case UserTaskIntent.ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED ->
           entity.setState(TaskState.CREATED);
+      case UserTaskIntent.SUSPENDED -> entity.setIsSuspended(true);
+      case UserTaskIntent.RESUMED -> entity.setIsSuspended(false);
       default -> {}
     }
 
@@ -180,6 +190,9 @@ public class UserTaskHandler implements OrdinalIndexExportHandler<TaskEntity, Us
     }
     if (entity.getState() != null) {
       updateFields.put(TaskTemplate.STATE, entity.getState());
+    }
+    if (entity.getIsSuspended() != null) {
+      updateFields.put(TaskTemplate.IS_SUSPENDED, entity.getIsSuspended());
     }
     if (entity.getFlowNodeBpmnId() != null) {
       updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());

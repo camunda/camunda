@@ -62,7 +62,9 @@ class UserTaskExportHandlerTest {
           UserTaskIntent.MIGRATED,
           UserTaskIntent.ASSIGNMENT_DENIED,
           UserTaskIntent.UPDATE_DENIED,
-          UserTaskIntent.COMPLETION_DENIED);
+          UserTaskIntent.COMPLETION_DENIED,
+          UserTaskIntent.SUSPENDED,
+          UserTaskIntent.RESUMED);
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
@@ -332,6 +334,34 @@ class UserTaskExportHandlerTest {
 
     // then
     verify(userTaskWriter).updateState(eq(recordValue.getUserTaskKey()), eq(UserTaskState.CREATED));
+    verifyNoMoreInteractions(userTaskWriter);
+  }
+
+  @Test
+  void shouldMarkUserTaskSuspendedOnSuspendedRecord() {
+    // given
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.SUSPENDED));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(userTaskWriter).updateSuspended(record.getValue().getUserTaskKey(), true);
+    verifyNoMoreInteractions(userTaskWriter);
+  }
+
+  @Test
+  void shouldClearUserTaskSuspensionMarkerOnResumedRecord() {
+    // given
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.RESUMED));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(userTaskWriter).updateSuspended(record.getValue().getUserTaskKey(), false);
     verifyNoMoreInteractions(userTaskWriter);
   }
 

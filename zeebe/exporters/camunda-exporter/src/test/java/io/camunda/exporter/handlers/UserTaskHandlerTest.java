@@ -69,7 +69,9 @@ public class UserTaskHandlerTest {
           UserTaskIntent.UPDATED,
           UserTaskIntent.ASSIGNMENT_DENIED,
           UserTaskIntent.UPDATE_DENIED,
-          UserTaskIntent.COMPLETION_DENIED);
+          UserTaskIntent.COMPLETION_DENIED,
+          UserTaskIntent.SUSPENDED,
+          UserTaskIntent.RESUMED);
 
   @Captor private ArgumentCaptor<Map<String, Object>> updateFieldsCaptor;
 
@@ -1033,6 +1035,73 @@ public class UserTaskHandlerTest {
           .describedAs("Expect state to be updated to {}", expectedState)
           .containsEntry(TaskTemplate.STATE, expectedState);
     }
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = UserTaskIntent.class,
+      names = {"SUSPENDED", "RESUMED"})
+  void shouldUpdateSuspensionMarkerOnSuspendedAndResumed(final UserTaskIntent intent) {
+    // given
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(intent)
+                    .withKey(111)
+                    .withValue(
+                        ImmutableUserTaskRecordValue.builder()
+                            .from(factory.generateObject(UserTaskRecordValue.class))
+                            .build()));
+
+    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(111));
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // when
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+    underTest.flush(index, taskEntity, mockRequest);
+
+    // then
+    verify(mockRequest)
+        .upsertWithRouting(
+            eq(index), eq(taskEntity.getId()), eq(taskEntity), updateFieldsCaptor.capture(), any());
+    assertThat(updateFieldsCaptor.getValue())
+        .describedAs("Expect only the suspension marker to be updated")
+        .containsOnlyKeys(TaskTemplate.IS_SUSPENDED)
+        .containsEntry(TaskTemplate.IS_SUSPENDED, intent == UserTaskIntent.SUSPENDED);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = UserTaskIntent.class,
+      names = {"SUSPENDED", "RESUMED"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void shouldNotUpdateSuspensionMarkerOnOtherIntents(final UserTaskIntent intent) {
+    Assumptions.assumeThat(SUPPORTED_INTENTS).contains(intent);
+
+    // given
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(intent)
+                    .withKey(111)
+                    .withValue(ImmutableUserTaskRecordValue.builder().build()));
+
+    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(111));
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // when
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+    underTest.flush(index, taskEntity, mockRequest);
+
+    // then
+    verify(mockRequest)
+        .upsertWithRouting(
+            eq(index), eq(taskEntity.getId()), eq(taskEntity), updateFieldsCaptor.capture(), any());
+    assertThat(updateFieldsCaptor.getValue()).doesNotContainKey(TaskTemplate.IS_SUSPENDED);
   }
 
   /**

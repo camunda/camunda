@@ -452,6 +452,12 @@
     WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 
+  <update id="updateSuspended" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
+    UPDATE ${prefix}USER_TASK
+    SET IS_SUSPENDED = #{isSuspended}
+    WHERE USER_TASK_KEY = #{userTaskKey}
+  </update>
+
   <delete id="deleteCandidateUsers" parameterType="java.lang.Long">
     DELETE
     FROM ${prefix}CANDIDATE_USER
