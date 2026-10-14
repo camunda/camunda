@@ -21,6 +21,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.OperationExecutorProperties;
 import io.camunda.operate.webapp.elasticsearch.writer.BatchOperationWriter;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -49,11 +50,14 @@ public class UpdateVariableHandlerTest {
   private OperateProperties operateProperties;
 
   @Mock private Metrics metrics;
+  @Mock private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @InjectMocks private UpdateVariableHandler handler;
 
   private final String operationId = "123";
+  // scopeKey is the process instance's own root scope
   private final Long scopeKey = 456L;
+  private final Long processInstanceKey = 456L;
   private final Long variableDocumentKey = 995L;
   private final String variableName = "x";
   private final int variableValue = 1;
@@ -153,6 +157,23 @@ public class UpdateVariableHandlerTest {
             OperationType.UPDATE_VARIABLE.name());
   }
 
+  @Test
+  void shouldFailOperationWhenScopeDoesNotBelongToProcessInstance() throws Exception {
+    // given: scopeKey belongs to a foreign process instance
+    final var operation = createLockedOperation().setScopeKey(999L);
+    // flowNodeInstanceReader returns no flow node instances by default
+
+    // when
+    handler.handle(operation);
+
+    // then: the operation fails and setVariables is never called
+    verify(batchOperationWriter).updateOperation(operation);
+    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
+    assertThat(operation.getErrorMessage())
+        .isEqualTo("Scope 999 does not belong to process instance " + processInstanceKey + ".");
+    verifyNoInteractions(operateServicesAdapter);
+  }
+
   /**
    * Creates a locked UPDATE_VARIABLE operation, simulating an operation that was picked up by the
    * executor for processing.
@@ -164,6 +185,7 @@ public class UpdateVariableHandlerTest {
         .setVariableName(variableName)
         .setVariableValue(String.valueOf(variableValue))
         .setScopeKey(scopeKey)
+        .setProcessInstanceKey(processInstanceKey)
         .setState(OperationState.LOCKED)
         .setLockOwner(workerId);
   }
