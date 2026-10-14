@@ -684,6 +684,7 @@ final class JsonSerializableToJsonTest {
                   .setExpression("=10 + 5")
                   .setResultValue(wrapString("15"))
                   .setScopeKey(1)
+                  .setStorageOrdinal(1234)
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"))
                   .setVariables(VARIABLES_MSGPACK)
@@ -696,6 +697,7 @@ final class JsonSerializableToJsonTest {
                   "expression":"=10 + 5",
                   "resultValue":49,
                   "scopeKey":1,
+                  "storageOrdinal":1234,
                   "warnings":["warning1","warning2"],
                   "variables":{
                     "foo":"bar"

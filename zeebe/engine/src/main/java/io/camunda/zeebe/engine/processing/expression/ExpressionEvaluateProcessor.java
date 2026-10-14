@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -63,6 +64,8 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
 
   @Override
   public void processRecord(final TypedRecord<ExpressionRecord> command) {
+    // an evaluation belongs to no instance unless a scope resolves below
+    command.getValue().setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     validator
         .validate(command)
         .map(this::applyResolvedTenant)
@@ -85,7 +88,16 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
   }
 
   private Either<Rejection, ExpressionRecord> evaluate(final ValidatedCommand validated) {
-    return expressionBehavior.resolveExpression(validated.expression(), validated.record());
+    // only the EVALUATED event belongs to the instance, the command keeps -1 so every rejection,
+    // including one written by the engine after an unexpected error, carries -1
+    final int storageOrdinal =
+        validated
+            .resolvedInstance()
+            .map(ResolvedInstance::storageOrdinal)
+            .orElse(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+    return expressionBehavior
+        .resolveExpression(validated.expression(), validated.record())
+        .map(evaluated -> evaluated.setStorageOrdinal(storageOrdinal));
   }
 
   private Either<Rejection, ValidatedCommand> authorize(
