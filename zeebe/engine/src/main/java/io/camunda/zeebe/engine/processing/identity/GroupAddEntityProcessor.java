@@ -102,7 +102,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     final var groupKey = persistedRecord.get().getGroupKey();
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityId, entityType)) {
+    if (!isEntityPresent(entityId, entityType, record.getPolicyVersion())) {
       final var errorMessage =
           "Expected to add an entity with ID '%s' and type '%s' to group with ID '%s', but the entity does not exist."
               .formatted(entityId, entityType, groupId);
@@ -160,12 +160,13 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
         });
   }
 
-  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
+  private boolean isEntityPresent(
+      final String entityId, final EntityType entityType, final long policyVersion) {
     final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
     return switch (entityType) {
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
       case CLIENT -> true;
-      case EntityType.MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
+      case EntityType.MAPPING_RULE -> mappingRuleState.get(entityId, policyVersion).isPresent();
       default -> false;
     };
   }

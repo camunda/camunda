@@ -83,7 +83,7 @@ public class AuthorizationEntityValidator {
         }
         break;
       case MAPPING_RULE:
-        if (mappingRuleState.get(record.getOwnerId()).isEmpty()) {
+        if (mappingRuleState.get(record.getOwnerId(), record.getPolicyVersion()).isEmpty()) {
           LOG.debug("Owner mapping rule '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
@@ -125,7 +125,7 @@ public class AuthorizationEntityValidator {
           }
           break;
         case MAPPING_RULE:
-          if (mappingRuleState.get(record.getResourceId()).isEmpty()) {
+          if (mappingRuleState.get(record.getResourceId(), record.getPolicyVersion()).isEmpty()) {
             LOG.debug("Resource mapping rule '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(

@@ -100,7 +100,8 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
+    if (!isEntityPresent(
+        command.getAuthorizations(), entityType, entityId, record.getPolicyVersion())) {
       final var errorMessage =
           ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -163,11 +164,12 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   private boolean isEntityPresent(
       final Map<String, Object> authorizations,
       final EntityType entityType,
-      final String entityId) {
+      final String entityId,
+      final long policyVersion) {
     return switch (entityType) {
       case USER, CLIENT, GROUP ->
           true; // With simple mapping rules, any username, client id or group can be assigned
-      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId, policyVersion).isPresent();
       default -> false;
     };
   }

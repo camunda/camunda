@@ -169,7 +169,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       case GROUP -> !localGroupEnabled || groupState.get(entityId, policyVersion).isPresent();
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
       case CLIENT -> true;
-      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId, policyVersion).isPresent();
       case ROLE -> roleState.getRole(entityId).isPresent();
       default -> false;
     };

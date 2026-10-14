@@ -94,7 +94,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityId, entityType)) {
+    if (!isEntityPresent(entityId, entityType, record.getPolicyVersion())) {
       final var errorMessage =
           "Expected to remove an entity with ID '%s' and type '%s' from group with ID '%s', but the entity does not exist."
               .formatted(entityId, entityType, groupId);
@@ -157,11 +157,12 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
         record.getEntityType(), record.getEntityId(), RelationType.GROUP, record.getGroupId());
   }
 
-  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
+  private boolean isEntityPresent(
+      final String entityId, final EntityType entityType, final long policyVersion) {
     return switch (entityType) {
       case USER, CLIENT ->
           true; // With simple mapping rules, any username or client id can be assigned
-      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId, policyVersion).isPresent();
       default -> false;
     };
   }

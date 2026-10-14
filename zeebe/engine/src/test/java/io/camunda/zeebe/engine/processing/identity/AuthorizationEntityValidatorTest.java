@@ -82,9 +82,11 @@ class AuthorizationEntityValidatorTest {
     lenient()
         .when(roleState.getRole("role1", 0L))
         .thenReturn(Optional.of(mock(PersistedRole.class)));
-    lenient().when(groupState.get("group1", 0L)).thenReturn(Optional.of(mock(PersistedGroup.class)));
     lenient()
-        .when(mappingRuleState.get("mapping-rule1"))
+        .when(groupState.get("group1", 0L))
+        .thenReturn(Optional.of(mock(PersistedGroup.class)));
+    lenient()
+        .when(mappingRuleState.get("mapping-rule1", 0L))
         .thenReturn(Optional.of(mock(PersistedMappingRule.class)));
   }
 

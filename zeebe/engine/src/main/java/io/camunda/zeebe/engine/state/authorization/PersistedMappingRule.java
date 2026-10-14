@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.authorization;
 import io.camunda.security.core.auth.MappingRuleMatcher;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -22,14 +23,26 @@ public class PersistedMappingRule extends UnpackedObject
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty mappingRuleIdProp = new StringProperty("mappingRuleId", "");
+  private final BooleanProperty deletedProp = new BooleanProperty("deleted", false);
 
   public PersistedMappingRule() {
-    super(5);
+    super(6);
     declareProperty(mappingRuleKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp)
-        .declareProperty(mappingRuleIdProp);
+        .declareProperty(mappingRuleIdProp)
+        .declareProperty(deletedProp);
+  }
+
+  /** Whether this version of the mapping rule is a tombstone, that is, the rule is deleted. */
+  public boolean isDeleted() {
+    return deletedProp.getValue();
+  }
+
+  public PersistedMappingRule setDeleted(final boolean deleted) {
+    deletedProp.setValue(deleted);
+    return this;
   }
 
   public PersistedMappingRule copy() {

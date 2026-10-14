@@ -23,6 +23,6 @@ public class MappingRuleDeletedApplier
 
   @Override
   public void applyState(final long key, final MappingRuleRecord value) {
-    mappingRuleState.delete(value.getMappingRuleId());
+    mappingRuleState.delete(value);
   }
 }

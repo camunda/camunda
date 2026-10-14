@@ -170,7 +170,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       case GROUP -> !localGroupEnabled || groupState.get(entityId, policyVersion).isPresent();
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
       case CLIENT -> true;
-      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId, policyVersion).isPresent();
       default -> false;
     };
   }

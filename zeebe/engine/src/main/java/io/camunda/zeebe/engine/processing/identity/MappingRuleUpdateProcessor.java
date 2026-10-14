@@ -81,7 +81,7 @@ public class MappingRuleUpdateProcessor
       return;
     }
 
-    final var persistedRecord = mappingRuleState.get(mappingRuleId);
+    final var persistedRecord = mappingRuleState.get(mappingRuleId, record.getPolicyVersion());
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
           MAPPING_RULE_ID_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(mappingRuleId);
@@ -101,7 +101,8 @@ public class MappingRuleUpdateProcessor
     }
 
     final var persistedMappingRuleWithSameClaim =
-        mappingRuleState.get(record.getClaimName(), record.getClaimValue());
+        mappingRuleState.get(
+            record.getClaimName(), record.getClaimValue(), record.getPolicyVersion());
     if (persistedMappingRuleWithSameClaim.isPresent()
         && !persistedMappingRuleWithSameClaim.get().getMappingRuleId().equals(mappingRuleId)) {
       final var errorMessage =

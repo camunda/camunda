@@ -86,7 +86,7 @@ public class MappingRuleDeleteProcessor
   public void processNewCommand(final TypedRecord<MappingRuleRecord> command) {
     final var record = command.getValue();
     final String id = record.getMappingRuleId();
-    final var persistedMappingRuleOptional = mappingRuleState.get(id);
+    final var persistedMappingRuleOptional = mappingRuleState.get(id, record.getPolicyVersion());
     if (persistedMappingRuleOptional.isEmpty()) {
       final var errorMessage = MAPPING_RULE_NOT_FOUND_ERROR_MESSAGE.formatted(id);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
