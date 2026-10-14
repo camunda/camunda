@@ -68,19 +68,22 @@ public class ResolveIncidentHandlerTest {
     // given
     final Long incidentKey = 123L;
     final Long jobKey = 1L;
+    final Long processInstanceKey = 100L;
     final String workerId = "1";
     when(incidentReader.getIncidentById(incidentKey))
         .thenReturn(
             new IncidentEntity()
                 .setErrorType(ErrorType.TASK_LISTENER_NO_RETRIES)
                 .setJobKey(jobKey)
-                .setKey(incidentKey));
+                .setKey(incidentKey)
+                .setProcessInstanceKey(processInstanceKey));
 
     final String operationId = "456";
     final OperationEntity operationEntity =
         new OperationEntity()
             .setType(OperationType.RESOLVE_INCIDENT)
             .setIncidentKey(incidentKey)
+            .setProcessInstanceKey(processInstanceKey)
             .setId(operationId)
             .setState(OperationState.LOCKED)
             .setLockOwner(workerId);
@@ -112,7 +115,9 @@ public class ResolveIncidentHandlerTest {
     // incident process instance key, operation process instance key
     return Stream.of(
         Arguments.of(999L, 100L), // incident belongs to a different process instance
-        Arguments.of(null, 100L)); // incident carries no process instance key
+        Arguments.of(null, 100L), // incident carries no process instance key
+        Arguments.of(100L, null), // operation carries no process instance key
+        Arguments.of(null, null)); // neither carries a process instance key
   }
 
   @ParameterizedTest(name = "incident PI key={0}, operation PI key={1}")
