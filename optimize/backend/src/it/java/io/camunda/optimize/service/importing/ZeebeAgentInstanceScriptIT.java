@@ -7,9 +7,12 @@
  */
 package io.camunda.optimize.service.importing;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_AGENT_INSTANCE_INDEX_NAME;
+import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -273,6 +276,38 @@ class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldCountStoredAgentWithoutCacheFieldsAsZeroWhenSiblingAgentUpdates() {
+    // given: a COMPLETED agent stored before cache tokens existed, i.e. without cache fields
+    final ProcessInstanceDto completed = buildBaseInstance();
+    completed.setAgentInstances(List.of(completedAgent(AGENT_ID)));
+    importProcessInstances(List.of(completed));
+    removeCacheFieldsFromStoredAgents();
+
+    // when: a second agent arrives with cache tokens, which rebuilds the process-level totals
+    final ProcessInstanceDto sibling = buildBaseInstance();
+    final AgentInstanceDto siblingAgent = createdAgent(AGENT_ID_2);
+    siblingAgent.setStatus("THINKING");
+    final AgentMetricsDto siblingMetrics = metrics();
+    siblingMetrics.setCacheReadTokens(1000L);
+    siblingMetrics.setCacheCreationTokens(50L);
+    siblingAgent.setMetrics(siblingMetrics);
+    sibling.setAgentInstances(List.of(siblingAgent));
+    importProcessInstances(List.of(sibling));
+
+    // then: the null guards in the script count the old agent as input + output only
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(2);
+              assertThat(saved.getAgentTotalInputTokens()).isEqualTo(200L);
+              assertThat(saved.getAgentTotalOutputTokens()).isEqualTo(400L);
+              assertThat(saved.getAgentTotalTokens())
+                  .isEqualTo((100L + 200L) + (100L + 1050L + 200L));
+            });
+  }
+
+  @Test
   void shouldNotOverwriteTerminalStatusEvenWithNewerUpdate() {
     // given: COMPLETED sets terminal status at END_TIME (10:00:05)
     final ProcessInstanceDto completed = buildBaseInstance();
@@ -434,6 +469,24 @@ class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
     dto.setAgentTotalModelCalls(totalModel);
     dto.setAgentTotalToolCalls(totalTool);
     dto.setAgentTotalTokens(totalInput + totalCache + totalOutput);
+  }
+
+  private void removeCacheFieldsFromStoredAgents() {
+    final ObjectNode doc =
+        databaseIntegrationTestExtension
+            .getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ObjectNode.class)
+            .get(0);
+    doc.path("agentInstances")
+        .forEach(
+            agent ->
+                ((ObjectNode) agent.path("metrics"))
+                    .remove(List.of("cacheReadTokens", "cacheCreationTokens")));
+    databaseIntegrationTestExtension.addEntryWithRawIndex(
+        databaseIntegrationTestExtension
+            .getIndexNameService()
+            .getOptimizeIndexAliasForIndex(getProcessInstanceIndexAliasName(PROCESS_KEY)),
+        INSTANCE_ID,
+        doc);
   }
 
   private void importProcessInstances(final List<ProcessInstanceDto> instances) {
