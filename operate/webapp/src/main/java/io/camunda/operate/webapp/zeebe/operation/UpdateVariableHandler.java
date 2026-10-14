@@ -12,11 +12,14 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /** Update the variable. */
@@ -26,14 +29,35 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
+  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
+
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
+    if (!scopeBelongsToProcessInstance(
+        operation.getScopeKey(), operation.getProcessInstanceKey())) {
+      failOperation(
+          operation,
+          String.format(
+              "Scope %s does not belong to process instance %s.",
+              operation.getScopeKey(), operation.getProcessInstanceKey()));
+      return;
+    }
     final Map<String, Object> updateVariableMap =
         getVariableMap(operation.getVariableName(), operation.getVariableValue());
     final var key =
         operationServicesAdapter.setVariables(
             operation.getScopeKey(), updateVariableMap, true, operation.getId());
     markAsSent(operation, key);
+  }
+
+  private boolean scopeBelongsToProcessInstance(
+      final Long scopeKey, final Long processInstanceKey) {
+    if (scopeKey.equals(processInstanceKey)) {
+      return true;
+    }
+    return flowNodeInstanceReader.getAllFlowNodeInstances(processInstanceKey).stream()
+        .map(FlowNodeInstanceEntity::getKey)
+        .anyMatch(scopeKey::equals);
   }
 
   @Override
