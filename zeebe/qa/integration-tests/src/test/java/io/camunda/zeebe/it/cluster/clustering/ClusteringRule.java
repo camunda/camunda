@@ -52,6 +52,7 @@ import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
@@ -479,10 +480,10 @@ public class ClusteringRule extends ExternalResource {
 
     // By default, RocksDB takes 10% of the host memory per broker (FRACTION strategy), which adds
     // up quickly when many brokers run in the same JVM or many test forks run in parallel. Use
-    // the minimum of 32 MiB per partition instead.
+    // the minimum per partition (32 MiB) instead.
     final var rocksdbCfg = brokerCfg.getExperimental().getRocksdb();
     rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
-    rocksdbCfg.setMemoryLimit(DataSize.ofMegabytes(32));
+    rocksdbCfg.setMemoryLimit(DataSize.ofBytes(RocksdbCfg.MINIMUM_PARTITION_MEMORY_LIMIT));
 
     // custom configurators
     brokerConfigurator.accept(brokerCfg);
