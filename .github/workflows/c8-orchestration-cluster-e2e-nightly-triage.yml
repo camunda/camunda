@@ -3,7 +3,8 @@
 #              workflow for every supported version (8.7 / 8.8 / 8.9 / 8.10 / main), extracts
 #              failing tests from json-report artifacts, groups by version, and dispatches
 #              one fix-agent run per version. Skips dispatch when an open failing-test-fix
-#              PR already exists for the same base branch.
+#              PR already exists for the same base branch. A second schedule checks the
+#              scheduled history of each nightly and posts when one stays red or stops running.
 # type: CI
 # owner: @camunda/test-automation-team
 ---
@@ -20,6 +21,10 @@ on:
                            # over that worst case while still starting earlier. Revisit
                            # if a nightly job's finish time drifts close to this trigger.
                            # Still runs before close-stale-fix-prs.yml at 05:00 UTC.
+    - cron: '45 7 * * 1-5' # 07:45 UTC Mon-Fri -- the suite-health job only. GitHub starts a
+                           # nightly up to ~2h45 after its cron (8.10 E2E, cron 02:15, has
+                           # started as late as 04:57), so only after ~07:00 is a nightly that
+                           # did not run today more than 26 hours past its previous run.
   workflow_dispatch:
     inputs:
       dispatch:
@@ -63,9 +68,26 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/qa-engineering'
+  # The nightlies that triage scans, one per line: workflow file | version | test_type,
+  # where test_type is e2e, api_es or api_rdbms.
+  NIGHTLY_WORKFLOWS: |
+    c8-orchestration-cluster-nightly-8.7-e2e.yml|8.7|e2e
+    c8-orchestration-cluster-nightly-8.7-api-es.yml|8.7|api_es
+    c8-orchestration-cluster-nightly-8.8-e2e.yml|8.8|e2e
+    c8-orchestration-cluster-nightly-8.8-api-es.yml|8.8|api_es
+    c8-orchestration-cluster-nightly-8.9-e2e.yml|8.9|e2e
+    c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api_es
+    c8-orchestration-cluster-nightly-8.9-api-rdbms.yml|8.9|api_rdbms
+    c8-orchestration-cluster-nightly-8.10-api-es.yml|8.10|api_es
+    c8-orchestration-cluster-nightly-8.10-api-rdbms.yml|8.10|api_rdbms
+    c8-orchestration-cluster-nightly-8.10-e2e.yml|8.10|e2e
+    c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e
+    c8-orchestration-cluster-nightly-main-api-es.yml|main|api_es
+    c8-orchestration-cluster-nightly-main-api-rdbms.yml|main|api_rdbms
 
 jobs:
   triage:
+    if: github.event.schedule != '45 7 * * 1-5'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -124,25 +146,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Allowlist of nightly workflows to scan. Each entry: workflow file | version | test_type
-          # test_type in {e2e, api_es, api_rdbms}.
-          declare -a SCOPE=(
-            "c8-orchestration-cluster-nightly-8.7-e2e.yml|8.7|e2e"
-            "c8-orchestration-cluster-nightly-8.7-api-es.yml|8.7|api_es"
-            "c8-orchestration-cluster-nightly-8.8-e2e.yml|8.8|e2e"
-            "c8-orchestration-cluster-nightly-8.8-api-es.yml|8.8|api_es"
-            "c8-orchestration-cluster-nightly-8.9-e2e.yml|8.9|e2e"
-            "c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api_es"
-            "c8-orchestration-cluster-nightly-8.9-api-rdbms.yml|8.9|api_rdbms"
-            "c8-orchestration-cluster-nightly-8.10-api-es.yml|8.10|api_es"
-            "c8-orchestration-cluster-nightly-8.10-api-rdbms.yml|8.10|api_rdbms"
-            "c8-orchestration-cluster-nightly-8.10-e2e.yml|8.10|e2e"
-          )
-          SCOPE+=(
-            "c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e"
-            "c8-orchestration-cluster-nightly-main-api-es.yml|main|api_es"
-            "c8-orchestration-cluster-nightly-main-api-rdbms.yml|main|api_rdbms"
-          )
+          mapfile -t SCOPE < <(grep -v '^[[:space:]]*$' <<< "$NIGHTLY_WORKFLOWS")
 
           # Working files
           all_failures=/tmp/all_failures.jsonl
@@ -1049,6 +1053,192 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  suite-health:
+    name: Check suite health
+    # Triage reads the latest run of each nightly; this reads their scheduled history. It has its
+    # own schedule (see on.schedule). In a manual run it runs after dispatch, because both commit
+    # to the nightly-triage-state branch.
+    needs: [triage, dispatch]
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || github.event.schedule == '45 7 * * 1-5') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read  # gh run list
+    env:
+      STATE_BRANCH: nightly-triage-state
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Load suite-health state
+        env:
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO:  ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Pass the token as a header through the environment, so it is in no command line
+          # and in no config file of the clone.
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w 0)"
+          export GIT_CONFIG_VALUE_0
+
+          url="https://github.com/${REPO}.git"
+          state_dir="${RUNNER_TEMP}/triage-state"
+          rc=0
+          git ls-remote --exit-code --heads "$url" "$STATE_BRANCH" >/dev/null || rc=$?
+          case "$rc" in
+            0)
+              git clone -q --depth 1 --single-branch --branch "$STATE_BRANCH" "$url" "$state_dir"
+              if [ -f "${state_dir}/health.json" ]; then
+                cp "${state_dir}/health.json" "${RUNNER_TEMP}/health.json"
+              else
+                echo '{}' > "${RUNNER_TEMP}/health.json"
+              fi
+              ;;
+            2)
+              echo "::notice::State branch '${STATE_BRANCH}' does not exist yet; starting without suite-health state"
+              echo '{}' > "${RUNNER_TEMP}/health.json"
+              ;;
+            *)
+              echo "::error::Could not read the state branch '${STATE_BRANCH}' (git ls-remote exit ${rc})"
+              exit 1
+              ;;
+          esac
+
+      - name: Check suite health
+        id: health
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO:     ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          export STATE_FILE="${RUNNER_TEMP}/health.json"
+          export ALERTS_FILE="${RUNNER_TEMP}/health-alerts.txt"
+          bash .github/scripts/oc-nightly-suite-health/suite-health.sh
+
+          {
+            echo "### Suite health"
+            echo ""
+            if [ -s "$ALERTS_FILE" ]; then
+              # Slack links (<url|text>) as Markdown links.
+              sed -E -e 's/<([^|>]+)\|([^>]+)>/[\2](\1)/' -e 's/^/- /' "$ALERTS_FILE"
+            else
+              echo "Nothing to announce."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -s "$ALERTS_FILE" ]; then
+            echo "alerts=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "alerts=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import Vault secrets
+        id: secrets
+        if: steps.health.outputs.alerts == 'true' && (github.event_name == 'schedule' || github.event.inputs.send_slack_notification == 'true')
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+
+      - name: Post suite-health alerts to Slack
+        if: steps.health.outputs.alerts == 'true' && (github.event_name == 'schedule' || github.event.inputs.send_slack_notification == 'true')
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          SLACK_CHANNEL: ${{ github.event.inputs.slack_channel || 'c8-orchestration-cluster-e2e-test-results' }}
+          # A Slack group mention such as <!subteam^ID|group>. Without it the alert pings nobody.
+          SLACK_MENTION: ${{ vars.OC_SUITE_HEALTH_SLACK_MENTION }}
+          RUN_URL:     ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUNBOOK_URL: ${{ github.server_url }}/${{ github.repository }}/blob/main/qa/c8-orchestration-cluster-e2e-test-suite/docs/nightly-runbook.md#suite-health
+        run: |
+          set -euo pipefail
+          alerts_file="${RUNNER_TEMP}/health-alerts.txt"
+
+          text=":stethoscope: *C8 Orchestration Cluster Nightly Suite Health -- $(date -u +%Y-%m-%d)*"
+          # Mention for a new or repeated problem, not for a recovery.
+          if [ -n "${SLACK_MENTION:-}" ] && grep -q -e ':rotating_light:' -e ':warning:' "$alerts_file"; then
+            text="${SLACK_MENTION} ${text}"
+          fi
+          text="${text}"$'\n'"$(cat "$alerts_file")"$'\n\n'"<${RUNBOOK_URL}|Runbook> | <${RUN_URL}|Triage run>"
+
+          payload=$(jq -nc --arg channel "$SLACK_CHANNEL" --arg text "$text" \
+            '{channel: $channel, text: $text, mrkdwn: true, unfurl_links: false}')
+          response=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$payload" || echo '{}')
+          echo "$response" | jq '.'
+          if [ "$(jq -r '.ok' <<< "$response")" != "true" ]; then
+            echo "::error::Slack post failed: $(jq -r '.error // "no response"' <<< "$response")"
+            exit 1
+          fi
+
+      # Saved only after a successful post, so an alert that failed to post is tried again on the
+      # next run. A run from another branch, or one that posts nothing, saves nothing, so a test
+      # run cannot mark an alert as sent.
+      - name: Commit suite-health state
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event.inputs.send_slack_notification == 'true')
+        env:
+          TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          state_dir="${RUNNER_TEMP}/triage-state"
+          if [ ! -d "${state_dir}/.git" ]; then
+            echo "::warning::State branch '${STATE_BRANCH}' does not exist yet (the dispatch job creates it); suite-health state not saved"
+            exit 0
+          fi
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w 0)"
+          export GIT_CONFIG_VALUE_0
+
+          cp "${RUNNER_TEMP}/health.json" "${state_dir}/health.json"
+          cd "$state_dir"
+          git add health.json
+          if git diff --cached --quiet; then
+            echo "Suite-health state unchanged"
+            exit 0
+          fi
+          git -c user.name="qa-processes[bot]" -c user.email="qa-processes[bot]@users.noreply.github.com" \
+            commit -q -m "health: $(date -u +%F)"
+          git push -q origin "HEAD:${STATE_BRANCH}"
+
       - name: Observe build status
         if: always()
         continue-on-error: true

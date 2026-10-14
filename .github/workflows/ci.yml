@@ -2842,6 +2842,8 @@ jobs:
         run: bats .github/scripts/mergeback/mergeback.bats
       - name: Run failing-test owner resolver tests
         run: bats .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.bats
+      - name: Run OC nightly suite-health tests
+        run: bats .github/scripts/oc-nightly-suite-health/suite-health.bats
       - name: Observe build status
         if: always()
         continue-on-error: true

@@ -35,6 +35,7 @@ The proposed area owners are not live yet. They wait for the area teams to appro
 
 - **Per run.** Each nightly posts its Playwright results to `#c8-orchestration-cluster-e2e-test-results`.
 - **Triage digest.** `C8 Orchestration Cluster Nightly Triage` runs Monday to Friday at 03:30 UTC and posts one digest to the same channel. Fix-agent results arrive as replies in its thread.
+- **Suite health.** A second run of the triage workflow, Monday to Friday at 07:45 UTC, posts to the same channel when a nightly stays red or stops running. See [Suite health](#suite-health).
 - **Metrics report.** `C8 Orchestration Cluster Nightly Metrics Report` posts the latest outcome of every nightly, by version, to the same channel at 03:30 UTC.
 - **Nightly metrics.** `camunda/qa-metrics-exporter` posts a daily digest at 11:00 UTC to `#team-test-automation-metrics`. Its `OC` lines are these nightlies: failures per version against the 7-day average, tests that failed 3 nights or more in a row, new breakages and flakiness.
 
@@ -64,14 +65,25 @@ Triage reads the newest run of each nightly, collects the tests that failed from
 
 Every Monday, `camunda/qa-metrics-exporter` opens pull requests that remove the skip from tests whose linked bug is closed. `C8 Orchestration Cluster Unskip Verify Agent` then runs the un-skipped specs and pushes a fix to the same pull request if they fail. Review them like a fix-agent pull request.
 
+## Suite health
+
+Triage reads the newest run of each nightly only. A suite-health check reads the scheduled history of each nightly, Monday to Friday at 07:45 UTC, and posts in `#c8-orchestration-cluster-e2e-test-results` when:
+
+- a nightly has been red on 3 scheduled runs in a row. Weekend runs count. Cancelled and skipped runs are ignored.
+- a nightly has had no scheduled run for 26 hours, for example because the workflow was disabled.
+
+It runs later than triage because GitHub can start a nightly hours after its scheduled time: at 07:45 UTC, a nightly that did not run that night is more than 26 hours past its previous run. It posts each condition once, again every 7 days while it lasts, and once more when it clears. New and repeated alerts mention the Slack group in the repository variable `OC_SUITE_HEALTH_SLACK_MENTION`, if it is set. A red streak means that the nightly has not been fixed for several days: look at it today. For a nightly with no run, check in the Actions tab that its workflow is enabled.
+
+The check reads the nightlies listed in `NIGHTLY_WORKFLOWS` of the triage workflow, the same list that triage scans. It saves what it announced in `health.json` on the `nightly-triage-state` branch.
+
 ## Incidents
 
-The nightlies are excluded from CI incidents today, because Enablement reviews them every day. [#65305](https://github.com/camunda/camunda/issues/65305) proposes a suite-health incident instead: one incident when a nightly is red on 3 scheduled runs in a row, routed to the owner of the failing specs, and resolved by the first green run. A separate incident fires when a nightly has not run for 26 hours. The exclusion stays until the area teams have taken over and that monitoring is live.
+The nightlies are excluded from CI incidents today, because Enablement reviews them every day. [#65305](https://github.com/camunda/camunda/issues/65305) plans to lift that exclusion once the area teams have taken over. A red nightly then raises a CI incident through the rule that covers other CI jobs, for the owner that CI Analytics attributes it to (see [Who owns which test](#who-owns-which-test)). incident.io groups the repeat alerts of a nightly that stays red, and a medic can silence a long fix with `ci-silence-incident`. A nightly that stops running raises no incident: the suite-health check above reports it.
 
 ## Re-running
 
 - **A nightly.** Use **Re-run failed jobs** on the run, or run `C8 Orchestration Cluster E2E Tests On Demand` for the branch.
-- **The triage.** Run `C8 Orchestration Cluster Nightly Triage` by hand. Its `dispatch` input set to false gives the digest only. `send_slack_notification` and `slack_channel` decide where it posts.
+- **The triage.** Run `C8 Orchestration Cluster Nightly Triage` by hand. Its `dispatch` input set to false gives the digest only. `send_slack_notification` and `slack_channel` decide where it posts. The suite-health check saves what it announced only for a run of `main` that posts to Slack, so a test run cannot mark an alert as sent.
 
 ## Supervised replay
 
