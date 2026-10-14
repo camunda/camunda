@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -22,6 +23,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
 public final class SnapshotDirectorPartitionTransitionStep implements PartitionTransitionStep {
+
+  public SnapshotDirectorPartitionTransitionStep(final StorageCapabilities capabilities) {
+    // the AsyncSnapshotDirector asks the state controller for directory snapshots
+    capabilities.requireFileSnapshots("SnapshotDirectorPartitionTransitionStep");
+  }
 
   @Override
   public ActorFuture<Void> prepareTransition(

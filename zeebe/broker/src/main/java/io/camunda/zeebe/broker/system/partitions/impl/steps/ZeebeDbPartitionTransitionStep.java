@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -18,6 +19,12 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
 
   private static final String RECOVERY_FAILED_ERROR_MSG =
       "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d";
+
+  public ZeebeDbPartitionTransitionStep(final StorageCapabilities capabilities) {
+    // recovery rebuilds the runtime database from a snapshot, closing it deletes the runtime dir
+    capabilities.requireFileSnapshots("ZeebeDbPartitionTransitionStep");
+    capabilities.requireEphemeralRuntime("ZeebeDbPartitionTransitionStep");
+  }
 
   @Override
   public ActorFuture<Void> prepareTransition(
