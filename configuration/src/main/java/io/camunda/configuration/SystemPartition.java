@@ -31,6 +31,13 @@ public class SystemPartition {
    */
   private DataSize logSegmentSize = DataSize.ofMegabytes(4);
 
+  /**
+   * How often the system partition's state is snapshotted, if it changed since the latest snapshot.
+   * Snapshots let the log be compacted, and are the only place the state is written to disk as a
+   * file.
+   */
+  private Duration snapshotPeriod = Duration.ofMinutes(5);
+
   public boolean isEnabled() {
     return enabled;
   }
@@ -55,6 +62,14 @@ public class SystemPartition {
     this.logSegmentSize = logSegmentSize;
   }
 
+  public Duration getSnapshotPeriod() {
+    return snapshotPeriod;
+  }
+
+  public void setSnapshotPeriod(final Duration snapshotPeriod) {
+    this.snapshotPeriod = snapshotPeriod;
+  }
+
   @Override
   public String toString() {
     return "SystemPartition{"
@@ -64,6 +79,8 @@ public class SystemPartition {
         + heartbeatInterval
         + ", logSegmentSize="
         + logSegmentSize
+        + ", snapshotPeriod="
+        + snapshotPeriod
         + '}';
   }
 }

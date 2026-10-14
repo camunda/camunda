@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.system.syspartition;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.SchedulingHints;
@@ -46,13 +45,12 @@ public final class SystemPartitionFactory {
 
     final var meterRegistry =
         MicrometerUtil.wrap(brokerMeterRegistry, PartitionKeyNames.tags(partitionId));
-    // No snapshots are taken yet, so the log is never compacted. Raft requires a store regardless.
     final var snapshotStore =
         new FileBasedSnapshotStore(
             brokerCfg.getCluster().getNodeId(),
             partitionId,
             directory,
-            new RocksDBSnapshotFileInfoProvider(),
+            SystemPartitionSnapshotter.FILE_INFO_PROVIDER,
             meterRegistry);
     // System records carry their own positions rather than the contiguous positions of a data
     // partition's log stream, so the Zeebe entry validator does not apply.
@@ -73,6 +71,21 @@ public final class SystemPartitionFactory {
   public static ActorFuture<Void> close(
       final SystemPartition systemPartition, final ConcurrencyControl concurrencyControl) {
     final ActorFuture<Void> result = concurrencyControl.createFuture();
+    final var snapshotter = systemPartition.snapshotter();
+    if (snapshotter == null) {
+      closeRaftAndStore(systemPartition, concurrencyControl, result);
+    } else {
+      concurrencyControl.runOnCompletion(
+          snapshotter.closeAsync(),
+          (ok, error) -> closeRaftAndStore(systemPartition, concurrencyControl, result));
+    }
+    return result;
+  }
+
+  private static void closeRaftAndStore(
+      final SystemPartition systemPartition,
+      final ConcurrencyControl concurrencyControl,
+      final ActorFuture<Void> result) {
     systemPartition
         .raftPartition()
         .close()
@@ -92,6 +105,5 @@ public final class SystemPartitionFactory {
                                 result.complete(null);
                               }
                             })));
-    return result;
   }
 }

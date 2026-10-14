@@ -18,10 +18,12 @@ import org.springframework.util.unit.DataSize;
 public final class SystemPartitionCfg implements ConfigurationEntry {
   public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofSeconds(1);
   public static final DataSize DEFAULT_LOG_SEGMENT_SIZE = DataSize.ofMegabytes(4);
+  public static final Duration DEFAULT_SNAPSHOT_PERIOD = Duration.ofMinutes(5);
 
   private boolean enabled = false;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   private DataSize logSegmentSize = DEFAULT_LOG_SEGMENT_SIZE;
+  private Duration snapshotPeriod = DEFAULT_SNAPSHOT_PERIOD;
 
   public boolean isEnabled() {
     return enabled;
@@ -47,6 +49,14 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
     this.logSegmentSize = logSegmentSize;
   }
 
+  public Duration getSnapshotPeriod() {
+    return snapshotPeriod;
+  }
+
+  public void setSnapshotPeriod(final Duration snapshotPeriod) {
+    this.snapshotPeriod = snapshotPeriod;
+  }
+
   @Override
   public String toString() {
     return "SystemPartitionCfg{"
@@ -56,6 +66,8 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
         + heartbeatInterval
         + ", logSegmentSize="
         + logSegmentSize
+        + ", snapshotPeriod="
+        + snapshotPeriod
         + '}';
   }
 }
