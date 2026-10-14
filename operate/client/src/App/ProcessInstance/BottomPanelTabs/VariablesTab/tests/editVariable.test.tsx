@@ -467,6 +467,107 @@ describe('Edit variable', () => {
     });
   });
 
+  it('should save an edited truncated variable when the API formats the JSON differently', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariable({
+          name: 'clientNo',
+          value: '"value-preview"',
+          isTruncated: true,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('"value-preview"')).toBeInTheDocument();
+    });
+
+    mockGetVariable().withSuccess(
+      createVariable({
+        name: 'clientNo',
+        value: '{"count":0}',
+        isTruncated: false,
+      }),
+    );
+
+    const variableRow = await screen.findByTestId('variable-clientNo');
+    await user.click(
+      within(variableRow).getByRole('button', {
+        name: /edit/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        within(variableRow).getByTestId('edit-variable-value'),
+      ).toHaveValue('{"count":0}');
+    });
+    const input = within(variableRow).getByTestId('edit-variable-value');
+    await user.clear(input);
+    await user.type(input, '{{"count":1}');
+
+    await waitFor(() => {
+      expect(
+        within(variableRow).getByRole('button', {name: /save/i}),
+      ).toBeEnabled();
+    });
+
+    mockUpdateElementInstanceVariables('1').withDelay(null);
+    mockGetVariable().withSuccess(
+      createVariable({
+        name: 'clientNo',
+        value: '{ "count": 1.0 }',
+        isTruncated: false,
+      }),
+    );
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariable({
+          name: 'clientNo',
+          value: '"updated-preview"',
+          isTruncated: true,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    await user.click(within(variableRow).getByRole('button', {name: /save/i}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'success',
+        title: 'Variable updated',
+        isDismissable: true,
+      });
+    });
+  });
+
   it('should display notification if error occurs when getting single variable details', async () => {
     mockSearchVariables().withSuccess({
       items: [

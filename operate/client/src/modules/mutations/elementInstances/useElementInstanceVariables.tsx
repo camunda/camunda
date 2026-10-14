@@ -12,6 +12,15 @@ import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {getVariable} from 'modules/api/v2/variables/getVariable';
 import {queryKeys} from 'modules/queries/queryKeys';
+import isEqual from 'lodash/isEqual';
+
+const isSameJson = (a: string, b: string) => {
+  try {
+    return isEqual(JSON.parse(a), JSON.parse(b));
+  } catch {
+    return a === b;
+  }
+};
 
 function useElementInstanceVariables(
   elementInstanceKey: ElementInstance['elementInstanceKey'],
@@ -50,7 +59,7 @@ function useElementInstanceVariables(
               throw new Error(error.response?.statusText);
             }
 
-            if (response.value !== variable.value) {
+            if (!isSameJson(response.value, variable.value)) {
               throw new Error('Variable not updated yet');
             }
 
