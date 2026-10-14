@@ -337,11 +337,17 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     }
 
     public Builder<DocType, SearchAfterFieldType> maxRetryAttempts(final int maxRetryAttempts) {
+      if (maxRetryAttempts < 0) {
+        throw new IllegalArgumentException("Retries should not be less than zero");
+      }
       this.maxRetryAttempts = maxRetryAttempts;
       return this;
     }
 
     public Builder<DocType, SearchAfterFieldType> retryDelayMs(final int retryDelayMs) {
+      if (retryDelayMs < 0) {
+        throw new IllegalArgumentException("Retry delay should not be less than zero");
+      }
       this.retryDelayMs = retryDelayMs;
       return this;
     }
