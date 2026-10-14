@@ -56,6 +56,27 @@ class AsyncDocumentPipelineTest {
   }
 
   @Test
+  void shouldThrowExceptionIfBatchSizeTooSmall() {
+    assertThatThrownBy(
+            () ->
+                AsyncDocumentPipeline.builder(
+                        batchSupplier(1, 10), mock(BatchProcessor.class), Runnable::run)
+                    .batchSize(0))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldThrowExceptionIfMinBatchSizeTooLarge() {
+    assertThatThrownBy(
+            () ->
+                AsyncDocumentPipeline.builder(
+                        batchSupplier(1, 10), mock(BatchProcessor.class), Runnable::run)
+                    .batchSize(100)
+                    .minBatchSize(200))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void shouldProcessInBatches() {
     final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
     when(batchProcessor.process(any())).then(returnBatchSize());

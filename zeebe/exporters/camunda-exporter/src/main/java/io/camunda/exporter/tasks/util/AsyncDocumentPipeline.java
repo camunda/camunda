@@ -277,7 +277,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     private final Executor executor;
     private Logger logger = DEFAULT_LOGGER;
     private AtomicInteger batchSize = new AtomicInteger(2500);
-    private int minBatchSize = 50;
+    private int minBatchSize = 1;
     private int maxRetryAttempts = 3;
     private int retryDelayMs = 1_000;
     private final List<Class<? extends Throwable>> retryableExceptions =
@@ -311,12 +311,14 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
       if (minBatchSize <= 0) {
         throw new IllegalArgumentException("Min batch size must be greater than 0");
       }
+      verifyMinBatchSize(minBatchSize, batchSize.get());
       this.minBatchSize = minBatchSize;
       return this;
     }
 
     public Builder<DocType, SearchAfterFieldType> batchSize(final int batchSize) {
       verifyBatchSize(batchSize);
+      verifyMinBatchSize(minBatchSize, batchSize);
       this.batchSize = new AtomicInteger(batchSize);
       return this;
     }
@@ -329,6 +331,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
      */
     public Builder<DocType, SearchAfterFieldType> batchSize(final AtomicInteger batchSize) {
       verifyBatchSize(batchSize.get());
+      verifyMinBatchSize(minBatchSize, batchSize.get());
       this.batchSize = batchSize;
       return this;
     }
@@ -379,17 +382,24 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     }
 
     public CompletableFuture<PipelineStats> buildAndExecute() {
-      final var currentBatchSize = batchSize.get();
-      if (minBatchSize > currentBatchSize) {
-        throw new IllegalArgumentException(
-            "Min batch ("
-                + minBatchSize
-                + ") is greater than batch size ("
-                + currentBatchSize
-                + ")");
-      }
       final var pipeline = new AsyncDocumentPipeline<>(this);
       return pipeline.execute();
+    }
+
+    private void verifyMinBatchSize(final int minBatchSize, final int batchSize) {
+      if (minBatchSize > batchSize) {
+        throw new IllegalArgumentException(
+            "Min batch (" + minBatchSize + ") is greater than batch size (" + batchSize + ")");
+      }
+    }
+
+    private static void verifyBatchSize(final int batchSize) {
+      if (batchSize > MAX_BATCH_SIZE) {
+        throw new IllegalArgumentException("Batch size cannot be greater than " + MAX_BATCH_SIZE);
+      }
+      if (batchSize <= 0) {
+        throw new IllegalArgumentException("Batch size must be greater than zero");
+      }
     }
   }
 
