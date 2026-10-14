@@ -228,4 +228,30 @@ public class CreateRequestOperationValidatorTest {
                 + "processInstanceId=123: scope does not belong to this process instance.");
     verifyNoInteractions(mockVariableReader, mockOperationReader);
   }
+
+  @Test
+  void shouldAcceptScopeIdOfProcessInstanceWithLeadingZeros() {
+    // given: the scope is the process instance itself, written with a leading zero
+    final var request = new CreateOperationRequestDto(UPDATE_VARIABLE);
+    request.setVariableScopeId("0123");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+
+    // when - then
+    assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
+    verifyNoInteractions(mockFlowNodeInstanceReader);
+  }
+
+  @Test
+  void shouldAcceptScopeIdOfFlowNodeInstanceWithLeadingZeros() {
+    // given: the scope is a flow node instance of the process instance, written with a leading zero
+    final var request = new CreateOperationRequestDto(UPDATE_VARIABLE);
+    request.setVariableScopeId("0456");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+    stubScopeBelongsToProcessInstance("123", "456");
+
+    // when - then
+    assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
+  }
 }
