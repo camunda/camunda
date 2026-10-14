@@ -150,6 +150,10 @@ const FILL_HEIGHT_WHEN_EMPTY_CLASSES = [
 const SELECTION_SKELETON_CLASSES =
 	'[&_[data-slot=data-table-skeleton-row]_td:first-child>div]:w-4 [&_[data-slot=data-table-skeleton-row]_td:first-child>div]:rounded-sm';
 
+// The DS highlights `data-state=selected` rows with `--accent-background-subtle`. Selection here lives
+// outside the DS table, so the same token is applied to rows whose checkbox is checked.
+const SELECTED_ROW_CLASSES = '[&_tbody_tr:has([aria-checked=true])]:bg-[var(--accent-background-subtle)]';
+
 const DS_TABLE_SIZE: Record<TableSize, 'sm' | 'md' | 'lg'> = {
 	xs: 'sm',
 	sm: 'sm',
@@ -796,6 +800,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 					rows.length === 0 && FILL_HEIGHT_WHEN_EMPTY_CLASSES,
 					// The DS skeleton rows draw the same wide bar in every column, including the checkbox one
 					hasSelectionColumn && SELECTION_SKELETON_CLASSES,
+					hasSelectionColumn && SELECTED_ROW_CLASSES,
 				)}
 				data-testid={dataTestId}
 			>
