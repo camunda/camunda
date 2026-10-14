@@ -220,7 +220,8 @@ public final class ProcessingStateMachine implements CloseableSilently {
     typedCommand = new TypedRecordImpl(partitionId);
 
     streamProcessorListener = context.getStreamProcessorListener();
-    processingMetrics = new ProcessingMetrics(context.getMeterRegistry());
+    processingMetrics =
+        new ProcessingMetrics(context.getMeterRegistry(), context.getProcessingCounters());
     sideEffectRunner =
         new SideEffectRunner(
             context.getPartitionId(),

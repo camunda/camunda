@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
+import io.camunda.zeebe.broker.partitioning.BrokerLoadCounters;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -88,6 +89,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Map<String, PartitionManager> partitionManagers = new ConcurrentHashMap<>();
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
+  private final BrokerLoadCounters loadCounters = new BrokerLoadCounters();
   private ClusterConfigurationService clusterConfigurationService;
   private CheckpointSchedulingService checkpointSchedulingService;
 
@@ -296,6 +298,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void removePartitionManager(final String physicalTenantId) {
     partitionManagers.remove(physicalTenantId);
+  }
+
+  @Override
+  public BrokerLoadCounters getLoadCounters() {
+    return loadCounters;
   }
 
   @Override

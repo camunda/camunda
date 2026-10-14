@@ -125,6 +125,52 @@ public enum ClusterRebalanceMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return new KeyName[] {PartitionKeyNames.PARTITION, PartitionKeyNames.PHYSICAL_TENANT};
     }
+  },
+
+  /** How often the coordinator's scheduled rebalance was due, tagged by what came of it. */
+  SCHEDULED_RUNS {
+    @Override
+    public String getName() {
+      return "zeebe.cluster.rebalance.scheduled.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Scheduled rebalances that were due, by whether they started or why not";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {ClusterRebalanceKeyNames.RESULT};
+    }
+  },
+
+  /** The cluster-wide load the coordinator last measured for a scheduled rebalance. */
+  SCHEDULED_LOAD {
+    @Override
+    public String getName() {
+      return "zeebe.cluster.rebalance.scheduled.load";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Cluster-wide rate per second last measured for a scheduled rebalance, by measure";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {ClusterRebalanceKeyNames.MEASURE};
+    }
   };
 
   public enum ClusterRebalanceKeyNames implements KeyName {
@@ -133,6 +179,14 @@ public enum ClusterRebalanceMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "result";
+      }
+    },
+
+    /** The {@link LoadMeasure} a load value is for. */
+    MEASURE {
+      @Override
+      public String asString() {
+        return "measure";
       }
     }
   }

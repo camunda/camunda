@@ -14,11 +14,14 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.util.EnumCounters;
 import io.camunda.zeebe.util.collection.Map3D;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -34,15 +37,27 @@ public final class ProcessEngineMetrics {
       new EnumMap<>(CreationMode.class);
   private final Map3D<EngineAction, BpmnElementType, BpmnEventType, Counter> elementInstanceEvents =
       Map3D.ofEnum(EngineAction.class, BpmnElementType.class, BpmnEventType.class, Counter[]::new);
-  private final Map<EngineAction, Counter> executedEvents = new EnumMap<>(EngineAction.class);
+  private final EnumCounters<EngineAction> executedEvents;
+  private final long[] executedEventsAtStart = new long[EngineAction.values().length];
+  private final EnumSet<EngineAction> registeredExecutedEvents = EnumSet.noneOf(EngineAction.class);
   private final Map<EngineAction, Counter> evaluatedDmnElements = new EnumMap<>(EngineAction.class);
   private final AtomicLong activeProcessInstances = new AtomicLong(0);
   private boolean isActiveProcessInstanceGaugeRegistered = false;
 
+  /**
+   * @param executedEvents counts what happened to root process instances; may already hold counts
+   *     from before, which the exported metrics leave out
+   */
   public ProcessEngineMetrics(
-      final MeterRegistry registry, final long initialActiveRootProcessInstances) {
+      final MeterRegistry registry,
+      final long initialActiveRootProcessInstances,
+      final EnumCounters<EngineAction> executedEvents) {
     this.registry = Objects.requireNonNull(registry, "must specify a registry");
     activeProcessInstances.set(initialActiveRootProcessInstances);
+    this.executedEvents = executedEvents;
+    for (final var action : EngineAction.values()) {
+      executedEventsAtStart[action.ordinal()] = executedEvents.get(action);
+    }
   }
 
   public void processInstanceCreated(final ProcessInstanceCreationRecord instanceCreationRecord) {
@@ -127,7 +142,10 @@ public final class ProcessEngineMetrics {
   }
 
   private void increaseRootProcessInstance(final EngineAction action) {
-    executedEvents.computeIfAbsent(action, this::registerExecutedEventCounter).increment();
+    executedEvents.increment(action);
+    if (registeredExecutedEvents.add(action)) {
+      registerExecutedEventCounter(action);
+    }
   }
 
   private void increaseEvaluatedDmnElements(final EngineAction action, final int amount) {
@@ -171,9 +189,11 @@ public final class ProcessEngineMetrics {
         .register(registry);
   }
 
-  private Counter registerExecutedEventCounter(final EngineAction engineAction) {
+  private void registerExecutedEventCounter(final EngineAction engineAction) {
     final var meterDoc = EngineMetricsDoc.EXECUTED_EVENTS;
-    return Counter.builder(meterDoc.getName())
+    final long atStart = executedEventsAtStart[engineAction.ordinal()];
+    FunctionCounter.builder(
+            meterDoc.getName(), executedEvents, counts -> counts.get(engineAction) - atStart)
         .description(meterDoc.getDescription())
         .tag(EngineKeyNames.ACTION.asString(), engineAction.toString())
         .tag(EngineKeyNames.ELEMENT_TYPE.asString(), EXECUTED_EVENT_ELEMENT_TYPE_VALUE)

@@ -25,7 +25,9 @@ import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import io.camunda.zeebe.stream.impl.metrics.StreamProcessorAction;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
+import io.camunda.zeebe.util.EnumCounters;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
@@ -72,6 +74,8 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private EventFilter processingFilter = e -> true;
   private @Nullable ControllableStreamClock clock;
   private @Nullable MeterRegistry meterRegistry;
+  private EnumCounters<StreamProcessorAction> processingCounters =
+      new EnumCounters<>(StreamProcessorAction.class);
   private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
 
   public StreamProcessorContext actor(final ActorControl actor) {
@@ -309,6 +313,16 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext meterRegistry(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
     return this;
+  }
+
+  public StreamProcessorContext processingCounters(
+      final EnumCounters<StreamProcessorAction> processingCounters) {
+    this.processingCounters = processingCounters;
+    return this;
+  }
+
+  public EnumCounters<StreamProcessorAction> getProcessingCounters() {
+    return processingCounters;
   }
 
   public MeterRegistry getMeterRegistry() {

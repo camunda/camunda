@@ -11,6 +11,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.EngineAction;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.EnumCounters;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.io.IOException;
 import java.time.InstantSource;
@@ -106,7 +108,8 @@ public final class TestEngine {
                             SearchClientsProxy.noop(),
                             new BrokerRequestAuthorizationConverter(
                                 EngineSecurityConfigurations.defaultConfig()),
-                            new SecretStoreRegistry(Map.of()))
+                            new SecretStoreRegistry(Map.of()),
+                            new EnumCounters<>(EngineAction.class))
                         .withListener(
                             new ProcessingExporterTransistor(
                                 testStreams.getLogStream(
