@@ -62,7 +62,6 @@ final class IntentEncodingDecodingTest {
 
     // then
     assertThat(SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE.isEvent()).isFalse();
-    assertThat(SuspensionBatchIntent.COMPLETE_SUSPENDING_ELEMENT_INSTANCE.isEvent()).isFalse();
     assertThat(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED.isEvent()).isTrue();
     assertThat(unknown).isSameAs(Intent.UNKNOWN);
     assertThat(acknowledgement).isSameAs(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED);

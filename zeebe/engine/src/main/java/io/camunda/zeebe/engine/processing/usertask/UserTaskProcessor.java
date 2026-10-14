@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -63,12 +64,19 @@ public class UserTaskProcessor
   private static final String USER_TASK_VARIABLE_UPDATE_REJECTION =
       "Variable update for user task instance with key '%d' was denied by Task Listener. Reason to deny: '%s'";
 
+  private static final String USER_TASK_RESUME_NOT_FOUND =
+      "Expected to resume user task with key '%d', but no such user task was found";
+
+  private static final String USER_TASK_RESUME_NOT_RESUMING =
+      "Expected to resume user task with key '%d', but its process instance '%d' is not resuming";
+
   private final UserTaskCommandProcessors commandProcessors;
   private final ProcessState processState;
   private final MutableUserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
   private final VariableState variableState;
   private final AsyncRequestState asyncRequestState;
+  private final SuspensionState suspensionState;
 
   private final BpmnJobBehavior jobBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
@@ -100,6 +108,7 @@ public class UserTaskProcessor
     elementInstanceState = state.getElementInstanceState();
     variableState = state.getVariableState();
     asyncRequestState = state.getAsyncRequestState();
+    suspensionState = state.getSuspensionState();
 
     jobBehavior = bpmnBehaviors.jobBehavior();
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
@@ -117,8 +126,28 @@ public class UserTaskProcessor
           processOperationCommand(command, intent);
       case COMPLETE_TASK_LISTENER -> processCompleteTaskListener(command);
       case DENY_TASK_LISTENER -> processDenyTaskListener(command);
+      case RESUME -> processResume(command);
       default -> throw new UnsupportedOperationException("Unexpected user task intent: " + intent);
     }
+  }
+
+  private void processResume(final TypedRecord<UserTaskRecord> command) {
+    final long userTaskKey = command.getKey();
+    final var userTask = userTaskState.getUserTask(userTaskKey);
+    if (userTask == null) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.NOT_FOUND, USER_TASK_RESUME_NOT_FOUND.formatted(userTaskKey));
+      return;
+    }
+    final long processInstanceKey = userTask.getProcessInstanceKey();
+    if (suspensionState.getSuspensionState(processInstanceKey) != SuspensionState.State.RESUMING) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          USER_TASK_RESUME_NOT_RESUMING.formatted(userTaskKey, processInstanceKey));
+      return;
+    }
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.RESUMED, userTask);
   }
 
   private void processCompleteTaskListener(final TypedRecord<UserTaskRecord> command) {
@@ -422,6 +451,9 @@ public class UserTaskProcessor
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<UserTaskRecord> record) {
-    return SuspensionAction.REJECT;
+    // RESUME is buffered by the suspension walk and drained while resuming
+    return record.getIntent() == UserTaskIntent.RESUME
+        ? SuspensionAction.PROCESS
+        : SuspensionAction.REJECT;
   }
 }

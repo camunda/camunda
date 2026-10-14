@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -26,9 +27,11 @@ import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -53,6 +56,7 @@ public final class ProcessInstanceSuspendProcessor
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final CslAuthorizationCheck cslCheck;
   private final AsyncRequestState asyncRequestState;
@@ -72,6 +76,7 @@ public final class ProcessInstanceSuspendProcessor
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
+    commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
     asyncRequestState = processingState.getAsyncRequestState();
@@ -110,11 +115,9 @@ public final class ProcessInstanceSuspendProcessor
           processInstance.getKey(), ProcessInstanceIntent.SUSPENDING, value);
     }
     final int suspendedJobCount = closeSubscriptionsAndSuspendJobs(processInstance.getKey());
-    stateWriter.appendFollowUpEvent(
-        processInstance.getKey(), ProcessInstanceIntent.SUSPENDED, value);
+    startSuspensionBatch(processInstance.getKey(), value);
     responseWriter.writeAcceptedResponseOnCommand(
-        processInstance.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
-    suspensionMetrics.instanceSuspended();
+        processInstance.getKey(), ProcessInstanceIntent.SUSPENDING, value, command);
     if (suspendedJobCount > 0) {
       suspensionMetrics.jobsSuspended(suspendedJobCount);
     }
@@ -130,6 +133,25 @@ public final class ProcessInstanceSuspendProcessor
   private int closeSubscriptionsAndSuspendJobs(final long processInstanceKey) {
     suspensionSubscriptionBehavior.closeSubscriptions(processInstanceKey);
     return suspensionJobBehavior.suspendJobs(processInstanceKey);
+  }
+
+  /**
+   * Starts the walk of the element instance tree; {@link
+   * SuspensionBatchSuspendElementInstanceProcessor} writes {@link ProcessInstanceIntent#SUSPENDED}
+   * once it is done.
+   */
+  private void startSuspensionBatch(
+      final long processInstanceKey, final ProcessInstanceRecord value) {
+    final var batch =
+        new SuspensionBatchRecord()
+            .setProcessInstanceKey(value.getProcessInstanceKey())
+            .setProcessDefinitionKey(value.getProcessDefinitionKey())
+            .setStorageOrdinal(value.getStorageOrdinal())
+            .setElementInstanceKey(value.getProcessInstanceKey())
+            .setParentKey(-1)
+            .setIndex(-1);
+    commandWriter.appendFollowUpCommand(
+        processInstanceKey, SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE, batch);
   }
 
   private boolean validateCommand(

@@ -16,13 +16,12 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum SuspensionBatchIntent implements ProcessInstanceRelatedIntent {
+
+  /** Suspends one element instance, descending into its children first. */
   SUSPEND_ELEMENT_INSTANCE(0),
 
-  /** Completes traversal of a subtree, without completing the BPMN element. */
-  COMPLETE_SUSPENDING_ELEMENT_INSTANCE(1),
-
-  /** Acknowledges a processed traversal step without changing BPMN element state. */
-  ELEMENT_INSTANCE_SUSPENDED(2);
+  /** The element instance and everything it owns was suspended. */
+  ELEMENT_INSTANCE_SUSPENDED(1);
 
   private final short value;
 
@@ -35,8 +34,6 @@ public enum SuspensionBatchIntent implements ProcessInstanceRelatedIntent {
       case 0:
         return SUSPEND_ELEMENT_INSTANCE;
       case 1:
-        return COMPLETE_SUSPENDING_ELEMENT_INSTANCE;
-      case 2:
         return ELEMENT_INSTANCE_SUSPENDED;
       default:
         return UNKNOWN;

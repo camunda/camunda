@@ -31,10 +31,12 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -61,7 +63,9 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
@@ -303,6 +307,19 @@ public final class RecordToWrite implements LogAppendEntry {
   public RecordToWrite bufferedCommand(
       final BufferedCommandIntent intent, final BufferedCommandRecord value) {
     recordMetadata.valueType(ValueType.BUFFERED_COMMAND).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
+  public RecordToWrite userTask(final UserTaskIntent intent, final UserTaskRecord value) {
+    recordMetadata.valueType(ValueType.USER_TASK).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
+  public RecordToWrite suspensionBatch(
+      final SuspensionBatchIntent intent, final SuspensionBatchRecord value) {
+    recordMetadata.valueType(ValueType.SUSPENSION_BATCH).intent(intent);
     unifiedRecordValue = value;
     return this;
   }

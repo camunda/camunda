@@ -78,8 +78,9 @@ class CompactRecordLoggerTest {
                   ImmutableSuspensionBatchRecordValue.builder()
                       .withProcessInstanceKey(123L)
                       .withProcessDefinitionKey(234L)
-                      .withIndexKey(456L)
+                      .withElementInstanceKey(456L)
                       .withParentKey(345L)
+                      .withIndex(567L)
                       .withStorageOrdinal(1001)
                       .build())
               .build();
@@ -88,7 +89,7 @@ class CompactRecordLoggerTest {
       final var summary = compactRecordLogger.summarizeSuspensionBatch(record);
 
       // then
-      assertThat(summary).isEqualTo("PI:K123 idx:K456 parent:K345");
+      assertThat(summary).isEqualTo("PI:K123 EI:K456 parent:K345 idx:K567");
     }
 
     @Test

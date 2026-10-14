@@ -29,11 +29,15 @@ public class SuspensionBatchRecordStream
     return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
 
-  public SuspensionBatchRecordStream withIndexKey(final long indexKey) {
-    return valueFilter(v -> v.getIndexKey() == indexKey);
+  public SuspensionBatchRecordStream withElementInstanceKey(final long elementInstanceKey) {
+    return valueFilter(v -> v.getElementInstanceKey() == elementInstanceKey);
   }
 
   public SuspensionBatchRecordStream withParentKey(final long parentKey) {
     return valueFilter(v -> v.getParentKey() == parentKey);
+  }
+
+  public SuspensionBatchRecordStream withIndex(final long index) {
+    return valueFilter(v -> v.getIndex() == index);
   }
 }

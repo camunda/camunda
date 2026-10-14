@@ -1050,7 +1050,7 @@ public class UserTaskHandlerTest {
       case COMPLETED -> TaskState.COMPLETED;
       case CANCELING -> TaskState.CANCELING;
       case CANCELED -> TaskState.CANCELED;
-      case CORRECTED, MIGRATED -> /* doesn't affect the state */ null;
+      case CORRECTED, MIGRATED, SUSPENDED, RESUMED -> /* doesn't affect the state */ null;
       default ->
           throw new IllegalArgumentException(
               """

@@ -1102,10 +1102,12 @@ public class CompactRecordLogger {
     final var value = (SuspensionBatchRecordValue) record.getValue();
     return "PI:"
         + shortenKey(value.getProcessInstanceKey())
-        + " idx:"
-        + shortenKey(value.getIndexKey())
+        + " EI:"
+        + shortenKey(value.getElementInstanceKey())
         + " parent:"
-        + shortenKey(value.getParentKey());
+        + shortenKey(value.getParentKey())
+        + " idx:"
+        + shortenKey(value.getIndex());
   }
 
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {
