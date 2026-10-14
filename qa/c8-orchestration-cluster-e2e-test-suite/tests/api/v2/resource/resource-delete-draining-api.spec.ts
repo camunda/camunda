@@ -520,14 +520,30 @@ test.describe('Process Definition Draining Deletion API', () => {
     const processDefinitionId = uniquePrefixedId('draining-repeat');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
-    instancesToCancel.push(instance.processInstanceKey);
-    await findUserTask(request, instance.processInstanceKey, 'CREATED');
+
+    // Both deletes go to the partition owning the definition key, and it rejects
+    // the repeat only while it still holds an instance of its own. Instances
+    // land round-robin, so three per partition make that certain.
+    const instanceCount = 3 * (await partitionsCount(request));
+    const instances = await createInstances(
+      processDefinitionId,
+      1,
+      instanceCount,
+    );
+    instancesToCancel.push(
+      ...instances.map((instance) => instance.processInstanceKey),
+    );
+    await expectProcessInstanceCount(
+      request,
+      {processDefinitionId},
+      instanceCount,
+    );
 
     await drainProcessDefinition(request, processDefinitionKey);
 
     const second = await deleteProcessDefinition(request, processDefinitionKey);
     expect(second.status()).toBe(409);
+
     await expectProcessDefinitionState(
       request,
       processDefinitionKey,
