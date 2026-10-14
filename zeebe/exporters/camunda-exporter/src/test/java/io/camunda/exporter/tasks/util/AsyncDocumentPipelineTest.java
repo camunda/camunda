@@ -77,6 +77,26 @@ class AsyncDocumentPipelineTest {
   }
 
   @Test
+  void shouldThrowExceptionIfRetriesLessThanZero() {
+    assertThatThrownBy(
+            () ->
+                AsyncDocumentPipeline.builder(
+                        batchSupplier(1, 10), mock(BatchProcessor.class), Runnable::run)
+                    .maxRetryAttempts(-1))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldThrowExceptionIfRetryDelayIsLessThanZero() {
+    assertThatThrownBy(
+            () ->
+                AsyncDocumentPipeline.builder(
+                        batchSupplier(1, 10), mock(BatchProcessor.class), Runnable::run)
+                    .retryDelayMs(-1))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void shouldProcessInBatches() {
     final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
     when(batchProcessor.process(any())).then(returnBatchSize());
