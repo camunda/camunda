@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.PerPartition;
@@ -104,6 +105,11 @@ public final class ZeebeRocksDbFactory<
   @Override
   public ZeebeTransactionDb<ColumnFamilyType> createDb(final File pathName) {
     return createDb(pathName, CloseMode.FAST);
+  }
+
+  @Override
+  public StorageCapabilities capabilities() {
+    return new StorageCapabilities(true, true, true);
   }
 
   @Override

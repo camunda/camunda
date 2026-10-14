@@ -46,4 +46,7 @@ public interface ZeebeDbFactory<ColumnFamilyNames extends Enum<? extends EnumVal
    * @return a snapshot-able DB
    */
   ZeebeDb<ColumnFamilyNames> openSnapshotOnlyDb(final File path);
+
+  /** Declares the assumptions the broker may make about this storage backend. */
+  StorageCapabilities capabilities();
 }

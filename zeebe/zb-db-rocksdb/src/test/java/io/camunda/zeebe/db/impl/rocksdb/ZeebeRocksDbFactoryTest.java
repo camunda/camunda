@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -58,6 +59,18 @@ final class ZeebeRocksDbFactoryTest {
   @AfterEach
   void tearDown() {
     CloseHelper.closeAll(closeable);
+  }
+
+  @Test
+  void shouldDeclareFullLocalSnapshotCapabilities() {
+    // given
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
+
+    // when
+    final var capabilities = dbFactory.capabilities();
+
+    // then
+    assertThat(capabilities).isEqualTo(new StorageCapabilities(true, true, true));
   }
 
   @Test
