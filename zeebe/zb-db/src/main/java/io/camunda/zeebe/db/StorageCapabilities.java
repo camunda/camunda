@@ -17,7 +17,8 @@ package io.camunda.zeebe.db;
  *     to and recovered from a directory
  * @param ephemeralRuntime the runtime directory is derived state: it is safe to delete, and is
  *     always rebuilt from a snapshot on recovery
- * @param scopedCopy {@link SnapshotCopy} (used by dynamic scaling) is supported
+ * @param scopedCopy {@link SnapshotCopy} is supported; the broker's snapshot API handler, which
+ *     serves snapshot transfer for bootstrapping and scaling partitions, requires it
  */
 public record StorageCapabilities(
     boolean fileSnapshots, boolean ephemeralRuntime, boolean scopedCopy) {
