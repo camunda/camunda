@@ -293,9 +293,9 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testResolveIncidentOfOtherProcessInstanceFails() throws Exception {
+  public void testResolveIncidentOfOtherProcessInstanceIsRejected() throws Exception {
     // given
-    // two instances, only the first one has an incident (jobs are failed oldest first)
+    // two instances, only the first one has an incident
     final Long otherProcessInstanceKey = startDemoProcessInstance();
     failTaskWithNoRetriesLeft("taskA", otherProcessInstanceKey, "Some error");
     final Long processInstanceKey = startDemoProcessInstance();
