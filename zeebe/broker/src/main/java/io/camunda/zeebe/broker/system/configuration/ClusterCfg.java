@@ -98,6 +98,7 @@ public final class ClusterCfg implements ConfigurationEntry {
     }
 
     validateZoneAwareConfig(globalConfig);
+    systemPartition.init(globalConfig, brokerBase);
     if (nodeId < 0) {
       throw new IllegalArgumentException("Node id must be positive");
     }

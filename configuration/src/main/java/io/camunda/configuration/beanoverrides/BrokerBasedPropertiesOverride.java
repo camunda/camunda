@@ -564,15 +564,25 @@ public class BrokerBasedPropertiesOverride {
     override
         .getCluster()
         .getSystemPartition()
-        .setHeartbeatInterval(cluster.getSystemPartition().getHeartbeatInterval());
-    override
-        .getCluster()
-        .getSystemPartition()
         .setLogSegmentSize(cluster.getSystemPartition().getLogSegmentSize());
     override
         .getCluster()
         .getSystemPartition()
         .setSnapshotPeriod(cluster.getSystemPartition().getSnapshotPeriod());
+    final var failureDetector = cluster.getSystemPartition().getFailureDetector();
+    final var failureDetectorOverride =
+        override.getCluster().getSystemPartition().getFailureDetector();
+    failureDetectorOverride.setType(failureDetector.getType());
+    failureDetectorOverride
+        .getTickTock()
+        .setTickInterval(failureDetector.getTickTock().getTickInterval());
+    failureDetectorOverride
+        .getTickTock()
+        .setMissedTicksThreshold(failureDetector.getTickTock().getMissedTicksThreshold());
+    failureDetectorOverride
+        .getTickTock()
+        .setSuspectMissedTicksThreshold(
+            failureDetector.getTickTock().getSuspectMissedTicksThreshold());
 
     populateFromMembership(override, camunda);
     populateFromRaftProperties(override, camunda);

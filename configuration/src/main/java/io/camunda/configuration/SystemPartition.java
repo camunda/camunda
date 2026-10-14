@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import java.time.Duration;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.unit.DataSize;
 
 /**
@@ -19,9 +20,6 @@ public class SystemPartition {
 
   /** Whether the system partition is bootstrapped on this broker. */
   private boolean enabled = false;
-
-  /** How often this broker appends a heartbeat to the system partition. */
-  private Duration heartbeatInterval = Duration.ofSeconds(1);
 
   /**
    * The size of the system partition's log segments. The log is compacted by deleting whole
@@ -38,20 +36,15 @@ public class SystemPartition {
    */
   private Duration snapshotPeriod = Duration.ofMinutes(5);
 
+  /** Experimental, opt-in detection of brokers gone from the cluster. */
+  @NestedConfigurationProperty private FailureDetector failureDetector = new FailureDetector();
+
   public boolean isEnabled() {
     return enabled;
   }
 
   public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
-  }
-
-  public Duration getHeartbeatInterval() {
-    return heartbeatInterval;
-  }
-
-  public void setHeartbeatInterval(final Duration heartbeatInterval) {
-    this.heartbeatInterval = heartbeatInterval;
   }
 
   public DataSize getLogSegmentSize() {
@@ -70,17 +63,25 @@ public class SystemPartition {
     this.snapshotPeriod = snapshotPeriod;
   }
 
+  public FailureDetector getFailureDetector() {
+    return failureDetector;
+  }
+
+  public void setFailureDetector(final FailureDetector failureDetector) {
+    this.failureDetector = failureDetector;
+  }
+
   @Override
   public String toString() {
     return "SystemPartition{"
         + "enabled="
         + enabled
-        + ", heartbeatInterval="
-        + heartbeatInterval
         + ", logSegmentSize="
         + logSegmentSize
         + ", snapshotPeriod="
         + snapshotPeriod
+        + ", failureDetector="
+        + failureDetector
         + '}';
   }
 }

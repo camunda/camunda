@@ -22,7 +22,11 @@ public enum SystemPartitionKeyType {
    */
   CLUSTER_ID(1),
   /** When the cluster was first bootstrapped, set once alongside {@link #CLUSTER_ID}. */
-  CLUSTER_CREATION_TIME(2);
+  CLUSTER_CREATION_TIME(2),
+  /** The latest tick of the failure detector, put by the leader every tick interval. */
+  TICK(3),
+  /** The latest tick each broker is known to have seen, put by the failure detector's leader. */
+  CLUSTER_VIEW(4);
 
   private final long id;
 
