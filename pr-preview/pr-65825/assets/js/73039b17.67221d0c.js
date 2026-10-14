@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkmonorepo_docs_site=globalThis.webpackChunkmonorepo_docs_site||[]).push([[6719],{4263:o=>{o.exports=JSON.parse('{"name":"docusaurus-plugin-content-docs","id":"architecture"}')}}]);
