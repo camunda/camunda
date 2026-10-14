@@ -191,7 +191,7 @@ public class ZeebeTransactionDb<
     }
   }
 
-  @Override
+  /** RocksDB-specific; reads a {@code rocksdb.*} property of the default column family. */
   public Optional<String> getProperty(final String propertyName) {
     String propertyValue = null;
     try {

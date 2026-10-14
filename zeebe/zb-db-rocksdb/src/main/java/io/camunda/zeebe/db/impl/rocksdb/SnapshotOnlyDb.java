@@ -24,7 +24,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableBoolean;
@@ -65,11 +64,6 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & 
       throw new ZeebeDbException(
           "Failed to take a RocksDB snapshot at '%s'".formatted(snapshotDir), e);
     }
-  }
-
-  @Override
-  public Optional<String> getProperty(final String propertyName) {
-    throw unsupported("getProperty");
   }
 
   @Override
