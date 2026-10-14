@@ -30,6 +30,14 @@
 # Master switch. Off by default: turn it on per dispatcher once a week of
 # dry-run logs looks right.
 REOPEN_CLOSED_PRS="${REOPEN_CLOSED_PRS:-false}"
+# Observation mode, and the only way to GET those dry-run logs: candidate
+# selection runs in full and prints its whole decision trace, but the caller must
+# not commit. Selection is read-only, so this is safe by construction — it is the
+# caller that owns `reopen_commit`, and the dispatcher checks this flag before
+# calling it. Separate from REOPEN_CLOSED_PRS on purpose: with only the master
+# switch, "off" evaluates nothing and "on" mutates PRs immediately, so there was
+# no state in which the gates could be observed before they could act.
+REOPEN_DRY_RUN="${REOPEN_DRY_RUN:-false}"
 # "Recent" — wide enough to span a long weekend, short enough that a branch is
 # not hopelessly behind main.
 REOPEN_WINDOW_DAYS="${REOPEN_WINDOW_DAYS:-7}"
@@ -46,8 +54,17 @@ STALE_CLOSE_MARKER="${STALE_CLOSE_MARKER:-stale-sweeper-closed}"
 REOPENED_LABEL="${REOPENED_LABEL:-reopened-by-triage}"
 # A human asking for a PR to be left alone also means "do not resurrect it".
 REOPEN_VETO_LABEL="${REOPEN_VETO_LABEL:-do-not-close}"
-# The app identity the sweeper and the fix agent run as.
-BOT_OWNER="${BOT_OWNER:-qa-processes}"
+# Bot identities whose close may be reopened, space-separated and compared after
+# normalisation (an `app/` prefix and a `[bot]` suffix are stripped). It is a SET,
+# not one name, because the two bots here close PRs under different identities:
+# the fix agent runs as the qa-processes app, while close-stale-fix-prs calls
+# `gh pr close` with secrets.GITHUB_TOKEN and therefore closes as
+# `github-actions[bot]`. Matching only one of them rejected every real sweeper
+# close and made the whole reopen path dead code.
+# This list is NOT what proves the sweeper closed the PR — the auto-closed-stale
+# label or the stale-sweeper-closed marker does that, below. Its only job is to
+# veto a close by anyone who is not a known bot, i.e. a human.
+BOT_OWNERS="${BOT_OWNERS:-qa-processes github-actions}"
 
 # Closed-but-NOT-merged bot fix PRs on this platform+version's branch slot,
 # closed inside the recency window, newest close first. Emits "<number>\t<branch>".
@@ -75,7 +92,7 @@ reopen_candidates() {
 # Did OUR sweeper close this, or did a person close it deliberately?
 # Two independent signals, either sufficient:
 #   1. the auto-closed-stale label the sweeper applies at close time
-#   2. the LAST `closed` timeline event's actor is the bot app AND a comment
+#   2. the LAST `closed` timeline event's actor is a known bot AND a comment
 #      carries the sweeper's marker
 # The actor alone is not enough (the bot also OPENED the PR and could close its
 # own); the marker alone is not enough (a human could quote the sweeper's text).
@@ -95,7 +112,11 @@ closed_by_sweeper() {
             2>/dev/null || echo "")
   actor="${actor#app/}"
   actor="${actor%\[bot\]}"
-  [ "$actor" = "$BOT_OWNER" ] || return 1
+  [ -n "$actor" ] || return 1
+  case " ${BOT_OWNERS} " in
+    *" ${actor} "*) ;;
+    *) return 1 ;;
+  esac
 
   # Bot-closed. Now confirm it was the SWEEPER, not some other bot path: either
   # the label it applies, or the marker it writes into the close comment (which
@@ -158,7 +179,9 @@ spec_overlap() {
 # the caller matches instead).
 reopen_pick() {
   local prefix="$1" specs_json="${2:-[]}" n branch rc bb ov
-  [ "$REOPEN_CLOSED_PRS" = "true" ] || return 0
+  # Dry run evaluates every gate and logs the trace; only the caller's
+  # reopen_commit is withheld.
+  [ "$REOPEN_CLOSED_PRS" = "true" ] || [ "$REOPEN_DRY_RUN" = "true" ] || return 0
 
   while IFS=$'\t' read -r n branch; do
     [ -z "${n:-}" ] && continue
