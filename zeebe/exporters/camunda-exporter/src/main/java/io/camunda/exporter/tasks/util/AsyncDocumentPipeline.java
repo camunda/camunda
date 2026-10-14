@@ -82,13 +82,14 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
   CompletableFuture<PipelineStats> execute() {
     return AsyncRepeatUntil.repeatUntil(this::processNextBatch, ignored -> finished.get())
-        .thenApply(ignore -> pipelineStats())
-        // let callers get stats even if exception thrown (for logging etc)
+        .thenApply(ignore -> getPipelineStats())
         .whenComplete(
             (stats, throwable) -> {
               if (throwable != null) {
-                pipelineStats();
+                // let callers get stats even if exception thrown (for logging etc)
+                stats = getPipelineStats();
               }
+              statsConsumer.accept(stats);
             });
   }
 
@@ -243,11 +244,8 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     return exceptions.stream().anyMatch(clazz -> clazz.isInstance(thr));
   }
 
-  private PipelineStats pipelineStats() {
-    final var stats =
-        new PipelineStats(totalRead.get(), totalProcessed.get(), totalTimeTakenMs.get());
-    statsConsumer.accept(stats);
-    return stats;
+  private PipelineStats getPipelineStats() {
+    return new PipelineStats(totalRead.get(), totalProcessed.get(), totalTimeTakenMs.get());
   }
 
   private static void verifyBatchSize(final int batchSize) {
