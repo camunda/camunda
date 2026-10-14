@@ -14,7 +14,7 @@ export interface ApplyInputs {
 /** Reads only. The real executor will be a second dependency, not a flag on these. */
 export interface ApplyDeps {
   labelled(label: string): Promise<Labelled>;
-  issueFacts(numbers: readonly number[]): Promise<ReadonlyMap<number, IssueState>>;
+  issueStates(numbers: readonly number[]): Promise<ReadonlyMap<number, IssueState>>;
 }
 
 export interface ApplyResult {
@@ -42,10 +42,10 @@ export async function runApply(inputs: ApplyInputs, deps: ApplyDeps): Promise<Ap
   }
 
   const labelled = await deps.labelled(`version:${files.labels.version}`);
-  // State is read for the generator's issues (comment rule) and for zcl-only
-  // ones (hint), once each, in batches.
+  // State and comments are read for the generator's issues (comment rule) and for
+  // zcl-only ones (hint), once each, in batches.
   const wanted = [...new Set([...files.labels.issues, ...labelled.issues])];
-  const issueFacts = await deps.issueFacts(wanted);
+  const issueFacts = await deps.issueStates(wanted);
 
   const plan = planApply(files, { zclIssues: labelled.issues, zclPullRequests: labelled.pullRequests, issueFacts });
   const warnings = plan.baselineEmpty ? [`No issues carry version:${plan.version}, so there was nothing to compare with.`] : [];

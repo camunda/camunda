@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
-import { fetchLabelledNumbers } from '../src/apply/reader';
+import { fetchIssueStates, fetchLabelledNumbers } from '../src/apply/reader';
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -82,4 +82,44 @@ test('makes no write calls', async () => {
   await fetchLabelledNumbers('token', 'camunda', 'camunda', 'version:8.8.31', noSleep);
 
   assert.ok(calls.every((call) => call.method === 'GET'));
+});
+
+/** Answers every GraphQL POST with `respond(query)` and records the query. */
+function stubGraphql(respond: (query: string) => object): string[] {
+  const queries: string[] = [];
+  globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+    const query = (JSON.parse(String(init?.body)) as { query: string }).query;
+    queries.push(query);
+    return new Response(JSON.stringify(respond(query)), { status: 200 });
+  }) as typeof fetch;
+  return queries;
+}
+
+test('reads state and comments for each issue, and leaves out one GitHub does not know', async () => {
+  // given issue 2 does not exist
+  stubGraphql(() => ({
+    data: { repository: { i0: { closed: true, stateReason: 'COMPLETED', comments: { nodes: [{ body: 'one' }, { body: 'two' }] } }, i1: null } },
+    errors: [{ type: 'NOT_FOUND', message: 'no issue 2' }],
+  }));
+
+  // when
+  const states = await fetchIssueStates('token', 'camunda', 'camunda', [1, 2], noSleep);
+
+  // then
+  assert.deepEqual(states.get(1), { closed: true, stateReason: 'COMPLETED', comments: ['one', 'two'] });
+  assert.equal(states.has(2), false);
+});
+
+test('reads issue states in batches', async () => {
+  const queries = stubGraphql(() => ({ data: { repository: {} } }));
+
+  await fetchIssueStates('token', 'camunda', 'camunda', Array.from({ length: 60 }, (_, index) => index + 1), noSleep);
+
+  assert.equal(queries.length, 3);
+});
+
+test('a GraphQL error other than not-found surfaces instead of reading as unknown state', async () => {
+  stubGraphql(() => ({ errors: [{ type: 'RATE_LIMITED', message: 'slow down' }] }));
+
+  await assert.rejects(fetchIssueStates('token', 'camunda', 'camunda', [1], noSleep), /slow down/);
 });

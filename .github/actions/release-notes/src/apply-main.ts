@@ -1,8 +1,8 @@
 import { writeFileSync } from 'node:fs';
 import * as core from './gha';
+import { parseDryRun } from './apply/index';
 import { runApply } from './apply/run';
-import { fetchLabelledNumbers } from './apply/reader';
-import { GithubGraphqlResolver } from './resolve';
+import { fetchIssueStates, fetchLabelledNumbers } from './apply/reader';
 
 /**
  * The `apply` entrypoint, dry-run only: compares the generator's plan with
@@ -14,17 +14,16 @@ async function run(): Promise<void> {
   if (!owner || !repo) throw new Error(`GITHUB_REPOSITORY must be set to "owner/repo", got "${process.env.GITHUB_REPOSITORY ?? ''}".`);
   const token = core.getInput('token', { required: true });
   const inputDir = core.getInput('input-dir') || '.';
-  const graphql = new GithubGraphqlResolver(token, owner, repo);
 
   const result = await runApply(
     {
       inputDir,
-      dryRun: core.getInput('dry-run') !== 'false',
+      dryRun: parseDryRun(core.getInput('dry-run')),
       generateOutcome: core.getInput('generate-outcome'),
     },
     {
       labelled: (label) => fetchLabelledNumbers(token, owner, repo, label),
-      issueFacts: (numbers) => graphql.fetchIssueFacts(numbers),
+      issueStates: (numbers) => fetchIssueStates(token, owner, repo, numbers),
     },
   );
 

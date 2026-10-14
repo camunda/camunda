@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   DIVERGENCE_LIST_CAP,
+  parseDryRun,
   parseGeneratorFiles,
   planApply,
   renderDegradedReport,
@@ -44,16 +45,22 @@ function entry(issueNumber: number, prNumbers: number[], relationKind: 'closing'
   };
 }
 
+function state(closed: boolean, stateReason: string | null, comments: string[] = []) {
+  return { closed, stateReason, comments };
+}
+
+const LEGACY_COMMENT = `This has been released in version [${VERSION}](https://github.com/camunda/camunda/releases/tag/${VERSION}). See release notes [here](https://github.com/camunda/camunda/releases/tag/${VERSION}) for details.`;
+
 function observed(overrides: Partial<Observed> = {}): Observed {
   return {
     zclIssues: new Set([1, 2, 9]),
     zclPullRequests: new Set([101]),
     issueFacts: new Map([
-      [1, { closed: true, stateReason: 'COMPLETED' }],
-      [2, { closed: true, stateReason: 'COMPLETED' }],
-      [3, { closed: false, stateReason: null }],
-      [4, { closed: true, stateReason: 'NOT_PLANNED' }],
-      [9, { closed: true, stateReason: 'COMPLETED' }],
+      [1, state(true, 'COMPLETED')],
+      [2, state(true, 'COMPLETED')],
+      [3, state(false, null)],
+      [4, state(true, 'NOT_PLANNED')],
+      [9, state(true, 'COMPLETED')],
     ]),
     ...overrides,
   };
@@ -116,10 +123,81 @@ test('an empty zcl baseline is flagged and the whole generator plan becomes labe
 test('hints state facts about the delivering PR and the issue', () => {
   const plan = planApply(files(), observed());
 
-  assert.match(plan.hints[4]!, /via PR #101 \(closing; attribution section; delivery direct\)/);
+  assert.match(plan.hints[4]!, /closing, via PR #101 \(attribution section; delivery direct\)/);
   assert.match(plan.hints[4]!, /closed as not planned/);
-  assert.match(plan.hints[9]!, /no PR in the generator's range is attributed to it/);
+  assert.match(plan.hints[9]!, /the generator's labels\.json does not list it/);
   assert.match(plan.hints[9]!, /closed/);
+});
+
+test('a hint quotes each delivering PR with its own attribution and delivery path', () => {
+  const plan = planApply(files(), observed());
+
+  assert.equal(plan.hints[3], 'closing, via PR #103, #104, #105, #106, #107, #108, #109, #110, #111 · issue open');
+  const both = files({ comments: { schemaVersion: '2.0.0', version: VERSION, entries: [entry(4, [101, 102], 'closing')] } });
+  assert.match(
+    planApply(both, observed()).hints[4]!,
+    /via PR #101 \(attribution section; delivery direct\), #102 \(attribution closingIssuesReferences; delivery backport\)/,
+  );
+});
+
+test('a generator-only issue without a comment entry says so instead of guessing', () => {
+  const plan = planApply(files({ comments: { schemaVersion: '2.0.0', version: VERSION, entries: [] } }), observed());
+
+  assert.match(plan.hints[3]!, /the generator has no comment entry for it/);
+});
+
+test('an issue the legacy script already commented on is not commented again', () => {
+  const facts = new Map(observed().issueFacts);
+  facts.set(1, state(true, 'COMPLETED', ['unrelated', LEGACY_COMMENT]));
+
+  const plan = planApply(files(), observed({ issueFacts: facts }));
+
+  assert.deepEqual(plan.operations.filter((operation) => operation.type === 'create-comment').map((operation) => operation.issueNumber), [2]);
+  assert.ok(plan.operations.some((operation) => operation.type === 'skip' && operation.number === 1 && operation.reason === 'already commented by the legacy script'));
+});
+
+test('an issue that already carries the generator marker is not commented again', () => {
+  const facts = new Map(observed().issueFacts);
+  facts.set(2, state(true, 'COMPLETED', [`Partially delivered in ${VERSION} by #102.\n<!-- release-notes:${VERSION}:issue-2 -->`]));
+
+  const plan = planApply(files(), observed({ issueFacts: facts }));
+
+  assert.ok(plan.operations.some((operation) => operation.type === 'skip' && operation.number === 2 && operation.reason === 'already commented by the generator'));
+});
+
+test('compares the comments the generator would post with the ones the legacy script posted', () => {
+  // given the legacy script commented on 1 (generator agrees) and 9 (generator plans nothing)
+  const facts = new Map(observed().issueFacts);
+  facts.set(1, state(true, 'COMPLETED', [LEGACY_COMMENT]));
+  facts.set(9, state(true, 'COMPLETED', [LEGACY_COMMENT]));
+
+  // when
+  const plan = planApply(files(), observed({ issueFacts: facts }));
+
+  // then
+  assert.deepEqual(plan.comments, { both: [1], generatorOnly: [2], legacyOnly: [9] });
+  assert.match(plan.hints[9]!, /the generator's labels\.json does not list it/);
+  const markdown = renderReport(plan);
+  assert.match(markdown, /Legacy script commented, generator agrees \| 1 \|/);
+  assert.match(markdown, /Legacy commented, generator would not \| 1 \|/);
+  assert.match(markdown, /#### Legacy commented, generator would not \(1\)/);
+});
+
+test('the report says when the legacy script has not commented yet', () => {
+  const markdown = renderReport(planApply(files(), observed()));
+
+  assert.match(markdown, /Generator would comment, legacy has not \| 2 \|/);
+  assert.match(markdown, /legacy script runs weekly/);
+});
+
+test('a repeated comment entry for one issue plans one comment', () => {
+  const doubled = files({
+    comments: { schemaVersion: '2.0.0', version: VERSION, entries: [entry(1, [101], 'closing'), entry(1, [102], 'contributor')] },
+  });
+
+  const plan = planApply(doubled, observed());
+
+  assert.equal(plan.operations.filter((operation) => operation.type === 'create-comment' && operation.issueNumber === 1).length, 1);
 });
 
 test('the report lists divergences and what would be done', () => {
@@ -133,7 +211,7 @@ test('the report lists divergences and what would be done', () => {
   assert.match(markdown, /#### zcl only \(1\)/);
   assert.match(markdown, /Label 2 issues and 2 pull requests/);
   assert.match(markdown, /Comment on 2 issues: 1 "Released in" and 1 "Partially delivered"/);
-  assert.match(markdown, /Skipped: 1 still open, 1 closed as not planned/);
+  assert.match(markdown, /Skipped issues: 1 still open, 1 closed as not planned/);
 });
 
 test('the example comment shows its hidden marker inside a code fence', () => {
@@ -187,8 +265,9 @@ test('markup in interpolated text is escaped', () => {
 
   const markdown = renderReport(planApply(hostile, observed()));
 
-  assert.ok(!markdown.includes('<img'));
-  assert.match(markdown, /&lt;img src=x&gt;/);
+  assert.match(markdown, /### Release-notes apply \(dry run\): &lt;img src=x&gt;/);
+  assert.ok(markdown.includes('`version:<img src=x>`'), 'a code span shows markup literally, so it is not escaped there');
+  assert.ok(!markdown.replaceAll('`version:<img src=x>`', '').includes('<img'));
 });
 
 test('a degraded report names the reason and never reads as a comparison', () => {
@@ -224,6 +303,32 @@ test('parseGeneratorFiles reads changelog.json when present and tolerates its ab
     { number: 7, attributionSource: 'section', deliveryPath: 'direct' },
   ]);
   assert.deepEqual(parseGeneratorFiles({ labels, comments }).changelog, []);
+});
+
+test('parseGeneratorFiles ignores an unusable changelog.json instead of failing the comparison', () => {
+  const labels = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, issues: [], pullRequests: [] });
+  const comments = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, entries: [] });
+
+  for (const changelog of ['{}', '{"prs": 3}', '{nope']) {
+    assert.deepEqual(parseGeneratorFiles({ labels, comments, changelog }).changelog, [], changelog);
+  }
+});
+
+test('parseGeneratorFiles names a labels.json or comments.json of the wrong shape', () => {
+  const labels = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, issues: [], pullRequests: [] });
+  const comments = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, entries: [] });
+  const noIssues = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, pullRequests: [] });
+  const badEntries = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, entries: [{ issueNumber: 'x' }] });
+
+  assert.throws(() => parseGeneratorFiles({ labels: noIssues, comments }), /labels\.json must hold/);
+  assert.throws(() => parseGeneratorFiles({ labels, comments: badEntries }), /comments\.json must hold/);
+});
+
+test('dry-run accepts only true or false', () => {
+  assert.equal(parseDryRun('true'), true);
+  assert.equal(parseDryRun(''), true);
+  assert.equal(parseDryRun('false'), false);
+  for (const value of ['False', 'TRUE', '0', 'no']) assert.throws(() => parseDryRun(value), /must be "true" or "false"/, value);
 });
 
 test('the plan is plain data a JSON artifact can carry', () => {
