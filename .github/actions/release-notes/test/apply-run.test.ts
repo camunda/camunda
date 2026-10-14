@@ -95,6 +95,25 @@ test('an unusable changelog.json does not cost the comparison', async (t) => {
   assert.equal(result.warnings.length, 0);
 });
 
+test('issues whose state could not be read are named in a warning', async (t) => {
+  const result = await runApply(
+    { inputDir: inputDir(t), dryRun: true, generateOutcome: 'success' },
+    deps({ issueStates: async () => new Map([[1, { closed: true, stateReason: 'COMPLETED', comments: [] }]]) }),
+  );
+
+  assert.equal(result.warnings.length, 1);
+  assert.match(result.warnings[0]!, /state of 2 of 3 issues could not be read \(#2, #5\)/);
+});
+
+test('issues with more comments than were read are named in a warning', async (t) => {
+  const result = await runApply(
+    { inputDir: inputDir(t), dryRun: true, generateOutcome: 'success' },
+    deps({ issueStates: async (numbers) => new Map(numbers.map((number) => [number, { closed: true, stateReason: 'COMPLETED', comments: [], commentsTruncated: true }])) }),
+  );
+
+  assert.match(result.warnings.join('\n'), /3 issues have more comments than were read/);
+});
+
 test('an unknown schema version is refused, not guessed at', async (t) => {
   const directory = inputDir(t, { 'labels.json': { schemaVersion: '9.0.0', version: VERSION, issues: [], pullRequests: [] } });
 
