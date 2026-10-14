@@ -227,7 +227,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</argLine>
+          <argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar} ${jvm.test.extra.args}</argLine>
         </configuration>
       </plugin>
 
@@ -235,7 +235,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</argLine>
+          <argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar} ${jvm.test.extra.args}</argLine>
         </configuration>
       </plugin>
 

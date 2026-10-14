@@ -303,7 +303,7 @@
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
             <argLine>${jvm.module.opens} --add-opens java.base/java.lang=ALL-UNNAMED
-              --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+              --add-opens java.base/java.util=ALL-UNNAMED ${jvm.test.extra.args}</argLine>
             <systemPropertyVariables>
               <database.type>${database.type}</database.type>
             </systemPropertyVariables>
