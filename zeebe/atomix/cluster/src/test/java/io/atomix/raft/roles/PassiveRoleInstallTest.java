@@ -132,7 +132,7 @@ final class PassiveRoleInstallTest {
     verify(receivedSnapshot).persist();
     verify(log).reset(SNAPSHOT_INDEX + 1);
     // the reset removes every entry, so a configuration of a removed entry must not survive
-    verify(cluster).rollbackConfigurationAfterLogReset();
+    verify(cluster).reloadStoredConfiguration();
   }
 
   @Test

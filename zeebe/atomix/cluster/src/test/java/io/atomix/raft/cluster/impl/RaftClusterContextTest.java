@@ -831,7 +831,7 @@ final class RaftClusterContextTest {
     context.configure(configuration(2, 2, active(1), active(2), active(4)));
 
     // when -- the log entry of the uncommitted configuration is truncated
-    context.rollbackConfigurationAfterTruncation(1);
+    context.dropConfigurationsWithoutLogEntry(1);
 
     // then -- the stored configuration is back and the member it introduced is gone
     assertThat(context.getConfiguration()).isEqualTo(stored);
@@ -855,7 +855,7 @@ final class RaftClusterContextTest {
     final var context = bootstrap(raft);
 
     // when -- only the newer entry is truncated
-    context.rollbackConfigurationAfterTruncation(2);
+    context.dropConfigurationsWithoutLogEntry(2);
 
     // then -- the older entry is still backed by the log and wins over the stored configuration
     assertThat(context.getConfiguration())
@@ -874,7 +874,7 @@ final class RaftClusterContextTest {
     context.configure(uncommitted);
 
     // when -- the log is truncated after the configuration's entry
-    context.rollbackConfigurationAfterTruncation(2);
+    context.dropConfigurationsWithoutLogEntry(2);
 
     // then
     assertThat(context.getConfiguration()).isEqualTo(uncommitted);
@@ -893,7 +893,7 @@ final class RaftClusterContextTest {
     clearInvocations(raft);
 
     // when -- the promotion's log entry is truncated
-    context.rollbackConfigurationAfterTruncation(1);
+    context.dropConfigurationsWithoutLogEntry(1);
 
     // then -- the local member is passive again and the server follows
     assertThat(context.getLocalMember().getType()).isEqualTo(Type.PASSIVE);
@@ -908,7 +908,7 @@ final class RaftClusterContextTest {
     context.configure(configuration(5, 2, active(1), active(2), active(4)));
 
     // when -- the whole log is reset to install a snapshot at index 10
-    context.rollbackConfigurationAfterLogReset();
+    context.reloadStoredConfiguration();
 
     // then -- the configuration of the removed entry is gone
     assertThat(context.getConfiguration()).isEqualTo(stored);
@@ -922,7 +922,7 @@ final class RaftClusterContextTest {
     final var context = bootstrap(raftWithStoredConfiguration(stored));
 
     // when
-    context.rollbackConfigurationAfterLogReset();
+    context.reloadStoredConfiguration();
 
     // then
     assertThat(context.getConfiguration()).isEqualTo(stored);

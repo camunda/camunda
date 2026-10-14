@@ -342,7 +342,7 @@ public class PassiveRoleTest {
 
     // then - a configuration that only the erased log knew must not survive
     verify(log).reset(1);
-    verify(ctx.getCluster()).rollbackConfigurationAfterLogReset();
+    verify(ctx.getCluster()).reloadStoredConfiguration();
   }
 
   @Test
@@ -370,7 +370,7 @@ public class PassiveRoleTest {
 
     // then - the divergent entry is deleted and so is a configuration that came from it
     verify(log).deleteAfter(0);
-    verify(ctx.getCluster()).rollbackConfigurationAfterTruncation(0);
+    verify(ctx.getCluster()).dropConfigurationsWithoutLogEntry(0);
   }
 
   @Test
@@ -396,7 +396,7 @@ public class PassiveRoleTest {
     role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then - the retry would not truncate again, so the configuration must be dropped now
-    verify(ctx.getCluster()).rollbackConfigurationAfterTruncation(0);
+    verify(ctx.getCluster()).dropConfigurationsWithoutLogEntry(0);
   }
 
   @Test

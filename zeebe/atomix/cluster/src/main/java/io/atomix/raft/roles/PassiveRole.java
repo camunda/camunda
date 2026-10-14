@@ -126,10 +126,10 @@ public class PassiveRole extends InactiveRole {
     try {
       raft.getLog().deleteAfter(index);
     } catch (final FlushException e) {
-      raft.getCluster().rollbackConfigurationAfterTruncation(index);
+      raft.getCluster().dropConfigurationsWithoutLogEntry(index);
       throw e;
     }
-    raft.getCluster().rollbackConfigurationAfterTruncation(index);
+    raft.getCluster().dropConfigurationsWithoutLogEntry(index);
   }
 
   @Override
@@ -901,8 +901,7 @@ public class PassiveRole extends InactiveRole {
       // Reset the log to the previous index plus one.
       if (request.prevLogTerm() == 0) {
         log.debug("Reset first index to {}", request.prevLogIndex() + 1);
-        raft.getLog().reset(request.prevLogIndex() + 1);
-        raft.getCluster().rollbackConfigurationAfterLogReset();
+        resetLog(request.prevLogIndex() + 1);
       }
 
       // Iterate through entries and append them.
@@ -1182,7 +1181,15 @@ public class PassiveRole extends InactiveRole {
         raftLog.getLastIndex(),
         snapshotIndex,
         snapshotIndex + 1);
-    raftLog.reset(snapshotIndex + 1);
-    raft.getCluster().rollbackConfigurationAfterLogReset();
+    resetLog(snapshotIndex + 1);
+  }
+
+  /**
+   * Resets the log so that it starts at the given index. No entry remains, so a configuration that
+   * came from one of them is dropped too.
+   */
+  private void resetLog(final long firstIndex) {
+    raft.getLog().reset(firstIndex);
+    raft.getCluster().reloadStoredConfiguration();
   }
 }
