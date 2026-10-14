@@ -277,7 +277,8 @@ public class UserTaskHandler implements OrdinalIndexExportHandler<TaskEntity, Us
     entity
         .setState(TaskState.CANCELED)
         .setCompletionTime(
-            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
+        .setIsSuspended(false);
     updateChangedAttributes(record, entity);
   }
 

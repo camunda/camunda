@@ -274,8 +274,6 @@ class UserTaskExportHandlerTest {
 
               assertUserTaskModelFieldsEqualToRecord(model, record);
             });
-
-    verifyNoMoreInteractions(userTaskWriter);
   }
 
   @Test
@@ -363,6 +361,19 @@ class UserTaskExportHandlerTest {
     // then
     verify(userTaskWriter).updateSuspended(record.getValue().getUserTaskKey(), false);
     verifyNoMoreInteractions(userTaskWriter);
+  }
+
+  @Test
+  void shouldClearUserTaskSuspensionMarkerOnCanceledRecord() {
+    // given
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.CANCELED));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(userTaskWriter).updateSuspended(record.getValue().getUserTaskKey(), false);
   }
 
   // Helper method to assert that the fields of a UserTaskDbModel match the values in a Record and

@@ -1075,7 +1075,7 @@ public class UserTaskHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = UserTaskIntent.class,
-      names = {"SUSPENDED", "RESUMED"},
+      names = {"SUSPENDED", "RESUMED", "CANCELED"},
       mode = EnumSource.Mode.EXCLUDE)
   void shouldNotUpdateSuspensionMarkerOnOtherIntents(final UserTaskIntent intent) {
     Assumptions.assumeThat(SUPPORTED_INTENTS).contains(intent);
@@ -1102,6 +1102,35 @@ public class UserTaskHandlerTest {
         .upsertWithRouting(
             eq(index), eq(taskEntity.getId()), eq(taskEntity), updateFieldsCaptor.capture(), any());
     assertThat(updateFieldsCaptor.getValue()).doesNotContainKey(TaskTemplate.IS_SUSPENDED);
+  }
+
+  @Test
+  void shouldClearSuspensionMarkerOnCanceled() {
+    // given
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.CANCELED)
+                    .withKey(111)
+                    .withValue(ImmutableUserTaskRecordValue.builder().build())
+                    .withTimestamp(System.currentTimeMillis()));
+
+    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(111));
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // when
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+    underTest.flush(index, taskEntity, mockRequest);
+
+    // then
+    verify(mockRequest)
+        .upsertWithRouting(
+            eq(index), eq(taskEntity.getId()), eq(taskEntity), updateFieldsCaptor.capture(), any());
+    assertThat(updateFieldsCaptor.getValue())
+        .containsEntry(TaskTemplate.IS_SUSPENDED, false)
+        .containsEntry(TaskTemplate.STATE, TaskState.CANCELED);
   }
 
   /**

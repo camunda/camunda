@@ -101,12 +101,11 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
           userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.CANCELING);
       case UserTaskIntent.CREATED, ASSIGNED, UPDATED ->
           userTaskWriter.update(map(record, UserTaskState.CREATED, null));
-      case UserTaskIntent.CANCELED ->
-          userTaskWriter.update(
-              map(
-                  record,
-                  UserTaskState.CANCELED,
-                  DateUtil.toOffsetDateTime(record.getTimestamp())));
+      case UserTaskIntent.CANCELED -> {
+        userTaskWriter.update(
+            map(record, UserTaskState.CANCELED, DateUtil.toOffsetDateTime(record.getTimestamp())));
+        userTaskWriter.updateSuspended(value.getUserTaskKey(), false);
+      }
       case UserTaskIntent.COMPLETED ->
           userTaskWriter.update(
               map(
