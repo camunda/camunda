@@ -162,6 +162,50 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
   6667 evaluations/s. The load profile comes from the `DMN_RATE`, `DMN_RAMP_UP`,
   `DMN_DURATION`, `DMN_PRE_ALLOCATED_VUS` and `DMN_MAX_VUS` variables, set
   through `k6.tests.dmn.env`.
+* `dmn-large`: deploys a synthetic decision graph (48 MiB, 12 decisions, 8479
+  rules by default), or a portfolio of them, and evaluates it with input
+  vectors checking the returned `rate`. The files are too large for a
+  ConfigMap: an init container of each runner generates them with
+  `k6/generators/generate_tariff_dmn.py` (deterministic, seconds), see
+  `k6.tests.<name>.generator` in `values.yaml`. Disabled by default; the
+  `dmn-large` scenario enables it alone, with the same `DMN_*` load variables as
+  `dmn` (set through `k6.tests.dmn-large.env`). Its shape follows large
+  real-world rating models: three large FIRST-hit tables, the largest one
+  evaluated four times per request. To compare models and request profiles:
+  - In `k6.tests.dmn-large.generator.env`:
+    - `DMN_SIZE_MIB` (default 48): file size; the rule counts scale with it.
+    - `DMN_KB_PER_RULE` (default: 6.0 like the reference models): average KB
+      of XML per rule. Most production models have ~3.8 (more, shorter rules
+      per MiB), which costs more engine time per MiB.
+    - `DMN_PORTFOLIO_SCALE` (default 0: one model): deploys `round(420 x
+      scale)` models with the size mix of a production portfolio (36% under
+      1 MiB, 27% 1-5 MiB, 24% 5-10 MiB, 13% 10-20 MiB; those under 0.25 MiB
+      are generated at 0.25 MiB) instead of one model, to measure the heap of
+      the parsed models per partition leader. 0.1 deploys 42 models (~180
+      MiB); 1 deploys ~1.8 GiB, which the k6 runner holds in memory for the
+      deployment (raise its memory) and the brokers parse for every leader
+      (~10 times the file size).
+  - In `k6.tests.dmn-large.env`:
+    - `DMN_DEPTH_MIX` (default empty: every vector in turn, which covers every
+      rule of a single model): share of requests per depth bucket, the position
+      of the matched rule in the largest table: `q1` to `q4` (quarters);
+      `payload`, shaped like a measured production request (no specific rule
+      of the two largest tables matches, but half their rules pass the first
+      columns); or `fallthrough` (the catch-all rules answer). Example:
+      `q1=25,q2=25,q3=25,q4=25`. Escape the commas in `--set-string`:
+      `k6.tests.dmn-large.env.DMN_DEPTH_MIX=q1=50\,q4=50`.
+    - `DMN_EXTRA_VARIABLES` (default 0): variables the model does not read,
+      added to every request, as real payloads often carry them; the engine
+      copies all the variables for every rule it checks.
+    - `DMN_HOT_MODELS` (default empty: same share for every model): traffic
+      skew over a portfolio, `<% of the models>:<% of the requests>`, e.g.
+      `20:80`.
+
+  Requests are tagged with their `depth` and the `size` of their model. A
+  profile close to production: `DMN_KB_PER_RULE=3.8`,
+  `DMN_DEPTH_MIX=payload=100` and `DMN_EXTRA_VARIABLES=14`; at 20 MiB with the
+  reference density, a `payload` request costs about as much engine time as a
+  real 20 MB rating model with a production payload.
 
 ### How to add a new test?
 

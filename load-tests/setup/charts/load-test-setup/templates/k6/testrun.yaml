@@ -60,6 +60,10 @@ spec:
 
       - name: DATA_DIR
         value: /data
+      {{- if $test.generator }}
+      - name: GENERATED_DIR
+        value: /generated
+      {{- end }}
 
       # Credentials
       - name: CAMUNDA_BASE_URL
@@ -112,14 +116,55 @@ spec:
     tolerations:
       {{- toYaml $root.Values.k6.tolerations | nindent 6 }}
 
+    {{- with $test.generator }}
+    # Test data too large for a ConfigMap is generated before k6 starts. The generator must be
+    # deterministic, so that every runner pod generates the same files.
+    initContainers:
+      - name: generate-data
+        image: {{ .image | quote }}
+        command:
+          - python3
+          - -I
+          - "/generators/{{ .script }}"
+          {{- range .args }}
+          - {{ . | quote }}
+          {{- end }}
+        {{- with .env }}
+        env:
+          {{- range $name, $value := . }}
+          - name: {{ $name }}
+            value: {{ $value | quote }}
+          {{- end }}
+        {{- end }}
+        resources:
+          {{- toYaml .resources | nindent 10 }}
+        volumeMounts:
+          - name: k6-generators
+            mountPath: /generators
+          - name: k6-generated
+            mountPath: /generated
+    {{- end }}
+
     volumes:
       - name: k6-data
         configMap:
           name: k6-data
+      {{- with $test.generator }}
+      - name: k6-generators
+        configMap:
+          name: k6-generators
+      - name: k6-generated
+        emptyDir:
+          sizeLimit: {{ .sizeLimit | quote }}
+      {{- end }}
 
     volumeMounts:
       - name: k6-data
         mountPath: /data
+      {{- if $test.generator }}
+      - name: k6-generated
+        mountPath: /generated
+      {{- end }}
 
 {{- end }}
 {{- end }}

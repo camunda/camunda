@@ -132,7 +132,7 @@ Most useful inputs:
 |--------------------------|---------------------------------------------------------------|
 | `name` (required)        | Namespace suffix; full namespace becomes `c8-<name>`          |
 | `ref`                    | Git ref to build the image from (defaults to `main`)          |
-| `scenario`               | `latency` / `realistic` / `typical` / `max` / `archiver` / `dmn` |
+| `scenario`               | `latency` / `realistic` / `typical` / `max` / `archiver` / `dmn` / `dmn-large` |
 | `secondary-storage-type` | `elasticsearch` (default) / `opensearch` / `postgresql` / ... |
 | `reuse-tag`              | Skip the build and reuse a previously built tag               |
 | `orchestration-tag`      | Use a released Docker Hub image instead of building           |

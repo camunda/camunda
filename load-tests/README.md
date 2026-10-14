@@ -453,7 +453,7 @@ In practice, most ad-hoc runs only need a test `name`, a Git `ref`, a built-in `
 
 * Specification of the Camunda/Zeebe version to test against (by selecting the workflow revision) — will make sure to use the right Camunda Platform Helm Chart version and values file.
 * Specification of the branch to test against (default: main) — will build a Docker image based on the specified branch and be used for the cluster under test and load test applications.
-* Specification of a workload scenario (`max`, `realistic`, `typical`, `latency`, `archiver`, or `dmn`) — making it easy to start from a known workload profile before applying targeted overrides.
+* Specification of a workload scenario (`max`, `realistic`, `typical`, `latency`, `archiver`, `dmn`, or `dmn-large`) — making it easy to start from a known workload profile before applying targeted overrides.
 * Specification of the time to live (TTL) for the load test — making sure that the load test is automatically cleaned up after the specified time.
 * Specification of an existing Docker image to use — making it possible to reuse existing images.
 * Specification of platform chart overrides via `platform-helm-values` — for example orchestration sizing, env vars, and image-related settings.
