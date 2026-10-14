@@ -226,6 +226,23 @@ exporting, ES indexing, REST layer, and the ES index fresh interval.
 histogram_quantile(0.99, sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=~"$namespace"}[$__rate_interval])))
 ```
 
+Instances that are not found within the 90 s limit are still recorded in this histogram (in the
+top bucket) so a plateau at the limit stays visible. To tell true timeouts apart from instances
+genuinely found at the limit, they are additionally counted here:
+
+```promql
+sum(rate(starter_data_availability_timed_out_total{namespace=~"$namespace"}[$__rate_interval])) by (partition)
+```
+
+A single availability check returns at most a full page of instances (the search page size). When a
+result page is full, the number of confirmed instances per check is capped and some available
+instances may be recorded as later (or timed out) only because they did not fit on the page. A
+non-zero rate here means the check is hitting that cap and latency may be overstated:
+
+```promql
+sum(rate(starter_data_availability_full_page_total{namespace=~"$namespace"}[$__rate_interval]))
+```
+
 ---
 
 ### Request-response latency

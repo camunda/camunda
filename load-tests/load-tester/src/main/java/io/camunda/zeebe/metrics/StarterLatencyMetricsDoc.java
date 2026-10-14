@@ -213,6 +213,59 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.GAUGE;
     }
+  },
+
+  /**
+   * The number of process instances that were removed from the awaiting list because they were not
+   * found within the maximum availability duration (the top latency bucket). These are still
+   * recorded in {@link #DATA_AVAILABILITY_LATENCY} so a plateau at the limit stays visible, but
+   * this counter separates true timeouts from instances that were genuinely found at the limit.
+   */
+  DATA_AVAILABILITY_TIMED_OUT {
+    private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.PARTITION};
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public String getDescription() {
+      return "The number of process instances removed from the awaiting list because they were not found within the maximum availability duration.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.data.availability.timed.out";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+  },
+
+  /**
+   * The number of availability checks whose result page was full, i.e. the search returned as many
+   * instances as the page limit. A full page means the number of confirmed instances per check is
+   * capped and some available instances may be counted as later (or timed out) only because they
+   * did not fit on the page.
+   */
+  DATA_AVAILABILITY_FULL_PAGE {
+    @Override
+    public String getDescription() {
+      return "The number of availability checks whose result page was full, meaning the confirmed instances per check hit the page limit.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.data.availability.full.page";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
   };
 
   public enum StarterLatencyMetricKeyNames implements KeyName {

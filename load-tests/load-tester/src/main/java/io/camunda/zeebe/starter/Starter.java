@@ -76,6 +76,7 @@ public class Starter implements CommandLineRunner {
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
+  private static final int AVAILABILITY_QUERY_PAGE_SIZE = 2500;
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -243,13 +244,14 @@ public class Starter implements CommandLineRunner {
             registry,
             Executors.newScheduledThreadPool(1),
             properties.getMonitorDataAvailabilityInterval(),
+            AVAILABILITY_QUERY_PAGE_SIZE,
             (listOfStartedInstances) -> {
               final CamundaFuture<SearchResponse<ProcessInstance>> send =
                   queryClient
                       .newProcessInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
                       .sort(s -> s.startDate().asc())
-                      .page(p -> p.limit(2500))
+                      .page(p -> p.limit(AVAILABILITY_QUERY_PAGE_SIZE))
                       .send();
 
               return send.thenApply(
