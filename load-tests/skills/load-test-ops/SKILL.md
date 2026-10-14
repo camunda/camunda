@@ -84,8 +84,9 @@ Most runs follow the same arc — each step links to its own section for full op
 7. **[Stop / clean up](#stop--clean-up)** — delete the namespace to free benchmark resources
    (also auto-cleaned at `deadline-date`).
 
-For automation, the metrics workflow's `load-test-results-<namespace>` artifact (`results.json`) can feed
-directly into the delete workflow.
+For automation, a downstream job can download the metrics workflow's
+`load-test-results-<namespace>` artifact (`results.json`, metric values only) and pass the
+namespace to the delete workflow as its own input.
 
 ---
 

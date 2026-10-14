@@ -238,7 +238,6 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: 'read'
-      actions: read
     outputs:
       comparison-md: ${{ steps.render.outputs.comparison-md }}
     env:
