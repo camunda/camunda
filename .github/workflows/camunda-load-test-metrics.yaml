@@ -1,6 +1,12 @@
 # description: Renders load-test metrics for a given namespace as a job
-#              summary. Reusable via workflow_call (returns JSON for other
-#              workflows) or runnable ad-hoc via workflow_dispatch.
+#              summary. Reusable via workflow_call (publishes JSON for other
+#              workflows as an artifact) or runnable ad-hoc via workflow_dispatch.
+#              The results are a `load-test-results-<namespace>` artifact holding
+#              results.json, a JSON object {name: number, ...} (metrics that scrape no data are
+#              omitted). They are not a workflow output: the Prometheus credentials are masked in
+#              this job, and GitHub silently drops a $GITHUB_OUTPUT write whose value contains a
+#              substring of a masked secret
+#              (https://github.com/orgs/community/discussions/26636).
 # calls: loadtestctl report (load-tests/loadtestctl)
 # type: CI
 # owner: @camunda/reliability-testing
@@ -40,10 +46,6 @@ on:
         required: false
         type: string
         default: ''
-    outputs:
-      results-json:
-        description: 'JSON object {name: number, ...} from loadtestctl report (metrics that scrape no data are omitted)'
-        value: ${{ jobs.query-and-summarize.outputs.results-json }}
 
 defaults:
   run:
@@ -62,8 +64,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {}
-    outputs:
-      results-json: ${{ steps.run-queries.outputs.results-json }}
     steps:
       - name: Validate namespace prefix
         run: |
@@ -93,7 +93,6 @@ jobs:
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
       - name: Run PromQL queries via loadtestctl report
-        id: run-queries
         env:
           LOADTESTCTL_REPORT_END: ${{ env.AT }}
         # `report-queries-comparison.yaml` holds the metrics of the comparison table. Metrics that
@@ -113,11 +112,14 @@ jobs:
           jq '.metrics | with_entries(select(.value != null))' "$RUNNER_TEMP/comparison.json" > /tmp/results.json
           echo "--- /tmp/results.json (null entries stripped) ---"
           cat /tmp/results.json
-          {
-            echo "results-json<<__VQ_EOF__"
-            cat /tmp/results.json
-            echo "__VQ_EOF__"
-          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: load-test-results-${{ inputs.namespace }}
+          path: /tmp/results.json
+          retention-days: 7
+          overwrite: true
 
       - name: Build full load test report
         # Artifact for later analysis; the comparison above does not depend on it.

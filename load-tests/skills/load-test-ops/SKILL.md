@@ -84,8 +84,9 @@ Most runs follow the same arc — each step links to its own section for full op
 7. **[Stop / clean up](#stop--clean-up)** — delete the namespace to free benchmark resources
    (also auto-cleaned at `deadline-date`).
 
-For automation, the metrics workflow's `results-json` output can feed directly into the delete
-workflow.
+For automation, a downstream job can download the metrics workflow's
+`load-test-results-<namespace>` artifact (`results.json`, metric values only) and pass the
+namespace to the delete workflow as its own input.
 
 ---
 
@@ -359,7 +360,8 @@ gh run view "$RUN_ID" --repo camunda/camunda
 
 `duration-seconds` is the PromQL range each query covers (default `600` = 10 min). Pass `1200`
 for a ~20-min window. Results render in the job summary; the workflow is also reusable via
-`workflow_call` and exposes `results-json` for downstream jobs (e.g. analyze → delete).
+`workflow_call` and publishes a `load-test-results-<namespace>` artifact for downstream jobs
+(e.g. analyze → delete).
 
 ### Other ways to get metrics
 
@@ -387,7 +389,7 @@ matching conditions:
   identical inputs and the same `duration-seconds`.
 
 Capture both via [Analyze metrics](#analyze-metrics) over the same window, then diff the JSON
-outputs. The metrics workflow's `results-json` makes this scriptable.
+outputs. The metrics workflow's `load-test-results-<namespace>` artifact makes this scriptable.
 
 ---
 
