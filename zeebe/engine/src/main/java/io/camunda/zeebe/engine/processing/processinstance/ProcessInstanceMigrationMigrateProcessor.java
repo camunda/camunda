@@ -133,26 +133,11 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     requireNonNullProcessInstance(processInstance, processInstanceKey);
 
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(processInstance.getValue().getTenantId())
-            .addResourceId(processInstance.getValue().getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "migrate a process instance",
-                  processInstance.getValue().getProcessInstanceKey(),
-                  "such process instance")
-              : rejection.reason();
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
+    if (!isAuthorizedToUpdate(
+        command,
+        processInstance.getValue().getBpmnProcessId(),
+        processInstance.getValue().getTenantId(),
+        processInstanceKey)) {
       return;
     }
 
@@ -167,6 +152,15 @@ public class ProcessInstanceMigrationMigrateProcessor
             processInstance.getValue().getTenantId());
 
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
+
+    if (!isAuthorizedToUpdate(
+        command,
+        BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId()),
+        targetProcessDefinition.getTenantId(),
+        processInstanceKey)) {
+      return;
+    }
+
     requireTargetProcessDefinitionNotDraining(targetProcessDefinition, targetProcessDefinitionKey);
     requireNoStartEventInstanceForTargetProcess(
         processInstance, targetProcessDefinition, messageState);
@@ -216,6 +210,38 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  /**
+   * Checks the UPDATE_PROCESS_INSTANCE permission on the given process definition. Writes the
+   * rejection and returns false if the check fails.
+   */
+  private boolean isAuthorizedToUpdate(
+      final TypedRecord<ProcessInstanceMigrationRecord> command,
+      final String bpmnProcessId,
+      final String tenantId,
+      final long processInstanceKey) {
+    final var authorizationRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+            .tenantId(tenantId)
+            .addResourceId(bpmnProcessId)
+            .build();
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.NOT_FOUND.equals(rejection.type())
+              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "migrate a process instance", processInstanceKey, "such process instance")
+              : rejection.reason();
+      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
+      return false;
+    }
+    return true;
   }
 
   private Map<String, String> mapElementIds(
