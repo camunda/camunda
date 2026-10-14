@@ -15,26 +15,26 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-public enum SuspensionBatchIntent implements ProcessInstanceRelatedIntent {
+public enum ElementInstanceWalkIntent implements ProcessInstanceRelatedIntent {
 
   /** Suspends one element instance, descending into its children first. */
-  SUSPEND_ELEMENT_INSTANCE(0),
+  SUSPEND(0),
 
   /** The element instance and everything it owns was suspended. */
-  ELEMENT_INSTANCE_SUSPENDED(1);
+  SUSPENDED(1);
 
   private final short value;
 
-  SuspensionBatchIntent(final int value) {
+  ElementInstanceWalkIntent(final int value) {
     this.value = (short) value;
   }
 
   public static Intent from(final short value) {
     switch (value) {
       case 0:
-        return SUSPEND_ELEMENT_INSTANCE;
+        return SUSPEND;
       case 1:
-        return ELEMENT_INSTANCE_SUSPENDED;
+        return SUSPENDED;
       default:
         return UNKNOWN;
     }
@@ -47,7 +47,7 @@ public enum SuspensionBatchIntent implements ProcessInstanceRelatedIntent {
 
   @Override
   public boolean isEvent() {
-    return this == ELEMENT_INSTANCE_SUSPENDED;
+    return this == SUSPENDED;
   }
 
   @Override

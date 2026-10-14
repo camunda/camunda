@@ -182,19 +182,19 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
 
 **D6. Suspend walks the element instance tree depth-first (post-order), one element instance per
 command, and emits a user task event for every user task it visits.**
-`SuspensionBatchSuspendElementInstanceProcessor` handles a single command intent,
-`SuspensionBatch.SUSPEND_ELEMENT_INSTANCE`. Its cursor — `elementInstanceKey`, `parentKey`, and
+`ElementInstanceWalkSuspendProcessor` handles a single command intent,
+`ElementInstanceWalk.SUSPEND`. Its cursor — `elementInstanceKey`, `parentKey`, and
 `index` — is carried on the command, not persisted in state. For the element instance at
 `elementInstanceKey`, the command descends into the next child after `index` if one exists
 (writing only a follow-up command, no event); otherwise it runs the user-task visitor and writes
-`ELEMENT_INSTANCE_SUSPENDED`. After suspending an element instance, the walk moves straight on to
+`ElementInstanceWalk.SUSPENDED`. After suspending an element instance, the walk moves straight on to
 its next sibling under the same parent (`index = -1`, so the sibling's own children are visited
 from the start); only once there is no sibling left does it ascend to the parent, with `index` set
 to the element instance just suspended, so the parent's own next step seeks from there. Once the
 root itself is suspended this way, the walk writes `ProcessInstance.SUSPENDED` instead of
 continuing. For a container with n children this costs n + 2 commands rather than the 2n + 1 an
 ascend-then-redescend per child would cost — events are unaffected either way, still exactly one
-`ELEMENT_INSTANCE_SUSPENDED` per element instance, in post-order. Children are found via the element
+`ElementInstanceWalk.SUSPENDED` per element instance, in post-order. Children are found via the element
 instance's own child count, so a leaf costs no lookup. Each command appends at most one follow-up
 command, so the walk needs no recursion and each batch stays bounded however large the tree is. The
 first command uses the process instance key as its record key; every follow-up reuses that same key
