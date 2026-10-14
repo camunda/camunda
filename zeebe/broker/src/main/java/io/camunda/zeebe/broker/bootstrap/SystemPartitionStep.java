@@ -38,8 +38,13 @@ final class SystemPartitionStep extends AbstractBrokerStartupStep {
       return;
     }
 
+    final var clusterServices = brokerStartupContext.getClusterServices();
     final var factory =
-        new SystemPartitionFactory(brokerCfg, brokerStartupContext.getMeterRegistry());
+        new SystemPartitionFactory(
+            brokerCfg,
+            brokerStartupContext.getMeterRegistry(),
+            clusterServices.getCommunicationService(),
+            clusterServices.getMembershipService().getLocalMember().id());
     concurrencyControl.runOnCompletion(
         factory.create(brokerStartupContext.getActorSchedulingService()),
         (systemPartition, error) -> {
@@ -49,7 +54,6 @@ final class SystemPartitionStep extends AbstractBrokerStartupStep {
           }
 
           brokerStartupContext.setSystemPartition(systemPartition);
-          final var clusterServices = brokerStartupContext.getClusterServices();
           systemPartition
               .bootstrap(
                   new DefaultPartitionManagementService(

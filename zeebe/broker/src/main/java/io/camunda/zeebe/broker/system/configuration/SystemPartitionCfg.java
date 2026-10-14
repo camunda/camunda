@@ -13,17 +13,21 @@ import org.springframework.util.unit.DataSize;
 /**
  * Configuration of the system partition: a metadata-only Raft group replicated on every broker of
  * the cluster, including brokers of control zones which host no data partitions. It carries cluster
- * coordination records such as broker heartbeats.
+ * coordination data, and optionally detects brokers gone from the cluster.
  */
 public final class SystemPartitionCfg implements ConfigurationEntry {
-  public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofSeconds(1);
   public static final DataSize DEFAULT_LOG_SEGMENT_SIZE = DataSize.ofMegabytes(4);
   public static final Duration DEFAULT_SNAPSHOT_PERIOD = Duration.ofMinutes(5);
 
   private boolean enabled = false;
-  private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   private DataSize logSegmentSize = DEFAULT_LOG_SEGMENT_SIZE;
   private Duration snapshotPeriod = DEFAULT_SNAPSHOT_PERIOD;
+  private FailureDetectorCfg failureDetector = new FailureDetectorCfg();
+
+  @Override
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
+    failureDetector.init(globalConfig, brokerBase);
+  }
 
   public boolean isEnabled() {
     return enabled;
@@ -31,14 +35,6 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
 
   public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
-  }
-
-  public Duration getHeartbeatInterval() {
-    return heartbeatInterval;
-  }
-
-  public void setHeartbeatInterval(final Duration heartbeatInterval) {
-    this.heartbeatInterval = heartbeatInterval;
   }
 
   public DataSize getLogSegmentSize() {
@@ -57,17 +53,25 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
     this.snapshotPeriod = snapshotPeriod;
   }
 
+  public FailureDetectorCfg getFailureDetector() {
+    return failureDetector;
+  }
+
+  public void setFailureDetector(final FailureDetectorCfg failureDetector) {
+    this.failureDetector = failureDetector;
+  }
+
   @Override
   public String toString() {
     return "SystemPartitionCfg{"
         + "enabled="
         + enabled
-        + ", heartbeatInterval="
-        + heartbeatInterval
         + ", logSegmentSize="
         + logSegmentSize
         + ", snapshotPeriod="
         + snapshotPeriod
+        + ", failureDetector="
+        + failureDetector
         + '}';
   }
 }
