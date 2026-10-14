@@ -76,7 +76,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "@camunda8/orchestration-cluster-api": "9.1.5",
+    "@camunda8/orchestration-cluster-api": "10.0.0",
     "@cfaester/enzyme-adapter-react-18": "^0.8.0",
     "@eslint/js": "^9.12.0",
     "@playwright/test": "1.62.1",

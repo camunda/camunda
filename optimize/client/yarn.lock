@@ -1231,10 +1231,10 @@
     sonner "^2.0.8"
     tailwind-merge "3.6.0"
 
-"@camunda8/orchestration-cluster-api@9.1.5":
-  version "9.1.5"
-  resolved "https://registry.yarnpkg.com/@camunda8/orchestration-cluster-api/-/orchestration-cluster-api-9.1.5.tgz#a58f768170e5ee42c060cd24881d6840a2b45b85"
-  integrity sha512-xl3E89SQI56vJBqIbprQEfuXLfW+RgqYQ8BQxkTfqjQTDLzq5kZeEKfcDOIZCPH58gokgV441v/vrvi8U9hnUA==
+"@camunda8/orchestration-cluster-api@10.0.0":
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/@camunda8/orchestration-cluster-api/-/orchestration-cluster-api-10.0.0.tgz#0ecf0498481ff58f108957488021a34fbb880ef4"
+  integrity sha512-jExmBd8nKcUYLuY7TGbBEA0QxvZA1zMgKlhflgJKxRXzLgJD4KvHefGOiycrFlB2fZRv8Aunpgl+XyrG22WFJQ==
   dependencies:
     typed-env "^2.0.0"
     zod "^4"
