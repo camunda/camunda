@@ -135,8 +135,13 @@ browser redirect elsewhere.
 Prerequisites: Java 21, Node 18+, a built distribution:
 
 ```sh
-./mvnw install -pl dist -am -Dquickly -T1C
+./mvnw install -pl dist -am -Dquickly -T1C -o
 ```
+
+Build offline (`-o`) and with `-am`: otherwise Maven's daily snapshot check can put remote
+`8.11.0-<timestamp>` jars next to the local `8.11.0-SNAPSHOT` ones in `dist/target/camunda-zeebe/lib`,
+and the cluster fails to start (duplicate MyBatis mappers, `NoSuchMethodError`). If that happened,
+rebuild with `clean install` and the same flags.
 
 Then, from this directory, in two terminals:
 
@@ -154,16 +159,29 @@ npm link
 Then:
 
 ```sh
-c8poc login                         # choose physical tenant + provider; Keycloak: demo / demo
+c8poc login                         # choose physical tenant, then the identity provider in the
+                                    # browser; Keycloak: demo / demo
 c8poc whoami                        # context, physical tenant, identity, issuer, client, audience
 c8poc topology                      # GET /v2/topology with the stored token
 c8poc api /v2/license               # GET any path below the physical tenant's API
 c8poc logout                        # deletes the context and its user
 ```
 
-`login` options: `--physical-tenant <id>`, `--provider <id>` to skip the prompts, `--name <context>`
-for the context name, `--no-browser` to only print the login URL. Without `npm link`, run
-`node c8poc.mjs <command>` instead.
+`login` options: `--physical-tenant <id>` and `--provider <id>` to skip the choices, `--name
+<context>` for the context name, `--no-browser` to only print the login URL (open it on this
+machine). Without `npm link`, run `node c8poc.mjs <command>` instead.
+
+### Logging in through the browser
+
+`login` serves a few pages on the loopback interface, in the Camunda/Carbon look (light and dark):
+
+1. **Choose the identity provider** - when the physical tenant offers more than one; each tile shows
+   the provider's `client-name` and issuer. With a single provider (or `--provider`) the browser
+   goes straight to it.
+2. The identity provider's login (authorization code + PKCE).
+3. **The outcome** - the CLI redeems the code and checks the token before answering, so the page
+   shows the user, provider, cluster, physical tenant and CLI context - or why the login failed,
+   e.g. a token without the cluster's audience. **Cancel** on the first page aborts the login.
 
 ### Configuration: clusters, users, contexts (like kubectl)
 

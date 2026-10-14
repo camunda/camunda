@@ -35,10 +35,10 @@ Log in:
                                  ${DEFAULT_CLUSTER}/physical-tenants/pt1
       --physical-tenant <id>     Physical tenant (instead of putting it in the url); without
                                  either, asks if the cluster has more than the default one
-      --provider <id>            Identity provider (instead of being asked)
+      --provider <id>            Identity provider (instead of choosing in the browser)
       --name <context>           Context name (default: <host>[/<physical tenant>]);
                                  c8poc --context <name> login ... works as well
-      --no-browser               Only print the login URL
+      --no-browser               Only print the login URL (open it on this machine)
   logout                         Delete the context and its user
   physical-tenants [url]         List the cluster's physical tenants
 
@@ -202,20 +202,7 @@ function withTokens(user, tokens) {
   };
 }
 
-// ---------- OIDC ----------
-
-async function chooseProvider(providers, providerId) {
-  if (providerId) {
-    const p = providers.find((x) => x.id === providerId);
-    if (!p) throw new Error(`no provider '${providerId}', available: ${providers.map((x) => x.id).join(", ")}`);
-    return p;
-  }
-  if (providers.length === 1) return providers[0];
-  providers.forEach((p, i) => info(`  [${i + 1}] ${p.id}  (${p.issuer})`));
-  const p = providers[Number(await prompt("Log in with: ")) - 1];
-  if (!p) throw new Error("invalid choice");
-  return p;
-}
+// ---------- OIDC: browser login ----------
 
 const DEFAULT_REDIRECT_URI = "http://127.0.0.1/callback";
 const LOOPBACK_ADDRESSES = { "127.0.0.1": ["127.0.0.1"], "[::1]": ["::1"], localhost: ["127.0.0.1", "::1"] };
@@ -246,50 +233,116 @@ function listen(server, port, address) {
   });
 }
 
-// Waits for the authorization server to redirect the browser back to the loopback address(es).
-async function startCallbackServer(redirect, expectedState) {
-  let resolveCode, rejectCode;
-  const code = new Promise((res, rej) => ((resolveCode = res), (rejectCode = rej)));
-  const handler = (req, res) => {
-    const url = new URL(req.url, "http://127.0.0.1");
-    if (url.pathname !== (redirect.path || "/")) return res.writeHead(404).end();
-    const error = url.searchParams.get("error");
-    const ok = !error && url.searchParams.get("state") === expectedState;
-    res.writeHead(ok ? 200 : 400, { "content-type": "text/html" });
-    res.end(ok ? "<h3>Logged in to c8poc. You can close this tab.</h3>" : `<h3>Login failed: ${error ?? "state mismatch"}</h3>`);
-    ok ? resolveCode(url.searchParams.get("code")) : rejectCode(new Error(error ?? "state mismatch"));
-  };
-
-  // The first address picks the port (unless fixed); the others must get the same one. If one is
-  // taken there, start over with a new port.
+// Serves `handler` on every given loopback address, all on the same port: the first address picks
+// it (unless fixed), the others must get the same one - if one is taken there, start over.
+async function listenOnLoopback(handler, addresses, fixedPort) {
   for (let attempt = 1; ; attempt++) {
     const servers = [];
     try {
-      let port = redirect.fixedPort ?? 0;
-      for (const address of redirect.addresses) {
+      let port = fixedPort ?? 0;
+      for (const address of addresses) {
         const server = createServer(handler);
         servers.push(server);
         port = await listen(server, port, address);
       }
-      return { port, code, close: () => servers.forEach((s) => s.close()) };
+      return { port, close: () => servers.forEach((s) => s.close()) };
     } catch (e) {
       servers.forEach((s) => s.close());
-      if (e.code !== "EADDRINUSE" || redirect.fixedPort || attempt >= BIND_ATTEMPTS) {
-        throw new Error(`cannot listen for the login redirect on ${redirect.host}: ${e.message}`);
+      if (e.code !== "EADDRINUSE" || fixedPort || attempt >= BIND_ATTEMPTS) {
+        throw new Error(`cannot listen for the login redirect on ${addresses.join(", ")}: ${e.message}`);
       }
     }
   }
 }
 
-async function browserLogin(meta, provider, { noBrowser }) {
+// Logs in through the browser. A small server on the loopback interface lets the user pick the
+// identity provider (when the physical tenant offers more than one), starts authorization code +
+// PKCE for it, receives the redirect, redeems the code and shows the outcome - all in the browser.
+async function browserLogin(providers, { providerId, noBrowser, cluster, physicalTenant, contextName }) {
+  const offered = providerId ? providers.filter((p) => p.id === providerId) : providers;
+  if (!offered.length) throw new Error(`no provider '${providerId}', available: ${providers.map((p) => p.id).join(", ")}`);
+  const redirects = new Map(offered.map((p) => [p.id, parseRedirectUri(p.redirect_uri)]));
+  const fixedPorts = [...new Set([...redirects.values()].map((r) => r.fixedPort).filter(Boolean))];
+  if (fixedPorts.length > 1) throw new Error(`the providers need different fixed ports (${fixedPorts.join(", ")}); pick one with --provider`);
+  const addresses = [...new Set([...redirects.values()].flatMap((r) => r.addresses))];
+
+  let resolveLogin, rejectLogin;
+  const result = new Promise((res, rej) => ((resolveLogin = res), (rejectLogin = rej)));
+  const pending = new Map(); // state -> one started login attempt
+  let port;
+  const context = { cluster, physicalTenant, contextName };
+
+  const handler = async (req, res) => {
+    const url = new URL(req.url, "http://127.0.0.1");
+    const query = url.searchParams;
+    const send = (status, html, after) => {
+      res.writeHead(status, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      res.end(html, after);
+    };
+    try {
+      // the identity provider's redirect (Entra ID registers no path, so it may arrive on "/")
+      if (query.has("state") && (query.has("code") || query.has("error"))) {
+        const attempt = pending.get(query.get("state"));
+        if (!attempt || url.pathname !== (attempt.redirect.path || "/")) {
+          return send(400, resultPage({ ok: false, title: "This login link has expired", detail: "Start the login again from the terminal." }));
+        }
+        if (query.has("error")) {
+          const detail = `${query.get("error")}${query.get("error_description") ? `: ${query.get("error_description")}` : ""}`;
+          return send(400, resultPage({ ok: false, title: "Login failed", detail, provider: attempt.provider, context }), () =>
+            rejectLogin(new Error(`login failed at ${attempt.provider.issuer}: ${detail}`)));
+        }
+        const tokens = await redeemCode(attempt, query.get("code"));
+        try {
+          checkAccessToken(tokens.access_token, attempt.provider);
+        } catch (e) {
+          return send(400, resultPage({ ok: false, title: "The cluster would reject this login", detail: e.message, provider: attempt.provider, context }), () => rejectLogin(e));
+        }
+        const claims = decodeJwt(tokens.access_token);
+        return send(200, resultPage({ ok: true, identity: claims.preferred_username ?? claims.sub, provider: attempt.provider, context }), () =>
+          resolveLogin({ provider: attempt.provider, meta: attempt.meta, tokens }));
+      }
+      if (url.pathname === "/start") {
+        const provider = offered.find((p) => p.id === query.get("provider"));
+        if (!provider) return send(404, resultPage({ ok: false, title: "Unknown identity provider", detail: query.get("provider") ?? "" }));
+        const attempt = await startAttempt(provider, redirects.get(provider.id), port);
+        pending.set(attempt.state, attempt);
+        res.writeHead(302, { location: attempt.authorizeUrl, "cache-control": "no-store" });
+        return res.end();
+      }
+      if (url.pathname === "/cancel") {
+        return send(200, resultPage({ ok: false, title: "Login cancelled", detail: "Nothing was changed.", context }), () => rejectLogin(new Error("login cancelled in the browser")));
+      }
+      if (url.pathname === "/" && !query.size) return send(200, chooserPage(offered, context));
+      res.writeHead(404).end();
+    } catch (e) {
+      send(500, resultPage({ ok: false, title: "Login failed", detail: e.message, context }), () => rejectLogin(e));
+    }
+  };
+
+  const server = await listenOnLoopback(handler, addresses, fixedPorts[0]);
+  port = server.port;
+  const pageHost = addresses.includes("127.0.0.1") ? "127.0.0.1" : "[::1]";
+  const entry = offered.length === 1 ? `/start?provider=${encodeURIComponent(offered[0].id)}` : "/";
+  const loginUrl = `http://${pageHost}:${port}${entry}`;
+  if (noBrowser) {
+    info(`Open this URL to log in:\n\n  ${loginUrl}\n`);
+  } else {
+    info(`Opening the browser to log in${offered.length > 1 ? " - choose your identity provider there" : ""}...`);
+    info(`(if it does not open: ${loginUrl})`);
+    openBrowser(loginUrl);
+  }
+  try {
+    return await result;
+  } finally {
+    server.close();
+  }
+}
+
+async function startAttempt(provider, redirect, port) {
+  const meta = await getJson(`${provider.issuer.replace(/\/$/, "")}/.well-known/openid-configuration`);
   const verifier = base64url(randomBytes(32));
-  const challenge = base64url(createHash("sha256").update(verifier).digest());
   const state = base64url(randomBytes(16));
-
-  const redirect = parseRedirectUri(provider.redirect_uri);
-  const callback = await startCallbackServer(redirect, state);
-  const redirectUri = `http://${redirect.host}:${callback.port}${redirect.path}`;
-
+  const redirectUri = `http://${redirect.host}:${port}${redirect.path}`;
   const authorize = new URL(meta.authorization_endpoint);
   authorize.search = new URLSearchParams({
     response_type: "code",
@@ -297,37 +350,153 @@ async function browserLogin(meta, provider, { noBrowser }) {
     redirect_uri: redirectUri,
     scope: (provider.scopes?.length ? provider.scopes : ["openid"]).join(" "),
     state,
-    code_challenge: challenge,
+    code_challenge: base64url(createHash("sha256").update(verifier).digest()),
     code_challenge_method: "S256",
     ...(provider.resource ? { resource: provider.resource } : {}),
   });
+  return { provider, meta, redirect, redirectUri, verifier, state, authorizeUrl: authorize.toString() };
+}
 
-  if (noBrowser) {
-    info(`Open this URL to log in:\n\n  ${authorize}\n`);
-  } else {
-    info("Opening the browser to log in... (if it does not open, use --no-browser)");
-    openBrowser(authorize.toString());
-  }
-
-  let code;
-  try {
-    code = await callback.code;
-  } finally {
-    callback.close();
-  }
-
-  return getJson(meta.token_endpoint, {
+function redeemCode(attempt, code) {
+  return getJson(attempt.meta.token_endpoint, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: redirectUri,
-      client_id: provider.client_id,
-      code_verifier: verifier,
-      ...(provider.resource ? { resource: provider.resource } : {}),
+      redirect_uri: attempt.redirectUri,
+      client_id: attempt.provider.client_id,
+      code_verifier: attempt.verifier,
+      ...(attempt.provider.resource ? { resource: attempt.provider.resource } : {}),
     }),
   });
+}
+
+// ---------- OIDC: pages (Camunda / Carbon look, self-contained) ----------
+
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const issuerLabel = (issuer) => issuer.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+function contextLine({ cluster, physicalTenant }) {
+  if (!cluster) return "";
+  const host = new URL(cluster).host;
+  return `<p class="meta">Cluster <strong>${esc(host)}</strong>${physicalTenant && physicalTenant !== "default" ? ` &middot; Physical tenant <strong>${esc(physicalTenant)}</strong>` : ""}</p>`;
+}
+
+function chooserPage(providers, context) {
+  const tiles = providers
+    .map((p) => {
+      const name = p.name ?? p.id;
+      return `<li><a class="tile" href="/start?provider=${encodeURIComponent(p.id)}">
+        <span class="badge" aria-hidden="true">${esc(name.trim()[0]?.toUpperCase() ?? "?")}</span>
+        <span class="tile-text"><span class="tile-title">${esc(name)}</span><span class="tile-sub">${esc(issuerLabel(p.issuer))}</span></span>
+        <svg class="chevron" width="20" height="20" viewBox="0 0 32 32" aria-hidden="true"><path d="M18 6l-1.43 1.393L24.15 15H4v2h20.15l-7.58 7.573L18 26l10-10z"/></svg>
+      </a></li>`;
+    })
+    .join("");
+  return layout(
+    "Log in",
+    `<h1>Log in</h1>
+     ${contextLine(context)}
+     <p class="lead">Choose your identity provider.</p>
+     <ul class="tiles">${tiles}</ul>
+     <p class="footer-link"><a href="/cancel">Cancel</a></p>`,
+  );
+}
+
+function resultPage({ ok, title, detail, identity, provider, context }) {
+  const icon = ok
+    ? `<svg class="status ok" width="48" height="48" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2a14 14 0 1 0 14 14A14 14 0 0 0 16 2zm-2 19.59l-5-5L10.59 15 14 18.41 21.41 11 23 12.59z"/></svg>`
+    : `<svg class="status err" width="48" height="48" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2a14 14 0 1 0 14 14A14 14 0 0 0 16 2zm-1.1 6h2.2v11h-2.2zM16 25a1.5 1.5 0 1 1 1.5-1.5A1.5 1.5 0 0 1 16 25z"/></svg>`;
+  const rows = [
+    ["User", identity],
+    ["Identity provider", provider && (provider.name ?? provider.id)],
+    ["Cluster", context?.cluster],
+    ["Physical tenant", context?.physicalTenant],
+    ["CLI context", ok ? context?.contextName : undefined],
+  ].filter(([, v]) => v);
+  return layout(
+    ok ? "Logged in" : title,
+    `${icon}
+     <h1>${esc(ok ? "You're logged in" : title)}</h1>
+     ${detail ? `<p class="${ok ? "lead" : "error"}">${esc(detail)}</p>` : ""}
+     ${rows.length ? `<dl>${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : ""}
+     <p class="lead">${ok ? "You can close this tab and return to the terminal." : "Return to the terminal to try again."}</p>`,
+  );
+}
+
+function layout(title, body) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)} | Camunda CLI</title>
+<style>
+  :root {
+    --bg: #f4f4f4; --panel: #ffffff; --text: #161616; --muted: #525252; --border: #e0e0e0;
+    --tile: #f4f4f4; --tile-hover: #e8e8e8; --link: #0f62fe; --focus: #0f62fe;
+    --brand: #fc5d0d; --ok: #24a148; --err: #da1e28; --shell: #161616; --shell-text: #f4f4f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161616; --panel: #262626; --text: #f4f4f4; --muted: #c6c6c6; --border: #393939;
+      --tile: #393939; --tile-hover: #4c4c4c; --link: #78a9ff; --focus: #ffffff;
+      --ok: #42be65; --err: #fa4d56; --shell: #000000;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; font-size: 14px; line-height: 1.43;
+  }
+  header {
+    height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 16px;
+    background: var(--shell); color: var(--shell-text); border-bottom: 1px solid #393939;
+  }
+  .wordmark { color: var(--brand); font-weight: 600; font-size: 20px; letter-spacing: -0.02em; }
+  .product { font-size: 14px; color: #c6c6c6; padding-left: 12px; border-left: 1px solid #525252; }
+  main { max-width: 480px; margin: 64px auto; padding: 0 16px; }
+  .panel { background: var(--panel); padding: 32px; border: 1px solid var(--border); }
+  h1 { font-size: 28px; font-weight: 400; line-height: 1.29; margin: 0 0 8px; }
+  .meta { color: var(--muted); margin: 0 0 24px; }
+  .lead { margin: 16px 0; }
+  .error {
+    margin: 16px 0; padding: 12px 16px; border-left: 3px solid var(--err);
+    background: color-mix(in srgb, var(--err) 8%, var(--panel)); word-break: break-word;
+  }
+  ul.tiles { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  ul.tiles > li { min-width: 0; }
+  .tile {
+    display: flex; align-items: center; gap: 16px; padding: 16px; min-height: 64px;
+    background: var(--tile); color: var(--text); text-decoration: none; outline: 2px solid transparent;
+    transition: background 110ms cubic-bezier(0.2, 0, 0.38, 0.9);
+  }
+  .tile:hover { background: var(--tile-hover); }
+  .tile:focus-visible { outline-color: var(--focus); outline-offset: -2px; }
+  .badge {
+    flex: none; width: 32px; height: 32px; display: grid; place-items: center;
+    background: var(--brand); color: #ffffff; font-weight: 600;
+  }
+  .tile-text { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .tile-title { font-size: 16px; }
+  .tile-sub { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chevron { margin-left: auto; flex: none; fill: var(--link); }
+  .footer-link { margin: 24px 0 0; }
+  a { color: var(--link); }
+  .status { display: block; margin-bottom: 16px; }
+  .status.ok { fill: var(--ok); }
+  .status.err { fill: var(--err); }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 24px; margin: 24px 0; }
+  dt { color: var(--muted); }
+  dd { margin: 0; word-break: break-all; }
+</style>
+</head>
+<body>
+<header><span class="wordmark">camunda</span><span class="product">Command-line login</span></header>
+<main><div class="panel">${body}</div></main>
+</body>
+</html>`;
 }
 
 async function refresh(config, userName, user) {
@@ -410,10 +579,13 @@ async function login(args, contextFlag) {
     if (!res.ok) throw new Error(`login failed: ${res.status}`);
   } else if (discovery.method === "oidc") {
     if (!discovery.providers?.length) throw new Error(`${where} announces no CLI client for any identity provider`);
-    const provider = await chooseProvider(discovery.providers, providerId);
-    const meta = await getJson(`${provider.issuer.replace(/\/$/, "")}/.well-known/openid-configuration`);
-    const tokens = await browserLogin(meta, provider, { noBrowser });
-    checkAccessToken(tokens.access_token, provider);
+    const { provider, meta, tokens } = await browserLogin(discovery.providers, {
+      providerId,
+      noBrowser,
+      cluster: clusterUrl,
+      physicalTenant: target.physicalTenant,
+      contextName: name,
+    });
     user = withTokens(
       { method: "oidc", provider: provider.id, issuer: provider.issuer, clientId: provider.client_id, tokenEndpoint: meta.token_endpoint, resource: provider.resource },
       tokens,

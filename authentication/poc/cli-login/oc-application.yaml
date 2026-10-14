@@ -13,6 +13,7 @@ camunda:
       method: oidc
       unprotected-api: false
       oidc:
+        client-name: Keycloak
         issuer-uri: http://localhost:18080/realms/camunda
         client-id: camunda
         client-secret: camunda-secret
