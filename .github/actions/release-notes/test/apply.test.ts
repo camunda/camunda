@@ -336,16 +336,41 @@ test('parseGeneratorFiles ignores an unusable changelog.json instead of failing 
   }
 });
 
-test('parseGeneratorFiles names a labels.json or comments.json of the wrong shape', () => {
-  const labels = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, issues: [], pullRequests: [] });
-  const comments = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, entries: [] });
-  const noIssues = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, pullRequests: [] });
-  const badEntries = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, entries: [{ issueNumber: 'x' }] });
+function rawFiles(overrides: { labels?: object; comments?: object } = {}) {
+  return {
+    labels: JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, issues: [1], pullRequests: [10], ...overrides.labels }),
+    comments: JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, entries: [entry(1, [10], 'closing')], ...overrides.comments }),
+  };
+}
 
-  assert.throws(() => parseGeneratorFiles({ labels: noIssues, comments }), /labels\.json must hold/);
-  const stringIssues = JSON.stringify({ schemaVersion: '2.0.0', version: VERSION, issues: ['1'], pullRequests: [] });
-  assert.throws(() => parseGeneratorFiles({ labels: stringIssues, comments }), /array of numbers/);
-  assert.throws(() => parseGeneratorFiles({ labels, comments: badEntries }), /comments\.json must hold/);
+test('parseGeneratorFiles accepts well-formed files', () => {
+  assert.equal(parseGeneratorFiles(rawFiles()).labels.version, VERSION);
+});
+
+test('parseGeneratorFiles names a labels.json or comments.json of the wrong shape', () => {
+  const bad = (entryOverride: object) => ({ entries: [{ ...entry(1, [10], 'closing'), ...entryOverride }] });
+
+  assert.throws(() => parseGeneratorFiles(rawFiles({ labels: { issues: undefined } })), /labels\.json must hold/);
+  assert.throws(() => parseGeneratorFiles(rawFiles({ labels: { issues: ['1'] } })), /positive whole numbers/);
+  assert.throws(() => parseGeneratorFiles(rawFiles({ labels: { issues: [1.5] } })), /positive whole numbers/);
+  assert.throws(() => parseGeneratorFiles(rawFiles({ labels: { pullRequests: [-3] } })), /positive whole numbers/);
+  assert.throws(() => parseGeneratorFiles(rawFiles({ labels: { issues: [1e999] } })), /positive whole numbers/);
+  assert.throws(() => parseGeneratorFiles(rawFiles({ comments: { entries: [{ issueNumber: 'x' }] } })), /comments\.json must hold/);
+  assert.throws(() => parseGeneratorFiles(rawFiles({ comments: bad({ marker: '' }) })), /comments\.json must hold/);
+  assert.throws(() => parseGeneratorFiles(rawFiles({ comments: bad({ text: undefined }) })), /comments\.json must hold/);
+  assert.throws(() => parseGeneratorFiles(rawFiles({ comments: bad({ relationKind: 'other' }) })), /comments\.json must hold/);
+  assert.throws(() => parseGeneratorFiles(rawFiles({ comments: bad({ prNumbers: ['10'] }) })), /comments\.json must hold/);
+});
+
+test('parseGeneratorFiles refuses a version that is missing or could carry markup', () => {
+  for (const version of [undefined, 7, '', '8.8.1\n\n# x', '[x](https://evil)', '<img src=x>']) {
+    assert.throws(
+      () => parseGeneratorFiles(rawFiles({ labels: { version }, comments: { version } })),
+      /no usable "version"/,
+      String(version),
+    );
+  }
+  assert.doesNotThrow(() => parseGeneratorFiles(rawFiles({ labels: { version: '8.10.0-alpha5-rc1' }, comments: { version: '8.10.0-alpha5-rc1' } })));
 });
 
 test('dry-run accepts only true or false', () => {
@@ -353,6 +378,52 @@ test('dry-run accepts only true or false', () => {
   assert.equal(parseDryRun(''), true);
   assert.equal(parseDryRun('false'), false);
   for (const value of ['False', 'TRUE', '0', 'no']) assert.throws(() => parseDryRun(value), /must be "true" or "false"/, value);
+});
+
+test('a hint cannot smuggle markup from changelog facts', () => {
+  const plan = planApply(files({ changelog: [{ number: 101, attributionSource: '<b>x</b>', deliveryPath: 'direct' }] }), observed());
+
+  const markdown = renderReport(plan);
+
+  assert.ok(!markdown.includes('<b>'));
+  assert.match(markdown, /&lt;b&gt;x&lt;\/b&gt;/);
+});
+
+test('a degraded reason is escaped', () => {
+  assert.ok(!renderDegradedReport('<script>x</script>').includes('<script>'));
+});
+
+test('a comment containing backticks is fenced by a longer fence', () => {
+  const tricky = files({
+    comments: { schemaVersion: '2.0.0', version: VERSION, entries: [{ ...entry(1, [101], 'closing'), text: 'see ```` here' }] },
+  });
+
+  const markdown = renderReport(planApply(tricky, observed()));
+
+  assert.ok(markdown.includes('`````text\nsee ```` here'), 'the fence is longer than the longest backtick run inside');
+});
+
+test('a version holding backticks cannot close its code span', () => {
+  const plan = planApply(files({ labels: { schemaVersion: '2.0.0', version: 'a`b', issues: [], pullRequests: [] } }), observed());
+
+  assert.ok(renderReport(plan).includes('``version:a`b``'));
+});
+
+test('an issue closed as a duplicate is never commented on and the hint says so', () => {
+  const facts = new Map(observed().issueFacts);
+  facts.set(3, state(true, 'DUPLICATE'));
+
+  const plan = planApply(files(), observed({ issueFacts: facts }));
+
+  assert.ok(plan.operations.some((operation) => operation.type === 'skip' && operation.number === 3 && operation.reason === 'closed as duplicate'));
+  assert.match(plan.hints[3]!, /closed as duplicate/);
+});
+
+test('the report says the comparison is incomplete when issue states could not be read', () => {
+  const markdown = renderReport(planApply(files(), observed({ issueFacts: new Map() })));
+
+  assert.match(markdown, /state of 4 issues could not be read, so this comparison is incomplete/);
+  assert.ok(!markdown.includes('legacy script runs weekly'));
 });
 
 test('the plan is plain data a JSON artifact can carry', () => {

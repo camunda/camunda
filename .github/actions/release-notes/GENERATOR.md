@@ -658,7 +658,8 @@ Skipped issues are counted by reason, so the effect of "closed only" is visible.
 state could not be read is skipped, never commented on.
 
 **Existing comments.** The latest 100 comments of each issue are read (one batched query, which also
-gives the issue's state). An issue the legacy script already commented on for this version
+gives the issue's state; an issue with more is named in a warning, since the legacy script reads all
+of them). An issue the legacy script already commented on for this version
 (`This has been released in version [<version>]`) or that already carries the generator's marker is
 skipped, so the plan never duplicates a comment. The report also compares the two sets: legacy
 commented and the generator agrees, generator would comment and legacy has not, legacy commented
@@ -667,15 +668,16 @@ count is usually zero; compare again after its next run.
 
 **A dry run must not look green when it compared nothing:**
 
-|                   Situation                    |                                Result                                |
-|------------------------------------------------|----------------------------------------------------------------------|
-| Generate step did not succeed                  | Skipped, warning names the outcome                                   |
-| `labels.json` / `comments.json` missing or bad | Skipped, warning names the file                                      |
-| `changelog.json` missing or unusable           | Compared; hints lose the PR attribution facts                        |
-| `dry-run` not exactly `true` or `false`        | The step fails                                                       |
-| Unknown `schemaVersion` major                  | Skipped (refused, not guessed at)                                    |
-| No issue carries the label                     | Warning, generator's plan shown, no comparison                       |
-| API failure (permission, retries exhausted)    | The step fails; the job summary and a warning name the apply outcome |
+|                                Situation                                |                                 Result                                 |
+|-------------------------------------------------------------------------|------------------------------------------------------------------------|
+| Generate step did not succeed                                           | Skipped, warning names the outcome                                     |
+| `labels.json` / `comments.json` missing or malformed (shape, `version`) | Skipped, warning names the file                                        |
+| `changelog.json` missing or unusable                                    | Compared; hints lose the PR attribution facts                          |
+| `dry-run` not exactly `true` or `false`                                 | The step fails                                                         |
+| Unknown `schemaVersion` major                                           | Skipped (refused, not guessed at)                                      |
+| No issue carries the label                                              | Warning, generator's plan shown, no comparison                         |
+| Some issue states unreadable, or comments truncated                     | Warning names them; the report marks the comment comparison incomplete |
+| API failure (permission, retries exhausted)                             | The step fails; the job summary and a warning name the apply outcome   |
 
 ---
 

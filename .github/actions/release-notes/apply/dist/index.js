@@ -104,21 +104,33 @@ function parseGeneratorFiles(raw) {
             throw new Error(`${name} has schemaVersion ${file.schemaVersion}, but this action supports ${exports.SUPPORTED_SCHEMA_MAJOR}.x only.`);
         }
     }
+    for (const [name, file] of [['labels.json', labels], ['comments.json', comments]]) {
+        if (typeof file.version !== 'string' || !VERSION_SHAPE.test(file.version)) {
+            throw new Error(`${name} has no usable "version" (letters, digits, dots, dashes, plus signs and underscores only).`);
+        }
+    }
     if (labels.version !== comments.version) {
         throw new Error(`labels.json and comments.json are for different versions (${labels.version} and ${comments.version}).`);
     }
-    const isNumbers = (value) => Array.isArray(value) && value.every((item) => typeof item === 'number');
     if (!isNumbers(labels.issues) || !isNumbers(labels.pullRequests)) {
-        throw new Error('labels.json must hold an "issues" and a "pullRequests" array of numbers.');
+        throw new Error('labels.json must hold an "issues" and a "pullRequests" array of positive whole numbers.');
     }
     if (!Array.isArray(comments.entries) || !comments.entries.every(isCommentEntry)) {
         throw new Error('comments.json must hold an "entries" array of { issueNumber, prNumbers, relationKind, text, marker }.');
     }
     return { labels, comments, changelog: parseChangelogHints(raw.changelog) };
 }
+const VERSION_SHAPE = /^[0-9A-Za-z][0-9A-Za-z._+-]*$/;
+const isNumber = (value) => typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+const isNumbers = (value) => Array.isArray(value) && value.every(isNumber);
 function isCommentEntry(entry) {
     const candidate = entry;
-    return typeof candidate?.issueNumber === 'number' && Array.isArray(candidate.prNumbers) && typeof candidate.marker === 'string';
+    return (isNumber(candidate?.issueNumber) &&
+        isNumbers(candidate?.prNumbers) &&
+        (candidate?.relationKind === 'closing' || candidate?.relationKind === 'contributor') &&
+        typeof candidate.text === 'string' &&
+        typeof candidate.marker === 'string' &&
+        candidate.marker !== '');
 }
 /** changelog.json only adds facts to hints, so one that is missing, unreadable
  *  or the wrong shape costs the hints, not the comparison. */
@@ -308,7 +320,11 @@ function renderCommentComparison(plan) {
         `| Legacy commented, generator would not | ${legacyOnly.length} |`,
         '',
     ];
-    if (both.length + legacyOnly.length === 0) {
+    const unreadable = countSkips(plan, 'comment', 'issue state unknown');
+    if (unreadable > 0) {
+        lines.push(`⚠ The state of ${plural(unreadable, 'issue')} could not be read, so this comparison is incomplete.`, '');
+    }
+    else if (both.length + legacyOnly.length === 0) {
         lines.push('The legacy script runs weekly, so at release time it has usually not commented yet; compare again after its next run.', '');
     }
     return [...lines, ...bucket('Legacy commented, generator would not', legacyOnly, plan.hints)];
@@ -366,6 +382,7 @@ function fence(content) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.COMMENTS_READ = void 0;
 exports.fetchLabelledNumbers = fetchLabelledNumbers;
 exports.fetchIssueStates = fetchIssueStates;
 const github_1 = __nccwpck_require__(631);
@@ -392,39 +409,91 @@ async function fetchLabelledNumbers(token, owner, repo, label, sleepImpl) {
 /** Comment bodies make a response heavy, so this batch is smaller than the 100 the
  *  resolver uses for scalar fields. */
 const STATE_BATCH_SIZE = 25;
-/** The latest comments read per issue; the legacy script itself looks at one page of 100. */
-const COMMENTS_READ = 100;
+/** The latest comments read per issue. The legacy script reads every page, so an
+ *  issue with more comments than this is flagged `commentsTruncated`. */
+exports.COMMENTS_READ = 100;
+const RATE_LIMITED = 'RATE_LIMITED';
+const NOT_FOUND = 'NOT_FOUND';
+/** Retries ran out for a reason a smaller request might survive. */
+class RetriesExhausted extends Error {
+}
 /** What the plan needs about each issue, in batched queries: whether it is closed
  *  and why, and its latest comments. An issue GitHub does not know is left out,
- *  which the planner reads as "state unknown". Any other error throws. */
+ *  which the planner reads as "state unknown". Any other error throws, and so does
+ *  a response with no repository, which would otherwise read as "no issue known". */
 async function fetchIssueStates(token, owner, repo, numbers, sleepImpl) {
     const states = new Map();
     for (let start = 0; start < numbers.length; start += STATE_BATCH_SIZE) {
-        const batch = numbers.slice(start, start + STATE_BATCH_SIZE);
-        const fields = batch.map((number, i) => `i${i}: issue(number: ${number}) { closed stateReason comments(last: ${COMMENTS_READ}) { nodes { body } } }`);
-        const body = JSON.stringify({
-            query: 'query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { ' + fields.join(' ') + ' } }',
-            variables: { owner, name: repo },
-        });
-        const result = await (0, github_1.fetchJsonWithRetry)(`${github_1.GITHUB_API}/graphql`, { method: 'POST', headers: (0, github_1.githubHeaders)(token, { json: true }), body }, sleepImpl);
+        for (const [number, state] of await readStates(token, owner, repo, numbers.slice(start, start + STATE_BATCH_SIZE), sleepImpl)) {
+            states.set(number, state);
+        }
+    }
+    return states;
+}
+/** A batch whose retries are exhausted is halved, down to one issue, where the failure is real. */
+async function readStates(token, owner, repo, batch, sleepImpl) {
+    try {
+        return await readBatch(token, owner, repo, batch, sleepImpl);
+    }
+    catch (error) {
+        if (!(error instanceof RetriesExhausted) || batch.length <= 1)
+            throw error;
+        const half = Math.ceil(batch.length / 2);
+        const merged = await readStates(token, owner, repo, batch.slice(0, half), sleepImpl);
+        for (const [number, state] of await readStates(token, owner, repo, batch.slice(half), sleepImpl))
+            merged.set(number, state);
+        return merged;
+    }
+}
+async function readBatch(token, owner, repo, batch, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
+    // Issue numbers travel as variables, never in the query text.
+    const declarations = batch.map((_, i) => `$n${i}: Int!`).join(', ');
+    const fields = batch.map((_, i) => `i${i}: issue(number: $n${i}) { closed stateReason comments(last: ${exports.COMMENTS_READ}) { totalCount nodes { body } } }`);
+    const variables = { owner, name: repo };
+    batch.forEach((number, i) => (variables[`n${i}`] = number));
+    const body = JSON.stringify({
+        query: `query($owner: String!, $name: String!, ${declarations}) { repository(owner: $owner, name: $name) { ${fields.join(' ')} } }`,
+        variables,
+    });
+    for (let attempt = 0;; attempt++) {
+        let result;
+        try {
+            result = await (0, github_1.fetchJsonWithRetry)(`${github_1.GITHUB_API}/graphql`, { method: 'POST', headers: (0, github_1.githubHeaders)(token, { json: true }), body }, sleepImpl);
+        }
+        catch (error) {
+            throw new RetriesExhausted(error instanceof Error ? error.message : String(error));
+        }
         if (!result.ok)
             throw new Error(`GitHub GraphQL HTTP ${result.status} reading issue states.`);
-        const failure = result.data.errors?.find((error) => error.type !== 'NOT_FOUND');
-        if (failure)
-            throw new Error(`GitHub GraphQL error reading issue states: ${failure.message ?? failure.type}`);
-        const repository = result.data.data?.repository ?? {};
+        const { data, errors = [] } = result.data;
+        if (errors.some((error) => error.type === RATE_LIMITED)) {
+            if (attempt >= github_1.MAX_RETRIES - 1)
+                throw new RetriesExhausted(`GitHub GraphQL rate limit persisted past ${github_1.MAX_RETRIES} attempts.`);
+            await sleepImpl((0, github_1.backoffMs)(null, attempt));
+            continue;
+        }
+        // An absent issue is a NOT_FOUND on its own alias; anything else, or a missing repository, is a failure.
+        const fatal = errors.find((error) => !(error.type === NOT_FOUND && error.path?.[0] === 'repository' && /^i\d+$/.test(String(error.path[1]))));
+        if (fatal)
+            throw new Error(`GitHub GraphQL error reading issue states: ${fatal.message ?? fatal.type}`);
+        const repository = data?.repository;
+        if (!repository)
+            throw new Error('GitHub GraphQL returned no repository reading issue states.');
+        const states = new Map();
         batch.forEach((number, i) => {
             const node = repository[`i${i}`];
             if (!node)
                 return;
+            const comments = (node.comments?.nodes ?? []).map((comment) => comment.body ?? '');
             states.set(number, {
                 closed: node.closed ?? false,
                 stateReason: node.stateReason ?? null,
-                comments: (node.comments?.nodes ?? []).map((comment) => comment.body ?? ''),
+                comments,
+                commentsTruncated: (node.comments?.totalCount ?? comments.length) > comments.length,
             });
         });
+        return states;
     }
-    return states;
 }
 
 
@@ -463,6 +532,14 @@ async function runApply(inputs, deps) {
     const issueFacts = await deps.issueStates(wanted);
     const plan = (0, index_1.planApply)(files, { zclIssues: labelled.issues, zclPullRequests: labelled.pullRequests, issueFacts });
     const warnings = plan.baselineEmpty ? [`No issues carry version:${plan.version}, so there was nothing to compare with.`] : [];
+    const unread = wanted.filter((number) => !issueFacts.has(number));
+    if (unread.length > 0) {
+        warnings.push(`The state of ${unread.length} of ${wanted.length} issues could not be read (${unread.slice(0, 5).map((number) => `#${number}`).join(', ')}${unread.length > 5 ? ', …' : ''}), so the comment comparison is incomplete.`);
+    }
+    const truncated = [...issueFacts].filter(([, state]) => state.commentsTruncated).map(([number]) => number);
+    if (truncated.length > 0) {
+        warnings.push(`${truncated.length} issues have more comments than were read (${truncated.slice(0, 5).map((number) => `#${number}`).join(', ')}${truncated.length > 5 ? ', …' : ''}), so an existing comment may be missed.`);
+    }
     return { markdown: (0, index_1.renderReport)(plan), divergence: plan, warnings };
 }
 function skipped(reason) {

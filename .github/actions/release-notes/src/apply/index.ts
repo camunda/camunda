@@ -52,6 +52,8 @@ export interface IssueState {
   /** Bodies of the issue's latest comments, matched against the legacy script's
    *  text and the generator's marker. */
   readonly comments: readonly string[];
+  /** The issue has more comments than were read, so an existing one may be missed. */
+  readonly commentsTruncated?: boolean;
 }
 
 export interface Observed {
@@ -121,12 +123,16 @@ export function parseGeneratorFiles(raw: { labels: string; comments: string; cha
       throw new Error(`${name} has schemaVersion ${file.schemaVersion}, but this action supports ${SUPPORTED_SCHEMA_MAJOR}.x only.`);
     }
   }
+  for (const [name, file] of [['labels.json', labels], ['comments.json', comments]] as const) {
+    if (typeof file.version !== 'string' || !VERSION_SHAPE.test(file.version)) {
+      throw new Error(`${name} has no usable "version" (letters, digits, dots, dashes, plus signs and underscores only).`);
+    }
+  }
   if (labels.version !== comments.version) {
     throw new Error(`labels.json and comments.json are for different versions (${labels.version} and ${comments.version}).`);
   }
-  const isNumbers = (value: unknown): boolean => Array.isArray(value) && value.every((item) => typeof item === 'number');
   if (!isNumbers(labels.issues) || !isNumbers(labels.pullRequests)) {
-    throw new Error('labels.json must hold an "issues" and a "pullRequests" array of numbers.');
+    throw new Error('labels.json must hold an "issues" and a "pullRequests" array of positive whole numbers.');
   }
   if (!Array.isArray(comments.entries) || !comments.entries.every(isCommentEntry)) {
     throw new Error('comments.json must hold an "entries" array of { issueNumber, prNumbers, relationKind, text, marker }.');
@@ -134,9 +140,21 @@ export function parseGeneratorFiles(raw: { labels: string; comments: string; cha
   return { labels, comments, changelog: parseChangelogHints(raw.changelog) };
 }
 
+const VERSION_SHAPE = /^[0-9A-Za-z][0-9A-Za-z._+-]*$/;
+
+const isNumber = (value: unknown): boolean => typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+const isNumbers = (value: unknown): boolean => Array.isArray(value) && value.every(isNumber);
+
 function isCommentEntry(entry: unknown): entry is CommentEntry {
   const candidate = entry as Partial<CommentEntry> | null;
-  return typeof candidate?.issueNumber === 'number' && Array.isArray(candidate.prNumbers) && typeof candidate.marker === 'string';
+  return (
+    isNumber(candidate?.issueNumber) &&
+    isNumbers(candidate?.prNumbers) &&
+    (candidate?.relationKind === 'closing' || candidate?.relationKind === 'contributor') &&
+    typeof candidate.text === 'string' &&
+    typeof candidate.marker === 'string' &&
+    candidate.marker !== ''
+  );
 }
 
 /** changelog.json only adds facts to hints, so one that is missing, unreadable
@@ -358,7 +376,10 @@ function renderCommentComparison(plan: ApplyPlan): string[] {
     `| Legacy commented, generator would not | ${legacyOnly.length} |`,
     '',
   ];
-  if (both.length + legacyOnly.length === 0) {
+  const unreadable = countSkips(plan, 'comment', 'issue state unknown');
+  if (unreadable > 0) {
+    lines.push(`⚠ The state of ${plural(unreadable, 'issue')} could not be read, so this comparison is incomplete.`, '');
+  } else if (both.length + legacyOnly.length === 0) {
     lines.push('The legacy script runs weekly, so at release time it has usually not commented yet; compare again after its next run.', '');
   }
   return [...lines, ...bucket('Legacy commented, generator would not', legacyOnly, plan.hints)];
