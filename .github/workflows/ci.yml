@@ -872,6 +872,7 @@ jobs:
               "owner": "@camunda/core-features",
               "module": "Zeebe",
               "test-filter": "io.camunda.zeebe.it.engine.**,!**/*${DOLLAR}*.java",
+              "test-jvm-args": "-XX:MaxRAMPercentage=5 -XX:InitialRAMPercentage=1",
               "allow-stress": true,
               "stressRun": 1
             },
