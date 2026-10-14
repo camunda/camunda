@@ -60,6 +60,7 @@ class RdbmsDbModelSortITCoverageArchTest {
           "BatchOperationErrorDbModel", // error sub-entity of BatchOperation; no sort fields
           "HistoryDeletionTypeDbModel", // type sub-model for HistoryDeletion; no sort fields
           "EventTypeDbModel", // audit-event type enum model; no sort fields
+          "ProtectionModeDbModel", // protection mode enum model; no sort fields
           "UsageMetricStatisticsDbModel", // statistics sub-model; no sort fields
           "UsageMetricTUStatisticsDbModel", // TU statistics variant; no sort fields
           "UsageMetricTenantStatisticsDbModel", // tenant statistics variant; no sort fields
