@@ -813,6 +813,7 @@
             <!-- combine.self="override" replaces the whole base <configuration>, including
                  forkedProcessTimeoutInSeconds; repeat it here so nightly forks stay bounded too. -->
             <configuration combine.self="override">
+              <argLine>${jvm.module.opens} ${jvm.test.extra.args}</argLine>
               <groups>dl-nightly</groups>
               <excludedGroups/>
               <forkedProcessTimeoutInSeconds>${failsafe.timeout}</forkedProcessTimeoutInSeconds>
