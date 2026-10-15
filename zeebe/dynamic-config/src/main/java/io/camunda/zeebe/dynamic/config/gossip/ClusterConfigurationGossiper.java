@@ -125,21 +125,17 @@ public final class ClusterConfigurationGossiper
   }
 
   private void sync() {
-    try {
-      refreshMembersToSync();
+    // Schedule first, so that the loop survives whatever happens in this tick: no known member, a
+    // failing request, or an exception.
+    scheduleSync();
+    refreshMembersToSync();
 
-      if (membersToSync.isEmpty()) {
-        LOGGER.debug("No other cluster member known, skipping this configuration sync round");
-        scheduleSync();
-        return;
-      }
-
-      sync(membersToSync.remove(0));
-    } catch (final RuntimeException e) {
-      // The loop is re-armed only after a response, so a synchronous failure would stop it forever
-      LOGGER.warn("Failed to start configuration sync, will retry", e);
-      scheduleSync();
+    if (membersToSync.isEmpty()) {
+      LOGGER.debug("No other cluster member known, skipping this configuration sync round");
+      return;
     }
+
+    sync(membersToSync.remove(0));
   }
 
   private void sync(final MemberId toMember) {
@@ -169,7 +165,6 @@ public final class ClusterConfigurationGossiper
     } else {
       LOGGER.warn("Failed to sync with {}", member, error);
     }
-    scheduleSync();
   }
 
   private void update(final ClusterConfigurationGossipState receivedGossipState) {
