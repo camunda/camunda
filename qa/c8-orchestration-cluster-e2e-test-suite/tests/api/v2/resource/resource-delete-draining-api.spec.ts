@@ -553,6 +553,16 @@ test.describe('Process Definition Draining Deletion API', () => {
   test('A repeated delete is accepted as a drain retry when the deployment partition holds no instance', async ({
     request,
   }) => {
+    // The RDBMS API jobs run the broker from source with its default of one
+    // partition, where this case cannot arise: every instance is local to the
+    // deployment partition, so the repeat is always rejected and that is what
+    // the test above covers.
+    // eslint-disable-next-line playwright/no-skipped-test
+    test.skip(
+      (await partitionsCount(request)) < 2,
+      'needs a partition other than the deployment one',
+    );
+
     const processDefinitionId = uniquePrefixedId('draining-repeat-retry');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
