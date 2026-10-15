@@ -24,6 +24,35 @@ public interface ClusterConfigurationManager {
       UnaryOperator<CurrentClusterConfiguration> updater);
 
   /**
+   * Returns the configuration a coordinator bases a change on: the one in the {@link
+   * ClusterConfigurationStore} merged into the local one, along with the next change id the store
+   * must still have when the change is committed via {@link #commitCoordinatedConfiguration}.
+   */
+  ActorFuture<CoordinatedConfiguration> readCoordinatedConfiguration();
+
+  /**
+   * Writes {@code configuration} to the {@link ClusterConfigurationStore} if its next change id is
+   * still {@code expectedNextId}, and only then merges it into the local configuration, which is
+   * persisted and gossiped as by {@link #updateMultiConfiguration}.
+   */
+  ActorFuture<CurrentClusterConfiguration> commitCoordinatedConfiguration(
+      long expectedNextId, CurrentClusterConfiguration configuration);
+
+  /**
+   * Applies {@code updater} to the {@link #readCoordinatedConfiguration() coordinated
+   * configuration} and {@link #commitCoordinatedConfiguration commits} the result.
+   */
+  ActorFuture<CurrentClusterConfiguration> updateCoordinatedConfiguration(
+      UnaryOperator<CurrentClusterConfiguration> updater);
+
+  /**
+   * @param configuration the stored configuration merged into the local one
+   * @param expectedNextId the next change id of the stored configuration, or {@link
+   *     ClusterConfigurationStore#ABSENT}
+   */
+  record CoordinatedConfiguration(CurrentClusterConfiguration configuration, long expectedNextId) {}
+
+  /**
    * A listener that is invoked, when the local member state in the local configuration is older
    * compared to the received configuration. Normally, only a member can change its own state.
    * However, if the state changes without its knowledge it means there was a request that force

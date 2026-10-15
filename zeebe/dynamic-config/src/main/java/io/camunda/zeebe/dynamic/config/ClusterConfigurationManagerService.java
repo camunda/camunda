@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.cluster.PartitionId;
@@ -56,6 +58,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -81,7 +84,9 @@ public final class ClusterConfigurationManagerService
   private final MemberId localMemberId;
   private final RequestValidatorRegistry validators = new RequestValidatorRegistry();
   private final Map<String, ModeChangeExecutor> modeChangeExecutorPerTenant = new HashMap<>();
+  private final ClusterMembershipEventListener membershipListener;
 
+  /** Uses a store kept in memory, so coordinators share nothing, as used by tests. */
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
       final ClusterCommunicationService communicationService,
@@ -89,6 +94,27 @@ public final class ClusterConfigurationManagerService
       final ClusterConfigurationGossiperConfig config,
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry) {
+    this(
+        dataRootDirectory,
+        communicationService,
+        memberShipService,
+        config,
+        clusterChangeExecutor,
+        meterRegistry,
+        ClusterConfigurationStore.inMemory());
+  }
+
+  /**
+   * @param configurationStore the configuration shared by all coordinators
+   */
+  public ClusterConfigurationManagerService(
+      final Path dataRootDirectory,
+      final ClusterCommunicationService communicationService,
+      final ClusterMembershipService memberShipService,
+      final ClusterConfigurationGossiperConfig config,
+      final ClusterChangeExecutor clusterChangeExecutor,
+      final MeterRegistry meterRegistry,
+      final ClusterConfigurationStore configurationStore) {
     gossiperConfig = config;
     this.clusterChangeExecutor = clusterChangeExecutor;
     topologyMetrics = new TopologyMetrics(meterRegistry);
@@ -107,12 +133,20 @@ public final class ClusterConfigurationManagerService
 
     persistedCurrentClusterConfiguration =
         PersistedCurrentClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
+    final Supplier<Set<MemberId>> aliveMembers =
+        () ->
+            memberShipService.getMembers().stream()
+                .map(Member::id)
+                .collect(Collectors.toUnmodifiableSet());
     clusterConfigurationManager =
         new ClusterConfigurationManagerImpl(
             managerActor,
             localMemberId,
             persistedCurrentClusterConfiguration,
-            topologyManagerMetrics);
+            topologyManagerMetrics,
+            configurationStore,
+            aliveMembers);
+    membershipListener = event -> clusterConfigurationManager.onMembershipChanged();
 
     clusterConfigurationGossiper =
         new ClusterConfigurationGossiper(
@@ -125,7 +159,7 @@ public final class ClusterConfigurationManagerService
             topologyMetrics);
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
-            clusterConfigurationManager, localMemberId, managerActor);
+            clusterConfigurationManager, localMemberId, managerActor, aliveMembers);
     configurationRequestServer =
         new ClusterConfigurationRequestServer(
             communicationService,
@@ -257,6 +291,7 @@ public final class ClusterConfigurationManagerService
     final var result = new CompletableActorFuture<Void>();
 
     configurationRequestServer.start();
+    membershipService.addListener(membershipListener);
 
     // Start gossiper first so that when ClusterConfigurationManager initializes the configuration,
     // it can immediately gossip it.
@@ -302,6 +337,7 @@ public final class ClusterConfigurationManagerService
 
   @Override
   public ActorFuture<Void> closeAsync() {
+    membershipService.removeListener(membershipListener);
     if (configurationRequestServer != null) {
       configurationRequestServer.close();
     }

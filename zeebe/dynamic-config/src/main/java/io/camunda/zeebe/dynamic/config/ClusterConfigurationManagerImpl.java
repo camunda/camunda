@@ -42,7 +42,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NonNull;
@@ -105,6 +108,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final PersistedCurrentClusterConfiguration persistedCurrentConfiguration;
   private @Nullable Consumer<CurrentClusterConfiguration> currentConfigurationGossiper;
   private final ClusterConfigurationCoordinatorSupplier coordinatorSupplier;
+  private final ClusterConfigurationStore configurationStore;
   private @Nullable GlobalConfigurationChangeAppliers globalChangeAppliers;
   private final Map<String, PartitionGroupConfigurationChangeAppliers>
       partitionGroupChangeAppliers = new HashMap<>();
@@ -118,19 +122,29 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final Map<Long, PlanAdvancer> planAdvancers = new HashMap<>();
   private final int completedChangeHistoryLimit;
 
-  /** Constructs a manager operating on the multi-partition-group model. */
+  /**
+   * Constructs a manager operating on the multi-partition-group model.
+   *
+   * @param configurationStore the configuration shared by all coordinators
+   * @param aliveMembers the members currently alive, among which the coordinator is chosen
+   */
   ClusterConfigurationManagerImpl(
       final ConcurrencyControl executor,
       final MemberId localMemberId,
       final PersistedCurrentClusterConfiguration persistedCurrentConfiguration,
-      final TopologyManagerMetrics topologyMetrics) {
+      final TopologyManagerMetrics topologyMetrics,
+      final ClusterConfigurationStore configurationStore,
+      final Supplier<Set<MemberId>> aliveMembers) {
     this(
         executor,
         localMemberId,
         persistedCurrentConfiguration,
         topologyMetrics,
         MIN_RETRY_DELAY,
-        MAX_RETRY_DELAY);
+        MAX_RETRY_DELAY,
+        PhasedChangeState.DEFAULT_HISTORY_LIMIT,
+        configurationStore,
+        aliveMembers);
   }
 
   @VisibleForTesting
@@ -164,7 +178,31 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       final Duration minRetryDelay,
       final Duration maxRetryDelay,
       final int completedChangeHistoryLimit) {
+    // every member of the configuration is considered alive
+    this(
+        executor,
+        localMemberId,
+        persistedCurrentConfiguration,
+        topologyMetrics,
+        minRetryDelay,
+        maxRetryDelay,
+        completedChangeHistoryLimit,
+        ClusterConfigurationStore.inMemory(),
+        () -> persistedCurrentConfiguration.getConfiguration().getMembers());
+  }
+
+  private ClusterConfigurationManagerImpl(
+      final ConcurrencyControl executor,
+      final MemberId localMemberId,
+      final PersistedCurrentClusterConfiguration persistedCurrentConfiguration,
+      final TopologyManagerMetrics topologyMetrics,
+      final Duration minRetryDelay,
+      final Duration maxRetryDelay,
+      final int completedChangeHistoryLimit,
+      final ClusterConfigurationStore configurationStore,
+      final Supplier<Set<MemberId>> aliveMembers) {
     this.executor = executor;
+    this.configurationStore = configurationStore;
     this.persistedCurrentConfiguration = persistedCurrentConfiguration;
     startFuture = executor.createFuture();
     this.localMemberId = localMemberId;
@@ -174,8 +212,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     this.completedChangeHistoryLimit = completedChangeHistoryLimit;
     PhasedChangeState.setHistoryLimit(completedChangeHistoryLimit);
     coordinatorSupplier =
-        ClusterConfigurationCoordinatorSupplier.from(
-            () -> this.persistedCurrentConfiguration.getConfiguration());
+        ClusterConfigurationCoordinatorSupplier.fromAlive(
+            () -> this.persistedCurrentConfiguration.getConfiguration(), aliveMembers);
   }
 
   /** Returns the full multi-group configuration. */
@@ -206,6 +244,99 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
           }
         });
     return future;
+  }
+
+  @Override
+  public ActorFuture<CoordinatedConfiguration> readCoordinatedConfiguration() {
+    final var future = executor.<CoordinatedConfiguration>createFuture();
+    configurationStore
+        .read()
+        .whenComplete(
+            (stored, error) ->
+                executor.run(
+                    () -> {
+                      if (error != null) {
+                        future.completeExceptionally(unwrap(error));
+                        return;
+                      }
+                      try {
+                        final var local = persistedCurrentConfiguration.getConfiguration();
+                        future.complete(
+                            new CoordinatedConfiguration(
+                                stored.map(local::merge).orElse(local),
+                                stored
+                                    .map(c -> c.phasedChangeState().nextId())
+                                    .orElse(ClusterConfigurationStore.ABSENT)));
+                      } catch (final Exception e) {
+                        future.completeExceptionally(e);
+                      }
+                    }));
+    return future;
+  }
+
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> commitCoordinatedConfiguration(
+      final long expectedNextId, final CurrentClusterConfiguration configuration) {
+    final var future = executor.<CurrentClusterConfiguration>createFuture();
+    configurationStore
+        .compareAndSet(expectedNextId, configuration)
+        .whenComplete(
+            (ok, error) ->
+                executor.run(
+                    () -> {
+                      if (error != null) {
+                        future.completeExceptionally(unwrap(error));
+                        return;
+                      }
+                      // merged, as the local configuration may have changed since it was read
+                      updateMultiConfiguration(local -> local.merge(configuration))
+                          .onComplete(future);
+                    }));
+    return future;
+  }
+
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> updateCoordinatedConfiguration(
+      final UnaryOperator<CurrentClusterConfiguration> updater) {
+    final var future = executor.<CurrentClusterConfiguration>createFuture();
+    readCoordinatedConfiguration()
+        .onComplete(
+            (coordinated, readError) -> {
+              if (readError != null) {
+                future.completeExceptionally(readError);
+                return;
+              }
+              final CurrentClusterConfiguration updated;
+              try {
+                updated = updater.apply(coordinated.configuration());
+              } catch (final Exception e) {
+                future.completeExceptionally(e);
+                return;
+              }
+              commitCoordinatedConfiguration(coordinated.expectedNextId(), updated)
+                  .onComplete(future);
+            },
+            executor);
+    return future;
+  }
+
+  private static Throwable unwrap(final Throwable error) {
+    return error instanceof CompletionException && error.getCause() != null
+        ? error.getCause()
+        : error;
+  }
+
+  /**
+   * Re-evaluates who coordinates, as the coordinator is chosen among the alive members: a member
+   * taking over must continue advancing the pending plans of the previous coordinator.
+   */
+  void onMembershipChanged() {
+    executor.run(
+        () -> {
+          if (initialized) {
+            reconcile(persistedCurrentConfiguration.getConfiguration());
+          }
+        });
   }
 
   ActorFuture<Void> start(
@@ -605,7 +736,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return new PlanAdvancer(
         planId,
         executor,
-        this::updateMultiConfiguration,
+        this::updateCoordinatedConfiguration,
         persistedCurrentConfiguration::getConfiguration,
         this::isLocalMemberCoordinator,
         minRetryDelay,

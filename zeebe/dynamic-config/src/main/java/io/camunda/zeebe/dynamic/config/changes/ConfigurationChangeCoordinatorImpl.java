@@ -9,6 +9,8 @@ package io.camunda.zeebe.dynamic.config.changes;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.CoordinatedConfiguration;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationStore;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
@@ -35,6 +37,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.agrona.collections.MutableLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,12 +49,30 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
   private final int completedChangeHistoryLimit;
+  // null if every member of the configuration is considered alive
+  private final Supplier<Set<MemberId>> aliveMembers;
 
   public ConfigurationChangeCoordinatorImpl(
       final ClusterConfigurationManager clusterTopologyManager,
       final MemberId localMemberId,
       final ConcurrencyControl executor) {
     this(clusterTopologyManager, localMemberId, executor, PhasedChangeState.DEFAULT_HISTORY_LIMIT);
+  }
+
+  /**
+   * @param aliveMembers the members currently alive, among which the coordinator is chosen
+   */
+  public ConfigurationChangeCoordinatorImpl(
+      final ClusterConfigurationManager clusterTopologyManager,
+      final MemberId localMemberId,
+      final ConcurrencyControl executor,
+      final Supplier<Set<MemberId>> aliveMembers) {
+    this(
+        clusterTopologyManager,
+        localMemberId,
+        executor,
+        PhasedChangeState.DEFAULT_HISTORY_LIMIT,
+        aliveMembers);
   }
 
   /**
@@ -63,10 +84,20 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       final MemberId localMemberId,
       final ConcurrencyControl executor,
       final int completedChangeHistoryLimit) {
+    this(clusterTopologyManager, localMemberId, executor, completedChangeHistoryLimit, null);
+  }
+
+  private ConfigurationChangeCoordinatorImpl(
+      final ClusterConfigurationManager clusterTopologyManager,
+      final MemberId localMemberId,
+      final ConcurrencyControl executor,
+      final int completedChangeHistoryLimit,
+      final Supplier<Set<MemberId>> aliveMembers) {
     this.clusterTopologyManager = clusterTopologyManager;
     this.executor = executor;
     this.localMemberId = localMemberId;
     this.completedChangeHistoryLimit = completedChangeHistoryLimit;
+    this.aliveMembers = aliveMembers;
   }
 
   @Override
@@ -111,7 +142,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
     executor.run(
         () ->
             clusterTopologyManager
-                .updateMultiConfiguration(
+                .updateCoordinatedConfiguration(
                     currentConfiguration -> {
                       if (!validateCancelNewModel(changeId, currentConfiguration, future)) {
                         return currentConfiguration;
@@ -166,14 +197,14 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
     final ActorFuture<ConfigurationChangeResult> future = executor.createFuture();
     executor.run(
         () ->
-            clusterTopologyManager
-                .getMultiConfiguration()
+            readConfiguration(request)
                 .onComplete(
-                    (currentConfiguration, errorOnGettingConfig) -> {
+                    (coordinated, errorOnGettingConfig) -> {
                       if (errorOnGettingConfig != null) {
                         failFuture(future, errorOnGettingConfig);
                         return;
                       }
+                      final var currentConfiguration = coordinated.configuration();
                       if (!request.isForced() && !isCoordinator(currentConfiguration)) {
                         failFuture(
                             future,
@@ -206,14 +237,52 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                         return;
                       }
                       applyOrDryRunOnConfigurationNewModel(
-                          dryRun, currentConfiguration, generatedPhases.get(), future);
+                          dryRun,
+                          request.isForced() ? null : coordinated,
+                          currentConfiguration,
+                          generatedPhases.get(),
+                          future);
                     },
                     executor));
     return future;
   }
 
+  /**
+   * A forced request is meant to work when the coordinator, or the system partition, is
+   * unavailable, so it uses the local configuration only, as before coordinators shared one.
+   *
+   * <p>Known limitation, to be explored after the POC: advancing the phases of a forced plan still
+   * goes through the shared store. When the forced change follows the loss of a quorum of system
+   * partition members (e.g. force-removing half of the brokers), the plan never completes.
+   */
+  private ActorFuture<CoordinatedConfiguration> readConfiguration(
+      final ConfigurationChangeRequest request) {
+    if (!request.isForced()) {
+      return clusterTopologyManager.readCoordinatedConfiguration();
+    }
+    final ActorFuture<CoordinatedConfiguration> future = executor.createFuture();
+    clusterTopologyManager
+        .getMultiConfiguration()
+        .onComplete(
+            (configuration, error) -> {
+              if (error != null) {
+                future.completeExceptionally(error);
+              } else {
+                future.complete(
+                    new CoordinatedConfiguration(configuration, ClusterConfigurationStore.ABSENT));
+              }
+            },
+            executor);
+    return future;
+  }
+
+  /**
+   * @param coordinated the configuration read for coordination, which the change is committed
+   *     against; null for forced requests, which only change the local configuration
+   */
   private void applyOrDryRunOnConfigurationNewModel(
       final boolean dryRun,
+      final CoordinatedConfiguration coordinated,
       final CurrentClusterConfiguration currentConfiguration,
       final List<Phase> phases,
       final ActorFuture<ConfigurationChangeResult> future) {
@@ -269,30 +338,40 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
           // that bump the counter. The applied id is therefore read fresh, inside the same
           // single-threaded transaction that calls initPlan, so it is exact.
           final MutableLong appliedChangeId = new MutableLong();
-          clusterTopologyManager
-              .updateMultiConfiguration(
-                  config -> {
-                    checkConcurrentModification(config, currentConfiguration, phases);
-                    appliedChangeId.set(config.phasedChangeState().nextId());
-                    return config.initPlan(phases);
-                  })
-              .onComplete(
-                  (updated, error) -> {
-                    if (error != null) {
-                      failFuture(future, error);
-                      return;
-                    }
-                    future.complete(
-                        new ConfigurationChangeResult(
-                            currentConfiguration.toLegacyDefault(),
-                            simulatedFinalConfiguration.toLegacyDefault(),
-                            currentConfiguration,
-                            simulatedFinalConfiguration,
-                            appliedChangeId.get(),
-                            operations,
-                            phases));
-                  },
-                  executor);
+          final ActorFuture<CurrentClusterConfiguration> applied;
+          if (coordinated == null) {
+            applied =
+                clusterTopologyManager.updateMultiConfiguration(
+                    config -> {
+                      checkConcurrentModification(config, currentConfiguration, phases);
+                      appliedChangeId.set(config.phasedChangeState().nextId());
+                      return config.initPlan(phases);
+                    });
+          } else {
+            // A concurrent change is detected by the store, whose next change id moved on since
+            // it was read, whether this or another coordinator issued it.
+            appliedChangeId.set(changeId);
+            applied =
+                clusterTopologyManager.commitCoordinatedConfiguration(
+                    coordinated.expectedNextId(), currentConfiguration.initPlan(phases));
+          }
+          applied.onComplete(
+              (updated, error) -> {
+                if (error != null) {
+                  failFuture(future, error);
+                  return;
+                }
+                future.complete(
+                    new ConfigurationChangeResult(
+                        currentConfiguration.toLegacyDefault(),
+                        simulatedFinalConfiguration.toLegacyDefault(),
+                        currentConfiguration,
+                        simulatedFinalConfiguration,
+                        appliedChangeId.get(),
+                        operations,
+                        phases));
+              },
+              executor);
         });
   }
 
@@ -629,8 +708,10 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   }
 
   private boolean isCoordinator(final CurrentClusterConfiguration currentConfiguration) {
+    final var alive = aliveMembers == null ? null : aliveMembers.get();
     return localMemberId.equals(
         currentConfiguration.globalConfiguration().members().keySet().stream()
+            .filter(member -> alive == null || alive.contains(member))
             .min(MemberId::compareTo)
             .orElse(null));
   }

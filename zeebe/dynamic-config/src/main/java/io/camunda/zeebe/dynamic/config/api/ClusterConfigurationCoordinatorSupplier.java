@@ -79,6 +79,45 @@ public interface ClusterConfigurationCoordinatorSupplier {
     return ofMembers(() -> getActiveMembers(clusterTopologySupplier.get()));
   }
 
+  /**
+   * Like {@link #from(Supplier)}, except that the default coordinator is the lowest of the active
+   * members that are also alive, as seen by SWIM, so that coordination moves on when it fails.
+   */
+  static ClusterConfigurationCoordinatorSupplier fromAlive(
+      final Supplier<CurrentClusterConfiguration> clusterTopologySupplier,
+      final Supplier<Set<MemberId>> aliveMembersSupplier) {
+    final var delegate = from(clusterTopologySupplier);
+    final var alive =
+        ofMembers(
+            () -> {
+              final var aliveMembers = aliveMembersSupplier.get();
+              return getActiveMembers(clusterTopologySupplier.get()).stream()
+                  .filter(aliveMembers::contains)
+                  .collect(Collectors.toSet());
+            });
+    return new ClusterConfigurationCoordinatorSupplier() {
+      @Override
+      public MemberId getDefaultCoordinator() {
+        return alive.getDefaultCoordinator();
+      }
+
+      @Override
+      public MemberId getNextCoordinator(final Collection<MemberId> members) {
+        return delegate.getNextCoordinator(members);
+      }
+
+      @Override
+      public MemberId getNextCoordinatorExcluding(final Set<MemberId> memberIds) {
+        return delegate.getNextCoordinatorExcluding(memberIds);
+      }
+
+      @Override
+      public Optional<MemberId> getNextCoordinatorExcludingZone(final String zone) {
+        return delegate.getNextCoordinatorExcludingZone(zone);
+      }
+    };
+  }
+
   private static Set<MemberId> getActiveMembers(
       final CurrentClusterConfiguration currentClusterConfiguration) {
     final var toBeRemovedMembers =
