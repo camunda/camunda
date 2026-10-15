@@ -36,7 +36,7 @@
     "react-transition-group": "4.4.5",
     "styled-components": "6.4.4",
     "ts-pattern": "5.7.1",
-    "zod": "4.6.6"
+    "zod": "4.6.7"
   },
   "scripts": {
     "start": "vite",
