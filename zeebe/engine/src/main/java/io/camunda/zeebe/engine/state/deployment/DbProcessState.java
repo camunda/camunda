@@ -426,6 +426,13 @@ public final class DbProcessState implements MutableProcessState {
 
     process.setState(PersistedProcessState.ACTIVE);
     processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
+
+    // the stale state was also written to the by-version copy, so correct it as well
+    processId.wrapBuffer(process.getBpmnProcessId());
+    processVersion.wrapLong(process.getVersion());
+    if (processByIdAndVersionColumnFamily.exists(tenantAwareProcessIdAndVersionKey)) {
+      processByIdAndVersionColumnFamily.update(tenantAwareProcessIdAndVersionKey, process);
+    }
     updateInMemoryState(process);
   }
 
