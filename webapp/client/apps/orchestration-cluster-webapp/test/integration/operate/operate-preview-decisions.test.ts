@@ -156,6 +156,34 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		});
 	});
 
+	test('should filter the instances by the evaluation date range', async ({
+		network,
+		operatePreviewDecisionsPage,
+		page,
+	}) => {
+		network.use(
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
+			}),
+		);
+		await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+		await operatePreviewDecisionsPage.moreFiltersButton.click();
+		await page.getByRole('menuitem', {name: 'Evaluation date range'}).click();
+
+		const filteredRequest = page.waitForRequest(
+			(request) =>
+				request.method() === 'POST' &&
+				request.url().includes('decision-instances/search') &&
+				request.postDataJSON()?.filter?.evaluationDate !== undefined,
+		);
+		await page.getByLabel('From', {exact: true}).fill('2024-01-01 00:00:00');
+
+		expect((await filteredRequest).postDataJSON().filter.evaluationDate).toMatchObject({
+			$gt: expect.stringContaining('2024-01-01'),
+		});
+		await expect(page).toHaveURL(/evaluationDateFrom=2024-01-01/);
+	});
+
 	test('should collapse and expand the filter sidebar', async ({network, operatePreviewDecisionsPage, page}) => {
 		network.use(
 			mockQueryDecisionInstancesEndpoint({
