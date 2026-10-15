@@ -138,7 +138,10 @@ function openBrowser(url, onCancel) {
   const choice = process.env.C8POC_BROWSER;
   const loginWindow = choice ? undefined : macosLoginWindow();
   if (loginWindow) {
-    const helper = spawn(loginWindow, [url, new URL(LOGIN_WINDOW_DONE_URL).protocol.slice(0, -1)], { stdio: "ignore", detached: true });
+    // A private session unless single sign-on is wanted: it skips the system's "wants to use ... to
+    // sign in" question, and prompt=login asks for credentials anyway.
+    const scheme = new URL(LOGIN_WINDOW_DONE_URL).protocol.slice(0, -1);
+    const helper = spawn(loginWindow, [url, scheme, ...(LOGIN_PROMPT ? [] : ["shared"])], { stdio: "ignore", detached: true });
     helper.on("exit", (code) => code === 2 && onCancel());
     helper.unref();
     return true;

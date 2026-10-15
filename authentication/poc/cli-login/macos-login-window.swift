@@ -1,8 +1,10 @@
 // Shows a login URL in the macOS sign-in window (ASWebAuthenticationSession), the one native apps
-// use: a window of its own without tabs or address bar, with the browser's saved passwords and
-// sessions. c8poc compiles this on first use.
+// use: a window of its own without tabs or address bar, with the browser's saved passwords. c8poc
+// compiles this on first use.
 //
-// Usage: login-window <url> <callback scheme>
+// Usage: login-window <url> <callback scheme> [shared]
+// The session is private (no cookies of the browser, no "wants to use ... to sign in" question)
+// unless "shared" asks for the browser's sessions, for single sign-on.
 // Exits 0 when a page navigates to <callback scheme>://... (c8poc's result page does, to close the
 // window), 2 when the user cancels, 1 on any other error.
 import AppKit
@@ -14,8 +16,8 @@ final class Anchor: NSObject, ASWebAuthenticationPresentationContextProviding {
 }
 
 let arguments = CommandLine.arguments
-guard arguments.count == 3, let url = URL(string: arguments[1]) else {
-  FileHandle.standardError.write("usage: login-window <url> <callback scheme>\n".data(using: .utf8)!)
+guard (3...4).contains(arguments.count), let url = URL(string: arguments[1]) else {
+  FileHandle.standardError.write("usage: login-window <url> <callback scheme> [shared]\n".data(using: .utf8)!)
   exit(1)
 }
 
@@ -27,7 +29,7 @@ let session = ASWebAuthenticationSession(url: url, callbackURLScheme: arguments[
   exit(error == nil ? 0 : 1)
 }
 session.presentationContextProvider = anchor
-session.prefersEphemeralWebBrowserSession = false
+session.prefersEphemeralWebBrowserSession = arguments.count < 4 || arguments[3] != "shared"
 DispatchQueue.main.async {
   app.activate(ignoringOtherApps: true)
   if !session.start() { exit(1) }

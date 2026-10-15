@@ -182,9 +182,11 @@ machine). Without `npm link`, run `node c8poc.mjs <command>` instead.
 
 On macOS the login opens in the system's sign-in window (ASWebAuthenticationSession, what native
 apps log in with): a window of its own without tabs or address bar, with your browser's saved
-passwords and sessions, that closes by itself after the login. Node cannot open it, so `c8poc`
-compiles a small Swift helper (`macos-login-window.swift`) into `~/.c8poc/bin` on first use - that
-needs the Xcode command line tools and takes about half a minute once. Elsewhere, or with
+passwords and sessions, that closes by itself after the login. It runs as a private session, so
+neither macOS nor the browser asks whether `c8poc` may open it (with `C8POC_PROMPT=` it shares the
+browser's sessions for single sign-on, and they ask again). Node cannot open it, so `c8poc` compiles
+a small Swift helper (`macos-login-window.swift`) into `~/.c8poc/bin` on first use - that needs the
+Xcode command line tools and takes about half a minute once. Elsewhere, or with
 `C8POC_BROWSER=system`, the default browser opens; `C8POC_BROWSER=app` opens an app window of
 Chrome, Edge, Brave or Chromium, `C8POC_BROWSER=<path>` one of that browser. The CLI asks the
 identity provider for `prompt=login`, so it always asks for credentials, even if the browser is
