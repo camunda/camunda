@@ -115,4 +115,37 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="add_source_column_to_user" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}USER_" columnName="SOURCE"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}USER_">
+      <column name="SOURCE" type="VARCHAR(256)"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_source_column_to_group" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}GROUP_" columnName="SOURCE"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}GROUP_">
+      <column name="SOURCE" type="VARCHAR(256)"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_origin_column_to_mapping_rules" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MAPPING_RULES" columnName="ORIGIN"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MAPPING_RULES">
+      <column name="ORIGIN" type="VARCHAR(256)"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

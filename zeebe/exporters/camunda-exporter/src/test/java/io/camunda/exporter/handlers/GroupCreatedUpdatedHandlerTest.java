@@ -105,6 +105,7 @@ public class GroupCreatedUpdatedHandlerTest {
             .withName("updated-foo")
             .withDescription("updated-bar")
             .withExternalId("ext-1")
+            .withSource("scim-a")
             .withAttributes(Map.of("cc", "42"))
             .withGroupId(groupId)
             .withGroupKey(recordKey)
@@ -124,6 +125,7 @@ public class GroupCreatedUpdatedHandlerTest {
     assertThat(groupEntity.getName()).isEqualTo("updated-foo");
     assertThat(groupEntity.getDescription()).isEqualTo("updated-bar");
     assertThat(groupEntity.getExternalId()).isEqualTo("ext-1");
+    assertThat(groupEntity.getSource()).isEqualTo("scim-a");
     assertThat(groupEntity.getAttributes()).isEqualTo("{\"cc\":\"42\"}");
   }
 

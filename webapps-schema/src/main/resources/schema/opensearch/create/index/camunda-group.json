@@ -20,6 +20,9 @@
       "externalId": {
         "type": "keyword"
       },
+      "source": {
+        "type": "keyword"
+      },
       "attributes": {
         "type": "keyword",
         "index": false,

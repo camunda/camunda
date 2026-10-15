@@ -22,6 +22,7 @@ public class UserIndex extends AbstractIndexDescriptor implements Prio4Backup {
   public static final String EMAIL = "email";
   public static final String PASSWORD = "password";
   public static final String EXTERNAL_ID = "externalId";
+  public static final String SOURCE = "source";
   public static final String ACTIVE = "active";
   public static final String ATTRIBUTES = "attributes";
   public static final String CREATED_AT = "createdAt";

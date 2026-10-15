@@ -63,6 +63,23 @@ final class GroupExportHandlerTest {
   }
 
   @Test
+  void shouldExportSourceAndStoreNoneAsNull() {
+    // given
+    final var owned = groupRecord(GroupIntent.CREATED, "ext-1", "scim-a");
+    final var unowned = groupRecord(GroupIntent.UPDATED, "ext-1", "");
+
+    // when
+    handler.export(owned);
+    handler.export(unowned);
+
+    // then
+    verify(writer).create(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getValue().source()).isEqualTo("scim-a");
+    verify(writer).update(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getValue().source()).isNull();
+  }
+
+  @Test
   void shouldExportExternalIdOnUpdate() {
     // given
     final Record<GroupRecordValue> record = groupRecord(GroupIntent.UPDATED, "ext-2");
@@ -166,10 +183,16 @@ final class GroupExportHandlerTest {
   }
 
   private Record<GroupRecordValue> groupRecord(final GroupIntent intent, final String externalId) {
+    return groupRecord(intent, externalId, "");
+  }
+
+  private Record<GroupRecordValue> groupRecord(
+      final GroupIntent intent, final String externalId, final String source) {
     final GroupRecordValue value =
         ImmutableGroupRecordValue.builder()
             .from(factory.generateObject(GroupRecordValue.class))
             .withExternalId(externalId)
+            .withSource(source)
             .withAttributes(Map.of("cc", "42"))
             .build();
     return factory.generateRecord(ValueType.GROUP, r -> r.withIntent(intent).withValue(value));

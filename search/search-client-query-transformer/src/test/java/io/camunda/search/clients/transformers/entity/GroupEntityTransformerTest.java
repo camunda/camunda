@@ -31,6 +31,31 @@ class GroupEntityTransformerTest {
   }
 
   @Test
+  void shouldMapSource() {
+    // given
+    final var source =
+        new GroupEntity().setKey(1L).setGroupId("group").setName("Group").setSource("scim-a");
+
+    // when
+    final var result = transformer.apply(source);
+
+    // then
+    assertThat(result.source()).isEqualTo("scim-a");
+  }
+
+  @Test
+  void shouldKeepSourceNullForDocumentsWrittenBeforeTheField() {
+    // given
+    final var source = new GroupEntity().setKey(1L).setGroupId("group").setName("Group");
+
+    // when
+    final var result = transformer.apply(source);
+
+    // then
+    assertThat(result.source()).isNull();
+  }
+
+  @Test
   void shouldKeepExternalIdNullForDocumentsWrittenBeforeTheField() {
     // given
     final var source = new GroupEntity().setKey(1L).setGroupId("group").setName("Group");

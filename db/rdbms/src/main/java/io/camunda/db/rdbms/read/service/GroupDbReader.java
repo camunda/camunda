@@ -93,7 +93,8 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
         model.externalId(),
         JsonObjectMapTypeHandler.parse(model.attributes()),
         model.createdAt(),
-        model.lastModifiedAt());
+        model.lastModifiedAt(),
+        model.source());
   }
 
   private boolean shouldReturnEmptyResult(

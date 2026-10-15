@@ -23,7 +23,8 @@ public record GroupDbModel(
     String attributes,
     OffsetDateTime createdAt,
     OffsetDateTime lastModifiedAt,
-    List<GroupMemberDbModel> members)
+    List<GroupMemberDbModel> members,
+    String source)
     implements DbModel<GroupDbModel> {
 
   public GroupDbModel {
@@ -41,7 +42,8 @@ public record GroupDbModel(
       final String externalId,
       final String attributes,
       final OffsetDateTime createdAt,
-      final OffsetDateTime lastModifiedAt) {
+      final OffsetDateTime lastModifiedAt,
+      final String source) {
     this(
         groupKey,
         groupId,
@@ -51,7 +53,8 @@ public record GroupDbModel(
         attributes,
         createdAt,
         lastModifiedAt,
-        null);
+        null,
+        source);
   }
 
   @Override
@@ -68,7 +71,8 @@ public record GroupDbModel(
                 .attributes(attributes)
                 .createdAt(createdAt)
                 .lastModifiedAt(lastModifiedAt)
-                .members(members))
+                .members(members)
+                .source(source))
         .build();
   }
 
@@ -83,6 +87,7 @@ public record GroupDbModel(
     private OffsetDateTime createdAt;
     private OffsetDateTime lastModifiedAt;
     private List<GroupMemberDbModel> members;
+    private String source;
 
     public Builder() {}
 
@@ -131,6 +136,11 @@ public record GroupDbModel(
       return this;
     }
 
+    public Builder source(final String source) {
+      this.source = source;
+      return this;
+    }
+
     @Override
     public GroupDbModel build() {
       return new GroupDbModel(
@@ -142,7 +152,8 @@ public record GroupDbModel(
           attributes,
           createdAt,
           lastModifiedAt,
-          members);
+          members,
+          source);
     }
   }
 }

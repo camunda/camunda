@@ -19,6 +19,7 @@ public class MappingRuleEntity extends AbstractExporterEntity<MappingRuleEntity>
   @BeforeVersion880 private String claimValue;
   @BeforeVersion880 private String name;
   private String type;
+  private String origin;
 
   public MappingRuleEntity() {}
 
@@ -73,6 +74,15 @@ public class MappingRuleEntity extends AbstractExporterEntity<MappingRuleEntity>
 
   public MappingRuleEntity setType(final String type) {
     this.type = type;
+    return this;
+  }
+
+  public String getOrigin() {
+    return origin;
+  }
+
+  public MappingRuleEntity setOrigin(final String origin) {
+    this.origin = origin;
     return this;
   }
 }

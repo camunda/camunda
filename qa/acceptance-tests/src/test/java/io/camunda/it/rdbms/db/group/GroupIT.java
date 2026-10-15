@@ -328,6 +328,7 @@ public class GroupIT {
     assertThat(instance.name()).isEqualTo(group.name());
     assertThat(instance.description()).isEqualTo(group.description());
     assertThat(instance.externalId()).isEqualTo(group.externalId());
+    assertThat(instance.source()).isEqualTo(group.source());
     assertThat(instance.attributes()).isEqualTo(parseJson(group.attributes()));
   }
 }

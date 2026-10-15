@@ -164,5 +164,7 @@ final class MappingRuleExportHandlerTest {
     assertThat(model.claimName()).isEqualTo(recordValue.getClaimName());
     assertThat(model.claimValue()).isEqualTo(recordValue.getClaimValue());
     assertThat(model.type()).isEqualTo(recordValue.getType().name());
+    assertThat(model.origin())
+        .isEqualTo(recordValue.getOrigin().isEmpty() ? null : recordValue.getOrigin());
   }
 }

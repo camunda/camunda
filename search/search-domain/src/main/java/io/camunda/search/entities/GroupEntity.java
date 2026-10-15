@@ -22,7 +22,29 @@ public record GroupEntity(
     @Nullable String externalId,
     @Nullable Map<String, Object> attributes,
     @Nullable OffsetDateTime createdAt,
-    @Nullable OffsetDateTime lastModifiedAt) {
+    @Nullable OffsetDateTime lastModifiedAt,
+    @Nullable String source) {
+
+  public GroupEntity(
+      final Long groupKey,
+      final String groupId,
+      final String name,
+      final @Nullable String description,
+      final @Nullable String externalId,
+      final @Nullable Map<String, Object> attributes,
+      final @Nullable OffsetDateTime createdAt,
+      final @Nullable OffsetDateTime lastModifiedAt) {
+    this(
+        groupKey,
+        groupId,
+        name,
+        description,
+        externalId,
+        attributes,
+        createdAt,
+        lastModifiedAt,
+        null);
+  }
 
   public GroupEntity(
       final Long groupKey,
@@ -31,7 +53,7 @@ public record GroupEntity(
       final @Nullable String description,
       final @Nullable String externalId,
       final @Nullable Map<String, Object> attributes) {
-    this(groupKey, groupId, name, description, externalId, attributes, null, null);
+    this(groupKey, groupId, name, description, externalId, attributes, null, null, null);
   }
 
   public GroupEntity(
@@ -40,7 +62,7 @@ public record GroupEntity(
       final String name,
       final @Nullable String description,
       final @Nullable String externalId) {
-    this(groupKey, groupId, name, description, externalId, null, null, null);
+    this(groupKey, groupId, name, description, externalId, null, null, null, null);
   }
 
   public GroupEntity(
@@ -48,7 +70,7 @@ public record GroupEntity(
       final String groupId,
       final String name,
       final @Nullable String description) {
-    this(groupKey, groupId, name, description, null, null, null, null);
+    this(groupKey, groupId, name, description, null, null, null, null, null);
   }
 
   public GroupEntity {

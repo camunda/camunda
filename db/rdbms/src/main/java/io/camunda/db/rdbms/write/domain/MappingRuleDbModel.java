@@ -16,7 +16,8 @@ public record MappingRuleDbModel(
     String claimName,
     String claimValue,
     String name,
-    String type)
+    String type,
+    String origin)
     implements DbModel<MappingRuleDbModel> {
 
   @Override
@@ -31,7 +32,8 @@ public record MappingRuleDbModel(
                 .claimValue(claimValue)
                 .name(name)
                 .mappingRuleId(mappingRuleId)
-                .type(type))
+                .type(type)
+                .origin(origin))
         .build();
   }
 
@@ -43,6 +45,7 @@ public record MappingRuleDbModel(
     private String name;
     private String mappingRuleId;
     private String type;
+    private String origin;
 
     public MappingRuleDbModelBuilder() {}
 
@@ -76,10 +79,15 @@ public record MappingRuleDbModel(
       return this;
     }
 
+    public MappingRuleDbModelBuilder origin(final String origin) {
+      this.origin = origin;
+      return this;
+    }
+
     @Override
     public MappingRuleDbModel build() {
       return new MappingRuleDbModel(
-          mappingRuleId, mappingRuleKey, claimName, claimValue, name, type);
+          mappingRuleId, mappingRuleKey, claimName, claimValue, name, type, origin);
     }
   }
 }

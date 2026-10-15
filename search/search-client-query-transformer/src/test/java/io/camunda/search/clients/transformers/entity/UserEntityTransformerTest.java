@@ -33,6 +33,30 @@ class UserEntityTransformerTest {
   }
 
   @Test
+  void shouldMapSource() {
+    // given
+    final var source = new UserEntity().setKey(1L).setUsername("user").setSource("scim-a");
+
+    // when
+    final var result = transformer.apply(source);
+
+    // then
+    assertThat(result.source()).isEqualTo("scim-a");
+  }
+
+  @Test
+  void shouldKeepSourceNullForDocumentsWrittenBeforeTheField() {
+    // given
+    final var source = new UserEntity().setKey(1L).setUsername("user");
+
+    // when
+    final var result = transformer.apply(source);
+
+    // then
+    assertThat(result.source()).isNull();
+  }
+
+  @Test
   void shouldKeepActiveNullForDocumentsWrittenBeforeTheField() {
     // given
     final var source = new UserEntity().setKey(1L).setUsername("user");

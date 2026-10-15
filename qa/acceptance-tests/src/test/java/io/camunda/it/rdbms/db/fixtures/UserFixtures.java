@@ -27,6 +27,7 @@ public final class UserFixtures extends CommonFixtures {
             .email("user-" + userKey + "@camunda-test.com")
             .password("password-" + userKey)
             .externalId("external-" + userKey)
+            .source("source-" + userKey)
             .active(true)
             .attributes("{\"department\":\"dept-" + userKey + "\",\"nested\":{\"levels\":[1,2]}}");
 

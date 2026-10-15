@@ -20,6 +20,7 @@ public class UserEntity extends AbstractExporterEntity<UserEntity> {
   @BeforeVersion880 private String email;
   @BeforeVersion880 private String password;
   private String externalId;
+  private String source;
   private Boolean active;
   private String attributes;
   private OffsetDateTime createdAt;
@@ -67,6 +68,15 @@ public class UserEntity extends AbstractExporterEntity<UserEntity> {
 
   public UserEntity setPassword(final String password) {
     this.password = password;
+    return this;
+  }
+
+  public String getSource() {
+    return source;
+  }
+
+  public UserEntity setSource(final String source) {
+    this.source = source;
     return this;
   }
 

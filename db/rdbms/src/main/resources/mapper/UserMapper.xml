@@ -37,6 +37,7 @@
     EMAIL,
     PASSWORD,
     EXTERNAL_ID,
+    SOURCE,
     ACTIVE,
     ATTRIBUTES,
     CREATED_AT,
@@ -119,12 +120,13 @@
         name="attributes"/>
       <arg column="CREATED_AT" javaType="java.time.OffsetDateTime" name="createdAt"/>
       <arg column="LAST_MODIFIED_AT" javaType="java.time.OffsetDateTime" name="lastModifiedAt"/>
+      <arg column="SOURCE" javaType="java.lang.String" name="source"/>
     </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.UserDbModel">
-    INSERT INTO ${prefix}USER_ (USER_KEY, USERNAME, NAME, EMAIL, PASSWORD, EXTERNAL_ID, ACTIVE, ATTRIBUTES, CREATED_AT, LAST_MODIFIED_AT)
-    VALUES (#{userKey}, #{username}, #{name}, #{email}, #{password}, #{externalId}, #{active}, #{attributes}, #{createdAt, jdbcType=TIMESTAMP}, #{lastModifiedAt, jdbcType=TIMESTAMP})
+    INSERT INTO ${prefix}USER_ (USER_KEY, USERNAME, NAME, EMAIL, PASSWORD, EXTERNAL_ID, ACTIVE, ATTRIBUTES, CREATED_AT, LAST_MODIFIED_AT, SOURCE)
+    VALUES (#{userKey}, #{username}, #{name}, #{email}, #{password}, #{externalId}, #{active}, #{attributes}, #{createdAt, jdbcType=TIMESTAMP}, #{lastModifiedAt, jdbcType=TIMESTAMP}, #{source})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.UserDbModel">
@@ -135,7 +137,8 @@
         EXTERNAL_ID = #{externalId},
         ACTIVE   = #{active},
         ATTRIBUTES = #{attributes},
-        LAST_MODIFIED_AT = #{lastModifiedAt, jdbcType=TIMESTAMP}
+        LAST_MODIFIED_AT = #{lastModifiedAt, jdbcType=TIMESTAMP},
+        SOURCE = #{source}
     WHERE USERNAME = #{username}
   </update>
 

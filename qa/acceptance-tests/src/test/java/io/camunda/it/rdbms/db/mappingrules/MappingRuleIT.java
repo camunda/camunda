@@ -297,6 +297,7 @@ public class MappingRuleIT {
             .claimName("Updated Claim Name")
             .claimValue("Updated Claim Value")
             .type("USER_ATTRIBUTE")
+            .origin("scim-b")
             .build();
     writer.getMappingRuleWriter().update(updatedMappingRule);
     writer.flush();
@@ -311,6 +312,7 @@ public class MappingRuleIT {
         .returns("Updated Name", m -> m.name())
         .returns("Updated Claim Name", m -> m.claimName())
         .returns("Updated Claim Value", m -> m.claimValue())
-        .returns("USER_ATTRIBUTE", m -> m.type());
+        .returns("USER_ATTRIBUTE", m -> m.type())
+        .returns("scim-b", m -> m.origin());
   }
 }

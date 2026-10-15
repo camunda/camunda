@@ -95,6 +95,7 @@ public class UserCreatedUpdatedHandlerTest {
             .withPassword("updated-baz")
             .withEmail("updated-baz@foo")
             .withExternalId("ext-1")
+            .withSource("scim-a")
             .withActive(false)
             .withAttributes(Map.of("department", "eng"))
             .withUserKey(recordKey)
@@ -116,6 +117,7 @@ public class UserCreatedUpdatedHandlerTest {
     assertThat(userEntity.getEmail()).isEqualTo("updated-baz@foo");
     assertThat(userEntity.getPassword()).isEqualTo("updated-baz");
     assertThat(userEntity.getExternalId()).isEqualTo("ext-1");
+    assertThat(userEntity.getSource()).isEqualTo("scim-a");
     assertThat(userEntity.getActive()).isFalse();
     assertThat(userEntity.getAttributes()).isEqualTo("{\"department\":\"eng\"}");
   }

@@ -22,6 +22,9 @@
       },
       "type": {
         "type": "keyword"
+      },
+      "origin": {
+        "type": "keyword"
       }
     }
   }

@@ -30,6 +30,7 @@ SELECT
     t.ATTRIBUTES,
     t.CREATED_AT,
     t.LAST_MODIFIED_AT,
+    t.SOURCE,
     gm.GROUP_ID AS MEMBER_GROUP_ID,
     gm.ENTITY_ID AS MEMBER_ENTITY_ID,
     gm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
@@ -43,7 +44,8 @@ SELECT
     g.EXTERNAL_ID,
     g.ATTRIBUTES,
     g.CREATED_AT,
-    g.LAST_MODIFIED_AT
+    g.LAST_MODIFIED_AT,
+    g.SOURCE
     FROM ${prefix}GROUP_ g
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchAndAuthFilter"/>
     ) t
@@ -185,6 +187,7 @@ SELECT
       <arg name="attributes" column="ATTRIBUTES" javaType="java.lang.String"/>
       <arg name="createdAt" column="CREATED_AT" javaType="java.time.OffsetDateTime"/>
       <arg name="lastModifiedAt" column="LAST_MODIFIED_AT" javaType="java.time.OffsetDateTime"/>
+      <arg name="source" column="SOURCE" javaType="java.lang.String"/>
     </constructor>
     <collection property="members" ofType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
       javaType="java.util.List">
@@ -205,8 +208,8 @@ SELECT
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel">
-    INSERT INTO ${prefix}GROUP_ (GROUP_KEY, GROUP_ID, NAME, DESCRIPTION, EXTERNAL_ID, ATTRIBUTES, CREATED_AT, LAST_MODIFIED_AT)
-    VALUES (#{groupKey}, #{groupId}, #{name}, #{description}, #{externalId}, #{attributes}, #{createdAt, jdbcType=TIMESTAMP}, #{lastModifiedAt, jdbcType=TIMESTAMP})
+    INSERT INTO ${prefix}GROUP_ (GROUP_KEY, GROUP_ID, NAME, DESCRIPTION, EXTERNAL_ID, ATTRIBUTES, CREATED_AT, LAST_MODIFIED_AT, SOURCE)
+    VALUES (#{groupKey}, #{groupId}, #{name}, #{description}, #{externalId}, #{attributes}, #{createdAt, jdbcType=TIMESTAMP}, #{lastModifiedAt, jdbcType=TIMESTAMP}, #{source})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel">
@@ -215,7 +218,8 @@ SELECT
                     DESCRIPTION = #{description},
                     EXTERNAL_ID = #{externalId},
                     ATTRIBUTES = #{attributes},
-                    LAST_MODIFIED_AT = #{lastModifiedAt, jdbcType=TIMESTAMP}
+                    LAST_MODIFIED_AT = #{lastModifiedAt, jdbcType=TIMESTAMP},
+                    SOURCE = #{source}
     WHERE GROUP_ID = #{groupId}
   </update>
 

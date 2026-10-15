@@ -24,7 +24,33 @@ public record UserEntity(
     @Nullable Boolean active,
     @Nullable Map<String, Object> attributes,
     @Nullable OffsetDateTime createdAt,
-    @Nullable OffsetDateTime lastModifiedAt) {
+    @Nullable OffsetDateTime lastModifiedAt,
+    @Nullable String source) {
+
+  public UserEntity(
+      final Long userKey,
+      final String username,
+      final @Nullable String name,
+      final @Nullable String email,
+      final @Nullable String password,
+      final @Nullable String externalId,
+      final @Nullable Boolean active,
+      final @Nullable Map<String, Object> attributes,
+      final @Nullable OffsetDateTime createdAt,
+      final @Nullable OffsetDateTime lastModifiedAt) {
+    this(
+        userKey,
+        username,
+        name,
+        email,
+        password,
+        externalId,
+        active,
+        attributes,
+        createdAt,
+        lastModifiedAt,
+        null);
+  }
 
   public UserEntity(
       final Long userKey,
@@ -35,7 +61,8 @@ public record UserEntity(
       final @Nullable String externalId,
       final @Nullable Boolean active,
       final @Nullable Map<String, Object> attributes) {
-    this(userKey, username, name, email, password, externalId, active, attributes, null, null);
+    this(
+        userKey, username, name, email, password, externalId, active, attributes, null, null, null);
   }
 
   public UserEntity(
@@ -46,7 +73,7 @@ public record UserEntity(
       final @Nullable String password,
       final @Nullable String externalId,
       final @Nullable Boolean active) {
-    this(userKey, username, name, email, password, externalId, active, null, null, null);
+    this(userKey, username, name, email, password, externalId, active, null, null, null, null);
   }
 
   public UserEntity(
@@ -55,7 +82,7 @@ public record UserEntity(
       final @Nullable String name,
       final @Nullable String email,
       final @Nullable String password) {
-    this(userKey, username, name, email, password, null, null, null, null, null);
+    this(userKey, username, name, email, password, null, null, null, null, null, null);
   }
 
   public UserEntity {

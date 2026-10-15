@@ -25,6 +25,7 @@ public class GroupEntityTransformer
         value.getExternalId(),
         AttributesJson.parse(value.getAttributes()),
         value.getCreatedAt(),
-        value.getLastModifiedAt());
+        value.getLastModifiedAt(),
+        value.getSource());
   }
 }

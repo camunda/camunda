@@ -21,7 +21,8 @@ public record UserDbModel(
     Boolean active,
     String attributes,
     OffsetDateTime createdAt,
-    OffsetDateTime lastModifiedAt)
+    OffsetDateTime lastModifiedAt,
+    String source)
     implements DbModel<UserDbModel> {
 
   @Override
@@ -38,7 +39,8 @@ public record UserDbModel(
                 .active(active)
                 .attributes(attributes)
                 .createdAt(createdAt)
-                .lastModifiedAt(lastModifiedAt))
+                .lastModifiedAt(lastModifiedAt)
+                .source(source))
         .build();
   }
 
@@ -54,6 +56,7 @@ public record UserDbModel(
     private String attributes;
     private OffsetDateTime createdAt;
     private OffsetDateTime lastModifiedAt;
+    private String source;
 
     public Builder() {}
 
@@ -108,6 +111,11 @@ public record UserDbModel(
       return this;
     }
 
+    public Builder source(final String source) {
+      this.source = source;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public UserDbModel build() {
@@ -121,7 +129,8 @@ public record UserDbModel(
           active,
           attributes,
           createdAt,
-          lastModifiedAt);
+          lastModifiedAt,
+          source);
     }
   }
 }

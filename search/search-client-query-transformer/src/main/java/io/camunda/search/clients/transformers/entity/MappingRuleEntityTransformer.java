@@ -23,6 +23,7 @@ public class MappingRuleEntityTransformer
         value.getClaimName(),
         value.getClaimValue(),
         value.getName(),
-        value.getType());
+        value.getType(),
+        value.getOrigin());
   }
 }

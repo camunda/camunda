@@ -74,6 +74,7 @@ public class GroupCreatedUpdatedHandler
         .setName(value.getName())
         .setDescription(value.getDescription())
         .setExternalId(value.getExternalId())
+        .setSource(emptyToNull(value.getSource()))
         .setAttributes(AttributesJson.serialize(value.getAttributes()))
         .setLastModifiedAt(timestamp)
         .setJoin(joinRelation);
@@ -94,6 +95,7 @@ public class GroupCreatedUpdatedHandler
     updateFields.put(GroupIndex.NAME, entity.getName());
     updateFields.put(GroupIndex.DESCRIPTION, entity.getDescription());
     updateFields.put(GroupIndex.EXTERNAL_ID, entity.getExternalId());
+    updateFields.put(GroupIndex.SOURCE, entity.getSource());
     updateFields.put(GroupIndex.ATTRIBUTES, entity.getAttributes());
     updateFields.put(GroupIndex.LAST_MODIFIED_AT, entity.getLastModifiedAt());
     batchRequest.upsert(index, entity.getId(), entity, updateFields);
@@ -102,5 +104,9 @@ public class GroupCreatedUpdatedHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 }

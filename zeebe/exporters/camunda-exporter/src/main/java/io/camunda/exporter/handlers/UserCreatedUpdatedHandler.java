@@ -73,6 +73,7 @@ public class UserCreatedUpdatedHandler
         .setEmail(value.getEmail())
         .setPassword(value.getPassword())
         .setExternalId(value.getExternalId())
+        .setSource(emptyToNull(value.getSource()))
         .setActive(value.isActive())
         .setAttributes(AttributesJson.serialize(value.getAttributes()))
         .setLastModifiedAt(timestamp);
@@ -94,6 +95,7 @@ public class UserCreatedUpdatedHandler
     updateFields.put(UserIndex.EMAIL, entity.getEmail());
     updateFields.put(UserIndex.PASSWORD, entity.getPassword());
     updateFields.put(UserIndex.EXTERNAL_ID, entity.getExternalId());
+    updateFields.put(UserIndex.SOURCE, entity.getSource());
     updateFields.put(UserIndex.ACTIVE, entity.getActive());
     updateFields.put(UserIndex.ATTRIBUTES, entity.getAttributes());
     updateFields.put(UserIndex.LAST_MODIFIED_AT, entity.getLastModifiedAt());
@@ -103,5 +105,9 @@ public class UserCreatedUpdatedHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 }

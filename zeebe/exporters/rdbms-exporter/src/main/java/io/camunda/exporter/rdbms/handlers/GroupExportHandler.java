@@ -92,9 +92,14 @@ public class GroupExportHandler implements RdbmsExportHandler<GroupRecordValue> 
         .name(decision.getName())
         .description(decision.getDescription())
         .externalId(decision.getExternalId())
+        .source(emptyToNull(decision.getSource()))
         .attributes(AttributesJson.serialize(decision.getAttributes()))
         .createdAt(createdAt)
         .lastModifiedAt(lastModifiedAt)
         .build();
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 }

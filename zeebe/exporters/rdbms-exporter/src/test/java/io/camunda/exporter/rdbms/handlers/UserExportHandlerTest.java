@@ -62,6 +62,23 @@ final class UserExportHandlerTest {
   }
 
   @Test
+  void shouldExportSourceAndStoreNoneAsNull() {
+    // given
+    final var owned = userRecord(UserIntent.CREATED, "ext-1", true, "scim-a");
+    final var unowned = userRecord(UserIntent.UPDATED, "ext-1", true, "");
+
+    // when
+    handler.export(owned);
+    handler.export(unowned);
+
+    // then
+    verify(writer).create(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getValue().source()).isEqualTo("scim-a");
+    verify(writer).update(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getValue().source()).isNull();
+  }
+
+  @Test
   void shouldExportExternalIdAndActiveOnUpdate() {
     // given
     final Record<UserRecordValue> record = userRecord(UserIntent.UPDATED, "ext-2", true);
@@ -119,10 +136,16 @@ final class UserExportHandlerTest {
 
   private Record<UserRecordValue> userRecord(
       final UserIntent intent, final String externalId, final boolean active) {
+    return userRecord(intent, externalId, active, "");
+  }
+
+  private Record<UserRecordValue> userRecord(
+      final UserIntent intent, final String externalId, final boolean active, final String source) {
     final UserRecordValue value =
         ImmutableUserRecordValue.builder()
             .from(factory.generateObject(UserRecordValue.class))
             .withExternalId(externalId)
+            .withSource(source)
             .withActive(active)
             .withAttributes(Map.of("department", "eng"))
             .build();

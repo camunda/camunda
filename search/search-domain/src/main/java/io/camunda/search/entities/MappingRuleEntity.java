@@ -18,7 +18,8 @@ public record MappingRuleEntity(
     String claimName,
     String claimValue,
     String name,
-    String type)
+    String type,
+    String origin)
     implements MappingRuleMatcher.MappingRule {
 
   public static final String TYPE_TOKEN_CLAIM = "TOKEN_CLAIM";
@@ -30,8 +31,18 @@ public record MappingRuleEntity(
       final Long mappingRuleKey,
       final String claimName,
       final String claimValue,
+      final String name,
+      final String type) {
+    this(mappingRuleId, mappingRuleKey, claimName, claimValue, name, type, "");
+  }
+
+  public MappingRuleEntity(
+      final String mappingRuleId,
+      final Long mappingRuleKey,
+      final String claimName,
+      final String claimValue,
       final String name) {
-    this(mappingRuleId, mappingRuleKey, claimName, claimValue, name, TYPE_TOKEN_CLAIM);
+    this(mappingRuleId, mappingRuleKey, claimName, claimValue, name, TYPE_TOKEN_CLAIM, "");
   }
 
   public MappingRuleEntity {
@@ -41,5 +52,6 @@ public record MappingRuleEntity(
     Objects.requireNonNull(claimValue, "claimValue");
     Objects.requireNonNull(name, "name");
     type = type == null ? TYPE_TOKEN_CLAIM : type;
+    origin = origin == null ? "" : origin;
   }
 }

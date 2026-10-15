@@ -66,10 +66,15 @@ public class UserExportHandler implements RdbmsExportHandler<UserRecordValue> {
         .email(decision.getEmail())
         .password(decision.getPassword())
         .externalId(decision.getExternalId())
+        .source(emptyToNull(decision.getSource()))
         .active(decision.isActive())
         .attributes(AttributesJson.serialize(decision.getAttributes()))
         .createdAt(createdAt)
         .lastModifiedAt(lastModifiedAt)
         .build();
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 }

@@ -18,6 +18,7 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
   @BeforeVersion880 private String name;
   @BeforeVersion880 private String description;
   private String externalId;
+  private String source;
   private String attributes;
   private OffsetDateTime createdAt;
   private OffsetDateTime lastModifiedAt;
@@ -57,6 +58,15 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
   public GroupEntity setDescription(final String description) {
     this.description = description;
+    return this;
+  }
+
+  public String getSource() {
+    return source;
+  }
+
+  public GroupEntity setSource(final String source) {
+    this.source = source;
     return this;
   }
 

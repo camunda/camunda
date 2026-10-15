@@ -97,6 +97,7 @@ public class MappingRuleCreatedUpdatedHandlerTest {
             .withName("updated-name")
             .withMappingRuleId("updated-id")
             .withType(MappingRuleType.USER_ATTRIBUTE)
+            .withOrigin("scim-a")
             .build();
 
     final Record<MappingRuleRecordValue> mappingRuleRecord =
@@ -119,6 +120,7 @@ public class MappingRuleCreatedUpdatedHandlerTest {
     assertThat(mappingRuleEntity.getName()).isEqualTo("updated-name");
     assertThat(mappingRuleEntity.getMappingRuleId()).isEqualTo("updated-id");
     assertThat(mappingRuleEntity.getType()).isEqualTo("USER_ATTRIBUTE");
+    assertThat(mappingRuleEntity.getOrigin()).isEqualTo("scim-a");
   }
 
   @Test

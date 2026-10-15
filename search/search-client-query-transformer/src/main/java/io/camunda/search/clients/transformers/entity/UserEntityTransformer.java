@@ -27,6 +27,7 @@ public class UserEntityTransformer
         value.getActive(),
         AttributesJson.parse(value.getAttributes()),
         value.getCreatedAt(),
-        value.getLastModifiedAt());
+        value.getLastModifiedAt(),
+        value.getSource());
   }
 }

@@ -40,6 +40,30 @@ class MappingRuleEntityTransformerTest {
     assertThat(result.type()).isEqualTo("TOKEN_CLAIM");
   }
 
+  @Test
+  void shouldMapOrigin() {
+    // given
+    final var rule = baseEntity().setOrigin("scim-a");
+
+    // when
+    final var result = transformer.apply(rule);
+
+    // then
+    assertThat(result.origin()).isEqualTo("scim-a");
+  }
+
+  @Test
+  void shouldDefaultOriginToAnyForDocumentsWrittenBeforeTheField() {
+    // given
+    final var rule = baseEntity();
+
+    // when
+    final var result = transformer.apply(rule);
+
+    // then
+    assertThat(result.origin()).isEmpty();
+  }
+
   private static MappingRuleEntity baseEntity() {
     return new MappingRuleEntity()
         .setMappingRuleId("rule")

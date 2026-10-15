@@ -23,6 +23,9 @@
       "externalId": {
         "type": "keyword"
       },
+      "source": {
+        "type": "keyword"
+      },
       "active": {
         "type": "boolean"
       },
