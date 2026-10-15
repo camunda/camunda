@@ -25,6 +25,10 @@ import {
   expectProcessDefinitionState,
   expectBatchState,
   expectProcessInstanceCount,
+  partitionsCount,
+  partitionOf,
+  createInstancesUntilOn,
+  createInstanceAwayFrom,
   findUserTask,
   RESOURCE_DELETION_ENDPOINT,
   searchProcessInstances,
@@ -81,61 +85,6 @@ async function historyBatchOperationKeyFor(
   const items: Array<{batchOperationKey: string}> =
     (await res.json()).items ?? [];
   return items.length === 0 ? undefined : String(items[0]!.batchOperationKey);
-}
-
-async function partitionsCount(request: APIRequestContext): Promise<number> {
-  const res = await request.get(buildUrl('/topology'), {
-    headers: jsonHeaders(),
-  });
-  await assertStatusCode(res, 200);
-  return (await res.json()).partitionsCount as number;
-}
-
-// A key carries the partition that minted it in its high bits. Definition keys
-// are minted on the deployment partition, which therefore serves every delete
-// of that definition.
-function partitionOf(key: string): number {
-  return Number(BigInt(key) >> 51n);
-}
-
-/**
- * Starts instances until one lands on `partition`, returning all of them.
- * Placement is round-robin and the offset is shared with the specs running in
- * parallel, so a fixed instance count cannot guarantee the partition is covered.
- */
-async function createInstancesUntilOn(
-  processDefinitionId: string,
-  partition: number,
-  maxAttempts: number,
-) {
-  const instances = [];
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const [instance] = await createInstances(processDefinitionId, 1, 1);
-    instances.push(instance!);
-    if (partitionOf(instance!.processInstanceKey) === partition) {
-      break;
-    }
-  }
-  return instances;
-}
-
-/**
- * Starts one instance away from `partition`, cancelling any that land on it so
- * that partition keeps none of the definition's running instances.
- */
-async function createInstanceAwayFrom(
-  processDefinitionId: string,
-  partition: number,
-  maxAttempts: number,
-) {
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const [instance] = await createInstances(processDefinitionId, 1, 1);
-    if (partitionOf(instance!.processInstanceKey) !== partition) {
-      return instance!;
-    }
-    await cancelProcessInstance(instance!.processInstanceKey);
-  }
-  return undefined;
 }
 
 /**
