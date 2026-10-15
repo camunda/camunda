@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -18,10 +19,13 @@ public final class ProcessDefinitionRestoreRecord extends UnifiedRecordValue
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1L);
   private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final IntegerProperty restoredCountProp = new IntegerProperty("restoredCount", 0);
 
   public ProcessDefinitionRestoreRecord() {
-    super(2);
-    declareProperty(processDefinitionKeyProp).declareProperty(tenantIdProp);
+    super(3);
+    declareProperty(processDefinitionKeyProp)
+        .declareProperty(tenantIdProp)
+        .declareProperty(restoredCountProp);
   }
 
   @Override
@@ -41,6 +45,16 @@ public final class ProcessDefinitionRestoreRecord extends UnifiedRecordValue
 
   public ProcessDefinitionRestoreRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getRestoredCount() {
+    return restoredCountProp.getValue();
+  }
+
+  public ProcessDefinitionRestoreRecord setRestoredCount(final int restoredCount) {
+    restoredCountProp.setValue(restoredCount);
     return this;
   }
 }

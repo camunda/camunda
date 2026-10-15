@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
 
 /**
  * Visits one process definition per command, looking for stray resting {@code PENDING_DELETION}
@@ -34,6 +36,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @ExcludeAuthorizationCheck
 public class ProcessDefinitionRestoreContinueProcessor
     implements TypedRecordProcessor<ProcessDefinitionRestoreRecord> {
+
+  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -72,10 +76,16 @@ public class ProcessDefinitionRestoreContinueProcessor
       // no definition after the previous one: we reached the end
       stateWriter.appendFollowUpEvent(
           command.getKey(), ProcessDefinitionRestoreIntent.FINISHED, value);
+      LOG.info(
+          "Process definition restore finished on partition {}: restored {} definition(s)",
+          command.getPartitionId(),
+          value.getRestoredCount());
       return;
     }
 
+    var restoredCount = value.getRestoredCount();
     if (stray.get()) {
+      restoredCount++;
       stateWriter.appendFollowUpEvent(
           cursor.processDefinitionKey(),
           ProcessDefinitionRestoreIntent.RESTORED,
@@ -89,6 +99,7 @@ public class ProcessDefinitionRestoreContinueProcessor
         ProcessDefinitionRestoreIntent.CONTINUE,
         new ProcessDefinitionRestoreRecord()
             .setTenantId(cursor.tenantId())
-            .setProcessDefinitionKey(cursor.processDefinitionKey()));
+            .setProcessDefinitionKey(cursor.processDefinitionKey())
+            .setRestoredCount(restoredCount));
   }
 }

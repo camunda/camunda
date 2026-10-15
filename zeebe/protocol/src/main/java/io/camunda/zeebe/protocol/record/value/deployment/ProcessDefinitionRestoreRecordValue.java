@@ -36,4 +36,10 @@ public interface ProcessDefinitionRestoreRecordValue extends RecordValue {
    *     of the process definition the final command resumed from.
    */
   String getTenantId();
+
+  /**
+   * @return the number of process definitions restored so far by the current restore run on this
+   *     partition, carried from one CONTINUE to the next; the FINISHED record holds the total
+   */
+  int getRestoredCount();
 }
