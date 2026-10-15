@@ -25,6 +25,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.awaitility.Awaitility;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -44,6 +45,11 @@ public final class ClockTest {
   public void beforeEach() {
     RecordingExporter.reset();
     clearInvocations(ENGINE.getCommandResponseWriter());
+  }
+
+  @After
+  public void afterEach() {
+    ENGINE.getClock().reset();
   }
 
   @Test
@@ -159,6 +165,69 @@ public final class ClockTest {
     inOrder
         .verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
         .intent(ClockIntent.RESETTED);
+    inOrder
+        .verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
+        .tryWriteResponse(1, 1L);
+  }
+
+  @Test
+  public void shouldFetchPinnedTime() {
+    // given
+    final var fakeNow = Instant.now().minusSeconds(180).truncatedTo(ChronoUnit.MILLIS);
+    ENGINE.awaitProcessingOf(clockClient.pinAt(fakeNow));
+
+    // when
+    final var record = clockClient.fetch();
+
+    // then
+    Assertions.assertThat(record).hasIntent(ClockIntent.FETCHED);
+    assertThat(record.getValue().getTime()).isEqualTo(fakeNow.toEpochMilli());
+  }
+
+  @Test
+  public void shouldFetchActorClockTimeWhenClockIsNotModified() {
+    // given
+    ENGINE.awaitProcessingOf(clockClient.reset());
+    final var actorClockTime = Instant.now().plusSeconds(3600).truncatedTo(ChronoUnit.MILLIS);
+    ENGINE.getClock().setCurrentTime(actorClockTime);
+
+    // when
+    final var record = clockClient.fetch();
+
+    // then
+    Assertions.assertThat(record).hasIntent(ClockIntent.FETCHED);
+    assertThat(record.getValue().getTime()).isEqualTo(actorClockTime.toEpochMilli());
+  }
+
+  @Test
+  public void shouldNotModifyClockOnFetch() {
+    // given
+    final var fakeNow = Instant.now().minusSeconds(180).truncatedTo(ChronoUnit.MILLIS);
+    ENGINE.awaitProcessingOf(clockClient.pinAt(fakeNow));
+
+    // when
+    ENGINE.awaitProcessingOf(clockClient.fetch());
+
+    // then
+    assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
+    assertThat(ENGINE.getProcessingState().getClockState().getModification())
+        .isEqualTo(Modification.pinAt(fakeNow));
+  }
+
+  @Test
+  public void shouldRespondToFetchClock() {
+    // given
+    final var fakeNow = Instant.now().minusSeconds(180).truncatedTo(ChronoUnit.MILLIS);
+    ENGINE.awaitProcessingOf(clockClient.pinAt(fakeNow));
+
+    // when
+    ENGINE.awaitProcessingOf(clockClient.requestId(1L).requestStreamId(1).fetch());
+
+    // then
+    final var inOrder = Mockito.inOrder(ENGINE.getCommandResponseWriter());
+    inOrder
+        .verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
+        .intent(ClockIntent.FETCHED);
     inOrder
         .verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
         .tryWriteResponse(1, 1L);

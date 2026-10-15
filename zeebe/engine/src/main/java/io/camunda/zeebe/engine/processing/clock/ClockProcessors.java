@@ -35,5 +35,9 @@ public final class ClockProcessors {
         ClockIntent.RESET,
         new ClockResetProcessor(
             writers, keyGenerator, clock, commandDistributionBehavior, cslCheck));
+    typedRecordProcessors.onCommand(
+        ValueType.CLOCK,
+        ClockIntent.FETCH,
+        new ClockFetchProcessor(writers, keyGenerator, clock, cslCheck));
   }
 }

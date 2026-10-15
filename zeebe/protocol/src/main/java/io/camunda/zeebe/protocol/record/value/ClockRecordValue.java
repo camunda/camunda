@@ -36,6 +36,8 @@ public interface ClockRecordValue extends RecordValue {
    *       milliseconds
    *   <li>If the associated intent is an offset, then time would be the duration in milliseconds
    *   <li>If the associated intent is a reset, then this value has no meaning, and will be 0
+   *   <li>If the associated intent is {@link ClockIntent#FETCHED}, then the time is the current
+   *       time of the clock as epoch milliseconds; for {@link ClockIntent#FETCH} it has no meaning
    * </ol>
    */
   long getTime();

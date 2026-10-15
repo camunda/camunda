@@ -16,6 +16,7 @@ public final class ClockRecord extends UnifiedRecordValue implements ClockRecord
   // depending on the intent, the value may be a:
   // - timestamp (epoch milliseconds)
   // - offset (in milliseconds)
+  // - current time of the clock (epoch milliseconds), for FETCHED
   private final LongProperty timeProperty = new LongProperty("time", 0);
 
   public ClockRecord() {
@@ -37,6 +38,11 @@ public final class ClockRecord extends UnifiedRecordValue implements ClockRecord
   public ClockRecord offsetBy(final long offsetMillis) {
     reset();
     timeProperty.setValue(offsetMillis);
+    return this;
+  }
+
+  public ClockRecord setTime(final long epochMillis) {
+    timeProperty.setValue(epochMillis);
     return this;
   }
 }
