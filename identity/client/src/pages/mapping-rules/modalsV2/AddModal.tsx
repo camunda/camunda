@@ -16,12 +16,15 @@ import { useNotifications } from "src/components/notifications";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { mappingRuleMutations } from "src/utility/api/mapping-rules/mutations";
 import { isValidId, getIdPattern } from "src/utility/validate";
+import type { MappingRuleType } from "src/utility/api/mapping-rules";
+import MappingRuleTypeSelect from "./MappingRuleTypeSelect";
 
 type FormData = {
   mappingRuleId: string;
   mappingRuleName: string;
   claimName: string;
   claimValue: string;
+  type: MappingRuleType;
 };
 
 const AddMappingRuleModal: FC<UseModalProps> = ({
@@ -42,15 +45,19 @@ const AddMappingRuleModal: FC<UseModalProps> = ({
     control,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<FormData>({
     defaultValues: {
       mappingRuleId: "",
       mappingRuleName: "",
       claimName: "",
       claimValue: "",
+      type: "TOKEN_CLAIM",
     },
     mode: "all",
   });
+
+  const isAttributeRule = watch("type") !== "TOKEN_CLAIM";
 
   const onSubmit = (data: FormData) => {
     mutate(
@@ -59,6 +66,7 @@ const AddMappingRuleModal: FC<UseModalProps> = ({
         name: data.mappingRuleName,
         claimName: data.claimName,
         claimValue: data.claimValue,
+        type: data.type,
       },
       {
         onSuccess: () => {
@@ -123,6 +131,16 @@ const AddMappingRuleModal: FC<UseModalProps> = ({
           />
         )}
       />
+      <Controller
+        name="type"
+        control={control}
+        render={({ field }) => (
+          <MappingRuleTypeSelect
+            value={field.value}
+            onChange={field.onChange}
+          />
+        )}
+      />
       <Separator />
       <div className="grid gap-2">
         <Heading as="h3" variant="heading-xs">
@@ -138,9 +156,17 @@ const AddMappingRuleModal: FC<UseModalProps> = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                label={t("claimName")}
-                placeholder={t("enterClaimName")}
-                helperText={t("customClaimName")}
+                label={isAttributeRule ? t("attributePath") : t("claimName")}
+                placeholder={
+                  isAttributeRule
+                    ? t("enterAttributePath")
+                    : t("enterClaimName")
+                }
+                helperText={
+                  isAttributeRule
+                    ? t("customAttributePath")
+                    : t("customClaimName")
+                }
                 errors={errors.claimName?.message}
               />
             )}

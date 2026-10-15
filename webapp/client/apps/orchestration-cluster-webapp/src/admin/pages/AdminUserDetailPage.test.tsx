@@ -47,6 +47,34 @@ describe('<AdminUserDetailPage />', () => {
 		await expect.element(screen.getByText('john.doe@example.com')).toBeVisible();
 	});
 
+	it('should show the status and the external ID', async () => {
+		const user = createUser({username: 'john.doe', externalId: 'idp-123', active: false});
+
+		const screen = await render(<AdminUserDetailPage user={user} onDeleted={vi.fn()} />, {wrapper: getWrapper()});
+
+		await expect.element(screen.getByText('Deactivated')).toBeVisible();
+		await expect.element(screen.getByText('idp-123')).toBeVisible();
+	});
+
+	it('should omit the external ID when the user has none', async () => {
+		const screen = await render(<AdminUserDetailPage user={createUser()} onDeleted={vi.fn()} />, {
+			wrapper: getWrapper(),
+		});
+
+		await expect.element(screen.getByText('Active')).toBeVisible();
+		await expect.element(screen.getByText('External ID')).not.toBeInTheDocument();
+	});
+
+	it('should hide edit and delete when read-only', async () => {
+		const screen = await render(<AdminUserDetailPage user={createUser()} onDeleted={vi.fn()} isReadOnly />, {
+			wrapper: getWrapper(),
+		});
+
+		await expect.element(screen.getByRole('heading', {name: 'jane.doe'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Edit user'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Delete user'})).not.toBeInTheDocument();
+	});
+
 	it('should delete the user and notify the caller', async ({worker}) => {
 		const user = createUser({username: 'john.doe'});
 		const onDeleted = vi.fn();

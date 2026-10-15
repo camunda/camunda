@@ -25,10 +25,21 @@ import { ROLES_ENDPOINT } from "src/utility/api/roles";
 
 export type GroupKeys = keyof Group;
 
+/**
+ * Groups provisioned by an external identity provider (e.g. via SCIM) carry an
+ * `externalId` that is not part of the published API schema yet.
+ */
+export type ProvisionedGroup = Group & {
+  externalId?: string | null;
+  attributes?: Record<string, unknown> | null;
+  createdAt?: string | null;
+  lastModifiedAt?: string | null;
+};
+
 export const GROUPS_ENDPOINT = "/groups";
 
 export const searchGroups: ApiDefinition<
-  QueryGroupsResponseBody,
+  Omit<QueryGroupsResponseBody, "items"> & { items: ProvisionedGroup[] },
   (QueryGroupsRequestBody & { groupIds?: string[] }) | undefined
 > = (filterParams = {}) => {
   const { groupIds, ...pageParams } = filterParams;
@@ -40,9 +51,11 @@ export const searchGroups: ApiDefinition<
   return apiPost(`${GROUPS_ENDPOINT}/search`, { ...params, ...pageParams });
 };
 
-export const getGroupDetails: ApiDefinition<Group, Pick<Group, "groupId">> = ({
-  groupId,
-}) => apiGet(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}`);
+export const getGroupDetails: ApiDefinition<
+  ProvisionedGroup,
+  Pick<Group, "groupId">
+> = ({ groupId }) =>
+  apiGet(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}`);
 
 export const createGroup: ApiDefinition<undefined, Group> = (params) =>
   apiPost(GROUPS_ENDPOINT, params);

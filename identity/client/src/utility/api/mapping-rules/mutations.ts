@@ -11,6 +11,7 @@ import type {
   MappingRule,
   UpdateMappingRuleRequestBody,
 } from "@camunda/camunda-api-zod-schemas/8.10";
+import type { MappingRuleType, TypedMappingRule } from ".";
 import { getApiBaseUrl } from "src/configuration/urlConfig";
 import { unwrap } from "../request";
 import { queryKeys } from "../queryKeys";
@@ -19,7 +20,7 @@ import { createMappingRule, deleteMappingRule, updateMappingRule } from ".";
 export const mappingRuleMutations = {
   create: (qc: QueryClient) =>
     mutationOptions({
-      mutationFn: (body: MappingRule) =>
+      mutationFn: (body: TypedMappingRule) =>
         unwrap(createMappingRule(body)(getApiBaseUrl())),
       meta: { skipErrorNotification: true },
       onSuccess: () =>
@@ -28,7 +29,8 @@ export const mappingRuleMutations = {
   update: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (
-        body: UpdateMappingRuleRequestBody & Pick<MappingRule, "mappingRuleId">,
+        body: UpdateMappingRuleRequestBody &
+          Pick<MappingRule, "mappingRuleId"> & { type: MappingRuleType },
       ) => unwrap(updateMappingRule(body)(getApiBaseUrl())),
       meta: { skipErrorNotification: true },
       onSuccess: () =>

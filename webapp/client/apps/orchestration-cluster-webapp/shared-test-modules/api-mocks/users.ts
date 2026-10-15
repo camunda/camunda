@@ -13,6 +13,8 @@ function createUser(overrides?: Partial<User>): User {
 		username: 'jane.doe',
 		name: 'Jane Doe',
 		email: 'jane.doe@example.com',
+		externalId: null,
+		active: true,
 		...overrides,
 	};
 }

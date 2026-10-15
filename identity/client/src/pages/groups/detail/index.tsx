@@ -11,6 +11,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
+import GroupStatus from "src/pages/groups/GroupStatusTag";
+import { isGroupReadOnly } from "src/pages/groups/types";
+import InlineNotification from "src/components/notifications/InlineNotification";
 import { groupQueries } from "src/utility/api/groups/queries";
 import NotFound from "src/pages/not-found";
 import { Breadcrumbs, StackPage } from "src/components/layout/Page";
@@ -23,6 +26,7 @@ import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
 import { Description } from "src/components/layout/DetailsPageDescription";
 import Members from "src/pages/groups/detail/members";
+import GroupDetails from "src/pages/groups/detail/GroupDetailsTab";
 import Roles from "src/pages/groups/detail/roles";
 import MappingRules from "src/pages/groups/detail/mapping-rules";
 import Clients from "src/pages/groups/detail/clients";
@@ -47,6 +51,8 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
 
   if (!loading && !group) return <NotFound />;
 
+  const readOnly = !!group && isGroupReadOnly(group);
+
   return (
     <StackPage>
       <>
@@ -60,25 +66,25 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
                 <Stack gap="3">
                   <Stack orientation="horizontal" gap="1">
                     <PageHeadline>{group.name}</PageHeadline>
-                    <OverflowMenu ariaLabel={t("openGroupContextMenu")}>
-                      <OverflowMenuItem
-                        itemText={t("edit")}
-                        onClick={() => {
-                          editGroup(group);
-                        }}
-                      />
-                      <OverflowMenuItem
-                        itemText={t("delete")}
-                        isDelete
-                        onClick={() => {
-                          deleteGroup(group);
-                        }}
-                      />
-                    </OverflowMenu>
+                    {readOnly && <GroupStatus />}
+                    {!readOnly && (
+                      <OverflowMenu ariaLabel={t("openGroupContextMenu")}>
+                        <OverflowMenuItem
+                          itemText={t("edit")}
+                          onClick={() => {
+                            editGroup(group);
+                          }}
+                        />
+                        <OverflowMenuItem
+                          itemText={t("delete")}
+                          isDelete
+                          onClick={() => {
+                            deleteGroup(group);
+                          }}
+                        />
+                      </OverflowMenu>
+                    )}
                   </Stack>
-                  <p>
-                    {t("groupId")}: {group.groupId}
-                  </p>
                   {group.description && (
                     <Description>
                       {t("description")}: {group.description}
@@ -89,14 +95,31 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
             </Flex>
           )}
         </Stack>
+        {readOnly && (
+          <InlineNotification
+            kind="info"
+            title={t("managedByIdentityProvider")}
+          />
+        )}
         {group && (
           <Section>
             <Tabs
               tabs={[
                 {
+                  key: "details",
+                  label: t("groupDetails"),
+                  content: <GroupDetails group={group} />,
+                },
+                {
                   key: "users",
                   label: t("users"),
-                  content: <Members groupId={group.groupId} isOIDC={isOIDC} />,
+                  content: (
+                    <Members
+                      groupId={group.groupId}
+                      isOIDC={isOIDC}
+                      readOnly={readOnly}
+                    />
+                  ),
                 },
                 {
                   key: "roles",

@@ -33,6 +33,10 @@ export const isAdditionalIdpConfigured = getClientConfigBoolean(
   "isAdditionalIdpConfigured",
   false,
 );
+export const isUserProvisioningEnabled = getClientConfigBoolean(
+  "isUserProvisioningEnabled",
+  false,
+);
 
 export const docsUrl = "https://docs.camunda.io/docs/next";
 

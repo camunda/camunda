@@ -33,5 +33,15 @@
   "mappingRuleNameRequired": "Mapping rule name is required",
   "claimNameRequired": "Claim name is required",
   "claimValueRequired": "Claim value is required",
-  "searchByMappingRuleId": "Search by mapping rule ID"
+  "searchByMappingRuleId": "Search by mapping rule ID",
+  "type": "Type",
+  "typeTokenClaim": "Token claim",
+  "typeUserAttribute": "User attribute",
+  "typeTokenClaimHelper": "Matches a claim of the login token",
+  "typeUserAttributeHelper": "Matches an attribute provisioned via SCIM, e.g. department (use a JSONPath such as $.address.country for nested values)",
+  "typeGroupAttribute": "Group attribute",
+  "typeGroupAttributeHelper": "Matches an attribute of any group the user is a direct member of, e.g. region",
+  "attributePath": "Attribute path",
+  "enterAttributePath": "Enter attribute path",
+  "customAttributePath": "Enter the name of a provisioned attribute, e.g. department"
 }

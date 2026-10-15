@@ -33,5 +33,13 @@
   "openContextMenu": "Open users context menu",
   "repeatPassword": "Repeat password",
   "resetPassword": "Reset password",
-  "resetPasswordInfo": "New password must be at least 6 characters long and include at least one number."
+  "resetPasswordInfo": "New password must be at least 6 characters long and include at least one number.",
+  "status": "Status",
+  "active": "Active",
+  "deactivated": "Deactivated",
+  "externalId": "External ID",
+  "managedByIdentityProvider": "Users are provisioned by your identity provider and cannot be changed here.",
+  "created": "Created",
+  "lastSynced": "Last synced",
+  "lastModified": "Last modified"
 }

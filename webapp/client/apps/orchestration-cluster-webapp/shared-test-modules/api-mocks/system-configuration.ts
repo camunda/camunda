@@ -26,7 +26,12 @@ function createSystemConfiguration(
 			isTenantsApiEnabled: false,
 			maxRequestSize: 0,
 		},
-		authentication: {canLogout: true, isLoginDelegated: false, isCamundaGroupsEnabled: true},
+		authentication: {
+			canLogout: true,
+			isLoginDelegated: false,
+			isCamundaGroupsEnabled: true,
+			isUserProvisioningEnabled: false,
+		},
 		cloud: {
 			stage: null,
 		},

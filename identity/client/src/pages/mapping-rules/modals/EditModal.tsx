@@ -20,9 +20,13 @@ import {
   MappingRuleContainer,
 } from "./components";
 import { useNotifications } from "src/components/notifications";
-import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
+import type {
+  MappingRuleType,
+  TypedMappingRule,
+} from "src/utility/api/mapping-rules";
+import MappingRuleTypeSelect from "./MappingRuleTypeSelect";
 
-const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
+const EditModal: FC<UseEntityModalProps<TypedMappingRule>> = ({
   open,
   onClose,
   onSuccess,
@@ -37,18 +41,21 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
     error,
   } = useMutation(mappingRuleMutations.update(qc));
   type FormData = Pick<
-    MappingRule,
+    TypedMappingRule,
     "mappingRuleId" | "name" | "claimName" | "claimValue"
-  >;
-  const { control, handleSubmit } = useForm<FormData>({
+  > & { type: MappingRuleType };
+  const { control, handleSubmit, watch } = useForm<FormData>({
     defaultValues: {
       mappingRuleId: entity.mappingRuleId,
       name: entity.name,
       claimName: entity.claimName,
       claimValue: entity.claimValue,
+      type: entity.type ?? "TOKEN_CLAIM",
     },
     mode: "all",
   });
+
+  const isAttributeRule = watch("type") !== "TOKEN_CLAIM";
 
   const onSubmit = (data: FormData) => {
     mutate(
@@ -57,6 +64,7 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
         name: data.name,
         claimName: data.claimName,
         claimValue: data.claimValue,
+        type: data.type,
       },
       {
         onSuccess: () => {
@@ -104,6 +112,16 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
           />
         )}
       />
+      <Controller
+        name="type"
+        control={control}
+        render={({ field }) => (
+          <MappingRuleTypeSelect
+            value={field.value}
+            onChange={field.onChange}
+          />
+        )}
+      />
       <MappingRuleContainer>
         <Stack gap="5">
           <h3>{t("mappingRule")}</h3>
@@ -115,9 +133,17 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
               render={({ field, fieldState }) => (
                 <TextField
                   {...field}
-                  label={t("claimName")}
-                  placeholder={t("enterClaimName")}
-                  helperText={t("customClaimName")}
+                  label={isAttributeRule ? t("attributePath") : t("claimName")}
+                  placeholder={
+                    isAttributeRule
+                      ? t("enterAttributePath")
+                      : t("enterClaimName")
+                  }
+                  helperText={
+                    isAttributeRule
+                      ? t("customAttributePath")
+                      : t("customClaimName")
+                  }
                   errors={fieldState.error?.message}
                 />
               )}

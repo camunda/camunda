@@ -11,7 +11,7 @@ import {createFileRoute, useNavigate, type ErrorComponentProps} from '@tanstack/
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {PageLayout} from '@camunda/design-system';
 import type {User} from '@camunda/camunda-api-zod-schemas/8.11';
-import {assertAdminSectionAvailable} from '#/admin/adminSections';
+import {assertAdminSectionAvailable, getAdminSectionConfig} from '#/admin/adminSections';
 import {AdminUsersPage} from '#/admin/pages/AdminUsersPage';
 import {getUsersRequestBody, usersSearchSchema, type UsersSearch} from '#/admin/modules/users/searchSchema';
 import {ForbiddenError} from '#/shared/errors';
@@ -49,6 +49,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/users/')({
 	component: function AdminUsersRoute() {
 		const search = Route.useSearch();
 		const navigate = useNavigate();
+		const {isOidc} = getAdminSectionConfig();
 		const {data} = useSuspenseQuery(queries.queryUsers(getUsersRequestBody(search)));
 
 		const handleSearchChange = useCallback(
@@ -72,6 +73,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/users/')({
 				search={search}
 				onSearchChange={handleSearchChange}
 				onOpenUser={handleOpenUser}
+				isReadOnly={isOidc}
 			/>
 		);
 	},

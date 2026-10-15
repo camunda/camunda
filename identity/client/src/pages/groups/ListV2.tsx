@@ -10,6 +10,10 @@ import { FC } from "react";
 import { Pencil, Trash2 } from "@camunda/design-system/icons";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
+import { formatDateTime } from "src/utility/format/provisioning";
+import { isUserProvisioningEnabled } from "src/configuration";
+import GroupStatus from "src/pages/groups/GroupStatusBadgeV2";
+import { isGroupReadOnly } from "src/pages/groups/types";
 import { usePagination } from "src/utility/api";
 import { groupQueries } from "src/utility/api/groups/queries";
 import Page, { PageHeader } from "src/components/layoutV2/Page";
@@ -21,7 +25,7 @@ import EditModal from "src/pages/groups/modalsV2/EditModal";
 import DeleteModal from "src/pages/groups/modalsV2/DeleteModal";
 import AddModal from "src/pages/groups/modalsV2/AddModal";
 import PageEmptyState from "src/components/layoutV2/PageEmptyState";
-import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
+import type { ProvisionedGroup } from "src/utility/api/groups";
 
 const List: FC = () => {
   const { t } = useTranslate("groups");
@@ -38,14 +42,19 @@ const List: FC = () => {
     ...groupQueries.search(pageParams),
     select: (data) => ({
       ...data,
-      items: data.items.map((item) => ({ ...item, id: item.groupId })),
+      items: data.items.map((item) => ({
+        ...item,
+        id: item.groupId,
+        status: isGroupReadOnly(item) ? <GroupStatus /> : null,
+        lastModifiedAt: formatDateTime(item.lastModifiedAt),
+      })),
     }),
   });
 
   const [addGroup, addModal] = useModal(AddModal, noop);
   const [updateGroup, editModal] = useEntityModal(EditModal, noop);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, noop);
-  const showDetails = ({ groupId }: Group) => navigate(groupId);
+  const showDetails = ({ groupId }: ProvisionedGroup) => navigate(groupId);
 
   const shouldShowEmptyState =
     success && !search && !groupSearchResults?.items.length;
@@ -80,18 +89,33 @@ const List: FC = () => {
         headers={[
           { header: t("groupId"), key: "groupId", isSortable: true },
           { header: t("groupName"), key: "name", isSortable: true },
+          ...(isUserProvisioningEnabled
+            ? [{ header: t("status"), key: "status" as const }]
+            : []),
+          {
+            header: isUserProvisioningEnabled
+              ? t("lastSynced")
+              : t("lastModified"),
+            key: "lastModifiedAt" as const,
+          },
         ]}
         onEntityClick={showDetails}
         addEntityLabel={t("createGroup")}
         onAddEntity={addGroup}
         loading={loading}
         menuItems={[
-          { label: t("edit"), icon: Pencil, onClick: updateGroup },
+          {
+            label: t("edit"),
+            icon: Pencil,
+            onClick: updateGroup,
+            disabled: isGroupReadOnly,
+          },
           {
             label: t("delete"),
             icon: Trash2,
             isDangerous: true,
             onClick: deleteGroup,
+            disabled: isGroupReadOnly,
           },
         ]}
         searchPlaceholder={t("searchByGroupId")}

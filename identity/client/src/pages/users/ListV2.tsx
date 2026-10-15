@@ -11,17 +11,22 @@ import { useNavigate } from "react-router-dom";
 import { Pencil, Trash2 } from "@camunda/design-system/icons";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
+import { formatDateTime } from "src/utility/format/provisioning";
+import { isOIDC, isUserProvisioningEnabled } from "src/configuration";
+import UserStatus from "src/pages/users/UserStatusBadgeV2";
+import type { ProvisionedUser } from "src/pages/users/types";
 import { usePagination } from "src/utility/api";
 import { userQueries } from "src/utility/api/users/queries";
 import Page, { PageHeader } from "src/components/layoutV2/Page";
 import EntityList from "src/components/entityListV2";
-import { TranslatedErrorInlineNotification } from "src/components/notificationsV2/InlineNotification";
+import InlineNotification, {
+  TranslatedErrorInlineNotification,
+} from "src/components/notificationsV2/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modalV2/useModal";
 import AddModal from "src/pages/users/modalsV2/AddModal";
 import EditModal from "src/pages/users/modalsV2/EditModal";
 import DeleteModal from "src/pages/users/modalsV2/DeleteModal";
 import PageEmptyState from "src/components/layoutV2/PageEmptyState";
-import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const List: FC = () => {
   const { t } = useTranslate("users");
@@ -34,20 +39,23 @@ const List: FC = () => {
     refetch: reload,
   } = useQuery({
     ...userQueries.search(pageParams),
-    select: (data) => ({
-      ...data,
-      items: data.items.map((user) => ({ ...user, id: user.username })),
-    }),
   });
+  const tableData = userSearchResults?.items.map((user) => ({
+    ...user,
+    id: user.username,
+    status: <UserStatus user={user} />,
+    lastModifiedAt: formatDateTime(user.lastModifiedAt),
+  }));
   const noop = () => {};
   const [addUser, addUserModal] = useModal(AddModal, noop);
   const [editUser, editUserModal] = useEntityModal(EditModal, noop);
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, noop);
 
-  const showDetails = ({ username }: User) => navigate(`${username}`);
+  const showDetails = ({ username }: ProvisionedUser) =>
+    navigate(`${username}`);
 
   const shouldShowEmptyState =
-    success && !search && userSearchResults.items.length === 0;
+    !isOIDC && success && !search && userSearchResults.items.length === 0;
 
   const pageHeader = (
     <PageHeader
@@ -75,8 +83,14 @@ const List: FC = () => {
   return (
     <Page>
       {pageHeader}
+      {isOIDC && (
+        <InlineNotification
+          kind="info"
+          title={t("managedByIdentityProvider")}
+        />
+      )}
       <EntityList
-        data={userSearchResults?.items}
+        data={tableData}
         headers={[
           {
             header: t("username"),
@@ -85,23 +99,34 @@ const List: FC = () => {
           },
           { header: t("name"), key: "name", isSortable: true },
           { header: t("email"), key: "email", isSortable: true },
-        ]}
-        menuItems={[
+          { header: t("status"), key: "status" },
           {
-            label: t("editUser"),
-            onClick: editUser,
-            icon: Pencil,
-          },
-          {
-            label: t("delete"),
-            icon: Trash2,
-            onClick: deleteUser,
-            isDangerous: true,
+            header: isUserProvisioningEnabled
+              ? t("lastSynced")
+              : t("lastModified"),
+            key: "lastModifiedAt",
           },
         ]}
+        menuItems={
+          isOIDC
+            ? undefined
+            : [
+                {
+                  label: t("editUser"),
+                  onClick: editUser,
+                  icon: Pencil,
+                },
+                {
+                  label: t("delete"),
+                  icon: Trash2,
+                  onClick: deleteUser,
+                  isDangerous: true,
+                },
+              ]
+        }
         onEntityClick={showDetails}
-        addEntityLabel={t("createUser")}
-        onAddEntity={addUser}
+        addEntityLabel={isOIDC ? undefined : t("createUser")}
+        onAddEntity={isOIDC ? undefined : addUser}
         loading={loading}
         searchPlaceholder={t("searchByUsername")}
         searchKey="username"

@@ -12,6 +12,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "@camunda/design-system/icons";
 import { Button, PageHeader } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
+import { isOIDC } from "src/configuration";
+import InlineNotification from "src/components/notificationsV2/InlineNotification";
 import { userQueries } from "src/utility/api/users/queries";
 import NotFound from "src/pages/not-foundV2";
 import { Breadcrumbs, StackPage } from "src/components/layoutV2/Page";
@@ -66,29 +68,37 @@ const Details: FC = () => {
                 title={user.username}
                 breadcrumb={<Breadcrumbs items={breadcrumbs} />}
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => editUser(user)}
-                    >
-                      <Pencil aria-hidden="true" />
-                      {t("update")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteUser(user)}
-                    >
-                      <Trash2 aria-hidden="true" />
-                      {t("delete")}
-                    </Button>
-                  </>
+                  isOIDC ? undefined : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => editUser(user)}
+                      >
+                        <Pencil aria-hidden="true" />
+                        {t("update")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteUser(user)}
+                      >
+                        <Trash2 aria-hidden="true" />
+                        {t("delete")}
+                      </Button>
+                    </>
+                  )
                 }
                 tabs={<TabsHeaderList />}
               />
+              {isOIDC && (
+                <InlineNotification
+                  kind="info"
+                  title={t("managedByIdentityProvider")}
+                />
+              )}
               <TabsContent />
             </Tabs>
           )

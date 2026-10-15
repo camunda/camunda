@@ -18,10 +18,28 @@ import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 
 export type UserKeys = keyof User;
 
+/**
+ * Users provisioned by an external identity provider (e.g. via SCIM) carry
+ * attributes that are not part of the published API schema yet. A missing
+ * `active` flag means the user is active.
+ */
+export type ProvisionedUser = User & {
+  externalId?: string | null;
+  active?: boolean;
+  attributes?: Record<string, unknown> | null;
+  createdAt?: string | null;
+  lastModifiedAt?: string | null;
+};
+
+export type QueryProvisionedUsersResponseBody = Omit<
+  QueryUsersResponseBody,
+  "items"
+> & { items: ProvisionedUser[] };
+
 export const USERS_ENDPOINT = "/users";
 
 export const searchUser: ApiDefinition<
-  QueryUsersResponseBody,
+  QueryProvisionedUsersResponseBody,
   (QueryUsersRequestBody & { usernames?: string[] }) | undefined
 > = (params = {}) => {
   const { usernames, ...restParams } = params;
@@ -34,7 +52,7 @@ export const searchUser: ApiDefinition<
 };
 
 export const getUserDetails: ApiDefinition<
-  QueryUsersResponseBody,
+  QueryProvisionedUsersResponseBody,
   Pick<User, "username">
 > = ({ username }) =>
   apiPost(`${USERS_ENDPOINT}/search`, { filter: { username } });

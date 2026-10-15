@@ -13,6 +13,7 @@ export declare global {
     isTenantsApiEnabled?: string;
     isNewDesignSystemEnabled?: string;
     isAdditionalIdpConfigured?: string;
+    isUserProvisioningEnabled?: string;
     organizationId?: string;
     clusterId?: string;
     idPattern?: string;

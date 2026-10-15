@@ -73,6 +73,27 @@ describe('<AdminUsersPage />', () => {
 		await expect.element(screen.getByRole('cell', {name: 'john.doe@example.com'})).toBeVisible();
 	});
 
+	it('should show whether a user is active or deactivated', async () => {
+		const {screen} = await renderPage({
+			users: [createUser({username: 'john.doe', active: true}), createUser({username: 'jane.roe', active: false})],
+			totalItems: 2,
+		});
+
+		await expect.element(screen.getByText('Active')).toBeVisible();
+		await expect.element(screen.getByText('Deactivated')).toBeVisible();
+	});
+
+	it('should be read-only when users are provisioned externally', async () => {
+		const {screen} = await renderPage({users: [createUser({username: 'john.doe'})], isReadOnly: true});
+
+		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).toBeVisible();
+		await expect
+			.element(screen.getByText('Users are provisioned by your identity provider and cannot be changed here.'))
+			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Create user'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Row actions'})).not.toBeInTheDocument();
+	});
+
 	it('should open a user when a row is clicked', async () => {
 		const user = createUser({username: 'john.doe'});
 		const {screen, onOpenUser} = await renderPage({users: [user]});

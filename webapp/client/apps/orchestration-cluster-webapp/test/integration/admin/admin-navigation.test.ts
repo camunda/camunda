@@ -86,7 +86,12 @@ test.describe('Admin navigation', () => {
 				successResponse: HttpResponse.json(
 					createSystemConfiguration({
 						components: {active: ['admin']},
-						authentication: {canLogout: true, isLoginDelegated: true, isCamundaGroupsEnabled: false},
+						authentication: {
+							canLogout: true,
+							isLoginDelegated: true,
+							isCamundaGroupsEnabled: false,
+							isUserProvisioningEnabled: false,
+						},
 					}),
 				),
 			}),
@@ -102,7 +107,12 @@ test.describe('Admin navigation', () => {
 				successResponse: HttpResponse.json(
 					createSystemConfiguration({
 						components: {active: ['admin']},
-						authentication: {canLogout: true, isLoginDelegated: true, isCamundaGroupsEnabled: true},
+						authentication: {
+							canLogout: true,
+							isLoginDelegated: true,
+							isCamundaGroupsEnabled: true,
+							isUserProvisioningEnabled: false,
+						},
 					}),
 				),
 			}),

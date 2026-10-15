@@ -12,6 +12,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "@camunda/design-system/icons";
 import { Button, PageHeader } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
+import GroupStatus from "src/pages/groups/GroupStatusBadgeV2";
+import { isGroupReadOnly } from "src/pages/groups/types";
+import InlineNotification from "src/components/notificationsV2/InlineNotification";
 import { groupQueries } from "src/utility/api/groups/queries";
 import NotFound from "src/pages/not-foundV2";
 import { Breadcrumbs, StackPage } from "src/components/layoutV2/Page";
@@ -21,6 +24,7 @@ import { useEntityModal } from "src/components/modalV2";
 import EditModal from "src/pages/groups/modalsV2/EditModal";
 import DeleteModal from "src/pages/groups/modalsV2/DeleteModal";
 import Members from "src/pages/groups/detailV2/members";
+import GroupDetails from "src/pages/groups/detailV2/GroupDetailsTab";
 import Roles from "src/pages/groups/detailV2/roles";
 import MappingRules from "src/pages/groups/detailV2/mapping-rules";
 import Clients from "src/pages/groups/detailV2/clients";
@@ -45,6 +49,8 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
 
   if (!loading && !group) return <NotFound />;
 
+  const readOnly = !!group && isGroupReadOnly(group);
+
   return (
     <StackPage>
       <>
@@ -55,9 +61,20 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
             <Tabs
               tabs={[
                 {
+                  key: "details",
+                  label: t("groupDetails"),
+                  content: <GroupDetails group={group} />,
+                },
+                {
                   key: "users",
                   label: t("users"),
-                  content: <Members groupId={group.groupId} isOIDC={isOIDC} />,
+                  content: (
+                    <Members
+                      groupId={group.groupId}
+                      isOIDC={isOIDC}
+                      readOnly={readOnly}
+                    />
+                  ),
                 },
                 {
                   key: "roles",
@@ -85,6 +102,7 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
               <PageHeader
                 title={group.name}
                 description={group.description}
+                tag={readOnly ? <GroupStatus /> : undefined}
                 breadcrumb={
                   <Breadcrumbs
                     items={[
@@ -94,29 +112,37 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
                   />
                 }
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => editGroup(group)}
-                    >
-                      <Pencil aria-hidden="true" />
-                      {t("editGroup")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteGroup(group)}
-                    >
-                      <Trash2 aria-hidden="true" />
-                      {t("delete")}
-                    </Button>
-                  </>
+                  readOnly ? undefined : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => editGroup(group)}
+                      >
+                        <Pencil aria-hidden="true" />
+                        {t("editGroup")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteGroup(group)}
+                      >
+                        <Trash2 aria-hidden="true" />
+                        {t("delete")}
+                      </Button>
+                    </>
+                  )
                 }
                 tabs={<TabsHeaderList />}
               />
+              {readOnly && (
+                <InlineNotification
+                  kind="info"
+                  title={t("managedByIdentityProvider")}
+                />
+              )}
               <TabsContent />
             </Tabs>
           )
