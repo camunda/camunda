@@ -36,11 +36,10 @@ public final class DbMembershipState implements MutableMembershipState {
   private final RelationKeyAndEntityKey relationKeyAndEntityKey = new RelationKeyAndEntityKey();
   private final VersionedEntityKey versionedEntityKey = new VersionedEntityKey();
   private final VersionedRelationKey versionedRelationKey = new VersionedRelationKey();
-  private final DbEnumValue<MembershipStatus> status = new DbEnumValue<>(MembershipStatus.class);
+  private final DbMembershipStatus status = new DbMembershipStatus();
 
-  private final ColumnFamily<VersionedEntityKey, DbEnumValue<MembershipStatus>> relationsByEntity;
-  private final ColumnFamily<VersionedRelationKey, DbEnumValue<MembershipStatus>>
-      entitiesByRelation;
+  private final ColumnFamily<VersionedEntityKey, DbMembershipStatus> relationsByEntity;
+  private final ColumnFamily<VersionedRelationKey, DbMembershipStatus> entitiesByRelation;
   private final LongSupplier currentVersion;
 
   public DbMembershipState(
@@ -53,14 +52,14 @@ public final class DbMembershipState implements MutableMembershipState {
             ZbColumnFamilies.RELATIONS_BY_ENTITY,
             transactionContext,
             versionedEntityKey,
-            new DbEnumValue<>(MembershipStatus.class));
+            new DbMembershipStatus());
 
     entitiesByRelation =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ENTITIES_BY_RELATION,
             transactionContext,
             versionedRelationKey,
-            new DbEnumValue<>(MembershipStatus.class));
+            new DbMembershipStatus());
   }
 
   @Override
