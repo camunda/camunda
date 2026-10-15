@@ -206,7 +206,7 @@ SELECT
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel">
     INSERT INTO ${prefix}GROUP_ (GROUP_KEY, GROUP_ID, NAME, DESCRIPTION, EXTERNAL_ID, ATTRIBUTES, CREATED_AT, LAST_MODIFIED_AT)
-    VALUES (#{groupKey}, #{groupId}, #{name}, #{description}, #{externalId}, #{attributes}, #{createdAt}, #{lastModifiedAt})
+    VALUES (#{groupKey}, #{groupId}, #{name}, #{description}, #{externalId}, #{attributes}, #{createdAt, jdbcType=TIMESTAMP}, #{lastModifiedAt, jdbcType=TIMESTAMP})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel">
@@ -215,13 +215,13 @@ SELECT
                     DESCRIPTION = #{description},
                     EXTERNAL_ID = #{externalId},
                     ATTRIBUTES = #{attributes},
-                    LAST_MODIFIED_AT = #{lastModifiedAt}
+                    LAST_MODIFIED_AT = #{lastModifiedAt, jdbcType=TIMESTAMP}
     WHERE GROUP_ID = #{groupId}
   </update>
 
   <update id="updateLastModifiedAt" parameterType="java.util.Map">
     UPDATE ${prefix}GROUP_ SET
-                    LAST_MODIFIED_AT = #{lastModifiedAt}
+                    LAST_MODIFIED_AT = #{lastModifiedAt, jdbcType=TIMESTAMP}
     WHERE GROUP_ID = #{groupId}
   </update>
 
