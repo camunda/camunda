@@ -27,6 +27,8 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
   private final Counter resumedCounter;
   private final Counter jobSuspendedCounter;
   private final Counter jobResumedCounter;
+  private final Counter userTaskSuspendedCounter;
+  private final Counter userTaskResumedCounter;
   private final Counter commandBufferedCounter;
   private final Counter commandDrainedCounter;
   private final Counter commandDroppedCounter;
@@ -53,6 +55,16 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
     jobResumedCounter =
         registerCounter(
             meterRegistry, SuspensionMetricsDoc.JOB_SUSPENSION_EVENTS, SuspensionAction.RESUMED);
+    userTaskSuspendedCounter =
+        registerCounter(
+            meterRegistry,
+            SuspensionMetricsDoc.USER_TASK_SUSPENSION_EVENTS,
+            SuspensionAction.SUSPENDED);
+    userTaskResumedCounter =
+        registerCounter(
+            meterRegistry,
+            SuspensionMetricsDoc.USER_TASK_SUSPENSION_EVENTS,
+            SuspensionAction.RESUMED);
     commandBufferedCounter =
         registerCounter(
             meterRegistry,
@@ -92,6 +104,14 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
 
   public void jobResumed() {
     jobResumedCounter.increment();
+  }
+
+  public void userTaskSuspended() {
+    userTaskSuspendedCounter.increment();
+  }
+
+  public void userTaskResumed() {
+    userTaskResumedCounter.increment();
   }
 
   public void commandBuffered() {

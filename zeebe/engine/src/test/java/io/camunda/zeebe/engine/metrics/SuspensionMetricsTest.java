@@ -31,6 +31,8 @@ final class SuspensionMetricsTest {
   private static final String BUFFERED_COMMAND_EVENTS_METRIC =
       "zeebe.buffered.commands.events.total";
   private static final String RESUME_DURATION_METRIC = "zeebe.process.instance.resume.duration";
+  private static final String USER_TASK_SUSPENSION_EVENTS_METRIC =
+      "zeebe.user.task.suspension.events.total";
 
   private final AtomicLong monotonicNanos = new AtomicLong();
   private SimpleMeterRegistry registry;
@@ -207,6 +209,18 @@ final class SuspensionMetricsTest {
 
     // then
     assertThat(jobSuspensionEventCount("suspended")).isEqualTo(7.0);
+  }
+
+  @Test
+  void shouldIncrementUserTaskSuspensionCounters() {
+    // when
+    metrics.userTaskSuspended();
+    metrics.userTaskSuspended();
+    metrics.userTaskResumed();
+
+    // then
+    assertThat(taggedCounter(USER_TASK_SUSPENSION_EVENTS_METRIC, "suspended")).isEqualTo(2.0);
+    assertThat(taggedCounter(USER_TASK_SUSPENSION_EVENTS_METRIC, "resumed")).isEqualTo(1.0);
   }
 
   private void advanceClock(final Duration duration) {

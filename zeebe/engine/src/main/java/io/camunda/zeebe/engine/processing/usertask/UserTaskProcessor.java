@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -84,6 +85,7 @@ public class UserTaskProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final StateWriter stateWriter;
+  private final SuspensionMetrics suspensionMetrics;
 
   public UserTaskProcessor(
       final ProcessingState state,
@@ -93,7 +95,8 @@ public class UserTaskProcessor
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
-      final CslTenantCheck tenantCheck) {
+      final CslTenantCheck tenantCheck,
+      final SuspensionMetrics suspensionMetrics) {
     commandProcessors =
         new UserTaskCommandProcessors(
             state,
@@ -116,6 +119,7 @@ public class UserTaskProcessor
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     stateWriter = writers.state();
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -148,6 +152,7 @@ public class UserTaskProcessor
       return;
     }
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.RESUMED, userTask);
+    suspensionMetrics.userTaskResumed();
   }
 
   private void processCompleteTaskListener(final TypedRecord<UserTaskRecord> command) {

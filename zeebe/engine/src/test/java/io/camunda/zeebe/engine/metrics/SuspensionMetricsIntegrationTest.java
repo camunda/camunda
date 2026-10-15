@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -159,6 +160,96 @@ public class SuspensionMetricsIntegrationTest {
         .isGreaterThanOrEqualTo(1);
   }
 
+  @Test
+  public void shouldRecordUserTaskSuspensionMetrics() {
+    // given — a process with an active Zeebe user task
+    final String processId = Strings.newRandomValidBpmnId();
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", u -> u.zeebeUserTask())
+                .endEvent()
+                .done())
+        .deploy();
+    final long piKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED).withProcessInstanceKey(piKey).await();
+    final double suspendedBefore = userTaskSuspensionCounter("suspended");
+    final double resumedBefore = userTaskSuspensionCounter("resumed");
+
+    // when — suspend
+    engine.processInstance().withInstanceKey(piKey).suspend();
+    RecordingExporter.userTaskRecords(UserTaskIntent.SUSPENDED)
+        .withProcessInstanceKey(piKey)
+        .await();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SUSPENDED)
+        .withProcessInstanceKey(piKey)
+        .await();
+
+    // then
+    assertThat(userTaskSuspensionCounter("suspended") - suspendedBefore).isEqualTo(1.0);
+
+    // when — resume
+    engine.processInstance().withInstanceKey(piKey).resume();
+    RecordingExporter.userTaskRecords(UserTaskIntent.RESUMED).withProcessInstanceKey(piKey).await();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUMED)
+        .withProcessInstanceKey(piKey)
+        .await();
+
+    // then
+    assertThat(userTaskSuspensionCounter("resumed") - resumedBefore).isEqualTo(1.0);
+  }
+
+  @Test
+  public void shouldCountEachUserTaskOnceIncludingNestedOnes() {
+    // given — two parallel user tasks plus one inside an embedded sub-process
+    final String processId = Strings.newRandomValidBpmnId();
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("task1", u -> u.zeebeUserTask())
+                .endEvent()
+                .moveToNode("fork")
+                .userTask("task2", u -> u.zeebeUserTask())
+                .endEvent()
+                .moveToNode("fork")
+                .subProcess(
+                    "sub",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .userTask("task3", u -> u.zeebeUserTask())
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+    final long piKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(piKey)
+        .limit(3)
+        .await();
+    final double suspendedBefore = userTaskSuspensionCounter("suspended");
+    final double resumedBefore = userTaskSuspensionCounter("resumed");
+
+    // when
+    engine.processInstance().withInstanceKey(piKey).suspend();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SUSPENDED)
+        .withProcessInstanceKey(piKey)
+        .await();
+    engine.processInstance().withInstanceKey(piKey).resume();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUMED)
+        .withProcessInstanceKey(piKey)
+        .await();
+
+    // then
+    assertThat(userTaskSuspensionCounter("suspended") - suspendedBefore).isEqualTo(3.0);
+    assertThat(userTaskSuspensionCounter("resumed") - resumedBefore).isEqualTo(3.0);
+  }
+
   private MeterRegistry registry() {
     return engine.getMeterRegistry();
   }
@@ -177,6 +268,12 @@ public class SuspensionMetricsIntegrationTest {
         .tag("action", action)
         .counter()
         .count();
+  }
+
+  private double userTaskSuspensionCounter(final String action) {
+    final var counter =
+        registry().find("zeebe.user.task.suspension.events.total").tag("action", action).counter();
+    return counter == null ? 0.0 : counter.count();
   }
 
   private double bufferedCommandCounter(final String action) {

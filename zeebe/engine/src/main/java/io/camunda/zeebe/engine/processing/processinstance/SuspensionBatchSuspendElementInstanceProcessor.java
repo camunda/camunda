@@ -99,7 +99,9 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
     final var bufferingBehavior =
         new CommandBufferingBehavior(keyGenerator, writers, suspensionMetrics);
     visitors =
-        List.of(new UserTaskSuspensionVisitor(stateWriter, bufferingBehavior, userTaskState));
+        List.of(
+            new UserTaskSuspensionVisitor(
+                stateWriter, bufferingBehavior, userTaskState, suspensionMetrics));
   }
 
   @Override
