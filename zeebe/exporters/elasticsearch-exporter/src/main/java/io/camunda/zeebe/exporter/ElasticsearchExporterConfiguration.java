@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.zeebe.exporter.support.UrlRedaction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -46,7 +47,7 @@ public class ElasticsearchExporterConfiguration {
   public String toString() {
     return "ElasticsearchExporterConfiguration{"
         + "url='"
-        + url
+        + UrlRedaction.redactUserInfo(url)
         + '\''
         + ", requestTimeoutMs="
         + requestTimeoutMs

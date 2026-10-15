@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.zeebe.exporter.support.UrlRedaction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -47,7 +48,7 @@ public class OpensearchExporterConfiguration {
   public String toString() {
     return "OpensearchExporterConfiguration{"
         + "url='"
-        + url
+        + UrlRedaction.redactUserInfo(url)
         + '\''
         + ", index="
         + index
