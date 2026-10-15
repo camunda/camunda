@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
@@ -25,6 +26,9 @@ public class BrokerActivateAdHocSubProcessActivityRequest
 
   public BrokerActivateAdHocSubProcessActivityRequest setAdHocSubProcessInstanceKey(
       final long adHocSubProcessInstanceKey) {
+    // Only the partition is set. The command key stays unset on purpose: the engine uses it as the
+    // key of the ACTIVATED event and of the response.
+    request.setPartitionId(Protocol.decodePartitionId(adHocSubProcessInstanceKey));
     requestDto.setAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey);
     return this;
   }

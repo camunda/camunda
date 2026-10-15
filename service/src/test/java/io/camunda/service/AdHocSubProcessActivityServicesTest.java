@@ -22,6 +22,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubProcessActivityRequest;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import java.util.List;
 import java.util.Map;
@@ -190,5 +191,25 @@ public class AdHocSubProcessActivityServicesTest {
               assertThat(element.getElementId()).isEqualTo(ELEMENT_ID);
               assertThat(element.getVariables()).isEmpty();
             });
+  }
+
+  @Test
+  public void shouldSendActivationToPartitionOfAdHocSubProcessInstance() {
+    // given
+    final int partitionId = 3;
+    final AdHocSubProcessActivateActivitiesRequest request =
+        new AdHocSubProcessActivateActivitiesRequest(
+            Protocol.encodePartitionId(partitionId, AD_HOC_SUB_PROCESS_INSTANCE_KEY),
+            List.of(new AdHocSubProcessActivateActivityReference(ELEMENT_ID, Map.of())),
+            false);
+
+    when(brokerClient.sendRequest(requestCaptor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
+
+    // when
+    services.activateActivities(request, authentication).join();
+
+    // then
+    assertThat(requestCaptor.getValue().getPartitionId()).isEqualTo(partitionId);
   }
 }
