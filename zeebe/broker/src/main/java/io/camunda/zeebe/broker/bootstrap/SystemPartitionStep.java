@@ -38,6 +38,16 @@ final class SystemPartitionStep extends AbstractBrokerStartupStep {
       return;
     }
 
+    final var clusterServices = brokerStartupContext.getClusterServices();
+    final var localMemberId = clusterServices.getMembershipService().getLocalMember().id();
+    if (!SystemPartition.members(brokerCfg).contains(localMemberId)) {
+      LOG.debug(
+          "Not starting the system partition, as broker {} is not one of its configured members",
+          localMemberId);
+      startupFuture.complete(brokerStartupContext);
+      return;
+    }
+
     final var factory =
         new SystemPartitionFactory(brokerCfg, brokerStartupContext.getMeterRegistry());
     concurrencyControl.runOnCompletion(
@@ -49,7 +59,6 @@ final class SystemPartitionStep extends AbstractBrokerStartupStep {
           }
 
           brokerStartupContext.setSystemPartition(systemPartition);
-          final var clusterServices = brokerStartupContext.getClusterServices();
           systemPartition
               .bootstrap(
                   new DefaultPartitionManagementService(

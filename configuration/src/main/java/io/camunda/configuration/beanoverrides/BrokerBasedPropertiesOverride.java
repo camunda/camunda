@@ -568,6 +568,10 @@ public class BrokerBasedPropertiesOverride {
     override
         .getCluster()
         .getSystemPartition()
+        .setReplicationFactor(cluster.getSystemPartition().getReplicationFactor());
+    override
+        .getCluster()
+        .getSystemPartition()
         .setLogSegmentSize(cluster.getSystemPartition().getLogSegmentSize());
     override
         .getCluster()

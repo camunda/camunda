@@ -389,10 +389,10 @@ public final class TestClusterBuilder {
       return;
     }
 
-    final var zoneIndex = ZoneLayout.zoneRankForBareNodeIdx(brokerIndex, zoneCount);
+    final var slot = zoneSlot(brokerIndex);
     final var cluster = config.getCluster();
-    cluster.setZone(multiZoneConfigs.get(zoneIndex).name());
-    cluster.setNodeId(ZoneLayout.localNodeIdxForBareNodeIdx(brokerIndex, zoneCount));
+    cluster.setZone(multiZoneConfigs.get(slot[0]).name());
+    cluster.setNodeId(slot[1]);
     cluster.getPartitioning().setScheme(Scheme.ZONE_AWARE);
     cluster
         .getPartitioning()
@@ -401,6 +401,34 @@ public final class TestClusterBuilder {
     // cross-zone gossip during bootstrap needs more headroom than the 5s default used for
     // single-zone test clusters
     cluster.getMetadata().setBootstrapTimeout(MULTI_ZONE_BOOTSTRAP_TIMEOUT);
+  }
+
+  /**
+   * Returns the zone index and local node id of the broker. Brokers are assigned round-robin across
+   * the zones; when the zones' brokers add up to the brokers count, zones whose brokers are all
+   * assigned are skipped, so zones of different sizes, e.g. 3, 3 and 1, are filled exactly.
+   */
+  private int[] zoneSlot(final int brokerIndex) {
+    final var zoneCount = zoneCount();
+    final var zoneBrokers = multiZoneConfigs.stream().mapToInt(Zone::numberOfBrokers).sum();
+    if (zoneBrokers != brokersCount) {
+      return new int[] {
+        ZoneLayout.zoneRankForBareNodeIdx(brokerIndex, zoneCount),
+        ZoneLayout.localNodeIdxForBareNodeIdx(brokerIndex, zoneCount)
+      };
+    }
+
+    int assigned = 0;
+    for (int slot = 0; ; slot++) {
+      final var zoneIndex = ZoneLayout.zoneRankForBareNodeIdx(slot, zoneCount);
+      final var localNodeId = ZoneLayout.localNodeIdxForBareNodeIdx(slot, zoneCount);
+      if (localNodeId < multiZoneConfigs.get(zoneIndex).numberOfBrokers()) {
+        if (assigned == brokerIndex) {
+          return new int[] {zoneIndex, localNodeId};
+        }
+        assigned++;
+      }
+    }
   }
 
   private Zone zoneConfig(final int zoneIndex) {

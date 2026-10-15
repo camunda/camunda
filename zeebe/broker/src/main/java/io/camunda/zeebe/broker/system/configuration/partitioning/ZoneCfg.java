@@ -21,5 +21,23 @@ package io.camunda.zeebe.broker.system.configuration.partitioning;
  * priority will have its brokers assigned the highest Raft election priorities, so they win leader
  * elections first. If all brokers in the highest-priority region are unavailable, leadership fails
  * over to the next region automatically via Raft's priority-decrement mechanism.
+ *
+ * <p>{@link #role} marks a {@link ZoneRole#CONTROL control} zone, whose brokers host no data
+ * partitions and only run the system partition; it has no replicas.
  */
-public record ZoneCfg(String name, int numberOfBrokers, int numberOfReplicas, int priority) {}
+public record ZoneCfg(
+    String name, int numberOfBrokers, int numberOfReplicas, int priority, ZoneRole role) {
+
+  /** A data zone. */
+  public ZoneCfg(
+      final String name,
+      final int numberOfBrokers,
+      final int numberOfReplicas,
+      final int priority) {
+    this(name, numberOfBrokers, numberOfReplicas, priority, ZoneRole.DATA);
+  }
+
+  public boolean isControl() {
+    return role == ZoneRole.CONTROL;
+  }
+}

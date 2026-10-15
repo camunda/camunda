@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneRole;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -156,6 +157,37 @@ public class PartitioningTest {
           .usingRecursiveFieldByFieldElementComparator()
           .containsExactlyInAnyOrder(
               new ZoneCfg("us-east1", 4, 2, 1000), new ZoneCfg("us-west1", 2, 1, 500));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.cluster.partitioning.scheme=ZONE_AWARE",
+        "camunda.cluster.partitioning.zone-aware.zones.0.name=region-a",
+        "camunda.cluster.partitioning.zone-aware.zones.0.number-of-brokers=3",
+        "camunda.cluster.partitioning.zone-aware.zones.0.number-of-replicas=2",
+        "camunda.cluster.partitioning.zone-aware.zones.0.priority=1000",
+        "camunda.cluster.partitioning.zone-aware.zones.1.name=control",
+        "camunda.cluster.partitioning.zone-aware.zones.1.number-of-brokers=1",
+        "camunda.cluster.partitioning.zone-aware.zones.1.priority=1",
+        "camunda.cluster.partitioning.zone-aware.zones.1.role=control",
+        "camunda.cluster.system-partition.replication-factor=3",
+      })
+  class WithControlZone {
+    final BrokerBasedProperties brokerCfg;
+
+    WithControlZone(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldMapControlZoneAndSystemPartitionReplicationFactor() {
+      assertThat(brokerCfg.getExperimental().getPartitioning().getZoneAware().zones())
+          .containsExactly(
+              new ZoneCfg("region-a", 3, 2, 1000),
+              new ZoneCfg("control", 1, 0, 1, ZoneRole.CONTROL));
+      assertThat(brokerCfg.getCluster().getSystemPartition().getReplicationFactor()).isEqualTo(3);
     }
   }
 
