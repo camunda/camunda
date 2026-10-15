@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -16,10 +17,13 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.slf4j.Logger;
 
 @ExcludeAuthorizationCheck
 public class ProcessDefinitionRestoreStartProcessor
     implements TypedRecordProcessor<ProcessDefinitionRestoreRecord> {
+
+  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -40,6 +44,7 @@ public class ProcessDefinitionRestoreStartProcessor
       return;
     }
 
+    LOG.info("Process definition restore started on partition {}", command.getPartitionId());
     stateWriter.appendFollowUpEvent(
         command.getKey(), ProcessDefinitionRestoreIntent.STARTED, command.getValue());
     // start the loop from the beginning: no process has been visited yet

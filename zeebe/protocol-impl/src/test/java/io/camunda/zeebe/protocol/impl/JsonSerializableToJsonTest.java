@@ -5203,11 +5203,13 @@ final class JsonSerializableToJsonTest {
             () ->
                 new ProcessDefinitionRestoreRecord()
                     .setProcessDefinitionKey(123L)
-                    .setTenantId("tenant-1"),
+                    .setTenantId("tenant-1")
+                    .setRestoredCount(7),
         """
         {
           "processDefinitionKey": 123,
-          "tenantId": "tenant-1"
+          "tenantId": "tenant-1",
+          "restoredCount": 7
         }
         """
       },
@@ -5217,7 +5219,8 @@ final class JsonSerializableToJsonTest {
         """
         {
           "processDefinitionKey": -1,
-          "tenantId": ""
+          "tenantId": "",
+          "restoredCount": 0
         }
         """
       },
