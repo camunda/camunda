@@ -27,6 +27,7 @@ import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.BrokerInfo;
+import io.camunda.gateway.protocol.model.ClockResult;
 import io.camunda.gateway.protocol.model.ClusterBrokerInfo;
 import io.camunda.gateway.protocol.model.ClusterStatusResponse;
 import io.camunda.gateway.protocol.model.ClusterStatusResponse.StatusEnum;
@@ -111,6 +112,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -942,6 +944,10 @@ public final class ResponseMapper {
                             .build())
                 .toList())
         .build();
+  }
+
+  public static ClockResult toClockResult(final ClockRecord clockRecord) {
+    return ClockResult.Builder.create().timestamp(clockRecord.getTime()).build();
   }
 
   public static ClusterStatusResponse toClusterStatusResponse(final AggregatedStatus status) {

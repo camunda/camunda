@@ -18,6 +18,8 @@ import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
@@ -35,6 +37,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(ClockController.class)
 public class ClockControllerTest extends RestControllerTest {
@@ -125,5 +128,46 @@ public class ClockControllerTest extends RestControllerTest {
         .isNoContent();
 
     verify(clockServices).resetClock(any());
+  }
+
+  @Test
+  void getClockShouldReturnCurrentTime() {
+    // given
+    final long timestamp = 2693098555055L;
+    when(clockServices.getClock(any()))
+        .thenReturn(CompletableFuture.completedFuture(new ClockRecord().setTime(timestamp)));
+
+    // when - then
+    webClient
+        .get()
+        .uri(CLOCK_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json("{\"timestamp\":2693098555055}", JsonCompareMode.STRICT);
+
+    verify(clockServices).getClock(any());
+  }
+
+  @Test
+  void getClockShouldReturnForbiddenWhenUnauthorized() {
+    // given
+    when(clockServices.getClock(any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(
+                    "Insufficient permissions to perform operation 'READ' on resource 'SYSTEM'",
+                    Status.FORBIDDEN)));
+
+    // when - then
+    webClient
+        .get()
+        .uri(CLOCK_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isForbidden();
   }
 }
