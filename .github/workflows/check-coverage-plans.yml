@@ -41,6 +41,10 @@ defaults:
 
 env:
   CHECK_DIR: .github/scripts/coverage-plan-check
+  # Default owner for CI Analytics / incident routing. observe-build-status
+  # falls back to this when it cannot attribute a failure, so an auto-created
+  # incident pings the test-automation medic instead of landing with no owner.
+  TEST_OWNER: '@camunda/test-automation-team'
 
 jobs:
   validate:
