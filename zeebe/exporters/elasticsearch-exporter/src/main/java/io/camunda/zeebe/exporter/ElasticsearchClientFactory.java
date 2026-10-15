@@ -12,7 +12,6 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
-import io.camunda.zeebe.exporter.support.UrlRedaction;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import org.apache.http.Header;
@@ -171,9 +170,9 @@ final class ElasticsearchClientFactory {
       try {
         hosts[i] = HttpHost.create(urls[i]);
       } catch (final IllegalArgumentException e) {
-        // the cause is not chained: its message quotes the whole url
-        throw new IllegalArgumentException(
-            "Invalid Elasticsearch url: " + UrlRedaction.redactUserInfo(urls[i]));
+        // neither the url nor the cause is included: both quote the unparseable text, which may
+        // hold credentials
+        throw new IllegalArgumentException("Invalid Elasticsearch url at position " + i);
       }
     }
 

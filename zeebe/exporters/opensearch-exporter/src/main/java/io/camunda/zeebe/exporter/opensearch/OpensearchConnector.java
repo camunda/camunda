@@ -13,11 +13,11 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.AuthenticationConfiguration;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.ProxyConfiguration;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.SecurityConfiguration;
-import io.camunda.zeebe.exporter.support.UrlRedaction;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.stream.IntStream;
 import javax.net.ssl.SSLContext;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
@@ -153,23 +153,22 @@ public final class OpensearchConnector {
       final var uri = new URI(osConfig.getUrl());
       return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
     } catch (final URISyntaxException e) {
-      // the cause is not chained: the URISyntaxException message quotes the whole url
-      throw new SearchClientConnectException(
-          "Error in url: " + UrlRedaction.redactUserInfo(osConfig.getUrl()));
+      // neither the url nor the cause is included: both quote the unparseable text, which may
+      // hold credentials
+      throw new SearchClientConnectException("Error in url");
     }
   }
 
   private HttpHost[] getHttpHosts(final OpensearchExporterConfiguration osConfig) {
     final var urls = osConfig.getUrls();
     if (urls != null && !urls.isEmpty()) {
-      return urls.stream()
-          .map(
-              url -> {
+      return IntStream.range(0, urls.size())
+          .mapToObj(
+              i -> {
                 try {
-                  return HttpHost.create(url);
+                  return HttpHost.create(urls.get(i));
                 } catch (final URISyntaxException e) {
-                  throw new SearchClientConnectException(
-                      "Error in url: " + UrlRedaction.redactUserInfo(url));
+                  throw new SearchClientConnectException("Error in url at position " + i);
                 }
               })
           .toArray(HttpHost[]::new);

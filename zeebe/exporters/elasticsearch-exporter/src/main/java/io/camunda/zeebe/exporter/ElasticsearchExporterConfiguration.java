@@ -59,7 +59,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
   public String toString() {
     return "ElasticsearchExporterConfiguration{"
         + "url='"
-        + UrlRedaction.redactUserInfo(url)
+        + UrlRedaction.describe(url)
         + '\''
         + ", requestTimeoutMs="
         + requestTimeoutMs
