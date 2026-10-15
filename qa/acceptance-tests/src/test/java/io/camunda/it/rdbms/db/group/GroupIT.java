@@ -13,6 +13,9 @@ import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveRandomG
 import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
@@ -32,6 +35,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.UserSort;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -309,11 +313,21 @@ public class GroupIT {
     assertThat(users.total()).isEqualTo(0);
   }
 
+  private static Map<String, Object> parseJson(final String json) {
+    try {
+      return json == null ? null : new ObjectMapper().readValue(json, new TypeReference<>() {});
+    } catch (final JsonProcessingException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
   private static void compareGroups(final GroupEntity instance, final GroupDbModel group) {
     assertThat(instance).isNotNull();
     assertThat(instance.groupKey()).isEqualTo(group.groupKey());
     assertThat(instance.groupId()).isEqualTo(group.groupId());
     assertThat(instance.name()).isEqualTo(group.name());
     assertThat(instance.description()).isEqualTo(group.description());
+    assertThat(instance.externalId()).isEqualTo(group.externalId());
+    assertThat(instance.attributes()).isEqualTo(parseJson(group.attributes()));
   }
 }

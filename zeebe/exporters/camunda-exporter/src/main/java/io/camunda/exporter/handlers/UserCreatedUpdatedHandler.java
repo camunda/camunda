@@ -7,16 +7,23 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
+
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class UserCreatedUpdatedHandler
@@ -58,19 +65,39 @@ public class UserCreatedUpdatedHandler
   @Override
   public void updateEntity(final Record<UserRecordValue> record, final UserEntity entity) {
     final UserRecordValue value = record.getValue();
+    final OffsetDateTime timestamp = toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
     entity
         .setKey(value.getUserKey())
         .setUsername(value.getUsername())
         .setName(value.getName())
         .setEmail(value.getEmail())
-        .setPassword(value.getPassword());
+        .setPassword(value.getPassword())
+        .setExternalId(value.getExternalId())
+        .setActive(value.isActive())
+        .setAttributes(AttributesJson.serialize(value.getAttributes()))
+        .setLastModifiedAt(timestamp);
+    if (record.getIntent() == UserIntent.CREATED) {
+      entity.setCreatedAt(timestamp);
+    }
   }
 
   @Override
   public void flush(
       final TargetIndex index, final UserEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(index, entity);
+    // createdAt is deliberately left out of the update fields: it is only written when the
+    // document is inserted, so that an UPDATED record never overwrites the original creation time
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(UserIndex.KEY, entity.getKey());
+    updateFields.put(UserIndex.USERNAME, entity.getUsername());
+    updateFields.put(UserIndex.NAME, entity.getName());
+    updateFields.put(UserIndex.EMAIL, entity.getEmail());
+    updateFields.put(UserIndex.PASSWORD, entity.getPassword());
+    updateFields.put(UserIndex.EXTERNAL_ID, entity.getExternalId());
+    updateFields.put(UserIndex.ACTIVE, entity.getActive());
+    updateFields.put(UserIndex.ATTRIBUTES, entity.getAttributes());
+    updateFields.put(UserIndex.LAST_MODIFIED_AT, entity.getLastModifiedAt());
+    batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }
 
   @Override

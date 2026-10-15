@@ -35,7 +35,12 @@
     USERNAME,
     NAME,
     EMAIL,
-    PASSWORD
+    PASSWORD,
+    EXTERNAL_ID,
+    ACTIVE,
+    ATTRIBUTES,
+    CREATED_AT,
+    LAST_MODIFIED_AT
     FROM ${prefix}USER_ t
     <include refid="io.camunda.db.rdbms.sql.UserMapper.searchAndAuthFilter"/>
     ) t
@@ -107,19 +112,30 @@
       <arg column="NAME" javaType="java.lang.String" name="name"/>
       <arg column="EMAIL" javaType="java.lang.String" name="email"/>
       <arg column="PASSWORD" javaType="java.lang.String" name="password"/>
+      <arg column="EXTERNAL_ID" javaType="java.lang.String" name="externalId"/>
+      <arg column="ACTIVE" javaType="java.lang.Boolean" name="active"/>
+      <arg column="ATTRIBUTES" javaType="java.util.Map"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.JsonObjectMapTypeHandler"
+        name="attributes"/>
+      <arg column="CREATED_AT" javaType="java.time.OffsetDateTime" name="createdAt"/>
+      <arg column="LAST_MODIFIED_AT" javaType="java.time.OffsetDateTime" name="lastModifiedAt"/>
     </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.UserDbModel">
-    INSERT INTO ${prefix}USER_ (USER_KEY, USERNAME, NAME, EMAIL, PASSWORD)
-    VALUES (#{userKey}, #{username}, #{name}, #{email}, #{password})
+    INSERT INTO ${prefix}USER_ (USER_KEY, USERNAME, NAME, EMAIL, PASSWORD, EXTERNAL_ID, ACTIVE, ATTRIBUTES, CREATED_AT, LAST_MODIFIED_AT)
+    VALUES (#{userKey}, #{username}, #{name}, #{email}, #{password}, #{externalId}, #{active}, #{attributes}, #{createdAt}, #{lastModifiedAt})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.UserDbModel">
     UPDATE ${prefix}USER_
     SET NAME     = #{name},
         EMAIL    = #{email},
-        PASSWORD = #{password}
+        PASSWORD = #{password},
+        EXTERNAL_ID = #{externalId},
+        ACTIVE   = #{active},
+        ATTRIBUTES = #{attributes},
+        LAST_MODIFIED_AT = #{lastModifiedAt}
     WHERE USERNAME = #{username}
   </update>
 

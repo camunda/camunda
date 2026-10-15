@@ -11,6 +11,9 @@ import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveRandomUs
 import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -26,6 +29,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +51,12 @@ public class UserIT {
     createAndSaveUser(rdbmsWriters, user);
 
     final var userUpdate =
-        UserFixtures.createRandomized(b -> b.userKey(user.userKey()).username(user.username()));
+        UserFixtures.createRandomized(
+            b ->
+                b.userKey(user.userKey())
+                    .username(user.username())
+                    .active(false)
+                    .attributes("{\"department\":\"updated\"}"));
     rdbmsWriters.getUserWriter().update(userUpdate);
     rdbmsWriters.flush();
 
@@ -253,6 +262,15 @@ public class UserIT {
 
   private static void compareUsers(final UserEntity instance, final UserDbModel user) {
     assertThat(instance).isNotNull();
-    assertThat(instance).usingRecursiveComparison().isEqualTo(user);
+    assertThat(instance).usingRecursiveComparison().ignoringFields("attributes").isEqualTo(user);
+    assertThat(instance.attributes()).isEqualTo(parseJson(user.attributes()));
+  }
+
+  private static Map<String, Object> parseJson(final String json) {
+    try {
+      return json == null ? null : new ObjectMapper().readValue(json, new TypeReference<>() {});
+    } catch (final JsonProcessingException e) {
+      throw new IllegalStateException(e);
+    }
   }
 }

@@ -8,16 +8,37 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
+import java.time.OffsetDateTime;
 import java.util.function.Function;
 
-public record UserDbModel(Long userKey, String username, String name, String email, String password)
+public record UserDbModel(
+    Long userKey,
+    String username,
+    String name,
+    String email,
+    String password,
+    String externalId,
+    Boolean active,
+    String attributes,
+    OffsetDateTime createdAt,
+    OffsetDateTime lastModifiedAt)
     implements DbModel<UserDbModel> {
 
   @Override
   public UserDbModel copy(
       final Function<ObjectBuilder<UserDbModel>, ObjectBuilder<UserDbModel>> copyFunction) {
     return copyFunction
-        .apply(new Builder().username(username).name(name).email(email).password(password))
+        .apply(
+            new Builder()
+                .username(username)
+                .name(name)
+                .email(email)
+                .password(password)
+                .externalId(externalId)
+                .active(active)
+                .attributes(attributes)
+                .createdAt(createdAt)
+                .lastModifiedAt(lastModifiedAt))
         .build();
   }
 
@@ -28,6 +49,11 @@ public record UserDbModel(Long userKey, String username, String name, String ema
     private String name;
     private String email;
     private String password;
+    private String externalId;
+    private Boolean active;
+    private String attributes;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime lastModifiedAt;
 
     public Builder() {}
 
@@ -57,10 +83,45 @@ public record UserDbModel(Long userKey, String username, String name, String ema
       return this;
     }
 
+    public Builder externalId(final String externalId) {
+      this.externalId = externalId;
+      return this;
+    }
+
+    public Builder active(final Boolean active) {
+      this.active = active;
+      return this;
+    }
+
+    public Builder attributes(final String attributes) {
+      this.attributes = attributes;
+      return this;
+    }
+
+    public Builder createdAt(final OffsetDateTime createdAt) {
+      this.createdAt = createdAt;
+      return this;
+    }
+
+    public Builder lastModifiedAt(final OffsetDateTime lastModifiedAt) {
+      this.lastModifiedAt = lastModifiedAt;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public UserDbModel build() {
-      return new UserDbModel(userKey, username, name, email, password);
+      return new UserDbModel(
+          userKey,
+          username,
+          name,
+          email,
+          password,
+          externalId,
+          active,
+          attributes,
+          createdAt,
+          lastModifiedAt);
     }
   }
 }

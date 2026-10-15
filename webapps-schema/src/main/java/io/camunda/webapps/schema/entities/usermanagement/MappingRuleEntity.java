@@ -18,6 +18,7 @@ public class MappingRuleEntity extends AbstractExporterEntity<MappingRuleEntity>
   @BeforeVersion880 private String claimName;
   @BeforeVersion880 private String claimValue;
   @BeforeVersion880 private String name;
+  private String type;
 
   public MappingRuleEntity() {}
 
@@ -63,6 +64,15 @@ public class MappingRuleEntity extends AbstractExporterEntity<MappingRuleEntity>
 
   public MappingRuleEntity setName(final String name) {
     this.name = name;
+    return this;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public MappingRuleEntity setType(final String type) {
+    this.type = type;
     return this;
   }
 }

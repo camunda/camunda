@@ -17,6 +17,20 @@
       "description": {
         "type": "keyword"
       },
+      "externalId": {
+        "type": "keyword"
+      },
+      "attributes": {
+        "type": "keyword",
+        "index": false,
+        "doc_values": false
+      },
+      "createdAt": {
+        "type": "date"
+      },
+      "lastModifiedAt": {
+        "type": "date"
+      },
       "memberId": {
         "type": "keyword"
       },

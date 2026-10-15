@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableMappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -95,6 +96,7 @@ public class MappingRuleCreatedUpdatedHandlerTest {
             .withClaimValue("updated-value")
             .withName("updated-name")
             .withMappingRuleId("updated-id")
+            .withType(MappingRuleType.USER_ATTRIBUTE)
             .build();
 
     final Record<MappingRuleRecordValue> mappingRuleRecord =
@@ -116,6 +118,7 @@ public class MappingRuleCreatedUpdatedHandlerTest {
     assertThat(mappingRuleEntity.getClaimValue()).isEqualTo("updated-value");
     assertThat(mappingRuleEntity.getName()).isEqualTo("updated-name");
     assertThat(mappingRuleEntity.getMappingRuleId()).isEqualTo("updated-id");
+    assertThat(mappingRuleEntity.getType()).isEqualTo("USER_ATTRIBUTE");
   }
 
   @Test

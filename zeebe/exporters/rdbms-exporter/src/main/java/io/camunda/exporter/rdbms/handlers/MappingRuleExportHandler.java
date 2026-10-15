@@ -59,6 +59,7 @@ public class MappingRuleExportHandler implements RdbmsExportHandler<MappingRuleR
         .claimName(value.getClaimName())
         .claimValue(value.getClaimValue())
         .name(value.getName())
+        .type(value.getType() == null ? null : value.getType().name())
         .build();
   }
 }

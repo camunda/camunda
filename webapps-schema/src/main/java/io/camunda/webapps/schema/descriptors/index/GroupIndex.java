@@ -24,6 +24,10 @@ public class GroupIndex extends AbstractIndexDescriptor implements Prio4Backup {
   public static final String DESCRIPTION = "description";
   public static final String JOIN = "join";
   public static final String MEMBER_TYPE = "memberType";
+  public static final String EXTERNAL_ID = "externalId";
+  public static final String ATTRIBUTES = "attributes";
+  public static final String CREATED_AT = "createdAt";
+  public static final String LAST_MODIFIED_AT = "lastModifiedAt";
 
   public static final EntityJoinRelationFactory<IdentityJoinRelationshipType>
       JOIN_RELATION_FACTORY =

@@ -14,6 +14,8 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.function.Function;
 
 public class GroupWriter implements RdbmsWriter {
@@ -38,7 +40,11 @@ public class GroupWriter implements RdbmsWriter {
     final boolean wasMerged =
         mergeToQueue(
             group.groupId(),
-            b -> b.groupId(group.groupId()).name(group.name()).description(group.description()));
+            b ->
+                b.groupId(group.groupId())
+                    .name(group.name())
+                    .description(group.description())
+                    .lastModifiedAt(group.lastModifiedAt()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
@@ -48,6 +54,27 @@ public class GroupWriter implements RdbmsWriter {
               group.groupId(),
               "io.camunda.db.rdbms.sql.GroupMapper.update",
               group));
+    }
+  }
+
+  /**
+   * Bumps only {@code LAST_MODIFIED_AT}, e.g. when the group's membership changes. The standalone
+   * statement deliberately takes a {@link Map} rather than a {@link GroupDbModel}: a later {@link
+   * #update} merges into queued {@link GroupDbModel} items and would otherwise write the nulls of
+   * this partial model into EXTERNAL_ID and ATTRIBUTES.
+   */
+  public void updateLastModifiedAt(final String groupId, final OffsetDateTime lastModifiedAt) {
+    final boolean wasMerged =
+        mergeToQueue(groupId, b -> b.groupId(groupId).lastModifiedAt(lastModifiedAt));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.GROUP,
+              WriteStatementType.UPDATE,
+              groupId,
+              "io.camunda.db.rdbms.sql.GroupMapper.updateLastModifiedAt",
+              Map.of("groupId", groupId, "lastModifiedAt", lastModifiedAt)));
     }
   }
 

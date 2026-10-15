@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.GroupDbQuery;
 import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.columns.GroupSearchColumn;
+import io.camunda.db.rdbms.sql.typehandler.JsonObjectMapTypeHandler;
 import io.camunda.db.rdbms.write.domain.GroupDbModel;
 import io.camunda.search.clients.reader.GroupReader;
 import io.camunda.search.entities.GroupEntity;
@@ -88,7 +89,11 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
         model.groupKey(),
         nullToEmpty(model.groupId()),
         nullToEmpty(model.name()),
-        model.description());
+        model.description(),
+        model.externalId(),
+        JsonObjectMapTypeHandler.parse(model.attributes()),
+        model.createdAt(),
+        model.lastModifiedAt());
   }
 
   private boolean shouldReturnEmptyResult(

@@ -18,6 +18,13 @@ public class GroupEntityTransformer
   public GroupEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.GroupEntity value) {
     return new GroupEntity(
-        value.getKey(), value.getGroupId(), value.getName(), value.getDescription());
+        value.getKey(),
+        value.getGroupId(),
+        value.getName(),
+        value.getDescription(),
+        value.getExternalId(),
+        AttributesJson.parse(value.getAttributes()),
+        value.getCreatedAt(),
+        value.getLastModifiedAt());
   }
 }

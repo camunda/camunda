@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -18,6 +19,10 @@ public record GroupDbModel(
     String groupId,
     String name,
     String description,
+    String externalId,
+    String attributes,
+    OffsetDateTime createdAt,
+    OffsetDateTime lastModifiedAt,
     List<GroupMemberDbModel> members)
     implements DbModel<GroupDbModel> {
 
@@ -29,8 +34,24 @@ public record GroupDbModel(
   // Matches groupResultMap's <constructor>, which omits members -- populated separately via the
   // sibling <collection> element.
   public GroupDbModel(
-      final Long groupKey, final String groupId, final String name, final String description) {
-    this(groupKey, groupId, name, description, null);
+      final Long groupKey,
+      final String groupId,
+      final String name,
+      final String description,
+      final String externalId,
+      final String attributes,
+      final OffsetDateTime createdAt,
+      final OffsetDateTime lastModifiedAt) {
+    this(
+        groupKey,
+        groupId,
+        name,
+        description,
+        externalId,
+        attributes,
+        createdAt,
+        lastModifiedAt,
+        null);
   }
 
   @Override
@@ -43,6 +64,10 @@ public record GroupDbModel(
                 .groupId(groupId)
                 .name(name)
                 .description(description)
+                .externalId(externalId)
+                .attributes(attributes)
+                .createdAt(createdAt)
+                .lastModifiedAt(lastModifiedAt)
                 .members(members))
         .build();
   }
@@ -53,6 +78,10 @@ public record GroupDbModel(
     private String groupId;
     private String name;
     private String description;
+    private String externalId;
+    private String attributes;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime lastModifiedAt;
     private List<GroupMemberDbModel> members;
 
     public Builder() {}
@@ -77,6 +106,26 @@ public record GroupDbModel(
       return this;
     }
 
+    public Builder externalId(final String externalId) {
+      this.externalId = externalId;
+      return this;
+    }
+
+    public Builder attributes(final String attributes) {
+      this.attributes = attributes;
+      return this;
+    }
+
+    public Builder createdAt(final OffsetDateTime createdAt) {
+      this.createdAt = createdAt;
+      return this;
+    }
+
+    public Builder lastModifiedAt(final OffsetDateTime lastModifiedAt) {
+      this.lastModifiedAt = lastModifiedAt;
+      return this;
+    }
+
     public Builder members(final List<GroupMemberDbModel> members) {
       this.members = members;
       return this;
@@ -84,7 +133,16 @@ public record GroupDbModel(
 
     @Override
     public GroupDbModel build() {
-      return new GroupDbModel(groupKey, groupId, name, description, members);
+      return new GroupDbModel(
+          groupKey,
+          groupId,
+          name,
+          description,
+          externalId,
+          attributes,
+          createdAt,
+          lastModifiedAt,
+          members);
     }
   }
 }

@@ -65,7 +65,8 @@ public class MappingRuleCreatedUpdatedHandler
         .setMappingRuleId(value.getMappingRuleId())
         .setClaimName(value.getClaimName())
         .setClaimValue(value.getClaimValue())
-        .setName(value.getName());
+        .setName(value.getName())
+        .setType(value.getType() == null ? null : value.getType().name());
   }
 
   @Override

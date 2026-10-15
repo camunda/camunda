@@ -19,6 +19,9 @@
       },
       "name": {
         "type": "keyword"
+      },
+      "type": {
+        "type": "keyword"
       }
     }
   }

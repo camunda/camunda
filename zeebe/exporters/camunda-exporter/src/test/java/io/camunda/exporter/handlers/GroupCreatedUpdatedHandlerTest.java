@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -24,10 +25,15 @@ import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.Strings;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.mockito.ArgumentCaptor;
 
 public class GroupCreatedUpdatedHandlerTest {
 
@@ -98,6 +104,8 @@ public class GroupCreatedUpdatedHandlerTest {
             .from(factory.generateObject(GroupRecordValue.class))
             .withName("updated-foo")
             .withDescription("updated-bar")
+            .withExternalId("ext-1")
+            .withAttributes(Map.of("cc", "42"))
             .withGroupId(groupId)
             .withGroupKey(recordKey)
             .build();
@@ -115,12 +123,58 @@ public class GroupCreatedUpdatedHandlerTest {
     // then
     assertThat(groupEntity.getName()).isEqualTo("updated-foo");
     assertThat(groupEntity.getDescription()).isEqualTo("updated-bar");
+    assertThat(groupEntity.getExternalId()).isEqualTo("ext-1");
+    assertThat(groupEntity.getAttributes()).isEqualTo("{\"cc\":\"42\"}");
   }
 
   @Test
-  void shouldAddEntityOnFlush() throws PersistenceException {
+  void shouldSetCreatedAndLastModifiedAtFromRecordTimestampOnCreated() {
     // given
-    final GroupEntity inputEntity = new GroupEntity().setId("111");
+    final long timestamp = Instant.parse("2026-10-01T10:00:00Z").toEpochMilli();
+    final Record<GroupRecordValue> groupRecord =
+        factory.generateRecord(
+            ValueType.GROUP, r -> r.withIntent(GroupIntent.CREATED).withTimestamp(timestamp));
+
+    // when
+    final GroupEntity groupEntity = new GroupEntity().setId("111");
+    underTest.updateEntity(groupRecord, groupEntity);
+
+    // then
+    final var expected = OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC);
+    assertThat(groupEntity.getCreatedAt()).isEqualTo(expected);
+    assertThat(groupEntity.getLastModifiedAt()).isEqualTo(expected);
+  }
+
+  @Test
+  void shouldOnlySetLastModifiedAtFromRecordTimestampOnUpdated() {
+    // given
+    final long timestamp = Instant.parse("2026-10-02T12:30:00Z").toEpochMilli();
+    final Record<GroupRecordValue> groupRecord =
+        factory.generateRecord(
+            ValueType.GROUP, r -> r.withIntent(GroupIntent.UPDATED).withTimestamp(timestamp));
+
+    // when
+    final GroupEntity groupEntity = new GroupEntity().setId("111");
+    underTest.updateEntity(groupRecord, groupEntity);
+
+    // then
+    assertThat(groupEntity.getCreatedAt()).isNull();
+    assertThat(groupEntity.getLastModifiedAt())
+        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
+  }
+
+  @Test
+  void shouldUpsertEntityOnFlushWithoutOverwritingCreatedAt() throws PersistenceException {
+    // given
+    final OffsetDateTime createdAt = OffsetDateTime.parse("2026-10-01T10:00:00Z");
+    final OffsetDateTime lastModifiedAt = OffsetDateTime.parse("2026-10-02T12:30:00Z");
+    final GroupEntity inputEntity =
+        new GroupEntity()
+            .setId("111")
+            .setGroupId("group-1")
+            .setName("name")
+            .setCreatedAt(createdAt)
+            .setLastModifiedAt(lastModifiedAt);
     final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
@@ -128,6 +182,16 @@ public class GroupCreatedUpdatedHandlerTest {
     underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(index, inputEntity);
+    // createdAt is only used by the insert half of the upsert; an update must not carry it,
+    // otherwise an UPDATED record would reset the creation time
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<Map<String, Object>> updateFields = ArgumentCaptor.forClass(Map.class);
+    verify(mockRequest, times(1))
+        .upsert(eq(index), eq("111"), eq(inputEntity), updateFields.capture());
+    assertThat(updateFields.getValue())
+        .containsEntry(GroupIndex.GROUP_ID, "group-1")
+        .containsEntry(GroupIndex.NAME, "name")
+        .containsEntry(GroupIndex.LAST_MODIFIED_AT, lastModifiedAt)
+        .doesNotContainKey(GroupIndex.CREATED_AT);
   }
 }

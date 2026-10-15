@@ -31,7 +31,8 @@ public final class MappingRuleFixtures extends CommonFixtures {
             .mappingRuleKey(id)
             .claimName("claimName-" + UUID.randomUUID())
             .claimValue("claimValue-" + UUID.randomUUID())
-            .name("name" + UUID.randomUUID());
+            .name("name" + UUID.randomUUID())
+            .type("TOKEN_CLAIM");
 
     return builderFunction.apply(builder).build();
   }

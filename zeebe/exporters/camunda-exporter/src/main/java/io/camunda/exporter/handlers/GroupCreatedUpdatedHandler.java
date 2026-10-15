@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
+
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
@@ -17,7 +19,11 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class GroupCreatedUpdatedHandler
@@ -61,19 +67,36 @@ public class GroupCreatedUpdatedHandler
   public void updateEntity(final Record<GroupRecordValue> record, final GroupEntity entity) {
     final GroupRecordValue value = record.getValue();
     final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createParent();
+    final OffsetDateTime timestamp = toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
     entity
         .setKey(value.getGroupKey())
         .setGroupId(value.getGroupId())
         .setName(value.getName())
         .setDescription(value.getDescription())
+        .setExternalId(value.getExternalId())
+        .setAttributes(AttributesJson.serialize(value.getAttributes()))
+        .setLastModifiedAt(timestamp)
         .setJoin(joinRelation);
+    if (record.getIntent() == GroupIntent.CREATED) {
+      entity.setCreatedAt(timestamp);
+    }
   }
 
   @Override
   public void flush(
       final TargetIndex index, final GroupEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(index, entity);
+    // createdAt is deliberately left out of the update fields: it is only written when the
+    // document is inserted, so that an UPDATED record never overwrites the original creation time
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(GroupIndex.KEY, entity.getKey());
+    updateFields.put(GroupIndex.GROUP_ID, entity.getGroupId());
+    updateFields.put(GroupIndex.NAME, entity.getName());
+    updateFields.put(GroupIndex.DESCRIPTION, entity.getDescription());
+    updateFields.put(GroupIndex.EXTERNAL_ID, entity.getExternalId());
+    updateFields.put(GroupIndex.ATTRIBUTES, entity.getAttributes());
+    updateFields.put(GroupIndex.LAST_MODIFIED_AT, entity.getLastModifiedAt());
+    batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }
 
   @Override

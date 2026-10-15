@@ -21,6 +21,11 @@ public class UserIndex extends AbstractIndexDescriptor implements Prio4Backup {
   public static final String USERNAME = "username";
   public static final String EMAIL = "email";
   public static final String PASSWORD = "password";
+  public static final String EXTERNAL_ID = "externalId";
+  public static final String ACTIVE = "active";
+  public static final String ATTRIBUTES = "attributes";
+  public static final String CREATED_AT = "createdAt";
+  public static final String LAST_MODIFIED_AT = "lastModifiedAt";
 
   public UserIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

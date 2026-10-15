@@ -22,4 +22,83 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_external_id_and_active_columns_to_user" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}USER_" columnName="EXTERNAL_ID"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}USER_">
+      <column name="EXTERNAL_ID" type="VARCHAR(256)"/>
+      <column name="ACTIVE" type="BOOLEAN"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_external_id_column_to_group" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}GROUP_" columnName="EXTERNAL_ID"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}GROUP_">
+      <column name="EXTERNAL_ID" type="VARCHAR(256)"/>
+    </addColumn>
+  </changeSet>
+  <changeSet id="add_attributes_column_to_user" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}USER_" columnName="ATTRIBUTES"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}USER_">
+      <column name="ATTRIBUTES" type="CLOB"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_attributes_column_to_group" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}GROUP_" columnName="ATTRIBUTES"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}GROUP_">
+      <column name="ATTRIBUTES" type="CLOB"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_rule_type_column_to_mapping_rules" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MAPPING_RULES" columnName="RULE_TYPE"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MAPPING_RULES">
+      <column name="RULE_TYPE" type="VARCHAR(32)" defaultValue="TOKEN_CLAIM"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_timestamp_columns_to_user" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}USER_" columnName="CREATED_AT"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}USER_">
+      <column name="CREATED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="LAST_MODIFIED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_timestamp_columns_to_group" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}GROUP_" columnName="CREATED_AT"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}GROUP_">
+      <column name="CREATED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="LAST_MODIFIED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

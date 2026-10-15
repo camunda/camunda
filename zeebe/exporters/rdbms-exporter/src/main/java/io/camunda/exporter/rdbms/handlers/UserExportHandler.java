@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.exporter.rdbms.utils.DateUtil.toOffsetDateTime;
+
 import io.camunda.db.rdbms.write.domain.UserDbModel;
 import io.camunda.db.rdbms.write.service.UserWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -14,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import java.time.OffsetDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,10 +42,12 @@ public class UserExportHandler implements RdbmsExportHandler<UserRecordValue> {
   @Override
   public void export(final Record<UserRecordValue> record) {
     final UserRecordValue value = record.getValue();
+    final OffsetDateTime timestamp = toOffsetDateTime(record.getTimestamp());
     if (record.getIntent() == UserIntent.CREATED) {
-      userWriter.create(map(value));
+      userWriter.create(map(value, timestamp, timestamp));
     } else if (record.getIntent() == UserIntent.UPDATED) {
-      userWriter.update(map(value));
+      // createdAt is passed as null: UPDATE does not write CREATED_AT
+      userWriter.update(map(value, null, timestamp));
     } else if (record.getIntent() == UserIntent.DELETED) {
       userWriter.delete(value.getUsername());
     } else {
@@ -50,13 +55,21 @@ public class UserExportHandler implements RdbmsExportHandler<UserRecordValue> {
     }
   }
 
-  private UserDbModel map(final UserRecordValue decision) {
+  private UserDbModel map(
+      final UserRecordValue decision,
+      final OffsetDateTime createdAt,
+      final OffsetDateTime lastModifiedAt) {
     return new UserDbModel.Builder()
         .userKey(decision.getUserKey())
         .username(decision.getUsername())
         .name(decision.getName())
         .email(decision.getEmail())
         .password(decision.getPassword())
+        .externalId(decision.getExternalId())
+        .active(decision.isActive())
+        .attributes(AttributesJson.serialize(decision.getAttributes()))
+        .createdAt(createdAt)
+        .lastModifiedAt(lastModifiedAt)
         .build();
   }
 }
