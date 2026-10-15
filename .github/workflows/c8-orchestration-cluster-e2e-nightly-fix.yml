@@ -442,7 +442,8 @@ jobs:
 
           OWNERSHIP ROUTING: name the owning team of every root-cause group as the "### Ownership routing"
           section of the manual describes, and record it with exactly the keys of the "routing" example
-          under "### Result manifest". Main's .codeowners is at /tmp/nightly-fix-agent-codeowners.
+          under "### Result manifest", plus "job" for a workflow-level failure. Main's .codeowners is at
+          /tmp/nightly-fix-agent-codeowners.
           $(if [ -n "$ROUTING_RUNBOOK_DIR" ]; then
             echo "The routing runbook is checked out read-only at ${ROUTING_RUNBOOK_DIR}"
             echo "(camunda/eng-kit-memory at ${ROUTING_RUNBOOK_SHA}). Never write to it."
