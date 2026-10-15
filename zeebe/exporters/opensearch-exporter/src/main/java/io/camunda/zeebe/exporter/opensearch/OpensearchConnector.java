@@ -13,6 +13,7 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.AuthenticationConfiguration;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.ProxyConfiguration;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.SecurityConfiguration;
+import io.camunda.zeebe.exporter.support.UrlRedaction;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -152,7 +153,9 @@ public final class OpensearchConnector {
       final var uri = new URI(osConfig.getUrl());
       return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
     } catch (final URISyntaxException e) {
-      throw new SearchClientConnectException("Error in url: " + osConfig.getUrl(), e);
+      // the cause is not chained: the URISyntaxException message quotes the whole url
+      throw new SearchClientConnectException(
+          "Error in url: " + UrlRedaction.redactUserInfo(osConfig.getUrl()));
     }
   }
 
@@ -165,7 +168,8 @@ public final class OpensearchConnector {
                 try {
                   return HttpHost.create(url);
                 } catch (final URISyntaxException e) {
-                  throw new SearchClientConnectException("Error in url: " + url, e);
+                  throw new SearchClientConnectException(
+                      "Error in url: " + UrlRedaction.redactUserInfo(url));
                 }
               })
           .toArray(HttpHost[]::new);
