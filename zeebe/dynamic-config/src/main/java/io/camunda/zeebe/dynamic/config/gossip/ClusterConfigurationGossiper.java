@@ -125,15 +125,21 @@ public final class ClusterConfigurationGossiper
   }
 
   private void sync() {
-    refreshMembersToSync();
+    try {
+      refreshMembersToSync();
 
-    if (membersToSync.isEmpty()) {
-      return;
+      if (membersToSync.isEmpty()) {
+        LOGGER.debug("No other cluster member known, skipping this configuration sync round");
+        scheduleSync();
+        return;
+      }
+
+      sync(membersToSync.remove(0));
+    } catch (final RuntimeException e) {
+      // The loop is re-armed only after a response, so a synchronous failure would stop it forever
+      LOGGER.warn("Failed to start configuration sync, will retry", e);
+      scheduleSync();
     }
-
-    final var randomMemberToSync = membersToSync.remove(0);
-
-    sync(randomMemberToSync);
   }
 
   private void sync(final MemberId toMember) {
