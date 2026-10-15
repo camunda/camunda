@@ -716,7 +716,6 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Whether to verify the cluster health of the search engine
         health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HEALTHCHECKENABLED
         history: # Type: io.camunda.configuration.DocumentBasedHistory  
-          archive-by-id-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ARCHIVEBYIDENABLED
           # Maximum number of retries for archive-by-id batch operations on retryable errors
           archive-by-id-max-retry-attempts: 3 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ARCHIVEBYIDMAXRETRYATTEMPTS
           # Retry delay in millisecond interval when archive-by-id batch fails on retryable errors
@@ -734,7 +733,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           # Maximum number of docs reindexed/deleted in a batch
           reindex-batch-size: 2500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_REINDEXBATCHSIZE
           # Maximum number of process instances per archiving batch
-          rollover-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ROLLOVERBATCHSIZE
+          rollover-batch-size: 500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ROLLOVERBATCHSIZE
           # Time range for creating dated indices (e.g., 1d creates daily indices).
           rollover-interval: "1d" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ROLLOVERINTERVAL
           # Defines the name of the created and applied usage-metrics ILM policy.
@@ -965,7 +964,6 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Whether to verify the cluster health of the search engine
         health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HEALTHCHECKENABLED
         history: # Type: io.camunda.configuration.DocumentBasedHistory  
-          archive-by-id-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ARCHIVEBYIDENABLED
           # Maximum number of retries for archive-by-id batch operations on retryable errors
           archive-by-id-max-retry-attempts: 3 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ARCHIVEBYIDMAXRETRYATTEMPTS
           # Retry delay in millisecond interval when archive-by-id batch fails on retryable errors
@@ -983,7 +981,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           # Maximum number of docs reindexed/deleted in a batch
           reindex-batch-size: 2500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_REINDEXBATCHSIZE
           # Maximum number of process instances per archiving batch
-          rollover-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ROLLOVERBATCHSIZE
+          rollover-batch-size: 500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ROLLOVERBATCHSIZE
           # Time range for creating dated indices (e.g., 1d creates daily indices).
           rollover-interval: "1d" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ROLLOVERINTERVAL
           # Defines the name of the created and applied usage-metrics ILM policy.
