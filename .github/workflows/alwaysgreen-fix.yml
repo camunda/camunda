@@ -332,8 +332,10 @@ jobs:
               && echo "  got $3 from $1#$2" \
               || echo "  (absent) $3 from $1#$2"
           }
-          # Version-scoped artifact name, falling back to the unscoped glob; see
-          # .github/scripts/alwaysgreen/README.md.
+          # Version-scoped artifact name, falling back to the unscoped glob.
+          # preview-env-smoke-test.yml uploads one report per version from a single
+          # run, so an unscoped glob would hand the agent every version's evidence
+          # instead of the leg it was dispatched for.
           dl_versioned() { # repo, run_id, pattern-prefix
             local dest_found=""
             if [ -n "${VERSION}" ]; then
