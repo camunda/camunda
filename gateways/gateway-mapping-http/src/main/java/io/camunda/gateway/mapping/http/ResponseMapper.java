@@ -27,6 +27,7 @@ import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.BrokerInfo;
+import io.camunda.gateway.protocol.model.ClockResult;
 import io.camunda.gateway.protocol.model.ClusterBrokerInfo;
 import io.camunda.gateway.protocol.model.ClusterStatusResponse;
 import io.camunda.gateway.protocol.model.ClusterStatusResponse.StatusEnum;
@@ -111,6 +112,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -137,7 +139,9 @@ import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.Either;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
@@ -942,6 +946,12 @@ public final class ResponseMapper {
                             .build())
                 .toList())
         .build();
+  }
+
+  public static ClockResult toClockResult(final ClockRecord clockRecord) {
+    final var time =
+        OffsetDateTime.ofInstant(Instant.ofEpochMilli(clockRecord.getTime()), ZoneOffset.UTC);
+    return ClockResult.Builder.create().timestamp(formatDate(time)).build();
   }
 
   public static ClusterStatusResponse toClusterStatusResponse(final AggregatedStatus status) {
