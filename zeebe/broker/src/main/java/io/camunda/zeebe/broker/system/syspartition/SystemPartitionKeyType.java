@@ -26,7 +26,12 @@ public enum SystemPartitionKeyType {
   /** The latest tick of the failure detector, put by the leader every tick interval. */
   TICK(3),
   /** The latest tick each broker is known to have seen, put by the failure detector's leader. */
-  CLUSTER_VIEW(4);
+  CLUSTER_VIEW(4),
+  /**
+   * The decision to fail over from a failed region to a surviving one, put once by the failure
+   * detector's leader together with the tick that made the decision.
+   */
+  REGION_FAILOVER(5);
 
   private final long id;
 

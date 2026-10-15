@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.syspartition.detector.FailureDetectorFactory;
+import io.camunda.zeebe.broker.system.syspartition.detector.RegionLayout;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -95,6 +96,7 @@ public final class SystemPartitionFactory {
                   communicationService,
                   localMemberId,
                   SystemPartition.members(brokerCfg),
+                  RegionLayout.of(brokerCfg),
                   meterRegistry);
               return systemPartition;
             });

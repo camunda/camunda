@@ -118,6 +118,52 @@ enum TickTockMetricsDoc implements ExtendedMeterDocumentation {
     public String getDescription() {
       return "How long a tick put by the system partition leader takes to commit";
     }
+  },
+
+  REGION_STATE {
+    @Override
+    public String getName() {
+      return "zeebe.system.partition.failure.detector.region.state";
+    }
+
+    @Override
+    public Meter.Type getType() {
+      return Meter.Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "The state of a region as seen by the system partition's failure detector:"
+          + " 0 unknown, 1 active, 2 suspect, 3 failed";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {RegionKeyNames.REGION};
+    }
+  },
+
+  REGION_FAILOVER_TICK {
+    @Override
+    public String getName() {
+      return "zeebe.system.partition.failure.detector.region.failover.tick";
+    }
+
+    @Override
+    public Meter.Type getType() {
+      return Meter.Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "The id of the tick on which the system partition committed a failover from the"
+          + " failed region to the target region";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return RegionKeyNames.values();
+    }
   };
 
   enum BrokerKeyNames implements KeyName {
@@ -126,6 +172,24 @@ enum TickTockMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "broker";
+      }
+    }
+  }
+
+  enum RegionKeyNames implements KeyName {
+    /** The region a meter is about; for a failover, the failed region. */
+    REGION {
+      @Override
+      public String asString() {
+        return "region";
+      }
+    },
+
+    /** The region a failover moves to. */
+    TARGET_REGION {
+      @Override
+      public String asString() {
+        return "target_region";
       }
     }
   }
