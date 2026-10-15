@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.metrics;
 
+import io.camunda.client.api.worker.JobWorkerMetrics;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 
 /**
@@ -39,6 +40,15 @@ public interface ClientMetrics {
    * get them back instead of its own.
    */
   default void close() {}
+
+  /**
+   * Metrics for a job worker that does not configure its own.
+   *
+   * @param jobType the type of jobs the worker handles
+   */
+  default JobWorkerMetrics jobWorkerMetrics(final String jobType) {
+    return JobWorkerMetrics.noop();
+  }
 
   /** Returns metrics which record nothing; used when no meter registry is set. */
   static ClientMetrics noop() {
