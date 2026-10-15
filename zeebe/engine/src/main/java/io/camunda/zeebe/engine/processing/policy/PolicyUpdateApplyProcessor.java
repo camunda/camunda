@@ -197,7 +197,11 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
     }
     for (final PolicyMembershipEntryValue membership : chunk.getMemberships()) {
       appendMembershipCommand(
-          membership, RoleIntent.ADD_ENTITY, GroupIntent.ADD_ENTITY, TenantIntent.ADD_ENTITY);
+          membership,
+          RoleIntent.ADD_ENTITY,
+          GroupIntent.ADD_ENTITY,
+          TenantIntent.ADD_ENTITY,
+          version);
     }
     for (final AuthorizationRecordValue authorization : chunk.getAuthorizations()) {
       appendAuthorizationUpsert(authorization, version);
@@ -210,10 +214,11 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
           membership,
           RoleIntent.REMOVE_ENTITY,
           GroupIntent.REMOVE_ENTITY,
-          TenantIntent.REMOVE_ENTITY);
+          TenantIntent.REMOVE_ENTITY,
+          version);
     }
     for (final PolicyDeleteEntryValue delete : chunk.getDeletes()) {
-      appendDelete(delete);
+      appendDelete(delete, version);
     }
   }
 
@@ -226,7 +231,8 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
       final PolicyMembershipEntryValue membership,
       final RoleIntent roleIntent,
       final GroupIntent groupIntent,
-      final TenantIntent tenantIntent) {
+      final TenantIntent tenantIntent,
+      final long version) {
     final var targetId = membership.getTargetId();
     final var memberId = membership.getMemberId();
     final var memberType = membership.getMemberType();
@@ -234,7 +240,7 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
       case ROLE ->
           processingState
               .getRoleState()
-              .getRole(targetId)
+              .getRole(targetId, version)
               .ifPresent(
                   target -> {
                     final long key = target.getRoleKey();
@@ -245,12 +251,13 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
                             .setRoleKey(key)
                             .setRoleId(targetId)
                             .setEntityId(memberId)
-                            .setEntityType(memberType));
+                            .setEntityType(memberType)
+                            .setPolicyVersion(version));
                   });
       case GROUP ->
           processingState
               .getGroupState()
-              .get(targetId)
+              .get(targetId, version)
               .ifPresent(
                   target -> {
                     final long key = target.getGroupKey();
@@ -261,12 +268,13 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
                             .setGroupKey(key)
                             .setGroupId(targetId)
                             .setEntityId(memberId)
-                            .setEntityType(memberType));
+                            .setEntityType(memberType)
+                            .setPolicyVersion(version));
                   });
       case TENANT ->
           processingState
               .getTenantState()
-              .getTenantById(targetId)
+              .getTenantById(targetId, version)
               .ifPresent(
                   target -> {
                     final long key = target.getTenantKey();
@@ -277,7 +285,8 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
                             .setTenantKey(key)
                             .setTenantId(targetId)
                             .setEntityId(memberId)
-                            .setEntityType(memberType));
+                            .setEntityType(memberType)
+                            .setPolicyVersion(version));
                   });
       default ->
           throw new IllegalStateException(
@@ -344,13 +353,13 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
   }
 
   /** Deleting a missing entity queues nothing, so replays stay safe. */
-  private void appendDelete(final PolicyDeleteEntryValue delete) {
+  private void appendDelete(final PolicyDeleteEntryValue delete, final long version) {
     final var id = delete.getId();
     switch (delete.getEntityType()) {
       case TENANT ->
           processingState
               .getTenantState()
-              .getTenantById(id)
+              .getTenantById(id, version)
               .ifPresent(
                   existing ->
                       appendFollowUpCommand(
@@ -358,31 +367,38 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
                           TenantIntent.DELETE,
                           new TenantRecord()
                               .setTenantKey(existing.getTenantKey())
-                              .setTenantId(id)));
+                              .setTenantId(id)
+                              .setPolicyVersion(version)));
       case ROLE ->
           processingState
               .getRoleState()
-              .getRole(id)
+              .getRole(id, version)
               .ifPresent(
                   existing ->
                       appendFollowUpCommand(
                           existing.getRoleKey(),
                           RoleIntent.DELETE,
-                          new RoleRecord().setRoleKey(existing.getRoleKey()).setRoleId(id)));
+                          new RoleRecord()
+                              .setRoleKey(existing.getRoleKey())
+                              .setRoleId(id)
+                              .setPolicyVersion(version)));
       case GROUP ->
           processingState
               .getGroupState()
-              .get(id)
+              .get(id, version)
               .ifPresent(
                   existing ->
                       appendFollowUpCommand(
                           existing.getGroupKey(),
                           GroupIntent.DELETE,
-                          new GroupRecord().setGroupKey(existing.getGroupKey()).setGroupId(id)));
+                          new GroupRecord()
+                              .setGroupKey(existing.getGroupKey())
+                              .setGroupId(id)
+                              .setPolicyVersion(version)));
       case MAPPING_RULE ->
           processingState
               .getMappingRuleState()
-              .get(id)
+              .get(id, version)
               .ifPresent(
                   existing ->
                       appendFollowUpCommand(
@@ -390,7 +406,8 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
                           MappingRuleIntent.DELETE,
                           new MappingRuleRecord()
                               .setMappingRuleKey(existing.getMappingRuleKey())
-                              .setMappingRuleId(id)));
+                              .setMappingRuleId(id)
+                              .setPolicyVersion(version)));
       default ->
           throw new IllegalStateException(
               "Expected a delete of a tenant, role, group or mapping rule, but got %s"

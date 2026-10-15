@@ -187,7 +187,9 @@ public class MappingRuleDeleteProcessor
     stateWriter.appendFollowUpEvent(
         key,
         MappingRuleIntent.DELETED,
-        new MappingRuleRecord().setMappingRuleId(mappingRule.getMappingRuleId()));
+        new MappingRuleRecord()
+            .setMappingRuleId(mappingRule.getMappingRuleId())
+            .setPolicyVersion(policyVersion));
   }
 
   private void deleteAuthorizations(final String mappingRuleId, final long policyVersion) {
