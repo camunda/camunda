@@ -27,6 +27,7 @@ public class GroupEntityRemovedApplier implements TypedEventApplier<GroupIntent,
     final var entityId = value.getEntityId();
     final var entityType = value.getEntityType();
     final var groupId = value.getGroupId();
-    membershipState.deleteRelation(entityType, entityId, RelationType.GROUP, groupId);
+    membershipState.deleteRelation(
+        entityType, entityId, RelationType.GROUP, groupId, value.getPolicyVersion());
   }
 }

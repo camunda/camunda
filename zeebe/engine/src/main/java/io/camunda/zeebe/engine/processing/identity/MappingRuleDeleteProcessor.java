@@ -104,7 +104,8 @@ public class MappingRuleDeleteProcessor
       return;
     }
     final long key = keyGenerator.nextKey();
-    deleteMappingRule(persistedMappingRuleOptional.get(), key);
+    deleteMappingRule(
+        persistedMappingRuleOptional.get(), key, command.getValue().getPolicyVersion());
     responseWriter.writeAcceptedResponseOnCommand(key, MappingRuleIntent.DELETED, record, command);
 
     commandDistributionBehavior
@@ -119,7 +120,9 @@ public class MappingRuleDeleteProcessor
     mappingRuleState
         .get(record.getMappingRuleId())
         .ifPresentOrElse(
-            persistedMappingRule -> deleteMappingRule(persistedMappingRule, command.getKey()),
+            persistedMappingRule ->
+                deleteMappingRule(
+                    persistedMappingRule, command.getKey(), command.getValue().getPolicyVersion()),
             () -> {
               final var errorMessage =
                   MAPPING_RULE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingRuleKey());
@@ -129,13 +132,17 @@ public class MappingRuleDeleteProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void deleteMappingRule(final PersistedMappingRule mappingRule, final long key) {
+  private void deleteMappingRule(
+      final PersistedMappingRule mappingRule, final long key, final long policyVersion) {
     final var mappingRuleId = mappingRule.getMappingRuleId();
     deleteAuthorizations(mappingRuleId);
     for (final var tenantId :
         membershipState.getMemberships(
-            EntityType.MAPPING_RULE, mappingRule.getMappingRuleId(), RelationType.TENANT)) {
-      final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
+            EntityType.MAPPING_RULE,
+            mappingRule.getMappingRuleId(),
+            RelationType.TENANT,
+            policyVersion)) {
+      final var tenant = tenantState.getTenantById(tenantId, policyVersion).orElseThrow();
       stateWriter.appendFollowUpEvent(
           tenant.getTenantKey(),
           TenantIntent.ENTITY_REMOVED,
@@ -143,11 +150,13 @@ public class MappingRuleDeleteProcessor
               .setTenantKey(tenant.getTenantKey())
               .setTenantId(tenant.getTenantId())
               .setEntityId(mappingRule.getMappingRuleId())
-              .setEntityType(EntityType.MAPPING_RULE));
+              .setEntityType(EntityType.MAPPING_RULE)
+              .setPolicyVersion(policyVersion));
     }
     for (final var roleId :
-        membershipState.getMemberships(EntityType.MAPPING_RULE, mappingRuleId, RelationType.ROLE)) {
-      final var role = roleState.getRole(roleId).orElseThrow();
+        membershipState.getMemberships(
+            EntityType.MAPPING_RULE, mappingRuleId, RelationType.ROLE, policyVersion)) {
+      final var role = roleState.getRole(roleId, policyVersion).orElseThrow();
       stateWriter.appendFollowUpEvent(
           role.getRoleKey(),
           RoleIntent.ENTITY_REMOVED,
@@ -155,12 +164,16 @@ public class MappingRuleDeleteProcessor
               .setRoleKey(role.getRoleKey())
               .setRoleId(roleId)
               .setEntityId(mappingRuleId)
-              .setEntityType(EntityType.MAPPING_RULE));
+              .setEntityType(EntityType.MAPPING_RULE)
+              .setPolicyVersion(policyVersion));
     }
     for (final var groupId :
         membershipState.getMemberships(
-            EntityType.MAPPING_RULE, mappingRule.getMappingRuleId(), RelationType.GROUP)) {
-      final var group = groupState.get(groupId).orElseThrow();
+            EntityType.MAPPING_RULE,
+            mappingRule.getMappingRuleId(),
+            RelationType.GROUP,
+            policyVersion)) {
+      final var group = groupState.get(groupId, policyVersion).orElseThrow();
       stateWriter.appendFollowUpEvent(
           group.getGroupKey(),
           GroupIntent.ENTITY_REMOVED,
@@ -168,7 +181,8 @@ public class MappingRuleDeleteProcessor
               .setGroupKey(group.getGroupKey())
               .setGroupId(groupId)
               .setEntityId(mappingRule.getMappingRuleId())
-              .setEntityType(EntityType.MAPPING_RULE));
+              .setEntityType(EntityType.MAPPING_RULE)
+              .setPolicyVersion(policyVersion));
     }
     stateWriter.appendFollowUpEvent(
         key,

@@ -177,7 +177,11 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
   private boolean isEntityAssigned(final TenantRecord record) {
     return membershipState.hasRelation(
-        record.getEntityType(), record.getEntityId(), RelationType.TENANT, record.getTenantId());
+        record.getEntityType(),
+        record.getEntityId(),
+        RelationType.TENANT,
+        record.getTenantId(),
+        record.getPolicyVersion());
   }
 
   private void createEntityNotExistRejectCommand(

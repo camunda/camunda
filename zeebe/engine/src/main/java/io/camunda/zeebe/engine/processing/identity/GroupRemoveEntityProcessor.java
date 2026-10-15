@@ -154,7 +154,11 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
 
   private boolean isEntityAssigned(final GroupRecord record) {
     return membershipState.hasRelation(
-        record.getEntityType(), record.getEntityId(), RelationType.GROUP, record.getGroupId());
+        record.getEntityType(),
+        record.getEntityId(),
+        RelationType.GROUP,
+        record.getGroupId(),
+        record.getPolicyVersion());
   }
 
   private boolean isEntityPresent(

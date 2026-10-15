@@ -177,6 +177,10 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
 
   private boolean isEntityAssigned(final RoleRecord record) {
     return membershipState.hasRelation(
-        record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
+        record.getEntityType(),
+        record.getEntityId(),
+        RelationType.ROLE,
+        record.getRoleId(),
+        record.getPolicyVersion());
   }
 }

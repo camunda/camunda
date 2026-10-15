@@ -63,6 +63,7 @@ class TenantDeleteProcessorCacheInvalidationTest {
     when(persistedTenant.getTenantId()).thenReturn(TENANT_ID);
     when(persistedTenant.getName()).thenReturn("tenant-name");
     when(tenantState.getTenantById(TENANT_ID)).thenReturn(Optional.of(persistedTenant));
+    when(tenantState.getTenantById(TENANT_ID, 0L)).thenReturn(Optional.of(persistedTenant));
     when(authorizationState.getAuthorizationKeysForOwner(any(), any())).thenReturn(Set.of());
 
     final var state = mock(ProcessingState.class);

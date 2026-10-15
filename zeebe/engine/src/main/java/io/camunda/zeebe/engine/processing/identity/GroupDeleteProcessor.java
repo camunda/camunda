@@ -127,6 +127,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     membershipState.forEachMember(
         RelationType.GROUP,
         groupId,
+        record.getPolicyVersion(),
         (entityType, entityId) -> {
           stateWriter.appendFollowUpEvent(
               record.getGroupKey(),
@@ -134,7 +135,9 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
               new GroupRecord()
                   .setGroupId(groupId)
                   .setEntityType(entityType)
-                  .setEntityId(entityId));
+                  .setEntityId(entityId)
+                  .setPolicyVersion(record.getPolicyVersion()));
+          return true;
         });
   }
 

@@ -158,7 +158,11 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
   private boolean isEntityAssigned(final RoleRecord record) {
     return membershipState.hasRelation(
-        record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
+        record.getEntityType(),
+        record.getEntityId(),
+        RelationType.ROLE,
+        record.getRoleId(),
+        record.getPolicyVersion());
   }
 
   private boolean isEntityPresent(

@@ -25,6 +25,10 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
   @Override
   public void applyState(final long tenantKey, final TenantRecord tenant) {
     membershipState.insertRelation(
-        tenant.getEntityType(), tenant.getEntityId(), RelationType.TENANT, tenant.getTenantId());
+        tenant.getEntityType(),
+        tenant.getEntityId(),
+        RelationType.TENANT,
+        tenant.getTenantId(),
+        tenant.getPolicyVersion());
   }
 }

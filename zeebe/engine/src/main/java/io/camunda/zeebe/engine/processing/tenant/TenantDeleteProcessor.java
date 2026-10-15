@@ -170,12 +170,14 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   }
 
   private void removeAssignedEntities(final TenantRecord record) {
-    final var tenant = tenantState.getTenantById(record.getTenantId()).orElseThrow();
+    final var tenant =
+        tenantState.getTenantById(record.getTenantId(), record.getPolicyVersion()).orElseThrow();
     final var tenantId = tenant.getTenantId();
     final var tenantKey = tenant.getTenantKey();
     membershipState.forEachMember(
         RelationType.TENANT,
         tenantId,
+        record.getPolicyVersion(),
         (entityType, entityId) -> {
           stateWriter.appendFollowUpEvent(
               tenantKey,
@@ -183,7 +185,9 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
               new TenantRecord()
                   .setTenantId(tenantId)
                   .setEntityType(entityType)
-                  .setEntityId(entityId));
+                  .setEntityId(entityId)
+                  .setPolicyVersion(record.getPolicyVersion()));
+          return true;
         });
   }
 

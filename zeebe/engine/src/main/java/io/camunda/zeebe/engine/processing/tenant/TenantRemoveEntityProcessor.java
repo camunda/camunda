@@ -139,7 +139,12 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return false;
     }
-    if (!membershipState.hasRelation(entityType, entityId, RelationType.TENANT, tenantId)) {
+    if (!membershipState.hasRelation(
+        entityType,
+        entityId,
+        RelationType.TENANT,
+        tenantId,
+        command.getValue().getPolicyVersion())) {
       createNotAssignedRejectCommand(command, entityId, entityType, tenantId);
       return false;
     }
