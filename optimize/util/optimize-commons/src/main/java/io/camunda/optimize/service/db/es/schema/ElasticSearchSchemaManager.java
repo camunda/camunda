@@ -22,6 +22,8 @@ import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.schema.index.AccessMappingRuleIndexES;
+import io.camunda.optimize.service.db.es.schema.index.AccessRoleIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
@@ -39,6 +41,7 @@ import io.camunda.optimize.service.db.es.schema.index.ProcessOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ReportShareIndexES;
 import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
+import io.camunda.optimize.service.db.es.schema.index.TenantMembershipIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableLabelIndexES;
 import io.camunda.optimize.service.db.es.schema.index.WebSessionIndexES;
@@ -396,6 +399,9 @@ public class ElasticSearchSchemaManager
         new TenantIndexES(),
         new TerminatedUserSessionIndexES(),
         new WebSessionIndexES(),
+        new TenantMembershipIndexES(),
+        new AccessRoleIndexES(),
+        new AccessMappingRuleIndexES(),
         new TimestampBasedImportIndexES(),
         new PositionBasedImportIndexES(),
         new CombinedReportIndexES(),

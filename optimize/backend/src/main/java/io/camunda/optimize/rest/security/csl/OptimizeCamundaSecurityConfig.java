@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.optimize.service.db.repository.AccessRepository;
+import io.camunda.optimize.service.db.repository.TenantMembershipRepository;
 import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.OidcClaimsProvider;
@@ -21,10 +23,12 @@ import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.session.WebSessionConfiguration;
 import io.camunda.security.spring.spi.OidcAuthenticationEntryPoint;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -32,6 +36,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
+import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -88,8 +93,21 @@ public class OptimizeCamundaSecurityConfig {
    * Stub membership port CSL's claim converters depend on; see {@link OptimizeMembershipAdapter}.
    */
   @Bean
-  public MembershipPort membershipPort() {
-    return new OptimizeMembershipAdapter();
+  public MembershipPort membershipPort(
+      final ObjectProvider<TenantMembershipRepository> tenantMembershipRepository,
+      final ObjectProvider<AccessRepository> accessRepository,
+      final Environment environment) {
+    final boolean tenants =
+        environment.getProperty(
+            "optimize.security.tenant-membership.enabled", Boolean.class, false);
+    final boolean access =
+        environment.getProperty(
+            OptimizeAccessRoles.ACCESS_ROLES_ENABLED_PROPERTY, Boolean.class, false);
+    return new OptimizeMembershipAdapter(
+        tenants ? tenantMembershipRepository.getIfAvailable() : null,
+        access ? accessRepository.getIfAvailable() : null,
+        Duration.ofSeconds(
+            environment.getProperty("optimize.security.access-cache-seconds", Long.class, 10L)));
   }
 
   /**

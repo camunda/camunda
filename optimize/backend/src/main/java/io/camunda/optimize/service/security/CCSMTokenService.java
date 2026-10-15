@@ -32,6 +32,7 @@ import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -341,6 +342,23 @@ public class CCSMTokenService {
             authentication ->
                 nonBlank(authentication.authenticatedUsername())
                     .or(() -> nonBlank(authentication.authenticatedClientId())));
+  }
+
+  /**
+   * POC: tenant ids CSL resolved for the current request through {@code MembershipPort}, i.e. from
+   * Optimize's own tenant membership store rather than from Identity. Empty when the request is not
+   * CSL-authenticated.
+   */
+  public Optional<List<String>> getCslAuthenticatedTenantIds() {
+    final CamundaAuthenticationProvider provider =
+        camundaAuthenticationProviderProvider == null
+            ? null
+            : camundaAuthenticationProviderProvider.getIfAvailable();
+    if (provider == null || !CslAuthentication.isCslAuthenticatedRequest()) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(provider.getCamundaAuthentication())
+        .map(CamundaAuthentication::authenticatedTenantIds);
   }
 
   private static Optional<String> nonBlank(final String value) {

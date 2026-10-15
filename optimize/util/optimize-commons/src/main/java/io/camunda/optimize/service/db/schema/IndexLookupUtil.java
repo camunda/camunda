@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.db.schema;
 
+import io.camunda.optimize.service.db.es.schema.index.AccessMappingRuleIndexES;
+import io.camunda.optimize.service.db.es.schema.index.AccessRoleIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
@@ -26,6 +28,7 @@ import io.camunda.optimize.service.db.es.schema.index.ProcessOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ReportShareIndexES;
 import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
+import io.camunda.optimize.service.db.es.schema.index.TenantMembershipIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableLabelIndexES;
 import io.camunda.optimize.service.db.es.schema.index.WebSessionIndexES;
@@ -34,6 +37,8 @@ import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImport
 import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleDecisionReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
+import io.camunda.optimize.service.db.os.schema.index.AccessMappingRuleIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.AccessRoleIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessValueOverviewIndexOS;
@@ -53,6 +58,7 @@ import io.camunda.optimize.service.db.os.schema.index.ProcessOverviewIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ReportShareIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.SettingsIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TenantIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.TenantMembershipIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.VariableLabelIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.WebSessionIndexOS;
@@ -140,6 +146,11 @@ public class IndexLookupUtil {
         index -> new TerminatedUserSessionIndexOS());
     lookupMap.put(WebSessionIndexES.class.getSimpleName(), index -> new WebSessionIndexOS());
     lookupMap.put(
+        TenantMembershipIndexES.class.getSimpleName(), index -> new TenantMembershipIndexOS());
+    lookupMap.put(
+        AccessMappingRuleIndexES.class.getSimpleName(), index -> new AccessMappingRuleIndexOS());
+    lookupMap.put(AccessRoleIndexES.class.getSimpleName(), index -> new AccessRoleIndexOS());
+    lookupMap.put(
         TimestampBasedImportIndexES.class.getSimpleName(),
         index -> new TimestampBasedImportIndexOS());
     lookupMap.put(
@@ -196,6 +207,11 @@ public class IndexLookupUtil {
         TerminatedUserSessionIndexOS.class.getSimpleName(),
         index -> new TerminatedUserSessionIndexES());
     lookupMap.put(WebSessionIndexOS.class.getSimpleName(), index -> new WebSessionIndexES());
+    lookupMap.put(
+        TenantMembershipIndexOS.class.getSimpleName(), index -> new TenantMembershipIndexES());
+    lookupMap.put(
+        AccessMappingRuleIndexOS.class.getSimpleName(), index -> new AccessMappingRuleIndexES());
+    lookupMap.put(AccessRoleIndexOS.class.getSimpleName(), index -> new AccessRoleIndexES());
     lookupMap.put(
         TimestampBasedImportIndexOS.class.getSimpleName(),
         index -> new TimestampBasedImportIndexES());

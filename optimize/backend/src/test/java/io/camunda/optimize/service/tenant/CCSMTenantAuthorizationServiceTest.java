@@ -57,7 +57,8 @@ public class CCSMTenantAuthorizationServiceTest {
     when(configurationService.getCaches()).thenReturn(cacheConfig);
     when(ccsmTokenService.getCurrentUserIdFromAuthToken()).thenReturn(Optional.of(TEST_USER_ID));
     when(ccsmTokenService.getCurrentUserAuthToken()).thenReturn(Optional.of(TEST_TOKEN));
-    underTest = new CamundaCCSMTenantAuthorizationService(ccsmTokenService, configurationService);
+    underTest =
+        new CamundaCCSMTenantAuthorizationService(ccsmTokenService, configurationService, false);
   }
 
   @Test
@@ -98,6 +99,26 @@ public class CCSMTenantAuthorizationServiceTest {
     assertTenantAuthorization(authorizedTenants.stream().map(TenantDto::getId).toList());
     assertNoTenantAuthorization(List.of("tenant3", "tenant4"));
     assertNoTenantAuthorization(List.of("tenant1Id", "tenant3", "tenant4"));
+  }
+
+  @Test
+  public void usersAuthorizedToTenantsFromOptimizeMembershipWithoutCallingIdentity() {
+    // given
+    underTest =
+        new CamundaCCSMTenantAuthorizationService(ccsmTokenService, configurationService, true);
+    when(ccsmTokenService.getCslAuthenticatedTenantIds())
+        .thenReturn(Optional.of(List.of("tenant1Id", "tenant2Id")));
+
+    // when
+    final List<TenantDto> actualAuthorizedTenants = underTest.getCurrentUserAuthorizedTenants();
+
+    // then
+    Mockito.verify(ccsmTokenService, never()).getAuthorizedTenantsFromToken(any());
+    assertThat(actualAuthorizedTenants)
+        .extracting(TenantDto::getId)
+        .containsExactlyInAnyOrder("tenant1Id", "tenant2Id");
+    assertTenantAuthorization("tenant1Id");
+    assertNoTenantAuthorization("unauthorizedTenantId");
   }
 
   @Test

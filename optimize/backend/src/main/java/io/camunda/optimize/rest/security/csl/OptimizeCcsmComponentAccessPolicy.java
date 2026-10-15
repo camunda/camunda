@@ -15,6 +15,7 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Conditional(CCSMCondition.class)
+@ConditionalOnExpression("!${optimize.security.access-roles.enabled:false}")
 @ConditionalOnProperty(
     name = "optimize.security.csl.enabled",
     havingValue = "true",

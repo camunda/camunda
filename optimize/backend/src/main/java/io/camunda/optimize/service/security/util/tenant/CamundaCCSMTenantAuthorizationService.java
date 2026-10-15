@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.security.util.tenant;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
 import static java.util.stream.Collectors.toMap;
 
@@ -25,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -38,8 +40,14 @@ public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAu
   private final ConfigurationService configurationService;
   private final Cache<String, List<TenantDto>> userTenantAuthorizations;
 
+  private final boolean useOptimizeTenantMembership;
+
   public CamundaCCSMTenantAuthorizationService(
-      final CCSMTokenService ccsmTokenService, final ConfigurationService configurationService) {
+      final CCSMTokenService ccsmTokenService,
+      final ConfigurationService configurationService,
+      @Value("${optimize.security.tenant-membership.enabled:false}")
+          final boolean useOptimizeTenantMembership) {
+    this.useOptimizeTenantMembership = useOptimizeTenantMembership;
     this.ccsmTokenService = ccsmTokenService;
     this.configurationService = configurationService;
     userTenantAuthorizations =
@@ -131,6 +139,12 @@ public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAu
   }
 
   private Optional<List<TenantDto>> fetchCurrentUserAuthorizedTenants() {
+    if (useOptimizeTenantMembership) {
+      // POC: tenant names come from a catalog in the real design; the id doubles as the name here.
+      return ccsmTokenService
+          .getCslAuthenticatedTenantIds()
+          .map(ids -> ids.stream().map(id -> new TenantDto(id, id, ZEEBE_DATA_SOURCE)).toList());
+    }
     final Optional<String> authToken = ccsmTokenService.getCurrentUserAuthToken();
     if (authToken.isEmpty()) {
       return Optional.empty();

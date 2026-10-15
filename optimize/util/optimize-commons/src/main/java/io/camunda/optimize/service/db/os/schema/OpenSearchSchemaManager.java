@@ -20,6 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.db.os.schema.index.AccessMappingRuleIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.AccessRoleIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessValueOverviewIndexOS;
@@ -37,6 +39,7 @@ import io.camunda.optimize.service.db.os.schema.index.ProcessOverviewIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ReportShareIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.SettingsIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TenantIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.TenantMembershipIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.VariableLabelIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.WebSessionIndexOS;
@@ -566,6 +569,9 @@ public class OpenSearchSchemaManager
         new SettingsIndexOS(),
         new TerminatedUserSessionIndexOS(),
         new WebSessionIndexOS(),
+        new TenantMembershipIndexOS(),
+        new AccessRoleIndexOS(),
+        new AccessMappingRuleIndexOS(),
         new TenantIndexOS(),
         new TimestampBasedImportIndexOS(),
         new PositionBasedImportIndexOS(),
