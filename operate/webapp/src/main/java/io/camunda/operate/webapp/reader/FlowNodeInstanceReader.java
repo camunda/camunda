@@ -18,6 +18,7 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface FlowNodeInstanceReader {
 
@@ -47,4 +48,11 @@ public interface FlowNodeInstanceReader {
   Collection<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(Long processInstanceId);
 
   List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey);
+
+  /**
+   * Returns those of the given flow node instance keys that belong to the process instance, in any
+   * state and including archived flow node instances.
+   */
+  Set<Long> getFlowNodeInstanceKeysOfProcessInstance(
+      Long processInstanceKey, Set<Long> flowNodeInstanceKeys);
 }
