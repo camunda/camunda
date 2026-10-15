@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl;
+package io.camunda.zeebe.db.conformance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,6 +13,8 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -29,7 +31,7 @@ import net.jqwik.api.lifecycle.BeforeProperty;
 import org.assertj.core.util.Files;
 
 @Tag("randomized")
-public class ColumnFamilyRandomizedPropertyTest {
+public abstract class AbstractColumnFamilyRandomizedPropertyTest {
 
   private Map<Long, Long> map;
   private ColumnFamily<DbLong, DbLong> columnFamily;
@@ -38,14 +40,15 @@ public class ColumnFamilyRandomizedPropertyTest {
   @BeforeProperty
   private void setup() {
     final var pathName = Files.newTemporaryFolder();
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
-    zeebeDb = dbFactory.createDb(pathName);
+    zeebeDb = factory().createDb(pathName);
 
     columnFamily =
         zeebeDb.createColumnFamily(
             DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), new DbLong(), new DbLong());
     map = new HashMap<>();
   }
+
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
 
   @Property
   void columnFamilyHasSameEntriesAsMapAfterModifying(
@@ -191,7 +194,7 @@ public class ColumnFamilyRandomizedPropertyTest {
       try {
         modify(columnFamily).accept(dbKey, dbValue);
       } catch (final RuntimeException e) {
-        assertThat(e).hasRootCauseInstanceOf(ZeebeDbInconsistentException.class);
+        assertThat(e).isInstanceOf(ZeebeDbInconsistentException.class);
       }
     }
 

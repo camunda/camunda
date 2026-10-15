@@ -32,7 +32,7 @@ flowchart TD
   subgraph write["Zeebe — write path"]
     BROKER["broker\nzeebe/broker\nRaft log"]
     ENGINE["engine\nzeebe/engine\nBPMN / DMN execution"]
-    STATE[("state store\nzeebe/zb-db · RocksDB")]
+    STATE[("state store\nzeebe/zb-db (abstraction) · zeebe/zb-db-rocksdb")]
     BROKER --> ENGINE
     ENGINE <-.->|state| STATE
   end
@@ -87,7 +87,8 @@ Authorization is enforced by `security/` against rules managed by `identity/`.
 
 The **Zeebe broker** (`zeebe/broker`) receives commands, appends them to a partitioned append-only
 log (Raft consensus via `zeebe/atomix`). The **Zeebe engine** (`zeebe/engine`) executes them
-against its primary state store (RocksDB via `zeebe/zb-db`).
+against its primary state store (RocksDB via `zeebe/zb-db-rocksdb`, behind the `zeebe/zb-db`
+abstraction).
 
 ### Export path
 
