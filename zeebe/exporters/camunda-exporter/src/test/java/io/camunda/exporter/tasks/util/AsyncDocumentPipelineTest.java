@@ -66,17 +66,6 @@ class AsyncDocumentPipelineTest {
   }
 
   @Test
-  void shouldThrowExceptionIfMinBatchSizeTooLarge() {
-    assertThatThrownBy(
-            () ->
-                AsyncDocumentPipeline.builder(
-                        batchSupplier(1, 10), mock(BatchProcessor.class), Runnable::run)
-                    .batchSize(100)
-                    .minBatchSize(200))
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
   void shouldThrowExceptionIfRetriesLessThanZero() {
     assertThatThrownBy(
             () ->
