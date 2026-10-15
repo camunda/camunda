@@ -1523,6 +1523,39 @@
 				"panel": {
 					"label": "decision panel",
 					"unknownEvaluationFailure": "Evaluation failed with unknown error"
+				},
+				"ds": {
+					"drd": {
+						"title": "Decision requirements diagram",
+						"resize": "Resize DRD panel",
+						"maximize": "Maximize DRD panel",
+						"minimize": "Minimize DRD panel",
+						"close": "Close DRD panel",
+						"zoomIn": "Zoom in",
+						"zoomOut": "Zoom out",
+						"resetZoom": "Reset zoom",
+						"unavailableTitle": "No diagram available",
+						"unavailableInfo": "This decision is not part of a decision requirements diagram.",
+						"content": "Decision requirements diagram content"
+					},
+					"header": {
+						"decisionInstanceKeyColumn": "Decision instance key",
+						"evaluationDateColumn": "Evaluation date",
+						"processInstanceColumn": "Process instance key",
+						"openDrdButton": "Open decision requirements diagram"
+					},
+					"variablesPanel": {
+						"tabsLabel": "Variable panel tabs",
+						"inputsAndOutputs": "Inputs and outputs"
+					},
+					"forbidden": {
+						"heading": "You do not have permission to view this information"
+					},
+					"panel": {
+						"unknownEvaluationFailure": "Evaluation failed for an unknown reason. Check the input values and the decision definition.",
+						"expandFailure": "Show full message",
+						"collapseFailure": "Collapse message"
+					}
 				}
 			},
 			"processInstance": {

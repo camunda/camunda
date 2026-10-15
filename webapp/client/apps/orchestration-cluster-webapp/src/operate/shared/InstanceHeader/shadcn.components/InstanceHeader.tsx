@@ -47,13 +47,13 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 		<header
 			data-testid="instance-header"
 			className={cn(
-				'flex min-w-0 items-center gap-4 border-b border-border bg-neutral-background-subtle px-4 py-1',
+				'flex min-w-0 items-center gap-4 border-b border-border px-4 py-1',
 				hideBottomBorder && 'border-b-0',
 			)}
 		>
 			<StateIcon state={state} size={24} />
 
-			<div title={instanceName} className="mr-4 flex min-w-0 shrink flex-col gap-0.5">
+			<div title={instanceName} className="mr-4 flex min-w-24 shrink flex-col gap-0.5">
 				<span
 					className={cn(
 						'truncate text-neutral-foreground',
@@ -65,7 +65,7 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 				{hasSubtitleRow && (
 					<div className="flex min-w-0 items-center gap-2">
 						{incidentsCount > 0 && (
-							<span className={cn('truncate text-danger-foreground-strong', typographyVariants({variant: 'label-md'}))}>
+							<span className={cn('truncate text-danger-foreground-subtle', typographyVariants({variant: 'label-md'}))}>
 								{t('operate.shared.instanceHeader.incidentsCount', {count: incidentsCount})}
 							</span>
 						)}

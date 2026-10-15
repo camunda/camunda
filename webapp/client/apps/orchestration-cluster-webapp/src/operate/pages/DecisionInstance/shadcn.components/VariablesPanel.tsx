@@ -12,9 +12,9 @@ import {LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
-import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {useDecisionInstance} from '../decisionInstance.queries';
 import {inputColumnWidths, outputColumnWidths} from '../inputOutputColumns';
+import {InputsAndOutputsLayout} from './InputsAndOutputsLayout';
 import {InputOutputSkeleton} from './InputOutputSkeleton';
 import {InputsAndOutputs} from './InputsAndOutputs';
 import {Result} from './Result';
@@ -97,10 +97,10 @@ const VariablesPanelPending: React.FC = () => {
 		<VariablesPanelTabs
 			inputsAndOutputs={
 				<div className="h-full">
-					<ResizablePanel panelId="decision-instance-horizontal-panel" direction={SplitDirection.Horizontal}>
+					<InputsAndOutputsLayout>
 						<section
 							aria-label={t('operate.decisionInstance.variablesPanel.inputVariables')}
-							className="grid h-full grid-rows-[auto_1fr] overflow-hidden"
+							className="grid h-full grid-rows-[auto_1fr] overflow-hidden max-sm:h-auto max-sm:shrink-0"
 						>
 							<Heading as="h2" variant="heading-sm" className="m-0 mt-4 ml-4 text-muted-foreground">
 								{t('operate.decisionInstance.variablesPanel.inputs')}
@@ -109,14 +109,14 @@ const VariablesPanelPending: React.FC = () => {
 						</section>
 						<section
 							aria-label={t('operate.decisionInstance.variablesPanel.outputVariables')}
-							className="grid h-full grid-rows-[auto_1fr] overflow-hidden"
+							className="grid h-full grid-rows-[auto_1fr] overflow-hidden max-sm:h-auto max-sm:shrink-0"
 						>
 							<Heading as="h2" variant="heading-sm" className="m-0 mt-4 ml-4 text-muted-foreground">
 								{t('operate.decisionInstance.variablesPanel.outputs')}
 							</Heading>
 							<InputOutputSkeleton columnWidths={outputColumnWidths} data-testid="outputs-skeleton" />
 						</section>
-					</ResizablePanel>
+					</InputsAndOutputsLayout>
 				</div>
 			}
 			result={

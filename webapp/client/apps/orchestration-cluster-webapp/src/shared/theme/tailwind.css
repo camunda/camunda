@@ -84,6 +84,13 @@
 		color: var(--neutral-foreground-subtle);
 	}
 
+	@media (forced-colors: active) {
+		.tjs-table-container tbody tr[data-highlighted] td {
+			border-top: 2px solid Highlight;
+			border-bottom: 2px solid Highlight;
+		}
+	}
+
 	.tjs-table-container {
 		background-color: var(--viewer-layer);
 		border-width: 1px;
@@ -182,5 +189,11 @@
 	/* The renderer sets the rectangle fill inline, which only `!important` can override. */
 	.ope-selected .djs-visual rect {
 		fill: var(--info-background-subtle) !important;
+	}
+}
+
+@media (forced-colors: active) {
+	[role='tab'][data-state='active'] {
+		border-bottom: 2px solid Highlight;
 	}
 }
