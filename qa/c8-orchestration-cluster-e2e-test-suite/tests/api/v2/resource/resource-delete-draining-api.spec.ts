@@ -531,6 +531,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     );
     expect(
       instances.map((instance) => partitionOf(instance.processInstanceKey)),
+      'no instance landed on the deployment partition',
     ).toContain(deploymentPartition);
     await expectProcessInstanceCount(
       request,
@@ -557,9 +558,10 @@ test.describe('Process Definition Draining Deletion API', () => {
     // partition, where this case cannot arise: every instance is local to the
     // deployment partition, so the repeat is always rejected and that is what
     // the test above covers.
+    const partitions = await partitionsCount(request);
     // eslint-disable-next-line playwright/no-skipped-test
     test.skip(
-      (await partitionsCount(request)) < 2,
+      partitions < 2,
       'needs a partition other than the deployment one',
     );
 
@@ -573,14 +575,15 @@ test.describe('Process Definition Draining Deletion API', () => {
     // answer 200 here and 409 above is under discussion with the engine team;
     // this asserts today's behaviour so a change to it is not silent.
     const deploymentPartition = partitionOf(processDefinitionKey);
+    const attempts = 5 * partitions;
     const instance = await createInstanceAwayFrom(
       processDefinitionId,
       deploymentPartition,
-      5 * (await partitionsCount(request)),
+      attempts,
     );
     expect(
       instance,
-      'no instance landed away from the deployment partition — this case needs a cluster with more than one partition',
+      `all ${attempts} creates landed on the deployment partition`,
     ).toBeDefined();
     instancesToCancel.push(instance!.processInstanceKey);
     await expectProcessInstanceCount(
