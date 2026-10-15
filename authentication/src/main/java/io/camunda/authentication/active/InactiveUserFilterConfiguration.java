@@ -39,6 +39,10 @@ public class InactiveUserFilterConfiguration {
   // for one constant, as ApiFiltersConfiguration does.
   private static final int ORDER_AFTER_SECURITY_CHAIN = -99;
 
+  // Before the security chain, so the blocked-login page and its reset path are served without
+  // authentication and before the chain redirects an unauthenticated navigation to the IdP.
+  private static final int ORDER_BEFORE_SECURITY_CHAIN = -101;
+
   @Bean
   public ActiveUserChecker activeUserChecker(
       final ObjectProvider<ServiceRegistry> serviceRegistry, final Environment environment) {
@@ -58,6 +62,14 @@ public class InactiveUserFilterConfiguration {
                 authenticationProvider, activeUserChecker, LoginSources.from(environment)));
     registration.addUrlPatterns("/*");
     registration.setOrder(ORDER_AFTER_SECURITY_CHAIN);
+    return registration;
+  }
+
+  @Bean
+  public FilterRegistrationBean<BlockedLoginPageFilter> blockedLoginPageFilter() {
+    final var registration = new FilterRegistrationBean<>(new BlockedLoginPageFilter());
+    registration.addUrlPatterns("/*");
+    registration.setOrder(ORDER_BEFORE_SECURITY_CHAIN);
     return registration;
   }
 }

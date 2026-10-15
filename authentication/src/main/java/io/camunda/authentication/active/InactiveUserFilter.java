@@ -8,7 +8,8 @@
 package io.camunda.authentication.active;
 
 import io.camunda.authentication.active.ActiveUserChecker.StoredUser;
-import io.camunda.authentication.config.spi.SecurityPaths;
+import io.camunda.authentication.active.BlockedLogin.Marker;
+import io.camunda.authentication.active.BlockedLogin.Variant;
 import io.camunda.authentication.source.LoginSources;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
@@ -19,21 +20,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.HtmlUtils;
 
 /**
  * Rejects requests of authenticated users that are deactivated ({@code active=false}) with 403, and
@@ -53,14 +46,6 @@ import org.springframework.web.util.HtmlUtils;
 public final class InactiveUserFilter extends OncePerRequestFilter {
 
   private static final Logger LOG = LoggerFactory.getLogger(InactiveUserFilter.class);
-  private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
-  private static final String TENANT_PREFIX_PATTERN = "/physical-tenants/*";
-  private static final String PAGE_TEMPLATE = loadTemplate();
-  private static final Set<String> STATIC_EXTENSIONS =
-      Set.of(
-          "js", "mjs", "css", "map", "png", "svg", "ico", "jpg", "jpeg", "gif", "webp", "woff",
-          "woff2", "ttf");
-  private static final String ASSETS_PATTERN = "/**/assets/**";
 
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ActiveUserChecker activeUserChecker;
@@ -88,7 +73,7 @@ public final class InactiveUserFilter extends OncePerRequestFilter {
       final HttpServletResponse response,
       final FilterChain filterChain)
       throws ServletException, IOException {
-    if (isStaticResource(request)) {
+    if (BlockedLogin.isStaticResource(request)) {
       filterChain.doFilter(request, response);
       return;
     }
@@ -104,13 +89,11 @@ public final class InactiveUserFilter extends OncePerRequestFilter {
               request,
               response,
               "The login does not match the provisioned user.",
-              "This sign-in can't be used",
-              "You signed in through a different identity provider than the one that manages"
-                  + " your Camunda account. Sign in again with the right provider, or contact"
-                  + " your administrator.",
-              username,
-              LoginSources.loginSource(authentication.claims()),
-              stored.source());
+              new Marker(
+                  Variant.MISMATCH,
+                  username,
+                  LoginSources.loginSource(authentication.claims()),
+                  stored.source()));
           return;
         }
       }
@@ -120,13 +103,11 @@ public final class InactiveUserFilter extends OncePerRequestFilter {
             request,
             response,
             "The user is deactivated.",
-            "Your account is deactivated",
-            "Your identity provider has deactivated your account, so you can't use Camunda"
-                + " right now. If you think this is a mistake, contact your administrator.",
-            username,
-            null,
-            null);
+            new Marker(Variant.DEACTIVATED, username, null, null));
         return;
+      }
+      if (BlockedLogin.hasMarker(request)) {
+        BlockedLogin.clearMarker(request, response);
       }
     }
     filterChain.doFilter(request, response);
@@ -182,83 +163,19 @@ public final class InactiveUserFilter extends OncePerRequestFilter {
     return id != null ? id : PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
   }
 
-  private static boolean isBrowserNavigation(final HttpServletRequest request) {
-    if (!"GET".equals(request.getMethod()) || isApiPath(request)) {
-      return false;
-    }
-    final var fetchMode = request.getHeader("Sec-Fetch-Mode");
-    if (fetchMode != null && !"navigate".equalsIgnoreCase(fetchMode)) {
-      return false;
-    }
-    final var accept = request.getHeaders("Accept");
-    final var headers = Collections.list(accept);
-    if (headers.isEmpty()) {
-      return false;
-    }
-    try {
-      final var types = MediaType.parseMediaTypes(headers);
-      var preferred = types.get(0);
-      for (final var type : types) {
-        if (type.getQualityValue() > preferred.getQualityValue()) {
-          preferred = type;
-        }
-      }
-      return preferred.getQualityValue() > 0
-          && "text".equalsIgnoreCase(preferred.getType())
-          && "html".equalsIgnoreCase(preferred.getSubtype());
-    } catch (final RuntimeException e) {
-      return false;
-    }
-  }
-
-  private static String pathWithinContext(final HttpServletRequest request) {
-    final var path = request.getRequestURI();
-    final var contextPath = request.getContextPath();
-    return contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)
-        ? path.substring(contextPath.length())
-        : path;
-  }
-
-  /**
-   * Static webapp files (lazily imported chunks, styles, fonts, images) are never blocked: the
-   * browser cannot render an error page for them, and a failed import breaks the SPA instead of
-   * showing the blocked-login page. API paths are always checked.
-   */
-  private static boolean isStaticResource(final HttpServletRequest request) {
-    final var method = request.getMethod();
-    if (!"GET".equals(method) && !"HEAD".equals(method)) {
-      return false;
-    }
-    if (isApiPath(request)) {
-      return false;
-    }
-    final var path = pathWithinContext(request);
-    final var fileName = path.substring(path.lastIndexOf('/') + 1);
-    final var dot = fileName.lastIndexOf('.');
-    if (dot < 0) {
-      return false;
-    }
-    final var extension = fileName.substring(dot + 1).toLowerCase(Locale.ROOT);
-    return STATIC_EXTENSIONS.contains(extension)
-        || ("json".equals(extension) && PATH_MATCHER.match(ASSETS_PATTERN, path));
-  }
-
   private void block(
       final HttpServletRequest request,
       final HttpServletResponse response,
       final String detail,
-      final String title,
-      final String text,
-      final String username,
-      final String usedSource,
-      final String managingSource)
+      final Marker marker)
       throws IOException {
     final var hadSession = request.getSession(false) != null;
     if (hadSession) {
       endSession(request, response);
+      BlockedLogin.setMarker(request, response, marker);
     }
-    if (isBrowserNavigation(request)) {
-      rejectWithPage(response, title, text, username, usedSource, managingSource);
+    if (BlockedLogin.isBrowserNavigation(request)) {
+      BlockedLogin.writePage(request, response, marker);
     } else if (hadSession) {
       reject(response, request, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", detail);
     } else {
@@ -275,59 +192,6 @@ public final class InactiveUserFilter extends OncePerRequestFilter {
     } catch (final RuntimeException e) {
       LOG.warn("Failed to end the session of a blocked user", e);
       SecurityContextHolder.clearContext();
-    }
-  }
-
-  private static boolean isApiPath(final HttpServletRequest request) {
-    final var candidate = pathWithinContext(request);
-    final var unprefixed =
-        PATH_MATCHER.match(TENANT_PREFIX_PATTERN + "/**", candidate)
-            ? candidate.substring(candidate.indexOf('/', "/physical-tenants/".length()))
-            : candidate;
-    return SecurityPaths.API_PATHS.stream()
-        .anyMatch(
-            pattern ->
-                PATH_MATCHER.match(pattern, candidate) || PATH_MATCHER.match(pattern, unprefixed));
-  }
-
-  private static void rejectWithPage(
-      final HttpServletResponse response,
-      final String title,
-      final String text,
-      final String username,
-      final String usedSource,
-      final String managingSource)
-      throws IOException {
-    final var details = new StringBuilder();
-    if (usedSource != null || managingSource != null) {
-      details
-          .append("<dt>Signed in with</dt><dd>")
-          .append(escape(usedSource != null ? usedSource : "unknown"))
-          .append("</dd><dt>Account managed by</dt><dd>")
-          .append(escape(managingSource != null ? managingSource : "unknown"))
-          .append("</dd>");
-    }
-    final var page =
-        PAGE_TEMPLATE
-            .replace("{{details}}", details)
-            .replace("{{title}}", escape(title))
-            .replace("{{text}}", escape(text))
-            .replace("{{username}}", escape(username));
-    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-    response.setContentType("text/html;charset=UTF-8");
-    response.setHeader("Cache-Control", "no-store");
-    response.getWriter().write(page);
-  }
-
-  private static String escape(final String value) {
-    return HtmlUtils.htmlEscape(value);
-  }
-
-  private static String loadTemplate() {
-    try (final var in = new ClassPathResource("templates/blocked-login.html").getInputStream()) {
-      return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
     }
   }
 

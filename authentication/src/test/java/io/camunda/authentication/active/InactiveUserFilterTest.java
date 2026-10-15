@@ -20,6 +20,7 @@ import io.camunda.authentication.source.LoginSources.Source;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.Cookie;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -172,7 +173,7 @@ class InactiveUserFilterTest {
               "Your account is deactivated",
               "&lt;b&gt;jane&lt;/b&gt;",
               "Sign in again",
-              "href=\"/\"")
+              "href=\"/blocked-login/reset\"")
           .doesNotContain("<b>jane</b>", "{{", "type=\"hidden\"", "/logout");
       verify(chain, never()).doFilter(any(), any());
     }
@@ -562,6 +563,81 @@ class InactiveUserFilterTest {
 
       // then
       verify(chain).doFilter(request, response);
+    }
+  }
+
+  @Nested
+  class BlockedLoginMarker {
+
+    @Test
+    void shouldSetMarkerWhenEndingTheSessionOfAnXhr() throws Exception {
+      // given
+      when(provider.getCamundaAuthentication()).thenReturn(user("jane"));
+      when(checker.isActive("default", "jane")).thenReturn(false);
+      request.setSession(new MockHttpSession());
+      request.setSecure(true);
+
+      // when
+      filter.doFilter(request, response, chain);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(401);
+      final var cookie = response.getHeader("Set-Cookie");
+      assertThat(cookie)
+          .startsWith("CAMUNDA_LOGIN_BLOCKED=")
+          .contains("Path=/", "Max-Age=600", "HttpOnly", "SameSite=Lax", "Secure");
+      final var value = cookie.substring(cookie.indexOf('=') + 1, cookie.indexOf(';'));
+      assertThat(BlockedLogin.Marker.decode(value))
+          .isEqualTo(new BlockedLogin.Marker(BlockedLogin.Variant.DEACTIVATED, "jane", null, null));
+    }
+
+    @Test
+    void shouldSetMarkerWhenEndingTheSessionOfANavigation() throws Exception {
+      // given
+      when(provider.getCamundaAuthentication()).thenReturn(user("jane"));
+      when(checker.isActive("default", "jane")).thenReturn(false);
+      request.setRequestURI("/operate");
+      request.addHeader("Accept", "text/html");
+      request.setSession(new MockHttpSession());
+
+      // when
+      filter.doFilter(request, response, chain);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(403);
+      assertThat(response.getHeader("Set-Cookie"))
+          .startsWith("CAMUNDA_LOGIN_BLOCKED=")
+          .doesNotContain("Secure");
+    }
+
+    @Test
+    void shouldNotSetMarkerWithoutSession() throws Exception {
+      // given
+      when(provider.getCamundaAuthentication()).thenReturn(user("jane"));
+      when(checker.isActive("default", "jane")).thenReturn(false);
+
+      // when
+      filter.doFilter(request, response, chain);
+
+      // then
+      assertThat(response.getHeader("Set-Cookie")).isNull();
+    }
+
+    @Test
+    void shouldClearMarkerWhenAuthenticatedRequestPasses() throws Exception {
+      // given
+      when(provider.getCamundaAuthentication()).thenReturn(user("jane"));
+      when(checker.isActive("default", "jane")).thenReturn(true);
+      request.setCookies(new Cookie("CAMUNDA_LOGIN_BLOCKED", "abc"));
+
+      // when
+      filter.doFilter(request, response, chain);
+
+      // then
+      verify(chain).doFilter(request, response);
+      assertThat(response.getHeader("Set-Cookie"))
+          .startsWith("CAMUNDA_LOGIN_BLOCKED=;")
+          .contains("Max-Age=0", "Path=/");
     }
   }
 }
