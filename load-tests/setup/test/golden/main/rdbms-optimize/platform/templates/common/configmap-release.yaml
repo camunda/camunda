@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-main-rdbms-optimize
       namespace: c8-golden-main-rdbms-optimize
-      version: 15.0.0
+      version: 15.1.0
       tags:
       - dev
       custom-properties: []
@@ -35,7 +35,7 @@ data:
         metrics: http://identity.c8-golden-main-rdbms-optimize:82/actuator/prometheus
       - name: Optimize
         id: optimize
-        version: 8.10.2
+        version: 8.10.3
         url: http://localhost:8083
         readiness: http://optimize.c8-golden-main-rdbms-optimize:80/api/readyz
         metrics: http://optimize.c8-golden-main-rdbms-optimize:8092/actuator/prometheus
