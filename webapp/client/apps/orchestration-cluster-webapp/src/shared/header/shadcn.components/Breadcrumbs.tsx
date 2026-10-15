@@ -24,6 +24,7 @@ import {
 import {useTranslation} from 'react-i18next';
 import type {CurrentApp} from '#/shared/c3/components/C3Provider';
 import {getBootConfig} from '#/shared/config/getBootConfig';
+import {getHubLink} from './getHubLink';
 
 type Options = {
 	currentApp: CurrentApp;
@@ -45,13 +46,30 @@ function getAppIcon(key: string): NavIcon | undefined {
 	return Object.prototype.hasOwnProperty.call(camundaAppIcons, key) ? camundaAppIcons[key as CamundaAppKey] : undefined;
 }
 
-function mapBreadcrumb(breadcrumb: BreadcrumbDescriptor, currentApp: CamundaAppKey): NavBreadcrumbDescriptor {
+function getLinkProps(
+	breadcrumb: BreadcrumbDescriptor,
+	currentApp: CamundaAppKey,
+	hubPaths: Record<string, string | undefined>,
+): BreadcrumbDescriptor['linkProps'] {
+	if (breadcrumb.key === 'app') {
+		return {to: `/${currentApp}`};
+	}
+
+	const hubLink = hubPaths[breadcrumb.key];
+	return hubLink === undefined ? breadcrumb.linkProps : {href: hubLink};
+}
+
+function mapBreadcrumb(
+	breadcrumb: BreadcrumbDescriptor,
+	currentApp: CamundaAppKey,
+	hubPaths: Record<string, string | undefined>,
+): NavBreadcrumbDescriptor {
 	return {
 		key: breadcrumb.key,
 		label: breadcrumb.label,
 		icon: getBreadcrumbIcon(breadcrumb.key, currentApp),
 		onClick: breadcrumb.onClick,
-		linkProps: breadcrumb.key === 'app' ? {to: `/${currentApp}`} : breadcrumb.linkProps,
+		linkProps: getLinkProps(breadcrumb, currentApp, hubPaths),
 		actions: breadcrumb.actions,
 		dropdownTitle: breadcrumb.dropdownTitle,
 		dropdownAriaLabel: breadcrumb.dropdownAriaLabel,
@@ -79,10 +97,17 @@ const Breadcrumbs: React.FC<Options> = ({currentApp, webappLinks}) => {
 		currentApp,
 		webappLinks: organizationId !== null && clusterId !== null ? webappLinks : undefined,
 	});
-	const items = useMemo(
-		() => breadcrumbs.map((breadcrumb) => mapBreadcrumb(breadcrumb, currentApp)),
-		[breadcrumbs, currentApp],
-	);
+	const modelerLink = webappLinks['modeler'];
+	const items = useMemo(() => {
+		const hubPaths =
+			organizationId !== null && clusterId !== null
+				? {
+						org: getHubLink(modelerLink, `/org/${organizationId}`),
+						cluster: getHubLink(modelerLink, `/org/${organizationId}/cluster/${clusterId}`),
+					}
+				: {};
+		return breadcrumbs.map((breadcrumb) => mapBreadcrumb(breadcrumb, currentApp, hubPaths));
+	}, [breadcrumbs, currentApp, modelerLink, organizationId, clusterId]);
 
 	if (items.length === 0) {
 		return null;
