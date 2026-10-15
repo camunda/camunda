@@ -514,7 +514,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     expect(await instanceCountFor(request, processDefinitionId)).toBe(before);
   });
 
-  test('A repeated delete of an already draining definition is rejected', async ({
+  test('A repeated delete of an already draining definition never finalizes the drain', async ({
     request,
   }) => {
     const processDefinitionId = uniquePrefixedId('draining-repeat');
@@ -527,7 +527,15 @@ test.describe('Process Definition Draining Deletion API', () => {
     await drainProcessDefinition(request, processDefinitionKey);
 
     const second = await deleteProcessDefinition(request, processDefinitionKey);
-    expect(second.status()).toBe(409);
+
+    // A plain repeat delete is rejected 409 only while the serving partition
+    // still holds the DRAINING copy. Once the deployment partition has finalized
+    // its local copy but other partitions still owe a drain report, the engine
+    // can no longer tell a slow drain from one stuck mid-recovery, so it accepts
+    // the retry (200) and merely re-drives the partitions that are still
+    // draining — camunda#64586. Either way the still-running instance keeps the
+    // definition DRAINING; the retry must never prematurely finalize it.
+    expect([200, 409]).toContain(second.status());
     await expectProcessDefinitionState(
       request,
       processDefinitionKey,
