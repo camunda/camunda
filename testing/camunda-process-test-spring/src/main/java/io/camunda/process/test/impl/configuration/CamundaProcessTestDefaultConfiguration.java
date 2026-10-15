@@ -57,6 +57,7 @@ public class CamundaProcessTestDefaultConfiguration {
   @ConditionalOnMissingBean
   public ObjectMapper objectMapper() {
     return new ObjectMapper()
+        .findAndRegisterModules()
         .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
         .configure(ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
   }

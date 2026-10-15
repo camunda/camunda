@@ -18,6 +18,8 @@ package io.camunda.client.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.util.ClientTest;
+import java.time.Duration;
+import java.util.Collections;
 import org.junit.Test;
 
 public class CamundaObjectMapperTest extends ClientTest {
@@ -32,6 +34,17 @@ public class CamundaObjectMapperTest extends ClientTest {
     final String actual = camundaObjectMapper.toJson(testObject);
     // Then
     assertThat(actual).isEqualTo("{\"object\":{}}");
+  }
+
+  @Test
+  public void shouldSerializeJavaTimeTypes() {
+    // Given
+    final CamundaObjectMapper camundaObjectMapper = new CamundaObjectMapper();
+    // When
+    final String actual =
+        camundaObjectMapper.toJson(Collections.singletonMap("d", Duration.ofSeconds(90)));
+    // Then
+    assertThat(actual).isEqualTo("{\"d\":90.000000000}");
   }
 
   public static final class TestObject {
