@@ -337,7 +337,7 @@
           <ignoredDependencies>
             <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
             <ignoredDependency>javax.annotation:javax.annotation-api</ignoredDependency>
-            <!-- discovered at runtime via ServiceLoader (findAndRegisterModules) -->
+            <!-- loaded reflectively by CamundaObjectMapper if present -->
             <ignoredDependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</ignoredDependency>
           </ignoredDependencies>
         </configuration>

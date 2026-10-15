@@ -18,6 +18,7 @@ package io.camunda.client.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.camunda.client.api.JsonMapper;
@@ -35,10 +36,13 @@ public final class CamundaObjectMapper implements JsonMapper {
   private static final TypeReference<Map<String, String>> STRING_MAP_TYPE_REFERENCE =
       new TypeReference<Map<String, String>>() {};
 
+  private static final String JAVA_TIME_MODULE_CLASS =
+      "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule";
+
   private final ObjectMapper objectMapper;
 
   public CamundaObjectMapper() {
-    this(new ObjectMapper().findAndRegisterModules());
+    this(createDefaultObjectMapper());
   }
 
   public CamundaObjectMapper(final ObjectMapper objectMapper) {
@@ -47,6 +51,23 @@ public final class CamundaObjectMapper implements JsonMapper {
         .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         .registerModule(new StringFilterPropertyModule());
+  }
+
+  /**
+   * Creates the {@link ObjectMapper} used when no mapper is provided. The {@code java.time} module
+   * is registered if {@code jackson-datatype-jsr310} is on the classpath. Other modules are
+   * deliberately not discovered, as modules such as the Scala module change how untyped values are
+   * deserialized.
+   */
+  public static ObjectMapper createDefaultObjectMapper() {
+    final ObjectMapper mapper = new ObjectMapper();
+    try {
+      final Class<?> moduleClass = Class.forName(JAVA_TIME_MODULE_CLASS);
+      mapper.registerModule((Module) moduleClass.getDeclaredConstructor().newInstance());
+    } catch (final ReflectiveOperationException | LinkageError e) {
+      // jsr310 is optional: java.time types stay unsupported without it
+    }
+    return mapper;
   }
 
   @Override
