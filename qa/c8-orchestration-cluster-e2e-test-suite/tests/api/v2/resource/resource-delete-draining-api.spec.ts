@@ -572,8 +572,8 @@ test.describe('Process Definition Draining Deletion API', () => {
     // With no instance of its own the deployment partition finalizes its copy
     // immediately, so the repeat is accepted as a retry of the drain the other
     // partitions still owe (camunda#64850). Whether the same request should
-    // answer 200 here and 409 above is under discussion with the engine team;
-    // this asserts today's behaviour so a change to it is not silent.
+    // answer 200 here and 409 above is tracked in camunda#66023; this asserts
+    // today's behaviour so a change to it is not silent.
     const deploymentPartition = partitionOf(processDefinitionKey);
     const attempts = 5 * partitions;
     const instance = await createInstanceAwayFrom(
