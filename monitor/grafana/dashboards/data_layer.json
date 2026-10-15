@@ -916,6 +916,359 @@
           }
         }
       },
+      "panel-718": {
+        "kind": "Panel",
+        "spec": {
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${DS_PROMETHEUS}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "editorMode": "code",
+                        "expr": "sum(increase(zeebe_camunda_exporter_archiver_batch_retries_total{cluster=~\"$cluster\", namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (physicalTenant, partition, type)",
+                        "instant": false,
+                        "legendFormat": "{{physicalTenant}} {{type}} retries [p{{partition}}]",
+                        "range": true
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "A"
+                  }
+                }
+              ],
+              "queryOptions": {},
+              "transformations": []
+            }
+          },
+          "description": "Number of archiver batch retries caused by retryable errors (e.g. socket timeouts, search engine exceptions). Consecutive points overlap, so a single burst appears in several points. Sustained non-zero values indicate the search engine is struggling to keep up with archiving.",
+          "id": 718,
+          "links": [],
+          "title": "Archiving - Batch retries",
+          "vizConfig": {
+            "group": "timeseries",
+            "kind": "VizConfig",
+            "spec": {
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "lastNotNull",
+                    "max",
+                    "min"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              }
+            },
+            "version": "12.0.2"
+          }
+        }
+      },
+      "panel-719": {
+        "kind": "Panel",
+        "spec": {
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${DS_PROMETHEUS}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "editorMode": "code",
+                        "expr": "max by (source) (zeebe_camunda_exporter_archiver_index_duration_seconds_max{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"})",
+                        "instant": false,
+                        "legendFormat": "{{source}}",
+                        "range": true
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "A"
+                  }
+                }
+              ],
+              "queryOptions": {},
+              "transformations": []
+            }
+          },
+          "description": "Maximum duration of archiving a batch of documents, per source index.",
+          "id": 719,
+          "links": [],
+          "title": "Archiving - Max duration",
+          "vizConfig": {
+            "group": "timeseries",
+            "kind": "VizConfig",
+            "spec": {
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "s",
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "lastNotNull",
+                    "max",
+                    "min"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              }
+            },
+            "version": "12.0.2"
+          }
+        }
+      },
+      "panel-720": {
+        "kind": "Panel",
+        "spec": {
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${DS_PROMETHEUS}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "editorMode": "code",
+                        "expr": "sum(rate(zeebe_camunda_exporter_archiver_index_docs_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval]))",
+                        "instant": false,
+                        "legendFormat": "docs archived",
+                        "range": true
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "A"
+                  }
+                }
+              ],
+              "queryOptions": {},
+              "transformations": []
+            }
+          },
+          "description": "Rate of documents archived, summed over all source indices.",
+          "id": 720,
+          "links": [],
+          "title": "Archiving - Doc count",
+          "vizConfig": {
+            "group": "timeseries",
+            "kind": "VizConfig",
+            "spec": {
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "ops",
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "lastNotNull",
+                    "max",
+                    "min"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              }
+            },
+            "version": "12.0.2"
+          }
+        }
+      },
       "panel-17": {
         "kind": "Panel",
         "spec": {
@@ -6693,51 +7046,12 @@
                       "spec": {
                         "element": {
                           "kind": "ElementReference",
-                          "name": "panel-18"
-                        },
-                        "height": 8,
-                        "width": 7,
-                        "x": 0,
-                        "y": 174
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-19"
-                        },
-                        "height": 8,
-                        "width": 8,
-                        "x": 7,
-                        "y": 174
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-20"
-                        },
-                        "height": 8,
-                        "width": 9,
-                        "x": 15,
-                        "y": 174
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "element": {
-                          "kind": "ElementReference",
                           "name": "panel-15"
                         },
                         "height": 8,
                         "width": 12,
                         "x": 0,
-                        "y": 182
+                        "y": 174
                       }
                     },
                     {
@@ -6750,6 +7064,45 @@
                         "height": 8,
                         "width": 12,
                         "x": 12,
+                        "y": 174
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-18"
+                        },
+                        "height": 8,
+                        "width": 7,
+                        "x": 0,
+                        "y": 182
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-19"
+                        },
+                        "height": 8,
+                        "width": 8,
+                        "x": 7,
+                        "y": 182
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-20"
+                        },
+                        "height": 8,
+                        "width": 9,
+                        "x": 15,
                         "y": 182
                       }
                     },
@@ -6784,12 +7137,51 @@
                       "spec": {
                         "element": {
                           "kind": "ElementReference",
-                          "name": "panel-48"
+                          "name": "panel-718"
                         },
                         "height": 8,
                         "width": 12,
                         "x": 0,
                         "y": 198
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-720"
+                        },
+                        "height": 8,
+                        "width": 12,
+                        "x": 12,
+                        "y": 198
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-719"
+                        },
+                        "height": 8,
+                        "width": 12,
+                        "x": 0,
+                        "y": 206
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-48"
+                        },
+                        "height": 8,
+                        "width": 12,
+                        "x": 12,
+                        "y": 206
                       }
                     }
                   ]
