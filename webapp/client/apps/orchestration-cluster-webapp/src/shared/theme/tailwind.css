@@ -78,6 +78,12 @@
 		border-width: 1px;
 	}
 
+	.tjs-table-container tbody tr[data-highlighted],
+	.tjs-table-container tbody tr[data-highlighted] td {
+		background-color: var(--info-background-subtle);
+		color: var(--neutral-foreground-subtle);
+	}
+
 	.tjs-table-container {
 		background-color: var(--viewer-layer);
 		border-width: 1px;
@@ -86,9 +92,12 @@
 	.dmn-literal-expression-container {
 		--literal-expression-font-family: inherit;
 		--literal-expression-font-family-monospace: var(--font-mono);
+		--decision-properties-background-color: var(--viewer-layer);
 		--decision-properties-border-color: var(--neutral-border-strong);
 		--decision-properties-color: var(--neutral-foreground-subtle);
+		--textarea-border-color: var(--neutral-border-strong);
 		--textarea-color: var(--neutral-foreground-subtle);
+		--literal-expression-properties-border-color: var(--neutral-border-strong);
 		--literal-expression-properties-color: var(--neutral-foreground-subtle);
 
 		table {

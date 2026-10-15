@@ -50,6 +50,10 @@ class DmnJS {
 
 	onDefinitionsChange?: (definitions: Definitions | undefined) => void;
 
+	setOnDefinitionsChange = (callback: ((definitions: Definitions | undefined) => void) | undefined) => {
+		this.onDefinitionsChange = callback;
+	};
+
 	render = async (container: HTMLElement, xml: string, decisionViewId: string) => {
 		let manager = this.#manager ?? new DecisionManager({container});
 		this.#manager = manager;
