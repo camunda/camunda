@@ -66,7 +66,7 @@ test('should have no accessibility violations in the decisions shell with the in
 	makeAxeBuilder,
 }) => {
 	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
-	await expect(operatePreviewDecisionsPage.moreFiltersCombobox).toBeVisible();
+	await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
 	await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
 	await expect(page.getByText('Invoice Approval')).toBeVisible();
 
@@ -175,6 +175,34 @@ test('should have no accessibility violations with a selected decision and the d
 	await operatePreviewDecisionsPage.goto('?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1');
 	await page.getByRole('button', {name: /Delete decision definition/}).click();
 	await expect(page.getByRole('dialog')).toBeVisible();
+
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations in the bulk action bar with a selected row', async ({
+	page,
+	operatePreviewDecisionsPage,
+	makeAxeBuilder,
+}) => {
+	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+	await page.getByRole('checkbox', {name: 'Select row 1'}).click();
+	await expect(page.getByRole('status').filter({hasText: '1 item selected'})).toBeVisible();
+
+	const results = await makeAxeBuilder().include('[data-slot="bulk-action-bar"]').analyze();
+	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations with the evaluation date picker open', async ({
+	page,
+	operatePreviewDecisionsPage,
+	makeAxeBuilder,
+}) => {
+	await page.goto(
+		`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z`,
+	);
+	await page.getByLabel('From', {exact: true}).click();
+	await expect(page.getByRole('grid')).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
