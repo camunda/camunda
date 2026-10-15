@@ -810,12 +810,9 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
-            <!-- combine.self="override" replaces the whole base <configuration>, including
-                 forkedProcessTimeoutInSeconds; repeat it here so nightly forks stay bounded too. -->
-            <configuration combine.self="override">
+            <configuration>
               <groups>dl-nightly</groups>
-              <excludedGroups/>
-              <forkedProcessTimeoutInSeconds>${failsafe.timeout}</forkedProcessTimeoutInSeconds>
+              <excludedGroups combine.self="override"/>
             </configuration>
           </plugin>
         </plugins>

@@ -30,6 +30,8 @@ import io.camunda.container.volume.CamundaVolume;
 import io.camunda.it.schema.ExporterMigrationTestHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -49,6 +51,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.OutputFrame;
 
@@ -184,7 +187,7 @@ abstract class SecondaryStorageRollingUpdateIT {
       // === Phase 1: both brokers on old version — deploy, start, drive to message subscription ===
       LOGGER.info("Starting brokers");
       final CompletableFuture<Void> broker0StartFuture = CompletableFuture.runAsync(broker0::start);
-      awaitSecondOldBrokerStartDelay();
+      awaitSchemaInitialization(storageContainer, storage);
       broker1.start();
       broker0StartFuture.join();
 
@@ -387,16 +390,27 @@ abstract class SecondaryStorageRollingUpdateIT {
     applySecondaryStorageEnv(broker, storage);
   }
 
-  private void awaitSecondOldBrokerStartDelay() {
-    final long delayStartNanos = System.nanoTime();
-    await(
-            "wait before starting second old-version broker to allow for bootstrapping liquibase without race condition")
-        .atMost(Duration.ofSeconds(10))
+  private void awaitSchemaInitialization(
+      final GenericContainer<?> storageContainer, final StorageTestCase storage) {
+    if (storage.type() != SecondaryStorageType.rdbms) {
+      return;
+    }
+
+    final var database = (JdbcDatabaseContainer<?>) storageContainer;
+    await("first broker should initialize the Liquibase schema before starting the second broker")
+        .atMost(Duration.ofMinutes(1))
+        .ignoreExceptionsInstanceOf(SQLException.class)
         .until(
-            () ->
-                Duration.ofNanos(System.nanoTime() - delayStartNanos)
-                        .compareTo(Duration.ofSeconds(3))
-                    >= 0);
+            () -> {
+              try (final var connection =
+                      DriverManager.getConnection(
+                          database.getJdbcUrl(), storage.username(), storage.password());
+                  final var statement = connection.createStatement();
+                  final var result =
+                      statement.executeQuery("SELECT COUNT(*) FROM databasechangelog")) {
+                return result.next() && result.getLong(1) > 0;
+              }
+            });
   }
 
   private void configureBroker(
