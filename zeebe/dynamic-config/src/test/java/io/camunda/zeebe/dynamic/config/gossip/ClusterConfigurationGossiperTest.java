@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.gossip;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -344,9 +345,8 @@ final class ClusterConfigurationGossiperTest {
         .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
   }
 
-  // The request is sent, but its response fails (e.g. peer down or timeout). Re-arming then happens
-  // when the response is handled. See shouldKeepSyncingWhenStartingASyncFails for the case where no
-  // request gets sent at all.
+  // The request is sent, but its response fails (e.g. peer down or timeout). See
+  // shouldKeepSyncingWhenStartingASyncFails for the case where no request gets sent at all.
   @Test
   void shouldKeepSyncingAfterAFailedSync() {
     // given
@@ -365,8 +365,8 @@ final class ClusterConfigurationGossiperTest {
         .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
   }
 
-  // Counterpart of shouldKeepSyncingAfterAFailedSync: here the failure is synchronous, while
-  // starting the sync, so there is no response to re-arm from and sync() has to do it itself.
+  // Counterpart of shouldKeepSyncingAfterAFailedSync: here the tick itself throws, so there is no
+  // response at all. The actor logs and carries on, so the next tick must already be scheduled.
   @Test
   void shouldKeepSyncingWhenStartingASyncFails() {
     // given — the membership service fails once, then recovers
@@ -378,7 +378,7 @@ final class ClusterConfigurationGossiperTest {
     fixture.start();
 
     // when — the failing tick runs
-    fixture.executor.runAll();
+    assertThatThrownBy(fixture.executor::runAll).isInstanceOf(IllegalStateException.class);
 
     // then — the next tick is scheduled and syncs with the peer
     assertThat(fixture.executor.scheduledTasks()).as("next sync tick is scheduled").isOne();
