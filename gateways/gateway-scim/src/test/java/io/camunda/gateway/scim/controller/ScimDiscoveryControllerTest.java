@@ -15,11 +15,17 @@ import com.unboundid.scim2.common.types.ResourceTypeResource;
 import com.unboundid.scim2.common.types.SchemaResource;
 import com.unboundid.scim2.common.types.ServiceProviderConfigResource;
 import com.unboundid.scim2.common.utils.JsonUtils;
+import io.camunda.gateway.scim.ScimAttributeProperties;
 import io.camunda.gateway.scim.ScimJson;
+import io.camunda.gateway.scim.mapper.ScimAttributeMapping;
+import io.camunda.gateway.scim.mapper.ScimGroupMapper;
+import io.camunda.gateway.scim.mapper.ScimUserMapper;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import tools.jackson.databind.node.ObjectNode;
 
 class ScimDiscoveryControllerTest {
 
@@ -89,6 +95,50 @@ class ScimDiscoveryControllerTest {
                   .extracting(attribute -> attribute.getName())
                   .containsExactly("displayName", "externalId", "members");
             });
+  }
+
+  @Test
+  void shouldListConfiguredExtensionUrnsAsSchemaExtensions() throws Exception {
+    // given
+    final var userUrn = "urn:ietf:params:scim:schemas:extension:acme:2.0:User";
+    final var groupUrn = "urn:acme:group";
+    final var mockMvc =
+        MockMvcBuilders.standaloneSetup(
+                new ScimDiscoveryController(
+                    ScimAttributeMapping.of(
+                        "p",
+                        List.of(
+                            new ScimAttributeProperties.Attribute("a", userUrn + ":a"),
+                            new ScimAttributeProperties.Attribute("b", userUrn + ":b"),
+                            new ScimAttributeProperties.Attribute("t", "title")),
+                        ScimUserMapper.USER_SCHEMA),
+                    ScimAttributeMapping.of(
+                        "g",
+                        List.of(new ScimAttributeProperties.Attribute("c", groupUrn + ":c")),
+                        ScimGroupMapper.GROUP_SCHEMA)))
+            .build();
+
+    // when
+    final var response = mockMvc.perform(get("/scim/v2/ResourceTypes")).andReturn().getResponse();
+
+    // then
+    final var resources =
+        ScimJson.read(response.getContentAsString(), ObjectNode.class).get("Resources");
+    for (final var type : resources) {
+      final var expected = "User".equals(type.get("name").asString()) ? userUrn : groupUrn;
+      assertThat(type.get("schemaExtensions")).hasSize(1);
+      assertThat(type.get("schemaExtensions").get(0).get("schema").asString()).isEqualTo(expected);
+      assertThat(type.get("schemaExtensions").get(0).get("required").asBoolean()).isFalse();
+    }
+  }
+
+  @Test
+  void shouldOmitSchemaExtensionsWithoutConfiguredExtensions() throws Exception {
+    // when
+    final var response = perform("/scim/v2/ResourceTypes");
+
+    // then
+    assertThat(response.getContentAsString()).doesNotContain("schemaExtensions");
   }
 
   private MockHttpServletResponse perform(final String path) throws Exception {

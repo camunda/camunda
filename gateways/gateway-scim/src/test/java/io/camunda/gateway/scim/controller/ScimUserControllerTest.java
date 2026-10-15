@@ -25,6 +25,7 @@ import com.unboundid.scim2.common.messages.ErrorResponse;
 import com.unboundid.scim2.common.messages.ListResponse;
 import com.unboundid.scim2.common.types.UserResource;
 import io.camunda.gateway.scim.ScimJson;
+import io.camunda.gateway.scim.ScimSources;
 import io.camunda.gateway.scim.error.ScimExceptionHandler;
 import io.camunda.gateway.scim.mapper.ScimPatchTranslator;
 import io.camunda.gateway.scim.mapper.ScimUserMapper;
@@ -40,6 +41,8 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -81,7 +84,8 @@ class ScimUserControllerTest {
                     serviceRegistry,
                     authenticationProvider,
                     new ScimUserMapper(),
-                    new ScimPatchTranslator()))
+                    new ScimPatchTranslator(),
+                    new ScimSources(List.of())))
             .setControllerAdvice(new ScimExceptionHandler())
             .build();
   }
@@ -125,7 +129,9 @@ class ScimUserControllerTest {
     final var dto = ArgumentCaptor.forClass(UserDTO.class);
     verify(userServices).createUser(dto.capture(), eq(AUTHENTICATION));
     assertThat(dto.getValue())
-        .isEqualTo(new UserDTO("alice", "Alice", "alice@example.com", "", "ext-1", true));
+        .isEqualTo(
+            new UserDTO(
+                "alice", "Alice", "alice@example.com", "", "ext-1", true, Map.of(), "default"));
   }
 
   @Test
@@ -366,6 +372,7 @@ class ScimUserControllerTest {
     verify(userServices).updateUser(any(), attributes.capture(), eq(AUTHENTICATION));
     assertThat(attributes.getValue())
         .containsExactlyInAnyOrder(
+            UserAttribute.SOURCE,
             UserAttribute.NAME,
             UserAttribute.EMAIL,
             UserAttribute.EXTERNAL_ID,
@@ -417,7 +424,8 @@ class ScimUserControllerTest {
     final var dto = ArgumentCaptor.forClass(UserDTO.class);
     final var attributes = ArgumentCaptor.forClass(Set.class);
     verify(userServices).updateUser(dto.capture(), attributes.capture(), eq(AUTHENTICATION));
-    assertThat(attributes.getValue()).containsExactly(UserAttribute.ACTIVE);
+    assertThat(attributes.getValue())
+        .containsExactlyInAnyOrder(UserAttribute.ACTIVE, UserAttribute.SOURCE);
     assertThat(dto.getValue().active()).isFalse();
     verify(userServices, never()).getUser(any(), any());
   }
@@ -489,7 +497,7 @@ class ScimUserControllerTest {
   @Test
   void shouldDeleteUser() throws Exception {
     // given
-    when(userServices.deleteUser("alice", AUTHENTICATION))
+    when(userServices.deleteUser("alice", "default", true, AUTHENTICATION))
         .thenReturn(CompletableFuture.completedFuture(new UserRecord().setUsername("alice")));
 
     // when
@@ -503,7 +511,7 @@ class ScimUserControllerTest {
   @Test
   void shouldMapNotFoundOnDelete() throws Exception {
     // given
-    when(userServices.deleteUser("ghost", AUTHENTICATION))
+    when(userServices.deleteUser("ghost", "default", true, AUTHENTICATION))
         .thenReturn(CompletableFuture.failedFuture(new ServiceException("nope", Status.NOT_FOUND)));
 
     // when

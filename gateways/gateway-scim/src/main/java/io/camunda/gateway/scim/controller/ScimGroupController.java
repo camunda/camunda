@@ -13,6 +13,8 @@ import com.unboundid.scim2.common.messages.PatchRequest;
 import com.unboundid.scim2.common.types.GroupResource;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.gateway.scim.ScimJson;
+import io.camunda.gateway.scim.ScimSources;
+import io.camunda.gateway.scim.ScimSources.Source;
 import io.camunda.gateway.scim.mapper.ScimGroupFilter;
 import io.camunda.gateway.scim.mapper.ScimGroupIdGenerator;
 import io.camunda.gateway.scim.mapper.ScimGroupMapper;
@@ -25,16 +27,21 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.service.GroupServices;
+import io.camunda.service.GroupServices.GroupAttribute;
+import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
@@ -90,18 +97,21 @@ public class ScimGroupController {
   private final ScimGroupMapper groupMapper;
   private final ScimGroupPatchTranslator patchTranslator;
   private final ScimGroupIdGenerator idGenerator;
+  private final ScimSources sources;
 
   public ScimGroupController(
       final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final ScimGroupMapper groupMapper,
       final ScimGroupPatchTranslator patchTranslator,
-      final ScimGroupIdGenerator idGenerator) {
+      final ScimGroupIdGenerator idGenerator,
+      final ScimSources sources) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     this.groupMapper = groupMapper;
     this.patchTranslator = patchTranslator;
     this.idGenerator = idGenerator;
+    this.sources = sources;
   }
 
   @PostMapping
@@ -110,18 +120,22 @@ public class ScimGroupController {
     final var resource = ScimJson.read(body, GroupResource.class);
     final var members = groupMapper.memberIds(resource.getMembers());
     final var groupId = idGenerator.generate(resource.getDisplayName(), resource.getExternalId());
-    final var dto =
-        groupMapper.toCreateDto(resource, groupId, ScimJson.read(body, ObjectNode.class));
     final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var source = sources.require(authentication);
+    final var dto =
+        withSource(
+            groupMapper.toCreateDto(resource, groupId, ScimJson.read(body, ObjectNode.class)),
+            source);
     // the futures complete on a broker thread, where the request context is no longer bound
     final var location = location(groupId);
     final var memberRef = memberRef();
     final var services = groupServices();
     return services
         .createGroup(dto, authentication)
+        .exceptionallyCompose(error -> adoptExisting(error, services, dto, source, authentication))
         .thenCompose(
             record ->
-                setMembers(services, groupId, members, authentication, !members.isEmpty())
+                setMembers(services, groupId, members, source, authentication, !members.isEmpty())
                     .thenApply(
                         ignored ->
                             ResponseEntity.status(HttpStatus.CREATED)
@@ -136,10 +150,14 @@ public class ScimGroupController {
   @GetMapping("/{id}")
   public ResponseEntity<String> getGroup(
       @PathVariable final String id,
-      @RequestParam(name = "excludedAttributes", required = false)
-          final String excludedAttributes) {
+      @RequestParam(name = "excludedAttributes", required = false) final String excludedAttributes)
+      throws ScimException {
     final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var source = sources.require(authentication);
     final var entity = groupServices().getGroup(id, authentication);
+    if (!source.canSee(entity.source())) {
+      throw notFound(id);
+    }
     return ok(
         ScimJson.write(
             toResource(entity, authentication, !excludesMembers(excludedAttributes), memberRef())));
@@ -164,19 +182,25 @@ public class ScimGroupController {
                     .page(p -> p.from(start - 1).size(Math.max(size, 1))));
 
     final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var source = sources.require(authentication);
     final var result = groupServices().search(query, authentication);
 
+    // the source is filtered in memory after the search, so the total is reduced by the hidden
+    // entities of this page only (POC)
+    final var visible =
+        result.items().stream().filter(entity -> source.canSee(entity.source())).toList();
+    final long total = result.total() - (result.items().size() - visible.size());
     final var withMembers = !excludesMembers(excludedAttributes);
     final var memberRef = memberRef();
     final List<ObjectNode> resources =
-        result.items().stream()
+        visible.stream()
             .limit(size)
             .map(entity -> toResource(entity, authentication, withMembers, memberRef))
             .toList();
     return ok(
         ScimJson.write(
             new ListResponse<>(
-                result.total() > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) result.total(),
+                total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total,
                 resources,
                 start,
                 resources.size())));
@@ -187,16 +211,19 @@ public class ScimGroupController {
       @PathVariable final String id, @RequestBody final String body) throws ScimException {
     final var resource = ScimJson.read(body, GroupResource.class);
     final var members = groupMapper.memberIds(resource.getMembers());
-    final var dto = groupMapper.toReplaceDto(resource, id, ScimJson.read(body, ObjectNode.class));
     final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var source = sources.require(authentication);
+    final var dto =
+        withSource(
+            groupMapper.toReplaceDto(resource, id, ScimJson.read(body, ObjectNode.class)), source);
     final var location = location(id);
     final var memberRef = memberRef();
     final var services = groupServices();
     return services
-        .updateGroup(dto, groupMapper.replacedAttributes(), authentication)
+        .updateGroup(dto, withAdoption(groupMapper.replacedAttributes(), source), authentication)
         .thenCompose(
             record ->
-                setMembers(services, id, members, authentication, true)
+                setMembers(services, id, members, source, authentication, true)
                     .thenApply(
                         ignored ->
                             ok(
@@ -209,10 +236,13 @@ public class ScimGroupController {
       @PathVariable final String id, @RequestBody final String body) throws ScimException {
     final var patch = patchTranslator.translate(ScimJson.read(body, PatchRequest.class), id);
     final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var source = sources.require(authentication);
     final var services = groupServices();
     if (patch.changedAttributes().isEmpty() && patch.memberChanges().isEmpty()) {
       // nothing to apply, but an unknown group must still answer 404
-      services.getGroup(id, authentication);
+      if (!source.canSee(services.getGroup(id, authentication).source())) {
+        throw notFound(id);
+      }
       return CompletableFuture.completedFuture(ResponseEntity.noContent().build());
     }
     CompletableFuture<Void> applied = CompletableFuture.completedFuture(null);
@@ -221,21 +251,27 @@ public class ScimGroupController {
           applied.thenCompose(
               ignored ->
                   services
-                      .updateGroup(patch.group(), patch.changedAttributes(), authentication)
+                      .updateGroup(
+                          withSource(patch.group(), source),
+                          withAdoption(patch.changedAttributes(), source),
+                          authentication)
                       .thenApply(record -> null));
     }
     for (final MemberChange change : patch.memberChanges()) {
       applied =
-          applied.thenCompose(ignored -> applyMemberChange(services, id, change, authentication));
+          applied.thenCompose(
+              ignored -> applyMemberChange(services, id, change, source, authentication));
     }
     return applied.thenApply(ignored -> ResponseEntity.noContent().build());
   }
 
   @DeleteMapping("/{id}")
-  public CompletableFuture<ResponseEntity<Void>> deleteGroup(@PathVariable final String id) {
+  public CompletableFuture<ResponseEntity<Void>> deleteGroup(@PathVariable final String id)
+      throws ScimException {
     final var authentication = authenticationProvider.getCamundaAuthentication();
+    final var source = sources.require(authentication);
     return groupServices()
-        .deleteGroup(id, authentication)
+        .deleteGroup(id, source.id(), source.adoptUnowned(), authentication)
         .thenApply(record -> ResponseEntity.noContent().build());
   }
 
@@ -243,22 +279,31 @@ public class ScimGroupController {
       final GroupServices services,
       final String groupId,
       final MemberChange change,
+      final Source source,
       final CamundaAuthentication authentication) {
     return switch (change.type()) {
-      case SET -> setMembers(services, groupId, change.memberIds(), authentication, true);
+      case SET -> setMembers(services, groupId, change.memberIds(), source, authentication, true);
       case ADD ->
           forEachMember(
               change,
               memberId ->
                   tolerate(
-                      services.assignMember(member(groupId, memberId), authentication),
+                      services.assignMember(
+                          member(groupId, memberId),
+                          source.id(),
+                          source.adoptUnowned(),
+                          authentication),
                       error -> error.getStatus() == Status.ALREADY_EXISTS));
       case REMOVE ->
           forEachMember(
               change,
               memberId ->
                   tolerate(
-                      services.removeMember(member(groupId, memberId), authentication),
+                      services.removeMember(
+                          member(groupId, memberId),
+                          source.id(),
+                          source.adoptUnowned(),
+                          authentication),
                       ScimGroupController::isMemberNotFound));
     };
   }
@@ -276,13 +321,15 @@ public class ScimGroupController {
       final GroupServices services,
       final String groupId,
       final List<String> members,
+      final Source source,
       final CamundaAuthentication authentication,
       final boolean send) {
     if (!send) {
       return CompletableFuture.completedFuture(null);
     }
     return services
-        .setMembers(groupId, EntityType.USER, members, authentication)
+        .setMembers(
+            groupId, EntityType.USER, members, source.id(), source.adoptUnowned(), authentication)
         .thenApply(record -> null);
   }
 
@@ -316,6 +363,63 @@ public class ScimGroupController {
               ? completion
               : new CompletionException(error);
         });
+  }
+
+  /**
+   * A create of an existing group that no source owns becomes an update that adopts it, if the
+   * source allows adoption. Every other failure, including a group of another source, is reported
+   * as is.
+   */
+  private CompletableFuture<GroupRecord> adoptExisting(
+      final Throwable error,
+      final GroupServices services,
+      final GroupDTO dto,
+      final Source source,
+      final CamundaAuthentication authentication) {
+    final var cause =
+        error instanceof CompletionException && error.getCause() != null ? error.getCause() : error;
+    if (source.adoptUnowned()
+        && cause instanceof final ServiceException serviceException
+        && serviceException.getStatus() == Status.ALREADY_EXISTS
+        && isUnowned(services, dto.groupId(), authentication)) {
+      return services.updateGroup(
+          dto, withAdoption(groupMapper.replacedAttributes(), source), authentication);
+    }
+    return CompletableFuture.failedFuture(cause);
+  }
+
+  private static boolean isUnowned(
+      final GroupServices services, final String groupId, final CamundaAuthentication auth) {
+    try {
+      final var source = services.getGroup(groupId, auth).source();
+      return source == null || source.isEmpty();
+    } catch (final RuntimeException e) {
+      return false;
+    }
+  }
+
+  private static GroupDTO withSource(final GroupDTO dto, final Source source) {
+    return new GroupDTO(
+        dto.groupId(),
+        dto.name(),
+        dto.description(),
+        dto.externalId(),
+        dto.attributes(),
+        source.id());
+  }
+
+  private static Set<GroupAttribute> withAdoption(
+      final Set<GroupAttribute> attributes, final Source source) {
+    if (!source.adoptUnowned()) {
+      return attributes;
+    }
+    final Set<GroupAttribute> withSource = EnumSet.copyOf(attributes);
+    withSource.add(GroupAttribute.SOURCE);
+    return withSource;
+  }
+
+  private static ScimException notFound(final String id) {
+    return new ScimException(404, null, "Group '" + id + "' not found");
   }
 
   private static GroupMemberDTO member(final String groupId, final String memberId) {

@@ -21,6 +21,15 @@ public class ScimAttributeProperties {
 
   private List<Attribute> userAttributes = new ArrayList<>();
   private List<Attribute> groupAttributes = new ArrayList<>();
+  private List<SourceProperties> sources = new ArrayList<>();
+
+  public List<SourceProperties> getSources() {
+    return sources;
+  }
+
+  public void setSources(final List<SourceProperties> sources) {
+    this.sources = sources;
+  }
 
   public List<Attribute> getUserAttributes() {
     return userAttributes;
@@ -64,6 +73,55 @@ public class ScimAttributeProperties {
 
     public void setPath(final String path) {
       this.path = path;
+    }
+  }
+
+  /** A SCIM source as configured under {@code camunda.scim.sources}. */
+  public static class SourceProperties {
+    private String id;
+    private List<String> clientIds = new ArrayList<>();
+    private String oidcRegistration;
+    private String loginBindingClaim;
+    private boolean adoptUnowned;
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(final String id) {
+      this.id = id;
+    }
+
+    public List<String> getClientIds() {
+      return clientIds;
+    }
+
+    public void setClientIds(final List<String> clientIds) {
+      this.clientIds = clientIds;
+    }
+
+    public String getOidcRegistration() {
+      return oidcRegistration;
+    }
+
+    public void setOidcRegistration(final String oidcRegistration) {
+      this.oidcRegistration = oidcRegistration;
+    }
+
+    public String getLoginBindingClaim() {
+      return loginBindingClaim;
+    }
+
+    public void setLoginBindingClaim(final String loginBindingClaim) {
+      this.loginBindingClaim = loginBindingClaim;
+    }
+
+    public boolean isAdoptUnowned() {
+      return adoptUnowned;
+    }
+
+    public void setAdoptUnowned(final boolean adoptUnowned) {
+      this.adoptUnowned = adoptUnowned;
     }
   }
 }

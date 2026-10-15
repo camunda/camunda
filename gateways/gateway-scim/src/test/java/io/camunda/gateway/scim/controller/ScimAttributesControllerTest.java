@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.unboundid.scim2.common.messages.ErrorResponse;
 import io.camunda.gateway.scim.ScimAttributeProperties.Attribute;
 import io.camunda.gateway.scim.ScimJson;
+import io.camunda.gateway.scim.ScimSources;
 import io.camunda.gateway.scim.error.ScimExceptionHandler;
 import io.camunda.gateway.scim.mapper.ScimAttributeMapping;
 import io.camunda.gateway.scim.mapper.ScimGroupIdGenerator;
@@ -110,13 +111,15 @@ class ScimAttributesControllerTest {
                     serviceRegistry,
                     authenticationProvider,
                     userMapper,
-                    new ScimPatchTranslator(userMapper.attributes())),
+                    new ScimPatchTranslator(userMapper.attributes()),
+                    new ScimSources(List.of())),
                 new ScimGroupController(
                     serviceRegistry,
                     authenticationProvider,
                     groupMapper,
                     new ScimGroupPatchTranslator(groupMapper),
-                    new ScimGroupIdGenerator(new IdentifierValidator(ID_PATTERN, ID_PATTERN))))
+                    new ScimGroupIdGenerator(new IdentifierValidator(ID_PATTERN, ID_PATTERN)),
+                    new ScimSources(List.of())))
             .setControllerAdvice(new ScimExceptionHandler())
             .build();
   }
@@ -249,7 +252,8 @@ class ScimAttributesControllerTest {
     final var dto = ArgumentCaptor.forClass(UserDTO.class);
     final var mask = ArgumentCaptor.forClass(Set.class);
     verify(userServices).updateUser(dto.capture(), mask.capture(), eq(AUTHENTICATION));
-    assertThat(mask.getValue()).containsExactly(UserAttribute.ATTRIBUTES_MERGE);
+    assertThat(mask.getValue())
+        .containsExactlyInAnyOrder(UserAttribute.ATTRIBUTES_MERGE, UserAttribute.SOURCE);
     assertThat(dto.getValue().attributes()).isEqualTo(Map.of("department", "Sales"));
     final var body = ScimJson.read(response.getContentAsString(), ObjectNode.class);
     assertThat(body.get(ENTERPRISE).get("department").asString()).isEqualTo("Sales");
@@ -335,7 +339,8 @@ class ScimAttributesControllerTest {
     final var dto = ArgumentCaptor.forClass(GroupDTO.class);
     final var mask = ArgumentCaptor.forClass(Set.class);
     verify(groupServices).updateGroup(dto.capture(), mask.capture(), eq(AUTHENTICATION));
-    assertThat(mask.getValue()).containsExactly(GroupAttribute.ATTRIBUTES_MERGE);
+    assertThat(mask.getValue())
+        .containsExactlyInAnyOrder(GroupAttribute.ATTRIBUTES_MERGE, GroupAttribute.SOURCE);
     assertThat(dto.getValue().attributes()).containsOnlyKeys("costCenter");
     assertThat(dto.getValue().attributes().get("costCenter")).isNull();
   }

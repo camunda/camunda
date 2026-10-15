@@ -31,6 +31,11 @@ import org.springframework.context.annotation.Bean;
 public class ScimGatewayAutoConfiguration {
 
   @Bean
+  public ScimSources scimSources(final ScimAttributeProperties properties) {
+    return new ScimSources(properties.getSources());
+  }
+
+  @Bean
   public ScimUserMapper scimUserMapper(final ScimAttributeProperties properties) {
     return new ScimUserMapper(
         ScimAttributeMapping.of(
@@ -49,9 +54,10 @@ public class ScimGatewayAutoConfiguration {
       final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final ScimUserMapper userMapper,
-      final ScimPatchTranslator patchTranslator) {
+      final ScimPatchTranslator patchTranslator,
+      final ScimSources sources) {
     return new ScimUserController(
-        serviceRegistry, authenticationProvider, userMapper, patchTranslator);
+        serviceRegistry, authenticationProvider, userMapper, patchTranslator, sources);
   }
 
   @Bean
@@ -79,9 +85,15 @@ public class ScimGatewayAutoConfiguration {
       final CamundaAuthenticationProvider authenticationProvider,
       final ScimGroupMapper groupMapper,
       final ScimGroupPatchTranslator patchTranslator,
-      final ScimGroupIdGenerator idGenerator) {
+      final ScimGroupIdGenerator idGenerator,
+      final ScimSources sources) {
     return new ScimGroupController(
-        serviceRegistry, authenticationProvider, groupMapper, patchTranslator, idGenerator);
+        serviceRegistry,
+        authenticationProvider,
+        groupMapper,
+        patchTranslator,
+        idGenerator,
+        sources);
   }
 
   @Bean

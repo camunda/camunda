@@ -49,6 +49,33 @@ class ScimAttributePropertiesTest {
   }
 
   @Test
+  void shouldBindSourcesFromYamlShapedConfiguration() {
+    // given
+    final var source =
+        new MapConfigurationPropertySource(
+            Map.of(
+                "camunda.scim.sources[0].id", "entra",
+                "camunda.scim.sources[0].client-ids[0]", "c1",
+                "camunda.scim.sources[0].client-ids[1]", "c2",
+                "camunda.scim.sources[0].oidc-registration", "entra",
+                "camunda.scim.sources[0].login-binding-claim", "oid",
+                "camunda.scim.sources[0].adopt-unowned", "true"));
+
+    // when
+    final var properties =
+        new Binder(source).bind("camunda.scim", ScimAttributeProperties.class).get();
+
+    // then
+    assertThat(properties.getSources()).hasSize(1);
+    final var bound = properties.getSources().getFirst();
+    assertThat(bound.getId()).isEqualTo("entra");
+    assertThat(bound.getClientIds()).containsExactly("c1", "c2");
+    assertThat(bound.getOidcRegistration()).isEqualTo("entra");
+    assertThat(bound.getLoginBindingClaim()).isEqualTo("oid");
+    assertThat(bound.isAdoptUnowned()).isTrue();
+  }
+
+  @Test
   void shouldListConfiguredExtensionAttributesInSchemas() throws Exception {
     // given
     final var mapping =

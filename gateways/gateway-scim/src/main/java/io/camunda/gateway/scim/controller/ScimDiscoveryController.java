@@ -16,8 +16,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +40,7 @@ public class ScimDiscoveryController {
   private static final MediaType SCIM_MEDIA_TYPE = MediaType.parseMediaType(ScimJson.MEDIA_TYPE);
 
   private final String serviceProviderConfig = load("ServiceProviderConfig");
-  private final String resourceTypes = load("ResourceTypes");
+  private final String resourceTypes;
   private final String schemas;
 
   public ScimDiscoveryController() {
@@ -49,6 +51,7 @@ public class ScimDiscoveryController {
 
   public ScimDiscoveryController(
       final ScimAttributeMapping userAttributes, final ScimAttributeMapping groupAttributes) {
+    resourceTypes = withSchemaExtensions(load("ResourceTypes"), userAttributes, groupAttributes);
     schemas = withExtensionSchemas(load("Schemas"), userAttributes, groupAttributes);
   }
 
@@ -65,6 +68,42 @@ public class ScimDiscoveryController {
   @GetMapping("/Schemas")
   public ResponseEntity<String> getSchemas() {
     return ok(schemas);
+  }
+
+  /** Lists the configured extension URNs under {@code schemaExtensions} of User and Group. */
+  private static String withSchemaExtensions(
+      final String document,
+      final ScimAttributeMapping userAttributes,
+      final ScimAttributeMapping groupAttributes) {
+    final var userUrns = urns(userAttributes);
+    final var groupUrns = urns(groupAttributes);
+    if (userUrns.isEmpty() && groupUrns.isEmpty()) {
+      return document;
+    }
+    try {
+      final var root = ScimJson.read(document, ObjectNode.class);
+      for (final var resource : (ArrayNode) root.get("Resources")) {
+        final var type = (ObjectNode) resource;
+        final var urns = "User".equals(type.get("name").asString()) ? userUrns : groupUrns;
+        if (!urns.isEmpty()) {
+          final var extensions = type.putArray("schemaExtensions");
+          urns.forEach(urn -> extensions.addObject().put("schema", urn).put("required", false));
+        }
+      }
+      return ScimJson.write(root);
+    } catch (final BadRequestException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private static Set<String> urns(final ScimAttributeMapping mapping) {
+    final Map<String, String> byLowerCase = new LinkedHashMap<>();
+    for (final var attribute : mapping.attributes()) {
+      if (attribute.urn() != null) {
+        byLowerCase.putIfAbsent(attribute.urn().toLowerCase(Locale.ROOT), attribute.urn());
+      }
+    }
+    return new LinkedHashSet<>(byLowerCase.values());
   }
 
   private static String withExtensionSchemas(

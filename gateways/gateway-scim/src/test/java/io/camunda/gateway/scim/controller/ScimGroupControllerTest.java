@@ -10,6 +10,7 @@ package io.camunda.gateway.scim.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -30,6 +31,7 @@ import com.unboundid.scim2.common.messages.ErrorResponse;
 import com.unboundid.scim2.common.messages.ListResponse;
 import com.unboundid.scim2.common.types.GroupResource;
 import io.camunda.gateway.scim.ScimJson;
+import io.camunda.gateway.scim.ScimSources;
 import io.camunda.gateway.scim.error.ScimExceptionHandler;
 import io.camunda.gateway.scim.mapper.ScimGroupIdGenerator;
 import io.camunda.gateway.scim.mapper.ScimGroupMapper;
@@ -52,6 +54,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -96,7 +99,8 @@ class ScimGroupControllerTest {
                     authenticationProvider,
                     mapper,
                     new ScimGroupPatchTranslator(mapper),
-                    new ScimGroupIdGenerator(new IdentifierValidator(ID_PATTERN, ID_PATTERN))))
+                    new ScimGroupIdGenerator(new IdentifierValidator(ID_PATTERN, ID_PATTERN)),
+                    new ScimSources(List.of())))
             .setControllerAdvice(new ScimExceptionHandler())
             .build();
   }
@@ -111,7 +115,8 @@ class ScimGroupControllerTest {
                     .setGroupId("engineering-ops")
                     .setName("Engineering & Ops")
                     .setExternalId("ext-1")));
-    when(groupServices.setMembers(any(), any(), anyCollection(), eq(AUTHENTICATION)))
+    when(groupServices.setMembers(
+            any(), any(), anyCollection(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
 
     // when
@@ -148,9 +153,15 @@ class ScimGroupControllerTest {
     order
         .verify(groupServices)
         .setMembers(
-            "engineering-ops", EntityType.USER, List.of("alice", "bob@x.io"), AUTHENTICATION);
+            "engineering-ops",
+            EntityType.USER,
+            List.of("alice", "bob@x.io"),
+            "default",
+            true,
+            AUTHENTICATION);
     assertThat(dto.getValue())
-        .isEqualTo(new GroupDTO("engineering-ops", "Engineering & Ops", "", "ext-1"));
+        .isEqualTo(
+            new GroupDTO("engineering-ops", "Engineering & Ops", "", "ext-1", Map.of(), "default"));
   }
 
   @Test
@@ -167,7 +178,8 @@ class ScimGroupControllerTest {
 
     // then
     assertThat(response.getStatus()).isEqualTo(201);
-    verify(groupServices, never()).setMembers(any(), any(), anyCollection(), any());
+    verify(groupServices, never())
+        .setMembers(any(), any(), anyCollection(), any(), anyBoolean(), any());
   }
 
   @Test
@@ -178,7 +190,8 @@ class ScimGroupControllerTest {
             CompletableFuture.supplyAsync(
                 () -> new GroupRecord().setGroupId("eng").setName("Eng"),
                 CompletableFuture.delayedExecutor(50, TimeUnit.MILLISECONDS)));
-    when(groupServices.setMembers(any(), any(), anyCollection(), eq(AUTHENTICATION)))
+    when(groupServices.setMembers(
+            any(), any(), anyCollection(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(
             CompletableFuture.supplyAsync(
                 GroupRecord::new, CompletableFuture.delayedExecutor(50, TimeUnit.MILLISECONDS)));
@@ -243,7 +256,8 @@ class ScimGroupControllerTest {
     when(groupServices.createGroup(any(), eq(AUTHENTICATION)))
         .thenReturn(
             CompletableFuture.completedFuture(new GroupRecord().setGroupId("eng").setName("Eng")));
-    when(groupServices.setMembers(any(), any(), anyCollection(), eq(AUTHENTICATION)))
+    when(groupServices.setMembers(
+            any(), any(), anyCollection(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(
             CompletableFuture.failedFuture(new ServiceException("no such user", Status.NOT_FOUND)));
 
@@ -256,7 +270,7 @@ class ScimGroupControllerTest {
 
     // then
     assertError(response, 404, null);
-    verify(groupServices, never()).deleteGroup(any(), any());
+    verify(groupServices, never()).deleteGroup(any(), any(), anyBoolean(), any());
   }
 
   @Test
@@ -428,7 +442,8 @@ class ScimGroupControllerTest {
                     .setName("Engineering")
                     .setDescription("kept")
                     .setExternalId("kc-1")));
-    when(groupServices.setMembers(any(), any(), anyCollection(), eq(AUTHENTICATION)))
+    when(groupServices.setMembers(
+            any(), any(), anyCollection(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
 
     // when
@@ -454,10 +469,13 @@ class ScimGroupControllerTest {
     order.verify(groupServices).updateGroup(dto.capture(), mask.capture(), eq(AUTHENTICATION));
     order
         .verify(groupServices)
-        .setMembers("eng", EntityType.USER, List.of("alice", "bob"), AUTHENTICATION);
-    assertThat(dto.getValue()).isEqualTo(new GroupDTO("eng", "Engineering", "", "kc-1"));
+        .setMembers(
+            "eng", EntityType.USER, List.of("alice", "bob"), "default", true, AUTHENTICATION);
+    assertThat(dto.getValue())
+        .isEqualTo(new GroupDTO("eng", "Engineering", "", "kc-1", Map.of(), "default"));
     assertThat(mask.getValue())
-        .containsExactlyInAnyOrder(GroupAttribute.NAME, GroupAttribute.EXTERNAL_ID);
+        .containsExactlyInAnyOrder(
+            GroupAttribute.NAME, GroupAttribute.EXTERNAL_ID, GroupAttribute.SOURCE);
   }
 
   @Test
@@ -466,7 +484,8 @@ class ScimGroupControllerTest {
     when(groupServices.updateGroup(any(), any(), eq(AUTHENTICATION)))
         .thenReturn(
             CompletableFuture.completedFuture(new GroupRecord().setGroupId("eng").setName("E")));
-    when(groupServices.setMembers(any(), any(), anyCollection(), eq(AUTHENTICATION)))
+    when(groupServices.setMembers(
+            any(), any(), anyCollection(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
 
     // when
@@ -476,7 +495,8 @@ class ScimGroupControllerTest {
 
     // then
     assertThat(response.getStatus()).isEqualTo(200);
-    verify(groupServices).setMembers("eng", EntityType.USER, List.of(), AUTHENTICATION);
+    verify(groupServices)
+        .setMembers("eng", EntityType.USER, List.of(), "default", true, AUTHENTICATION);
   }
 
   @Test
@@ -492,7 +512,8 @@ class ScimGroupControllerTest {
 
     // then
     assertError(response, 404, null);
-    verify(groupServices, never()).setMembers(any(), any(), anyCollection(), any());
+    verify(groupServices, never())
+        .setMembers(any(), any(), anyCollection(), any(), anyBoolean(), any());
   }
 
   @Test
@@ -521,12 +542,15 @@ class ScimGroupControllerTest {
     order
         .verify(groupServices)
         .updateGroup(
-            eq(new GroupDTO("eng", "Renamed", "", "kc-1")), mask.capture(), eq(AUTHENTICATION));
+            eq(new GroupDTO("eng", "Renamed", "", "kc-1", Map.of(), "default")),
+            mask.capture(),
+            eq(AUTHENTICATION));
     order
         .verify(groupServices)
-        .setMembers("eng", EntityType.USER, List.of("alice"), AUTHENTICATION);
+        .setMembers("eng", EntityType.USER, List.of("alice"), "default", true, AUTHENTICATION);
     assertThat(mask.getValue())
-        .containsExactlyInAnyOrder(GroupAttribute.NAME, GroupAttribute.EXTERNAL_ID);
+        .containsExactlyInAnyOrder(
+            GroupAttribute.NAME, GroupAttribute.EXTERNAL_ID, GroupAttribute.SOURCE);
   }
 
   @Test
@@ -543,7 +567,8 @@ class ScimGroupControllerTest {
 
     // then
     assertThat(response.getStatus()).isEqualTo(204);
-    verify(groupServices).setMembers("eng", EntityType.USER, List.of(), AUTHENTICATION);
+    verify(groupServices)
+        .setMembers("eng", EntityType.USER, List.of(), "default", true, AUTHENTICATION);
     verify(groupServices, never()).updateGroup(any(), any(), any());
   }
 
@@ -551,9 +576,9 @@ class ScimGroupControllerTest {
   void shouldPatchEntraStyleAddRemoveAndRenameInOrder() throws Exception {
     // given
     stubUpdateAndSet();
-    when(groupServices.assignMember(any(), eq(AUTHENTICATION)))
+    when(groupServices.assignMember(any(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
-    when(groupServices.removeMember(any(), eq(AUTHENTICATION)))
+    when(groupServices.removeMember(any(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
 
     // when
@@ -575,21 +600,23 @@ class ScimGroupControllerTest {
     order
         .verify(groupServices)
         .updateGroup(
-            eq(new GroupDTO("eng", "Eng", "", "")),
-            eq(Set.of(GroupAttribute.NAME)),
+            eq(new GroupDTO("eng", "Eng", "", "", Map.of(), "default")),
+            eq(Set.of(GroupAttribute.NAME, GroupAttribute.SOURCE)),
             eq(AUTHENTICATION));
     order
         .verify(groupServices)
-        .assignMember(new GroupMemberDTO("eng", "alice", EntityType.USER), AUTHENTICATION);
+        .assignMember(
+            new GroupMemberDTO("eng", "alice", EntityType.USER), "default", true, AUTHENTICATION);
     order
         .verify(groupServices)
-        .removeMember(new GroupMemberDTO("eng", "bob", EntityType.USER), AUTHENTICATION);
+        .removeMember(
+            new GroupMemberDTO("eng", "bob", EntityType.USER), "default", true, AUTHENTICATION);
   }
 
   @Test
   void shouldTreatAlreadyAssignedMemberAsSuccess() throws Exception {
     // given
-    when(groupServices.assignMember(any(), eq(AUTHENTICATION)))
+    when(groupServices.assignMember(any(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException("assigned", Status.ALREADY_EXISTS)));
@@ -610,7 +637,7 @@ class ScimGroupControllerTest {
   @Test
   void shouldTreatMissingMemberOnRemovalAsSuccess() throws Exception {
     // given
-    when(groupServices.removeMember(any(), eq(AUTHENTICATION)))
+    when(groupServices.removeMember(any(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException(
@@ -632,7 +659,7 @@ class ScimGroupControllerTest {
   @Test
   void shouldAnswerNotFoundWhenTheGroupIsMissingOnMemberRemoval() throws Exception {
     // given
-    when(groupServices.removeMember(any(), eq(AUTHENTICATION)))
+    when(groupServices.removeMember(any(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException(
@@ -654,7 +681,7 @@ class ScimGroupControllerTest {
   @Test
   void shouldPatchWhenEngineRespondsOnAnotherThread() throws Exception {
     // given
-    when(groupServices.assignMember(any(), eq(AUTHENTICATION)))
+    when(groupServices.assignMember(any(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(
             CompletableFuture.supplyAsync(
                 GroupRecord::new, CompletableFuture.delayedExecutor(50, TimeUnit.MILLISECONDS)));
@@ -705,7 +732,7 @@ class ScimGroupControllerTest {
   @Test
   void shouldDeleteGroup() throws Exception {
     // given
-    when(groupServices.deleteGroup("eng", AUTHENTICATION))
+    when(groupServices.deleteGroup("eng", "default", true, AUTHENTICATION))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
 
     // when
@@ -719,7 +746,7 @@ class ScimGroupControllerTest {
   @Test
   void shouldMapNotFoundOnDelete() throws Exception {
     // given
-    when(groupServices.deleteGroup("ghost", AUTHENTICATION))
+    when(groupServices.deleteGroup("ghost", "default", true, AUTHENTICATION))
         .thenReturn(CompletableFuture.failedFuture(new ServiceException("nope", Status.NOT_FOUND)));
 
     // when
@@ -734,7 +761,9 @@ class ScimGroupControllerTest {
         .when(groupServices.updateGroup(any(), any(), eq(AUTHENTICATION)))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord().setGroupId("eng")));
     lenient()
-        .when(groupServices.setMembers(any(), any(), anyCollection(), eq(AUTHENTICATION)))
+        .when(
+            groupServices.setMembers(
+                any(), any(), anyCollection(), eq("default"), eq(true), eq(AUTHENTICATION)))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
   }
 
