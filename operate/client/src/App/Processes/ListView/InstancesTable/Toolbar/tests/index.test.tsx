@@ -254,6 +254,29 @@ describe('<ProcessOperations />', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should disable suspend and cancel when all instances are selected with only finished state filters', () => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 2,
+      visibleIds: ['1', '2'],
+      visibleRunningIds: [],
+      visibleFinishedIds: ['1', '2'],
+      visibleIncidentIds: [],
+    });
+    processInstancesSelectionStore.resetState();
+    processInstancesSelectionStore.selectAll();
+
+    render(<Toolbar selectedInstancesCount={2} />, {
+      wrapper: ({children}) => (
+        <Wrapper initialEntries={['/processes?completed=true&canceled=true']}>
+          {children}
+        </Wrapper>
+      ),
+    });
+
+    expect(screen.getByRole('button', {name: 'Suspend'})).toBeDisabled();
+    expect(screen.getByTestId('cancel-batch-operation')).toBeDisabled();
+  });
+
   describe('suspended instances', () => {
     const WrapperWithoutFilters = ({children}: Props) => (
       <Wrapper initialEntries={['/processes']}>{children}</Wrapper>
