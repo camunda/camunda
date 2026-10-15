@@ -25,9 +25,11 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupSetEntitiesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -84,7 +86,9 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         new BrokerGroupCreateRequest()
             .setGroupId(groupDTO.groupId)
             .setName(groupDTO.name)
-            .setDescription(groupDTO.description),
+            .setDescription(groupDTO.description)
+            .setExternalId(groupDTO.externalId)
+            .setAttributes(groupDTO.attributes),
         authentication);
   }
 
@@ -106,6 +110,26 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
       final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerGroupUpdateRequest(groupId).setName(name).setDescription(description),
+        authentication);
+  }
+
+  /**
+   * Updates only the given attributes of the group; all other attributes keep their current value.
+   */
+  public CompletableFuture<GroupRecord> updateGroup(
+      final GroupDTO groupDTO,
+      final Set<GroupAttribute> changedAttributes,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerGroupUpdateRequest(groupDTO.groupId)
+            .setName(groupDTO.name)
+            .setDescription(groupDTO.description)
+            .setExternalId(groupDTO.externalId)
+            .setAttributes(groupDTO.attributes)
+            .setChangedAttributes(
+                changedAttributes.stream()
+                    .map(attribute -> GroupRecord.GroupAttribute.valueOf(attribute.name()))
+                    .toList()),
         authentication);
   }
 
@@ -132,6 +156,23 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         authentication);
   }
 
+  /**
+   * Replaces the complete membership of the given type with {@code memberIds}; the engine computes
+   * the difference against its own state. The full list travels in a single command, so it is
+   * bounded by the maximum message size.
+   */
+  public CompletableFuture<GroupRecord> setMembers(
+      final String groupId,
+      final EntityType memberType,
+      final Collection<String> memberIds,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerGroupSetEntitiesRequest(groupId)
+            .setEntityType(AuthzModelMapper.toProtocol(memberType))
+            .setEntityIds(memberIds),
+        authentication);
+  }
+
   public SearchQueryResult<GroupMemberEntity> searchMembers(
       final GroupMemberQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
@@ -143,7 +184,33 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
                 .searchGroupMembers(query));
   }
 
-  public record GroupDTO(String groupId, String name, String description) {}
+  public enum GroupAttribute {
+    NAME,
+    DESCRIPTION,
+    EXTERNAL_ID,
+    ATTRIBUTES,
+    ATTRIBUTES_MERGE
+  }
+
+  public record GroupDTO(
+      String groupId,
+      String name,
+      String description,
+      String externalId,
+      Map<String, Object> attributes) {
+
+    public GroupDTO(
+        final String groupId,
+        final String name,
+        final String description,
+        final String externalId) {
+      this(groupId, name, description, externalId, Map.of());
+    }
+
+    public GroupDTO(final String groupId, final String name, final String description) {
+      this(groupId, name, description, "", Map.of());
+    }
+  }
 
   public record GroupMemberDTO(String groupId, String memberId, EntityType memberType) {}
 }

@@ -8,11 +8,16 @@
 package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord.GroupAttribute;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 public class GroupClient {
@@ -33,6 +38,10 @@ public class GroupClient {
 
   public GroupAddEntityClient addEntity(final String groupId) {
     return new GroupAddEntityClient(writer, groupId);
+  }
+
+  public GroupSetEntitiesClient setEntities(final String groupId) {
+    return new GroupSetEntitiesClient(writer, groupId);
   }
 
   public GroupRemoveEntityClient removeEntity(final String groupId) {
@@ -76,6 +85,16 @@ public class GroupClient {
 
     public GroupCreateClient withDescription(final String description) {
       groupRecord.setDescription(description);
+      return this;
+    }
+
+    public GroupCreateClient withAttributes(final Map<String, Object> attributes) {
+      groupRecord.setAttributes(attributes);
+      return this;
+    }
+
+    public GroupCreateClient withExternalId(final String externalId) {
+      groupRecord.setExternalId(externalId);
       return this;
     }
 
@@ -129,6 +148,21 @@ public class GroupClient {
 
     public GroupUpdateClient withDescription(final String description) {
       groupRecord.setDescription(description);
+      return this;
+    }
+
+    public GroupUpdateClient withAttributes(final Map<String, Object> attributes) {
+      groupRecord.setAttributes(attributes);
+      return this;
+    }
+
+    public GroupUpdateClient withExternalId(final String externalId) {
+      groupRecord.setExternalId(externalId);
+      return this;
+    }
+
+    public GroupUpdateClient withChangedAttributes(final GroupAttribute... changedAttributes) {
+      groupRecord.setChangedAttributes(Set.of(changedAttributes));
       return this;
     }
 
@@ -197,6 +231,60 @@ public class GroupClient {
     }
 
     public GroupAddEntityClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class GroupSetEntitiesClient {
+
+    private static final Function<Long, Record<GroupRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.groupRecords()
+                .withIntent(GroupIntent.ENTITIES_SET)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<GroupRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.groupRecords()
+                .onlyCommandRejections()
+                .withIntent(GroupIntent.SET_ENTITIES)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private final CommandWriter writer;
+    private final GroupRecord groupRecord;
+
+    private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public GroupSetEntitiesClient(final CommandWriter writer, final String groupId) {
+      this.writer = writer;
+      groupRecord = new GroupRecord();
+      groupRecord.setGroupId(groupId);
+    }
+
+    public GroupSetEntitiesClient withEntityIds(final Collection<String> entityIds) {
+      groupRecord.setEntityIds(List.copyOf(entityIds));
+      return this;
+    }
+
+    public GroupSetEntitiesClient withEntityType(final EntityType entityType) {
+      groupRecord.setEntityType(entityType);
+      return this;
+    }
+
+    public Record<GroupRecordValue> set() {
+      final long position = writer.writeCommand(GroupIntent.SET_ENTITIES, groupRecord);
+      return expectation.apply(position);
+    }
+
+    public Record<GroupRecordValue> set(final String username) {
+      final long position = writer.writeCommand(GroupIntent.SET_ENTITIES, username, groupRecord);
+      return expectation.apply(position);
+    }
+
+    public GroupSetEntitiesClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }

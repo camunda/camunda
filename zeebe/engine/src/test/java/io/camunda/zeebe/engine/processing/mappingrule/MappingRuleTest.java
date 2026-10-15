@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -50,6 +51,81 @@ public class MappingRuleTest {
         .hasClaimValue(claimValue)
         .hasName(name)
         .hasMappingRuleId(id);
+  }
+
+  @Test
+  public void shouldCreateMappingRuleWithTokenClaimTypeByDefault() {
+    // given
+    final var id = Strings.newRandomValidIdentityId();
+
+    // when
+    final var created =
+        engine
+            .mappingRule()
+            .newMappingRule(id)
+            .withClaimName(UUID.randomUUID().toString())
+            .withClaimValue("value")
+            .withName("name")
+            .create();
+
+    // then
+    assertThat(created.getValue()).hasType(MappingRuleType.TOKEN_CLAIM);
+    Assertions.assertThat(
+            engine.getProcessingState().getMappingRuleState().get(id).orElseThrow().getType())
+        .isEqualTo(MappingRuleType.TOKEN_CLAIM);
+  }
+
+  @Test
+  public void shouldCreateMappingRuleWithUserAttributeType() {
+    // given
+    final var id = Strings.newRandomValidIdentityId();
+
+    // when
+    final var created =
+        engine
+            .mappingRule()
+            .newMappingRule(id)
+            .withClaimName("$.department")
+            .withClaimValue("sales")
+            .withName("name")
+            .withType(MappingRuleType.USER_ATTRIBUTE)
+            .create();
+
+    // then
+    assertThat(created.getValue()).hasType(MappingRuleType.USER_ATTRIBUTE);
+    Assertions.assertThat(
+            engine.getProcessingState().getMappingRuleState().get(id).orElseThrow().getType())
+        .isEqualTo(MappingRuleType.USER_ATTRIBUTE);
+  }
+
+  @Test
+  public void shouldUpdateMappingRuleType() {
+    // given
+    final var id = Strings.newRandomValidIdentityId();
+    engine
+        .mappingRule()
+        .newMappingRule(id)
+        .withClaimName("claim")
+        .withClaimValue("value")
+        .withName("name")
+        .create();
+
+    // when
+    final var updated =
+        engine
+            .mappingRule()
+            .updateMappingRule(id)
+            .withClaimName("$.department")
+            .withClaimValue("value")
+            .withName("name")
+            .withType(MappingRuleType.USER_ATTRIBUTE)
+            .update();
+
+    // then
+    assertThat(updated.getValue()).hasType(MappingRuleType.USER_ATTRIBUTE);
+    Assertions.assertThat(
+            engine.getProcessingState().getMappingRuleState().get(id).orElseThrow().getType())
+        .isEqualTo(MappingRuleType.USER_ATTRIBUTE);
   }
 
   @Test

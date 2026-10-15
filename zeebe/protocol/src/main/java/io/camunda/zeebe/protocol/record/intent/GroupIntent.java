@@ -25,7 +25,9 @@ public enum GroupIntent implements Intent {
   ADD_ENTITY(6),
   ENTITY_ADDED(7),
   REMOVE_ENTITY(8),
-  ENTITY_REMOVED(9);
+  ENTITY_REMOVED(9),
+  SET_ENTITIES(10),
+  ENTITIES_SET(11);
 
   private final short value;
 
@@ -46,6 +48,7 @@ public enum GroupIntent implements Intent {
       case DELETED:
       case ENTITY_ADDED:
       case ENTITY_REMOVED:
+      case ENTITIES_SET:
         return true;
       default:
         return false;
@@ -74,6 +77,10 @@ public enum GroupIntent implements Intent {
         return REMOVE_ENTITY;
       case 9:
         return ENTITY_REMOVED;
+      case 10:
+        return SET_ENTITIES;
+      case 11:
+        return ENTITIES_SET;
       default:
         return Intent.UNKNOWN;
     }

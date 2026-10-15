@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class BrokerGroupCreateRequest extends BrokerExecuteCommand<GroupRecord> {
@@ -35,6 +36,16 @@ public class BrokerGroupCreateRequest extends BrokerExecuteCommand<GroupRecord> 
 
   public BrokerGroupCreateRequest setDescription(final String description) {
     requestDto.setDescription(description);
+    return this;
+  }
+
+  public BrokerGroupCreateRequest setExternalId(final String externalId) {
+    requestDto.setExternalId(externalId);
+    return this;
+  }
+
+  public BrokerGroupCreateRequest setAttributes(final Map<String, Object> attributes) {
+    requestDto.setAttributes(attributes);
     return this;
   }
 

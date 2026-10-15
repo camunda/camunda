@@ -17,6 +17,8 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -35,9 +37,25 @@ public interface GroupRecordValue extends RecordValue {
   /** The description of the group. */
   String getDescription();
 
+  /**
+   * The identifier of the group in an external identity provider; empty if the group is not
+   * provisioned externally.
+   */
+  String getExternalId();
+
   /** The ID of a user/mapping rule to assign/remove from a group. */
   String getEntityId();
 
   /** The type of the entity to assign/remove from a group. */
   EntityType getEntityType();
+
+  /**
+   * The IDs of the entities that make up the complete membership of the given {@link
+   * #getEntityType()}, set by a set-entities command and carried by its event; empty for all other
+   * intents.
+   */
+  List<String> getEntityIds();
+
+  /** The custom attributes stored for the group, e.g. provisioned via SCIM; empty if none. */
+  Map<String, Object> getAttributes();
 }

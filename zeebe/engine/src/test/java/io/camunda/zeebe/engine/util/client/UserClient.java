@@ -8,10 +8,13 @@
 package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord.UserAttribute;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 public final class UserClient {
@@ -99,6 +102,21 @@ public final class UserClient {
       return this;
     }
 
+    public UserCreationClient withExternalId(final String externalId) {
+      userCreationRecord.setExternalId(externalId);
+      return this;
+    }
+
+    public UserCreationClient withAttributes(final Map<String, Object> attributes) {
+      userCreationRecord.setAttributes(attributes);
+      return this;
+    }
+
+    public UserCreationClient withActive(final boolean active) {
+      userCreationRecord.setActive(active);
+      return this;
+    }
+
     public Record<UserRecordValue> create() {
       final long position = writer.writeCommand(intent, userCreationRecord);
       return expectation.apply(position);
@@ -163,6 +181,26 @@ public final class UserClient {
 
     public UpdateUserClient withPassword(final String password) {
       userRecord.setPassword(password);
+      return this;
+    }
+
+    public UpdateUserClient withExternalId(final String externalId) {
+      userRecord.setExternalId(externalId);
+      return this;
+    }
+
+    public UpdateUserClient withAttributes(final Map<String, Object> attributes) {
+      userRecord.setAttributes(attributes);
+      return this;
+    }
+
+    public UpdateUserClient withActive(final boolean active) {
+      userRecord.setActive(active);
+      return this;
+    }
+
+    public UpdateUserClient withChangedAttributes(final UserAttribute... changedAttributes) {
+      userRecord.setChangedAttributes(Set.of(changedAttributes));
       return this;
     }
 

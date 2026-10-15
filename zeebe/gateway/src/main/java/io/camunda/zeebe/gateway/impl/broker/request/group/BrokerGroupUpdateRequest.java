@@ -10,8 +10,11 @@ package io.camunda.zeebe.gateway.impl.broker.request.group;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord.GroupAttribute;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import java.util.Collection;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class BrokerGroupUpdateRequest extends BrokerExecuteCommand<GroupRecord> {
@@ -31,6 +34,22 @@ public class BrokerGroupUpdateRequest extends BrokerExecuteCommand<GroupRecord> 
 
   public BrokerGroupUpdateRequest setDescription(final String description) {
     requestDto.setDescription(description);
+    return this;
+  }
+
+  public BrokerGroupUpdateRequest setExternalId(final String externalId) {
+    requestDto.setExternalId(externalId);
+    return this;
+  }
+
+  public BrokerGroupUpdateRequest setChangedAttributes(
+      final Collection<GroupAttribute> changedAttributes) {
+    requestDto.setChangedAttributes(changedAttributes);
+    return this;
+  }
+
+  public BrokerGroupUpdateRequest setAttributes(final Map<String, Object> attributes) {
+    requestDto.setAttributes(attributes);
     return this;
   }
 

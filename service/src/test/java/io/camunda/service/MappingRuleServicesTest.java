@@ -225,4 +225,79 @@ public class MappingRuleServicesTest {
     assertThat(query.filter().nameOperations()).isNull();
     assertThat(query.filter().claims()).isNull();
   }
+
+  @Test
+  public void shouldMatchTokenRulesAgainstClaimsAndAttributeRulesAgainstAttributes() {
+    // given
+    final var tokenRule = new MappingRuleEntity("token", 1L, "$.team", "red", "token");
+    final var attributeRule =
+        new MappingRuleEntity(
+            "attribute", 2L, "$.department", "Finance", "attribute", "USER_ATTRIBUTE");
+    final var rules =
+        new SearchQueryResult<>(2, false, List.of(tokenRule, attributeRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+
+    // when / then
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of("team", "red"), Map.of("department", "Finance"), authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactlyInAnyOrder("token", "attribute");
+  }
+
+  @Test
+  public void shouldMatchGroupAttributeRulesAgainstAnyGroupAttributesOnly() {
+    // given
+    final var groupRule =
+        new MappingRuleEntity("group", 1L, "$.region", "EMEA", "group", "GROUP_ATTRIBUTE");
+    final var rules = new SearchQueryResult<>(1, false, List.of(groupRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+    final Map<String, Object> region = Map.of("region", "EMEA");
+
+    // when / then
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of(), Map.of(), List.of(Map.of("region", "APAC"), region), authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactly("group");
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of(), Map.of(), List.of(Map.of("region", "APAC")), authentication))
+        .isEmpty();
+    // token claims and user attributes never satisfy a group-attribute rule
+    assertThat(services.getMatchingMappingRules(region, region, List.of(), authentication))
+        .isEmpty();
+    assertThat(services.getMatchingMappingRules(region, region, authentication)).isEmpty();
+  }
+
+  @Test
+  public void shouldNotMatchAttributeRulesAgainstTokenClaims() {
+    // given
+    final var attributeRule =
+        new MappingRuleEntity(
+            "attribute", 2L, "$.department", "Finance", "attribute", "USER_ATTRIBUTE");
+    final var rules = new SearchQueryResult<>(1, false, List.of(attributeRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+    final Map<String, Object> spoofedClaims = Map.of("department", "Finance");
+
+    // when / then
+    assertThat(services.getMatchingMappingRules(spoofedClaims, authentication)).isEmpty();
+    assertThat(services.getMatchingMappingRules(spoofedClaims, Map.of(), authentication)).isEmpty();
+    assertThat(
+            services.getMatchingMappingRules(
+                spoofedClaims, Map.of("department", "Sales"), authentication))
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldNotMatchTokenRulesAgainstUserAttributes() {
+    // given
+    final var tokenRule = new MappingRuleEntity("token", 1L, "$.team", "red", "token");
+    final var rules = new SearchQueryResult<>(1, false, List.of(tokenRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+
+    // when / then
+    assertThat(services.getMatchingMappingRules(Map.of(), Map.of("team", "red"), authentication))
+        .isEmpty();
+  }
 }

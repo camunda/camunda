@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class PersistedMappingRule extends UnpackedObject
@@ -22,14 +23,17 @@ public class PersistedMappingRule extends UnpackedObject
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty mappingRuleIdProp = new StringProperty("mappingRuleId", "");
+  private final StringProperty typeProp =
+      new StringProperty("type", MappingRuleType.TOKEN_CLAIM.name());
 
   public PersistedMappingRule() {
-    super(5);
+    super(6);
     declareProperty(mappingRuleKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp)
-        .declareProperty(mappingRuleIdProp);
+        .declareProperty(mappingRuleIdProp)
+        .declareProperty(typeProp);
   }
 
   public PersistedMappingRule copy() {
@@ -80,6 +84,17 @@ public class PersistedMappingRule extends UnpackedObject
 
   public PersistedMappingRule setMappingRuleId(final String mappingRuleId) {
     mappingRuleIdProp.setValue(mappingRuleId);
+    return this;
+  }
+
+  /** Rules persisted before types existed carry no value and are token rules. */
+  public MappingRuleType getType() {
+    final String type = BufferUtil.bufferAsString(typeProp.getValue());
+    return type.isEmpty() ? MappingRuleType.TOKEN_CLAIM : MappingRuleType.valueOf(type);
+  }
+
+  public PersistedMappingRule setType(final MappingRuleType type) {
+    typeProp.setValue(type.name());
     return this;
   }
 

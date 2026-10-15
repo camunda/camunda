@@ -1013,6 +1013,7 @@ public final class EventAppliers implements EventApplier {
     register(GroupIntent.UPDATED, new GroupUpdatedApplier(state.getGroupState()));
     register(GroupIntent.ENTITY_ADDED, new GroupEntityAddedApplier(state));
     register(GroupIntent.ENTITY_REMOVED, new GroupEntityRemovedApplier(state));
+    register(GroupIntent.ENTITIES_SET, NOOP_EVENT_APPLIER);
     register(GroupIntent.DELETED, new GroupDeletedApplier(state));
   }
 

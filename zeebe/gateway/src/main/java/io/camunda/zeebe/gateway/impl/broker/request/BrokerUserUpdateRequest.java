@@ -10,8 +10,11 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord.UserAttribute;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import java.util.Collection;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class BrokerUserUpdateRequest extends BrokerExecuteCommand<UserRecord> {
@@ -39,6 +42,27 @@ public class BrokerUserUpdateRequest extends BrokerExecuteCommand<UserRecord> {
 
   public BrokerUserUpdateRequest setPassword(final String password) {
     requestDto.setPassword(password);
+    return this;
+  }
+
+  public BrokerUserUpdateRequest setExternalId(final String externalId) {
+    requestDto.setExternalId(externalId);
+    return this;
+  }
+
+  public BrokerUserUpdateRequest setActive(final boolean active) {
+    requestDto.setActive(active);
+    return this;
+  }
+
+  public BrokerUserUpdateRequest setChangedAttributes(
+      final Collection<UserAttribute> changedAttributes) {
+    requestDto.setChangedAttributes(changedAttributes);
+    return this;
+  }
+
+  public BrokerUserUpdateRequest setAttributes(final Map<String, Object> attributes) {
+    requestDto.setAttributes(attributes);
     return this;
   }
 

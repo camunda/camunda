@@ -72,6 +72,17 @@ public class GroupProcessors {
             membershipStateAdapter));
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
+        GroupIntent.SET_ENTITIES,
+        new GroupSetEntitiesProcessor(
+            processingState,
+            permissionsBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior,
+            securityConfig,
+            membershipStateAdapter));
+    typedRecordProcessors.onCommand(
+        ValueType.GROUP,
         GroupIntent.DELETE,
         new GroupDeleteProcessor(
             processingState,

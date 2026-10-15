@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import org.agrona.DirectBuffer;
 
 public class BrokerMappingRuleCreateRequest extends BrokerExecuteCommand<MappingRuleRecord> {
@@ -40,6 +41,11 @@ public class BrokerMappingRuleCreateRequest extends BrokerExecuteCommand<Mapping
 
   public BrokerMappingRuleCreateRequest setMappingRuleId(final String mappingRuleId) {
     requestDto.setMappingRuleId(mappingRuleId);
+    return this;
+  }
+
+  public BrokerMappingRuleCreateRequest setType(final MappingRuleType type) {
+    requestDto.setType(type);
     return this;
   }
 

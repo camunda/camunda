@@ -24,6 +24,9 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 public class UserUpdateProcessor implements DistributedTypedRecordProcessor<UserRecord> {
 
@@ -79,7 +82,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
-    final var updatedUser = overlayUser(persistedUser.getUser(), record);
+    final var updatedUser = overlayUser(persistedUser.getUser(), record).clearChangedAttributes();
 
     stateWriter.appendFollowUpEvent(persistedUser.getUserKey(), UserIntent.UPDATED, updatedUser);
     responseWriter.writeAcceptedResponseOnCommand(
@@ -89,7 +92,8 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     distributionBehavior
         .withKey(distributionKey)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
-        .distribute(command);
+        .distribute(
+            command.getValueType(), command.getIntent(), updatedUser, command.getAuthInfo());
   }
 
   @Override
@@ -101,13 +105,56 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
   }
 
   private UserRecord overlayUser(final UserRecord persistedUser, final UserRecord updatedUser) {
-    persistedUser.setName(updatedUser.getName());
-    persistedUser.setEmail(updatedUser.getEmail());
+    final var changedAttributes = updatedUser.getChangedAttributes();
 
-    if (!updatedUser.getPassword().isEmpty()) {
-      persistedUser.setPassword(updatedUser.getPassword());
+    if (changedAttributes.isEmpty()) {
+      // legacy full update: it knows nothing about custom attributes, so the stored ones are kept
+      persistedUser.setName(updatedUser.getName());
+      persistedUser.setEmail(updatedUser.getEmail());
+
+      if (!updatedUser.getPassword().isEmpty()) {
+        persistedUser.setPassword(updatedUser.getPassword());
+      }
+
+      return persistedUser;
+    }
+
+    for (final var attribute : changedAttributes) {
+      switch (attribute) {
+        case NAME -> persistedUser.setName(updatedUser.getName());
+        case EMAIL -> persistedUser.setEmail(updatedUser.getEmail());
+        case PASSWORD -> persistedUser.setPassword(updatedUser.getPassword());
+        case EXTERNAL_ID -> persistedUser.setExternalId(updatedUser.getExternalId());
+        case ACTIVE -> persistedUser.setActive(updatedUser.isActive());
+        case ATTRIBUTES ->
+            persistedUser.setAttributes(withoutNullValues(updatedUser.getAttributes()));
+        case ATTRIBUTES_MERGE ->
+            persistedUser.setAttributes(
+                mergeAttributes(persistedUser.getAttributes(), updatedUser.getAttributes()));
+      }
     }
 
     return persistedUser;
+  }
+
+  private static Map<String, Object> withoutNullValues(final Map<String, Object> attributes) {
+    final Map<String, Object> result = new HashMap<>(attributes);
+    result.values().removeIf(Objects::isNull);
+    return result;
+  }
+
+  /** Top-level JSON merge patch: a null value removes the key, any other value sets it. */
+  private static Map<String, Object> mergeAttributes(
+      final Map<String, Object> stored, final Map<String, Object> patch) {
+    final Map<String, Object> result = new HashMap<>(stored);
+    patch.forEach(
+        (key, value) -> {
+          if (value == null) {
+            result.remove(key);
+          } else {
+            result.put(key, value);
+          }
+        });
+    return result;
   }
 }

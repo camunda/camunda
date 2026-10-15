@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class BrokerUserCreateRequest extends BrokerExecuteCommand<UserRecord> {
@@ -44,6 +45,21 @@ public class BrokerUserCreateRequest extends BrokerExecuteCommand<UserRecord> {
 
   public BrokerUserCreateRequest setPassword(final String password) {
     requestDto.setPassword(password);
+    return this;
+  }
+
+  public BrokerUserCreateRequest setExternalId(final String externalId) {
+    requestDto.setExternalId(externalId);
+    return this;
+  }
+
+  public BrokerUserCreateRequest setActive(final boolean active) {
+    requestDto.setActive(active);
+    return this;
+  }
+
+  public BrokerUserCreateRequest setAttributes(final Map<String, Object> attributes) {
+    requestDto.setAttributes(attributes);
     return this;
   }
 

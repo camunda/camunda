@@ -23,6 +23,9 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -77,13 +80,14 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
     }
 
     updateExistingGroup(persistedRecord.get(), record);
-    updateState(command, persistedRecord.get());
+    final var updatedRecord = updateState(command, persistedRecord.get());
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
         .withKey(distributionKey)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
-        .distribute(command);
+        .distribute(
+            command.getValueType(), command.getIntent(), updatedRecord, command.getAuthInfo());
   }
 
   @Override
@@ -95,28 +99,69 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
 
   private void updateExistingGroup(
       final PersistedGroup persistedGroup, final GroupRecord updateRecord) {
-    final var updatedName = updateRecord.getName();
-    if (!updatedName.isEmpty()) {
-      persistedGroup.setName(updatedName);
-    }
-    final var updatedDescription = updateRecord.getDescription();
+    final var changedAttributes = updateRecord.getChangedAttributes();
 
-    persistedGroup.setDescription(updatedDescription);
+    if (changedAttributes.isEmpty()) {
+      // legacy full update: it knows nothing about custom attributes, so the stored ones are kept
+      final var updatedName = updateRecord.getName();
+      if (!updatedName.isEmpty()) {
+        persistedGroup.setName(updatedName);
+      }
+      persistedGroup.setDescription(updateRecord.getDescription());
+      return;
+    }
+
+    for (final var attribute : changedAttributes) {
+      switch (attribute) {
+        case NAME -> persistedGroup.setName(updateRecord.getName());
+        case DESCRIPTION -> persistedGroup.setDescription(updateRecord.getDescription());
+        case EXTERNAL_ID -> persistedGroup.setExternalId(updateRecord.getExternalId());
+        case ATTRIBUTES ->
+            persistedGroup.setAttributes(withoutNullValues(updateRecord.getAttributes()));
+        case ATTRIBUTES_MERGE ->
+            persistedGroup.setAttributes(
+                mergeAttributes(persistedGroup.getAttributes(), updateRecord.getAttributes()));
+      }
+    }
   }
 
-  private void updateState(
+  private GroupRecord updateState(
       final TypedRecord<GroupRecord> command, final PersistedGroup persistedGroup) {
     final var updatedRecord =
         new GroupRecord()
             .setGroupKey(persistedGroup.getGroupKey())
             .setGroupId(persistedGroup.getGroupId())
             .setName(persistedGroup.getName())
-            .setDescription(persistedGroup.getDescription());
+            .setDescription(persistedGroup.getDescription())
+            .setExternalId(persistedGroup.getExternalId())
+            .setAttributes(persistedGroup.getAttributes());
 
     stateWriter.appendFollowUpEvent(
         persistedGroup.getGroupKey(), GroupIntent.UPDATED, updatedRecord);
     responseWriter.writeAcceptedResponseOnCommand(
         persistedGroup.getGroupKey(), GroupIntent.UPDATED, updatedRecord, command);
     commandDistributionBehavior.acknowledgeCommand(command);
+    return updatedRecord;
+  }
+
+  private static Map<String, Object> withoutNullValues(final Map<String, Object> attributes) {
+    final Map<String, Object> result = new HashMap<>(attributes);
+    result.values().removeIf(Objects::isNull);
+    return result;
+  }
+
+  /** Top-level JSON merge patch: a null value removes the key, any other value sets it. */
+  private static Map<String, Object> mergeAttributes(
+      final Map<String, Object> stored, final Map<String, Object> patch) {
+    final Map<String, Object> result = new HashMap<>(stored);
+    patch.forEach(
+        (key, value) -> {
+          if (value == null) {
+            result.remove(key);
+          } else {
+            result.put(key, value);
+          }
+        });
+    return result;
   }
 }

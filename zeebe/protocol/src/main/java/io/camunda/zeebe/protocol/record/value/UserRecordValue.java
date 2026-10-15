@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -32,4 +33,13 @@ public interface UserRecordValue extends RecordValue {
   String getEmail();
 
   String getPassword();
+
+  String getExternalId();
+
+  boolean isActive();
+
+  /**
+   * The custom attributes stored for the user, e.g. provisioned via SCIM; empty if there are none.
+   */
+  Map<String, Object> getAttributes();
 }

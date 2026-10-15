@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class MappingRuleRecord extends UnifiedRecordValue implements MappingRuleRecordValue {
@@ -22,20 +23,24 @@ public class MappingRuleRecord extends UnifiedRecordValue implements MappingRule
   private static final StringValue CLAIM_NAME_KEY = new StringValue("claimName");
   private static final StringValue CLAIM_VALUE_KEY = new StringValue("claimValue");
   private static final StringValue NAME_KEY = new StringValue("name");
+  private static final StringValue TYPE_KEY = new StringValue("type");
 
   private final LongProperty mappingRuleKeyProp = new LongProperty(MAPPING_RULE_KEY_KEY, -1L);
   private final StringProperty mappingRuleIdProp = new StringProperty(MAPPING_RULE_ID_KEY);
   private final StringProperty claimNameProp = new StringProperty(CLAIM_NAME_KEY, "");
   private final StringProperty claimValueProp = new StringProperty(CLAIM_VALUE_KEY, "");
   private final StringProperty nameProp = new StringProperty(NAME_KEY, "");
+  private final StringProperty typeProp =
+      new StringProperty(TYPE_KEY, MappingRuleType.TOKEN_CLAIM.name());
 
   public MappingRuleRecord() {
-    super(5);
+    super(6);
     declareProperty(mappingRuleKeyProp)
         .declareProperty(mappingRuleIdProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
-        .declareProperty(nameProp);
+        .declareProperty(nameProp)
+        .declareProperty(typeProp);
   }
 
   @Override
@@ -85,6 +90,18 @@ public class MappingRuleRecord extends UnifiedRecordValue implements MappingRule
 
   public MappingRuleRecord setMappingRuleId(final String mappingRuleId) {
     mappingRuleIdProp.setValue(mappingRuleId);
+    return this;
+  }
+
+  /** A missing or empty type means {@link MappingRuleType#TOKEN_CLAIM}. */
+  @Override
+  public MappingRuleType getType() {
+    final String type = BufferUtil.bufferAsString(typeProp.getValue());
+    return type.isEmpty() ? MappingRuleType.TOKEN_CLAIM : MappingRuleType.valueOf(type);
+  }
+
+  public MappingRuleRecord setType(final MappingRuleType type) {
+    typeProp.setValue(type == null ? MappingRuleType.TOKEN_CLAIM.name() : type.name());
     return this;
   }
 }
