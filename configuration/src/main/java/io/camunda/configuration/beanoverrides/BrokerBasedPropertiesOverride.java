@@ -69,6 +69,7 @@ import io.camunda.zeebe.broker.system.configuration.engine.StorageOrdinalsCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
 import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
@@ -903,6 +904,15 @@ public class BrokerBasedPropertiesOverride {
     brokerRocksDb.setIoRateBytesPerSecond(unifiedRocksDb.getIoRateBytesPerSecond());
     brokerRocksDb.setDisableWal(unifiedRocksDb.isWalDisabled());
     brokerRocksDb.setEnableSstPartitioning(unifiedRocksDb.isSstPartitioningEnabled());
+
+    final var compactOnDeletion = unifiedRocksDb.getCompactOnDeletion();
+    brokerRocksDb.setCompactOnDeletion(
+        compactOnDeletion.isEnabled()
+            ? new RocksDbConfiguration.CompactOnDeletion(
+                compactOnDeletion.getWindowSize(),
+                compactOnDeletion.getDeletionTrigger(),
+                compactOnDeletion.getDeletionRatio())
+            : null);
   }
 
   private static void populateFromS3(final BrokerBasedProperties override, final Camunda camunda) {

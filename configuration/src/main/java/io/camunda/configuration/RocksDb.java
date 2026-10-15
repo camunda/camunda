@@ -148,6 +148,13 @@ public class RocksDb {
    */
   private boolean sstPartitioningEnabled = true;
 
+  /**
+   * Configures RocksDB's compact-on-deletion collector, which compacts SST files with a high
+   * density of deletions early. Enabled by default.
+   */
+  @NestedConfigurationProperty
+  private RocksDbCompactOnDeletion compactOnDeletion = new RocksDbCompactOnDeletion();
+
   public Properties getColumnFamilyOptions() {
     return columnFamilyOptions;
   }
@@ -302,6 +309,14 @@ public class RocksDb {
     this.sstPartitioningEnabled = sstPartitioningEnabled;
   }
 
+  public RocksDbCompactOnDeletion getCompactOnDeletion() {
+    return compactOnDeletion;
+  }
+
+  public void setCompactOnDeletion(final RocksDbCompactOnDeletion compactOnDeletion) {
+    this.compactOnDeletion = compactOnDeletion;
+  }
+
   @Override
   public String toString() {
     return "RocksDb{"
@@ -327,6 +342,8 @@ public class RocksDb {
         + walDisabled
         + ", sstPartitioningEnabled="
         + sstPartitioningEnabled
+        + ", compactOnDeletion="
+        + compactOnDeletion
         + '}';
   }
 

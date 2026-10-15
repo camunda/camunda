@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.CompactOnDeletion;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.PerPartition;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.Shared;
@@ -42,6 +43,7 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.Statistics;
 import org.rocksdb.StatsLevel;
 import org.rocksdb.TableFormatConfig;
+import org.rocksdb.TablePropertiesCollectorFactory;
 
 public final class ZeebeRocksDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
@@ -216,8 +218,8 @@ public final class ZeebeRocksDbFactory<
     // Overwrite with user-provided options
     options.putAll(rocksDbConfiguration.getColumnFamilyOptions());
 
-    final var columnFamilyOptions = ColumnFamilyOptions.getColumnFamilyOptionsFromProps(options);
-    if (columnFamilyOptions == null) {
+    final var optionsFromProps = ColumnFamilyOptions.getColumnFamilyOptionsFromProps(options);
+    if (optionsFromProps == null) {
       throw new IllegalStateException(
           String.format(
               "Expected to create column family options for RocksDB, "
@@ -228,9 +230,38 @@ public final class ZeebeRocksDbFactory<
     }
 
     // Apply configuration that cannot be set via Properties
+    final var compactOnDeletion = rocksDbConfiguration.getCompactOnDeletion();
+    final var columnFamilyOptions =
+        compactOnDeletion == null
+            ? optionsFromProps
+            : withCompactOnDeletion(optionsFromProps, compactOnDeletion, closeables);
     final var tableConfig = createTableFormatConfig(closeables, rocksDbResources);
     columnFamilyOptions.setTableFormatConfig(tableConfig);
     return columnFamilyOptions;
+  }
+
+  /**
+   * RocksJava only exposes table properties collectors on the combined {@link Options}, so the
+   * collector is set there and the column family part is copied back out. The native copy keeps
+   * every option set so far, but RocksJava does not carry over its Java-side references (e.g. the
+   * table format config), so this has to run before those are set.
+   */
+  private static ColumnFamilyOptions withCompactOnDeletion(
+      final ColumnFamilyOptions columnFamilyOptions,
+      final CompactOnDeletion compactOnDeletion,
+      final List<AutoCloseable> closeables) {
+    final var collectorFactory =
+        TablePropertiesCollectorFactory.NewCompactOnDeletionCollectorFactory(
+            compactOnDeletion.windowSize(),
+            compactOnDeletion.deletionTrigger(),
+            compactOnDeletion.deletionRatio());
+    closeables.add(collectorFactory);
+    try (columnFamilyOptions;
+        final var dbOptions = new DBOptions();
+        final var options = new Options(dbOptions, columnFamilyOptions)) {
+      options.setTablePropertiesCollectorFactory(List.of(collectorFactory));
+      return new ColumnFamilyOptions(options);
+    }
   }
 
   /**
@@ -264,10 +295,13 @@ public final class ZeebeRocksDbFactory<
     final var maxWriteBuffers = rocksDbConfiguration.getMaxWriteBufferNumber();
     props.setProperty("max_write_buffer_number", RocksDbOptionsFormatter.format(maxWriteBuffers));
 
+    // the budget is an upper bound: large write buffers keep tombstones in memory for long
     final var writeBufferSize =
-        Math.round(
-            ((double) memory.writeBufferBudgetPerPartition() / maxWriteBuffers)
-                * (1 - memtablePrefixFilterMemory));
+        Math.min(
+            RocksDbConfiguration.DEFAULT_MAX_WRITE_BUFFER_SIZE,
+            Math.round(
+                ((double) memory.writeBufferBudgetPerPartition() / maxWriteBuffers)
+                    * (1 - memtablePrefixFilterMemory)));
 
     props.setProperty("write_buffer_size", RocksDbOptionsFormatter.format(writeBufferSize));
 

@@ -141,6 +141,13 @@ public class ZeebeTransactionDb<
     }
   }
 
+  /** Creates prefix-bounded read options that are closed together with this database. */
+  PrefixBoundedReadOptions newPrefixBoundedReadOptions() {
+    final var readOptions = new PrefixBoundedReadOptions();
+    closables.add(readOptions);
+    return readOptions;
+  }
+
   protected ReadOptions getPrefixReadOptions() {
     return prefixReadOptions;
   }
