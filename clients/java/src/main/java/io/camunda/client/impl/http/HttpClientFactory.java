@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.metrics.ClientMetrics;
 import io.camunda.client.impl.search.filter.StringFilterPropertyModule;
 import io.camunda.client.impl.tls.TlsContexts;
 import io.camunda.client.impl.util.AddressUtil;
@@ -94,9 +95,19 @@ public class HttpClientFactory {
   private final CamundaClientConfiguration config;
   private final Duration responseDeadlineMargin;
   private final TimeValue connectionTimeToLive;
+  private final ClientMetrics clientMetrics;
 
   public HttpClientFactory(final CamundaClientConfiguration config) {
-    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN, DEFAULT_CONNECTION_TIME_TO_LIVE);
+    this(config, ClientMetrics.noop());
+  }
+
+  public HttpClientFactory(
+      final CamundaClientConfiguration config, final ClientMetrics clientMetrics) {
+    this(
+        config,
+        ResponseDeadlineChainHandler.DEFAULT_MARGIN,
+        DEFAULT_CONNECTION_TIME_TO_LIVE,
+        clientMetrics);
   }
 
   /** Lets tests shorten the margin of the response deadline and the connection lifetime. */
@@ -104,9 +115,18 @@ public class HttpClientFactory {
       final CamundaClientConfiguration config,
       final Duration responseDeadlineMargin,
       final TimeValue connectionTimeToLive) {
+    this(config, responseDeadlineMargin, connectionTimeToLive, ClientMetrics.noop());
+  }
+
+  private HttpClientFactory(
+      final CamundaClientConfiguration config,
+      final Duration responseDeadlineMargin,
+      final TimeValue connectionTimeToLive,
+      final ClientMetrics clientMetrics) {
     this.config = config;
     this.responseDeadlineMargin = responseDeadlineMargin;
     this.connectionTimeToLive = connectionTimeToLive;
+    this.clientMetrics = clientMetrics;
   }
 
   public HttpClient createClient() {
@@ -273,6 +293,8 @@ public class HttpClientFactory {
         ResponseDeadlineChainHandler.NAME,
         ExchangeAbortChainHandler.NAME,
         new ExchangeAbortChainHandler());
+
+    clientMetrics.instrumentHttpClient(builder);
 
     return builder;
   }
