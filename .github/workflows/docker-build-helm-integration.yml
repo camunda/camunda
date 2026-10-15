@@ -1355,6 +1355,12 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout (for observe-build-status)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - name: Generate a token that may dispatch to the triage repository
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
@@ -1414,3 +1420,17 @@ jobs:
             /repos/camunda/c8-cross-component-e2e-tests/dispatches \
             --input - <<<"$payload"
           echo "Handed run ${GITHUB_RUN_ID} to the central triage." >> "$GITHUB_STEP_SUMMARY"
+
+      # Same CI Health observability hook every other job here uses. The job this
+      # replaced was a reusable-workflow call, which carried its own; a steps-based
+      # job has to send its own or the Monorepo CI Health linter fails the lint.
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: alwaysgreen-triage
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
