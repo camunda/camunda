@@ -159,6 +159,19 @@ final class ExporterConfigurationTest {
         .satisfies(e -> assertThat(e.getMessage()).doesNotContain("s3cr3t-password"));
   }
 
+  @Test
+  void shouldNotExposeArgValueInExceptionForScalarSuppliedForObject() {
+    // given
+    final Map<String, Object> args = Map.of("index", "s3cr3t-password");
+
+    // when / then
+    assertThatCode(() -> ExporterConfiguration.fromArgs(ObjectConfig.class, args))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("index")
+        .hasNoCause()
+        .satisfies(e -> assertThat(e.getMessage()).doesNotContain("s3cr3t-password"));
+  }
+
   // ---------------------------------------------------------------------------
   // fromArgs — null map
   // ---------------------------------------------------------------------------
@@ -504,6 +517,8 @@ final class ExporterConfigurationTest {
   private record DurationConfig(Duration timeout) {}
 
   private record PortConfig(int port) {}
+
+  private record ObjectConfig(PortConfig index) {}
 
   private record PathConfig(Path filePath) {}
 

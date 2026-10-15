@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -137,14 +137,14 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
           LOG.error(message);
           throw new IllegalArgumentException(message, upe);
         }
-        if (e.getCause() instanceof final InvalidFormatException ife) {
+        if (e.getCause() instanceof final MismatchedInputException mie) {
           // The Jackson message quotes the offending value, which may be a credential. Report
           // only the path and do not chain the cause, as its message has the value.
           throw new IllegalArgumentException(
               "Invalid exporter configuration value in "
                   + configClass.getSimpleName()
                   + " (path: "
-                  + ife.getPathReference()
+                  + mie.getPathReference()
                   + ")");
         }
         throw e;
