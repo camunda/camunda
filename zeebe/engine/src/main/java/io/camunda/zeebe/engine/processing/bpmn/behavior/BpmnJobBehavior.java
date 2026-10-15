@@ -835,7 +835,8 @@ public final class BpmnJobBehavior {
             new AgentHistoryRecord()
                 .setJobKey(jobKey)
                 .ignoreLease()
-                .setProcessInstanceKey(job.getProcessInstanceKey()));
+                .setProcessInstanceKey(job.getProcessInstanceKey())
+                .setStorageOrdinal(job.getStorageOrdinal()));
       }
     }
   }
