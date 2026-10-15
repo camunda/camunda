@@ -130,6 +130,34 @@ public enum SuspensionMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /** Wall-clock time from SUSPEND command to SUSPENDED event per process instance */
+  SUSPEND_DURATION {
+    @Override
+    public String getName() {
+      return "zeebe.process.instance.suspend.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Wall-clock time from SUSPEND command to SUSPENDED event per process instance";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return RESUME_DURATION.getTimerSLOs();
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
   /** Wall-clock time from RESUME command to RESUMED event per process instance */
   RESUME_DURATION {
     private static final Duration[] BUCKETS =

@@ -250,6 +250,32 @@ public class SuspensionMetricsIntegrationTest {
     assertThat(userTaskSuspensionCounter("resumed") - resumedBefore).isEqualTo(3.0);
   }
 
+  @Test
+  public void shouldRecordSuspendDuration() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", u -> u.zeebeUserTask())
+                .endEvent()
+                .done())
+        .deploy();
+    final long piKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final long countBefore = recordedSuspendDurations();
+
+    // when
+    engine.processInstance().withInstanceKey(piKey).suspend();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SUSPENDED)
+        .withProcessInstanceKey(piKey)
+        .await();
+
+    // then
+    assertThat(recordedSuspendDurations() - countBefore).isEqualTo(1L);
+  }
+
   private MeterRegistry registry() {
     return engine.getMeterRegistry();
   }
@@ -268,6 +294,10 @@ public class SuspensionMetricsIntegrationTest {
         .tag("action", action)
         .counter()
         .count();
+  }
+
+  private long recordedSuspendDurations() {
+    return registry().get("zeebe.process.instance.suspend.duration").timer().count();
   }
 
   private double userTaskSuspensionCounter(final String action) {

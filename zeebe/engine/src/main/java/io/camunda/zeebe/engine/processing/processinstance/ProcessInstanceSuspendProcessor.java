@@ -104,6 +104,8 @@ public final class ProcessInstanceSuspendProcessor
       return;
     }
 
+    final long suspendStartTime = suspensionMetrics.suspendStartTime();
+
     final ProcessInstanceRecord value = processInstance.getValue();
     // restarting a SUSPENDING instance skips the event (the marker is already there) and runs the
     // suspension steps again; they skip subscriptions and jobs that were already handled
@@ -121,6 +123,7 @@ public final class ProcessInstanceSuspendProcessor
     if (suspendedJobCount > 0) {
       suspensionMetrics.jobsSuspended(suspendedJobCount);
     }
+    suspensionMetrics.startSuspendDuration(processInstance.getKey(), suspendStartTime);
   }
 
   /**

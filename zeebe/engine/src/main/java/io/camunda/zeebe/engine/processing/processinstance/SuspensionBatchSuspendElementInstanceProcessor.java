@@ -196,6 +196,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
           ProcessInstanceIntent.SUSPENDED,
           instanceToSuspend.getValue());
       suspensionMetrics.instanceSuspended();
+      suspensionMetrics.stopSuspendDuration(value.getProcessInstanceKey());
     } else {
       continueWithNextSiblingOrParent(
           command, instanceToSuspend.getParentKey(), instanceToSuspendKey);
