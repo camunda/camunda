@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -260,7 +261,7 @@ public class ProcessDefinitionRestoreTest {
   }
 
   @Test
-  public void shouldIgnoreCommittedStartWhenRestoreAlreadyRan() {
+  public void shouldRejectCommittedStartWhenRestoreAlreadyRan() {
     // given - the cleanup already ran once, so the partition-local flag is set
     engine.stop();
     engine.withEngineConfig(cfg -> cfg.setEnableProcessDefinitionRestore(true));
@@ -289,7 +290,12 @@ public class ProcessDefinitionRestoreTest {
             .filter(r -> r.getKey() == markerKey)
             .getFirst();
 
-    // then - the redundant START is skipped, so the run is not started a second time
+    // then - the redundant START is rejected, so the run is not started a second time
+    final var rejection =
+        RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.START)
+            .onlyCommandRejections()
+            .getFirst();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getPosition() >= markerRecord.getPosition())
