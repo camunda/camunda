@@ -63,6 +63,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.async.DeferredResult;
 
 @CamundaRestController
 @RequestMapping("/v2/jobs")
@@ -88,13 +89,15 @@ public class JobController {
   }
 
   @CamundaPostMapping(path = "/activation")
-  public CompletableFuture<ResponseEntity<Object>> activateJobs(
+  public DeferredResult<ResponseEntity<Object>> activateJobs(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final JobActivationRequest activationRequest) {
-    return RequestMapper.toJobsActivationRequest(
-            activationRequest, multiTenancyCfg.isChecksEnabled())
-        .fold(
-            RestErrorMapper::mapProblemToCompletedResponse, r -> activateJobs(physicalTenantId, r));
+    return RequestExecutor.toDeferredResult(
+        RequestMapper.toJobsActivationRequest(activationRequest, multiTenancyCfg.isChecksEnabled())
+            .fold(
+                RestErrorMapper::mapProblemToCompletedResponse,
+                r -> activateJobs(physicalTenantId, r)),
+        -1L);
   }
 
   @CamundaPostMapping(path = "/{jobKey}/failure")
