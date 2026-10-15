@@ -967,41 +967,19 @@ jobs:
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           persist-credentials: false
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
-      - name: Get FOSSA context
-        id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
-      - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
-        with:
-          api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-          branch: ${{ steps.fossa-context.outputs.head-ref }}
-          project-id: "custom+50756/camunda/camunda@single-app"
-          revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
-          dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
+        uses: ./.github/actions/fossa-release-project
         with:
-          api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-          branch: ${{ steps.fossa-context.outputs.head-ref }}
           project-id: "custom+50756/camunda/camunda@single-app"
           attribution-release-group-id: "4904" # https://app.fossa.com/projects/group/4904
           sbom-release-group-id: "4905"        # https://app.fossa.com/projects/group/4905
+          fossa-api-key-vault-path: secret/data/products/camunda/ci/camunda
           release-number: ${{ env.RELEASE_VERSION }}
           revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
-          attribution-format: "TXT"
-          sbom-format: "CYCLONEDX_JSON"
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Observe build status
         if: always()
         continue-on-error: true
