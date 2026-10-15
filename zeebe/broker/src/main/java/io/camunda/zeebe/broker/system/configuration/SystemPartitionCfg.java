@@ -23,7 +23,7 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
   public static final DataSize DEFAULT_LOG_SEGMENT_SIZE = DataSize.ofMegabytes(4);
   public static final Duration DEFAULT_SNAPSHOT_PERIOD = Duration.ofMinutes(5);
 
-  private boolean enabled = false;
+  private boolean enabled = true;
   // null: every broker of the cluster
   private @Nullable Integer replicationFactor;
   private DataSize logSegmentSize = DEFAULT_LOG_SEGMENT_SIZE;

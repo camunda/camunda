@@ -11,6 +11,8 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.LegacyExportingStateReader;
+import io.camunda.zeebe.broker.system.syspartition.SystemPartition;
+import io.camunda.zeebe.broker.system.syspartition.configuration.SystemPartitionClusterConfigurationStore;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
@@ -311,7 +313,10 @@ public class DynamicClusterConfigurationService
         brokerStartupContext.getClusterServices().getMembershipService(),
         brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
         clusterChangeExecutor,
-        brokerStartupContext.getMeterRegistry());
+        brokerStartupContext.getMeterRegistry(),
+        new SystemPartitionClusterConfigurationStore(
+            brokerStartupContext.getClusterServices().getCommunicationService(),
+            SystemPartition.members(brokerStartupContext.getBrokerConfiguration())));
   }
 
   @Override

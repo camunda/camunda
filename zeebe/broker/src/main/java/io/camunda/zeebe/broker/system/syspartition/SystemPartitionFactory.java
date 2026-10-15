@@ -12,6 +12,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.syspartition.configuration.ClusterConfigurationStoreServer;
 import io.camunda.zeebe.broker.system.syspartition.detector.FailureDetectorFactory;
 import io.camunda.zeebe.broker.system.syspartition.detector.RegionLayout;
 import io.camunda.zeebe.scheduler.Actor;
@@ -90,6 +91,10 @@ public final class SystemPartitionFactory {
                       systemPartition.keyValueReader(),
                       brokerCfg.getCluster().getClusterId(),
                       InstantSource.system()));
+              final var configurationStoreServer =
+                  new ClusterConfigurationStoreServer(communicationService, systemPartition);
+              systemPartition.addListener(configurationStoreServer);
+              systemPartition.addComponent(configurationStoreServer);
               FailureDetectorFactory.install(
                   brokerCfg.getCluster().getSystemPartition().getFailureDetector(),
                   systemPartition,

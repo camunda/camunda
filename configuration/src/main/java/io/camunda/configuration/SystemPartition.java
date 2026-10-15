@@ -20,7 +20,7 @@ import org.springframework.util.unit.DataSize;
 public class SystemPartition {
 
   /** Whether the system partition is bootstrapped on this broker. */
-  private boolean enabled = false;
+  private boolean enabled = true;
 
   /**
    * How many brokers replicate the system partition, independently of the data partitions'

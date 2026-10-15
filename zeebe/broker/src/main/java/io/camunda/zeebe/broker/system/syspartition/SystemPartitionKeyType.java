@@ -31,7 +31,12 @@ public enum SystemPartitionKeyType {
    * The decision to fail over from a failed region to a surviving one, put once by the failure
    * detector's leader together with the tick that made the decision.
    */
-  REGION_FAILOVER(5);
+  REGION_FAILOVER(5),
+  /**
+   * The cluster configuration as last written by a configuration change coordinator, compared and
+   * set by its next change id.
+   */
+  CLUSTER_CONFIGURATION(6);
 
   private final long id;
 

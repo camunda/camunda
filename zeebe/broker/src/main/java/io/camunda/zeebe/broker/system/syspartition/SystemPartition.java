@@ -138,6 +138,18 @@ public final class SystemPartition {
   }
 
   /**
+   * Returns a future completed once the entry at the given position, or a later one, is applied to
+   * this broker's key-value store. Must be called after {@link #start(ActorSchedulingService)}.
+   */
+  public ActorFuture<Void> awaitApplied(final long position) {
+    final var started = stateMachine;
+    if (started == null) {
+      throw new IllegalStateException("Expected the system partition to be started");
+    }
+    return started.awaitApplied(position);
+  }
+
+  /**
    * Adds a listener of this broker's role transitions, which hands out the key-value writer while
    * this broker is the leader. A listener added while this broker is the leader is notified right
    * away.

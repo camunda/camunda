@@ -9,6 +9,7 @@ package io.camunda.application.commons.clustering;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
@@ -107,8 +109,12 @@ public class DynamicClusterServices {
       final BrokerTopologyManager brokerTopologyManager) {
     return new ClusterConfigurationManagementRequestSender(
         clusterCommunicationService,
-        ClusterConfigurationCoordinatorSupplier.from(
-            brokerTopologyManager::getClusterConfiguration),
+        ClusterConfigurationCoordinatorSupplier.fromAlive(
+            brokerTopologyManager::getClusterConfiguration,
+            () ->
+                clusterMembershipService.getMembers().stream()
+                    .map(Member::id)
+                    .collect(Collectors.toUnmodifiableSet())),
         new ProtoBufSerializer(),
         clusterMembershipService.getLocalMember().id());
   }
