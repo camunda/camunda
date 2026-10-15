@@ -25,7 +25,9 @@ final class BrokerLivenessEvaluatorTest {
   private final TickTockMetrics metrics = new TickTockMetrics(meterRegistry);
   private final BrokerLivenessEvaluator evaluator =
       new BrokerLivenessEvaluator(
-          Set.of("0", "1", "2"), SUSPECT_THRESHOLD, DEAD_THRESHOLD, metrics);
+          Set.of("0", "1", "2"),
+          new LivenessThresholds(SUSPECT_THRESHOLD, DEAD_THRESHOLD),
+          metrics);
 
   @AfterEach
   void tearDown() {

@@ -26,7 +26,9 @@ import org.slf4j.Logger;
  * received since its previous tick. Before each tick it puts the cluster view those tocks and the
  * tick itself produce, so both are committed facts and replaying the log rebuilds them. At most one
  * tick is uncommitted at a time, so ticks do not pile up in the log while the partition cannot
- * commit. Runs on the failure detector's actor.
+ * commit. When the view at a tick shows a failed data region and an active one, it puts a region
+ * failover after that tick, once: the failover procedure it initiates owns the decision from then
+ * on. Runs on the failure detector's actor.
  */
 final class TickPublisher {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
@@ -37,6 +39,7 @@ final class TickPublisher {
   private final Set<String> members;
   private final Duration tickInterval;
   private final TickTockMetrics metrics;
+  private final RegionFailoverDecider failoverDecider;
   // the latest tick each broker, this one included, acknowledged since the previous tick
   private final Map<String, Long> tocks = new HashMap<>();
   // the latest tick each broker was seen at, including the ticks put but not committed yet
@@ -46,6 +49,7 @@ final class TickPublisher {
   private @Nullable ScheduledTimer timer;
   private long nextTickId;
   private boolean tickPending;
+  private boolean failoverCommitted;
   // identifies the current leadership, so completions of earlier ones are ignored
   private long leadership;
 
@@ -55,8 +59,10 @@ final class TickPublisher {
       final String localMemberId,
       final Set<String> members,
       final Duration tickInterval,
+      final RegionFailoverDecider failoverDecider,
       final TickTockMetrics metrics) {
     this.metrics = metrics;
+    this.failoverDecider = failoverDecider;
     this.actor = actor;
     this.communicationService = communicationService;
     this.localMemberId = localMemberId;
@@ -70,13 +76,16 @@ final class TickPublisher {
    * @param writer the key-value writer of the leadership
    * @param lastTickId the id of the latest committed tick, or 0 if none
    * @param committedView the latest committed cluster view
+   * @param failoverCommitted whether a region failover was committed already
    */
   void start(
       final SystemKeyValueWriter writer,
       final long lastTickId,
-      final Map<String, Long> committedView) {
+      final Map<String, Long> committedView,
+      final boolean failoverCommitted) {
     stop();
     this.writer = writer;
+    this.failoverCommitted = failoverCommitted;
     nextTickId = lastTickId + 1;
     lastSeenTicks.putAll(committedView);
     communicationService.consume(Tock.SUBJECT, Tock::decode, this::onTock, actor::run);
@@ -127,8 +136,24 @@ final class TickPublisher {
     final var tick = new TickValue().setTickId(tickId).setLeaderId(localMemberId).setTocks(tocks);
     tocks.clear();
     final var putAt = System.nanoTime();
+    final var tickPut = writer.put(SystemPartitionKeyType.TICK, tick);
+    if (!failoverCommitted) {
+      failoverDecider
+          .decide(tickId, lastSeenTicks, localMemberId)
+          .ifPresent(
+              failover -> {
+                failoverCommitted = true;
+                LOG.warn(
+                    "Every broker of region {} missed more ticks than the threshold at tick {};"
+                        + " putting a failover to region {}",
+                    failover.getFailedRegion(),
+                    tickId,
+                    failover.getTargetRegion());
+                writer.put(SystemPartitionKeyType.REGION_FAILOVER, failover);
+              });
+    }
     actor.runOnCompletion(
-        writer.put(SystemPartitionKeyType.TICK, tick),
+        tickPut,
         (position, error) -> {
           if (currentLeadership != leadership) {
             return;

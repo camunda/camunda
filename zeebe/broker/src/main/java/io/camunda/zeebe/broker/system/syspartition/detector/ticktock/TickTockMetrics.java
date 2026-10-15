@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.syspartition.detector.ticktock;
 
 import io.camunda.zeebe.broker.system.syspartition.detector.ticktock.TickTockMetricsDoc.BrokerKeyNames;
+import io.camunda.zeebe.broker.system.syspartition.detector.ticktock.TickTockMetricsDoc.RegionKeyNames;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
@@ -28,6 +29,8 @@ final class TickTockMetrics implements AutoCloseable {
   private final AtomicLong latestTick = new AtomicLong();
   private final Map<String, BrokerGauges> brokerGauges = new HashMap<>();
   private final Map<String, Counter> tocksReceived = new HashMap<>();
+  private final Map<String, AtomicLong> regionStates = new HashMap<>();
+  private final Map<String, AtomicLong> regionFailoverTicks = new HashMap<>();
   private final Timer tickCommitLatency;
 
   TickTockMetrics(final MeterRegistry meterRegistry) {
@@ -72,12 +75,49 @@ final class TickTockMetrics implements AutoCloseable {
     gauges.stateCode.set(stateCode);
   }
 
+  void setRegionState(final String region, final int stateCode) {
+    regionStates
+        .computeIfAbsent(
+            region,
+            ignored -> {
+              final var state = new AtomicLong();
+              meters.add(
+                  Gauge.builder(TickTockMetricsDoc.REGION_STATE.getName(), state, AtomicLong::get)
+                      .description(TickTockMetricsDoc.REGION_STATE.getDescription())
+                      .tag(RegionKeyNames.REGION.asString(), region)
+                      .register(meterRegistry));
+              return state;
+            })
+        .set(stateCode);
+  }
+
+  /** Reports the tick on which a failover from the failed to the target region was committed. */
+  void setRegionFailover(final String failedRegion, final String targetRegion, final long tickId) {
+    regionFailoverTicks
+        .computeIfAbsent(
+            failedRegion + "->" + targetRegion,
+            ignored -> {
+              final var tick = new AtomicLong();
+              meters.add(
+                  Gauge.builder(
+                          TickTockMetricsDoc.REGION_FAILOVER_TICK.getName(), tick, AtomicLong::get)
+                      .description(TickTockMetricsDoc.REGION_FAILOVER_TICK.getDescription())
+                      .tag(RegionKeyNames.REGION.asString(), failedRegion)
+                      .tag(RegionKeyNames.TARGET_REGION.asString(), targetRegion)
+                      .register(meterRegistry));
+              return tick;
+            })
+        .set(tickId);
+  }
+
   @Override
   public void close() {
     meters.forEach(meterRegistry::remove);
     meters.clear();
     brokerGauges.clear();
     tocksReceived.clear();
+    regionStates.clear();
+    regionFailoverTicks.clear();
   }
 
   private BrokerGauges registerBrokerGauges(final String broker) {

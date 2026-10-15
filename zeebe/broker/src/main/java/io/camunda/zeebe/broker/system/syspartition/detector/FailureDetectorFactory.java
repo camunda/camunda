@@ -25,7 +25,8 @@ public final class FailureDetectorFactory {
    * Installs the configured failure detector on the system partition, which starts it with the
    * partition. Must be called before the partition starts.
    *
-   * @param members every broker of the cluster, all of which the detector observes
+   * @param members the brokers running the system partition, all of which the detector observes
+   * @param regionLayout the region of each member, empty for a cluster without regions
    */
   public static void install(
       final FailureDetectorCfg cfg,
@@ -33,6 +34,7 @@ public final class FailureDetectorFactory {
       final ClusterCommunicationService communicationService,
       final MemberId localMemberId,
       final Set<MemberId> members,
+      final RegionLayout regionLayout,
       final MeterRegistry meterRegistry) {
     switch (cfg.getType()) {
       case NONE -> {}
@@ -43,6 +45,7 @@ public final class FailureDetectorFactory {
                 communicationService,
                 localMemberId.id(),
                 members.stream().map(MemberId::id).collect(Collectors.toUnmodifiableSet()),
+                regionLayout,
                 cfg.getTickTock(),
                 meterRegistry);
         systemPartition.addComponent(detector);
