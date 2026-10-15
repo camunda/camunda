@@ -124,7 +124,11 @@ public class ClusterMultiplePartitionsBatchOperationIT {
     waitForBatchOperationWithCorrectTotalCount(
         camundaClient, batchOperationKey, activeProcessInstances.size());
     waitForBatchOperationCompleted(
-        camundaClient, batchOperationKey, activeProcessInstances.size(), 0);
+        camundaClient,
+        batchOperationKey,
+        activeProcessInstances.size(),
+        0,
+        TIMEOUT_DATA_AVAILABILITY.multipliedBy(3));
 
     // Now wait until all process instances are terminated
     final var activeKeys =
