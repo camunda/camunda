@@ -31,6 +31,7 @@ final class TickTockMetrics implements AutoCloseable {
   private final Map<String, Counter> tocksReceived = new HashMap<>();
   private final Map<String, AtomicLong> regionStates = new HashMap<>();
   private final Map<String, AtomicLong> regionFailoverTicks = new HashMap<>();
+  private final Map<String, Meter> regionFailoverGauges = new HashMap<>();
   private final Timer tickCommitLatency;
 
   TickTockMetrics(final MeterRegistry meterRegistry) {
@@ -91,23 +92,34 @@ final class TickTockMetrics implements AutoCloseable {
         .set(stateCode);
   }
 
-  /** Reports the tick on which a failover from the failed to the target region was committed. */
+  /**
+   * Reports the tick on which a failover from the failed to the target region was committed. Only
+   * the latest failover is reported: a failover between other regions replaces the previous one.
+   */
   void setRegionFailover(final String failedRegion, final String targetRegion, final long tickId) {
-    regionFailoverTicks
-        .computeIfAbsent(
-            failedRegion + "->" + targetRegion,
-            ignored -> {
-              final var tick = new AtomicLong();
-              meters.add(
-                  Gauge.builder(
-                          TickTockMetricsDoc.REGION_FAILOVER_TICK.getName(), tick, AtomicLong::get)
-                      .description(TickTockMetricsDoc.REGION_FAILOVER_TICK.getDescription())
-                      .tag(RegionKeyNames.REGION.asString(), failedRegion)
-                      .tag(RegionKeyNames.TARGET_REGION.asString(), targetRegion)
-                      .register(meterRegistry));
-              return tick;
-            })
-        .set(tickId);
+    final var key = failedRegion + "->" + targetRegion;
+    if (!regionFailoverTicks.containsKey(key)) {
+      regionFailoverGauges.values().forEach(this::remove);
+      regionFailoverGauges.clear();
+      regionFailoverTicks.clear();
+      regionFailoverGauges.clear();
+      final var tick = new AtomicLong();
+      final var gauge =
+          Gauge.builder(TickTockMetricsDoc.REGION_FAILOVER_TICK.getName(), tick, AtomicLong::get)
+              .description(TickTockMetricsDoc.REGION_FAILOVER_TICK.getDescription())
+              .tag(RegionKeyNames.REGION.asString(), failedRegion)
+              .tag(RegionKeyNames.TARGET_REGION.asString(), targetRegion)
+              .register(meterRegistry);
+      meters.add(gauge);
+      regionFailoverGauges.put(key, gauge);
+      regionFailoverTicks.put(key, tick);
+    }
+    regionFailoverTicks.get(key).set(tickId);
+  }
+
+  private void remove(final Meter meter) {
+    meterRegistry.remove(meter);
+    meters.remove(meter);
   }
 
   @Override
@@ -118,6 +130,7 @@ final class TickTockMetrics implements AutoCloseable {
     tocksReceived.clear();
     regionStates.clear();
     regionFailoverTicks.clear();
+    regionFailoverGauges.clear();
   }
 
   private BrokerGauges registerBrokerGauges(final String broker) {

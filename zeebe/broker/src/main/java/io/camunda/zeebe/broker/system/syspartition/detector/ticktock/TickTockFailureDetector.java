@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.syspartition.SystemPartition;
 import io.camunda.zeebe.broker.system.syspartition.SystemPartitionKeyType;
 import io.camunda.zeebe.broker.system.syspartition.SystemPartitionListener;
 import io.camunda.zeebe.broker.system.syspartition.detector.RegionLayout;
+import io.camunda.zeebe.broker.system.syspartition.detector.ticktock.RegionFailoverDecider.CommittedFailover;
 import io.camunda.zeebe.scheduler.Actor;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
@@ -90,9 +91,12 @@ public final class TickTockFailureDetector extends Actor implements SystemPartit
             .map(TickValue::getTickId)
             .orElse(0L);
     final var committedView = lastSeenTicks();
-    final var failoverCommitted =
-        reader.get(SystemPartitionKeyType.REGION_FAILOVER, new RegionFailoverValue()).isPresent();
-    actor.run(() -> publisher.start(writer, lastTickId, committedView, failoverCommitted));
+    final var lastFailover =
+        reader
+            .get(SystemPartitionKeyType.REGION_FAILOVER, new RegionFailoverValue())
+            .map(CommittedFailover::of)
+            .orElse(null);
+    actor.run(() -> publisher.start(writer, lastTickId, committedView, lastFailover));
   }
 
   @Override

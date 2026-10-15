@@ -13,6 +13,7 @@ import static io.camunda.zeebe.broker.system.syspartition.RegionTopologyTestSupp
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.system.syspartition.detector.RegionLayout;
+import io.camunda.zeebe.broker.system.syspartition.detector.ticktock.RegionFailoverDecider.CommittedFailover;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ final class RegionFailoverDeciderTest {
             "control_0", TICK - 1);
 
     // when
-    final var failover = decider.decide(TICK, view, "region-b_0");
+    final var failover = decider.decide(TICK, view, "region-b_0", null);
 
     // then
     assertThat(failover)
@@ -62,7 +63,7 @@ final class RegionFailoverDeciderTest {
             "control_0", TICK - 1);
 
     // when - then
-    assertThat(decider.decide(TICK, view, "region-b_0")).isEmpty();
+    assertThat(decider.decide(TICK, view, "region-b_0", null)).isEmpty();
   }
 
   @Test
@@ -77,7 +78,7 @@ final class RegionFailoverDeciderTest {
             "control_0", TICK - 1);
 
     // when - then
-    assertThat(decider.decide(TICK, view, "region-b_0")).isEmpty();
+    assertThat(decider.decide(TICK, view, "region-b_0", null)).isEmpty();
   }
 
   @Test
@@ -92,7 +93,7 @@ final class RegionFailoverDeciderTest {
             "control_0", TICK - 5);
 
     // when - then
-    assertThat(decider.decide(TICK, view, "region-b_0")).isEmpty();
+    assertThat(decider.decide(TICK, view, "region-b_0", null)).isEmpty();
   }
 
   @Test
@@ -101,7 +102,7 @@ final class RegionFailoverDeciderTest {
     final var view = Map.of("region-b_0", TICK - 1, "region-b_1", TICK - 1, "control_0", TICK - 1);
 
     // when - then
-    assertThat(decider.decide(TICK, view, "region-b_0")).isEmpty();
+    assertThat(decider.decide(TICK, view, "region-b_0", null)).isEmpty();
   }
 
   @Test
@@ -110,7 +111,68 @@ final class RegionFailoverDeciderTest {
     final var withoutRegions = new RegionFailoverDecider(RegionLayout.NONE, THRESHOLDS);
 
     // when - then
-    assertThat(withoutRegions.decide(TICK, Map.of("0", 1L), "1")).isEmpty();
+    assertThat(withoutRegions.decide(TICK, Map.of("0", 1L), "1", null)).isEmpty();
+  }
+
+  @Test
+  void shouldNotFailOverAgainWhileTheRegionStaysFailed() {
+    // given - region A failed over at tick 100, and is still dead
+    final var previous = new CommittedFailover(REGION_A, TICK);
+    final var view = viewWithRegionADeadSince(TICK - 1);
+
+    // when
+    final var failover = decider.decide(TICK + 10, view, "region-b_0", previous);
+
+    // then
+    assertThat(failover).isEmpty();
+  }
+
+  @Test
+  void shouldFailOverAgainWhenTheRegionRecoveredAndFailedAgain() {
+    // given - region A failed over at tick 100, was seen at tick 120, and is dead again at 130
+    final var previous = new CommittedFailover(REGION_A, TICK);
+    final var view = viewWithRegionADeadSince(TICK + 20);
+
+    // when
+    final var failover = decider.decide(TICK + 30, view, "region-b_0", previous);
+
+    // then
+    assertThat(failover)
+        .hasValueSatisfying(value -> assertThat(value.getFailedRegion()).isEqualTo(REGION_A));
+  }
+
+  @Test
+  void shouldFailOverWhenAnotherRegionFailedAfterTheCommittedFailover() {
+    // given - region B failed, region A is the live one
+    final var previous = new CommittedFailover(REGION_A, TICK);
+    final var view =
+        Map.of(
+            "region-a_0", TICK + 29,
+            "region-a_1", TICK + 29,
+            "region-b_0", TICK + 20,
+            "region-b_1", TICK + 20,
+            "control_0", TICK + 29);
+
+    // when
+    final var failover = decider.decide(TICK + 30, view, "control_0", previous);
+
+    // then
+    assertThat(failover)
+        .hasValueSatisfying(
+            value -> {
+              assertThat(value.getFailedRegion()).isEqualTo(REGION_B);
+              assertThat(value.getTargetRegion()).isEqualTo(REGION_A);
+            });
+  }
+
+  private static Map<String, Long> viewWithRegionADeadSince(final long lastSeenA) {
+    final var lastSeenOthers = lastSeenA + 100;
+    return Map.of(
+        "region-a_0", lastSeenA,
+        "region-a_1", lastSeenA,
+        "region-b_0", lastSeenOthers,
+        "region-b_1", lastSeenOthers,
+        "control_0", lastSeenOthers);
   }
 
   @Test
