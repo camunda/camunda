@@ -13,7 +13,7 @@ dependencies {
   implementation("net.ltgt.gradle:gradle-errorprone-plugin:4.3.0")
   implementation("com.google.protobuf:protobuf-gradle-plugin:0.10.0")
   implementation(libs.openapi.generator.plugin)
-  implementation("com.gradleup.shadow:shadow-gradle-plugin:9.4.2")
+  implementation("com.gradleup.shadow:shadow-gradle-plugin:9.6.1")
   implementation("org.gradle:test-retry-gradle-plugin:1.6.6")
 
   testImplementation(gradleTestKit())
