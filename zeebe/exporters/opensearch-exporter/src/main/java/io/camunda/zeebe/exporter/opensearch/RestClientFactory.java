@@ -12,6 +12,7 @@ import io.github.acm19.aws.interceptor.http.AwsRequestSigningApacheInterceptor;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import io.camunda.zeebe.exporter.support.UrlRedaction;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
@@ -157,7 +158,13 @@ final class RestClientFactory {
     final var hosts = new HttpHost[urls.length];
 
     for (int i = 0; i < urls.length; i++) {
-      hosts[i] = HttpHost.create(urls[i]);
+      try {
+        hosts[i] = HttpHost.create(urls[i]);
+      } catch (final IllegalArgumentException e) {
+        // the cause is not chained: its message quotes the whole url
+        throw new IllegalArgumentException(
+            "Invalid OpenSearch url: " + UrlRedaction.redactUserInfo(urls[i]));
+      }
     }
 
     return hosts;

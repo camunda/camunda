@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -34,6 +35,19 @@ import org.mockito.ArgumentCaptor;
 final class RestClientFactoryTest {
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
+
+  @Test
+  void shouldNotExposeUrlCredentialsInErrorForInvalidUrl() {
+    // given
+    config.url = "http://elastic:s3cr3t@localhost:notaport";
+
+    // when / then
+    assertThatThrownBy(() -> RestClientFactory.of(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("localhost")
+        .hasMessageNotContaining("s3cr3t")
+        .hasNoCause();
+  }
 
   @Test
   void shouldConfigureMultipleHosts() {
