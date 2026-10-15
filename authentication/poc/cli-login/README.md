@@ -164,14 +164,32 @@ c8poc login                         # choose physical tenant, then the identity 
 c8poc whoami                        # context, physical tenant, identity, issuer, client, audience
 c8poc topology                      # GET /v2/topology with the stored token
 c8poc api /v2/license               # GET any path below the physical tenant's API
-c8poc logout                        # deletes the context and its user
+c8poc deploy examples/order.bpmn    # POST /v2/deployments (BPMN, DMN, forms; several files at once)
+c8poc create-instance order --variables '{"amount": 42}'   # or --variables @vars.json, --version 2
+c8poc logout                        # deletes the tokens; the context stays
 ```
+
+Commands that call the cluster log in on their own when they need to: if the context is not
+logged in yet, its session expired (no refresh token, or the refresh fails), or the cluster answers
+401, the CLI opens the browser login for that context and then sends the request again. With
+`--context <name>` the login is stored for that context, but the current context does not change.
 
 `login` options: `--physical-tenant <id>` and `--provider <id>` to skip the choices, `--name
 <context>` for the context name, `--no-browser` to only print the login URL (open it on this
 machine). Without `npm link`, run `node c8poc.mjs <command>` instead.
 
 ### Logging in through the browser
+
+On macOS the login opens in the system's sign-in window (ASWebAuthenticationSession, what native
+apps log in with): a window of its own without tabs or address bar, with your browser's saved
+passwords and sessions, that closes by itself after the login. Node cannot open it, so `c8poc`
+compiles a small Swift helper (`macos-login-window.swift`) into `~/.c8poc/bin` on first use - that
+needs the Xcode command line tools and takes about half a minute once. Elsewhere, or with
+`C8POC_BROWSER=system`, the default browser opens; `C8POC_BROWSER=app` opens an app window of
+Chrome, Edge, Brave or Chromium, `C8POC_BROWSER=<path>` one of that browser. The CLI asks the
+identity provider for `prompt=login`, so it always asks for credentials, even if the browser is
+still logged in there; `C8POC_PROMPT=` (empty) allows single sign-on instead, and
+`C8POC_PROMPT=select_account` shows Entra ID's account picker.
 
 `login` serves a few pages on the loopback interface, in the Camunda/Carbon look (light and dark):
 
@@ -245,6 +263,7 @@ c8poc config use-context localhost:8080/pt1     # switch
 c8poc config current-context
 c8poc config rename-context localhost:8080/pt1 sales
 c8poc config delete-context acme                # also deletes its user (and an unused cluster)
+c8poc config delete-context --all               # start over: no contexts, users or clusters
 c8poc config get-clusters
 c8poc config get-users
 c8poc config view                               # whole configuration, tokens REDACTED

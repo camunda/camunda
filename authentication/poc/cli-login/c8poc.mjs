@@ -12,19 +12,24 @@
 //
 // Zero dependencies; needs Node 18+. The configuration lives in ~/.c8poc/config.json.
 
-import { execFile } from "node:child_process";
+import { execFile, execFileSync, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
+import { fileURLToPath } from "node:url";
 
 const CONFIG_DIR = process.env.C8POC_HOME ?? join(homedir(), ".c8poc");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 const LEGACY_SESSION_FILE = join(CONFIG_DIR, "session.json");
 const DEFAULT_CLUSTER = "http://localhost:8080";
 const REFRESH_LEEWAY_SECONDS = 30;
+// OIDC prompt: "login" makes the identity provider ask for credentials even when the browser still
+// has a session there (the login window uses the user's own profile). C8POC_PROMPT= (empty) keeps
+// single sign-on; "select_account" lets Entra ID offer its account picker instead.
+const LOGIN_PROMPT = process.env.C8POC_PROMPT ?? "login";
 
 const USAGE = `Usage: c8poc [--context <name>] <command> [options]
 
@@ -39,13 +44,17 @@ Log in:
       --name <context>           Context name (default: <host>[/<physical tenant>]);
                                  c8poc --context <name> login ... works as well
       --no-browser               Only print the login URL (open it on this machine)
-  logout                         Delete the context and its user
+  logout                         Delete the context's tokens (the context stays)
   physical-tenants [url]         List the cluster's physical tenants
 
 Use the cluster (with the current context, or --context <name>):
   whoami                         Cluster, physical tenant and identity of the context
   topology                       GET /v2/topology
   api <path>                     GET any path below the physical tenant's API
+  deploy <file>...               Deploy BPMN/DMN/form files (POST /v2/deployments)
+  create-instance <process id>   Start a process instance (POST /v2/process-instances)
+      --variables <json|@file>   Variables, e.g. '{"amount": 42}' or @vars.json
+      --version <n>              Process version (default: latest)
 
 Configuration (like kubectl config):
   config discover [url]          Add a context for each physical tenant of the cluster (not
@@ -56,7 +65,8 @@ Configuration (like kubectl config):
   config current-context         Print the current context
   config use-context <name>      Switch the current context
   config rename-context <old> <new>
-  config delete-context <name>   Delete a context (and its user, if no other context uses it)
+  config delete-context <name>   Delete a context (and its user, if no other context uses it);
+                                 --all deletes every context, user and cluster
   config get-clusters            List clusters
   config get-users               List users
   config view                    Print the configuration, tokens redacted
@@ -90,9 +100,61 @@ function decodeJwt(token) {
   }
 }
 
-function openBrowser(url) {
-  const cmd = { darwin: "open", win32: "explorer" }[process.platform] ?? "xdg-open";
-  execFile(cmd, [url], () => {});
+const CHROMIUM_BROWSERS = {
+  darwin: ["Google Chrome", "Microsoft Edge", "Brave Browser", "Chromium"].map((app) => `/Applications/${app}.app/Contents/MacOS/${app}`),
+  linux: ["google-chrome", "google-chrome-stable", "microsoft-edge", "brave-browser", "chromium", "chromium-browser"].flatMap((bin) =>
+    (process.env.PATH ?? "").split(":").map((dir) => join(dir, bin))),
+  win32: ["Google/Chrome/Application/chrome.exe", "Microsoft/Edge/Application/msedge.exe"].flatMap((exe) =>
+    [process.env.PROGRAMFILES, process.env["PROGRAMFILES(X86)"], process.env.LOCALAPPDATA].filter(Boolean).map((dir) => join(dir, exe))),
+};
+const LOGIN_WINDOW_SOURCE = join(dirname(fileURLToPath(import.meta.url)), "macos-login-window.swift");
+const LOGIN_WINDOW_DONE_URL = "c8poc://done";
+
+// The macOS sign-in window (ASWebAuthenticationSession) native apps log in with: a window of its
+// own, without tabs or address bar, with the browser's saved passwords and sessions. Node cannot
+// open it, so a small Swift helper does; compiled once per version of its source.
+function macosLoginWindow() {
+  if (process.platform !== "darwin" || !existsSync(LOGIN_WINDOW_SOURCE)) return undefined;
+  const source = readFileSync(LOGIN_WINDOW_SOURCE);
+  const binary = join(CONFIG_DIR, "bin", `login-window-${createHash("sha256").update(source).digest("hex").slice(0, 12)}`);
+  if (existsSync(binary)) return binary;
+  try {
+    info("Preparing the macOS login window (once, takes about half a minute)...");
+    mkdirSync(dirname(binary), { recursive: true });
+    execFileSync("swiftc", ["-O", "-o", binary, LOGIN_WINDOW_SOURCE], { stdio: "ignore" });
+    return binary;
+  } catch {
+    info("Could not compile the macOS login window (needs the Xcode command line tools) - using the browser.");
+    return undefined;
+  }
+}
+
+// Opens the login: on macOS in the sign-in window, elsewhere in the default browser.
+// C8POC_BROWSER=system always uses the default browser; C8POC_BROWSER=app an app window of a
+// Chromium-based browser (no tabs or address bar, slower to appear), C8POC_BROWSER=<path> that
+// browser's app window. Returns whether the result page can close the window (the sign-in window
+// closes when a page navigates to LOGIN_WINDOW_DONE_URL); onCancel runs if the user closes it first.
+function openBrowser(url, onCancel) {
+  const choice = process.env.C8POC_BROWSER;
+  const loginWindow = choice ? undefined : macosLoginWindow();
+  if (loginWindow) {
+    const helper = spawn(loginWindow, [url, new URL(LOGIN_WINDOW_DONE_URL).protocol.slice(0, -1)], { stdio: "ignore", detached: true });
+    helper.on("exit", (code) => code === 2 && onCancel());
+    helper.unref();
+    return true;
+  }
+  const chromium = choice === "app"
+    ? (CHROMIUM_BROWSERS[process.platform] ?? []).find((p) => existsSync(p))
+    : choice && choice !== "system" ? choice : undefined;
+  if (chromium) {
+    // A running browser takes the window over and this process ends; otherwise it is the browser,
+    // which must outlive the CLI.
+    spawn(chromium, [`--app=${url}`, "--window-size=520,760"], { stdio: "ignore", detached: true }).unref();
+  } else {
+    const cmd = { darwin: "open", win32: "explorer" }[process.platform] ?? "xdg-open";
+    execFile(cmd, [url], () => {});
+  }
+  return false;
 }
 
 async function prompt(question) {
@@ -157,7 +219,11 @@ function deleteClusterIfUnused(config, clusterName) {
   if (!Object.values(config.contexts).some((c) => c.cluster === clusterName)) delete config.clusters[clusterName];
 }
 
+// A context that can be fixed by logging in (again); commands that call the cluster do so and retry.
+class LoginRequired extends Error {}
+
 // A context with its cluster and user resolved - what the commands work with.
+
 function resolveContext(config, name) {
   const resolved = name ?? config.currentContext;
   if (!resolved) throw new Error("no current context - run: c8poc login [url], or c8poc config use-context <name>");
@@ -166,7 +232,7 @@ function resolveContext(config, name) {
   const cluster = config.clusters[context.cluster];
   if (!cluster) throw new Error(`context '${resolved}' has no cluster - see: c8poc config set-context`);
   const user = config.users[context.user];
-  if (!user) throw new Error(`context '${resolved}' is not logged in - run: c8poc --context ${resolved} login`);
+  if (!user) throw new LoginRequired(`context '${resolved}' is not logged in - run: c8poc --context ${resolved} login`);
   return { name: resolved, context, clusterUrl: cluster.server, user };
 }
 
@@ -338,7 +404,7 @@ async function browserLogin(providers, { providerId, noBrowser, cluster, physica
   } else {
     info(`Opening the browser to log in${offered.length > 1 ? " - choose your identity provider there" : ""}...`);
     info(`(if it does not open: ${loginUrl})`);
-    openBrowser(loginUrl);
+    context.closesWindow = openBrowser(loginUrl, () => rejectLogin(new Error("login cancelled: the login window was closed")));
   }
   try {
     return await result;
@@ -362,6 +428,7 @@ async function startAttempt(provider, redirect, port) {
     code_challenge: base64url(createHash("sha256").update(verifier).digest()),
     code_challenge_method: "S256",
     ...(provider.resource ? { resource: provider.resource } : {}),
+    ...(LOGIN_PROMPT ? { prompt: LOGIN_PROMPT } : {}),
   });
   return { provider, meta, redirect, redirectUri, verifier, state, authorizeUrl: authorize.toString() };
 }
@@ -430,7 +497,8 @@ function resultPage({ ok, title, detail, identity, provider, context }) {
      <h1>${esc(ok ? "You're logged in" : title)}</h1>
      ${detail ? `<p class="${ok ? "lead" : "error"}">${esc(detail)}</p>` : ""}
      ${rows.length ? `<dl>${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : ""}
-     <p class="lead">${ok ? "You can close this tab and return to the terminal." : "Return to the terminal to try again."}</p>`,
+     <p class="lead">${ok ? (context?.closesWindow ? "This window closes by itself - back to the terminal." : "You can close this window and return to the terminal.") : "Return to the terminal to try again."}</p>
+     ${ok && context?.closesWindow ? `<script>setTimeout(() => location.assign(${JSON.stringify(LOGIN_WINDOW_DONE_URL)}), 2000);</script>` : ""}`,
   );
 }
 
@@ -509,7 +577,7 @@ function layout(title, body) {
 }
 
 async function refresh(config, userName, user) {
-  if (!user.refreshToken) throw new Error("session expired - run: c8poc login");
+  if (!user.refreshToken) throw new LoginRequired("session expired - run: c8poc login");
   const tokens = await getJson(user.tokenEndpoint, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -520,7 +588,7 @@ async function refresh(config, userName, user) {
       ...(user.resource ? { resource: user.resource } : {}),
     }),
   }).catch(() => {
-    throw new Error("session expired - run: c8poc login");
+    throw new LoginRequired("session expired - run: c8poc login");
   });
   config.users[userName] = withTokens(user, tokens);
   saveConfig(config);
@@ -554,7 +622,7 @@ function checkAccessToken(accessToken, provider) {
 
 // ---------- commands ----------
 
-async function login(args, contextFlag) {
+async function login(args, contextFlag, { switchContext = true } = {}) {
   const providerId = takeFlag(args, "--provider", true);
   const noBrowser = takeFlag(args, "--no-browser", false);
   const physicalTenantFlag = takeFlag(args, "--physical-tenant", true);
@@ -604,11 +672,11 @@ async function login(args, contextFlag) {
   }
 
   addLogin(config, name, target, user);
-  config.currentContext = name;
+  if (switchContext) config.currentContext = name;
   saveConfig(config);
   const how = user.method === "oidc" ? ` via ${user.provider} (${user.issuer})` : user.method === "basic" ? " (basic auth)" : "";
   info(`Logged in to ${where} as ${identity(user) ?? "anonymous"}${how}.`);
-  info(`Context '${name}' is current.`);
+  if (switchContext) info(`Context '${name}' is current.`);
 }
 
 // RFC 9728 style: a physical tenant's document sits at the well-known path plus its API path
@@ -649,7 +717,32 @@ function authHeaders(user) {
   return {};
 }
 
-async function call(path, contextFlag) {
+// Not logged in, session expired or token rejected: log in to the context in the browser first,
+// then send the request again.
+async function call(path, contextFlag, init = {}) {
+  let res;
+  try {
+    res = await send(path, contextFlag, init);
+    if (res.status === 401) throw new LoginRequired(`401 Unauthorized on ${res.url}`);
+  } catch (e) {
+    if (!(e instanceof LoginRequired)) throw e;
+    const name = contextFlag ?? loadConfig().currentContext;
+    info(`Logging in to context '${name}' first (${e.message.replace(/ - run: .*/, "")}).`);
+    // like kubectl, --context applies to this command only: it does not switch contexts
+    await login([], name, { switchContext: false });
+    res = await send(path, name, init);
+    if (res.status === 401) throw new Error(`401 Unauthorized on ${res.url} - the cluster rejects the new token`);
+  }
+  const body = await res.text();
+  try {
+    console.log(JSON.stringify(JSON.parse(body), null, 2));
+  } catch {
+    console.log(body);
+  }
+  if (!res.ok) process.exitCode = 1;
+}
+
+async function send(path, contextFlag, init) {
   const config = loadConfig();
   const resolved = resolveContext(config, contextFlag);
   let user = resolved.user;
@@ -657,15 +750,7 @@ async function call(path, contextFlag) {
     user = await refresh(config, resolved.context.user, user);
   }
   const url = `${resolved.clusterUrl}${resolved.context.apiBase ?? ""}${path.startsWith("/") ? path : `/${path}`}`;
-  const res = await fetch(url, { headers: authHeaders(user) });
-  const body = await res.text();
-  if (res.status === 401) throw new Error(`401 Unauthorized on ${url} - run: c8poc login`);
-  try {
-    console.log(JSON.stringify(JSON.parse(body), null, 2));
-  } catch {
-    console.log(body);
-  }
-  if (!res.ok) process.exitCode = 1;
+  return fetch(url, { ...init, headers: { ...init.headers, ...authHeaders(user) } });
 }
 
 function whoami(contextFlag) {
@@ -684,12 +769,20 @@ function whoami(contextFlag) {
   console.log(JSON.stringify(out, null, 2));
 }
 
+// Forgets the context's tokens; the context itself (cluster, physical tenant, name, current or not)
+// stays, so the next command just logs in again.
 function logout(contextFlag) {
   const config = loadConfig();
-  const { name } = resolveContext(config, contextFlag);
-  deleteContext(config, name);
+  const name = contextFlag ?? config.currentContext;
+  if (!name) throw new Error("no current context - see: c8poc config get-contexts");
+  const context = config.contexts[name];
+  if (!context) throw new Error(`no context '${name}' - see: c8poc config get-contexts`);
+  if (!context.user) return info(`Context '${name}' is not logged in.`);
+  const userName = context.user;
+  delete context.user;
+  deleteUserIfUnused(config, userName);
   saveConfig(config);
-  info(`Logged out: deleted context '${name}' and its user.`);
+  info(`Logged out of context '${name}' (the context stays; delete it with: c8poc config delete-context ${name}).`);
 }
 
 // ---------- config (kubectl config) ----------
@@ -780,11 +873,12 @@ const configCommands = {
     console.log(`Context "${from}" renamed to "${to}".`);
   },
   "delete-context": ([name]) => {
-    if (!name) throw new Error("usage: c8poc config delete-context <name>");
+    if (!name) throw new Error("usage: c8poc config delete-context <name> | --all");
     const config = loadConfig();
-    deleteContext(config, name);
+    const names = name === "--all" ? Object.keys(config.contexts) : [name];
+    names.forEach((n) => deleteContext(config, n));
     saveConfig(config);
-    console.log(`Deleted context ${name} from ${CONFIG_FILE}`);
+    console.log(names.length ? `Deleted context${names.length > 1 ? "s" : ""} ${names.join(", ")} from ${CONFIG_FILE}` : "No contexts to delete");
   },
   "get-clusters": () => printTable(["NAME", "SERVER"], Object.entries(loadConfig().clusters).map(([n, c]) => [n, c.server])),
   "get-users": () =>
@@ -801,6 +895,31 @@ const configCommands = {
   },
 };
 
+async function deploy(files, contextFlag) {
+  if (files.length === 0) throw new Error("usage: c8poc deploy <file>...");
+  const form = new FormData();
+  for (const file of files) {
+    form.append("resources", new Blob([readFileSync(file)]), basename(file));
+  }
+  await call("/v2/deployments", contextFlag, { method: "POST", body: form });
+}
+
+async function createInstance(args, contextFlag) {
+  const variablesArg = takeFlag(args, "--variables", true);
+  const version = takeFlag(args, "--version", true);
+  const [processDefinitionId] = args;
+  if (!processDefinitionId) throw new Error("usage: c8poc create-instance <process id> [--variables <json|@file>] [--version <n>]");
+  const variables = variablesArg === undefined
+    ? undefined
+    : JSON.parse(variablesArg.startsWith("@") ? readFileSync(variablesArg.slice(1), "utf8") : variablesArg);
+  const body = { processDefinitionId, variables, processDefinitionVersion: version === undefined ? undefined : Number(version) };
+  await call("/v2/process-instances", contextFlag, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 // ---------- main ----------
 
 const argv = process.argv.slice(2);
@@ -816,6 +935,8 @@ const commands = {
     if (!args[0]) throw new Error("usage: c8poc api <path>");
     return call(args[0], contextFlag);
   },
+  deploy: () => deploy(args, contextFlag),
+  "create-instance": () => createInstance(args, contextFlag),
   config: () => {
     const sub = configCommands[args[0]];
     if (!sub) throw new Error(`usage: c8poc config ${Object.keys(configCommands).join("|")}`);
