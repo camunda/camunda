@@ -441,7 +441,8 @@ jobs:
           with GH_TOKEN="\$GH_PAT". Always qa-processes first; the PAT is a backup.
 
           OWNERSHIP ROUTING: name the owning team of every root-cause group as the "### Ownership routing"
-          section of the manual describes. Main's .codeowners is at /tmp/nightly-fix-agent-codeowners.
+          section of the manual describes, and record it with exactly the keys of the "routing" example
+          under "### Result manifest". Main's .codeowners is at /tmp/nightly-fix-agent-codeowners.
           $(if [ -n "$ROUTING_RUNBOOK_DIR" ]; then
             echo "The routing runbook is checked out read-only at ${ROUTING_RUNBOOK_DIR}"
             echo "(camunda/eng-kit-memory at ${ROUTING_RUNBOOK_SHA}). Never write to it."
@@ -724,9 +725,14 @@ jobs:
             if [ "$(jq '.routing // [] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)" -eq 0 ]; then
               echo "The agent recorded no routing."
             else
+              # An entry that names its owner under "owner" instead of "team" still shows as routed.
               jq -r '.routing[] |
-                (if (.team // "") != ""
-                   then "- **\(.team)** (`\(.github_handle // "")`), \(.tier // "tier?")"
+                (if (.team // "") != "" then .team else (.owner // "") end) as $team |
+                (if (.github_handle // "") != "" then .github_handle else (.owner // "") end) as $handle |
+                (if $team != ""
+                   then "- **\($team)**"
+                     + (if $handle != "" and $handle != $team then " (`\($handle)`)" else "" end)
+                     + ", \(.tier // "tier?")"
                    else "- **Unresolved**, \(.tier // "tier?")"
                      + (if ((.candidates // []) | length) > 0 then ", candidates: \(.candidates | join(", "))" else "" end) end)
                 + (if ((.tests // []) | length) > 0 then "\n  - Tests: \(.tests | join("; "))"
@@ -873,8 +879,9 @@ jobs:
             while IFS= read -r route; do
               [ -n "$route" ] && summary="${summary}"$'\n'"${route}"
             done < <(jq -r '.routing // [] | .[] |
+              (if (.team // "") != "" then .team else (.owner // "") end) as $team |
               "• :compass: " +
-              (if (.team // "") != "" then "owner: *\(.team)* (\(.tier // "tier?"))"
+              (if $team != "" then "owner: *\($team)* (\(.tier // "tier?"))"
                else "owner unresolved (\(.tier // "tier?"))"
                  + (if ((.candidates // []) | length) > 0 then ", candidates: \(.candidates | join(", "))" else "" end) end)
               + (if ((.tests // []) | length) > 0 then " — \(.tests | length) test(s)"
