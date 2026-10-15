@@ -181,6 +181,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-gateway-scim</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>
     </dependency>
 

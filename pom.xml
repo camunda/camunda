@@ -37,6 +37,7 @@
     <module>gateways/gateway-model</module>
     <module>gateways/gateway-mapping-http</module>
     <module>gateways/gateway-mcp</module>
+    <module>gateways/gateway-scim</module>
     <module>spring-utils</module>
     <module>clients/java</module>
     <module>clients/spring-boot-protobuf-compatibility</module>

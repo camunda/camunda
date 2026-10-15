@@ -118,6 +118,7 @@
     <version.rocksdbjni>10.10.1.1</version.rocksdbjni>
     <version.sbe>1.40.2</version.sbe>
     <version.scala>3.10.0</version.scala>
+    <version.scim2-sdk>6.0.0</version.scim2-sdk>
     <version.slf4j>2.0.20</version.slf4j>
     <version.snakeyaml>2.7</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
@@ -716,6 +717,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-gateway-scim</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>dynamic-node-id-provider</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1066,6 +1073,12 @@
         <version>${version.mcp-sdk}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>com.unboundid.product.scim2</groupId>
+        <artifactId>scim2-sdk-common</artifactId>
+        <version>${version.scim2-sdk}</version>
       </dependency>
 
       <dependency>
