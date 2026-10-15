@@ -9,6 +9,14 @@
 ---
 name: C8 Orchestration Cluster Nightly Fix Agent
 
+# The run title carries the dispatched version, because the `serialize` job
+# below identifies sibling agents by it: `gh run list` exposes displayTitle, not
+# the dispatch inputs. It also makes the Actions list readable, where every run
+# was previously titled by the workflow name alone.
+run-name: >-
+  fix orchestration ${{ inputs.version }}
+  — ${{ inputs.triage_run_url }}
+
 on:
   workflow_dispatch:
     inputs:
@@ -58,8 +66,148 @@ permissions:
   pull-requests: write
 
 jobs:
+  serialize:
+    # One fix agent per version at a time.
+    #
+    # Triage groups a night's failures by version, so a single triage run
+    # dispatches at most one agent per version. What this guards is everything
+    # else: a re-run of triage, a manual dispatch landing on top of a nightly
+    # one, or a second triage pass while a 100-minute agent is still working.
+    # Two agents on the same version would both branch from main, neither able
+    # to see the other's PR, and produce overlapping fixes for the same specs.
+    #
+    # NOT GitHub's `concurrency:` key: it keeps at most ONE pending run per
+    # group and cancels the rest, even with cancel-in-progress: false. The
+    # dispatcher has already written the version into its ledger as dispatched,
+    # so a cancelled run would silently lose those failures for the day. The
+    # queue is explicit instead: every run starts, each waits its turn.
+    name: Wait for sibling agents (${{ github.event.inputs.version }})
+    runs-on: ubuntu-latest
+    # Cumulative waiting budget, not a per-predecessor one: a fix agent runs
+    # for up to 100 minutes, so a run that is third in the queue has to sit
+    # through two of them. At 130 it would have been killed mid-queue while
+    # the gate was still working correctly. Near the 360-minute ceiling for
+    # hosted runners, which bounds a queue that has grown absurd: the gate
+    # then fails and `fix` is skipped, rather than releasing a blocked agent.
+    timeout-minutes: 350
+    permissions:
+      actions: read
+    steps:
+      - name: Wait for in-flight agents of this version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ github.event.inputs.version }}
+          SELF_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          # Wait only on runs AHEAD of us, ordered by when the current attempt
+          # started (`startedAt` is run_started_at, which GitHub resets on every
+          # re-run), with the run id breaking same-second ties.
+          #
+          # Ordering on the run id alone would be wrong for a re-run: a re-run
+          # keeps its original, LOWER run id, so it would see no predecessor and
+          # start immediately beside a newer agent already past this gate.
+          # Ordering on the attempt's start puts a re-run at the back of the
+          # queue, where it belongs. Still a total order, so the queue can
+          # neither deadlock (no two runs ever wait on each other) nor starve
+          # (every run has finitely many predecessors). A run never counts
+          # itself: its own startedAt equals self_started and its id is not
+          # less than its own.
+          #
+          # Match the run title, because `gh run list` exposes displayTitle but
+          # not the dispatch inputs. run-name renders
+          # "fix orchestration <version> — <triage_run_url>", so the version is
+          # the third token. The trailing space in the prefix matters: a bare
+          # contains("8.10") would also match a hypothetical "8.10.1".
+          prefix="fix orchestration ${VERSION} "
+
+          # Status is filtered in jq, NOT with --status: that flag takes a
+          # single value, so `--status in_progress --status queued` silently
+          # keeps only the last one and the gate sees no in-progress sibling at
+          # all. `!= "completed"` is also the safer test — it counts a run that
+          # is queued, waiting or pending approval, each of which will become
+          # in_progress and would otherwise race us. A cancelled run reports
+          # completed, so it correctly stops blocking.
+          #
+          # The listing is filtered by a separate jq invocation rather than
+          # `gh --jq`, so that the title prefix can be passed with --arg.
+          # `version` is a free-form dispatch input: interpolated into jq
+          # source, a value containing a quote would break every poll (holding
+          # the gate open for the whole budget) and a crafted fragment could
+          # change what the gate counts.
+          # shellcheck disable=SC2016
+          filter='[.[] | select(.status != "completed")
+                       | select(.startedAt < $self_started
+                                or (.startedAt == $self_started
+                                    and .databaseId < $self))
+                       | select(.displayTitle | startswith($prefix))]
+                  | length'
+
+          # The budget bounds a STALLED queue, not a busy one. Measured from
+          # this run's own start it would not serialize three runs queued
+          # together: the third would give up while the second was still
+          # legitimately working. It is therefore reset on every observed
+          # departure, so the gate only gives up when nothing ahead of it has
+          # finished for a full budget — longer than a fix agent's own
+          # 100-minute ceiling. The job's timeout-minutes is the hard cap on
+          # total waiting; exceeding it fails the gate rather than releasing a
+          # still-blocked agent.
+          stall_budget=$(( 120 * 60 ))
+          deadline=$(( $(date +%s) + stall_budget ))
+          prev_ahead=""
+          self_started=""
+
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            # Read once: this attempt's own start, which the queue is ordered on.
+            # While it is unreadable `ahead` stays empty, which the retry branch
+            # below already treats as a reason to wait rather than proceed.
+            if [ -z "$self_started" ]; then
+              self_started=$(gh run view "${SELF_RUN_ID}" \
+                               --json startedAt --jq '.startedAt' \
+                               2>/dev/null || echo "")
+            fi
+
+            runs=""
+            if [ -n "$self_started" ]; then
+              runs=$(gh run list \
+                       --workflow c8-orchestration-cluster-e2e-nightly-fix.yml \
+                       --limit 100 --json databaseId,displayTitle,status,startedAt \
+                       2>/dev/null || echo "")
+            fi
+            ahead=""
+            if [ -n "$runs" ]; then
+              ahead=$(printf '%s' "$runs" \
+                        | jq --arg prefix "$prefix" \
+                             --arg self_started "$self_started" \
+                             --argjson self "$SELF_RUN_ID" \
+                             "$filter" 2>/dev/null || echo "")
+            fi
+
+            # An empty result means the API call failed, not that the queue is
+            # clear. Treating that as 0 would let every agent through during a
+            # GitHub wobble — exactly when they all start at once — so retry.
+            if [ -z "$ahead" ]; then
+              echo "::warning::could not read the run queue, retrying"
+            elif [ "$ahead" -eq 0 ]; then
+              echo "queue clear for ${VERSION}"
+              exit 0
+            else
+              if [ -n "$prev_ahead" ] && [ "$ahead" -lt "$prev_ahead" ]; then
+                deadline=$(( $(date +%s) + stall_budget ))
+              fi
+              prev_ahead="$ahead"
+              echo "waiting: ${ahead} older ${VERSION} agent(s) still running"
+            fi
+            sleep 60
+          done
+
+          echo "::warning::serialize gate saw no older ${VERSION} agent finish for 120m — proceeding anyway. The agent's own open-PR check is still a guard against duplicates, it is just no longer race-free."
+
   fix:
     name: Fix nightly failures (${{ github.event.inputs.version }})
+    needs: [serialize]
     runs-on: ubuntu-latest
     # 100 (not 60): the Live Docker Verify loop (AGENTS.md) can build a full
     # Camunda distribution from source for RDBMS-flagged failures, mirroring
@@ -420,6 +568,26 @@ jobs:
 
           Branch name to use: fix/nightly-${VERSION}-<short-slug> for test fixes,
           ci/<short-slug> for workflow-level fixes.
+
+          REUSE AN OPEN PR FOR THIS VERSION IF ONE EXISTS. Before cutting a branch, run
+          \`gh pr list --repo ${REPO} --label "failing-test-fix" --state open --json number,headRefName\`
+          and look for one whose \`headRefName\` STARTS WITH \`fix/nightly-${VERSION}-\`. The prefix
+          test is not optional: a branch for another version, or a \`ci/\` branch, is not yours to
+          push to.
+            - If one exists: \`git fetch origin <branch> && git checkout <branch>\`, then
+              \`git fetch origin ${TARGET_REF} && git merge --no-edit origin/${TARGET_REF}\` — triage
+              may have REOPENED a PR opened on an earlier night, so its branch can be behind its
+              base. Merge ${TARGET_REF}, never main: this PR is opened against ${TARGET_REF}, and
+              for a stable version merging main would drag next-version commits into it. If that merge
+              conflicts and you cannot resolve it confidently within the scope of this fix, do NOT
+              force it: \`git merge --abort\`, say so in your summary, and cut a new branch instead.
+              Read the branch's own diff before re-fixing anything — it may already address one of
+              the failures you were dispatched for. Apply your fixes there, push, and do NOT open a
+              second PR; put that PR's number in /tmp/fix-meta.json.
+            - Otherwise: cut a new branch as named above.
+          Opening a second PR for a version that already has one is the duplication this check
+          exists to prevent — two PRs editing the same specs from the same base, neither aware of
+          the other.
           Commit + PR title prefix: 'test:' for test-only changes, 'ci:' for workflow-only
           changes, 'fix:' for other code changes (NEVER 'fix:' for test-only changes —
           commitlint rejects it).

@@ -2849,6 +2849,8 @@ jobs:
         run: bats .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.bats
       - name: Run OC nightly suite-health tests
         run: bats .github/scripts/oc-nightly-suite-health/suite-health.bats
+      - name: Run OC nightly fix-PR reopen gate tests
+        run: bats .github/scripts/nightly-fix-reopen.bats
       - name: Observe build status
         if: always()
         continue-on-error: true
