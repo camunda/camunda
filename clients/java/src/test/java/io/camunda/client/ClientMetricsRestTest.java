@@ -279,6 +279,16 @@ final class ClientMetricsRestTest extends ClientRestTest {
     }
   }
 
+  @Test
+  void shouldExposeIoThreadCount() {
+    // when
+    meteredClient = newClientBuilder(meterRegistry).build();
+
+    // then — the HttpClient default, one I/O thread per available processor
+    assertThat(clientMeters("camunda.client.http.io.threads", "default").gauge().value())
+        .isEqualTo(Runtime.getRuntime().availableProcessors());
+  }
+
   private static JobWorker openWorker(final CamundaClient client, final String jobType) {
     return client.newWorker().jobType(jobType).handler((c, j) -> {}).open();
   }

@@ -17,6 +17,7 @@ package io.camunda.client.impl.metrics;
 
 import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.Loggers;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -55,6 +56,8 @@ public final class MicrometerClientMetrics implements ClientMetrics {
 
   /** Prefix of the job worker meters, see {@code MicrometerJobWorkerMetricsBuilder.Names}. */
   static final String WORKER_METER_PREFIX = "camunda.client.worker.";
+
+  static final String IO_THREADS_METER_NAME = "camunda.client.http.io.threads";
 
   private static final Logger LOG = Loggers.LOGGER;
 
@@ -114,6 +117,14 @@ public final class MicrometerClientMetrics implements ClientMetrics {
   }
 
   @Override
+  public void ioThreadCount(final int ioThreadCount) {
+    Gauge.builder(IO_THREADS_METER_NAME, () -> ioThreadCount)
+        .description("Number of I/O threads of the REST client")
+        .tags(clientTags)
+        .register(meterRegistry);
+  }
+
+  @Override
   public JobWorkerMetrics jobWorkerMetrics(final String jobType) {
     return JobWorkerMetrics.micrometer()
         .withMeterRegistry(meterRegistry)
@@ -139,7 +150,9 @@ public final class MicrometerClientMetrics implements ClientMetrics {
   }
 
   private static boolean isClientMeterName(final String name) {
-    return name.startsWith(HTTP_METER_PREFIX) || name.startsWith(WORKER_METER_PREFIX);
+    return name.startsWith(HTTP_METER_PREFIX)
+        || name.startsWith(WORKER_METER_PREFIX)
+        || name.equals(IO_THREADS_METER_NAME);
   }
 
   private static boolean isHttpObservationAvailable() {
