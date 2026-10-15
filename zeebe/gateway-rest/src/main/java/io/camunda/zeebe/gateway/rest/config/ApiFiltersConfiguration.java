@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantSwaggerFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiPredicate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -30,7 +31,9 @@ import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.http.server.PathContainer;
 import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
 
@@ -130,17 +133,35 @@ public class ApiFiltersConfiguration {
     return registration;
   }
 
+  /**
+   * Blocks the users API in OIDC mode. When users are provisioned externally ({@code
+   * camunda.scim.enabled=true}), the read endpoints (search and get by username) stay reachable and
+   * only the write endpoints are blocked.
+   */
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
   @Bean
   public FilterRegistrationBean<EndpointAccessErrorFilter> disableUserApiFilter(
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper, final Environment environment) {
+    final var userPatterns =
+        patterns("/v2/users/**", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/users/**");
+    final BiPredicate<String, PathContainer> exemption;
+    if (UserReadApiCondition.isScimEnabled(environment)) {
+      final var searchPatterns =
+          patterns("/v2/users/search", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/users/search");
+      final var getPatterns =
+          patterns("/v2/users/{username}", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/users/{username}");
+      exemption =
+          (method, path) ->
+              ("POST".equals(method) && searchPatterns.stream().anyMatch(p -> p.matches(path)))
+                  || ("GET".equals(method) && getPatterns.stream().anyMatch(p -> p.matches(path)));
+    } else {
+      exemption = (method, path) -> false;
+    }
     final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
         new FilterRegistrationBean<>();
     registration.setFilter(
         new EndpointAccessErrorFilter(
-            objectMapper,
-            USERS_API_DISABLED_ERROR_MESSAGE,
-            patterns("/v2/users/**", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/users/**")));
+            objectMapper, USERS_API_DISABLED_ERROR_MESSAGE, userPatterns, exemption));
     registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;

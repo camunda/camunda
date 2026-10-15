@@ -21,6 +21,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +35,7 @@ public class AdminClientConfigController {
   private static final String IS_CAMUNDA_GROUPS_ENABLED = "isCamundaGroupsEnabled";
   private static final String IS_TENANTS_API_ENABLED = "isTenantsApiEnabled";
   private static final String IS_ADDITIONAL_IDP_CONFIGURED = "isAdditionalIdpConfigured";
+  private static final String IS_USER_PROVISIONING_ENABLED = "isUserProvisioningEnabled";
   private static final String ORGANIZATION_ID = "organizationId";
   private static final String CLUSTER_ID = "clusterId";
   private static final String ID_PATTERN = "idPattern";
@@ -48,7 +50,15 @@ public class AdminClientConfigController {
 
   public AdminClientConfigController(
       final CamundaSecurityLibraryProperties cslProperties,
-      @Autowired(required = false) final WebappConfiguration webappConfiguration) {
+      final WebappConfiguration webappConfiguration) {
+    this(cslProperties, webappConfiguration, false);
+  }
+
+  @Autowired
+  public AdminClientConfigController(
+      final CamundaSecurityLibraryProperties cslProperties,
+      @Autowired(required = false) final WebappConfiguration webappConfiguration,
+      @Value("${camunda.scim.enabled:false}") final boolean isUserProvisioningEnabled) {
     final var resolvedWebappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     final boolean isNewDesignSystemEnabled =
@@ -67,16 +77,25 @@ public class AdminClientConfigController {
 
     objectMapper = new ObjectMapper();
     clientConfigAsJS =
-        generateClientConfig(cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured);
+        generateClientConfig(
+            cslProperties,
+            isNewDesignSystemEnabled,
+            isAdditionalIdpConfigured,
+            isUserProvisioningEnabled);
   }
 
   private String generateClientConfig(
       final CamundaSecurityLibraryProperties cslProperties,
       final boolean isNewDesignSystemEnabled,
-      final boolean isAdditionalIdpConfigured) {
+      final boolean isAdditionalIdpConfigured,
+      final boolean isUserProvisioningEnabled) {
     try {
       final Map<String, Object> config =
-          createConfigMap(cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured);
+          createConfigMap(
+              cslProperties,
+              isNewDesignSystemEnabled,
+              isAdditionalIdpConfigured,
+              isUserProvisioningEnabled);
       final String configJson = objectMapper.writeValueAsString(config);
       return String.format(CONFIG_JS_TEMPLATE, configJson);
     } catch (final JsonProcessingException e) {
@@ -88,7 +107,8 @@ public class AdminClientConfigController {
   private Map<String, Object> createConfigMap(
       final CamundaSecurityLibraryProperties cslProperties,
       final boolean isNewDesignSystemEnabled,
-      final boolean isAdditionalIdpConfigured) {
+      final boolean isAdditionalIdpConfigured,
+      final boolean isUserProvisioningEnabled) {
     final var config = new java.util.HashMap<String, Object>();
     final var saasConfiguration = cslProperties.getSaas();
 
@@ -97,6 +117,7 @@ public class AdminClientConfigController {
     config.put(
         IS_TENANTS_API_ENABLED, String.valueOf(cslProperties.getMultiTenancy().isApiEnabled()));
     config.put(IS_ADDITIONAL_IDP_CONFIGURED, String.valueOf(isAdditionalIdpConfigured));
+    config.put(IS_USER_PROVISIONING_ENABLED, String.valueOf(isUserProvisioningEnabled));
     config.put(ORGANIZATION_ID, saasConfiguration.getOrganizationId());
     config.put(CLUSTER_ID, saasConfiguration.getClusterId());
     config.put(ID_PATTERN, cslProperties.getIdValidationPattern());

@@ -116,6 +116,7 @@ import io.camunda.gateway.protocol.model.JobWorkerStatisticsItem;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleResult;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
+import io.camunda.gateway.protocol.model.MappingRuleTypeEnum;
 import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
@@ -1101,6 +1102,10 @@ public final class SearchQueryResponseMapper {
         .name(groupEntity.name())
         .groupId(groupEntity.groupId())
         .description(groupEntity.description())
+        .externalId(groupEntity.externalId())
+        .attributes(groupEntity.attributes())
+        .createdAt(formatDateOrNull(groupEntity.createdAt()))
+        .lastModifiedAt(formatDateOrNull(groupEntity.lastModifiedAt()))
         .build();
   }
 
@@ -1192,6 +1197,7 @@ public final class SearchQueryResponseMapper {
         .claimValue(mappingRuleEntity.claimValue())
         .name(mappingRuleEntity.name())
         .mappingRuleId(mappingRuleEntity.mappingRuleId())
+        .type(MappingRuleTypeEnum.fromValue(mappingRuleEntity.type()))
         .build();
   }
 
@@ -1438,6 +1444,11 @@ public final class SearchQueryResponseMapper {
         .username(user.username())
         .name(user.name())
         .email(user.email())
+        .externalId(user.externalId())
+        .active(user.active() == null || user.active())
+        .attributes(user.attributes())
+        .createdAt(formatDateOrNull(user.createdAt()))
+        .lastModifiedAt(formatDateOrNull(user.lastModifiedAt()))
         .build();
   }
 

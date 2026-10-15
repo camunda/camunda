@@ -254,10 +254,30 @@ components:
         name:
           type: string
           description: The name of the mapping rule.
+        type:
+          allOf:
+            - $ref: '#/components/schemas/MappingRuleTypeEnum'
+          description: |
+            Where the mapping rule looks for its claim. `TOKEN_CLAIM` (default) evaluates the claim against the
+            token of the authenticating principal. `USER_ATTRIBUTE` evaluates the claim name as a JSONPath
+            expression against the attributes stored on the user. `GROUP_ATTRIBUTE` matches an attribute of any
+            group the user is a direct member of.
       required:
         - claimName
         - claimValue
         - name
+      x-properties-added-in-version:
+        - propertyName: "type"
+          addedInVersion: "8.11"
+
+    MappingRuleTypeEnum:
+      type: string
+      description: The type of claim a mapping rule matches its claim value against.
+      default: TOKEN_CLAIM
+      enum:
+        - TOKEN_CLAIM
+        - USER_ATTRIBUTE
+        - GROUP_ATTRIBUTE
 
     MappingRuleCreateRequest:
       type: object
@@ -293,11 +313,23 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The unique ID of the mapping rule.
+        type:
+          allOf:
+            - $ref: '#/components/schemas/MappingRuleTypeEnum'
+          description: |
+            Where the mapping rule looks for its claim. `TOKEN_CLAIM` (default) evaluates the claim against the
+            token of the authenticating principal. `USER_ATTRIBUTE` evaluates the claim name as a JSONPath
+            expression against the attributes stored on the user. `GROUP_ATTRIBUTE` matches an attribute of any
+            group the user is a direct member of.
       required:
         - claimName
         - claimValue
         - name
         - mappingRuleId
+        - type
+      x-properties-added-in-version:
+        - propertyName: "type"
+          addedInVersion: "8.11"
 
     MappingRuleCreateResult:
       type: object
@@ -338,11 +370,23 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The ID of the mapping rule.
+        type:
+          allOf:
+            - $ref: '#/components/schemas/MappingRuleTypeEnum'
+          description: |
+            Where the mapping rule looks for its claim. `TOKEN_CLAIM` (default) evaluates the claim against the
+            token of the authenticating principal. `USER_ATTRIBUTE` evaluates the claim name as a JSONPath
+            expression against the attributes stored on the user. `GROUP_ATTRIBUTE` matches an attribute of any
+            group the user is a direct member of.
       required:
         - claimName
         - claimValue
         - name
         - mappingRuleId
+        - type
+      x-properties-added-in-version:
+        - propertyName: "type"
+          addedInVersion: "8.11"
 
     MappingRuleSearchQuerySortRequest:
       type: object

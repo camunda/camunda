@@ -101,7 +101,7 @@ class SetupControllerTest extends RestControllerTest {
         .uri(USER_PATH)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(dto)
+        .bodyValue(toRequestBody(dto))
         .exchange()
         .expectStatus()
         .isCreated()
@@ -138,7 +138,7 @@ class SetupControllerTest extends RestControllerTest {
         .uri(USER_PATH)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(dto)
+        .bodyValue(toRequestBody(dto))
         .exchange()
         .expectStatus()
         .isForbidden()
@@ -163,7 +163,7 @@ class SetupControllerTest extends RestControllerTest {
         .uri(USER_PATH)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(dto)
+        .bodyValue(toRequestBody(dto))
         .exchange()
         .expectStatus()
         .isForbidden()
@@ -266,7 +266,7 @@ class SetupControllerTest extends RestControllerTest {
         .uri(USER_PATH)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(dto)
+        .bodyValue(toRequestBody(dto))
         .exchange()
         .expectStatus()
         .isCreated()
@@ -366,6 +366,15 @@ class SetupControllerTest extends RestControllerTest {
 
   private UserDTO validCreateUserRequest(final String username) {
     return new UserDTO(username, "Foo Bar", "bar@example.com", "zabraboof");
+  }
+
+  private UserRequest toRequestBody(final UserDTO dto) {
+    return UserRequest.Builder.create()
+        .username(dto.username())
+        .password(dto.password())
+        .name(dto.name())
+        .email(dto.email())
+        .build();
   }
 
   private UserRequest validUserWithPasswordRequest() {

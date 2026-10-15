@@ -62,6 +62,7 @@ import io.camunda.gateway.protocol.model.GroupUpdateResult;
 import io.camunda.gateway.protocol.model.JobKindEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.MappingRuleCreateResult;
+import io.camunda.gateway.protocol.model.MappingRuleTypeEnum;
 import io.camunda.gateway.protocol.model.MappingRuleUpdateResult;
 import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.gateway.protocol.model.MessageCorrelationResult;
@@ -794,6 +795,7 @@ public final class ResponseMapper {
         .claimValue(record.getClaimValue())
         .name(record.getName())
         .mappingRuleId(record.getMappingRuleId())
+        .type(MappingRuleTypeEnum.fromValue(record.getType().name()))
         .build();
   }
 
@@ -804,6 +806,7 @@ public final class ResponseMapper {
         .claimValue(record.getClaimValue())
         .name(record.getName())
         .mappingRuleId(record.getMappingRuleId())
+        .type(MappingRuleTypeEnum.fromValue(record.getType().name()))
         .build();
   }
 

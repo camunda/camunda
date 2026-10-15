@@ -323,10 +323,37 @@ components:
           description: The email of the user.
           nullable: true
           type: string
+        externalId:
+          description: The identifier of the user in the external identity provider, if the user was provisioned externally (for example via SCIM).
+          nullable: true
+          type: string
+        active:
+          description: Whether the user is active. Users provisioned externally can be deactivated by the identity provider.
+          type: boolean
+        attributes:
+          description: Attributes provisioned via SCIM, keyed by the configured attribute name.
+          nullable: true
+          type: object
+          additionalProperties: true
+        createdAt:
+          description: The date and time when the user was created.
+          nullable: true
+          type: string
+          format: date-time
+        lastModifiedAt:
+          description: The date and time when the user was last modified.
+          nullable: true
+          type: string
+          format: date-time
       required:
         - username
         - name
         - email
+        - externalId
+        - active
+        - attributes
+        - createdAt
+        - lastModifiedAt
       x-properties-added-in-version:
         - propertyName: "username"
           addedInVersionOverride: "8.8"
@@ -334,6 +361,16 @@ components:
           addedInVersionOverride: "8.8"
         - propertyName: "email"
           addedInVersionOverride: "8.8"
+        - propertyName: "externalId"
+          addedInVersion: "8.11"
+        - propertyName: "active"
+          addedInVersion: "8.11"
+        - propertyName: "attributes"
+          addedInVersion: "8.11"
+        - propertyName: "createdAt"
+          addedInVersion: "8.11"
+        - propertyName: "lastModifiedAt"
+          addedInVersion: "8.11"
 
     UserSearchQuerySortRequest:
       type: object

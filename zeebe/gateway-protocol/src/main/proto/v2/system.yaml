@@ -302,6 +302,7 @@ components:
         - canLogout
         - isLoginDelegated
         - isCamundaGroupsEnabled
+        - isUserProvisioningEnabled
       properties:
         canLogout:
           description: Whether users can log out (false for SaaS deployments).
@@ -315,8 +316,14 @@ components:
           description: Whether Camunda manages group membership locally, as opposed to delegating it to the identity provider via a groups claim.
           type: boolean
           example: true
+        isUserProvisioningEnabled:
+          description: Whether users are provisioned externally (for example via SCIM) rather than managed locally. When true, the users API is read-only.
+          type: boolean
+          example: false
       x-properties-added-in-version:
         - propertyName: isCamundaGroupsEnabled
+          addedInVersion: "8.11"
+        - propertyName: isUserProvisioningEnabled
           addedInVersion: "8.11"
 
     CloudConfigurationResponse:

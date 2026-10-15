@@ -44,7 +44,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = UserController.class)
+@WebMvcTest(value = UserQueryController.class)
 public class UserQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -53,7 +53,9 @@ public class UserQueryControllerTest extends RestControllerTest {
               "items": [
                  { "username": "username1",
                    "name": "name1",
-                   "email": "email1"
+                   "email": "email1",
+                   "externalId": null,
+                   "active": true
                  }
               ],
               "page": {
@@ -110,12 +112,43 @@ public class UserQueryControllerTest extends RestControllerTest {
             {
               "username": "username",
               "name": "User Name",
-              "email": "email@email.com"
+              "email": "email@email.com",
+              "externalId": null,
+              "active": true
             }""",
             JsonCompareMode.STRICT);
 
     // then
     verify(userServices, times(1)).getUser(eq(user.username()), any());
+  }
+
+  @Test
+  void getUserShouldReturnExternalIdAndInactiveFlag() {
+    // given
+    final var user =
+        new UserEntity(
+            101L, "scim-user", "Scim User", "scim@email.com", null, "ext-123", Boolean.FALSE);
+    when(userServices.getUser(eq(user.username()), any())).thenReturn(user);
+
+    // when/then
+    webClient
+        .get()
+        .uri("/v2/users/" + user.username())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "username": "scim-user",
+              "name": "Scim User",
+              "email": "scim@email.com",
+              "externalId": "ext-123",
+              "active": false
+            }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test

@@ -302,6 +302,30 @@ public class AdminClientConfigControllerTest {
     assertThat(config).containsEntry("isAdditionalIdpConfigured", "false");
   }
 
+  @Test
+  void shouldExposeUserProvisioningFlag() throws Exception {
+    // given
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+
+    // when
+    final var enabled =
+        extractConfigFromResponse(
+            MockMvcBuilders.standaloneSetup(
+                    new AdminClientConfigController(cslProperties, null, true))
+                .build()
+                .perform(get("/admin/config.js"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString());
+    final var defaultConfig = extractConfig(cslProperties, null);
+
+    // then
+    assertThat(enabled).containsEntry("isUserProvisioningEnabled", "true");
+    assertThat(defaultConfig).containsEntry("isUserProvisioningEnabled", "false");
+  }
+
   private String performGetConfig() throws Exception {
     return mockMvc.perform(get("/admin/config.js")).andReturn().getResponse().getContentAsString();
   }

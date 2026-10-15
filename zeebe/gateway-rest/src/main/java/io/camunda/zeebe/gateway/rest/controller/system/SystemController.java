@@ -49,6 +49,7 @@ public class SystemController {
   private final WebappConfiguration webappConfiguration;
   private final long maxRequestSizeBytes;
   private final PhysicalTenantRestConfigProvider tenantRestConfigProvider;
+  private final boolean isUserProvisioningEnabled;
 
   public SystemController(
       final ServiceRegistry serviceRegistry,
@@ -56,7 +57,8 @@ public class SystemController {
       @Autowired(required = false) final CamundaSecurityLibraryProperties cslProperties,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize,
-      final PhysicalTenantRestConfigProvider tenantRestConfigProvider) {
+      final PhysicalTenantRestConfigProvider tenantRestConfigProvider,
+      @Value("${camunda.scim.enabled:false}") final boolean isUserProvisioningEnabled) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     this.cslProperties = cslProperties;
@@ -64,6 +66,7 @@ public class SystemController {
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     this.maxRequestSizeBytes = maxRequestSize.toBytes();
     this.tenantRestConfigProvider = tenantRestConfigProvider;
+    this.isUserProvisioningEnabled = isUserProvisioningEnabled;
   }
 
   @RequiresSecondaryStorage
@@ -142,6 +145,7 @@ public class SystemController {
         .canLogout(canLogout)
         .isLoginDelegated(webappConfiguration.isLoginDelegated())
         .isCamundaGroupsEnabled(isCamundaGroupsEnabled)
+        .isUserProvisioningEnabled(isUserProvisioningEnabled)
         .build();
   }
 

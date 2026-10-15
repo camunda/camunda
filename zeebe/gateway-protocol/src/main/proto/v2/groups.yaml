@@ -881,10 +881,42 @@ components:
           type: string
           nullable: true
           description: The group description.
+        externalId:
+          description: The identifier of the group in the external identity provider, if the group was provisioned externally (for example via SCIM).
+          nullable: true
+          type: string
+        attributes:
+          description: Attributes provisioned via SCIM, keyed by the configured attribute name.
+          nullable: true
+          type: object
+          additionalProperties: true
+        createdAt:
+          description: The date and time when the group was created.
+          nullable: true
+          type: string
+          format: date-time
+        lastModifiedAt:
+          description: The date and time when the group was last modified, including when its members changed.
+          nullable: true
+          type: string
+          format: date-time
       required:
         - name
         - groupId
         - description
+        - externalId
+        - attributes
+        - createdAt
+        - lastModifiedAt
+      x-properties-added-in-version:
+        - propertyName: "externalId"
+          addedInVersion: "8.11"
+        - propertyName: "attributes"
+          addedInVersion: "8.11"
+        - propertyName: "createdAt"
+          addedInVersion: "8.11"
+        - propertyName: "lastModifiedAt"
+          addedInVersion: "8.11"
 
     GroupSearchQuerySortRequest:
       type: object
