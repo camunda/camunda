@@ -1414,6 +1414,7 @@
 				"toolbar": {
 					"delete": "Delete",
 					"discard": "Discard",
+					"bulkActionsLabel": "Bulk actions",
 					"itemsSelected": "{{count}} items selected",
 					"itemSelected": "{{count}} item selected",
 					"selectAll": "Select all items",

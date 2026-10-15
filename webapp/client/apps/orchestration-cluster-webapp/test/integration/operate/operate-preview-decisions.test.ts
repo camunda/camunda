@@ -218,7 +218,7 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 			(request) =>
 				request.method() === 'POST' &&
 				request.url().includes('decision-instances/search') &&
-				JSON.stringify(request.postDataJSON()?.sort) === JSON.stringify([{field: 'evaluationDate', order: 'asc'}]),
+				JSON.stringify(request.postDataJSON()?.sort) === JSON.stringify([{field: 'evaluationDate', order: 'ASC'}]),
 		);
 		await operatePreviewDecisionsPage.instancesTable.getByRole('button', {name: 'Evaluation date'}).click();
 
