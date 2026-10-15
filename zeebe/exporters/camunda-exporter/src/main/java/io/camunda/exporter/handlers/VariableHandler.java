@@ -83,8 +83,12 @@ public class VariableHandler
       entity.setIsPreview(false);
     }
 
-    final var protectionModes = recordValue.getMetadata().getProtectionModes();
-    entity.setProtectionModes(protectionModes.isEmpty() ? null : protectionModes);
+    final var metadata = recordValue.getMetadata();
+    if (metadata != null
+        && metadata.getProtectionModes() != null
+        && !metadata.getProtectionModes().isEmpty()) {
+      entity.setProtectionModes(metadata.getProtectionModes());
+    }
 
     final var rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {

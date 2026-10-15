@@ -131,8 +131,7 @@ final class CamundaExporterIT {
   void shouldOpenDifferentPartitions(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var p1Exporter = new CamundaExporter();
     final var p1Context = getContextFromConfig(config, 1);
@@ -170,8 +169,7 @@ final class CamundaExporterIT {
   void shouldUpdateExporterPositionAfterFlushing(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var exporter = new CamundaExporter();
 
@@ -195,8 +193,7 @@ final class CamundaExporterIT {
   void shouldExportRecordOnceBulkSizeReached(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     config.getBulk().setSize(2);
     final var exporter = new CamundaExporter();
@@ -229,8 +226,7 @@ final class CamundaExporterIT {
       final GenericContainer<?> container) throws IOException {
     // given
     final var config = getConnectConfigForContainer(container);
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var exporter = new CamundaExporter();
 
@@ -269,8 +265,7 @@ final class CamundaExporterIT {
   void shouldPeriodicallyFlushBasedOnConfiguration(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var duration = 2;
     config.getBulk().setDelay(duration);
@@ -296,8 +291,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var valueType = ValueType.VARIABLE;
     final Record record =
@@ -361,18 +355,8 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
-    createSchemas(config);
-    final var exporter = new CamundaExporter();
-    exporter.configure(getContextFromConfig(config));
-    exporter.open(new ExporterTestController());
-
-    final var varHandler =
-        getHandlers(config).stream()
-            .filter(handler -> VariableHandler.class.isAssignableFrom(handler.getClass()))
-            .findFirst()
-            .orElseThrow();
+    final var exporter = openExporterWithSchemas(config);
+    final var varHandler = getVariableHandler(config);
 
     final var protectedRecord =
         generateVariableRecord(
@@ -417,6 +401,28 @@ final class CamundaExporterIT {
             });
   }
 
+  private void prepareIndexConfig(final ExporterConfiguration config) {
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
+  }
+
+  private CamundaExporter openExporterWithSchemas(final ExporterConfiguration config)
+      throws IOException {
+    prepareIndexConfig(config);
+    createSchemas(config);
+    final var exporter = new CamundaExporter();
+    exporter.configure(getContextFromConfig(config));
+    exporter.open(new ExporterTestController());
+    return exporter;
+  }
+
+  private ExportHandler<?, ?> getVariableHandler(final ExporterConfiguration config) {
+    return getHandlers(config).stream()
+        .filter(handler -> VariableHandler.class.isAssignableFrom(handler.getClass()))
+        .findFirst()
+        .orElseThrow();
+  }
+
   private Record<VariableRecordValue> generateVariableRecord(
       final VariableIntent intent,
       final long scopeKey,
@@ -450,8 +456,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given - a running process instance already exported into the list view
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
 
     final long processInstanceKey = 4503599627370497L;
@@ -537,8 +542,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final ValueType valueType = ValueType.INCIDENT;
     final long notExistingOperationReference = 9876543210L;
@@ -575,8 +579,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final ValueType valueType = ValueType.INCIDENT;
     final long invalidTimestamp = 8109027450636607488L;
@@ -615,8 +618,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
 
     // Do not create schema yet
     final var exporter = spy(new CamundaExporter());
@@ -736,8 +738,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var exporter = new CamundaExporter();
 
@@ -810,8 +811,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final Record record =
         factory.generateRecord(
@@ -838,8 +838,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given - a batch operation document and one CHUNK CREATED record with 3 items
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     config.getBulk().setSize(1);
     final var exporter = new CamundaExporter();

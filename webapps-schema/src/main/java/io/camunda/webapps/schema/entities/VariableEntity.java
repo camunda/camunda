@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Arrays;
@@ -43,6 +44,7 @@ public class VariableEntity
 
   /** Absent when the variable is not protected. */
   @SinceVersion(value = "8.11.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Set<ProtectionMode> protectionModes;
 
   @JsonIgnore private Object[] sortValues;
