@@ -709,6 +709,7 @@ jobs:
               "owner": "@camunda/core-features",
               "module": "Zeebe",
               "test-filter": "io.camunda.zeebe.it.engine.**,!**/*${DOLLAR}*.java",
+              "test-jvm-args": "-XX:MaxRAMPercentage=5 -XX:InitialRAMPercentage=1",
               "allow-stress": true,
               "stressRun": 1
             },
@@ -724,6 +725,7 @@ jobs:
               "owner": "@camunda/zeebe-distributed-platform",
               "module": "Zeebe",
               "test-filter": "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*${DOLLAR}*.java",
+              "test-jvm-args": "-XX:MaxRAMPercentage=5 -XX:InitialRAMPercentage=1",
               "allow-stress": true,
               "stressRun": 1
             },
@@ -975,7 +977,7 @@ jobs:
           -D forkCount=3
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=16
-          -D argLine="@{argLine} -Xmx4g"
+          -D jvm.test.extra.args=-Xmx4g
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
@@ -1573,6 +1575,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # Propagate matrix test filters (may be empty for other matrix entries)
           TEST_FILTER: ${{ matrix.test-filter }}
+          # Extra JVM args for the forked test JVMs (may be empty), e.g. to cap the heap per fork
+          TEST_JVM_ARGS: ${{ matrix.test-jvm-args }}
           IS_STRESS_ENABLED: ${{ matrix.allow-stress == true && github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') }}
         shell: bash
         run: >
@@ -1582,6 +1586,7 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=${{ env.IS_STRESS_ENABLED == 'true' && '0' || env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
           -D failsafe.timeout=${{ env.IT_FORK_TIMEOUT_SECONDS }}
+          -D jvm.test.extra.args="${TEST_JVM_ARGS}"
           -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}"
           -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
