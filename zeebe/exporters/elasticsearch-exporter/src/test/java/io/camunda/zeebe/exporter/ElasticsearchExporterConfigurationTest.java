@@ -23,6 +23,6 @@ final class ElasticsearchExporterConfigurationTest {
     final var result = config.toString();
 
     // then
-    assertThat(result).contains("localhost:9200").doesNotContain("s3cr3t");
+    assertThat(result).contains("http://****:****@localhost:9200").doesNotContain("s3cr3t");
   }
 }

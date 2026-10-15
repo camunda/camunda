@@ -44,8 +44,7 @@ final class RestClientFactoryTest {
     // when / then
     assertThatThrownBy(() -> RestClientFactory.of(config))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("localhost")
-        .hasMessageNotContaining("s3cr3t")
+        .hasMessage("Invalid Elasticsearch url at position 0")
         .hasNoCause();
   }
 
