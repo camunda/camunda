@@ -17,6 +17,14 @@ dependencies {
   )
 }
 
+// parent-conventions pins every org.springframework.boot artifact to the current Spring Boot
+// version, which would swap the baseline BOM for the current one. Re-pin it to the baseline.
+springBootBaselineBom.resolutionStrategy.eachDependency {
+  if (requested.group == "org.springframework.boot") {
+    useVersion(libs.versions.parent.spring.boot.oldest.managing.protobuf.get())
+  }
+}
+
 configurations
   .matching { it.name == "testCompileClasspath" || it.name == "testRuntimeClasspath" }
   .configureEach {
