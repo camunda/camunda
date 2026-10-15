@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -324,6 +325,43 @@ public class AdminClientConfigControllerTest {
     // then
     assertThat(enabled).containsEntry("isUserProvisioningEnabled", "true");
     assertThat(defaultConfig).containsEntry("isUserProvisioningEnabled", "false");
+  }
+
+  @Test
+  void shouldExposeScimSourcesAsArray() throws Exception {
+    // given
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+    final var environment = new MockEnvironment();
+    environment.setProperty("camunda.scim.sources[0].id", "keycloak-a");
+    environment.setProperty("camunda.scim.sources[1].id", "keycloak-b");
+
+    // when
+    final var configured =
+        extractConfigFromResponse(
+            MockMvcBuilders.standaloneSetup(
+                    new AdminClientConfigController(cslProperties, null, true, environment))
+                .build()
+                .perform(get("/admin/config.js"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString());
+    final var withoutSources =
+        extractConfigFromResponse(
+            MockMvcBuilders.standaloneSetup(
+                    new AdminClientConfigController(
+                        cslProperties, null, true, new MockEnvironment()))
+                .build()
+                .perform(get("/admin/config.js"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString());
+
+    // then
+    assertThat(configured).containsEntry("scimSources", List.of("keycloak-a", "keycloak-b"));
+    assertThat(withoutSources).containsEntry("scimSources", List.of("default"));
+    assertThat(extractConfig(cslProperties, null)).containsEntry("scimSources", List.of("default"));
   }
 
   private String performGetConfig() throws Exception {

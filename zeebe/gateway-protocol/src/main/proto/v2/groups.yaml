@@ -881,6 +881,10 @@ components:
           type: string
           nullable: true
           description: The group description.
+        source:
+          description: The SCIM source that provisioned and owns this group. Null if the group is not provisioned.
+          nullable: true
+          type: string
         externalId:
           description: The identifier of the group in the external identity provider, if the group was provisioned externally (for example via SCIM).
           nullable: true
@@ -904,11 +908,14 @@ components:
         - name
         - groupId
         - description
+        - source
         - externalId
         - attributes
         - createdAt
         - lastModifiedAt
       x-properties-added-in-version:
+        - propertyName: "source"
+          addedInVersion: "8.11"
         - propertyName: "externalId"
           addedInVersion: "8.11"
         - propertyName: "attributes"

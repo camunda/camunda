@@ -9,6 +9,7 @@ package io.camunda.identity.webapp.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gateway.scim.ScimAttributeProperties;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -16,12 +17,16 @@ import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.swagger.v3.oas.annotations.Hidden;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +41,8 @@ public class AdminClientConfigController {
   private static final String IS_TENANTS_API_ENABLED = "isTenantsApiEnabled";
   private static final String IS_ADDITIONAL_IDP_CONFIGURED = "isAdditionalIdpConfigured";
   private static final String IS_USER_PROVISIONING_ENABLED = "isUserProvisioningEnabled";
+  private static final String SCIM_SOURCES = "scimSources";
+  private static final String DEFAULT_SCIM_SOURCE = "default";
   private static final String ORGANIZATION_ID = "organizationId";
   private static final String CLUSTER_ID = "clusterId";
   private static final String ID_PATTERN = "idPattern";
@@ -51,14 +58,22 @@ public class AdminClientConfigController {
   public AdminClientConfigController(
       final CamundaSecurityLibraryProperties cslProperties,
       final WebappConfiguration webappConfiguration) {
-    this(cslProperties, webappConfiguration, false);
+    this(cslProperties, webappConfiguration, false, null);
+  }
+
+  public AdminClientConfigController(
+      final CamundaSecurityLibraryProperties cslProperties,
+      final WebappConfiguration webappConfiguration,
+      final boolean isUserProvisioningEnabled) {
+    this(cslProperties, webappConfiguration, isUserProvisioningEnabled, null);
   }
 
   @Autowired
   public AdminClientConfigController(
       final CamundaSecurityLibraryProperties cslProperties,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
-      @Value("${camunda.scim.enabled:false}") final boolean isUserProvisioningEnabled) {
+      @Value("${camunda.scim.enabled:false}") final boolean isUserProvisioningEnabled,
+      @Autowired(required = false) final Environment environment) {
     final var resolvedWebappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     final boolean isNewDesignSystemEnabled =
@@ -81,21 +96,41 @@ public class AdminClientConfigController {
             cslProperties,
             isNewDesignSystemEnabled,
             isAdditionalIdpConfigured,
-            isUserProvisioningEnabled);
+            isUserProvisioningEnabled,
+            scimSourceIds(environment));
+  }
+
+  private static List<String> scimSourceIds(final Environment environment) {
+    if (environment == null) {
+      return List.of(DEFAULT_SCIM_SOURCE);
+    }
+    final var ids =
+        Binder.get(environment)
+            .bind(
+                "camunda.scim.sources",
+                Bindable.listOf(ScimAttributeProperties.SourceProperties.class))
+            .orElse(List.of())
+            .stream()
+            .map(ScimAttributeProperties.SourceProperties::getId)
+            .filter(StringUtils::hasText)
+            .toList();
+    return ids.isEmpty() ? List.of(DEFAULT_SCIM_SOURCE) : ids;
   }
 
   private String generateClientConfig(
       final CamundaSecurityLibraryProperties cslProperties,
       final boolean isNewDesignSystemEnabled,
       final boolean isAdditionalIdpConfigured,
-      final boolean isUserProvisioningEnabled) {
+      final boolean isUserProvisioningEnabled,
+      final List<String> scimSources) {
     try {
       final Map<String, Object> config =
           createConfigMap(
               cslProperties,
               isNewDesignSystemEnabled,
               isAdditionalIdpConfigured,
-              isUserProvisioningEnabled);
+              isUserProvisioningEnabled,
+              scimSources);
       final String configJson = objectMapper.writeValueAsString(config);
       return String.format(CONFIG_JS_TEMPLATE, configJson);
     } catch (final JsonProcessingException e) {
@@ -108,7 +143,8 @@ public class AdminClientConfigController {
       final CamundaSecurityLibraryProperties cslProperties,
       final boolean isNewDesignSystemEnabled,
       final boolean isAdditionalIdpConfigured,
-      final boolean isUserProvisioningEnabled) {
+      final boolean isUserProvisioningEnabled,
+      final List<String> scimSources) {
     final var config = new java.util.HashMap<String, Object>();
     final var saasConfiguration = cslProperties.getSaas();
 
@@ -118,6 +154,7 @@ public class AdminClientConfigController {
         IS_TENANTS_API_ENABLED, String.valueOf(cslProperties.getMultiTenancy().isApiEnabled()));
     config.put(IS_ADDITIONAL_IDP_CONFIGURED, String.valueOf(isAdditionalIdpConfigured));
     config.put(IS_USER_PROVISIONING_ENABLED, String.valueOf(isUserProvisioningEnabled));
+    config.put(SCIM_SOURCES, scimSources);
     config.put(ORGANIZATION_ID, saasConfiguration.getOrganizationId());
     config.put(CLUSTER_ID, saasConfiguration.getClusterId());
     config.put(ID_PATTERN, cslProperties.getIdValidationPattern());

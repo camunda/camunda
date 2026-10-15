@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
 import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toCamundaUser;
+import static io.camunda.security.auth.BrokerRequestAuthorizationConverter.LOGIN_SOURCE_CLAIM;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.cluster.PhysicalTenantIds;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,13 +61,62 @@ public class AuthenticationController {
   }
 
   @CamundaGetMapping(path = "/me")
-  public ResponseEntity<CamundaUserResult> getCurrentUser() {
+  public ResponseEntity<CamundaUserResult> getCurrentUser(
+      @PhysicalTenantId final String physicalTenantId) {
     final var authenticatedUser = camundaUserPort.getCurrentUser();
     if (authenticatedUser == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     final var tenants = resolveTenants(authenticatedUser.tenants());
-    return ResponseEntity.ok(toCamundaUser(authenticatedUser, tenants));
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return ResponseEntity.ok(
+        toCamundaUser(
+            authenticatedUser,
+            tenants,
+            loginSource(authentication),
+            provisionedBy(physicalTenantId, authenticatedUser.username()),
+            mappingRules(authentication)));
+  }
+
+  /** The source the login came through, as set by the web layer next to the token claims. */
+  private static @Nullable String loginSource(
+      final @Nullable CamundaAuthentication authentication) {
+    return authentication != null
+            && authentication.claims().get(LOGIN_SOURCE_CLAIM) instanceof final String source
+            && !source.isBlank()
+        ? source
+        : null;
+  }
+
+  /** The source that owns the stored user; null if the user is not stored or not provisioned. */
+  private @Nullable String provisionedBy(
+      final String physicalTenantId, final @Nullable String username) {
+    if (username == null) {
+      return null;
+    }
+    try {
+      final var user =
+          serviceRegistry
+              .userServices(physicalTenantId)
+              .getUser(username, CamundaAuthentication.anonymous());
+      return user == null || user.source() == null || user.source().isBlank()
+          ? null
+          : user.source();
+    } catch (final RuntimeException e) {
+      return null;
+    }
+  }
+
+  private static @Nullable List<String> mappingRules(
+      final @Nullable CamundaAuthentication authentication) {
+    if (authentication == null) {
+      return null;
+    }
+    try {
+      return List.copyOf(authentication.authenticatedMappingRuleIds());
+    } catch (final RuntimeException e) {
+      return null;
+    }
   }
 
   /**

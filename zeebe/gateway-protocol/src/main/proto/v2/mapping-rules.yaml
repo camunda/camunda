@@ -262,12 +262,21 @@ components:
             token of the authenticating principal. `USER_ATTRIBUTE` evaluates the claim name as a JSONPath
             expression against the attributes stored on the user. `GROUP_ATTRIBUTE` matches an attribute of any
             group the user is a direct member of.
+        origin:
+          description: |
+            The SCIM source this mapping rule is restricted to. A rule with an origin only applies to principals
+            of that source; an empty or absent origin means the rule applies to any source. On update, an absent
+            origin resets the rule to any source.
+          nullable: true
+          type: string
       required:
         - claimName
         - claimValue
         - name
       x-properties-added-in-version:
         - propertyName: "type"
+          addedInVersion: "8.11"
+        - propertyName: "origin"
           addedInVersion: "8.11"
 
     MappingRuleTypeEnum:
@@ -321,14 +330,24 @@ components:
             token of the authenticating principal. `USER_ATTRIBUTE` evaluates the claim name as a JSONPath
             expression against the attributes stored on the user. `GROUP_ATTRIBUTE` matches an attribute of any
             group the user is a direct member of.
+        origin:
+          description: |
+            The SCIM source this mapping rule is restricted to. A rule with an origin only applies to principals
+            of that source; an empty or absent origin means the rule applies to any source. On update, an absent
+            origin resets the rule to any source.
+          nullable: true
+          type: string
       required:
         - claimName
         - claimValue
         - name
         - mappingRuleId
         - type
+        - origin
       x-properties-added-in-version:
         - propertyName: "type"
+          addedInVersion: "8.11"
+        - propertyName: "origin"
           addedInVersion: "8.11"
 
     MappingRuleCreateResult:
@@ -378,14 +397,24 @@ components:
             token of the authenticating principal. `USER_ATTRIBUTE` evaluates the claim name as a JSONPath
             expression against the attributes stored on the user. `GROUP_ATTRIBUTE` matches an attribute of any
             group the user is a direct member of.
+        origin:
+          description: |
+            The SCIM source this mapping rule is restricted to. A rule with an origin only applies to principals
+            of that source; an empty or absent origin means the rule applies to any source. On update, an absent
+            origin resets the rule to any source.
+          nullable: true
+          type: string
       required:
         - claimName
         - claimValue
         - name
         - mappingRuleId
         - type
+        - origin
       x-properties-added-in-version:
         - propertyName: "type"
+          addedInVersion: "8.11"
+        - propertyName: "origin"
           addedInVersion: "8.11"
 
     MappingRuleSearchQuerySortRequest:

@@ -90,6 +90,16 @@ components:
         - displayName
         - email
         - username
+        - loginSource
+        - provisionedBy
+        - mappingRules
+      x-properties-added-in-version:
+        - propertyName: "loginSource"
+          addedInVersion: "8.11"
+        - propertyName: "provisionedBy"
+          addedInVersion: "8.11"
+        - propertyName: "mappingRules"
+          addedInVersion: "8.11"
       properties:
         username:
           description: The username of the user.
@@ -148,3 +158,26 @@ components:
         canLogout:
           description: Flag for understanding if the user is able to perform logout.
           type: boolean
+        loginSource:
+          description: >-
+            The SCIM source the current login came through, resolved from the OIDC registration or
+            the token issuer. Null if the login does not belong to a source or SCIM is not enabled.
+          type: string
+          nullable: true
+          example: entra
+        provisionedBy:
+          description: >-
+            The SCIM source that provisioned the stored user. Null if the user is not provisioned.
+          type: string
+          nullable: true
+          example: entra
+        mappingRules:
+          description: >-
+            The IDs of the mapping rules that matched the current login. Null if they could not be
+            resolved.
+          type: array
+          nullable: true
+          items:
+            type: string
+          example:
+            - finance-department

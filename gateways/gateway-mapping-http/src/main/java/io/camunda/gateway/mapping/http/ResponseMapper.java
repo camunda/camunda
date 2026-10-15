@@ -796,6 +796,7 @@ public final class ResponseMapper {
         .name(record.getName())
         .mappingRuleId(record.getMappingRuleId())
         .type(MappingRuleTypeEnum.fromValue(record.getType().name()))
+        .origin(record.getOrigin())
         .build();
   }
 
@@ -807,6 +808,7 @@ public final class ResponseMapper {
         .name(record.getName())
         .mappingRuleId(record.getMappingRuleId())
         .type(MappingRuleTypeEnum.fromValue(record.getType().name()))
+        .origin(record.getOrigin())
         .build();
   }
 

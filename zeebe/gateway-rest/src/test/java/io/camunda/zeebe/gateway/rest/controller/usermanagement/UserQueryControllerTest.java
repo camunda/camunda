@@ -54,7 +54,11 @@ public class UserQueryControllerTest extends RestControllerTest {
                  { "username": "username1",
                    "name": "name1",
                    "email": "email1",
+                   "source": null,
                    "externalId": null,
+                   "attributes": null,
+                   "createdAt": null,
+                   "lastModifiedAt": null,
                    "active": true
                  }
               ],
@@ -113,7 +117,11 @@ public class UserQueryControllerTest extends RestControllerTest {
               "username": "username",
               "name": "User Name",
               "email": "email@email.com",
+              "source": null,
               "externalId": null,
+              "attributes": null,
+              "createdAt": null,
+              "lastModifiedAt": null,
               "active": true
             }""",
             JsonCompareMode.STRICT);
@@ -145,7 +153,11 @@ public class UserQueryControllerTest extends RestControllerTest {
               "username": "scim-user",
               "name": "Scim User",
               "email": "scim@email.com",
+              "source": null,
               "externalId": "ext-123",
+              "attributes": null,
+              "createdAt": null,
+              "lastModifiedAt": null,
               "active": false
             }""",
             JsonCompareMode.STRICT);

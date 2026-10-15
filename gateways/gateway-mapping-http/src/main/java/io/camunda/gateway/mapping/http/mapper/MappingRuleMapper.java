@@ -35,7 +35,8 @@ public class MappingRuleMapper {
                 request.getClaimValue(),
                 request.getName(),
                 request.getMappingRuleId(),
-                toType(request.getType())));
+                toType(request.getType()),
+                request.getOrigin() == null ? "" : request.getOrigin()));
   }
 
   public Either<ProblemDetail, MappingRuleDTO> toMappingRuleUpdateRequest(
@@ -48,7 +49,8 @@ public class MappingRuleMapper {
                 request.getClaimValue(),
                 request.getName(),
                 mappingRuleId,
-                toType(request.getType())));
+                toType(request.getType()),
+                request.getOrigin() == null ? "" : request.getOrigin()));
   }
 
   private static MappingRuleType toType(final MappingRuleTypeEnum type) {

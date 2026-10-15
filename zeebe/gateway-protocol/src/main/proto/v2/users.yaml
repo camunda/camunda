@@ -323,6 +323,10 @@ components:
           description: The email of the user.
           nullable: true
           type: string
+        source:
+          description: The SCIM source that provisioned and owns this user. Null if the user is not provisioned.
+          nullable: true
+          type: string
         externalId:
           description: The identifier of the user in the external identity provider, if the user was provisioned externally (for example via SCIM).
           nullable: true
@@ -349,6 +353,7 @@ components:
         - username
         - name
         - email
+        - source
         - externalId
         - active
         - attributes
@@ -361,6 +366,8 @@ components:
           addedInVersionOverride: "8.8"
         - propertyName: "email"
           addedInVersionOverride: "8.8"
+        - propertyName: "source"
+          addedInVersion: "8.11"
         - propertyName: "externalId"
           addedInVersion: "8.11"
         - propertyName: "active"
