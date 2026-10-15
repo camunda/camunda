@@ -52,13 +52,13 @@ public final class ClusterConfigurationGossiper
 
   // Reuse the same random ordered list for both sync and gossip
   private List<MemberId> membersToSync = new LinkedList<>();
-  // only accessed from the actor
   private ScheduledTimer syncTimer;
   // true while a sync request is awaiting its response; ticks are skipped meanwhile so slow peers
   // don't pile up requests. Only accessed from the actor
   private boolean syncInFlight;
-  // set by close(), which may run on any thread, so late actor tasks know to do nothing
-  private volatile boolean closed;
+  // Set once closed, so that a start() queued after close() does nothing. Only accessed from the
+  // actor
+  private boolean closed;
 
   // The handler which can merge configuration updates and reacts to the changes.
   private final Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler;
@@ -99,11 +99,6 @@ public final class ClusterConfigurationGossiper
     registerSyncHandler();
     registerGossipHandler();
     registerMemberAddedListener();
-    if (closed) {
-      // close() ran while we were registering and may have missed the handlers added since
-      cancelSyncTimer();
-      unregisterAll();
-    }
   }
 
   private void registerMemberAddedListener() {
@@ -323,21 +318,15 @@ public final class ClusterConfigurationGossiper
 
   @Override
   public void close() {
-    closed = true;
-    // The timer belongs to the actor, so it has to be cancelled there. If the actor is already
-    // gone, so is the timer.
-    executor.run(this::cancelSyncTimer);
-    unregisterAll();
+    executor.run(this::internalClose);
   }
 
-  private void cancelSyncTimer() {
+  private void internalClose() {
+    closed = true;
     if (syncTimer != null) {
       syncTimer.cancel();
       syncTimer = null;
     }
-  }
-
-  private void unregisterAll() {
     unregisterMemberListener();
     unregisterSyncHandler();
     unregisterGossipHandler();
