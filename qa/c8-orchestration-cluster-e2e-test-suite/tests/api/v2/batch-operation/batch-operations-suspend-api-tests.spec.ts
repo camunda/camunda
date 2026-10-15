@@ -195,19 +195,53 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   test('Suspend active batch operation returns 204 and status becomes SUSPENDED without resume', async ({
     request,
   }) => {
-    // Use a large instance count so the batch stays ACTIVE long enough for the
-    // suspend command to catch it in flight and be observed as SUSPENDED before
-    // it reaches a terminal state. 30 instances can finish first, making
-    // /suspension return a permanent 404 that the retry budget cannot recover
-    // from. Same remedy as the 500-instance tests below.
-    const key = await test.step('Create cancel batch operation', async () => {
-      return createCancellationBatch(request, 500, 'batch_suspension_process');
-    });
+    // The suspend command has to catch the batch while it is still ACTIVE, but a
+    // cancellation batch can race to COMPLETED before suspend lands -- making
+    // /suspension return a permanent 404 the retry budget cannot recover from
+    // (seen on nightly RDBMS Oracle 21c, camunda/camunda#63745). A larger
+    // instance count only widens the window, it cannot guarantee it (500
+    // instances still raced to COMPLETED), so retry the whole create-and-suspend
+    // sequence against a fresh batch when the race is lost -- the same remedy as
+    // 'Resume suspended batch operation runs to completion' below.
+    const key =
+      await test.step('Create and suspend a batch operation before it completes', async () => {
+        const maxAttempts = 3;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const candidateKey = await createCancellationBatch(
+            request,
+            1000,
+            'batch_suspension_process',
+          );
 
-    await test.step('Send suspend request', async () => {
-      const res = await suspendBatchOperation(request, key);
-      await assertStatusCode(res, 204);
-    });
+          const suspendResult = await attemptSuspendBeforeCompletion(
+            request,
+            candidateKey,
+          );
+          if (suspendResult === 'lost') {
+            console.log(
+              `Attempt ${attempt}: batch ${candidateKey} was already terminal before suspend could land; retrying with a fresh batch.`,
+            );
+            continue;
+          }
+
+          let state = await getBatchOperationState(request, candidateKey);
+          const pollDeadline = Date.now() + 15_000;
+          while (state === 'ACTIVE' && Date.now() < pollDeadline) {
+            await sleep(1_000);
+            state = await getBatchOperationState(request, candidateKey);
+          }
+
+          if (state === 'SUSPENDED') {
+            return candidateKey;
+          }
+          console.log(
+            `Attempt ${attempt}: batch ${candidateKey} reached "${state}" before the suspend command landed; retrying with a fresh batch.`,
+          );
+        }
+        throw new Error(
+          `Suspend never caught the batch before it completed, after ${maxAttempts} attempts.`,
+        );
+      });
 
     await test.step('Poll until batch operation is suspended', async () => {
       await expectBatchState(request, key, 'SUSPENDED');

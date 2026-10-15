@@ -16,7 +16,10 @@ import {
   assertForbiddenRequest,
   encode,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {
   createMammalProcessInstanceAndDeployMammalDecision,
   createUser,
@@ -109,6 +112,11 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
     await test.step('Verify Decision Instance is Deleted', async () => {
       const decisionEvaluationInstanceKeyToGet =
         decisionInstanceToDelete.decisionEvaluationInstanceKey;
+      // The deletion returns 204 promptly, but the read model dropping the
+      // instance is eventually consistent and lags well past the default 30s
+      // budget on a slower RDBMS shard (seen on nightly MySQL 9.7-profiles,
+      // while ES and Oracle cleared it inside 30s). Wait out the longer
+      // secondary-storage propagation window instead of the default.
       await expect(async () => {
         const res = await request.get(
           buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
@@ -123,7 +131,7 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
           res,
           `Decision Instance with id '${decisionEvaluationInstanceKeyToGet}' not found`,
         );
-      }).toPass(defaultAssertionOptions);
+      }).toPass(extendedAssertionOptions);
     });
   });
 
