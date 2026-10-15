@@ -16,6 +16,7 @@
 package io.camunda.client.spring.configuration;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.metrics.CamundaClientMetrics;
 import io.camunda.client.health.HealthCheck;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.metrics.JobWorkerMetricsFactory;
@@ -26,6 +27,7 @@ import io.camunda.client.spring.actuator.CamundaClientHealthIndicator;
 import io.camunda.client.spring.actuator.JobWorkerController;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -35,6 +37,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
 /**
  * Spring Boot 3 compatible actuator configuration. Uses the package location for HealthIndicator in
@@ -63,6 +67,33 @@ public class CamundaActuatorConfiguration {
   @ConditionalOnMissingBean
   public JobWorkerMetricsFactory jobWorkerMetricsFactory(@Lazy final MeterRegistry meterRegistry) {
     return new MicrometerJobWorkerMetricsFactory(meterRegistry);
+  }
+
+  /**
+   * Records the client metrics (e.g. of its HTTP connection pool) to the application's meter
+   * registry. The job workers of the starter set their own metrics, so the client's fallback job
+   * worker metrics only apply to workers the application opens itself.
+   *
+   * <p>All configured clients share this one registry. Their meters are tagged with their physical
+   * tenant, so clients of different tenants don't collide. Two clients of the same physical tenant
+   * in one application do collide (see {@link io.camunda.client.api.metrics.CamundaClientMetrics}):
+   * this is a known limitation, as there is no hook to give individual clients their own registry.
+   *
+   * <p>Runs before all other {@link CamundaClientBuilderCustomizer}s, so that an application's
+   * customizer can replace the registry for all clients.
+   */
+  @Bean
+  @Order(Ordered.HIGHEST_PRECEDENCE)
+  public CamundaClientBuilderCustomizer camundaClientMeterRegistryCustomizer(
+      final ObjectProvider<MeterRegistry> meterRegistry) {
+    // Resolved per client when it is built: no registry, or several without a primary one, means
+    // no client metrics instead of failing the client creation.
+    return builder -> {
+      final MeterRegistry registry = meterRegistry.getIfUnique();
+      if (registry != null) {
+        builder.metrics(CamundaClientMetrics.micrometer().withMeterRegistry(registry).build());
+      }
+    };
   }
 
   @Bean

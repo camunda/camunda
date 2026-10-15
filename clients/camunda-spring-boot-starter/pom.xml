@@ -94,6 +94,14 @@
       <artifactId>httpclient5</artifactId>
     </dependency>
 
+    <!-- Enables the HTTP client metrics of the Camunda client, which the starter records to the
+         application's meter registry; not referenced from code -->
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5-observation</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
@@ -213,6 +221,8 @@
             <!-- test-only: present so the actuator @ConditionalOnClass matches in tests; it has no
                  compile-time reference, so dependency-analyze cannot see it is used -->
             <dependency>org.springframework.boot:spring-boot-actuator-autoconfigure</dependency>
+            <!-- runtime-only: the client loads it reflectively to record HTTP client metrics -->
+            <dependency>org.apache.httpcomponents.client5:httpclient5-observation</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
