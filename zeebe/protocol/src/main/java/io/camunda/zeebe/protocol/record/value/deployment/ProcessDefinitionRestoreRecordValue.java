@@ -26,14 +26,14 @@ public interface ProcessDefinitionRestoreRecordValue extends RecordValue {
   /**
    * @return the key of the process definition this record refers to, or -1 if none (for example,
    *     the START/STARTED records that bound a restore run). A FINISHED record may retain the key
-   *     of the process definition the final chunk resumed from.
+   *     of the process definition the final command resumed from.
    */
   long getProcessDefinitionKey();
 
   /**
    * @return the tenant id of the process definition this record refers to, or an empty string if
    *     none (for example, the START/STARTED records). A FINISHED record may retain the tenant id
-   *     of the process definition the final chunk resumed from.
+   *     of the process definition the final command resumed from.
    */
   String getTenantId();
 }

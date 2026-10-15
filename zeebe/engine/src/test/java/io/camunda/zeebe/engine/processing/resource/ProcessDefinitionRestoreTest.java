@@ -80,8 +80,7 @@ public class ProcessDefinitionRestoreTest {
     engine.withEngineConfig(cfg -> cfg.setEnableProcessDefinitionRestore(true));
     engine.start();
 
-    // then - both are flipped back to ACTIVE, and the single-command batch (well under the visit
-    // cap) proves the cursor loop terminates cleanly with no extra commands
+    // then - both are flipped back to ACTIVE, and the cursor loop terminates cleanly
     RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
         .getFirst();
 
@@ -102,7 +101,8 @@ public class ProcessDefinitionRestoreTest {
             .stream()
             .filter(r -> r.getIntent() == ProcessDefinitionRestoreIntent.CONTINUE)
             .toList();
-    assertThat(continueCommands).hasSize(1);
+    // each definition took its own CONTINUE, plus the one that found the end
+    assertThat(continueCommands).hasSize(3);
   }
 
   @Test
@@ -346,11 +346,10 @@ public class ProcessDefinitionRestoreTest {
   }
 
   @Test
-  public void shouldBoundVisitedRowsPerCommandAndStillFindAStrayNearTheEnd() {
-    // given - more ACTIVE definitions than the per-command visit cap, with the stray deployed last
-    final int visitLimit = ProcessDefinitionRestoreContinueProcessor.VISIT_LIMIT;
-    final var extraRows = 11;
-    IntStream.range(0, visitLimit + extraRows - 1)
+  public void shouldVisitOneDefinitionPerContinueAndStillFindAStrayNearTheEnd() {
+    // given - several ACTIVE definitions with the stray deployed last
+    final var definitions = 5;
+    IntStream.range(0, definitions - 1)
         .forEach(i -> deploy(simpleProcess(Strings.newRandomValidBpmnId())));
     final var stray = deploy(simpleProcess(Strings.newRandomValidBpmnId()));
     injectPendingDeletion(stray);
@@ -370,8 +369,7 @@ public class ProcessDefinitionRestoreTest {
     assertThat(restored.getValue().getProcessDefinitionKey())
         .isEqualTo(stray.getProcessDefinitionKey());
 
-    // and visiting (visitLimit + extraRows) rows in batches of at most visitLimit needed more than
-    // one loop command, proving the cap bounds a single command's work
+    // and - each definition took its own CONTINUE, plus the one that found the end
     final var continueCommands =
         RecordingExporter.processDefinitionRestoreRecords()
             .limit(r -> r.getPosition() >= finishedRecord.getPosition())
@@ -379,7 +377,7 @@ public class ProcessDefinitionRestoreTest {
             .stream()
             .filter(r -> r.getIntent() == ProcessDefinitionRestoreIntent.CONTINUE)
             .toList();
-    assertThat(continueCommands.size()).isGreaterThan(1);
+    assertThat(continueCommands).hasSize(definitions + 1);
   }
 
   @Test
