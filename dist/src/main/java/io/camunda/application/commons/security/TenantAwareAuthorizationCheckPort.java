@@ -15,7 +15,6 @@ import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.core.authz.ScopedAuthorizationCheckPortFactory.ScopedAuthorizationCheckPorts;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.List;
@@ -45,15 +44,15 @@ final class TenantAwareAuthorizationCheckPort implements AuthorizationCheckPort 
   private static final String COMPONENT_ADMIN = "admin";
   private static final String COMPONENT_IDENTITY_LEGACY_ALIAS = "identity";
 
-  private final ScopedAuthorizationCheckPorts checkPorts;
+  private final Map<String, AuthorizationCheckPort> checkPorts;
   private final boolean hasPerTenantScopes;
   private final TokenClaimsAuthenticationResolver claimsResolver;
 
   TenantAwareAuthorizationCheckPort(
-      final ScopedAuthorizationCheckPorts checkPorts,
+      final Map<String, AuthorizationCheckPort> checkPorts,
       final boolean hasPerTenantScopes,
       final TokenClaimsAuthenticationResolver claimsResolver) {
-    this.checkPorts = checkPorts;
+    this.checkPorts = Map.copyOf(checkPorts);
     this.hasPerTenantScopes = hasPerTenantScopes;
     this.claimsResolver = claimsResolver;
   }
@@ -90,9 +89,22 @@ final class TenantAwareAuthorizationCheckPort implements AuthorizationCheckPort 
 
   private AuthorizationCheckPort checkPortForCurrentScope() {
     if (!hasPerTenantScopes) {
-      return checkPorts.forScope(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      return forScope(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     }
-    return checkPorts.forScope(PhysicalTenantContext.currentOrNull());
+    return forScope(PhysicalTenantContext.currentOrNull());
+  }
+
+  private AuthorizationCheckPort forScope(final String scope) {
+    final var checkPort = scope == null ? null : checkPorts.get(scope);
+    if (checkPort == null) {
+      throw new IllegalStateException(
+          "No AuthorizationCheckPort assembled for scope '"
+              + scope
+              + "'; refusing to fall back to another scope's port, as resolving authorizations "
+              + "against the wrong scope's storage would break scope isolation. This indicates a "
+              + "configuration issue: the scope is unknown or has no authorization source.");
+    }
+    return checkPort;
   }
 
   private static <T> boolean isComponentAdminAccess(final RequiredAuthorization<T> authorization) {
