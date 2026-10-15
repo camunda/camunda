@@ -19,9 +19,12 @@ import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.impl.SearchAuthorizationScopeRepository;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.spi.WebAppAuthorizationEnabledPort;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -70,6 +73,7 @@ public class WebAppAuthorizationCheckPortConfiguration {
       final Optional<PhysicalTenantSearchClientReaders> physicalTenantSearchClientReaders,
       final List<PropertyAuthorizationEvaluator<?>> propertyAuthorizationEvaluators,
       final CamundaSecurityLibraryProperties securityProperties,
+      final PhysicalTenantSecurityProperties physicalTenantSecurityProperties,
       final ObjectProvider<LazyTokenClaimsConverter> claimsConverter) {
     final var resolver =
         claimsConverter.getIfAvailable(() -> defaultClaimsConverter(securityProperties));
@@ -91,14 +95,50 @@ public class WebAppAuthorizationCheckPortConfiguration {
               + "this bean -- every authorization check, including default-tenant ones, would "
               + "otherwise fail hard per request instead of at startup.");
     }
-    final var checkPorts =
-        ScopedAuthorizationCheckPortFactory.create(
-            scopeRepositoriesByScope,
-            resolver,
-            propertyAuthorizationEvaluators,
-            securityProperties.getAuthorizations().isEnabled(),
-            securityProperties.getMultiTenancy().isChecksEnabled());
+    final Map<String, AuthorizationCheckPort> checkPorts = new LinkedHashMap<>();
+    scopeRepositoriesByScope.forEach(
+        (tenantId, scopeRepository) ->
+            checkPorts.put(
+                tenantId,
+                ScopedAuthorizationCheckPortFactory.create(
+                        Map.of(tenantId, scopeRepository),
+                        resolver,
+                        propertyAuthorizationEvaluators,
+                        authorizationsEnabled(physicalTenantSecurityProperties, tenantId),
+                        securityProperties.getMultiTenancy().isChecksEnabled())
+                    .forScope(tenantId)));
     return new TenantAwareAuthorizationCheckPort(checkPorts, hasPerTenantScopes, resolver);
+  }
+
+  /**
+   * Lets the webapp authorization filter honour the request's physical tenant flag instead of the
+   * root one. An unknown tenant counts as enabled so the request reaches the check port, which
+   * fails hard for it.
+   */
+  @Bean
+  public WebAppAuthorizationEnabledPort webAppAuthorizationEnabledPort(
+      final PhysicalTenantSecurityProperties physicalTenantSecurityProperties) {
+    return request -> {
+      final var physicalTenantId =
+          Objects.requireNonNullElse(
+              PhysicalTenantContext.getPhysicalTenantId(request),
+              PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      final var tenantProperties =
+          physicalTenantSecurityProperties.propertiesByPhysicalTenant().get(physicalTenantId);
+      return tenantProperties == null || tenantProperties.getAuthorizations().isEnabled();
+    };
+  }
+
+  private static boolean authorizationsEnabled(
+      final PhysicalTenantSecurityProperties physicalTenantSecurityProperties,
+      final String physicalTenantId) {
+    final var tenantProperties =
+        physicalTenantSecurityProperties.propertiesByPhysicalTenant().get(physicalTenantId);
+    if (tenantProperties == null) {
+      throw new IllegalStateException(
+          "No security properties for physical tenant '" + physicalTenantId + "'");
+    }
+    return tenantProperties.getAuthorizations().isEnabled();
   }
 
   private static Map<String, AuthorizationScopeRepositoryPort> perTenantScopeRepositories(

@@ -28,10 +28,14 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.ScopedAuthorizationCheckPortFactory;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 class TenantAwareAuthorizationCheckPortTest {
 
@@ -54,14 +58,19 @@ class TenantAwareAuthorizationCheckPortTest {
    * #shouldFailHardWhenPerTenantScopesConfiguredButNoPhysicalTenantResolved} for that.
    */
   private AuthorizationCheckPort noPerTenantScopesCheckPort() {
-    final var checkPorts =
-        ScopedAuthorizationCheckPortFactory.create(
-            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, scopeRepository),
-            claimsResolver,
-            List.of(),
-            true,
-            false);
-    return new TenantAwareAuthorizationCheckPort(checkPorts, false, claimsResolver);
+    return new TenantAwareAuthorizationCheckPort(
+        Map.of(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            checkPort(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, scopeRepository)),
+        false,
+        claimsResolver);
+  }
+
+  private AuthorizationCheckPort checkPort(
+      final String scope, final AuthorizationScopeRepositoryPort repository) {
+    return ScopedAuthorizationCheckPortFactory.create(
+            Map.of(scope, repository), claimsResolver, List.of(), true, false)
+        .forScope(scope);
   }
 
   @Test
@@ -240,16 +249,35 @@ class TenantAwareAuthorizationCheckPortTest {
     // given — per-tenant scopes exist (keyed by physical tenant id, not "default"), and this test
     // runs outside any request scope or propagated tenant, so
     // PhysicalTenantContext.currentOrNull() returns null
-    final var checkPorts =
-        ScopedAuthorizationCheckPortFactory.create(
-            Map.of("tenant-a", scopeRepository), claimsResolver, List.of(), true, false);
     final AuthorizationCheckPort perTenantPort =
-        new TenantAwareAuthorizationCheckPort(checkPorts, true, claimsResolver);
+        new TenantAwareAuthorizationCheckPort(
+            Map.of("tenant-a", checkPort("tenant-a", scopeRepository)), true, claimsResolver);
 
     // when / then — CSL's fail-hard forScope(null) surfaces rather than silently resolving against
     // tenant-a's storage, which would break tenant isolation for an unstamped request
     assertThatIllegalStateException()
         .isThrownBy(() -> perTenantPort.check(authentication, componentAccess(COMPONENT_ADMIN)));
+  }
+
+  @Test
+  void shouldFailHardForUnknownPhysicalTenant() {
+    // given
+    final AuthorizationCheckPort perTenantPort =
+        new TenantAwareAuthorizationCheckPort(
+            Map.of("tenant-a", checkPort("tenant-a", scopeRepository)), true, claimsResolver);
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, "tenant-unknown");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+    // when / then
+    try {
+      assertThatIllegalStateException()
+          .isThrownBy(() -> perTenantPort.check(authentication, componentAccess(COMPONENT_ADMIN)))
+          .withMessageStartingWith(
+              "No AuthorizationCheckPort assembled for scope 'tenant-unknown'");
+    } finally {
+      RequestContextHolder.resetRequestAttributes();
+    }
   }
 
   private static RequiredAuthorization<Void> componentAccess(final String resourceId) {
