@@ -17,16 +17,21 @@ export default {
 		docs: {
 			description: `Enforce importing ${PACKAGE_NAME} from the API version matching the current Camunda version`,
 		},
-		schema: [
-			{
-				type: 'object',
-				properties: {
-					version: {type: 'string', pattern: '^\\d+\\.\\d+$'},
+		schema: {
+			type: 'array',
+			items: [
+				{
+					type: 'object',
+					properties: {
+						version: {type: 'string', pattern: '^\\d+\\.\\d+$'},
+					},
+					required: ['version'],
+					additionalProperties: false,
 				},
-				required: ['version'],
-				additionalProperties: false,
-			},
-		],
+			],
+			minItems: 1,
+			maxItems: 1,
+		},
 		messages: {
 			wrongVersion: `Import from '{{expected}}' instead of '{{actual}}'. The API version must match the version in webapp/client/package.json.`,
 		},
