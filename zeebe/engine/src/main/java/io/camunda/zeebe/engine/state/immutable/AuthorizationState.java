@@ -16,14 +16,37 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface AuthorizationState {
-  Optional<PersistedAuthorization> get(final long authorizationKey);
+  /** Returns the authorization visible to a command outside of a policy update. */
+  default Optional<PersistedAuthorization> get(final long authorizationKey) {
+    return get(authorizationKey, 0);
+  }
 
-  Set<AuthorizationScope> getAuthorizationScopes(
+  /**
+   * Returns the authorization visible to a command of the given policy version. A command sees the
+   * current version and its own version, so a policy update reads its own writes.
+   */
+  Optional<PersistedAuthorization> get(long authorizationKey, long commandVersion);
+
+  default Set<AuthorizationScope> getAuthorizationScopes(
       final AuthorizationOwnerType ownerType,
       final String ownerId,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    return getAuthorizationScopes(ownerType, ownerId, resourceType, permissionType, 0);
+  }
+
+  Set<AuthorizationScope> getAuthorizationScopes(
+      AuthorizationOwnerType ownerType,
+      String ownerId,
       AuthorizationResourceType resourceType,
-      final PermissionType permissionType);
+      PermissionType permissionType,
+      long commandVersion);
+
+  default Set<Long> getAuthorizationKeysForOwner(
+      final AuthorizationOwnerType ownerType, final String ownerId) {
+    return getAuthorizationKeysForOwner(ownerType, ownerId, 0);
+  }
 
   Set<Long> getAuthorizationKeysForOwner(
-      final AuthorizationOwnerType ownerType, final String ownerId);
+      AuthorizationOwnerType ownerType, String ownerId, long commandVersion);
 }

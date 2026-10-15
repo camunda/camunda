@@ -19,7 +19,10 @@ public class PermissionStateCorrectionMigration implements MigrationTask {
 
   @Override
   public boolean needsToRun(final MigrationTaskContext context) {
-    return true;
+    // The policy update proof of concept versions the authorization column families in place. This
+    // migration reads and writes them in the unversioned layout, so it would corrupt the versioned
+    // data. It is disabled until the layout change gets a real migration.
+    return false;
   }
 
   @Override

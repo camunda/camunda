@@ -144,14 +144,16 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   private void deleteAuthorizations(final GroupRecord record) {
     final var groupId = record.getGroupId();
     final var authorizationKeysForGroup =
-        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.GROUP, groupId);
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.GROUP, groupId, record.getPolicyVersion());
 
     authorizationKeysForGroup.forEach(
         authorizationKey -> {
           final var authorization =
               new AuthorizationRecord()
                   .setAuthorizationKey(authorizationKey)
-                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+                  .setPolicyVersion(record.getPolicyVersion());
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });

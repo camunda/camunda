@@ -29,9 +29,13 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+@Disabled(
+    "The policy update proof of concept versions the authorization column families in place, and"
+        + " this migration is disabled until it supports the versioned layout")
 @ExtendWith(ProcessingStateExtension.class)
 public class PermissionStateCorrectionMigrationTest {
   final PermissionStateCorrectionMigration sut = new PermissionStateCorrectionMigration();
@@ -53,7 +57,7 @@ public class PermissionStateCorrectionMigrationTest {
 
   @BeforeEach
   void setup() {
-    state = new DbAuthorizationState(zeebeDb, transactionContext);
+    state = new DbAuthorizationState(zeebeDb, transactionContext, () -> 0L);
 
     ownerType = new DbString();
     ownerId = new DbString();

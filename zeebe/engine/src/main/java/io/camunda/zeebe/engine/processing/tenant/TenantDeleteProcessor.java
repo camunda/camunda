@@ -194,14 +194,16 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   private void deleteAuthorizations(final TenantRecord record) {
     final var tenantId = record.getTenantId();
     final var authorizationKeysForGroup =
-        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.TENANT, tenantId);
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.TENANT, tenantId, record.getPolicyVersion());
 
     authorizationKeysForGroup.forEach(
         authorizationKey -> {
           final var authorization =
               new AuthorizationRecord()
                   .setAuthorizationKey(authorizationKey)
-                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+                  .setPolicyVersion(record.getPolicyVersion());
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });

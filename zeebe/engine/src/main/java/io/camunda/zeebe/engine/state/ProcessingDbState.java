@@ -237,9 +237,11 @@ public class ProcessingDbState implements MutableProcessingState {
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
     userState = new DbUserState(zeebeDb, transactionContext);
     clockState = new DbClockState(zeebeDb, transactionContext);
-    authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
-    routingState = new DbRoutingState(zeebeDb, transactionContext);
     policyUpdateState = new DbPolicyUpdateState(zeebeDb, transactionContext);
+    authorizationState =
+        new DbAuthorizationState(
+            zeebeDb, transactionContext, () -> policyUpdateState.getCurrentVersion());
+    routingState = new DbRoutingState(zeebeDb, transactionContext);
     roleState =
         new DbRoleState(zeebeDb, transactionContext, () -> policyUpdateState.getCurrentVersion());
     groupState =

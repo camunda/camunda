@@ -203,7 +203,7 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
       appendAuthorizationUpsert(authorization, version);
     }
     for (final AuthorizationRecordValue authorization : chunk.getAuthorizationDeletes()) {
-      appendAuthorizationDelete(authorization);
+      appendAuthorizationDelete(authorization, version);
     }
     for (final PolicyMembershipEntryValue membership : chunk.getMembershipDeletes()) {
       appendMembershipCommand(
@@ -288,7 +288,7 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
 
   /** Creates the authorization, or updates the permissions of the one with the same identity. */
   private void appendAuthorizationUpsert(final AuthorizationRecordValue value, final long version) {
-    final long existingKey = findAuthorizationKey(value);
+    final long existingKey = findAuthorizationKey(value, version);
     final var record =
         authorizationRecord(value)
             .setPolicyVersion(version)
@@ -301,13 +301,13 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
     }
   }
 
-  private void appendAuthorizationDelete(final AuthorizationRecordValue value) {
-    final long existingKey = findAuthorizationKey(value);
+  private void appendAuthorizationDelete(final AuthorizationRecordValue value, final long version) {
+    final long existingKey = findAuthorizationKey(value, version);
     if (existingKey != NEW_ENTITY_KEY) {
       appendFollowUpCommand(
           existingKey,
           AuthorizationIntent.DELETE,
-          authorizationRecord(value).setAuthorizationKey(existingKey));
+          authorizationRecord(value).setAuthorizationKey(existingKey).setPolicyVersion(version));
     }
   }
 
@@ -316,11 +316,12 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
    * if there is none. The state is read by key, so the owner's keys are scanned and each candidate
    * is compared right away, before the shared state buffer is reused.
    */
-  private long findAuthorizationKey(final AuthorizationRecordValue value) {
+  private long findAuthorizationKey(final AuthorizationRecordValue value, final long version) {
     final var authorizationState = processingState.getAuthorizationState();
     for (final long key :
-        authorizationState.getAuthorizationKeysForOwner(value.getOwnerType(), value.getOwnerId())) {
-      final var stored = authorizationState.get(key);
+        authorizationState.getAuthorizationKeysForOwner(
+            value.getOwnerType(), value.getOwnerId(), version)) {
+      final var stored = authorizationState.get(key, version);
       if (stored.isPresent()
           && stored.get().getResourceType() == value.getResourceType()
           && stored.get().getResourceMatcher() == value.getResourceMatcher()

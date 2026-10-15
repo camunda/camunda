@@ -135,7 +135,7 @@ public class MappingRuleDeleteProcessor
   private void deleteMappingRule(
       final PersistedMappingRule mappingRule, final long key, final long policyVersion) {
     final var mappingRuleId = mappingRule.getMappingRuleId();
-    deleteAuthorizations(mappingRuleId);
+    deleteAuthorizations(mappingRuleId, policyVersion);
     for (final var tenantId :
         membershipState.getMemberships(
             EntityType.MAPPING_RULE,
@@ -190,17 +190,18 @@ public class MappingRuleDeleteProcessor
         new MappingRuleRecord().setMappingRuleId(mappingRule.getMappingRuleId()));
   }
 
-  private void deleteAuthorizations(final String mappingRuleId) {
+  private void deleteAuthorizations(final String mappingRuleId, final long policyVersion) {
     final var authorizationKeysForMappingRule =
         authorizationState.getAuthorizationKeysForOwner(
-            AuthorizationOwnerType.MAPPING_RULE, mappingRuleId);
+            AuthorizationOwnerType.MAPPING_RULE, mappingRuleId, policyVersion);
 
     authorizationKeysForMappingRule.forEach(
         authorizationKey -> {
           final var authorization =
               new AuthorizationRecord()
                   .setAuthorizationKey(authorizationKey)
-                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+                  .setPolicyVersion(policyVersion);
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });

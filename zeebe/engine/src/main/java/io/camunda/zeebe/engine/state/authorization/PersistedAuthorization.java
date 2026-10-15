@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -44,8 +45,10 @@ public class PersistedAuthorization extends UnpackedObject
   private final ArrayProperty<StringValue> permissionTypesProp =
       new ArrayProperty<>("permissionTypes", StringValue::new);
 
+  private final BooleanProperty deletedProp = new BooleanProperty("deleted", false);
+
   public PersistedAuthorization() {
-    super(8);
+    super(9);
     declareProperty(authorizationKeyProp)
         .declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
@@ -53,7 +56,18 @@ public class PersistedAuthorization extends UnpackedObject
         .declareProperty(resourceIdProp)
         .declareProperty(resourcePropertyNameProp)
         .declareProperty(resourceTypeProp)
-        .declareProperty(permissionTypesProp);
+        .declareProperty(permissionTypesProp)
+        .declareProperty(deletedProp);
+  }
+
+  /** Whether this version of the authorization is a tombstone, that is, it was deleted. */
+  public boolean isDeleted() {
+    return deletedProp.getValue();
+  }
+
+  public PersistedAuthorization setDeleted(final boolean deleted) {
+    deletedProp.setValue(deleted);
+    return this;
   }
 
   @Override

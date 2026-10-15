@@ -139,7 +139,7 @@ public class PermissionsBehavior {
       final AuthorizationRecord authorizationRecord, final String rejectionMessage) {
     final var key = authorizationRecord.getAuthorizationKey();
     return authorizationState
-        .get(key)
+        .get(key, authorizationRecord.getPolicyVersion())
         .map(Either::<Rejection, PersistedAuthorization>right)
         .orElseGet(
             () ->
@@ -153,7 +153,11 @@ public class PermissionsBehavior {
       final var addedAuthorizationScope = createAuthorizationScope(record);
       final var currentAuthorizationScopes =
           authorizationState.getAuthorizationScopes(
-              record.getOwnerType(), record.getOwnerId(), record.getResourceType(), permission);
+              record.getOwnerType(),
+              record.getOwnerId(),
+              record.getResourceType(),
+              permission,
+              record.getPolicyVersion());
 
       if (currentAuthorizationScopes.contains(addedAuthorizationScope)) {
         final var rejectionReason = createDuplicatePermissionRejectionReason(record);

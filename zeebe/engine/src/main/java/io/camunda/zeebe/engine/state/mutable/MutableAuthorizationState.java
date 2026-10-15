@@ -28,10 +28,16 @@ public interface MutableAuthorizationState extends AuthorizationState {
    */
   void update(final long authorizationKey, final AuthorizationRecord authorization);
 
+  /** Removes the authorization outside of a policy update, which writes at version 0. */
+  default void delete(final long authorizationKey) {
+    delete(authorizationKey, 0);
+  }
+
   /**
-   * Removes the authorization with the provided key.
+   * Removes the authorization with the provided key at the given policy version.
    *
    * @param authorizationKey the key of the authorization to remove
+   * @param policyVersion the policy version the removal is written at
    */
-  void delete(final long authorizationKey);
+  void delete(long authorizationKey, long policyVersion);
 }

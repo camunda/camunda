@@ -157,14 +157,16 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   private void deleteAuthorizations(final RoleRecord record) {
     final var roleId = record.getRoleId();
     final var authorizationKeysForRole =
-        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.ROLE, roleId);
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.ROLE, roleId, record.getPolicyVersion());
 
     authorizationKeysForRole.forEach(
         authorizationKey -> {
           final var authorization =
               new AuthorizationRecord()
                   .setAuthorizationKey(authorizationKey)
-                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+                  .setPolicyVersion(record.getPolicyVersion());
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });
