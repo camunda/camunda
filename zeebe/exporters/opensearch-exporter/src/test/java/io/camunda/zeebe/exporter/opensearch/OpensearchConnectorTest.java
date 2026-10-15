@@ -84,8 +84,7 @@ final class OpensearchConnectorTest {
 
     // when / then
     assertThatThrownBy(() -> OpensearchConnector.of(config).createClient())
-        .hasMessageContaining("localhost:9200")
-        .hasMessageNotContaining("s3")
+        .hasMessage("Error in url at position 0")
         .hasNoCause();
   }
 
