@@ -37,6 +37,8 @@ public abstract class AbstractColumnFamilyRandomizedPropertyTest {
   private ColumnFamily<DbLong, DbLong> columnFamily;
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
 
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
+
   @BeforeProperty
   private void setup() {
     final var pathName = Files.newTemporaryFolder();
@@ -47,8 +49,6 @@ public abstract class AbstractColumnFamilyRandomizedPropertyTest {
             DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), new DbLong(), new DbLong());
     map = new HashMap<>();
   }
-
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
 
   @Property
   void columnFamilyHasSameEntriesAsMapAfterModifying(
