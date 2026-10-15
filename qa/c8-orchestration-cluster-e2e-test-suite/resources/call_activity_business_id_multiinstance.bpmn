@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  id="Definitions_call_activity_business_id_multiinstance"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <!--
+    Parallel multi-instance call activity over a fixed collection ([10, 20, 30]) with loop
+    variable `item`. Each spawned child derives its own Business ID from a FEEL expression that
+    references `item`, so the three children get distinct Business IDs. The parent and child
+    process ids and the businessId expression are placeholders substituted per test case.
+  -->
+  <bpmn:process id="__MI_PARENT_ID__" isExecutable="true">
+    <bpmn:startEvent id="mi_start">
+      <bpmn:outgoing>mi_flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="mi_flow_1" sourceRef="mi_start" targetRef="mi_call" />
+    <bpmn:callActivity id="mi_call" name="MI Call Child">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="__MI_CHILD_ID__" businessId="__MI_BUSINESS_ID_EXPR__" propagateAllChildVariables="false" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>mi_flow_1</bpmn:incoming>
+      <bpmn:outgoing>mi_flow_2</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=[10, 20, 30]" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="mi_flow_2" sourceRef="mi_call" targetRef="mi_end" />
+    <bpmn:endEvent id="mi_end">
+      <bpmn:incoming>mi_flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:process id="__MI_CHILD_ID__" isExecutable="true">
+    <bpmn:startEvent id="mi_child_start">
+      <bpmn:outgoing>mi_child_flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="mi_child_flow_1" sourceRef="mi_child_start" targetRef="mi_child_wait" />
+    <bpmn:userTask id="mi_child_wait" name="Wait">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>mi_child_flow_1</bpmn:incoming>
+      <bpmn:outgoing>mi_child_flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="mi_child_flow_2" sourceRef="mi_child_wait" targetRef="mi_child_end" />
+    <bpmn:endEvent id="mi_child_end">
+      <bpmn:incoming>mi_child_flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>
