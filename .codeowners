@@ -184,6 +184,7 @@ mwnw*                       @camunda/engineering-operations
 /zeebe/transport/           @camunda/zeebe-distributed-platform
 /zeebe/zb-db/               @camunda/zeebe-distributed-platform
 /zeebe/zb-db-rocksdb/       @camunda/zeebe-distributed-platform
+/zeebe/zb-db-sqlite/        @camunda/zeebe-distributed-platform
 
 /zeebe/test-util/ @camunda/core-features @camunda/zeebe-distributed-platform
 /zeebe/util/ @camunda/core-features @camunda/zeebe-distributed-platform
