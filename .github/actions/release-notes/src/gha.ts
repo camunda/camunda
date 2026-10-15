@@ -12,7 +12,7 @@ const escape = (msg: string): string => msg.replace(/%/g, '%25').replace(/\r/g, 
 
 // The step summary is built as HTML, so escape anything interpolated into it —
 // reasons carry user-controlled PR title/body fragments.
-const escapeHtml = (text: string): string =>
+export const escapeHtml = (text: string): string =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const appendEnvFile = (envVar: string, content: string): void => {

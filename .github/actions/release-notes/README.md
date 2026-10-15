@@ -258,7 +258,7 @@ and diffs it).
 npm ci
 npm test        # parser + policy unit tests (node --test via tsx)
 npm run typecheck
-npm run build   # ncc -> lint/dist/index.js  (commit the result)
+npm run build   # ncc -> lint/dist, generate/dist, apply/dist  (commit the result)
 ```
 
 ## Shared constants
