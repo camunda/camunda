@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collections;
@@ -52,6 +53,8 @@ public final class ClusterConfigurationGossiper
 
   // Reuse the same random ordered list for both sync and gossip
   private List<MemberId> membersToSync = new LinkedList<>();
+  // written on the actor in start(), read from whichever thread calls close()
+  private volatile ScheduledTimer syncTimer;
 
   // The handler which can merge configuration updates and reacts to the changes.
   private final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler;
@@ -90,7 +93,7 @@ public final class ClusterConfigurationGossiper
   }
 
   private void internalStart() {
-    executor.scheduleAtFixedRate(config.syncDelay(), this::sync);
+    syncTimer = executor.scheduleAtFixedRate(config.syncDelay(), this::sync);
     registerSyncHandler();
     registerGossipHandler();
     registerMemberAddedListener();
@@ -377,6 +380,10 @@ public final class ClusterConfigurationGossiper
 
   @Override
   public void close() {
+    final var timer = syncTimer;
+    if (timer != null) {
+      timer.cancel();
+    }
     unregisterMemberListener();
     unregisterSyncHandler();
     unregisterGossipHandler();
