@@ -88,15 +88,7 @@ public final class ExporterCfg implements ConfigurationEntry {
 
   @Override
   public String toString() {
-    return "ExporterCfg{"
-        + ", jarPath='"
-        + jarPath
-        + '\''
-        + ", className='"
-        + className
-        + '\''
-        + ", args="
-        + args
-        + '}';
+    // args is intentionally omitted: it is a generic map that may hold credentials
+    return "ExporterCfg{jarPath='" + jarPath + "', className='" + className + "'}";
   }
 }
