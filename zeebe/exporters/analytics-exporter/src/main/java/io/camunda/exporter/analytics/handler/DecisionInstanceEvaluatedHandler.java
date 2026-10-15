@@ -41,6 +41,7 @@ public final class DecisionInstanceEvaluatedHandler
 
     otelSdkManager.incrementMetric(
         AnalyticsAttributes.Metric.DECISION_INSTANCE_EVALUATED,
+        AnalyticsAttributes.Metric.DECISION_INSTANCE_EVALUATED_UNIT,
         record.getPosition(),
         record.getTimestamp(),
         Attributes.of(AnalyticsAttributes.Tenant.ID, value.getTenantId()));

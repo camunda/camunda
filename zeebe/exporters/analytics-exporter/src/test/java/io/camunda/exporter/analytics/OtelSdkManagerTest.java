@@ -278,6 +278,33 @@ class OtelSdkManagerTest {
         .isEqualTo(3L);
   }
 
+  /** Every record is stamped with the data contract version through the scope's schema URL. */
+  @Test
+  void shouldStampTheContractSchemaUrlOnTheInstrumentationScope() {
+    // given
+    final var received = new CopyOnWriteArrayList<LogRecordData>();
+    final var manager =
+        initManager(
+            logs -> {
+              received.addAll(logs);
+              return CompletableResultCode.ofSuccess();
+            },
+            2048,
+            512);
+
+    // when
+    manager.logEvent("test", 0L, log -> {});
+    manager.close();
+
+    // then
+    assertThat(received)
+        .singleElement()
+        .satisfies(
+            log ->
+                assertThat(log.getInstrumentationScopeInfo().getSchemaUrl())
+                    .isEqualTo("https://camunda.io/schemas/analytics/1.0"));
+  }
+
   /** The sequence number continues from the initial value provided at initialization. */
   @Test
   void shouldInitializeSequenceNumberFromGivenValue() {
@@ -527,7 +554,7 @@ class OtelSdkManagerTest {
     @Test
     void shouldRecordMetricByName() {
       // when
-      manager.incrementMetric("test.counter", 100L, 1000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 100L, 1000L, Attributes.empty());
 
       // then
       assertThat(findMetric(metricReader.collectAllMetrics(), "test.counter")).isPresent();
@@ -536,8 +563,8 @@ class OtelSdkManagerTest {
     @Test
     void shouldReuseCounterForSameName() {
       // when
-      manager.incrementMetric("test.counter", 100L, 1000L, Attributes.empty());
-      manager.incrementMetric("test.counter", 100L, 1000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 100L, 1000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 100L, 1000L, Attributes.empty());
 
       // then
       assertThat(findMetric(metricReader.collectAllMetrics(), "test.counter"))
@@ -554,8 +581,8 @@ class OtelSdkManagerTest {
     @Test
     void shouldCreateSeparateCountersForDifferentNames() {
       // when
-      manager.incrementMetric("counter.a", 100L, 1000L, Attributes.empty());
-      manager.incrementMetric("counter.b", 200L, 2000L, Attributes.empty());
+      manager.incrementMetric("counter.a", "{test}", 100L, 1000L, Attributes.empty());
+      manager.incrementMetric("counter.b", "{test}", 200L, 2000L, Attributes.empty());
 
       // then
       final var metrics = metricReader.collectAllMetrics();
@@ -571,7 +598,7 @@ class OtelSdkManagerTest {
               AttributeKey.stringKey("process.id"), "order", AttributeKey.longKey("version"), 3L);
 
       // when
-      manager.incrementMetric("test.counter", 100L, 1000L, attrs);
+      manager.incrementMetric("test.counter", "{test}", 100L, 1000L, attrs);
 
       // then
       assertThat(findMetric(metricReader.collectAllMetrics(), "test.counter"))
@@ -593,7 +620,7 @@ class OtelSdkManagerTest {
     void shouldAttachPhysicalTenantIdToMetricResource() {
       // when — physicalTenantId is a Resource attribute, set once at initialize() time, not
       // passed by the caller and not a per-point dimension
-      manager.incrementMetric("test.counter", 100L, 1000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 100L, 1000L, Attributes.empty());
 
       // then
       assertThat(findMetric(metricReader.collectAllMetrics(), "test.counter"))
@@ -606,8 +633,8 @@ class OtelSdkManagerTest {
     @Test
     void shouldEmitExportWindowGaugeWithMetadata() {
       // given
-      manager.incrementMetric("test.counter", 100L, 5000L, Attributes.empty());
-      manager.incrementMetric("test.counter", 200L, 6000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 100L, 5000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 200L, 6000L, Attributes.empty());
 
       // when
       final var metrics = metricReader.collectAllMetrics();
@@ -619,6 +646,7 @@ class OtelSdkManagerTest {
               metric -> {
                 assertThat(metric.getResource().getAttribute(PHYSICAL_ID))
                     .isEqualTo("test-physical-tenant");
+                assertThat(metric.getUnit()).isEqualTo("{record}");
                 assertThat(metric.getLongGaugeData().getPoints())
                     .first()
                     .satisfies(
@@ -637,10 +665,10 @@ class OtelSdkManagerTest {
     @Test
     void shouldIncrementFlushSequenceAcrossCollections() {
       // given — two collection cycles
-      manager.incrementMetric("test.counter", 100L, 1000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 100L, 1000L, Attributes.empty());
       metricReader.collectAllMetrics(); // flush_sequence = 1
 
-      manager.incrementMetric("test.counter", 200L, 2000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 200L, 2000L, Attributes.empty());
 
       // when
       final var metrics = metricReader.collectAllMetrics();
@@ -661,10 +689,10 @@ class OtelSdkManagerTest {
     @Test
     void shouldResetWindowAfterCollection() {
       // given
-      manager.incrementMetric("test.counter", 100L, 5000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 100L, 5000L, Attributes.empty());
       metricReader.collectAllMetrics(); // resets window
 
-      manager.incrementMetric("test.counter", 300L, 8000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 300L, 8000L, Attributes.empty());
 
       // when
       final var metrics = metricReader.collectAllMetrics();
@@ -706,7 +734,7 @@ class OtelSdkManagerTest {
     void shouldNotIncrementMetricSequenceWhenWindowIsEmpty() {
       // when — first collection happens with no events, then a real increment, then collection
       metricReader.collectAllMetrics(); // empty window — should not consume a sequence number
-      manager.incrementMetric("test.counter", 100L, 1000L, Attributes.empty());
+      manager.incrementMetric("test.counter", "{test}", 100L, 1000L, Attributes.empty());
       final var metrics = metricReader.collectAllMetrics();
 
       // then — sequence number is 1 (not 2), proving the empty window did not consume a slot
