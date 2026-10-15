@@ -9,67 +9,19 @@ package io.camunda.zeebe.db.conformance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.db.ColumnFamily;
-import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-public abstract class AbstractDbCompositeKeyColumnFamilyTest {
-
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
-
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private ZeebeDb<DefaultColumnFamily> zeebeDb;
-  private ColumnFamily<DbCompositeKey<DbString, DbLong>, DbString> columnFamily;
-  private DbString firstKey;
-  private DbLong secondKey;
-  private DbCompositeKey<DbString, DbLong> compositeKey;
-  private DbString value;
-
-  @Before
-  public void setup() throws Exception {
-    final File pathName = temporaryFolder.newFolder();
-    zeebeDb = factory().createDb(pathName);
-
-    firstKey = new DbString();
-    secondKey = new DbLong();
-    compositeKey = new DbCompositeKey<>(firstKey, secondKey);
-    value = new DbString();
-    columnFamily =
-        zeebeDb.createColumnFamily(
-            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), compositeKey, value);
-  }
-
-  @Test
-  public void shouldUpsertValue() {
-    // given
-    firstKey.wrapString("foo");
-    secondKey.wrapLong(2);
-    value.wrapString("baring");
-
-    // when
-    columnFamily.upsert(compositeKey, value);
-    value.wrapString("yes");
-
-    // then
-    final DbString zbLong = columnFamily.get(compositeKey);
-
-    assertThat(zbLong).isNotNull();
-    assertThat(zbLong.toString()).isEqualTo("baring");
-
-    // zbLong and value are referencing the same object
-    assertThat(value.toString()).isEqualTo("baring");
-  }
+/**
+ * Iteration conformance tests for a column family keyed by a composite key, kept apart from the
+ * point operations so that a backend can adopt them once it supports iteration.
+ */
+public abstract class AbstractDbCompositeKeyColumnFamilyIterationTest
+    extends AbstractDbCompositeKeyColumnFamilyTestBase {
 
   @Test
   public void shouldUseForeachValue() {
@@ -554,69 +506,6 @@ public abstract class AbstractDbCompositeKeyColumnFamilyTest {
     assertThat(secondKeyParts).isEmpty();
   }
 
-  @Test
-  public void shouldCount() {
-    // given
-    upsertKeyValuePair("foo", 12, "baring");
-    upsertKeyValuePair("foobar", 53, "expected value");
-    upsertKeyValuePair("foo", 13, "different value");
-    upsertKeyValuePair("foo", 213, "oh wow");
-    upsertKeyValuePair("foo", 53, "expected value");
-    upsertKeyValuePair("this is the one", 255, "as you know");
-    upsertKeyValuePair("hello", 34, "world");
-    upsertKeyValuePair("another", 923113, "string");
-    upsertKeyValuePair("might", 37426, "be good");
-
-    // when
-    final long count = columnFamily.count();
-
-    // then
-    assertThat(count).describedAs("Counts all entries").isEqualTo(9);
-  }
-
-  @Test
-  public void shouldCountEqualPrefix() {
-    // given
-    upsertKeyValuePair("foo", 12, "baring");
-    upsertKeyValuePair("foobar", 53, "expected value");
-    upsertKeyValuePair("foo", 13, "different value");
-    upsertKeyValuePair("foo", 213, "oh wow");
-    upsertKeyValuePair("foo", 53, "expected value");
-    upsertKeyValuePair("this is the one", 255, "as you know");
-    upsertKeyValuePair("hello", 34, "world");
-    upsertKeyValuePair("another", 923113, "string");
-    upsertKeyValuePair("might", 37426, "be good");
-
-    // when
-    firstKey.wrapString("foo");
-    final long count = columnFamily.countEqualPrefix(firstKey);
-
-    // then
-    assertThat(count).describedAs("Only counts entries matching 'foo'").isEqualTo(4);
-  }
-
-  @Test
-  public void shouldCountWhileEqualPrefixToDelete() {
-    // given
-    upsertKeyValuePair("foo", 12, "baring");
-    upsertKeyValuePair("foo", 13, "different value");
-    upsertKeyValuePair("foo", 14, "different value");
-    upsertKeyValuePair("hello", 34, "world");
-    upsertKeyValuePair("another", 923113, "string");
-    upsertKeyValuePair("might", 37426, "be good");
-
-    firstKey.wrapString("foo");
-    secondKey.wrapLong(14L);
-    columnFamily.deleteExisting(compositeKey);
-
-    // when
-    firstKey.wrapString("foo");
-    final long count = columnFamily.countEqualPrefix(firstKey);
-
-    // then
-    assertThat(count).describedAs("Only counts entries matching 'foo'").isEqualTo(2);
-  }
-
   // ---- Key-only iteration tests ----
 
   @Test
@@ -783,13 +672,5 @@ public abstract class AbstractDbCompositeKeyColumnFamilyTest {
     // then
     assertThat(firstKeyParts).isEmpty();
     assertThat(secondKeyParts).isEmpty();
-  }
-
-  private void upsertKeyValuePair(final String firstKey, final long secondKey, final String value) {
-    this.firstKey.wrapString(firstKey);
-    this.secondKey.wrapLong(secondKey);
-
-    this.value.wrapString(value);
-    columnFamily.upsert(compositeKey, this.value);
   }
 }

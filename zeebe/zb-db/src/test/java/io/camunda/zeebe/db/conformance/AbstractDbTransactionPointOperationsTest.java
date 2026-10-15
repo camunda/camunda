@@ -10,65 +10,20 @@ package io.camunda.zeebe.db.conformance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.db.ColumnFamily;
-import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.protocol.ColumnFamilyScope;
-import io.camunda.zeebe.protocol.EnumValue;
-import io.camunda.zeebe.protocol.ScopedColumnFamily;
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-public abstract class AbstractDbTransactionTest {
-
-  protected abstract <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-      ZeebeDbFactory<T> factory();
-
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-  private TransactionContext transactionContext;
-
-  private ColumnFamily<DbLong, DbLong> oneColumnFamily;
-  private ColumnFamily<DbLong, DbLong> twoColumnFamily;
-  private ColumnFamily<DbLong, DbLong> threeColumnFamily;
-
-  private DbLong oneKey;
-  private DbLong oneValue;
-  private DbLong twoValue;
-  private DbLong twoKey;
-  private DbLong threeKey;
-  private DbLong threeValue;
-
-  @Before
-  public void setup() throws Exception {
-    final File pathName = temporaryFolder.newFolder();
-    final ZeebeDb<ColumnFamilies> zeebeDb = this.<ColumnFamilies>factory().createDb(pathName);
-    transactionContext = zeebeDb.createContext();
-
-    oneKey = new DbLong();
-    oneValue = new DbLong();
-    oneColumnFamily =
-        zeebeDb.createColumnFamily(ColumnFamilies.ONE, transactionContext, oneKey, oneValue);
-
-    twoKey = new DbLong();
-    twoValue = new DbLong();
-    twoColumnFamily =
-        zeebeDb.createColumnFamily(ColumnFamilies.TWO, transactionContext, twoKey, twoValue);
-
-    threeKey = new DbLong();
-    threeValue = new DbLong();
-    threeColumnFamily =
-        zeebeDb.createColumnFamily(ColumnFamilies.THREE, transactionContext, threeKey, threeValue);
-  }
+/**
+ * Point-operation (insert, update, get, delete, count) conformance tests for transaction semantics
+ * of {@link io.camunda.zeebe.db.ZeebeDb}. A backend without iteration support can run this class on
+ * its own.
+ */
+public abstract class AbstractDbTransactionPointOperationsTest
+    extends AbstractDbTransactionTestBase {
 
   @Test
   public void shouldUseTransaction() {
@@ -293,64 +248,6 @@ public abstract class AbstractDbTransactionTest {
   }
 
   @Test
-  public void shouldIterateAndFindValuesInTransaction() {
-    // given
-    final Map<Long, Long> actualValues = new HashMap<>();
-
-    oneKey.wrapLong(1);
-    oneValue.wrapLong(-1);
-    oneColumnFamily.insert(oneKey, oneValue);
-
-    oneKey.wrapLong(2);
-    oneValue.wrapLong(-2);
-    oneColumnFamily.insert(oneKey, oneValue);
-
-    // when
-    transactionContext.runInTransaction(
-        () -> {
-          // update old value
-          oneKey.wrapLong(2);
-          oneValue.wrapLong(-5);
-          oneColumnFamily.update(oneKey, oneValue);
-
-          // create new key-value pair
-          oneKey.wrapLong(3);
-          oneValue.wrapLong(-3);
-          oneColumnFamily.insert(oneKey, oneValue);
-
-          oneColumnFamily.forEach((k, v) -> actualValues.put(k.getValue(), v.getValue()));
-        });
-
-    // then
-    final Map<Long, Long> expectedValues = new HashMap<>();
-    expectedValues.put(1L, -1L);
-    expectedValues.put(2L, -5L);
-    expectedValues.put(3L, -3L);
-    assertThat(actualValues).isEqualTo(expectedValues);
-  }
-
-  @Test
-  public void shouldIterateAndDeleteInTransaction() {
-    // given
-    oneKey.wrapLong(1);
-    oneValue.wrapLong(-1);
-    oneColumnFamily.insert(oneKey, oneValue);
-
-    oneKey.wrapLong(2);
-    oneValue.wrapLong(-2);
-    oneColumnFamily.insert(oneKey, oneValue);
-
-    // when
-    transactionContext.runInTransaction(
-        () -> oneColumnFamily.forEach((k, v) -> oneColumnFamily.deleteExisting(k)));
-
-    // then
-    assertThat(oneColumnFamily.exists(oneKey)).isFalse();
-    oneKey.wrapLong(2);
-    assertThat(oneColumnFamily.exists(oneKey)).isFalse();
-  }
-
-  @Test
   public void shouldEndInSameTransaction() {
     // given
     final AtomicLong actualValue = new AtomicLong(0);
@@ -479,22 +376,5 @@ public abstract class AbstractDbTransactionTest {
                       throw exception;
                     }))
         .isSameAs(exception);
-  }
-
-  private enum ColumnFamilies implements EnumValue, ScopedColumnFamily {
-    DEFAULT, // rocksDB needs a default column family
-    ONE,
-    TWO,
-    THREE;
-
-    @Override
-    public int getValue() {
-      return ordinal();
-    }
-
-    @Override
-    public ColumnFamilyScope partitionScope() {
-      return ColumnFamilyScope.PARTITION_LOCAL;
-    }
   }
 }

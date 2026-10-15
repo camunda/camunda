@@ -8,12 +8,11 @@
 package io.camunda.zeebe.db.impl.rocksdb.conformance;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.db.conformance.AbstractDbCompositeKeyColumnFamilyTest;
+import io.camunda.zeebe.db.conformance.AbstractColumnFamilyForeignKeyTest;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.rocksdb.DefaultZeebeDbFactory;
 
-public final class RocksDbDbCompositeKeyColumnFamilyTest
-    extends AbstractDbCompositeKeyColumnFamilyTest {
+public final class RocksDbColumnFamilyForeignKeyTest extends AbstractColumnFamilyForeignKeyTest {
 
   @Override
   protected ZeebeDbFactory<DefaultColumnFamily> factory() {
