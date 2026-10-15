@@ -33,8 +33,6 @@ import org.assertj.core.util.Files;
 @Tag("randomized")
 public abstract class AbstractColumnFamilyRandomizedPropertyTest {
 
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
-
   private Map<Long, Long> map;
   private ColumnFamily<DbLong, DbLong> columnFamily;
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
@@ -49,6 +47,8 @@ public abstract class AbstractColumnFamilyRandomizedPropertyTest {
             DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), new DbLong(), new DbLong());
     map = new HashMap<>();
   }
+
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
 
   @Property
   void columnFamilyHasSameEntriesAsMapAfterModifying(

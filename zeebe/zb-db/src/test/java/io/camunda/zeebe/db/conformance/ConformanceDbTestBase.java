@@ -36,10 +36,10 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public abstract class ConformanceDbTestBase {
 
-  @TempDir Path tempDir;
-
   protected ZeebeDb<Cf> db;
   protected TransactionContext context;
+
+  @TempDir Path tempDir;
 
   protected abstract <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<T> factory();
