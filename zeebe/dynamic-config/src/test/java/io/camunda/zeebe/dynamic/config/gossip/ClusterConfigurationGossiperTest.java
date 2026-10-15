@@ -216,6 +216,23 @@ final class ClusterConfigurationGossiperTest {
     assertThat(syncedMembers.getAllValues()).containsExactlyInAnyOrderElementsOf(peers);
   }
 
+  @Test
+  void shouldStopSyncingWhenClosed() {
+    // given
+    final var fixture = new SyncFixture();
+    fixture.addPeer("peer");
+    fixture.start();
+    assertThat(fixture.executor.scheduledTasks()).as("sync tick is scheduled").isOne();
+
+    // when
+    fixture.gossiper.close();
+
+    // then
+    assertThat(fixture.executor.scheduledTasks()).as("sync tick is cancelled").isZero();
+    fixture.executor.runAll();
+    verify(fixture.communicationService, never()).send(any(), any(), any(), any(), any(), any());
+  }
+
   private Node createNode(final String id) {
     return Node.builder().withId(id).withPort(SocketUtil.getNextAddress().getPort()).build();
   }
