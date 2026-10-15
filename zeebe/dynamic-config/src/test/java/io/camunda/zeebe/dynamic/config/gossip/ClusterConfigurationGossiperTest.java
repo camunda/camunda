@@ -109,19 +109,20 @@ final class ClusterConfigurationGossiperTest {
 
   @Test
   void shouldKeepSyncingWhenNoPeerIsKnownAtFirstTick() {
-    // given — a gossiper whose membership only contains the local member
+    // given
     final var fixture = new SyncFixture();
     fixture.start();
     assertThat(fixture.executor.scheduledTasks()).as("first sync tick is scheduled").isOne();
 
-    // when — the first tick runs while no peer is known
+    // when
     fixture.executor.runAll();
 
-    // then — no request is sent, but the next tick is already scheduled
+    // then
+
     verify(fixture.communicationService, never()).send(any(), any(), any(), any(), any(), any());
     assertThat(fixture.executor.scheduledTasks()).as("next sync tick is scheduled").isOne();
 
-    // when — a peer shows up and the next tick runs
+    // when
     final var peer = fixture.addPeer("peer");
     fixture.executor.runAll();
 
@@ -146,15 +147,13 @@ final class ClusterConfigurationGossiperTest {
     // when
     fixture.executor.runAll();
 
-    // then — the received configuration is handed over and the next tick syncs again
+    // then
     assertThat(fixture.receivedConfigurations).containsExactly(peerConfiguration);
     fixture.executor.runAll();
     verify(fixture.communicationService, times(2))
         .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
   }
 
-  // The request is sent, but its response fails (e.g. peer down or timeout). See
-  // shouldKeepSyncingWhenStartingASyncFails for the case where no request gets sent at all.
   @Test
   void shouldKeepSyncingAfterAFailedSync() {
     // given
@@ -166,18 +165,16 @@ final class ClusterConfigurationGossiperTest {
     // when
     fixture.executor.runAll();
 
-    // then — nothing is handed over, but the next tick syncs again
+    // then
     assertThat(fixture.receivedConfigurations).isEmpty();
     fixture.executor.runAll();
     verify(fixture.communicationService, times(2))
         .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
   }
 
-  // Counterpart of shouldKeepSyncingAfterAFailedSync: here the tick itself throws, so there is no
-  // response at all. The actor logs and carries on, so the next tick must already be scheduled.
   @Test
   void shouldKeepSyncingWhenStartingASyncFails() {
-    // given — the membership service fails once, then recovers
+    // given
     final var fixture = new SyncFixture();
     final var peer = fixture.addPeer("peer");
     when(fixture.membershipService.getMembers())
@@ -185,10 +182,10 @@ final class ClusterConfigurationGossiperTest {
         .thenAnswer(i -> Set.copyOf(fixture.members));
     fixture.start();
 
-    // when — the failing tick runs
+    // when
     assertThatThrownBy(fixture.executor::runAll).isInstanceOf(IllegalStateException.class);
 
-    // then — the next tick is scheduled and syncs with the peer
+    // then
     assertThat(fixture.executor.scheduledTasks()).as("next sync tick is scheduled").isOne();
     fixture.executor.runAll();
     verify(fixture.communicationService)
@@ -203,16 +200,63 @@ final class ClusterConfigurationGossiperTest {
     fixture.respondWith(CompletableFuture.completedFuture(new ClusterConfigurationGossipState()));
     fixture.start();
 
-    // when — one full round of ticks
-    for (int i = 0; i < peers.size(); i++) {
+    // when
+    for (int i = 0; i < 2 * peers.size(); i++) {
       fixture.executor.runAll();
     }
 
     // then
     final var syncedMembers = ArgumentCaptor.forClass(MemberId.class);
-    verify(fixture.communicationService, times(peers.size()))
+    verify(fixture.communicationService, times(2 * peers.size()))
         .send(any(), any(), any(), any(), syncedMembers.capture(), any());
-    assertThat(syncedMembers.getAllValues()).containsExactlyInAnyOrderElementsOf(peers);
+    final var allSynced = syncedMembers.getAllValues();
+    assertThat(allSynced.subList(0, peers.size())).containsExactlyInAnyOrderElementsOf(peers);
+    assertThat(allSynced.subList(peers.size(), allSynced.size()))
+        .containsExactlyInAnyOrderElementsOf(peers);
+  }
+
+  @Test
+  void shouldNotSendANewSyncWhileOneIsPending() {
+    // given
+    final var fixture = new SyncFixture();
+    final var peer = fixture.addPeer("peer");
+    final var pending = new CompletableFuture<ClusterConfigurationGossipState>();
+    fixture.respondWith(pending);
+    fixture.start();
+
+    // when
+    fixture.executor.runAll();
+    fixture.executor.runAll();
+    fixture.executor.runAll();
+
+    // then
+    verify(fixture.communicationService)
+        .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
+
+    // when
+    pending.complete(new ClusterConfigurationGossipState());
+    fixture.executor.runAll();
+
+    // then
+    verify(fixture.communicationService, times(2))
+        .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
+  }
+
+  @Test
+  void shouldNotStartSyncingOnceClosed() {
+    // given
+    final var fixture = new SyncFixture();
+    fixture.addPeer("peer");
+
+    // when
+    fixture.gossiper.close();
+    fixture.start();
+    fixture.executor.runAll();
+
+    // then
+    assertThat(fixture.executor.scheduledTasks()).isZero();
+    verify(fixture.communicationService, never()).send(any(), any(), any(), any(), any(), any());
+    verify(fixture.communicationService, never()).replyTo(any(), any(), any(), any(), any());
   }
 
   @Test
