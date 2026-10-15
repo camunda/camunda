@@ -31,6 +31,8 @@ public record DbForeignKey<K extends DbKey>(
     K inner, Enum<? extends EnumValue> columnFamily, MatchType match, Predicate<K> skip)
     implements DbKey, DbValue, ContainsForeignKeys {
 
+  private static final Predicate<?> NEVER_SKIP = k -> false;
+
   public DbForeignKey(final K inner, final Enum<? extends EnumValue> columnFamily) {
     this(inner, columnFamily, MatchType.Full);
   }
@@ -77,8 +79,6 @@ public record DbForeignKey<K extends DbKey>(
   public Collection<DbForeignKey<DbKey>> containedForeignKeys() {
     return Collections.singletonList((DbForeignKey<DbKey>) this);
   }
-
-  private static final Predicate<?> NEVER_SKIP = k -> false;
 
   @SuppressWarnings("unchecked")
   private static <T> Predicate<T> neverSkip() {
