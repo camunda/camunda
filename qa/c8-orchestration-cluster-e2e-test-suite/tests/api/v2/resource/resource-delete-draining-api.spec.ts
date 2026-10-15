@@ -563,21 +563,14 @@ test.describe('Process Definition Draining Deletion API', () => {
     // answer 200 here and 409 above is under discussion with the engine team;
     // this asserts today's behaviour so a change to it is not silent.
     const deploymentPartition = partitionOf(processDefinitionKey);
-    const partitions = await partitionsCount(request);
-    // A single-partition cluster cannot produce this case at all.
-    // eslint-disable-next-line playwright/no-skipped-test
-    test.skip(
-      partitions < 2,
-      'needs a partition other than the deployment one',
-    );
     const instance = await createInstanceAwayFrom(
       processDefinitionId,
       deploymentPartition,
-      5 * partitions,
+      5 * (await partitionsCount(request)),
     );
     expect(
       instance,
-      'no instance landed away from the deployment partition',
+      'no instance landed away from the deployment partition — this case needs a cluster with more than one partition',
     ).toBeDefined();
     instancesToCancel.push(instance!.processInstanceKey);
     await expectProcessInstanceCount(
