@@ -297,6 +297,13 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-scripts.outputs.load-test-k6-change == 'true'
       }}
+  gradle-changes:
+    description: Output whether Gradle/Maven build definitions changed, based on files changed only (not on the GitHub event)
+    value: >-
+      ${{
+        steps.filter-common.outputs.gradle-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -352,6 +359,15 @@ runs:
           - '**/pom.xml'
           - '.mvn/**'
           - '.ci/db-versions.yml'
+
+        gradle-change:
+          - '**/*.gradle.kts'
+          - 'gradle.properties'
+          - 'gradle/**'
+          - 'gradlew'
+          - 'gradlew.bat'
+          - '.github/scripts/gradle/**'
+          - '.github/workflows/gradle-ci.yml'
 
         validate-pom-metadata-extra-change:
           - 'mvnw'

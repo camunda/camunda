@@ -1,0 +1,9 @@
+plugins { id("buildlogic.server-conventions") }
+
+dependencies {
+  api(libs.io.camunda.security.library.api)
+  api(libs.io.camunda.security.library.validation)
+  implementation(libs.commons.validator.commons.validator)
+}
+
+description = "Camunda Security Validation"

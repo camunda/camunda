@@ -1,0 +1,215 @@
+# description: Non-blocking Gradle build validation (compile, distribution, parity with Maven). Lives outside
+#   the Unified CI until the Gradle build is deemed inclusion-worthy.
+# test location: /
+# type: CI
+# owner: @camunda/engineering-operations
+---
+name: Gradle CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "**/src/main/**"
+      - "**/src/test/**"
+      - "**/src/it/**"
+      - "**/src/build/**"
+      - "**/pom.xml"
+      - "**/*.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - ".github/scripts/gradle/**"
+      - ".github/actions/setup-build/**"
+      - ".github/workflows/gradle-ci.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+  GHA_BEST_PRACTICES_LINTER: enabled
+  # Bounds a hung `actions/checkout`; only for shallow ones, a `fetch-depth: 0` clone needs more.
+  SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
+
+jobs:
+  gradle-compile-check:
+    name: "Gradle / Compile Check"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: read  # paths-filter
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      # Parity with Maven only matters when the Gradle or Maven build definitions change, so the
+      # expensive Maven build below is skipped for plain source changes.
+      - name: Detect changes
+        uses: ./.github/actions/paths-filter
+        id: filter
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: gradle-compile
+          skip-maven-cache: ${{ !(github.event_name == 'workflow_dispatch' || steps.filter.outputs.gradle-changes == 'true') }}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Only main and stable pushes warm the shared cache; all other runs only read it.
+          cache-read-only: >-
+            ${{
+              !(
+                github.event_name == 'push' &&
+                (
+                  github.ref == 'refs/heads/main' ||
+                  startsWith(github.ref, 'refs/heads/stable/')
+                )
+              )
+            }}
+      - name: Compile
+        run: |
+          ./gradlew --console=plain --parallel -Pskip.fe.build \
+            testClasses
+      - name: Package distribution
+        run: |
+          ./gradlew --console=plain --parallel -Pskip.fe.build \
+            :camunda-zeebe:distZip
+      - name: Verify Gradle cache reuse
+        run: |
+          verification_log="$RUNNER_TEMP/gradle-cache-verification.log"
+          ./gradlew --console=plain --parallel -Pskip.fe.build \
+            testClasses 2>&1 | tee "$verification_log"
+
+          summary="$(grep -E '^[0-9]+ actionable tasks?:' "$verification_log" | tail -1 || true)"
+
+          if ! grep -q '^BUILD SUCCESSFUL' "$verification_log"; then
+            echo "Cache verification failed: BUILD SUCCESSFUL was not found"
+            exit 1
+          fi
+
+          if [[ -z "$summary" ]]; then
+            echo "Cache verification failed: Gradle task summary was not found"
+            exit 1
+          fi
+
+          if [[ "$summary" =~ [[:space:]][1-9][0-9]*[[:space:]]executed ]]; then
+            echo "Cache verification failed: tasks were executed"
+            echo "$summary"
+            exit 1
+          fi
+
+          echo "Cache verification passed: $summary"
+
+      - name: Verify Gradle isolated-project compatibility
+        run: |
+          set -euo pipefail
+          ./gradlew --isolated-projects --console=plain -Pskip.fe.build \
+            testClasses
+
+      - name: Write distribution dependency report
+        run: |
+          ./gradlew --no-configuration-cache --console=plain -Pskip.fe.build \
+            :camunda-zeebe:writeDistDependencyReport
+
+      - name: Build Maven distribution
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.gradle-changes == 'true' }}
+        run: ./mvnw -B -T4 -DskipTests -DskipChecks -PskipFrontendBuild package -pl dist -am
+
+      - name: Compare Gradle and Maven distributions
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.gradle-changes == 'true' }}
+        run: |
+          set -euo pipefail
+          gradle_zip=$(find dist/build/distributions -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
+          maven_zip=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
+          test -n "$gradle_zip" && test -n "$maven_zip"
+          python3 .github/scripts/gradle/compare-dist.py \
+            "$gradle_zip" "$maven_zip" \
+            --gradle-manifest dist/build/reports/dist-dependencies.json
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # This workflow is a soft integration: it is not part of the Unified CI check-results, so it never
+  # blocks a PR or merge group. Failures on main are reported to Slack instead.
+  gradle-notify-failure:
+    name: "Gradle / Notify on failure"
+    if: >-
+      always() &&
+      github.repository == 'camunda/camunda' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.gradle-compile-check.result == 'failure'
+    needs: [ gradle-compile-check ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      # Squash merges end the commit title with "(#<PR number>)". Only the digits are used below,
+      # so an arbitrary commit message cannot inject content into the Slack payload.
+      - name: Find merged pull request
+        id: pr
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          pr_number="$(head -n1 <<< "$COMMIT_MESSAGE" | grep -oE '\(#[0-9]+\)$' | grep -oE '[0-9]+' || true)"
+          echo "number=${pr_number}" >> "$GITHUB_OUTPUT"
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions GRADLE_BUILD_NOTIFICATIONS_WEBHOOK_URL;
+      - name: Send notification
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.secrets.outputs.GRADLE_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            text: "Gradle build on main failed (${{ github.sha }})"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "Gradle build on *main* FAILED (${{ needs.gradle-compile-check.result }})\nCommit: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}${{ steps.pr.outputs.number && format(' (PR {0}/{1}/pull/{2})', github.server_url, github.repository, steps.pr.outputs.number) || '' }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

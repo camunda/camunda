@@ -1,0 +1,27 @@
+import buildlogic.filterMavenResources
+
+plugins { id("buildlogic.server-conventions") }
+
+tasks.named<ProcessResources>("processResources") {
+  filterMavenResources(
+    this,
+    "testContainersResourceTokens",
+    mapOf(
+      "version.elasticsearch.container" to libs.versions.parent.elasticsearch.container.get(),
+      "version.opensearch.container" to libs.versions.parent.opensearch.container.get(),
+    ),
+    matching = "testcontainer-versions.properties",
+  )
+}
+
+dependencies {
+  implementation(libs.org.slf4j.slf4j.api)
+  api(libs.com.fasterxml.jackson.core.jackson.annotations)
+  api(project(":zeebe-protocol"))
+  api(libs.io.camunda.security.library.api)
+  testImplementation(libs.org.junit.platform.junit.platform.commons)
+  testImplementation(libs.org.reflections.reflections)
+  testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
+}
+
+description = "Webapps Schema"

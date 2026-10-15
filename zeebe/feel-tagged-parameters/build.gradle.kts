@@ -1,0 +1,8 @@
+plugins { id("buildlogic.server-conventions") }
+
+dependencies {
+  api(libs.org.camunda.feel.feel.engine)
+  api(libs.org.scala.lang.scala.library)
+}
+
+description = "Zeebe FEEL Tagged Parameters"

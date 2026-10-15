@@ -1,0 +1,22 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
+plugins { id("buildlogic.server-conventions") }
+
+dependencies {
+  implementation(libs.org.jspecify.jspecify)
+  implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-backup"))
+  implementation(project(":zeebe-backup-store-common"))
+  implementation(project(":zeebe-atomix-cluster"))
+  api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jdk8)
+  api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
+  api(libs.com.fasterxml.jackson.core.jackson.annotations)
+  api(libs.com.fasterxml.jackson.core.jackson.databind)
+  implementation(libs.org.slf4j.slf4j.api)
+  testImplementation(project(":zeebe-backup-testkit"))
+  testImplementation(projectArtifact(":zeebe-backup-testkit", ArtifactKind.TESTS))
+  testImplementation(libs.org.mockito.mockito.core)
+  testImplementation(project(":zeebe-protocol"))
+}
+
+description = "Zeebe Backup Store for local filesystem"

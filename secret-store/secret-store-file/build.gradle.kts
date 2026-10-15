@@ -1,0 +1,9 @@
+plugins { id("buildlogic.server-conventions") }
+
+dependencies {
+  api(project(":camunda-secret-store-api"))
+  implementation(libs.org.jspecify.jspecify)
+  implementation(libs.org.slf4j.slf4j.api)
+}
+
+description = "Camunda Secret Store File Implementation"
