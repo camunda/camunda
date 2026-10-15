@@ -13,6 +13,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -74,6 +75,19 @@ final class OpensearchConnectorTest {
       """;
 
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
+
+  @Test
+  void shouldNotExposeUrlCredentialsInErrorForInvalidUrl() {
+    // given
+    final var config = new OpensearchExporterConfiguration();
+    config.url = "http://admin:s3 cr3t@localhost:9200";
+
+    // when / then
+    assertThatThrownBy(() -> OpensearchConnector.of(config).createClient())
+        .hasMessageContaining("localhost:9200")
+        .hasMessageNotContaining("s3")
+        .hasNoCause();
+  }
 
   @Test
   void shouldConfigureMultipleHosts() throws Exception {

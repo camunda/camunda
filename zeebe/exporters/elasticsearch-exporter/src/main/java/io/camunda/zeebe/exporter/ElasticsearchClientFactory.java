@@ -12,6 +12,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
+import io.camunda.zeebe.exporter.support.UrlRedaction;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import org.apache.http.Header;
@@ -167,7 +168,13 @@ final class ElasticsearchClientFactory {
     final var hosts = new HttpHost[urls.length];
 
     for (int i = 0; i < urls.length; i++) {
-      hosts[i] = HttpHost.create(urls[i]);
+      try {
+        hosts[i] = HttpHost.create(urls[i]);
+      } catch (final IllegalArgumentException e) {
+        // the cause is not chained: its message quotes the whole url
+        throw new IllegalArgumentException(
+            "Invalid Elasticsearch url: " + UrlRedaction.redactUserInfo(urls[i]));
+      }
     }
 
     return hosts;
