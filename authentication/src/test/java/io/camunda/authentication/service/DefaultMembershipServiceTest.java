@@ -10,18 +10,21 @@ package io.camunda.authentication.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.active.ActiveUserChecker;
 import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
@@ -32,11 +35,13 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.registry.DefaultServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.PhysicalTenantContext;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -117,10 +122,86 @@ class DefaultMembershipServiceTest {
 
   @Test
   void mappingRuleIdsReturnsMatchingRules() {
-    when(mappingRuleServices.getMatchingMappingRules(any(), any()))
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
         .thenReturn(Stream.of(new MappingRuleEntity("mr1", 1L, "claim", "value", "rule")));
 
     assertThat(service.mappingRuleIds(baseQuery())).containsExactly("mr1");
+  }
+
+  @Test
+  void mappingRuleIdsPassesStoredUserAttributesToTheMatching() {
+    // given
+    final var userServices = mock(UserServices.class);
+    when(userServices.getUser(eq("alice"), any()))
+        .thenReturn(
+            new UserEntity(
+                1L, "alice", "n", "e", "p", null, true, Map.of("department", "Finance")));
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(
+            List.of(
+                new GroupEntity(1L, "g1", "group", "g", null, Map.of("region", "EMEA"), null, null),
+                new GroupEntity(2L, "g2", "empty", "g", null, Map.of(), null, null)));
+    final var withLookup = serviceWithUserLookup(userServices);
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
+        .thenReturn(Stream.of(new MappingRuleEntity("mr1", 1L, "$.department", "Finance", "r")));
+
+    // when
+    final var result = withLookup.mappingRuleIds(baseQuery());
+
+    // then - attributes come from storage, claims stay separate
+    assertThat(result).containsExactly("mr1");
+    verify(mappingRuleServices)
+        .getMatchingMappingRules(
+            eq(Map.of("sub", "alice")),
+            eq(Map.of("department", "Finance")),
+            eq(List.of(Map.of("region", "EMEA"))),
+            any());
+  }
+
+  @Test
+  void mappingRuleIdsUsesNoAttributesWhenUserLookupFailsOrIsAbsent() {
+    // given
+    final var userServices = mock(UserServices.class);
+    when(userServices.getUser(eq("alice"), any()))
+        .thenThrow(new ServiceException("down", ServiceException.Status.UNAVAILABLE));
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
+        .thenAnswer(invocation -> Stream.empty());
+
+    // when
+    serviceWithUserLookup(userServices).mappingRuleIds(baseQuery());
+    service.mappingRuleIds(baseQuery());
+
+    // then
+    verify(mappingRuleServices, times(2))
+        .getMatchingMappingRules(eq(Map.of("sub", "alice")), eq(Map.of()), eq(List.of()), any());
+  }
+
+  @Test
+  void mappingRuleIdsNeverLooksUpAttributesForClients() {
+    // given
+    final var userServices = mock(UserServices.class);
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
+        .thenAnswer(invocation -> Stream.empty());
+
+    // when
+    serviceWithUserLookup(userServices)
+        .mappingRuleIds(new MembershipQuery(Map.of("sub", "c"), "client", PrincipalType.CLIENT));
+
+    // then
+    verifyNoInteractions(userServices);
+  }
+
+  private DefaultMembershipService serviceWithUserLookup(final UserServices userServices) {
+    final var registry =
+        DefaultServiceRegistry.of(
+            b ->
+                b.mappingRuleServices("default", mappingRuleServices)
+                    .userServices("default", userServices)
+                    .groupServices("default", groupServices));
+    return new DefaultMembershipService(
+        registry,
+        new CamundaSecurityLibraryProperties(),
+        new ActiveUserChecker(() -> registry, Duration.ofSeconds(30)));
   }
 
   @Test
@@ -328,21 +409,21 @@ class DefaultMembershipServiceTest {
 
   @Test
   void mappingRuleIdsFallsBackToEmptyAfterExhaustingRetriesOnTransientFailure() {
-    when(mappingRuleServices.getMatchingMappingRules(any(), any()))
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
         .thenThrow(translatedSearchFailure(Reason.SEARCH_SERVER_FAILED, "shards unavailable"));
 
     assertThat(service.mappingRuleIds(baseQuery())).isEmpty();
-    verify(mappingRuleServices, times(3)).getMatchingMappingRules(any(), any());
+    verify(mappingRuleServices, times(3)).getMatchingMappingRules(any(), any(), any(), any());
   }
 
   @Test
   void mappingRuleIdsPropagatesNonTransientFailureWithoutRetry() {
-    when(mappingRuleServices.getMatchingMappingRules(any(), any()))
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
         .thenThrow(translatedSearchFailure(Reason.NOT_UNIQUE, "not unique"));
 
     assertThatThrownBy(() -> service.mappingRuleIds(baseQuery()))
         .isInstanceOf(ServiceException.class);
-    verify(mappingRuleServices, times(1)).getMatchingMappingRules(any(), any());
+    verify(mappingRuleServices, times(1)).getMatchingMappingRules(any(), any(), any(), any());
   }
 
   @Test
@@ -399,7 +480,7 @@ class DefaultMembershipServiceTest {
     final var request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, TENANT_A);
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-    when(tenantAMappingRuleServices.getMatchingMappingRules(any(), any()))
+    when(tenantAMappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
         .thenReturn(Stream.of(new MappingRuleEntity("mra1", 1L, "claim", "value", "rule")));
 
     // when

@@ -24,7 +24,13 @@ public final class SecurityPaths {
   // it wins the same-order tie-break, validate the token against the cluster's providers instead of
   // the tenant's — breaking per-tenant audience isolation. Keep this list cluster-only.
   public static final Set<String> API_PATHS =
-      Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
+      Set.of(
+          "/api/**",
+          "/v1/**",
+          "/v2/**",
+          "/mcp/**",
+          "/scim/**",
+          "/.well-known/oauth-protected-resource/**");
 
   public static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(

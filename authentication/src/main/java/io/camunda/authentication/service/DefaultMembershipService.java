@@ -11,6 +11,8 @@ import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.authentication.active.ActiveUserChecker;
+import io.camunda.authentication.active.ActiveUserChecker.StoredUser;
 import io.camunda.authentication.utils.OutageLog;
 import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.entities.GroupEntity;
@@ -36,8 +38,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -77,9 +82,28 @@ public class DefaultMembershipService implements MembershipPort {
   private final ServiceRegistry serviceRegistry;
   private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
+  // Absent unless OIDC with secondary storage is configured; without it no user attributes are
+  // known and user-attribute mapping rules match nothing.
+  private final @Nullable ActiveUserChecker userLookup;
 
   public DefaultMembershipService(
       final ServiceRegistry serviceRegistry, final CamundaSecurityLibraryProperties cslProperties) {
+    this(serviceRegistry, cslProperties, (ActiveUserChecker) null);
+  }
+
+  @Autowired
+  public DefaultMembershipService(
+      final ServiceRegistry serviceRegistry,
+      final CamundaSecurityLibraryProperties cslProperties,
+      final ObjectProvider<ActiveUserChecker> userLookup) {
+    this(serviceRegistry, cslProperties, userLookup.getIfAvailable());
+  }
+
+  DefaultMembershipService(
+      final ServiceRegistry serviceRegistry,
+      final CamundaSecurityLibraryProperties cslProperties,
+      final @Nullable ActiveUserChecker userLookup) {
+    this.userLookup = userLookup;
     this.serviceRegistry = serviceRegistry;
     oidcGroupsExtractor =
         new OidcGroupsExtractor(cslProperties.getAuthentication().getOidc().getGroupsClaim());
@@ -92,6 +116,7 @@ public class DefaultMembershipService implements MembershipPort {
       // BASIC auth has no claims; nothing can match.
       return List.of();
     }
+    final var storedUser = storedUser(query);
     final var ids =
         resolveWithRetry(
             "mappingRuleIds",
@@ -100,7 +125,10 @@ public class DefaultMembershipService implements MembershipPort {
                     serviceRegistry
                         .mappingRuleServices(PhysicalTenantContext.current())
                         .getMatchingMappingRules(
-                            query.tokenClaims(), CamundaAuthentication.anonymous())
+                            query.tokenClaims(),
+                            storedUser.attributes(),
+                            storedUser.groupAttributes(),
+                            CamundaAuthentication.anonymous())
                         .map(MappingRuleEntity::mappingRuleId)
                         .collect(Collectors.toSet())));
     if (ids.isEmpty()) {
@@ -109,6 +137,19 @@ public class DefaultMembershipService implements MembershipPort {
       LOG.debug("No mappingRules found for claim keys: {}", query.tokenClaims().keySet());
     }
     return ids;
+  }
+
+  /**
+   * Stored user with its attributes and the attributes of its direct groups (not those derived from
+   * mapping rules, which are resolved afterwards); unknown for clients or without a lookup.
+   */
+  private static final StoredUser NO_STORED_USER = new StoredUser(true, null, Map.of(), List.of());
+
+  private StoredUser storedUser(final MembershipQuery query) {
+    if (userLookup == null || query.principalType() != PrincipalType.USER) {
+      return NO_STORED_USER;
+    }
+    return userLookup.user(PhysicalTenantContext.current(), query.principalId());
   }
 
   @Override
