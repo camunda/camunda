@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.util;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -19,6 +20,8 @@ public final class AsyncRepeatUntil<T> {
   private final CompletableFuture<Void> finalFuture = new CompletableFuture<>();
   private final Supplier<CompletableFuture<T>> asyncTask;
   private final Predicate<T> until;
+  // Trampoline guard: stops already-completed tasks from recursively re-entering step()
+  private final AtomicInteger pendingSteps = new AtomicInteger();
 
   private AsyncRepeatUntil(
       final Supplier<CompletableFuture<T>> asyncTask, final Predicate<T> until) {
@@ -27,11 +30,18 @@ public final class AsyncRepeatUntil<T> {
   }
 
   private void next() {
+    if (pendingSteps.getAndIncrement() != 0) {
+      // a step is already running (possibly on this very stack); its loop will run this one
+      return;
+    }
+    do {
+      step();
+    } while (pendingSteps.decrementAndGet() != 0);
+  }
+
+  private void step() {
     try {
-      asyncTask
-          .get()
-          .thenAcceptAsync(this::completeOrNext)
-          .exceptionally(this::completeExceptionally);
+      asyncTask.get().thenAccept(this::completeOrNext).exceptionally(this::completeExceptionally);
     } catch (final Throwable err) {
       completeExceptionally(err);
     }
