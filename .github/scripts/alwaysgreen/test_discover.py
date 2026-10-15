@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 import classify
 import discover
 import plan as planning
+from alwaysgreen_core import fingerprints as core_fingerprints
 
 NOW = datetime.now(timezone.utc)
 
@@ -515,8 +516,11 @@ def test_an_expired_lock_is_not_reported_as_holding_the_key(monkeypatch):
 
 
 def test_a_product_bug_reports_its_issue_url(monkeypatch):
+    # Patched on alwaysgreen_core.fingerprints, not on discover: the function
+    # moved into the shared vendored package and resolves gh_json in ITS own
+    # module, so patching discover's re-exported name no longer reaches it.
     monkeypatch.setattr(
-        discover,
+        core_fingerprints,
         "gh_json",
         lambda args, default: [
             {
@@ -535,7 +539,7 @@ def test_a_product_bug_reports_its_issue_url(monkeypatch):
 def test_a_product_bug_without_a_url_still_suppresses(monkeypatch):
     # The fingerprint is what decides; the URL is only what the message prints.
     monkeypatch.setattr(
-        discover,
+        core_fingerprints,
         "gh_json",
         lambda args, default: [{"body": "nightly-product-bug fp=abcd1234"}],
     )

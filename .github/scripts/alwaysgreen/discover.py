@@ -32,6 +32,15 @@ from typing import Callable
 import classify
 import plan as planning
 
+# Shared with every other AlwaysGreen instance, vendored from
+# camunda/c8-cross-component-e2e-tests.
+from alwaysgreen_core.artifacts import (  # noqa: F401
+    download_artifacts,
+    read_json_files,
+)
+from alwaysgreen_core.fingerprints import product_bug_fingerprints  # noqa: F401
+from alwaysgreen_core.gh import gh_json, gh_json_ex, log  # noqa: F401
+
 REPO = os.environ.get("ALWAYSGREEN_REPO", "camunda/camunda")
 E2E_REPO = os.environ.get("ALWAYSGREEN_E2E_REPO", "camunda/c8-cross-component-e2e-tests")
 FIX_WORKFLOW = os.environ.get("ALWAYSGREEN_FIX_WORKFLOW", "alwaysgreen-fix.yml")
@@ -102,29 +111,6 @@ FIX_PR_REPOS = [
 ]
 
 
-def log(message: str) -> None:
-    print(message, file=sys.stderr)
-
-
-def gh_json_ex(args: list[str], default) -> tuple[object, str]:
-    """Run a gh command expecting JSON. Returns (value, error_text)."""
-    try:
-        out = subprocess.run(
-            ["gh", *args], capture_output=True, text=True, timeout=120, check=True
-        ).stdout.strip()
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
-        stderr = (getattr(exc, "stderr", "") or str(exc)).strip()
-        log(f"::warning::gh {' '.join(args[:3])} failed: {stderr[:200]}")
-        return default, stderr
-    if not out:
-        return default, ""
-    try:
-        return json.loads(out), ""
-    except json.JSONDecodeError:
-        log(f"::warning::gh {' '.join(args[:3])} returned non-JSON output")
-        return default, "invalid json"
-
-
 def gh_text_ex(args: list[str]) -> tuple[str | None, str]:
     """Run a gh command expecting plain text. Returns (text, error_text).
 
@@ -137,42 +123,6 @@ def gh_text_ex(args: list[str]) -> tuple[str | None, str]:
         ).stdout, ""
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
         return None, (getattr(exc, "stderr", "") or str(exc)).strip()
-
-
-def gh_json(args: list[str], default):
-    """Run a gh command expecting JSON on stdout. Returns `default` on any failure."""
-    value, _ = gh_json_ex(args, default)
-    return value
-
-
-def download_artifacts(run_id: str, repo: str, pattern: str, dest: Path) -> bool:
-    dest.mkdir(parents=True, exist_ok=True)
-    try:
-        subprocess.run(
-            [
-                "gh", "run", "download", str(run_id),
-                "--repo", repo, "--pattern", pattern, "--dir", str(dest),
-            ],
-            capture_output=True, text=True, timeout=300, check=True,
-        )
-        return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
-        return False
-
-
-def read_json_files(root: Path, filename: str) -> list[dict]:
-    out = []
-    for path in sorted(root.rglob(filename)):
-        try:
-            out.append(json.loads(path.read_text()))
-        except (json.JSONDecodeError, OSError):
-            log(f"::warning::could not parse {path}")
-    return out
-
-
-# ---------------------------------------------------------------------------
-# Failing jobs
-# ---------------------------------------------------------------------------
 
 
 def failure_annotations(check_run_url: str | None) -> list[str]:
@@ -660,38 +610,6 @@ def fixed_upstream_fingerprints(
             if touched[suite]:
                 out.add(fp)
     return out
-
-
-def product_bug_fingerprints() -> tuple[set[str], dict[str, str]]:
-    """(fingerprints, fingerprint -> issue URL).
-
-    The URL is carried so a suppressed failure can name the bug it is tracked by. A
-    medic told only "tracked as a known product bug" still has to find the issue by
-    hand, which is the whole cost the message was supposed to save.
-    """
-    issues = gh_json(
-        [
-            "search", "issues", "nightly-product-bug is:issue",
-            "--owner", "camunda", "--state", "open",
-            "--limit", "200", "--json", "body,url",
-        ],
-        [],
-    )
-    out: set[str] = set()
-    urls: dict[str, str] = {}
-    for issue in issues if isinstance(issues, list) else []:
-        for line in (issue.get("body") or "").splitlines():
-            if "nightly-product-bug fp=" in line:
-                fp = line.split("fp=", 1)[1].strip()[:8]
-                out.add(fp)
-                if issue.get("url"):
-                    urls.setdefault(fp, str(issue["url"]))
-    return out, urls
-
-
-# ---------------------------------------------------------------------------
-# Blame
-# ---------------------------------------------------------------------------
 
 
 def branch_tip_sha(ref: str) -> str:

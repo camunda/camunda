@@ -26,6 +26,22 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Iterator
 
+# Shared with every other AlwaysGreen instance, vendored from
+# camunda/c8-cross-component-e2e-tests. Re-exported here so call sites keep
+# saying `classify.fingerprint(...)`.
+from alwaysgreen_core.fingerprints import (  # noqa: F401
+    fingerprint,
+    job_fingerprint,
+    job_leaf_name,
+    source_spec_path,
+    spec_fingerprint,
+)
+from alwaysgreen_core.prs import (  # noqa: F401
+    backported_pr_number,
+    is_bot,
+    originating_pr,
+)
+
 # ---------------------------------------------------------------------------
 # Platform noise
 # ---------------------------------------------------------------------------
@@ -148,11 +164,6 @@ _SURFACE_PREFIXES: tuple[tuple[str | re.Pattern[str], str], ...] = (
 )
 
 _FRONTEND_BUILD_RE = re.compile(r"^Build \w+ Frontend$")
-
-
-def job_leaf_name(job_name: str) -> str:
-    """Return the last segment of a nested reusable-workflow job name."""
-    return job_name.rsplit("/", 1)[-1].strip()
 
 
 def surface_for_job(job_name: str) -> str | None:
@@ -394,25 +405,6 @@ def suite_from_rootdir(root_dir: str | None) -> str | None:
     return match.group("suite") if match else None
 
 
-def source_spec_path(spec_file: str, *, suite: str | None) -> str:
-    """Map a report `file` value to its path in the e2e test repository.
-
-    The npm package ships compiled `.js`; the source is `.ts`.
-    """
-    name = (spec_file or "").strip()
-    if not name:
-        return ""
-    if name.endswith(".spec.js"):
-        name = name[: -len(".spec.js")] + ".spec.ts"
-    if "/" in name:
-        return name
-    return f"tests/{suite}/{name}" if suite else name
-
-
-# ---------------------------------------------------------------------------
-# Failing-spec extraction
-# ---------------------------------------------------------------------------
-
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
 
@@ -501,55 +493,6 @@ def failing_specs(report: Any, *, suite: str | None = None) -> list[FailingSpec]
 # ---------------------------------------------------------------------------
 # Fingerprints
 # ---------------------------------------------------------------------------
-
-
-def fingerprint(*parts: str) -> str:
-    """Stable 8-character id used for dedupe and for the PR coverage block.
-
-    Failing *step* names are deliberately not an input: they are frequently
-    absent (a cancelled job, or a job whose steps never ran), which would make
-    the same failure hash differently between runs.
-    """
-    joined = "::".join(p or "" for p in parts)
-    return hashlib.sha256(joined.encode("utf-8")).hexdigest()[:8]
-
-
-def spec_fingerprint(base_ref: str, surface: str, file: str, test_name: str) -> str:
-    return fingerprint(base_ref, surface, file, test_name)
-
-
-def job_fingerprint(base_ref: str, surface: str, job_name: str) -> str:
-    return fingerprint(base_ref, surface, job_leaf_name(job_name))
-
-
-# ---------------------------------------------------------------------------
-# Blame
-# ---------------------------------------------------------------------------
-
-_BACKPORT_TITLE_RE = re.compile(r"^\[Backport [^\]]+\]\s.*\(#(?P<number>\d+)\)\s*$")
-
-
-def is_bot(login: str | None) -> bool:
-    return bool(login) and login.endswith("[bot]")
-
-
-def originating_pr(prs: list[dict], head_sha: str) -> dict | None:
-    """Pick the PR that actually produced `head_sha`.
-
-    `/commits/{sha}/pulls` also returns open PRs that merely contain the commit
-    as an ancestor, so match on `merge_commit_sha` and fall back to the first
-    entry only when nothing matches.
-    """
-    for pr in prs:
-        if pr.get("merge_commit_sha") == head_sha:
-            return pr
-    return prs[0] if prs else None
-
-
-def backported_pr_number(title: str | None) -> int | None:
-    """Return the original PR number referenced by a backport PR title."""
-    match = _BACKPORT_TITLE_RE.match((title or "").strip())
-    return int(match.group("number")) if match else None
 
 
 @dataclass(frozen=True)

@@ -22,6 +22,16 @@ from datetime import datetime, timedelta, timezone
 
 import classify
 
+# Shared with every other AlwaysGreen instance, vendored from
+# camunda/c8-cross-component-e2e-tests.
+from alwaysgreen_core.coverage import (  # noqa: F401
+    COVERAGE_BEGIN,
+    COVERAGE_END,
+    merge_coverage_block,
+    parse_coverage_block,
+    render_coverage_block,
+)
+
 #: Reasons a candidate was not dispatched, surfaced in the job summary.
 SUPPRESSED_NOT_DISPATCHABLE = "surface-not-in-increment"
 SUPPRESSED_IN_FLIGHT = "agent-already-running"
@@ -420,57 +430,3 @@ def plan_dispatches(
 # ---------------------------------------------------------------------------
 # PR coverage block
 # ---------------------------------------------------------------------------
-
-COVERAGE_BEGIN = "<!-- alwaysgreen-fixed"
-COVERAGE_END = "-->"
-
-
-def parse_coverage_block(body: str | None) -> set[str]:
-    """Extract fingerprints a fix PR claims to cover.
-
-    Format, one per line inside an HTML comment so it renders invisibly:
-
-        <!-- alwaysgreen-fixed
-        fp=1a2b3c4d
-        fp=5e6f7a8b
-        -->
-    """
-    text = body or ""
-    start = text.find(COVERAGE_BEGIN)
-    if start == -1:
-        return set()
-    end = text.find(COVERAGE_END, start)
-    block = text[start : end if end != -1 else len(text)]
-    out: set[str] = set()
-    for line in block.splitlines():
-        line = line.strip()
-        if line.startswith("fp="):
-            value = line[3:].strip()
-            if value:
-                out.add(value)
-    return out
-
-
-def render_coverage_block(fingerprints: set[str]) -> str:
-    """Render a coverage block, sorted so repeated updates produce a stable diff."""
-    lines = [COVERAGE_BEGIN] + [f"fp={fp}" for fp in sorted(fingerprints)] + [COVERAGE_END]
-    return "\n".join(lines)
-
-
-def merge_coverage_block(body: str | None, new_fingerprints: set[str]) -> str:
-    """Return the body with the coverage block replaced by the union of fingerprints.
-
-    Existing entries are never dropped: an accumulating PR must keep claiming every
-    test it already fixed, or a later triage run would re-dispatch them.
-    """
-    text = (body or "").rstrip()
-    existing = parse_coverage_block(text)
-    merged = existing | set(new_fingerprints)
-
-    start = text.find(COVERAGE_BEGIN)
-    if start == -1:
-        return f"{text}\n\n{render_coverage_block(merged)}\n"
-
-    end = text.find(COVERAGE_END, start)
-    tail = text[end + len(COVERAGE_END) :] if end != -1 else ""
-    return f"{text[:start]}{render_coverage_block(merged)}{tail}".rstrip() + "\n"

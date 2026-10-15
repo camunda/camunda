@@ -1,0 +1,31 @@
+{
+  "source_repo": "camunda/c8-cross-component-e2e-tests",
+  "source_ref": "1f4ba545a9164a2f435ef733db11ad81b887dc7b",
+  "files": [
+    {
+      "source_path": "scripts/alwaysgreen-core/alwaysgreen_core/__init__.py",
+      "vendored_path": ".github/scripts/alwaysgreen/alwaysgreen_core/__init__.py"
+    },
+    {
+      "source_path": "scripts/alwaysgreen-core/alwaysgreen_core/artifacts.py",
+      "vendored_path": ".github/scripts/alwaysgreen/alwaysgreen_core/artifacts.py"
+    },
+    {
+      "source_path": "scripts/alwaysgreen-core/alwaysgreen_core/coverage.py",
+      "vendored_path": ".github/scripts/alwaysgreen/alwaysgreen_core/coverage.py"
+    },
+    {
+      "source_path": "scripts/alwaysgreen-core/alwaysgreen_core/fingerprints.py",
+      "vendored_path": ".github/scripts/alwaysgreen/alwaysgreen_core/fingerprints.py"
+    },
+    {
+      "source_path": "scripts/alwaysgreen-core/alwaysgreen_core/gh.py",
+      "vendored_path": ".github/scripts/alwaysgreen/alwaysgreen_core/gh.py"
+    },
+    {
+      "source_path": "scripts/alwaysgreen-core/alwaysgreen_core/prs.py",
+      "vendored_path": ".github/scripts/alwaysgreen/alwaysgreen_core/prs.py"
+    }
+  ],
+  "note": "Machine-readable so the source repository can check these copies for drift. Keep source_ref in step with the vendored files."
+}
