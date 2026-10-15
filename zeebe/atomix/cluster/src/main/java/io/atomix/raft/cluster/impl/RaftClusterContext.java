@@ -393,12 +393,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     // Committed configurations are never truncated, so the stored configuration is always a valid
     // fallback. A newer configuration entry that is still in the log takes precedence.
     final var storedConfiguration = raft.getMetaStore().loadConfiguration();
-    // Committed entries do not need to be searched, a committed configuration is already stored.
-    final var firstIndexToSearch =
-        Math.max(
-                storedConfiguration == null ? 0 : storedConfiguration.index(),
-                raft.getCommitIndex())
-            + 1;
+    // A configuration is stored when it commits, so committed entries do not need to be searched.
+    final var firstIndexToSearch = raft.getCommitIndex() + 1;
     final var target =
         firstIndexToSearch <= lastRetainedIndex && !raft.getLog().isEmpty()
             ? newestConfigurationEntry(firstIndexToSearch, lastRetainedIndex)
