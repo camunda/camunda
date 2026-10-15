@@ -14,7 +14,6 @@ dependencies {
   testImplementation(project(":camunda-cluster"))
   testImplementation(libs.org.jspecify.jspecify)
   testImplementation(project(":camunda-authentication"))
-  testImplementation(project(":camunda-security-validation"))
   testImplementation(project(":camunda-search-client-reader"))
   testImplementation(project(":webapps-schema"))
   testImplementation(project(":webapps-backup"))

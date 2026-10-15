@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
 import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
-import io.camunda.security.validation.ClusterVariableValidator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

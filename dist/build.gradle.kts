@@ -362,7 +362,6 @@ dependencies {
   implementation(project(":camunda-gateway-mcp"))
   implementation(project(":zeebe-logstreams"))
   implementation(project(":camunda-security-protocol"))
-  implementation(project(":camunda-security-validation"))
   implementation(project(":camunda-exporter")) {
     exclude(group = "commons-logging", module = "commons-logging")
   }

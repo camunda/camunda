@@ -950,11 +950,6 @@
         <artifactId>camunda-security-services</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>camunda-security-validation</artifactId>
-        <version>${project.version}</version>
-      </dependency>
 
       <!-- Camunda Secret Store modules -->
 
