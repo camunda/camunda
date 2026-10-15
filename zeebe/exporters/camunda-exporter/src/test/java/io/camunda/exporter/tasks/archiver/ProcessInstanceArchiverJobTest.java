@@ -33,9 +33,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ProcessInstanceByIdArchiverJobTest extends ArchiverJobRecordingMetricsAbstractTest {
+final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAbstractTest {
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(ProcessInstanceByIdArchiverJobTest.class);
+      LoggerFactory.getLogger(ProcessInstanceArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
 
@@ -51,8 +51,8 @@ final class ProcessInstanceByIdArchiverJobTest extends ArchiverJobRecordingMetri
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
 
-  private final ProcessInstanceByIdArchiverJob job =
-      new ProcessInstanceByIdArchiverJob(
+  private final ProcessInstanceArchiverJob job =
+      new ProcessInstanceArchiverJob(
           historyConfiguration,
           repository,
           processInstanceTemplate,
@@ -94,8 +94,8 @@ final class ProcessInstanceByIdArchiverJobTest extends ArchiverJobRecordingMetri
   @Test
   void shouldOnlyMoveProcessInstancesWhenNoDependentTemplates() {
     // given
-    final ProcessInstanceByIdArchiverJob processInstanceJob =
-        new ProcessInstanceByIdArchiverJob(
+    final ProcessInstanceArchiverJob processInstanceJob =
+        new ProcessInstanceArchiverJob(
             historyConfiguration,
             repository,
             processInstanceTemplate,
@@ -238,7 +238,7 @@ final class ProcessInstanceByIdArchiverJobTest extends ArchiverJobRecordingMetri
     // given
     final var dependant = new WeirdlyNamedDependant();
     final var job =
-        new ProcessInstanceByIdArchiverJob(
+        new ProcessInstanceArchiverJob(
             historyConfiguration,
             repository,
             processInstanceTemplate,

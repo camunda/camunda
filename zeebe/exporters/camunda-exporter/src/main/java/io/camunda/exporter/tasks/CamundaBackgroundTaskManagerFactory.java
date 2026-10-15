@@ -28,7 +28,7 @@ import io.camunda.exporter.tasks.archiver.ElasticsearchAuditLogArchiverRepositor
 import io.camunda.exporter.tasks.archiver.JobBatchMetricsArchiverJob;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpensearchAuditLogArchiverRepository;
-import io.camunda.exporter.tasks.archiver.ProcessInstanceByIdArchiverJob;
+import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
@@ -436,7 +436,7 @@ public final class CamundaBackgroundTaskManagerFactory {
     }
 
     final var piArchiverJob =
-        new ProcessInstanceByIdArchiverJob(
+        new ProcessInstanceArchiverJob(
             history,
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
