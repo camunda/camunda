@@ -1263,6 +1263,10 @@ runbook, a `High` entry sets `team` and `github_handle` to the `.codeowners` han
 `route.md`: at least two bullets when the runbook was used, each quoting a literal phrase. The
 calling workflow shows `team` and `tier` in the Slack thread and the whole entry in the job summary.
 
+Use exactly the keys of the example, also when a value is empty, plus `job` for a workflow-level
+failure. Give `reasoning`, `sources`, `candidates` and `gaps` as lists. The job summary does not
+show other keys, such as `group` or `source`.
+
 ## Unskip Verify Agent
 
 This section is read automatically by the Claude Code agent dispatched from
