@@ -25,6 +25,10 @@ import {
   expectProcessDefinitionState,
   expectBatchState,
   expectProcessInstanceCount,
+  partitionsCount,
+  partitionOf,
+  createInstancesUntilOn,
+  createInstanceAwayFrom,
   findUserTask,
   RESOURCE_DELETION_ENDPOINT,
   searchProcessInstances,
@@ -81,14 +85,6 @@ async function historyBatchOperationKeyFor(
   const items: Array<{batchOperationKey: string}> =
     (await res.json()).items ?? [];
   return items.length === 0 ? undefined : String(items[0]!.batchOperationKey);
-}
-
-async function partitionsCount(request: APIRequestContext): Promise<number> {
-  const res = await request.get(buildUrl('/topology'), {
-    headers: jsonHeaders(),
-  });
-  await assertStatusCode(res, 200);
-  return (await res.json()).partitionsCount as number;
 }
 
 /**
@@ -514,20 +510,93 @@ test.describe('Process Definition Draining Deletion API', () => {
     expect(await instanceCountFor(request, processDefinitionId)).toBe(before);
   });
 
-  test('A repeated delete of an already draining definition is rejected', async ({
+  test('A repeated delete is rejected while the deployment partition still holds an instance', async ({
     request,
   }) => {
     const processDefinitionId = uniquePrefixedId('draining-repeat');
     const {processDefinitionKey} =
       await deployUserTaskProcess(processDefinitionId);
-    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
-    instancesToCancel.push(instance.processInstanceKey);
-    await findUserTask(request, instance.processInstanceKey, 'CREATED');
+
+    // Every delete of this definition is served by the partition that minted its
+    // key, and that partition rejects a repeat only while it still holds an
+    // instance of its own.
+    const deploymentPartition = partitionOf(processDefinitionKey);
+    const instances = await createInstancesUntilOn(
+      processDefinitionId,
+      deploymentPartition,
+      5 * (await partitionsCount(request)),
+    );
+    instancesToCancel.push(
+      ...instances.map((instance) => instance.processInstanceKey),
+    );
+    expect(
+      instances.map((instance) => partitionOf(instance.processInstanceKey)),
+      'no instance landed on the deployment partition',
+    ).toContain(deploymentPartition);
+    await expectProcessInstanceCount(
+      request,
+      {processDefinitionId},
+      instances.length,
+    );
 
     await drainProcessDefinition(request, processDefinitionKey);
 
     const second = await deleteProcessDefinition(request, processDefinitionKey);
     expect(second.status()).toBe(409);
+
+    await expectProcessDefinitionState(
+      request,
+      processDefinitionKey,
+      'DRAINING',
+    );
+  });
+
+  test('A repeated delete is accepted as a drain retry when the deployment partition holds no instance', async ({
+    request,
+  }) => {
+    // The RDBMS API jobs run the broker from source with its default of one
+    // partition, where this case cannot arise: every instance is local to the
+    // deployment partition, so the repeat is always rejected and that is what
+    // the test above covers.
+    const partitions = await partitionsCount(request);
+    // eslint-disable-next-line playwright/no-skipped-test
+    test.skip(
+      partitions < 2,
+      'needs a partition other than the deployment one',
+    );
+
+    const processDefinitionId = uniquePrefixedId('draining-repeat-retry');
+    const {processDefinitionKey} =
+      await deployUserTaskProcess(processDefinitionId);
+
+    // With no instance of its own the deployment partition finalizes its copy
+    // immediately, so the repeat is accepted as a retry of the drain the other
+    // partitions still owe (camunda#64850). Whether the same request should
+    // answer 200 here and 409 above is tracked in camunda#66023; this asserts
+    // today's behaviour so a change to it is not silent.
+    const deploymentPartition = partitionOf(processDefinitionKey);
+    const attempts = 5 * partitions;
+    const instance = await createInstanceAwayFrom(
+      processDefinitionId,
+      deploymentPartition,
+      attempts,
+    );
+    expect(
+      instance,
+      `all ${attempts} creates landed on the deployment partition`,
+    ).toBeDefined();
+    instancesToCancel.push(instance!.processInstanceKey);
+    await expectProcessInstanceCount(
+      request,
+      {processDefinitionId, state: 'ACTIVE'},
+      1,
+    );
+
+    await drainProcessDefinition(request, processDefinitionKey);
+
+    const second = await deleteProcessDefinition(request, processDefinitionKey);
+    expect(second.status()).toBe(200);
+
     await expectProcessDefinitionState(
       request,
       processDefinitionKey,
