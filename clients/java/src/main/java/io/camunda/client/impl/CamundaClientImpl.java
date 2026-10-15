@@ -354,6 +354,7 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
+import io.camunda.client.impl.metrics.ClientMetrics;
 import io.camunda.client.impl.search.request.AgentDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.AgentInstanceHistorySearchRequestImpl;
 import io.camunda.client.impl.search.request.AgentInstanceSearchRequestImpl;
@@ -455,9 +456,28 @@ public final class CamundaClientImpl implements CamundaClient {
   private final JobClient jobClient;
   private final CredentialsProvider credentialsProvider;
   private final HttpClient httpClient;
+  private final ClientMetrics clientMetrics;
 
   public CamundaClientImpl(final CamundaClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
+  }
+
+  public CamundaClientImpl(
+      final CamundaClientConfiguration configuration, final ClientMetrics clientMetrics) {
+    this(configuration, buildChannel(configuration), clientMetrics);
+  }
+
+  private CamundaClientImpl(
+      final CamundaClientConfiguration configuration,
+      final ManagedChannel channel,
+      final ClientMetrics clientMetrics) {
+    this(
+        configuration,
+        channel,
+        buildGatewayStub(channel, configuration),
+        buildExecutorService(configuration),
+        new HttpClientFactory(configuration, clientMetrics).createClient(),
+        clientMetrics);
   }
 
   public CamundaClientImpl(
@@ -498,7 +518,18 @@ public final class CamundaClientImpl implements CamundaClient {
       final GatewayStub gatewayStub,
       final JobWorkerExecutors executorResource,
       final HttpClient httpClient) {
+    this(config, channel, gatewayStub, executorResource, httpClient, ClientMetrics.noop());
+  }
+
+  public CamundaClientImpl(
+      final CamundaClientConfiguration config,
+      final ManagedChannel channel,
+      final GatewayStub gatewayStub,
+      final JobWorkerExecutors executorResource,
+      final HttpClient httpClient,
+      final ClientMetrics clientMetrics) {
     this.config = config;
+    this.clientMetrics = clientMetrics;
     jsonMapper = config.getJsonMapper();
     this.channel = channel;
     asyncStub = gatewayStub;
@@ -686,32 +717,38 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public void close() {
-    closeables.forEach(
-        c -> {
-          try {
-            c.close();
-          } catch (final IOException e) {
-            // ignore
-          }
-        });
-
-    executorResource.close();
-    channel.shutdownNow();
-
     try {
-      if (!channel.awaitTermination(15, TimeUnit.SECONDS)) {
+      closeables.forEach(
+          c -> {
+            try {
+              c.close();
+            } catch (final IOException e) {
+              // ignore
+            }
+          });
+
+      executorResource.close();
+      channel.shutdownNow();
+
+      try {
+        if (!channel.awaitTermination(15, TimeUnit.SECONDS)) {
+          throw new ClientException(
+              "Timed out awaiting termination of in-flight request channel after 15 seconds");
+        }
+      } catch (final InterruptedException e) {
         throw new ClientException(
-            "Timed out awaiting termination of in-flight request channel after 15 seconds");
+            "Unexpectedly interrupted awaiting termination of in-flight request channel", e);
       }
-    } catch (final InterruptedException e) {
-      throw new ClientException(
-          "Unexpectedly interrupted awaiting termination of in-flight request channel", e);
-    }
 
-    try {
-      httpClient.close();
-    } catch (final Exception e) {
-      throw new ClientException("Failed closing http client.", e);
+      try {
+        httpClient.close();
+      } catch (final Exception e) {
+        throw new ClientException("Failed closing http client.", e);
+      }
+    } finally {
+      // on every path, as a client failing to shut down must not leave its meters behind; last,
+      // so that no exchange of the closed HTTP client records a meter again
+      clientMetrics.close();
     }
   }
 

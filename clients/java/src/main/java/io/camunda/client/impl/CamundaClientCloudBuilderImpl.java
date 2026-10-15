@@ -35,6 +35,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.enums.TenantFilter;
+import io.camunda.client.api.metrics.CamundaClientMetrics;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.AddressUtil;
@@ -344,6 +345,12 @@ public class CamundaClientCloudBuilderImpl
   public CamundaClientBuilder defaultJobWorkerExceptionHandler(
       final JobExceptionHandler jobExceptionHandler) {
     innerBuilder.defaultJobWorkerExceptionHandler(jobExceptionHandler);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder metrics(final CamundaClientMetrics metrics) {
+    innerBuilder.metrics(metrics);
     return this;
   }
 

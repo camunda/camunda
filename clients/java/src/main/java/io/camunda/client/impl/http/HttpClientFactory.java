@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.metrics.ClientMetrics;
 import io.camunda.client.impl.search.filter.StringFilterPropertyModule;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.VersionUtil;
@@ -97,16 +98,30 @@ public class HttpClientFactory {
 
   private final CamundaClientConfiguration config;
   private final Duration responseDeadlineMargin;
+  private final ClientMetrics clientMetrics;
 
   public HttpClientFactory(final CamundaClientConfiguration config) {
-    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN);
+    this(config, ClientMetrics.noop());
+  }
+
+  public HttpClientFactory(
+      final CamundaClientConfiguration config, final ClientMetrics clientMetrics) {
+    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN, clientMetrics);
   }
 
   /** Lets tests shorten the margin of the response deadline. */
   HttpClientFactory(
       final CamundaClientConfiguration config, final Duration responseDeadlineMargin) {
+    this(config, responseDeadlineMargin, ClientMetrics.noop());
+  }
+
+  private HttpClientFactory(
+      final CamundaClientConfiguration config,
+      final Duration responseDeadlineMargin,
+      final ClientMetrics clientMetrics) {
     this.config = config;
     this.responseDeadlineMargin = responseDeadlineMargin;
+    this.clientMetrics = clientMetrics;
   }
 
   public HttpClient createClient() {
@@ -260,6 +275,8 @@ public class HttpClientFactory {
         ChainElement.MAIN_TRANSPORT.name(),
         ResponseDeadlineChainHandler.NAME,
         new ResponseDeadlineChainHandler(responseDeadlineMargin));
+
+    clientMetrics.instrumentHttpClient(builder);
 
     return builder;
   }
