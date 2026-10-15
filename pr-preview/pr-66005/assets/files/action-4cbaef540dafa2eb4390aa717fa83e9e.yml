@@ -1,0 +1,77 @@
+# This action expects the code to have been checked out beforehand, e.g. via actions/checkout
+---
+name: FOSSA release project
+
+# owner: @camunda/engineering-operations
+
+description: |
+  Waits for the FOSSA scan of a project at the release revision, then creates the FOSSA releases
+  and generates the attribution (TXT) and SBOM (CycloneDX JSON) reports.
+
+inputs:
+  project-id:
+    description: 'FOSSA project locator, e.g. custom+50756/camunda/camunda@single-app'
+    required: true
+  attribution-release-group-id:
+    description: 'FOSSA release group ID for the attribution report'
+    required: true
+  sbom-release-group-id:
+    description: 'FOSSA release group ID for the SBOM report'
+    required: true
+  release-number:
+    description: 'Release number to create in FOSSA'
+    required: true
+  revision-id:
+    description: 'Git revision (commit SHA) of the release tag'
+    required: true
+  dry-run:
+    description: 'If true, no FOSSA releases are created'
+    required: true
+  secret_vault_address:
+    description: 'Secret vault url'
+    required: true
+  secret_vault_roleId:
+    description: 'Secret vault roleId'
+    required: true
+  secret_vault_secretId:
+    description: 'Secret vault ID'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ inputs.secret_vault_address }}
+        method: approle
+        roleId: ${{ inputs.secret_vault_roleId }}
+        secretId: ${{ inputs.secret_vault_secretId }}
+        exportEnv: false
+        secrets: |
+          secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
+    - name: Get FOSSA context
+      id: fossa-context
+      uses: camunda/infra-global-github-actions/fossa/info@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
+    - name: Wait for FOSSA scan completion
+      uses: camunda/infra-global-github-actions/fossa/wait-for-scan@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        branch: ${{ steps.fossa-context.outputs.head-ref }}
+        project-id: ${{ inputs.project-id }}
+        revision-id: ${{ inputs.revision-id }}
+        dry-run: ${{ inputs.dry-run }}
+    - name: Create FOSSA releases and generate reports
+      uses: camunda/infra-global-github-actions/fossa/release@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        branch: ${{ steps.fossa-context.outputs.head-ref }}
+        project-id: ${{ inputs.project-id }}
+        attribution-release-group-id: ${{ inputs.attribution-release-group-id }}
+        sbom-release-group-id: ${{ inputs.sbom-release-group-id }}
+        release-number: ${{ inputs.release-number }}
+        revision-id: ${{ inputs.revision-id }}
+        attribution-format: "TXT"
+        sbom-format: "CYCLONEDX_JSON"
+        dry-run: ${{ inputs.dry-run }}
