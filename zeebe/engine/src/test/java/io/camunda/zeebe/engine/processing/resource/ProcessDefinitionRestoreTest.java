@@ -81,8 +81,10 @@ public class ProcessDefinitionRestoreTest {
     engine.start();
 
     // then - both are flipped back to ACTIVE, and the cursor loop terminates cleanly
-    RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
-        .getFirst();
+    final var finished =
+        RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
+            .getFirst();
+    assertThat(finished.getValue().getRestoredCount()).isEqualTo(2);
 
     final var restoredKeys =
         RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.RESTORED)
