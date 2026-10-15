@@ -65,7 +65,8 @@ extensions.configure<SpotlessExtension> {
         exclude("**/build/**", "**/node_modules/**", "**/target/**")
       }
     )
-    ktfmt().googleStyle()
+    // Keep the version in sync with the <kotlin><ktfmt> block in the root pom.xml.
+    ktfmt("0.63").googleStyle()
   }
 
   pom {
