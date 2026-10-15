@@ -9,7 +9,7 @@
 import {makeObservable, observable, action} from 'mobx';
 import {api} from 'modules/api';
 import {reactQueryClient} from 'modules/react-query/reactQueryClient';
-import {request} from 'modules/request';
+import {request, requestCsrfToken} from 'modules/request';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 type Status =
@@ -34,6 +34,10 @@ class Authentication {
   }
 
   handleLogin = async (username: string, password: string) => {
+    // The login endpoint rejects a POST without a CSRF token, and a GET of the login endpoint is
+    // where the server sends one.
+    await requestCsrfToken(api.v1.loginCsrfToken());
+
     const {response, error} = await request(
       api.v1.login({username, password}),
       {

@@ -22,6 +22,7 @@ describe('authentication store', () => {
 
   it('should login', async () => {
     nodeMockServer.use(
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post('/api/login', () => new HttpResponse(''), {once: true}),
     );
 
@@ -34,8 +35,67 @@ describe('authentication store', () => {
     expect(authenticationStore.status).toBe('logged-in');
   });
 
+  it('should send the CSRF token from the login endpoint with the login request', async () => {
+    const csrfToken = 'csrf-token-from-login-endpoint';
+    const requests: string[] = [];
+    let tokenSentWithLogin: string | null = null;
+    sessionStorage.clear();
+
+    nodeMockServer.use(
+      // The status of this response does not matter, only the token header does.
+      http.get(
+        '/api/login',
+        () => {
+          requests.push('GET');
+          return new HttpResponse('', {
+            status: 404,
+            headers: {'X-CSRF-TOKEN': csrfToken},
+          });
+        },
+        {once: true},
+      ),
+      http.post(
+        '/api/login',
+        ({request}) => {
+          requests.push('POST');
+          tokenSentWithLogin = request.headers.get('X-CSRF-TOKEN');
+          return new HttpResponse('');
+        },
+        {once: true},
+      ),
+    );
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(requests).toEqual(['GET', 'POST']);
+    expect(tokenSentWithLogin).toBe(csrfToken);
+    expect(authenticationStore.status).toBe('logged-in');
+  });
+
+  it('should still send the login request when the CSRF token request fails', async () => {
+    const consoleErrorMock = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    nodeMockServer.use(
+      http.get('/api/login', () => HttpResponse.error(), {once: true}),
+      http.post('/api/login', () => new HttpResponse(''), {once: true}),
+    );
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+    expect(consoleErrorMock).toHaveBeenCalledWith(
+      'Failed to fetch a CSRF token',
+      expect.anything(),
+    );
+
+    consoleErrorMock.mockRestore();
+  });
+
   it('should handle login failure', async () => {
     nodeMockServer.use(
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post('/api/login', () => new HttpResponse('', {status: 401}), {
         once: true,
       }),
@@ -68,6 +128,7 @@ describe('authentication store', () => {
     };
 
     nodeMockServer.use(
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post('/api/login', () => new HttpResponse(''), {once: true}),
       http.post('/api/logout', () => new HttpResponse(''), {once: true}),
     );
@@ -181,8 +242,10 @@ describe('authentication store', () => {
           };
 
           nodeMockServer.use(
+            http.get('/api/login', () => new HttpResponse(''), {once: true}),
             http.post('/api/login', () => new HttpResponse(''), {once: true}),
             http.post('/api/logout', () => new HttpResponse(''), {once: true}),
+            http.get('/api/login', () => new HttpResponse(''), {once: true}),
             http.post('/api/login', () => new HttpResponse(''), {once: true}),
           );
 

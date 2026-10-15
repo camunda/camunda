@@ -7,9 +7,7 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
-import static io.camunda.operate.webapp.security.OperateURIs.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
@@ -29,13 +27,9 @@ import org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration;
 import org.springframework.boot.autoconfigure.ldap.embedded.EmbeddedLdapAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -86,16 +80,8 @@ public class AuthenticationWrongParametersIT implements AuthenticationTestable {
     assertThat(userInfo.getUserId()).isEqualTo("bob");
   }
 
-  protected ResponseEntity<?> loginAs(String user, String password) {
-    final HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(APPLICATION_FORM_URLENCODED);
-
-    final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-    body.add("username", user);
-    body.add("password", password);
-
-    return testRestTemplate.postForEntity(
-        LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
+  protected ResponseEntity<?> loginAs(final String user, final String password) {
+    return login(user, password);
   }
 
   @Override

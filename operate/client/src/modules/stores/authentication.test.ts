@@ -11,6 +11,9 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {mockGetUser} from 'modules/mocks/api/getUser';
 import {createUser} from 'modules/testUtils';
+import {mockLogin, mockLoginCsrfToken} from 'modules/mocks/api/login';
+import {mockServer} from 'modules/mock-server/node';
+import {rest} from 'msw';
 
 const mockUserResponse = createUser();
 
@@ -101,4 +104,64 @@ describe('stores/authentication', () => {
       windowSpy.mockRestore();
     },
   );
+
+  describe('login', () => {
+    beforeEach(() => {
+      sessionStorage.clear();
+    });
+
+    it('should send the CSRF token from the login endpoint with the login request', async () => {
+      const csrfToken = 'csrf-token-from-login-endpoint';
+      const requests: string[] = [];
+      let tokenSentWithLogin: string | null = null;
+
+      mockServer.use(
+        // The status of this response does not matter, only the token header does.
+        rest.get('/api/login', (_, res, ctx) => {
+          requests.push('GET');
+          return res.once(
+            ctx.status(404),
+            ctx.set('X-CSRF-TOKEN', csrfToken),
+            ctx.text(''),
+          );
+        }),
+        rest.post('/api/login', (req, res, ctx) => {
+          requests.push('POST');
+          tokenSentWithLogin = req.headers.get('X-CSRF-TOKEN');
+          return res.once(ctx.json({}));
+        }),
+      );
+
+      expect(
+        await authenticationStore.handleLogin({
+          username: 'demo',
+          password: 'demo',
+        }),
+      ).toBeUndefined();
+
+      expect(requests).toEqual(['GET', 'POST']);
+      expect(tokenSentWithLogin).toBe(csrfToken);
+      expect(authenticationStore.state.status).toBe('logged-in');
+    });
+
+    it('should still send the login request when the CSRF token request fails', async () => {
+      const consoleErrorMock = jest
+        .spyOn(global.console, 'error')
+        .mockImplementation();
+
+      mockLoginCsrfToken().withNetworkError();
+      mockLogin().withSuccess({});
+
+      expect(
+        await authenticationStore.handleLogin({
+          username: 'demo',
+          password: 'demo',
+        }),
+      ).toBeUndefined();
+
+      expect(authenticationStore.state.status).toBe('logged-in');
+
+      consoleErrorMock.mockRestore();
+    });
+  });
 });

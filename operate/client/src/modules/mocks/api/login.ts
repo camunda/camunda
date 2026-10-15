@@ -6,8 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockPostRequest} from './mockRequest';
+import {mockGetRequest, mockPostRequest} from './mockRequest';
 
 const mockLogin = () => mockPostRequest('/api/login');
 
-export {mockLogin};
+// The login POST is preceded by a GET of the login endpoint, which is where the server sends the
+// CSRF token that the POST has to send back.
+const mockLoginCsrfToken = () => mockGetRequest('/api/login');
+
+export {mockLogin, mockLoginCsrfToken};

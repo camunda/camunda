@@ -110,8 +110,24 @@ public interface AuthenticationTestable {
     }
   }
 
+  /**
+   * Gets a CSRF token the way the frontend does before it logs in: the login endpoint rejects a
+   * POST without one, and a GET of it hands one to a client without a session. Returns the token as
+   * both the cookie and the header the POST must send back.
+   */
+  default HttpHeaders loginCsrfHeaders() {
+    final ResponseEntity<String> response = get(LOGIN_RESOURCE);
+    final HttpHeaders headers = getHeaderWithCSRF(response.getHeaders());
+    getCookies(response).stream()
+        .filter(cookie -> cookie.startsWith(X_CSRF_TOKEN + "="))
+        .map(cookie -> cookie.split(";")[0])
+        .findFirst()
+        .ifPresent(cookie -> headers.add("Cookie", cookie));
+    return headers;
+  }
+
   default ResponseEntity<Void> login(final String username, final String password) {
-    final HttpHeaders headers = new HttpHeaders();
+    final HttpHeaders headers = loginCsrfHeaders();
     headers.setContentType(APPLICATION_FORM_URLENCODED);
 
     final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();

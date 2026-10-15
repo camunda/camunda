@@ -19,14 +19,20 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 public class CsrfRequireMatcher implements RequestMatcher {
   private static final Pattern ALLOWED_METHODS = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
 
-  private static final Pattern ALLOWED_PATHS =
-      Pattern.compile(LOGIN_RESOURCE + "|" + LOGOUT_RESOURCE);
+  private static final Pattern ALLOWED_PATHS = Pattern.compile(LOGOUT_RESOURCE);
 
   @Override
   public boolean matches(final HttpServletRequest request) {
-    // If request is from Allowed Methods, Login and Logout
+    // If request is from Allowed Methods or Logout
     if (ALLOWED_METHODS.matcher(request.getMethod()).matches()) {
       return false;
+    }
+    // The login endpoint requires a valid CSRF token unconditionally: without it, a cross-site
+    // POST to it silently replaces the session of a browser that is already logged in with one of
+    // the attacker's choosing (camunda/security-testing-findings#281). Checked ahead of the
+    // unauthenticated, Swagger and Bearer exemptions below so none of them can exempt it.
+    if (LOGIN_RESOURCE.equals(request.getServletPath())) {
+      return true;
     }
     if (ALLOWED_PATHS.matcher(request.getServletPath()).matches()) {
       return false;

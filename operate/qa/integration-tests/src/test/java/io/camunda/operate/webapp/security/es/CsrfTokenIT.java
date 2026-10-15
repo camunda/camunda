@@ -127,6 +127,37 @@ public class CsrfTokenIT {
   }
 
   @Test
+  public void loginShouldFailWithoutCSRF() {
+    // given a login that does not send a CSRF token, as a cross-site form POST would not
+    final ResponseEntity<Void> loginResponse = postLogin(USER_ID, PASSWORD, new HttpHeaders());
+
+    // then
+    assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    assertThat(getSessionCookie(loginResponse)).isEmpty();
+  }
+
+  @Test
+  public void loginPageShouldHandOutCSRFTokenWithoutSession() {
+    // when a client without a session gets the login endpoint
+    final ResponseEntity<String> response =
+        testRestTemplate.getForEntity(LOGIN_RESOURCE, String.class);
+
+    // then it receives a token as both header and cookie, so it can log in next
+    assertThat(response.getHeaders().get(X_CSRF_TOKEN)).isNotEmpty();
+    assertThat(getCsrfCookie(response)).isPresent();
+  }
+
+  @Test
+  public void loginShouldSucceedWithCSRF() {
+    // when
+    final ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
+
+    // then
+    assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    assertThat(getSessionCookie(loginResponse)).isPresent();
+  }
+
+  @Test
   public void requestToInternalAPIShouldFailWithoutCSRF() {
     final ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
     final var headers = new HttpHeaders();
@@ -173,8 +204,19 @@ public class CsrfTokenIT {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
 
+  /** Logs in the way the frontend does: get a CSRF token first, then send it back. */
   private ResponseEntity<Void> login(final String username, final String password) {
+    final ResponseEntity<String> tokenResponse =
+        testRestTemplate.getForEntity(LOGIN_RESOURCE, String.class);
     final HttpHeaders headers = new HttpHeaders();
+    headers.set(X_CSRF_TOKEN, tokenResponse.getHeaders().getFirst(X_CSRF_TOKEN));
+    getCsrfCookie(tokenResponse)
+        .ifPresent(csrfCookie -> headers.add("Cookie", csrfCookie.split(";")[0]));
+    return postLogin(username, password, headers);
+  }
+
+  private ResponseEntity<Void> postLogin(
+      final String username, final String password, final HttpHeaders headers) {
     headers.setContentType(APPLICATION_FORM_URLENCODED);
 
     final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
@@ -185,8 +227,14 @@ public class CsrfTokenIT {
         LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
   }
 
+  /**
+   * The last CSRF cookie the response sets, as a browser would keep it. A login that sent a token
+   * first clears that token and then sets the new one, so the response sets the cookie twice.
+   */
   private Optional<String> getCsrfCookie(final ResponseEntity<?> response) {
-    return getCookies(response).stream().filter(key -> key.startsWith(X_CSRF_TOKEN)).findFirst();
+    return getCookies(response).stream()
+        .filter(key -> key.startsWith(X_CSRF_TOKEN))
+        .reduce((first, second) -> second);
   }
 
   private Optional<String> getSessionCookie(final ResponseEntity<?> response) {

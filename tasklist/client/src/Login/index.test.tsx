@@ -52,6 +52,7 @@ describe('<Login />', () => {
 
   it('should redirect to the initial page on success', async () => {
     nodeMockServer.use(
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/api/login',
         () => {
@@ -84,6 +85,7 @@ describe('<Login />', () => {
 
   it('should redirect to the referrer page', async () => {
     nodeMockServer.use(
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/api/login',
         () => {
@@ -112,6 +114,7 @@ describe('<Login />', () => {
 
   it('should show an error for wrong credentials', async () => {
     nodeMockServer.use(
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/api/login',
         () => {
@@ -139,6 +142,7 @@ describe('<Login />', () => {
 
   it('should show a generic error message', async () => {
     nodeMockServer.use(
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/api/login',
         () => {
@@ -164,6 +168,7 @@ describe('<Login />', () => {
     ).toBeInTheDocument();
 
     nodeMockServer.use(
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post('/api/login', () => {
         return HttpResponse.error();
       }),
@@ -180,6 +185,7 @@ describe('<Login />', () => {
 
   it('should show a loading state while the login form is submitting', async () => {
     nodeMockServer.use(
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/api/login',
         () => {
@@ -204,6 +210,10 @@ describe('<Login />', () => {
         name: 'Logging in',
       }),
     ).toBeDisabled();
+    // Let the login finish, so its requests do not outlive this test's handlers.
+    expect(
+      await screen.findByRole('button', {name: 'Login'}),
+    ).toBeInTheDocument();
   });
 
   it('should have the correct copyright notice', () => {
@@ -224,6 +234,7 @@ describe('<Login />', () => {
 
   it('should not allow the form to be submitted with empty fields', async () => {
     nodeMockServer.use(
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/api/login',
         () => {
@@ -233,6 +244,7 @@ describe('<Login />', () => {
           once: true,
         },
       ),
+      http.get('/api/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/api/login',
         () => {

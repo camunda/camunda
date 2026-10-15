@@ -25,6 +25,13 @@ function getFullURL(url: string) {
 
 const api = {
   v1: {
+    // The login endpoint sends a CSRF token with the response to a GET, and the login POST must
+    // send that token back.
+    loginCsrfToken: () =>
+      new Request(getFullURL('/api/login'), {
+        ...BASE_REQUEST_OPTIONS,
+        method: 'GET',
+      }),
     login: (body: {username: string; password: string}) => {
       return new Request(getFullURL('/api/login'), {
         ...BASE_REQUEST_OPTIONS,
