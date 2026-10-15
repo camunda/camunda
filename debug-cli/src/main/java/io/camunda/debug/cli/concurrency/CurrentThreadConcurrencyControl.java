@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
@@ -55,5 +56,10 @@ public class CurrentThreadConcurrencyControl implements ConcurrencyControl {
   @Override
   public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
     throw new UnsupportedOperationException("schedule is not supported");
+  }
+
+  @Override
+  public ScheduledTimer scheduleAtFixedRate(final Duration delay, final Runnable runnable) {
+    throw new UnsupportedOperationException("scheduleAtFixedRate is not supported");
   }
 }
