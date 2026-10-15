@@ -12,9 +12,11 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
@@ -27,12 +29,14 @@ public class ProcessDefinitionRestoreStartProcessor
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
+  private final TypedRejectionWriter rejectionWriter;
   private final ProcessState processState;
 
   public ProcessDefinitionRestoreStartProcessor(
       final Writers writers, final ProcessState processState) {
     stateWriter = writers.state();
     commandWriter = writers.command();
+    rejectionWriter = writers.rejection();
     this.processState = processState;
   }
 
@@ -41,6 +45,10 @@ public class ProcessDefinitionRestoreStartProcessor
     // a START committed before a leader change can still be in the log when the trigger schedules
     // another one on recovery
     if (processState.hasRunProcessDefinitionRestore()) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          "Expected to start the process definition restore, but it already ran on this partition");
       return;
     }
 
