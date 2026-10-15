@@ -257,14 +257,14 @@ jobs:
       # A missing artifact (metrics step failed or skipped) renders that column as n/a.
       - name: Download PR metrics
         continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: load-test-results-${{ needs.sanitize-branch-name.outputs.sanitized-name }}
           path: results/pr
       - name: Download daily metrics
         if: needs.resolve-daily-namespace.outputs.daily-namespace != ''
         continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: load-test-results-${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
           path: results/daily
