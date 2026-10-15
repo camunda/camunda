@@ -54,6 +54,7 @@ import { Route as ShadcnAuthAdminTenantsIndexRouteImport } from './routes/_shadc
 import { Route as ShadcnAuthAdminUsersIndexRouteImport } from './routes/_shadcn/_auth/admin/users/index'
 import { Route as ShadcnAuthAdminUsersUsernameRouteImport } from './routes/_shadcn/_auth/admin/users/$username'
 import { Route as ShadcnAuthOperatePreviewDecisionsIndexRouteImport } from './routes/_shadcn/_auth/operate-preview/decisions/index'
+import { Route as ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRouteImport } from './routes/_shadcn/_auth/operate-preview/decisions/$decisionInstanceId'
 import { Route as ShadcnAuthTasklistTasksIndexRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/index'
 import { Route as ShadcnAuthTasklistTasksUserTaskKeyRouteRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/$userTaskKey/route'
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdIndexRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/index'
@@ -317,6 +318,12 @@ const ShadcnAuthOperatePreviewDecisionsIndexRoute =
     path: '/',
     getParentRoute: () => ShadcnAuthOperatePreviewDecisionsRoute,
   } as any)
+const ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRoute =
+  ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRouteImport.update({
+    id: '/$decisionInstanceId',
+    path: '/$decisionInstanceId',
+    getParentRoute: () => ShadcnAuthOperatePreviewDecisionsRoute,
+  } as any)
 const ShadcnAuthTasklistTasksIndexRoute =
   ShadcnAuthTasklistTasksIndexRouteImport.update({
     id: '/',
@@ -436,6 +443,7 @@ export interface FileRoutesByFullPath {
   '/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
   '/admin/roles/$roleId': typeof ShadcnAuthAdminRolesRoleIdRoute
   '/admin/users/$username': typeof ShadcnAuthAdminUsersUsernameRoute
+  '/operate-preview/decisions/$decisionInstanceId': typeof ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRoute
   '/operate/batch-operations/': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/operate/decisions/': typeof CarbonAuthOperateDecisionsIndexRoute
   '/admin/authorizations/': typeof ShadcnAuthAdminAuthorizationsIndexRoute
@@ -484,6 +492,7 @@ export interface FileRoutesByTo {
   '/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
   '/admin/roles/$roleId': typeof ShadcnAuthAdminRolesRoleIdRoute
   '/admin/users/$username': typeof ShadcnAuthAdminUsersUsernameRoute
+  '/operate-preview/decisions/$decisionInstanceId': typeof ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRoute
   '/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/operate/decisions': typeof CarbonAuthOperateDecisionsIndexRoute
   '/admin/authorizations': typeof ShadcnAuthAdminAuthorizationsIndexRoute
@@ -545,6 +554,7 @@ export interface FileRoutesById {
   '/_carbon/_auth/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
   '/_shadcn/_auth/admin/roles/$roleId': typeof ShadcnAuthAdminRolesRoleIdRoute
   '/_shadcn/_auth/admin/users/$username': typeof ShadcnAuthAdminUsersUsernameRoute
+  '/_shadcn/_auth/operate-preview/decisions/$decisionInstanceId': typeof ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRoute
   '/_carbon/_auth/operate/batch-operations/': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/_carbon/_auth/operate/decisions/': typeof CarbonAuthOperateDecisionsIndexRoute
   '/_shadcn/_auth/admin/authorizations/': typeof ShadcnAuthAdminAuthorizationsIndexRoute
@@ -603,6 +613,7 @@ export interface FileRouteTypes {
     | '/operate/decisions/$decisionInstanceId'
     | '/admin/roles/$roleId'
     | '/admin/users/$username'
+    | '/operate-preview/decisions/$decisionInstanceId'
     | '/operate/batch-operations/'
     | '/operate/decisions/'
     | '/admin/authorizations/'
@@ -651,6 +662,7 @@ export interface FileRouteTypes {
     | '/operate/decisions/$decisionInstanceId'
     | '/admin/roles/$roleId'
     | '/admin/users/$username'
+    | '/operate-preview/decisions/$decisionInstanceId'
     | '/operate/batch-operations'
     | '/operate/decisions'
     | '/admin/authorizations'
@@ -711,6 +723,7 @@ export interface FileRouteTypes {
     | '/_carbon/_auth/operate/decisions/$decisionInstanceId'
     | '/_shadcn/_auth/admin/roles/$roleId'
     | '/_shadcn/_auth/admin/users/$username'
+    | '/_shadcn/_auth/operate-preview/decisions/$decisionInstanceId'
     | '/_carbon/_auth/operate/batch-operations/'
     | '/_carbon/_auth/operate/decisions/'
     | '/_shadcn/_auth/admin/authorizations/'
@@ -1062,6 +1075,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShadcnAuthOperatePreviewDecisionsIndexRouteImport
       parentRoute: typeof ShadcnAuthOperatePreviewDecisionsRoute
     }
+    '/_shadcn/_auth/operate-preview/decisions/$decisionInstanceId': {
+      id: '/_shadcn/_auth/operate-preview/decisions/$decisionInstanceId'
+      path: '/$decisionInstanceId'
+      fullPath: '/operate-preview/decisions/$decisionInstanceId'
+      preLoaderRoute: typeof ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRouteImport
+      parentRoute: typeof ShadcnAuthOperatePreviewDecisionsRoute
+    }
     '/_shadcn/_auth/tasklist/_tasks/': {
       id: '/_shadcn/_auth/tasklist/_tasks/'
       path: '/'
@@ -1366,11 +1386,14 @@ const ShadcnAuthAdminRouteRouteWithChildren =
   ShadcnAuthAdminRouteRoute._addFileChildren(ShadcnAuthAdminRouteRouteChildren)
 
 interface ShadcnAuthOperatePreviewDecisionsRouteChildren {
+  ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRoute: typeof ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRoute
   ShadcnAuthOperatePreviewDecisionsIndexRoute: typeof ShadcnAuthOperatePreviewDecisionsIndexRoute
 }
 
 const ShadcnAuthOperatePreviewDecisionsRouteChildren: ShadcnAuthOperatePreviewDecisionsRouteChildren =
   {
+    ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRoute:
+      ShadcnAuthOperatePreviewDecisionsDecisionInstanceIdRoute,
     ShadcnAuthOperatePreviewDecisionsIndexRoute:
       ShadcnAuthOperatePreviewDecisionsIndexRoute,
   }
