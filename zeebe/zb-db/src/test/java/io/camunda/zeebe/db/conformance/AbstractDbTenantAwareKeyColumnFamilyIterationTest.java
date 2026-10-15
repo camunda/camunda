@@ -10,100 +10,37 @@ package io.camunda.zeebe.db.conformance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.ColumnFamily;
-import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import java.io.File;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-public abstract class AbstractDbTenantAwareKeyColumnFamilyTest {
+/**
+ * Iteration conformance tests for a column family keyed by a tenant-aware key, kept apart from the
+ * point operations so that a backend can adopt them once it supports iteration.
+ */
+public abstract class AbstractDbTenantAwareKeyColumnFamilyIterationTest
+    extends AbstractDbTenantAwareKeyColumnFamilyTestBase {
 
-  @TempDir public File temporaryFolder;
-  private ZeebeDb<DefaultColumnFamily> zeebeDb;
-  private ColumnFamily<DbTenantAwareKey<DbLong>, DbString> columnFamily;
   private ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbLong, DbLong>>, DbString>
       compositeColumnFamily;
-  private DbString tenantKey;
-  private DbLong firstKey;
   private DbLong secondKey;
   private DbCompositeKey<DbLong, DbLong> compositeKey;
-
-  private DbString value;
-
-  private DbTenantAwareKey<DbLong> tenantAwareKey;
   private DbTenantAwareKey<DbCompositeKey<DbLong, DbLong>> compositeTenantAwareKey;
 
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
-
   @BeforeEach
-  void beforeEach() throws Exception {
-    zeebeDb = factory().createDb(temporaryFolder);
-
-    tenantKey = new DbString();
-    firstKey = new DbLong();
-    tenantAwareKey = new DbTenantAwareKey<>(tenantKey, firstKey, PlacementType.SUFFIX);
-
+  void createCompositeColumnFamily() {
     secondKey = new DbLong();
     compositeKey = new DbCompositeKey<>(firstKey, secondKey);
     compositeTenantAwareKey = new DbTenantAwareKey<>(tenantKey, compositeKey, PlacementType.SUFFIX);
-
-    value = new DbString();
-    columnFamily =
-        zeebeDb.createColumnFamily(
-            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), tenantAwareKey, value);
     compositeColumnFamily =
         zeebeDb.createColumnFamily(
             DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), compositeTenantAwareKey, value);
-  }
-
-  @Test
-  void shouldInsertValue() {
-    // given
-    tenantKey.wrapString("tenant");
-    firstKey.wrapLong(1);
-    value.wrapString("foo");
-
-    // when
-    columnFamily.insert(tenantAwareKey, value);
-    value.wrapString("bar");
-
-    // then
-    final DbString zbString = columnFamily.get(tenantAwareKey);
-
-    assertThat(zbString).isNotNull();
-    assertThat(zbString.toString()).isEqualTo("foo");
-
-    // zbString and value are referencing the same object
-    assertThat(value.toString()).isEqualTo("foo");
-  }
-
-  @Test
-  void shouldUpsertValue() {
-    // given
-    tenantKey.wrapString("tenant");
-    firstKey.wrapLong(1);
-    value.wrapString("foo");
-
-    // when
-    columnFamily.upsert(tenantAwareKey, value);
-    value.wrapString("bar");
-
-    // then
-    final DbString zbString = columnFamily.get(tenantAwareKey);
-
-    assertThat(zbString).isNotNull();
-    assertThat(zbString.toString()).isEqualTo("foo");
-
-    // zbString and value are referencing the same object
-    assertThat(value.toString()).isEqualTo("foo");
   }
 
   @Test
@@ -136,43 +73,6 @@ public abstract class AbstractDbTenantAwareKeyColumnFamilyTest {
     assertThat(keys).containsOnly(1L);
     assertThat(tenants).containsExactly("tenant", "otherTenant");
     assertThat(values).containsOnly("foo");
-  }
-
-  @Test
-  public void shouldUpdateValue() {
-    // given
-    tenantKey.wrapString("tenant");
-    firstKey.wrapLong(1);
-    value.wrapString("foo");
-    columnFamily.insert(tenantAwareKey, value);
-
-    // when
-    value.wrapString("bar");
-    columnFamily.upsert(tenantAwareKey, value);
-    value.wrapString("baz");
-
-    // then
-    final DbString zbString = columnFamily.get(tenantAwareKey);
-
-    assertThat(zbString).isNotNull();
-    assertThat(zbString.toString()).isEqualTo("bar");
-
-    // zbString and value are referencing the same object
-    assertThat(value.toString()).isEqualTo("bar");
-  }
-
-  @Test
-  void shouldDeleteValue() {
-    // given
-    upsertKeyValuePair(123L, "tenantId", "foo");
-
-    // when
-    columnFamily.deleteExisting(tenantAwareKey);
-
-    // then
-    final DbString zbString = columnFamily.get(tenantAwareKey);
-
-    assertThat(zbString).isNull();
   }
 
   @Test
@@ -310,13 +210,6 @@ public abstract class AbstractDbTenantAwareKeyColumnFamilyTest {
     assertThat(secondKeys).containsExactly(111L, 222L, 333L);
     assertThat(values).containsExactly("foo", "baz", "bar");
     assertThat(tenants).containsExactly("tenantId", "otherTenantId", "tenantId");
-  }
-
-  private void upsertKeyValuePair(final long key, final String tenantId, final String value) {
-    firstKey.wrapLong(key);
-    this.value.wrapString(value);
-    tenantKey.wrapString(tenantId);
-    columnFamily.upsert(tenantAwareKey, this.value);
   }
 
   private void upsertCompositeKeyValuePair(
