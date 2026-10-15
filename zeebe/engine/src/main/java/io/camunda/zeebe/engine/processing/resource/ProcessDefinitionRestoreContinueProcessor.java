@@ -19,30 +19,21 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import org.agrona.collections.MutableInteger;
 
 /**
- * Visits process definitions in bounded chunks, looking for stray resting {@code PENDING_DELETION}
- * rows left behind by a write-side bug to restore back to {@code ACTIVE}.
+ * Visits one process definition per command, looking for stray resting {@code PENDING_DELETION}
+ * rows left behind by a write-side bug to restore back to {@code ACTIVE}, and chains the next
+ * {@code CONTINUE} command.
  *
- * <p>The cap below bounds the rows <em>visited</em> per command, not the rows matched: each visited
- * {@code PersistedProcess} carries the full BPMN resource blob, so even scanning past many harmless
- * {@code ACTIVE} rows to find a rare stray one must stay bounded to keep a single command's
- * deserialization work and transaction size predictable, regardless of how many definitions exist
- * in state.
+ * <p>Each visited {@code PersistedProcess} carries the full BPMN resource blob, so a single command
+ * deserializes at most one. The engine's command batching groups the chained commands into bounded
+ * transactions and lets other commands interleave in between.
  */
 @ExcludeAuthorizationCheck
 public class ProcessDefinitionRestoreContinueProcessor
     implements TypedRecordProcessor<ProcessDefinitionRestoreRecord> {
-
-  /**
-   * Maximum number of process definitions visited by a single command. 50 keeps a worst-case
-   * command (50 full resource blobs deserialized) in the same order of magnitude as other engine
-   * batch limits (for example the message TTL checker's default batch of 100), while still making
-   * steady progress through large installations.
-   */
-  static final int VISIT_LIMIT = 50;
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -63,53 +54,41 @@ public class ProcessDefinitionRestoreContinueProcessor
             ? null
             : new ProcessIdentifier(value.getTenantId(), value.getProcessDefinitionKey());
 
-    final var visitedCount = new MutableInteger(0);
-    final AtomicReference<ProcessIdentifier> lastVisited = new AtomicReference<>();
+    final var visited = new AtomicReference<ProcessIdentifier>();
+    final var stray = new AtomicBoolean();
 
     processState.forEachProcess(
         previousProcess,
         persistedProcess -> {
           // copy out of the visitor: the PersistedProcess instance is shared and mutable
-          final var tenantId = persistedProcess.getTenantId();
-          final var processDefinitionKey = persistedProcess.getKey();
-          lastVisited.set(new ProcessIdentifier(tenantId, processDefinitionKey));
-          visitedCount.increment();
-
-          if (persistedProcess.getState() == PersistedProcessState.PENDING_DELETION) {
-            stateWriter.appendFollowUpEvent(
-                processDefinitionKey,
-                ProcessDefinitionRestoreIntent.RESTORED,
-                new ProcessDefinitionRestoreRecord()
-                    .setTenantId(tenantId)
-                    .setProcessDefinitionKey(processDefinitionKey));
-          }
-
-          return visitedCount.get() < VISIT_LIMIT;
+          visited.set(
+              new ProcessIdentifier(persistedProcess.getTenantId(), persistedProcess.getKey()));
+          stray.set(persistedProcess.getState() == PersistedProcessState.PENDING_DELETION);
+          return false;
         });
 
-    if (visitedCount.get() < VISIT_LIMIT) {
-      // fewer rows than the cap were visited: we reached the end of the process definitions
+    final var cursor = visited.get();
+    if (cursor == null) {
+      // no definition after the previous one: we reached the end
       stateWriter.appendFollowUpEvent(
           command.getKey(), ProcessDefinitionRestoreIntent.FINISHED, value);
       return;
     }
 
-    final var cursor = lastVisited.get();
+    if (stray.get()) {
+      stateWriter.appendFollowUpEvent(
+          cursor.processDefinitionKey(),
+          ProcessDefinitionRestoreIntent.RESTORED,
+          new ProcessDefinitionRestoreRecord()
+              .setTenantId(cursor.tenantId())
+              .setProcessDefinitionKey(cursor.processDefinitionKey()));
+    }
+
     commandWriter.appendFollowUpCommand(
         command.getKey(),
         ProcessDefinitionRestoreIntent.CONTINUE,
         new ProcessDefinitionRestoreRecord()
             .setTenantId(cursor.tenantId())
             .setProcessDefinitionKey(cursor.processDefinitionKey()));
-  }
-
-  /**
-   * Without this, the self-chained {@code CONTINUE} commands would run in this command's own batch
-   * (up to the max commands in batch), accumulating every chunk's {@link #VISIT_LIMIT} deserialized
-   * rows into one transaction and defeating the per-command bound.
-   */
-  @Override
-  public boolean shouldProcessResultsInSeparateBatches() {
-    return true;
   }
 }
