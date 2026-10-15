@@ -14,7 +14,6 @@ import {
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {
   cancelProcessInstance,
-  createInstances,
   createSingleInstance,
   deployWithSubstitutions,
 } from '../zeebeClient';
@@ -304,9 +303,9 @@ export async function createInstancesUntilOn(
 ) {
   const instances = [];
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const [instance] = await createInstances(processDefinitionId, 1, 1);
-    instances.push(instance!);
-    if (partitionOf(instance!.processInstanceKey) === partition) {
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+    instances.push(instance);
+    if (partitionOf(instance.processInstanceKey) === partition) {
       break;
     }
   }
@@ -324,11 +323,11 @@ export async function createInstanceAwayFrom(
   maxAttempts: number,
 ) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const [instance] = await createInstances(processDefinitionId, 1, 1);
-    if (partitionOf(instance!.processInstanceKey) !== partition) {
-      return instance!;
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+    if (partitionOf(instance.processInstanceKey) !== partition) {
+      return instance;
     }
-    await cancelProcessInstance(instance!.processInstanceKey);
+    await cancelProcessInstance(instance.processInstanceKey);
   }
   return undefined;
 }
