@@ -62,11 +62,13 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
         const {initialValues} = form.getState();
         const isNewVariable = initialValues?.name === '';
         const {name, value} = values;
+        const variableKey = initialValues?.variableKey;
 
         try {
           await mutateAsyncVariables({
             name,
             value: JSON.stringify(JSON.parse(value)),
+            variableKey,
           });
 
           notificationsStore.displayNotification({
