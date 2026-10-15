@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import java.time.OffsetDateTime;
 
 public class UserEntity extends AbstractExporterEntity<UserEntity> {
@@ -19,11 +20,23 @@ public class UserEntity extends AbstractExporterEntity<UserEntity> {
   @BeforeVersion880 private String name;
   @BeforeVersion880 private String email;
   @BeforeVersion880 private String password;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
   private String externalId;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
   private String source;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
   private Boolean active;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
   private String attributes;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
   private OffsetDateTime createdAt;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
   private OffsetDateTime lastModifiedAt;
 
   public Long getKey() {
