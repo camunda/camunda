@@ -38,7 +38,7 @@ public final class CamundaObjectMapper implements JsonMapper {
   private final ObjectMapper objectMapper;
 
   public CamundaObjectMapper() {
-    this(new ObjectMapper());
+    this(new ObjectMapper().findAndRegisterModules());
   }
 
   public CamundaObjectMapper(final ObjectMapper objectMapper) {

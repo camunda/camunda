@@ -375,6 +375,24 @@ public class CamundaProcessTestDefaultConfigurationTest {
   }
 
   @Nested
+  class ShouldUseDefaultJsonMapper {
+
+    @Autowired private JsonMapper jsonMapper;
+
+    @Test
+    void shouldSerializeJavaTimeTypes() {
+      // given
+      final Map<String, Object> variables = Map.of("d", Duration.ofSeconds(90));
+
+      // when
+      final String json = jsonMapper.toJson(variables);
+
+      // then
+      assertThat(json).isEqualTo("{\"d\":90.000000000}");
+    }
+  }
+
+  @Nested
   @ContextConfiguration(
       classes = {CamundaProcessTestDefaultConfigurationTest.CustomFactoryConfig.class})
   class ShouldUseCustomCamundaClientBuilderFactory {
