@@ -23,8 +23,8 @@ function stepTimeSegment(value: string, caret: number, delta: 1 | -1) {
 	const parts = value.split(':');
 	const base = parts.length === 3 && parts.every((part) => /^\d{1,2}$/.test(part)) ? parts.map(Number) : [0, 0, 0];
 	const segment = Math.min(Math.floor(caret / 3), 2);
-	const size = SEGMENT_MAX[segment] + 1;
-	base[segment] = (base[segment] + delta + size) % size;
+	const size = (SEGMENT_MAX[segment] ?? 59) + 1;
+	base[segment] = ((base[segment] ?? 0) + delta + size) % size;
 	return {value: base.map((part) => String(part).padStart(2, '0')).join(':'), segment};
 }
 

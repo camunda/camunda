@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, onTestFinished} from 'vitest';
+import {afterEach, describe, expect, onTestFinished} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {useSearch} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
@@ -40,7 +40,7 @@ function mockInstances() {
 }
 
 describe('<Decisions />', () => {
-	beforeEach(({worker}) => {
+	it.beforeEach(({worker}) => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 		worker.use(
 			mockQueryDecisionDefinitionsEndpoint({
@@ -166,7 +166,7 @@ describe('<Decisions />', () => {
 		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
 
 		await expect.element(screen.getByLabelText('Failed')).toBeVisible();
-		await screen.getByLabelText('Failed').element().click();
+		await (screen.getByLabelText('Failed').element() as HTMLElement).click();
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({failed: false});
 	});
@@ -192,8 +192,8 @@ describe('<Decisions />', () => {
 		});
 
 		await expect.element(screen.getByLabelText('Version')).toBeEnabled();
-		await screen.getByLabelText('Version').element().click();
-		await screen.getByRole('option', {name: '2'}).element().click();
+		await (screen.getByLabelText('Version').element() as HTMLElement).click();
+		await (screen.getByRole('option', {name: '2'}).element() as HTMLElement).click();
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
 	});
@@ -206,7 +206,7 @@ describe('<Decisions />', () => {
 		});
 
 		await expect.element(screen.getByRole('button', {name: 'Remove Business ID filter'})).toBeVisible();
-		await screen.getByRole('button', {name: 'Remove Business ID filter'}).element().click();
+		await (screen.getByRole('button', {name: 'Remove Business ID filter'}).element() as HTMLElement).click();
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
 		expect(screen.router.state.location.search).not.toHaveProperty('businessId');

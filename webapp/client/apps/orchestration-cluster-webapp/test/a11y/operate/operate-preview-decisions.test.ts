@@ -81,7 +81,7 @@ test('should have no accessibility violations with a selected row and the bulk d
 }) => {
 	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
 	await page.getByRole('checkbox', {name: 'Select row 1'}).click();
-	await expect(page.getByRole('status')).toHaveText('1 item selected');
+	await expect(page.getByRole('toolbar', {name: 'Bulk actions'})).toContainText('1 item selected');
 	await page.getByRole('button', {name: 'Delete', exact: true}).click();
 	await expect(page.getByRole('alertdialog')).toBeVisible();
 
@@ -173,9 +173,9 @@ test('should have no accessibility violations in the bulk action bar with a sele
 }) => {
 	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
 	await page.getByRole('checkbox', {name: 'Select row 1'}).click();
-	await expect(page.getByRole('status').filter({hasText: '1 item selected'})).toBeVisible();
+	await expect(page.getByRole('toolbar', {name: 'Bulk actions'})).toContainText('1 item selected');
 
-	const results = await makeAxeBuilder().include('[data-slot="bulk-action-bar"]').analyze();
+	const results = await makeAxeBuilder().include('[data-slot="data-table-batch-actions"]').analyze();
 	expect(results.violations).toEqual([]);
 });
 

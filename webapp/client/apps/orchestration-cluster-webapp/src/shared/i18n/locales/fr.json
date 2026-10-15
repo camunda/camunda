@@ -1221,6 +1221,7 @@
 				"toolbar": {
 					"delete": "Supprimer",
 					"discard": "Annuler",
+					"bulkActionsLabel": "Actions groupées",
 					"itemsSelected": "{{count}} éléments sélectionnés",
 					"itemSelected": "{{count}} élément sélectionné",
 					"selectAll": "Sélectionner tous les éléments",

@@ -9,7 +9,7 @@
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate, useSearch} from '@tanstack/react-router';
 import {z} from 'zod';
-import {Checkbox, DataTable, type DataTableColumn, type SortingConfig} from '@camunda/design-system';
+import {DataTable, type DataTableColumn, type SortingConfig} from '@camunda/design-system';
 import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
 import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
 import {cn} from '#/shared/cn';
@@ -138,6 +138,18 @@ type SelectionProps = {
 	checkIsRowSelected: (rowId: string) => boolean;
 	onSelectAll: () => void;
 	onSelect: (rowId: string) => void;
+	batchActions?: BatchAction[];
+	selectionCountLabel?: string;
+	batchActionsLabel?: string;
+	batchActionsCancelLabel?: string;
+};
+
+type BatchAction = {
+	id: string;
+	label: string;
+	variant?: 'default' | 'destructive';
+	disabled?: boolean;
+	onClick: () => void;
 };
 
 type Props<TRow> = BaseProps<TRow> & ({selectionType?: undefined} | SelectionProps);
@@ -153,6 +165,9 @@ const SELECTION_SKELETON_CLASSES =
 // The DS highlights `data-state=selected` rows with `--accent-background-subtle`. Selection here lives
 // outside the DS table, so the same token is applied to rows whose checkbox is checked.
 const SELECTED_ROW_CLASSES = '[&_tbody_tr:has([aria-checked=true])]:bg-[var(--accent-background-subtle)]';
+
+// The DS selection column renders a checkbox in every row, including the loading skeleton row
+const SKELETON_ROW_CHECKBOX_CLASSES = '[&_tr:has([data-skeleton-edge])_[role=checkbox]]:hidden';
 
 const DS_TABLE_SIZE: Record<TableSize, 'sm' | 'md' | 'lg'> = {
 	xs: 'sm',
@@ -633,82 +648,6 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		[columns, hasSelectionColumn, loadingPreviousTestId, loadingNextTestId],
 	);
 
-	const {
-		selectAllLabel,
-		selectRowLabel,
-		checkIsAllSelected,
-		checkIsIndeterminate,
-		checkIsRowSelected,
-		onSelectAll,
-		onSelect,
-	} = selection ?? {};
-	const selectionColumn: DataTableColumn<DisplayRow<TRow>> | undefined = useMemo(() => {
-		if (
-			checkIsIndeterminate === undefined ||
-			checkIsAllSelected === undefined ||
-			onSelectAll === undefined ||
-			selectAllLabel === undefined ||
-			checkIsRowSelected === undefined ||
-			onSelect === undefined ||
-			selectRowLabel === undefined
-		) {
-			return undefined;
-		}
-
-		return {
-			id: 'select',
-			enableSorting: false,
-			header: () => (
-				<div data-interactive className="flex items-center">
-					<Checkbox
-						checked={checkIsIndeterminate() ? 'indeterminate' : checkIsAllSelected()}
-						onCheckedChange={() => onSelectAll()}
-						aria-label={selectAllLabel}
-					/>
-				</div>
-			),
-			cell: (info) => {
-				const displayRow = info.row.original;
-
-				if (displayRow.kind === 'skeleton') {
-					return (
-						<SkeletonCell
-							label={displayRow.label}
-							isCheckbox
-							isFirstCell
-							edge={displayRow.id}
-							testId={displayRow.id === 'previous' ? loadingPreviousTestId : loadingNextTestId}
-						/>
-					);
-				}
-
-				const id = rowKey(displayRow.row);
-				return (
-					<div data-interactive className="flex items-center">
-						<Checkbox
-							checked={checkIsRowSelected(id)}
-							onCheckedChange={() => onSelect(id)}
-							aria-label={selectRowLabel(id)}
-						/>
-					</div>
-				);
-			},
-		};
-	}, [
-		checkIsIndeterminate,
-		checkIsAllSelected,
-		onSelectAll,
-		selectAllLabel,
-		checkIsRowSelected,
-		onSelect,
-		selectRowLabel,
-		rowKey,
-		loadingPreviousTestId,
-		loadingNextTestId,
-	]);
-
-	const tableColumns = selectionColumn !== undefined ? [selectionColumn, ...dataColumns] : dataColumns;
-
 	const displayRows: DisplayRow<TRow>[] = useMemo(() => {
 		const result: DisplayRow<TRow>[] = [];
 
@@ -732,6 +671,45 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			displayRow.kind === 'skeleton' ? `__skeleton-${displayRow.id}` : rowKey(displayRow.row),
 		[rowKey],
 	);
+
+	const loadedRowIds = useMemo(() => rows.map(rowKey), [rows, rowKey]);
+	const selectedRowIds = useMemo(() => {
+		if (selection === undefined) {
+			return undefined;
+		}
+		return Object.fromEntries(loadedRowIds.filter(selection.checkIsRowSelected).map((id) => [id, true]));
+	}, [loadedRowIds, selection]);
+
+	// The DS reports a full next selection; translate it into the toggle-style callbacks of the selection model
+	const handleSelectedRowsChange = (next: Record<string, boolean>) => {
+		if (selection === undefined || selectedRowIds === undefined) {
+			return;
+		}
+		const nextIds = loadedRowIds.filter((id) => next[id]);
+		const changedIds = loadedRowIds.filter((id) => (next[id] ?? false) !== (selectedRowIds[id] ?? false));
+
+		const [onlyChangedId] = changedIds;
+
+		if (changedIds.length === 1 && onlyChangedId !== undefined) {
+			selection.onSelect(onlyChangedId);
+		} else if (nextIds.length === 0) {
+			selection.onSelectAll();
+		} else if (!selection.checkIsAllSelected()) {
+			// `onSelectAll` toggles: from a partial selection the first call clears it, the second selects everything
+			if (selection.checkIsIndeterminate()) {
+				selection.onSelectAll();
+			}
+			selection.onSelectAll();
+		}
+	};
+
+	const batchActions = selection?.batchActions?.map(({id, label, variant, disabled, onClick}) => ({
+		id,
+		label,
+		variant,
+		disabled,
+		onClick: () => onClick(),
+	}));
 
 	const [scrollContainer, setScrollContainerState] = useState<HTMLDivElement | null>(null);
 	const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -769,13 +747,34 @@ function SortableTable<TRow>(props: Props<TRow>) {
 
 	const dataTable = (
 		<DataTable<DisplayRow<TRow>>
-			columns={tableColumns}
+			columns={dataColumns}
 			data={displayRows}
 			getRowId={getDisplayRowId}
 			aria-label={ariaLabel}
 			size={DS_TABLE_SIZE[size]}
 			emptyState={emptyState}
 			loading={isInitialLoad}
+			rowSelection={
+				selectedRowIds === undefined ? undefined : {selectedRowIds, onSelectedRowsChange: handleSelectedRowsChange}
+			}
+			selectAllRowsLabel={selection?.selectAllLabel}
+			getRowSelectionLabel={
+				selection === undefined
+					? undefined
+					: (displayRow) => (displayRow.kind === 'row' ? selection.selectRowLabel(rowKey(displayRow.row)) : '')
+			}
+			batchActions={batchActions}
+			batchActionsLabel={selection?.batchActionsLabel}
+			batchActionsCancelLabel={selection?.batchActionsCancelLabel}
+			selectionCountLabel={selection?.selectionCountLabel}
+			getSelectedRows={
+				selection === undefined
+					? undefined
+					: () =>
+							displayRows.filter(
+								(displayRow) => displayRow.kind === 'row' && selection.checkIsRowSelected(rowKey(displayRow.row)),
+							)
+			}
 			sorting={hasSortableColumns ? {manual: true, sortState, onSortingChange: handleSortingChange} : undefined}
 		/>
 	);
@@ -801,6 +800,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 					// The DS skeleton rows draw the same wide bar in every column, including the checkbox one
 					hasSelectionColumn && SELECTION_SKELETON_CLASSES,
 					hasSelectionColumn && SELECTED_ROW_CLASSES,
+					hasSelectionColumn && SKELETON_ROW_CHECKBOX_CLASSES,
 				)}
 				data-testid={dataTestId}
 			>
