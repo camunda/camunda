@@ -85,6 +85,7 @@ public final class StaticConfigurationGenerator {
       final PartitioningCfg config) {
     final var specs =
         config.getZoneAware().zones().stream()
+            .filter(zone -> !zone.isControl())
             .map(r -> new ZoneSpec(r.name(), r.numberOfReplicas(), r.priority()))
             .toList();
     return new ZoneAwarePartitionDistributor(specs);
@@ -123,10 +124,12 @@ public final class StaticConfigurationGenerator {
    * {@code "zone_localNodeId"} (e.g. {@code "us-east1_0"}). Local node IDs are 0-indexed within
    * each zone, derived from the {@link
    * io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg} configuration in the
-   * same insertion order used by each broker to determine its own member ID.
+   * same insertion order used by each broker to determine its own member ID. Brokers of control
+   * zones host no data partitions, so they are not members of the data partitions' cluster.
    */
   private static Set<MemberId> getZoneAwareRaftGroupMembers(final PartitioningCfg partitioningCfg) {
     return partitioningCfg.getZoneAware().zones().stream()
+        .filter(zone -> !zone.isControl())
         .flatMap(
             r ->
                 IntStream.range(0, r.numberOfBrokers())
