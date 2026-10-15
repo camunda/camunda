@@ -14,7 +14,13 @@ import {is} from 'dmn-js-shared/lib/util/ModelUtil';
 // @ts-expect-error no type declarations for this package
 import NavigatedViewer from 'dmn-js-drd/lib/NavigatedViewer';
 import isEqual from 'lodash/isEqual';
-import type {DrdData} from './drdData.queries';
+import type {DrdData} from '#/operate/pages/DecisionInstance/drdData.queries';
+
+type DrdRendererColors = {
+	defaultFillColor: string;
+	defaultStrokeColor: string;
+	defaultLabelColor: string;
+};
 
 type DecisionStateOverlay = {
 	decisionDefinitionId: string;
@@ -63,6 +69,11 @@ class DrdJS {
 	#renderVersion = 0;
 	#importPromise: Promise<void> | null = null;
 	#keyboardDecisions: SVGElement[] = [];
+	#drdRenderer: DrdRendererColors;
+
+	constructor(drdRenderer: DrdRendererColors) {
+		this.#drdRenderer = drdRenderer;
+	}
 
 	onDecisionSelection?: (decisionEvaluationInstanceKey: string) => void;
 	onDefinitionsChange?: (definitions: {id: string; name: string} | undefined) => void;
@@ -116,11 +127,7 @@ class DrdJS {
 						{__init__: ['outline'], outline: ['type', Outline]},
 						{definitionPropertiesView: ['value', null]},
 					],
-					drdRenderer: {
-						defaultFillColor: 'var(--cds-layer)',
-						defaultStrokeColor: 'var(--cds-icon-secondary)',
-						defaultLabelColor: 'var(--cds-text-primary)',
-					},
+					drdRenderer: this.#drdRenderer,
 				},
 			});
 			this.#xml = xml;
@@ -231,6 +238,17 @@ class DrdJS {
 
 		this.#data = data;
 	};
+
+	#zoomBy = (factor: number) => {
+		const canvas = this.#activeViewer?.get('canvas');
+		canvas?.zoom(canvas.zoom() * factor);
+	};
+
+	zoomIn = () => this.#zoomBy(1.2);
+
+	zoomOut = () => this.#zoomBy(1 / 1.2);
+
+	fit = () => this.#activeViewer?.get('canvas').zoom('fit-viewport', 'auto');
 
 	resize = () => {
 		this.#activeViewer?.get('canvas').resized();
