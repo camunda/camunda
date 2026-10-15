@@ -1406,7 +1406,7 @@ jobs:
           payload=$(jq -nc \
             --arg repo "${GITHUB_REPOSITORY}" \
             --arg run_id "${GITHUB_RUN_ID}" \
-            --arg base_ref "${{ github.ref_name }}" \
+            --arg base_ref "${GITHUB_REF_NAME}" \
             --arg ts "${SLACK_TS:-}" \
             --arg channel "${SLACK_CHANNEL:-}" \
             '{event_type: "alwaysgreen-triage",
