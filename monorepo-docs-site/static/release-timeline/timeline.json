@@ -239,6 +239,70 @@
       "branch": "release-8.11.0-alpha1",
       "note": "No more merges.",
       "description": "Final camunda/camunda artifacts should be tested and available for the overall C8 release train."
+    },
+    {
+      "title": "Code freeze of 8.11.0-alpha2",
+      "start": "2026-11-24",
+      "end": "2026-12-01",
+      "branch": "release-8.11.0-alpha2",
+      "note": "Only bug fixes found during QA should be backported to this branch.",
+      "description": "During this phase, release candidates are built from the branch until the release date whenever new fixes need QA validation."
+    },
+    {
+      "title": "Release of 8.11.0-alpha2",
+      "start": "2026-12-01",
+      "end": "2026-12-01",
+      "branch": "release-8.11.0-alpha2",
+      "note": "No more merges.",
+      "description": "Final camunda/camunda artifacts should be tested and available for the overall C8 release train."
+    },
+    {
+      "title": "Code freeze of 8.11.0-alpha3",
+      "start": "2026-12-17",
+      "end": "2027-01-05",
+      "branch": "release-8.11.0-alpha3",
+      "note": "Only bug fixes found during QA should be backported to this branch.",
+      "description": "During this phase, release candidates are built from the branch until the release date whenever new fixes need QA validation."
+    },
+    {
+      "title": "Release of 8.11.0-alpha3",
+      "start": "2027-01-05",
+      "end": "2027-01-05",
+      "branch": "release-8.11.0-alpha3",
+      "note": "No more merges.",
+      "description": "Final camunda/camunda artifacts should be tested and available for the overall C8 release train."
+    },
+    {
+      "title": "Code freeze of 8.11.0-alpha4",
+      "start": "2027-01-21",
+      "end": "2027-02-02",
+      "branch": "release-8.11.0-alpha4",
+      "note": "Only bug fixes found during QA should be backported to this branch.",
+      "description": "During this phase, release candidates are built from the branch until the release date whenever new fixes need QA validation."
+    },
+    {
+      "title": "Release of 8.11.0-alpha4",
+      "start": "2027-02-02",
+      "end": "2027-02-02",
+      "branch": "release-8.11.0-alpha4",
+      "note": "No more merges.",
+      "description": "Final camunda/camunda artifacts should be tested and available for the overall C8 release train."
+    },
+    {
+      "title": "Code freeze of 8.11.0-alpha5",
+      "start": "2027-02-23",
+      "end": "2027-03-02",
+      "branch": "release-8.11.0-alpha5",
+      "note": "Only bug fixes found during QA should be backported to this branch.",
+      "description": "During this phase, release candidates are built from the branch until the release date whenever new fixes need QA validation."
+    },
+    {
+      "title": "Release of 8.11.0-alpha5",
+      "start": "2027-03-02",
+      "end": "2027-03-02",
+      "branch": "release-8.11.0-alpha5",
+      "note": "No more merges.",
+      "description": "Final camunda/camunda artifacts should be tested and available for the overall C8 release train."
     }
   ]
 }
