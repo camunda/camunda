@@ -410,12 +410,8 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
       if (minBatchSize <= 0) {
         throw new IllegalArgumentException("Min batch size must be greater than 0");
       }
-      if (minBatchSize > batchSize) {
-        throw new IllegalArgumentException(
-            "Min batch (" + minBatchSize + ") is greater than batch size (" + batchSize + ")");
-      }
       configuredBatchSize = batchSize;
-      configuredMinBatchSize = minBatchSize;
+      configuredMinBatchSize = Math.min(minBatchSize, batchSize);
       currentBatchSize = new AtomicInteger(configuredBatchSize);
     }
 
