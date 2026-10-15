@@ -35,6 +35,7 @@ import io.camunda.client.protocol.rest.AuthorizationResult;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
 import io.camunda.client.protocol.rest.BatchOperationSearchQueryResult;
+import io.camunda.client.protocol.rest.ClockResult;
 import io.camunda.client.protocol.rest.ClusterStatusResponse;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
@@ -135,6 +136,15 @@ public class RestGatewayService {
    */
   public void onTopologyRequest(final TopologyResponse response) {
     registerGet(RestGatewayPaths.getTopologyUrl(), response);
+  }
+
+  /**
+   * Register the given response for get clock requests.
+   *
+   * @param response the response to provide upon a get clock request
+   */
+  public void onClockRequest(final ClockResult response) {
+    registerGet(RestGatewayPaths.getClockUrl(), response);
   }
 
   public void onEvaluateDecisionRequest(final EvaluateDecisionResult response) {
