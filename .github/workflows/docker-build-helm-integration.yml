@@ -21,7 +21,7 @@ on:
       helmRepositoryDirName:
         description: 'Helm chart directory name'
         type: string
-        default: 'camunda-platform-8.10'
+        default: 'camunda-platform-8.11'
       scenario:
         description: 'Test scenario'
         type: string
@@ -603,7 +603,7 @@ jobs:
       identifier: ${{ needs.format-identifier.outputs.identifier }}
       platforms: gke
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
-      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.10' }}
+      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.11' }}
       namespace-prefix: monorepo
       test-enabled: true
       e2e-enabled: true
@@ -621,6 +621,12 @@ jobs:
             pullSecrets:
               - name: index-docker-io
               - name: registry-camunda-cloud
+        connectors:
+          image:
+            tag: SNAPSHOT
+        optimize:
+          image:
+            tag: SNAPSHOT
       vault-secret-mapping: |
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
@@ -878,7 +884,7 @@ jobs:
                       "source_repo": "${{ github.repository }}",
                       "source_sha": "${{ github.sha }}",
                       "gen_name": "'"${GEN_NAME}"'",
-                      "c8Version": "8.10",
+                      "c8Version": "8.11",
                       "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
                       "operateVersion": "SNAPSHOT",
                       "tasklistVersion": "SNAPSHOT",
@@ -1347,7 +1353,7 @@ jobs:
       # derives from it, because the ref is part of every fingerprint and a per-PR value
       # would defeat dedupe.
       base_ref: ${{ github.ref_name }}
-      chart_version: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.10' }}
+      chart_version: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.11' }}
       # Whichever stage posted feedback owns the thread. Helm wins when both failed:
       # an install failure is the more likely root cause of a SaaS failure than the
       # reverse. Empty when neither stage failed, or Slack was unavailable; triage

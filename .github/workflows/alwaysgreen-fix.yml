@@ -128,10 +128,10 @@ jobs:
             *) echo "::error::unsupported surface '$SURFACE'"; exit 1 ;;
           esac
           # The version is the suite and chart the branch's pipeline exercises, not the
-          # branch's pom version: main became 8.11.0-SNAPSHOT when stable/8.10 was cut,
-          # while docker-build-helm-integration still deploys camunda-platform-8.10 and
-          # the e2e repo tops out at tests/SM-8.10. Bump when an 8.11 chart and suite exist.
-          if [ "$BASE_REF" = "main" ]; then version=8.10; else version="${BASE_REF#stable/}"; fi
+          # branch's pom version: it must match the camunda-helm-dir fallback and the SaaS
+          # c8Version in main's docker-build-helm-integration. Bump all three together at
+          # the next branch cut, once the e2e repo has the next tests/SM-<version>.
+          if [ "$BASE_REF" = "main" ]; then version=8.11; else version="${BASE_REF#stable/}"; fi
           # The e2e suite directory. SM specs live under an SM- prefix, SaaS specs under
           # the bare version, and pages/ mirrors tests/ exactly.
           if [ "$SURFACE" = "sm-smoke-e2e" ]; then suite="SM-${version}"; else suite="${version}"; fi

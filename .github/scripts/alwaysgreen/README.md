@@ -58,21 +58,14 @@ unmapped minor is suppressed rather than mis-dispatched.
 
 **The 8.11 leg is report-only by design, not by oversight.** Being absent from
 `SUPPORTED_BASE_REFS` means `plan_dispatches()` suppresses every 8.11 candidate as
-`base-ref-not-supported-by-fix-agent` and never dispatches an agent for it. That is
-the intended contract for now, for two independent reasons:
-
-1. There is no ref the agent could correctly target. 8.11 has no stable branch, and
-   `"main"` is taken by the main pipeline's own dispatch key (above).
-2. There is no 8.11 suite to fix. `alwaysgreen-fix.yml` derives `version=8.10` for
-   `base_ref=main`, because the e2e repo tops out at `tests/SM-8.10` and the chart at
-   `camunda-platform-8.10`. Dispatching an 8.11 failure would point the agent at
-   8.10's test directory.
+`base-ref-not-supported-by-fix-agent` and never dispatches an agent for it. The suite
+is not the obstacle: `alwaysgreen-fix.yml` maps `base_ref=main` to 8.11, and
+`tests/SM-8.11` and `camunda-platform-8.11` exist. The ref is. 8.11 has no stable
+branch, and `"main"` is taken by the main pipeline's own dispatch key (above).
 
 So 8.11 failures are still classified, fingerprinted and reported — they just stop
-short of a dispatch. When an 8.11 chart and `tests/SM-8.11` suite exist, the fix is
-to map 8.11 to a real branch and bump the version derivation in
-`alwaysgreen-fix.yml`; until then, suppression is the correct outcome and
-[`test_plan.py`](test_plan.py) asserts it
+short of a dispatch. Once 8.11 has a stable branch, map the 8.11 leg to it; until
+then, suppression is the correct outcome and [`test_plan.py`](test_plan.py) asserts it
 (`test_preview_env_8_11_leg_does_not_collide_with_the_real_main_candidate`).
 
 ### Evidence artifacts must be version-scoped too
