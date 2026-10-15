@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -51,7 +52,21 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
   @Override
   public <T> T instantiate(final Class<T> configClass) {
     if (arguments != null) {
-      return MAPPER.convertValue(arguments, configClass);
+      try {
+        return MAPPER.convertValue(arguments, configClass);
+      } catch (final IllegalArgumentException e) {
+        if (e.getCause() instanceof final InvalidFormatException ife) {
+          // The Jackson message quotes the offending value, which may be a credential. Report
+          // only the path and do not chain the cause, as its message has the value.
+          throw new IllegalArgumentException(
+              "Invalid exporter configuration value in "
+                  + configClass.getSimpleName()
+                  + " (path: "
+                  + ife.getPathReference()
+                  + ")");
+        }
+        throw e;
+      }
     } else {
       return ReflectUtil.newInstance(configClass);
     }
