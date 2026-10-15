@@ -510,22 +510,24 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 	}
 
 	processInfo := state.ProcessInfo
-	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
-		connectorsCmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
-		connectorsCmd.Env = defaultConnectorsEnv(connectorsCmd.Env, state.Settings.ConnectorsPort)
-		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
-		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
-		if err != nil {
-			log.Err(err).Msg("Failed to start Connectors process")
-			return
-		}
-	}, func() error {
-		return health.QueryConnectorsOnPort(ctx, "Connectors", state.Settings.ConnectorsPort, startupHealthCheckRetries)
-	}, connectorsFailed)
-
-	// Tenant runtimes start and are health-checked concurrently, so one slow or broken
-	// runtime never delays the others and the total wait does not grow with tenant count.
 	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
+			connectorsCmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
+			connectorsCmd.Env = defaultConnectorsEnv(connectorsCmd.Env, state.Settings.ConnectorsPort)
+			connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
+			err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
+			if err != nil {
+				log.Err(err).Msg("Failed to start Connectors process")
+				return
+			}
+		}, func() error {
+			return health.QueryConnectorsOnPort(ctx, "Connectors", state.Settings.ConnectorsPort, startupHealthCheckRetries)
+		}, connectorsFailed)
+	}()
+
 	for _, tenant := range state.Settings.PhysicalTenants {
 		if ctx.Err() != nil {
 			break
