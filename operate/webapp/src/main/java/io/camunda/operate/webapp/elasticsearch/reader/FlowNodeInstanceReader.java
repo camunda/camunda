@@ -275,6 +275,38 @@ public class FlowNodeInstanceReader extends AbstractReader
     }
   }
 
+  @Override
+  public Set<Long> getFlowNodeInstanceKeysOfProcessInstance(
+      final Long processInstanceKey, final Set<Long> flowNodeInstanceKeys) {
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            joinWithAnd(
+                termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
+                termsQuery(FlowNodeInstanceTemplate.KEY, flowNodeInstanceKeys)));
+
+    final var searchRequest =
+        new SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
+            .query(query)
+            // A key identifies one flow node instance, so one hit per given key is expected and the
+            // size is the number of given keys. No scrolling is needed. Only the key is fetched.
+            .size(flowNodeInstanceKeys.size())
+            .source(s -> s.filter(f -> f.includes(FlowNodeInstanceTemplate.KEY)))
+            .build();
+
+    try {
+      return esClient.search(searchRequest, FlowNodeInstanceEntity.class).hits().hits().stream()
+          .map(hit -> hit.source().getKey())
+          .collect(Collectors.toSet());
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(
+          String.format(
+              "Could not retrieve the flow node instances of process instance %s.",
+              processInstanceKey),
+          e);
+    }
+  }
+
   private FlowNodeInstanceResponseDto getFlowNodeInstances(final FlowNodeInstanceQueryDto request) {
     final FlowNodeInstanceResponseDto response = queryFlowNodeInstances(request);
     // query one additional instance
