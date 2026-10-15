@@ -8,12 +8,18 @@
 
 import { FC } from "react";
 import { Badge } from "@camunda/design-system";
+import SourceBadge from "src/components/sourceTagV2";
 import useTranslate from "src/utility/localization";
 
-const GroupStatusBadge: FC = () => {
+const GroupStatusBadge: FC<{ source?: string | null }> = ({ source }) => {
   const { t } = useTranslate("groups");
 
-  return <Badge variant="neutral">{t("provisioned")}</Badge>;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Badge variant="neutral">{t("provisioned")}</Badge>
+      <SourceBadge source={source} />
+    </span>
+  );
 };
 
 export default GroupStatusBadge;

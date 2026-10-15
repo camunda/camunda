@@ -82,5 +82,6 @@
   "managedByIdentityProvider": "This group is provisioned by your identity provider; its name and members cannot be changed here.",
   "created": "Created",
   "lastSynced": "Last synced",
-  "lastModified": "Last modified"
+  "lastModified": "Last modified",
+  "source": "Source"
 }

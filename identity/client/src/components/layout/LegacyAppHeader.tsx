@@ -20,6 +20,7 @@ import { observer } from "mobx-react-lite";
 import { themeStore, isThemeOption } from "src/common/theme/theme";
 import { useQuery } from "@tanstack/react-query";
 import { authenticationQueries } from "src/utility/api/authentication/queries.ts";
+import SignInDetails from "./SignInDetails";
 import { licenseQueries } from "src/utility/api/headers/queries.ts";
 
 const LOGOUT_DELAY = 1000;
@@ -75,6 +76,9 @@ const LegacyAppHeader = observer(
           version: import.meta.env.VITE_APP_VERSION,
           ariaLabel: "Settings",
           customElements: {
+            customSection: camundaUser ? (
+              <SignInDetails user={camundaUser} />
+            ) : undefined,
             profile: {
               label: "Profile",
               user: {

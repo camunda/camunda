@@ -103,5 +103,6 @@
   "emptyStateTenantAccessDisclaimer": "Members of this Tenant will be given access to the data within the Tenant.",
   "attributes": "Attributes",
   "attributeName": "Name",
-  "attributeValue": "Value"
+  "attributeValue": "Value",
+  "sourceTag": "Source: {{source}}"
 }

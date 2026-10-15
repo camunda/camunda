@@ -31,6 +31,7 @@ export type GroupKeys = keyof Group;
  */
 export type ProvisionedGroup = Group & {
   externalId?: string | null;
+  source?: string | null;
   attributes?: Record<string, unknown> | null;
   createdAt?: string | null;
   lastModifiedAt?: string | null;

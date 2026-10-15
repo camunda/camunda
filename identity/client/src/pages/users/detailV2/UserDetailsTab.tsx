@@ -37,6 +37,7 @@ const UserDetails: FC<UserDetailsProps> = ({ user, loading }) => {
           },
           { label: t("email"), value: user.email || "-" },
           { label: t("status"), value: <UserStatus user={user} /> },
+          ...(user.source ? [{ label: t("source"), value: user.source }] : []),
           ...(user.externalId
             ? [{ label: t("externalId"), value: user.externalId }]
             : []),

@@ -43,5 +43,9 @@
   "typeGroupAttributeHelper": "Matches an attribute of any group the user is a direct member of, e.g. region",
   "attributePath": "Attribute path",
   "enterAttributePath": "Enter attribute path",
-  "customAttributePath": "Enter the name of a provisioned attribute, e.g. department"
+  "customAttributePath": "Enter the name of a provisioned attribute, e.g. department",
+  "origin": "Origin",
+  "originAny": "Any source",
+  "originAnyShort": "Any",
+  "originHelper": "Restrict the rule to logins and users of one identity provider"
 }

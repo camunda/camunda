@@ -25,6 +25,7 @@ export type UserKeys = keyof User;
  */
 export type ProvisionedUser = User & {
   externalId?: string | null;
+  source?: string | null;
   active?: boolean;
   attributes?: Record<string, unknown> | null;
   createdAt?: string | null;

@@ -32,6 +32,7 @@ import { ForwardRefLink } from "./ForwardRefLink";
 import { InfoMenu } from "./InfoMenu";
 import { LicenseBadges } from "./LicenseBadges";
 import { LogoutAwareUserMenu } from "./LogoutAwareUserMenu";
+import SignInDetails from "./SignInDetails";
 import { ThemeSelector } from "./ThemeSelector";
 import { useBreadcrumbs } from "./useBreadcrumbs";
 import { useSidebarChildren } from "./useSidebarChildren";
@@ -193,6 +194,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
               items={userMenuItems}
               customSection={
                 <>
+                  <SignInDetails user={camundaUser} />
                   {isSaaS ? <SaasThemeSelector /> : <ThemeSelector />}
                   <VersionFooter />
                 </>

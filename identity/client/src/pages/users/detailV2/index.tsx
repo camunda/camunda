@@ -17,6 +17,7 @@ import InlineNotification from "src/components/notificationsV2/InlineNotificatio
 import { userQueries } from "src/utility/api/users/queries";
 import NotFound from "src/pages/not-foundV2";
 import { Breadcrumbs, StackPage } from "src/components/layoutV2/Page";
+import SourceBadge from "src/components/sourceTagV2";
 import UserDetails from "./UserDetailsTab";
 import { Tabs, TabsHeaderList, TabsContent } from "src/components/tabsV2";
 import { DetailPageHeaderFallback } from "src/components/fallbacksV2";
@@ -66,6 +67,9 @@ const Details: FC = () => {
             <Tabs path={`../${id}`} tabs={tabs} selectedTabKey={tab}>
               <PageHeader
                 title={user.username}
+                tag={
+                  user.source ? <SourceBadge source={user.source} /> : undefined
+                }
                 breadcrumb={<Breadcrumbs items={breadcrumbs} />}
                 actions={
                   isOIDC ? undefined : (

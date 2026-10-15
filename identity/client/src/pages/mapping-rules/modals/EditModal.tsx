@@ -24,6 +24,7 @@ import type {
   MappingRuleType,
   TypedMappingRule,
 } from "src/utility/api/mapping-rules";
+import MappingRuleOriginSelect from "./MappingRuleOriginSelect";
 import MappingRuleTypeSelect from "./MappingRuleTypeSelect";
 
 const EditModal: FC<UseEntityModalProps<TypedMappingRule>> = ({
@@ -43,7 +44,7 @@ const EditModal: FC<UseEntityModalProps<TypedMappingRule>> = ({
   type FormData = Pick<
     TypedMappingRule,
     "mappingRuleId" | "name" | "claimName" | "claimValue"
-  > & { type: MappingRuleType };
+  > & { type: MappingRuleType; origin: string };
   const { control, handleSubmit, watch } = useForm<FormData>({
     defaultValues: {
       mappingRuleId: entity.mappingRuleId,
@@ -51,6 +52,7 @@ const EditModal: FC<UseEntityModalProps<TypedMappingRule>> = ({
       claimName: entity.claimName,
       claimValue: entity.claimValue,
       type: entity.type ?? "TOKEN_CLAIM",
+      origin: entity.origin ?? "",
     },
     mode: "all",
   });
@@ -65,6 +67,7 @@ const EditModal: FC<UseEntityModalProps<TypedMappingRule>> = ({
         claimName: data.claimName,
         claimValue: data.claimValue,
         type: data.type,
+        origin: data.origin,
       },
       {
         onSuccess: () => {
@@ -117,6 +120,16 @@ const EditModal: FC<UseEntityModalProps<TypedMappingRule>> = ({
         control={control}
         render={({ field }) => (
           <MappingRuleTypeSelect
+            value={field.value}
+            onChange={field.onChange}
+          />
+        )}
+      />
+      <Controller
+        name="origin"
+        control={control}
+        render={({ field }) => (
+          <MappingRuleOriginSelect
             value={field.value}
             onChange={field.onChange}
           />

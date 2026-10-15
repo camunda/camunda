@@ -41,7 +41,9 @@ const List: FC = () => {
   } = useQuery(groupQueries.search(pageParams));
   const tableData = groupSearchResults?.items.map((group) => ({
     ...group,
-    status: isGroupReadOnly(group) ? <GroupStatus /> : null,
+    status: isGroupReadOnly(group) ? (
+      <GroupStatus source={group.source} />
+    ) : null,
     lastModifiedAt: formatDateTime(group.lastModifiedAt),
   }));
 

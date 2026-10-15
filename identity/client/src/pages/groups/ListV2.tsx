@@ -45,7 +45,9 @@ const List: FC = () => {
       items: data.items.map((item) => ({
         ...item,
         id: item.groupId,
-        status: isGroupReadOnly(item) ? <GroupStatus /> : null,
+        status: isGroupReadOnly(item) ? (
+          <GroupStatus source={item.source} />
+        ) : null,
         lastModifiedAt: formatDateTime(item.lastModifiedAt),
       })),
     }),

@@ -17,6 +17,7 @@ import NotFound from "src/pages/not-found";
 import { OverflowMenu, OverflowMenuItem, Section } from "@carbon/react";
 import { StackPage } from "src/components/layout/Page";
 import PageHeadline from "src/components/layout/PageHeadline";
+import SourceTag from "src/components/sourceTag";
 import UserDetails from "./UserDetailsTab";
 import Tabs from "src/components/tabs";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
@@ -49,6 +50,7 @@ const Details: FC = () => {
             {user && (
               <>
                 <PageHeadline>{user.username}</PageHeadline>
+                <SourceTag source={user.source} />
                 {!isOIDC && (
                   <OverflowMenu ariaLabel={t("openContextMenu")}>
                     <OverflowMenuItem

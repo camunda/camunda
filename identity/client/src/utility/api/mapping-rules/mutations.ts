@@ -30,7 +30,10 @@ export const mappingRuleMutations = {
     mutationOptions({
       mutationFn: (
         body: UpdateMappingRuleRequestBody &
-          Pick<MappingRule, "mappingRuleId"> & { type: MappingRuleType },
+          Pick<MappingRule, "mappingRuleId"> & {
+            type: MappingRuleType;
+            origin: string;
+          },
       ) => unwrap(updateMappingRule(body)(getApiBaseUrl())),
       meta: { skipErrorNotification: true },
       onSuccess: () =>

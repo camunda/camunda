@@ -30,6 +30,9 @@ const GroupDetails: FC<GroupDetailsProps> = ({ group }) => {
           ...(group.description
             ? [{ label: t("description"), value: group.description }]
             : []),
+          ...(group.source
+            ? [{ label: t("source"), value: group.source }]
+            : []),
           ...(group.externalId
             ? [{ label: t("externalId"), value: group.externalId }]
             : []),

@@ -47,6 +47,10 @@ export const resourcePermissions = getClientConfigObject(
   {} as Record<ResourceType, PermissionType[]>,
 ) as Record<ResourceType, PermissionType[]>;
 
+export const scimSources = getClientConfigObject<string[]>("scimSources", [
+  "default",
+]);
+
 export const defaultRoleIds = getClientConfigObject<string[]>(
   "defaultRoleIds",
   [],

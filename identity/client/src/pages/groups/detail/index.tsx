@@ -66,7 +66,7 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
                 <Stack gap="3">
                   <Stack orientation="horizontal" gap="1">
                     <PageHeadline>{group.name}</PageHeadline>
-                    {readOnly && <GroupStatus />}
+                    {readOnly && <GroupStatus source={group.source} />}
                     {!readOnly && (
                       <OverflowMenu ariaLabel={t("openGroupContextMenu")}>
                         <OverflowMenuItem

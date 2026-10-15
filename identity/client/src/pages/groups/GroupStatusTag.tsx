@@ -8,15 +8,19 @@
 
 import { FC } from "react";
 import { Tag } from "@carbon/react";
+import SourceTag from "src/components/sourceTag";
 import useTranslate from "src/utility/localization";
 
-const GroupStatusTag: FC = () => {
+const GroupStatusTag: FC<{ source?: string | null }> = ({ source }) => {
   const { t } = useTranslate("groups");
 
   return (
-    <Tag type="blue" size="sm">
-      {t("provisioned")}
-    </Tag>
+    <>
+      <Tag type="blue" size="sm">
+        {t("provisioned")}
+      </Tag>
+      <SourceTag source={source} />
+    </>
   );
 };
 

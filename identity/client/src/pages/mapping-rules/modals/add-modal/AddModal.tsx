@@ -22,6 +22,7 @@ import {
 import { Stack } from "@carbon/react";
 import { isValidId, getIdPattern } from "src/utility/validate";
 import type { MappingRuleType } from "src/utility/api/mapping-rules";
+import MappingRuleOriginSelect from "../MappingRuleOriginSelect";
 import MappingRuleTypeSelect from "../MappingRuleTypeSelect";
 
 type FormData = {
@@ -30,6 +31,7 @@ type FormData = {
   claimName: string;
   claimValue: string;
   type: MappingRuleType;
+  origin: string;
 };
 
 export const AddMappingRuleModal: FC<UseModalProps> = ({
@@ -58,6 +60,7 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
       claimName: "",
       claimValue: "",
       type: "TOKEN_CLAIM",
+      origin: "",
     },
     mode: "all",
   });
@@ -72,6 +75,7 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
         claimName: data.claimName,
         claimValue: data.claimValue,
         type: data.type,
+        ...(data.origin ? { origin: data.origin } : {}),
       },
       {
         onSuccess: () => {
@@ -141,6 +145,16 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
         control={control}
         render={({ field }) => (
           <MappingRuleTypeSelect
+            value={field.value}
+            onChange={field.onChange}
+          />
+        )}
+      />
+      <Controller
+        name="origin"
+        control={control}
+        render={({ field }) => (
+          <MappingRuleOriginSelect
             value={field.value}
             onChange={field.onChange}
           />

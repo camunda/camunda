@@ -41,5 +41,6 @@
   "managedByIdentityProvider": "Users are provisioned by your identity provider and cannot be changed here.",
   "created": "Created",
   "lastSynced": "Last synced",
-  "lastModified": "Last modified"
+  "lastModified": "Last modified",
+  "source": "Source"
 }

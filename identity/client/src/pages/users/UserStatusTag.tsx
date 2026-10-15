@@ -8,6 +8,7 @@
 
 import { FC } from "react";
 import { Tag } from "@carbon/react";
+import SourceTag from "src/components/sourceTag";
 import useTranslate from "src/utility/localization";
 import { isUserActive, ProvisionedUser } from "./types";
 
@@ -16,9 +17,12 @@ const UserStatusTag: FC<{ user: ProvisionedUser }> = ({ user }) => {
   const active = isUserActive(user);
 
   return (
-    <Tag type={active ? "green" : "gray"} size="sm">
-      {active ? t("active") : t("deactivated")}
-    </Tag>
+    <>
+      <Tag type={active ? "green" : "gray"} size="sm">
+        {active ? t("active") : t("deactivated")}
+      </Tag>
+      <SourceTag source={user.source} />
+    </>
   );
 };
 

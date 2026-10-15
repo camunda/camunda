@@ -102,7 +102,9 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
               <PageHeader
                 title={group.name}
                 description={group.description}
-                tag={readOnly ? <GroupStatus /> : undefined}
+                tag={
+                  readOnly ? <GroupStatus source={group.source} /> : undefined
+                }
                 breadcrumb={
                   <Breadcrumbs
                     items={[

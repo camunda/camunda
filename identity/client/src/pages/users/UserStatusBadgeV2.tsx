@@ -8,6 +8,7 @@
 
 import { FC } from "react";
 import { Badge } from "@camunda/design-system";
+import SourceBadge from "src/components/sourceTagV2";
 import useTranslate from "src/utility/localization";
 import { isUserActive, ProvisionedUser } from "./types";
 
@@ -16,9 +17,12 @@ const UserStatusBadge: FC<{ user: ProvisionedUser }> = ({ user }) => {
   const active = isUserActive(user);
 
   return (
-    <Badge variant={active ? "success" : "neutral"}>
-      {active ? t("active") : t("deactivated")}
-    </Badge>
+    <span className="inline-flex items-center gap-1">
+      <Badge variant={active ? "success" : "neutral"}>
+        {active ? t("active") : t("deactivated")}
+      </Badge>
+      <SourceBadge source={user.source} />
+    </span>
   );
 };
 

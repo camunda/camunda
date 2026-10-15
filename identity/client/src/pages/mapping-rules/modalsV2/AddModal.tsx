@@ -17,6 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { mappingRuleMutations } from "src/utility/api/mapping-rules/mutations";
 import { isValidId, getIdPattern } from "src/utility/validate";
 import type { MappingRuleType } from "src/utility/api/mapping-rules";
+import MappingRuleOriginSelect from "./MappingRuleOriginSelect";
 import MappingRuleTypeSelect from "./MappingRuleTypeSelect";
 
 type FormData = {
@@ -25,6 +26,7 @@ type FormData = {
   claimName: string;
   claimValue: string;
   type: MappingRuleType;
+  origin: string;
 };
 
 const AddMappingRuleModal: FC<UseModalProps> = ({
@@ -53,6 +55,7 @@ const AddMappingRuleModal: FC<UseModalProps> = ({
       claimName: "",
       claimValue: "",
       type: "TOKEN_CLAIM",
+      origin: "",
     },
     mode: "all",
   });
@@ -67,6 +70,7 @@ const AddMappingRuleModal: FC<UseModalProps> = ({
         claimName: data.claimName,
         claimValue: data.claimValue,
         type: data.type,
+        ...(data.origin ? { origin: data.origin } : {}),
       },
       {
         onSuccess: () => {
@@ -136,6 +140,16 @@ const AddMappingRuleModal: FC<UseModalProps> = ({
         control={control}
         render={({ field }) => (
           <MappingRuleTypeSelect
+            value={field.value}
+            onChange={field.onChange}
+          />
+        )}
+      />
+      <Controller
+        name="origin"
+        control={control}
+        render={({ field }) => (
+          <MappingRuleOriginSelect
             value={field.value}
             onChange={field.onChange}
           />
