@@ -149,9 +149,9 @@ public class TestConcurrencyControl implements ConcurrencyControl {
    * Each run queues the next one before executing, so a failing run doesn't stop the repetition.
    */
   @Override
-  public ScheduledTimer scheduleAtFixedRate(final Duration delay, final Runnable runnable) {
+  public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
     if (!asyncSchedule) {
-      throw new UnsupportedOperationException("scheduleAtFixedRate requires asyncSchedule");
+      throw new UnsupportedOperationException("runAtFixedRate requires asyncSchedule");
     }
     final var cancelled = new AtomicBoolean();
     final var nextRun = new AtomicReference<ScheduledTimer>();
