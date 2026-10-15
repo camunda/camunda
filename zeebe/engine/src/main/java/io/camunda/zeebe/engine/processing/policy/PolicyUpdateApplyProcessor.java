@@ -93,10 +93,16 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
     LOG.debug(
         "Processing chunk {} of {} of policy update '{}'", chunkIndex, chunkCount, envelopeId);
     if (chunkIndex == chunkCount) {
-      // All entity commands of the previous pages are queued ahead of this command, so the
-      // version switch below happens after they have been processed.
+      // All entity commands of the previous pages are queued ahead of this command, so the switch
+      // runs after they were processed and after their distributions were enqueued.
       appendApplied(
           command.getKey(), progress(envelopeId, version, chunkCount - 1, chunkCount, true));
+      // The switch must not inherit the key of this command: a key decides whether a command
+      // counts as distributed, and the switch has to start as a new command on this partition.
+      appendFollowUpCommand(
+          NEW_ENTITY_KEY,
+          PolicyUpdateIntent.SWITCH_VERSION,
+          new PolicyUpdateRecord().setEnvelopeId(envelopeId).setPolicyVersion(version));
       return;
     }
 

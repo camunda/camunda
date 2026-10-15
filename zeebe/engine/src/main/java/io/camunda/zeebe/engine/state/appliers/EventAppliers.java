@@ -1010,6 +1010,9 @@ public final class EventAppliers implements EventApplier {
         PolicyUpdateIntent.ABORTED, new PolicyUpdateAbortedApplier(state.getPolicyUpdateState()));
     register(
         PolicyUpdateIntent.APPLIED, new PolicyUpdateAppliedApplier(state.getPolicyUpdateState()));
+    register(
+        PolicyUpdateIntent.VERSION_SWITCHED,
+        new PolicyUpdateVersionSwitchedApplier(state.getPolicyUpdateState()));
   }
 
   private void registerRoleAppliers(final MutableProcessingState state) {

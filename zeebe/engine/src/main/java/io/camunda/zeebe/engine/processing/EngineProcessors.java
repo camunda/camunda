@@ -630,7 +630,7 @@ public final class EngineProcessors {
         membershipStateAdapter);
 
     PolicyUpdateProcessors.addPolicyUpdateProcessors(
-        typedRecordProcessors, processingState, writers);
+        typedRecordProcessors, processingState, keyGenerator, writers, commandDistributionBehavior);
 
     MappingRuleProcessors.addMappingRuleProcessors(
         typedRecordProcessors,

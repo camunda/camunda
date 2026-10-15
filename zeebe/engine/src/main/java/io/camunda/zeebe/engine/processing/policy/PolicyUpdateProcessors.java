@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.policy;
 
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -22,7 +24,9 @@ public final class PolicyUpdateProcessors {
   public static void addPolicyUpdateProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
-      final Writers writers) {
+      final KeyGenerator keyGenerator,
+      final Writers writers,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.POLICY_UPDATE,
         PolicyUpdateIntent.APPEND_CHUNK,
@@ -32,5 +36,13 @@ public final class PolicyUpdateProcessors {
         PolicyUpdateIntent.APPLY,
         new PolicyUpdateApplyProcessor(
             processingState.getPolicyUpdateState(), processingState, writers));
+    typedRecordProcessors.onCommand(
+        ValueType.POLICY_UPDATE,
+        PolicyUpdateIntent.SWITCH_VERSION,
+        new PolicyUpdateSwitchVersionProcessor(
+            processingState.getPolicyUpdateState(),
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
   }
 }

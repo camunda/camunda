@@ -152,15 +152,18 @@ public final class DbPolicyUpdateState implements MutablePolicyUpdateState {
       final long policyVersion,
       final int chunkIndex,
       final boolean lastPage) {
-    if (lastPage) {
-      currentVersion.wrapLong(policyVersion);
-      versionColumnFamily.upsert(versionKey, currentVersion);
-      removeAssembly(envelopeId);
-      return;
-    }
     this.envelopeId.wrapString(envelopeId);
     final var assembly = assemblyColumnFamily.get(this.envelopeId, PersistedPolicyAssembly::new);
     assembly.setAppliedChunks(chunkIndex + 1);
     assemblyColumnFamily.update(this.envelopeId, assembly);
+  }
+
+  @Override
+  public void switchVersion(final long policyVersion) {
+    currentVersion.wrapLong(policyVersion);
+    versionColumnFamily.upsert(versionKey, currentVersion);
+    findOpenAssembly()
+        .filter(assembly -> assembly.getPolicyVersion() == policyVersion)
+        .ifPresent(assembly -> removeAssembly(assembly.getEnvelopeId()));
   }
 }
