@@ -11,6 +11,7 @@ dependencies {
   testImplementation(project(":camunda-authentication"))
   testImplementation(project(":zeebe-cluster-config"))
   testImplementation(project(":zeebe-broker"))
+  testImplementation(project(":zeebe-db"))
   testImplementation(projectArtifact(":zeebe-broker", ArtifactKind.TESTS))
   testImplementation(libs.org.apache.httpcomponents.core5.httpcore5)
   testImplementation(project(":zeebe-logstreams"))
