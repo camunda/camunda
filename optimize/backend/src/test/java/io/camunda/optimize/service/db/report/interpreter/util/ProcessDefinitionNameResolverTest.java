@@ -8,37 +8,24 @@
 package io.camunda.optimize.service.db.report.interpreter.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
-import io.camunda.optimize.dto.optimize.DefinitionType;
-import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class ProcessDefinitionNameResolverTest {
 
-  @Mock private DefinitionService definitionService;
-
   @Test
-  void shouldLabelGroupWithLatestVersionNameWhileKeepingTheKey() {
+  void shouldLabelGroupWithDisplayNameWhileKeepingTheKey() {
     // given
     final CompositeCommandResult result = resultWithGroups("invoice-process");
-    when(definitionService.getLatestCachedDefinitionOnAnyTenant(
-            DefinitionType.PROCESS, "invoice-process"))
-        .thenReturn(Optional.of(definitionWithName("Invoice Approval")));
 
     // when
-    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyDefinitionLabels(
+        result, List.of(definition("invoice-process", "Invoice", "Invoice Approval")));
 
     // then
     final GroupByResult group = result.getGroups().getFirst();
@@ -47,80 +34,110 @@ class ProcessDefinitionNameResolverTest {
   }
 
   @Test
-  void shouldFallBackToKeyWhenNoDefinitionIsFound() {
+  void shouldFallBackToNameWhenDisplayNameIsMissing() {
     // given
-    final CompositeCommandResult result = resultWithGroups("orphan-process");
-    when(definitionService.getLatestCachedDefinitionOnAnyTenant(
-            DefinitionType.PROCESS, "orphan-process"))
-        .thenReturn(Optional.empty());
+    final CompositeCommandResult result = resultWithGroups("null-display", "blank-display");
 
     // when
-    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyDefinitionLabels(
+        result,
+        List.of(
+            definition("null-display", "Null Display", null),
+            definition("blank-display", "Blank Display", "   ")));
 
-    // then the label falls back to the key
+    // then
+    assertThat(result.getGroups())
+        .extracting(GroupByResult::getLabel)
+        .containsExactly("Null Display", "Blank Display");
+  }
+
+  @Test
+  void shouldFallBackToKeyWhenDefinitionHasNoName() {
+    // given
+    final CompositeCommandResult result = resultWithGroups("nameless-process", "blank-process");
+
+    // when
+    ProcessDefinitionNameResolver.applyDefinitionLabels(
+        result,
+        List.of(
+            definition("nameless-process", null, null), definition("blank-process", "  ", " ")));
+
+    // then no label is ever blank
+    assertThat(result.getGroups())
+        .extracting(GroupByResult::getLabel)
+        .containsExactly("nameless-process", "blank-process");
+  }
+
+  @Test
+  void shouldFallBackToKeyWhenReportHasNoMatchingDefinition() {
+    // given a key the report's definitions do not cover, e.g. one from a tenant the user cannot see
+    final CompositeCommandResult result = resultWithGroups("orphan-process");
+
+    // when
+    ProcessDefinitionNameResolver.applyDefinitionLabels(
+        result, List.of(definition("other-process", "Other Process", "Other Process")));
+
+    // then the label is never borrowed from another definition
     assertThat(result.getGroups().getFirst().getLabel()).isEqualTo("orphan-process");
   }
 
   @Test
-  void shouldFallBackToKeyWhenLatestVersionHasNoName() {
+  void shouldFallBackToKeyWhenReportHasNoDefinitions() {
     // given
-    final CompositeCommandResult result = resultWithGroups("unnamed-process");
-    when(definitionService.getLatestCachedDefinitionOnAnyTenant(
-            DefinitionType.PROCESS, "unnamed-process"))
-        .thenReturn(Optional.of(definitionWithName("   ")));
+    final CompositeCommandResult result = resultWithGroups("some-process", "other-process");
 
     // when
-    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyDefinitionLabels(result, null);
+    ProcessDefinitionNameResolver.applyDefinitionLabels(result, List.of());
 
-    // then the blank name is ignored and the label falls back to the key
-    assertThat(result.getGroups().getFirst().getLabel()).isEqualTo("unnamed-process");
+    // then
+    assertThat(result.getGroups())
+        .extracting(GroupByResult::getLabel)
+        .containsExactly("some-process", "other-process");
   }
 
   @Test
   void shouldResolveEachGroupIndependently() {
     // given
     final CompositeCommandResult result = resultWithGroups("heavy-process", "light-process");
-    when(definitionService.getLatestCachedDefinitionOnAnyTenant(
-            DefinitionType.PROCESS, "heavy-process"))
-        .thenReturn(Optional.of(definitionWithName("Heavy Agent")));
-    when(definitionService.getLatestCachedDefinitionOnAnyTenant(
-            DefinitionType.PROCESS, "light-process"))
-        .thenReturn(Optional.empty());
 
     // when
-    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyDefinitionLabels(
+        result, List.of(definition("heavy-process", "Heavy Agent", "Heavy Agent")));
 
-    // then each group is resolved on its own; unresolved keys keep the key as label
+    // then
     assertThat(result.getGroups())
         .extracting(GroupByResult::getLabel)
         .containsExactly("Heavy Agent", "light-process");
   }
 
   @Test
-  void shouldFallBackToKeyWhenLatestVersionNameIsNull() {
+  void shouldUseFirstDefinitionWhenKeyAppearsTwice() {
     // given
-    final CompositeCommandResult result = resultWithGroups("nameless-process");
-    when(definitionService.getLatestCachedDefinitionOnAnyTenant(
-            DefinitionType.PROCESS, "nameless-process"))
-        .thenReturn(Optional.of(definitionWithName(null)));
+    final CompositeCommandResult result = resultWithGroups("invoice-process");
 
     // when
-    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyDefinitionLabels(
+        result,
+        List.of(
+            definition("invoice-process", "Invoice First", "Invoice First"),
+            definition("invoice-process", "Invoice Second", "Invoice Second")));
 
-    // then the null name is ignored and the label falls back to the key
-    assertThat(result.getGroups().getFirst().getLabel()).isEqualTo("nameless-process");
+    // then
+    assertThat(result.getGroups().getFirst().getLabel()).isEqualTo("Invoice First");
   }
 
   @Test
-  void shouldNotQueryDefinitionServiceForBlankKeys() {
-    // given a group whose key is blank (nothing to resolve)
+  void shouldLeaveBlankKeysUntouched() {
+    // given
     final CompositeCommandResult result = resultWithGroups("   ");
 
     // when
-    ProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+    ProcessDefinitionNameResolver.applyDefinitionLabels(
+        result, List.of(definition("   ", "Blank Key", "Blank Key")));
 
-    // then the definition service is never consulted
-    verifyNoInteractions(definitionService);
+    // then
+    assertThat(result.getGroups().getFirst().getLabel()).isEqualTo("   ");
   }
 
   private static CompositeCommandResult resultWithGroups(final String... processDefinitionKeys) {
@@ -132,7 +149,11 @@ class ProcessDefinitionNameResolverTest {
     return result;
   }
 
-  private static ProcessDefinitionOptimizeDto definitionWithName(final String name) {
-    return ProcessDefinitionOptimizeDto.builder().key("ignored").version("1").name(name).build();
+  private static ReportDataDefinitionDto definition(
+      final String key, final String name, final String displayName) {
+    final ReportDataDefinitionDto definition = new ReportDataDefinitionDto(key);
+    definition.setName(name);
+    definition.setDisplayName(displayName);
+    return definition;
   }
 }
