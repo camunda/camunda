@@ -91,6 +91,24 @@
           "temporary": false
         }
       ]
+    },
+    {
+      "username": "jane",
+      "enabled": true,
+      "email": "jane@example.com",
+      "emailVerified": true,
+      "firstName": "Jane",
+      "lastName": "Doe",
+      "realmRoles": [
+        "offline_access"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "jane",
+          "temporary": false
+        }
+      ]
     }
   ],
   "clientScopes": [
