@@ -50,7 +50,7 @@
     "react-router-dom": "7.18.3",
     "react-transition-group": "4.4.5",
     "remark-gfm": "4.0.1",
-    "styled-components": "6.5.0",
+    "styled-components": "6.6.0",
     "tiny-svg": "4.1.4",
     "zod": "4.6.6"
   },
