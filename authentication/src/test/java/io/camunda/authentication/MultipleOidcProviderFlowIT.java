@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
+import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -52,22 +53,22 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
       // OIDC provider/realm: camunda-foo
       "camunda.security.authentication.providers.oidc.foo.client-id="
-          + MultipleOidcProviderFlowTest.REALM_FOO_CLIENT_ID,
+          + MultipleOidcProviderFlowIT.REALM_FOO_CLIENT_ID,
       "camunda.security.authentication.providers.oidc.foo.client-secret="
-          + MultipleOidcProviderFlowTest.REALM_FOO_CLIENT_SECRET,
+          + MultipleOidcProviderFlowIT.REALM_FOO_CLIENT_SECRET,
       "camunda.security.authentication.providers.oidc.foo.redirect-uri=http://localhost/sso-callback",
       "camunda.security.authentication.providers.oidc.foo.audiences=camunda-foo",
 
       // OIDC provider/realm: camunda-bar
       "camunda.security.authentication.providers.oidc.bar.client-id="
-          + MultipleOidcProviderFlowTest.REALM_BAR_CLIENT_ID,
+          + MultipleOidcProviderFlowIT.REALM_BAR_CLIENT_ID,
       "camunda.security.authentication.providers.oidc.bar.client-secret="
-          + MultipleOidcProviderFlowTest.REALM_BAR_CLIENT_SECRET,
+          + MultipleOidcProviderFlowIT.REALM_BAR_CLIENT_SECRET,
       "camunda.security.authentication.providers.oidc.bar.redirect-uri=http://localhost/sso-callback"
     })
 @ActiveProfiles("consolidated-auth")
 @Testcontainers
-class MultipleOidcProviderFlowTest {
+class MultipleOidcProviderFlowIT {
 
   static final String REALM_FOO_CLIENT_ID = "camunda-foo";
   static final String REALM_FOO_CLIENT_SECRET = "pW7IzLnbYMpPk785irfwoQjBQ3VSQnT3";
@@ -84,7 +85,7 @@ class MultipleOidcProviderFlowTest {
 
   @Container
   static KeycloakContainer keycloak =
-      new KeycloakContainer()
+      DefaultTestContainers.createDefaultKeycloak()
           .withRealmImportFiles(
               "/camunda-foo-realm.json",
               "/camunda-bar-realm.json",
