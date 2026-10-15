@@ -337,6 +337,8 @@
           <ignoredDependencies>
             <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
             <ignoredDependency>javax.annotation:javax.annotation-api</ignoredDependency>
+            <!-- discovered at runtime via ServiceLoader (findAndRegisterModules) -->
+            <ignoredDependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</ignoredDependency>
           </ignoredDependencies>
         </configuration>
       </plugin>
