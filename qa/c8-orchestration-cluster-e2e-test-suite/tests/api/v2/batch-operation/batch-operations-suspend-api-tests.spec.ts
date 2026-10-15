@@ -37,14 +37,18 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     request,
   }) => {
     // Use a large instance count so the batch stays ACTIVE long enough for the
-    // suspend command to catch it in flight. 30 instances can finish first,
-    // making /suspension return a permanent 404 that the retry budget cannot
-    // recover from. Same remedy as the 500-instance tests below.
+    // suspend command to catch it in flight. Under nightly RDBMS contention
+    // (observed on Oracle 21c) a 500-instance cancellation batch can still reach
+    // a terminal state before the suspend command is applied, after which
+    // /suspension returns a permanent 404 NOT_FOUND that the retry budget cannot
+    // recover from. 2000 instances matches the proven suspend-active pattern used
+    // by the Operate UI suspension tests (tests/operate/batchOperations.spec.ts),
+    // which widen the active window enough to catch the batch reliably.
     const key =
       await test.step('Create cancelable batch operation', async () => {
         return createCancellationBatch(
           request,
-          500,
+          2000,
           'batch_suspension_process',
         );
       });
