@@ -12,7 +12,8 @@ import org.gradle.api.attributes.Attribute
  * generated assertions, ...). Producers tag their consumable configuration with it and consumers
  * request it by value, so variant selection never depends on a configuration's name.
  */
-val ARTIFACT_KIND: Attribute<String> = Attribute.of("io.camunda.build.artifact-kind", String::class.java)
+val ARTIFACT_KIND: Attribute<String> =
+  Attribute.of("io.camunda.build.artifact-kind", String::class.java)
 
 object ArtifactKind {
   const val TESTS = "tests"
