@@ -42,6 +42,7 @@ import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -66,9 +67,12 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableMetadataValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.ObjectSizeEstimator;
@@ -350,6 +354,95 @@ final class CamundaExporterIT {
                   exportHandler.getClass().getSimpleName(), exportHandler.getHandledValueType())
               .isEqualTo(expectedEntity);
         });
+  }
+
+  @TestTemplate
+  void shouldExportProtectionModesOfVariable(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
+    createSchemas(config);
+    final var exporter = new CamundaExporter();
+    exporter.configure(getContextFromConfig(config));
+    exporter.open(new ExporterTestController());
+
+    final var varHandler =
+        getHandlers(config).stream()
+            .filter(handler -> VariableHandler.class.isAssignableFrom(handler.getClass()))
+            .findFirst()
+            .orElseThrow();
+
+    final var protectedRecord =
+        generateVariableRecord(
+            VariableIntent.CREATED,
+            1L,
+            ImmutableVariableMetadataValue.builder()
+                .addProtectionModes(ProtectionMode.REDACT)
+                .build());
+    final var unprotectedRecord =
+        generateVariableRecord(
+            VariableIntent.CREATED, 2L, ImmutableVariableMetadataValue.builder().build());
+    final var updatedRecord =
+        generateVariableRecord(
+            VariableIntent.UPDATED,
+            3L,
+            ImmutableVariableMetadataValue.builder()
+                .addProtectionModes(ProtectionMode.REDACT)
+                .build());
+
+    // when
+    exporter.export(protectedRecord);
+    exporter.export(unprotectedRecord);
+    exporter.export(updatedRecord);
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      getVariable(clientAdapter, varHandler.getIndexName(), protectedRecord)
+                          .getProtectionModes())
+                  .containsExactly(ProtectionMode.REDACT);
+              assertThat(
+                      getVariable(clientAdapter, varHandler.getIndexName(), unprotectedRecord)
+                          .getProtectionModes())
+                  .isNull();
+              assertThat(
+                      getVariable(clientAdapter, varHandler.getIndexName(), updatedRecord)
+                          .getProtectionModes())
+                  .containsExactly(ProtectionMode.REDACT);
+            });
+  }
+
+  private Record<VariableRecordValue> generateVariableRecord(
+      final VariableIntent intent,
+      final long scopeKey,
+      final ImmutableVariableMetadataValue metadata) {
+    return factory.generateRecord(
+        ValueType.VARIABLE,
+        r ->
+            r.withIntent(intent)
+                .withValue(
+                    ImmutableVariableRecordValue.builder()
+                        .from(factory.generateObject(VariableRecordValue.class))
+                        .withScopeKey(scopeKey)
+                        .withMetadata(metadata)
+                        .build()));
+  }
+
+  private VariableEntity getVariable(
+      final SearchClientAdapter clientAdapter,
+      final String indexName,
+      final Record<VariableRecordValue> record)
+      throws IOException {
+    final var value = record.getValue();
+    return clientAdapter.get(
+        VariableForListViewEntity.getIdBy(value.getScopeKey(), value.getName()),
+        indexName,
+        VariableEntity.class);
   }
 
   @TestTemplate
