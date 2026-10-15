@@ -8,10 +8,10 @@
 package io.camunda.authentication.active;
 
 import io.camunda.authentication.utils.OutageLog;
-import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.service.MappingRuleServices.SourcedAttributes;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.registry.ServiceRegistry;
 import java.time.Duration;
@@ -50,17 +50,28 @@ public final class ActiveUserChecker {
 
   private record Key(String physicalTenantId, String username) {}
 
-  /** What is known about a user: absent or unreadable users are active with no attributes. */
+  /**
+   * What is known about a user: absent or unreadable users are active with no attributes and no
+   * source. {@code source} is the id of the SCIM source that provisioned the user, null if none
+   * did; {@code groups} are the non-empty attributes of the user's direct groups with the source of
+   * each group.
+   */
   public record StoredUser(
       boolean active,
       @Nullable String externalId,
+      @Nullable String source,
       Map<String, Object> attributes,
-      List<Map<String, Object>> groupAttributes) {
+      List<SourcedAttributes> groups) {
 
-    static final StoredUser UNKNOWN = new StoredUser(true, null, Map.of(), List.of());
+    public static final StoredUser UNKNOWN = new StoredUser(true, null, null, Map.of(), List.of());
 
-    StoredUser withGroupAttributes(final List<Map<String, Object>> groupAttributes) {
-      return new StoredUser(active, externalId, attributes, groupAttributes);
+    StoredUser withGroups(final List<SourcedAttributes> groups) {
+      return new StoredUser(active, externalId, source, attributes, groups);
+    }
+
+    /** Whether the user was provisioned by a SCIM source. */
+    public boolean provisioned() {
+      return source != null && !source.isBlank();
     }
   }
 
@@ -97,8 +108,7 @@ public final class ActiveUserChecker {
       return cached.user();
     }
     final var user =
-        lookup(physicalTenantId, username)
-            .withGroupAttributes(lookupGroupAttributes(physicalTenantId, username));
+        lookup(physicalTenantId, username).withGroups(lookupGroups(physicalTenantId, username));
     if (ttlNanos > 0) {
       if (cache.size() >= MAX_ENTRIES) {
         evict(now);
@@ -126,6 +136,7 @@ public final class ActiveUserChecker {
       return new StoredUser(
           !Boolean.FALSE.equals(user.active()),
           user.externalId(),
+          user.source(),
           user.attributes() == null ? Map.of() : user.attributes(),
           List.of());
     } catch (final ServiceException e) {
@@ -140,8 +151,8 @@ public final class ActiveUserChecker {
     }
   }
 
-  /** Non-empty attribute maps of the groups the user is a direct member of; empty on failure. */
-  private List<Map<String, Object>> lookupGroupAttributes(
+  /** Non-empty attributes of the groups the user is a direct member of; empty on failure. */
+  private List<SourcedAttributes> lookupGroups(
       final String physicalTenantId, final String username) {
     try {
       return serviceRegistry
@@ -150,8 +161,8 @@ public final class ActiveUserChecker {
           .getGroupsByMemberTypeAndMemberIds(
               Map.of(EntityType.USER, Set.of(username)), CamundaAuthentication.anonymous())
           .stream()
-          .map(GroupEntity::attributes)
-          .filter(attributes -> attributes != null && !attributes.isEmpty())
+          .filter(group -> group.attributes() != null && !group.attributes().isEmpty())
+          .map(group -> new SourcedAttributes(group.source(), group.attributes()))
           .toList();
     } catch (final RuntimeException e) {
       LOG.debug("Group-attribute lookup for '{}' failed: {}", username, e.toString());

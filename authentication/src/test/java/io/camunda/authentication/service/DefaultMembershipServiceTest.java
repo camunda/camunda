@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.active.ActiveUserChecker;
+import io.camunda.authentication.source.LoginSources;
 import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
@@ -33,6 +35,7 @@ import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
+import io.camunda.service.MappingRuleServices.SourcedAttributes;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
@@ -122,7 +125,7 @@ class DefaultMembershipServiceTest {
 
   @Test
   void mappingRuleIdsReturnsMatchingRules() {
-    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any(), any(), any()))
         .thenReturn(Stream.of(new MappingRuleEntity("mr1", 1L, "claim", "value", "rule")));
 
     assertThat(service.mappingRuleIds(baseQuery())).containsExactly("mr1");
@@ -142,7 +145,7 @@ class DefaultMembershipServiceTest {
                 new GroupEntity(1L, "g1", "group", "g", null, Map.of("region", "EMEA"), null, null),
                 new GroupEntity(2L, "g2", "empty", "g", null, Map.of(), null, null)));
     final var withLookup = serviceWithUserLookup(userServices);
-    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any(), any(), any()))
         .thenReturn(Stream.of(new MappingRuleEntity("mr1", 1L, "$.department", "Finance", "r")));
 
     // when
@@ -154,7 +157,63 @@ class DefaultMembershipServiceTest {
         .getMatchingMappingRules(
             eq(Map.of("sub", "alice")),
             eq(Map.of("department", "Finance")),
-            eq(List.of(Map.of("region", "EMEA"))),
+            eq(List.of(new SourcedAttributes(null, Map.of("region", "EMEA")))),
+            isNull(),
+            isNull(),
+            any());
+  }
+
+  @Test
+  void mappingRuleIdsPassesLoginSourceAndSourcesOfUserAndGroupsToTheMatching() {
+    // given
+    final var userServices = mock(UserServices.class);
+    when(userServices.getUser(eq("alice"), any()))
+        .thenReturn(
+            new UserEntity(
+                1L,
+                "alice",
+                "n",
+                "e",
+                "p",
+                "ext",
+                true,
+                Map.of("department", "Finance"),
+                null,
+                null,
+                "keycloak"));
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(
+            List.of(
+                new GroupEntity(
+                    1L,
+                    "g1",
+                    "group",
+                    "g",
+                    null,
+                    Map.of("region", "EMEA"),
+                    null,
+                    null,
+                    "keycloak")));
+    final var withLookup = serviceWithUserLookup(userServices);
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any(), any(), any()))
+        .thenAnswer(invocation -> Stream.empty());
+    final var query =
+        new MembershipQuery(
+            Map.of("sub", "alice", LoginSources.LOGIN_SOURCE_CLAIM, "entra"),
+            "alice",
+            PrincipalType.USER);
+
+    // when
+    withLookup.mappingRuleIds(query);
+
+    // then - the login source is kept out of the token claims
+    verify(mappingRuleServices)
+        .getMatchingMappingRules(
+            eq(Map.of("sub", "alice")),
+            eq(Map.of("department", "Finance")),
+            eq(List.of(new SourcedAttributes("keycloak", Map.of("region", "EMEA")))),
+            eq("entra"),
+            eq("keycloak"),
             any());
   }
 
@@ -164,7 +223,7 @@ class DefaultMembershipServiceTest {
     final var userServices = mock(UserServices.class);
     when(userServices.getUser(eq("alice"), any()))
         .thenThrow(new ServiceException("down", ServiceException.Status.UNAVAILABLE));
-    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any(), any(), any()))
         .thenAnswer(invocation -> Stream.empty());
 
     // when
@@ -173,14 +232,15 @@ class DefaultMembershipServiceTest {
 
     // then
     verify(mappingRuleServices, times(2))
-        .getMatchingMappingRules(eq(Map.of("sub", "alice")), eq(Map.of()), eq(List.of()), any());
+        .getMatchingMappingRules(
+            eq(Map.of("sub", "alice")), eq(Map.of()), eq(List.of()), isNull(), isNull(), any());
   }
 
   @Test
   void mappingRuleIdsNeverLooksUpAttributesForClients() {
     // given
     final var userServices = mock(UserServices.class);
-    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any(), any(), any()))
         .thenAnswer(invocation -> Stream.empty());
 
     // when
@@ -409,21 +469,23 @@ class DefaultMembershipServiceTest {
 
   @Test
   void mappingRuleIdsFallsBackToEmptyAfterExhaustingRetriesOnTransientFailure() {
-    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any(), any(), any()))
         .thenThrow(translatedSearchFailure(Reason.SEARCH_SERVER_FAILED, "shards unavailable"));
 
     assertThat(service.mappingRuleIds(baseQuery())).isEmpty();
-    verify(mappingRuleServices, times(3)).getMatchingMappingRules(any(), any(), any(), any());
+    verify(mappingRuleServices, times(3))
+        .getMatchingMappingRules(any(), any(), any(), any(), any(), any());
   }
 
   @Test
   void mappingRuleIdsPropagatesNonTransientFailureWithoutRetry() {
-    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any(), any(), any(), any()))
         .thenThrow(translatedSearchFailure(Reason.NOT_UNIQUE, "not unique"));
 
     assertThatThrownBy(() -> service.mappingRuleIds(baseQuery()))
         .isInstanceOf(ServiceException.class);
-    verify(mappingRuleServices, times(1)).getMatchingMappingRules(any(), any(), any(), any());
+    verify(mappingRuleServices, times(1))
+        .getMatchingMappingRules(any(), any(), any(), any(), any(), any());
   }
 
   @Test
@@ -480,7 +542,8 @@ class DefaultMembershipServiceTest {
     final var request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, TENANT_A);
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-    when(tenantAMappingRuleServices.getMatchingMappingRules(any(), any(), any(), any()))
+    when(tenantAMappingRuleServices.getMatchingMappingRules(
+            any(), any(), any(), any(), any(), any()))
         .thenReturn(Stream.of(new MappingRuleEntity("mra1", 1L, "claim", "value", "rule")));
 
     // when

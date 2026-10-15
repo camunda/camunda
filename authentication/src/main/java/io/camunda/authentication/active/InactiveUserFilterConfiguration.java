@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.active;
 
+import io.camunda.authentication.source.LoginSources;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
@@ -49,10 +50,12 @@ public class InactiveUserFilterConfiguration {
   @Bean
   public FilterRegistrationBean<InactiveUserFilter> inactiveUserFilter(
       final CamundaAuthenticationProvider authenticationProvider,
-      final ActiveUserChecker activeUserChecker) {
+      final ActiveUserChecker activeUserChecker,
+      final Environment environment) {
     final var registration =
         new FilterRegistrationBean<>(
-            new InactiveUserFilter(authenticationProvider, activeUserChecker));
+            new InactiveUserFilter(
+                authenticationProvider, activeUserChecker, LoginSources.from(environment)));
     registration.addUrlPatterns("/*");
     registration.setOrder(ORDER_AFTER_SECURITY_CHAIN);
     return registration;

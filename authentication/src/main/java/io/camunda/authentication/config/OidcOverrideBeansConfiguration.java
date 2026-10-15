@@ -12,6 +12,8 @@ import static java.util.stream.Collectors.toMap;
 
 import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
 import io.camunda.authentication.pt.PhysicalTenantOidcProviders;
+import io.camunda.authentication.source.LoginSourceClaimsProvider;
+import io.camunda.authentication.source.LoginSources;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.context.OidcClaimsProvider;
@@ -171,7 +173,9 @@ public class OidcOverrideBeansConfiguration {
     // rebuilt one — hence it is deliberately excluded from the per-tenant map below.
     final var defaultConverter =
         new OidcTokenAuthenticationConverter(
-            tokenClaimsConverter, oidcClaimsProvider, perIssuerConverters);
+            tokenClaimsConverter,
+            new LoginSourceClaimsProvider(oidcClaimsProvider, LoginSources.from(environment)),
+            perIssuerConverters);
     // One converter per NON-DEFAULT physical tenant, each built from that tenant's resolved OIDC
     // config (#64685). When no physical tenants are configured the map is empty and the plain
     // default converter is returned unchanged — so non-physical-tenant deployments behave exactly
@@ -261,8 +265,11 @@ public class OidcOverrideBeansConfiguration {
     final var claimsProvider =
         scopedOidcClaimsProviderFactory.buildClaimsProvider(
             authentication, "physical tenant '" + physicalTenantId + "'");
+    // SCIM sources are not supported per physical tenant; this only drops a forged login source.
     return new OidcTokenAuthenticationConverter(
-        defaultClaimsConverter, claimsProvider, new TokenClaimsConvertersByIssuer(byIssuer));
+        defaultClaimsConverter,
+        new LoginSourceClaimsProvider(claimsProvider, LoginSources.disabled()),
+        new TokenClaimsConvertersByIssuer(byIssuer));
   }
 
   private static boolean hasText(final String value) {
@@ -346,7 +353,8 @@ public class OidcOverrideBeansConfiguration {
             membershipPort,
             membershipResolutionContextPropagator),
         buildIdentityClaimsByRegistrationId(environment),
-        physicalTenantOidcSettings);
+        physicalTenantOidcSettings,
+        LoginSources.from(environment));
   }
 
   /**

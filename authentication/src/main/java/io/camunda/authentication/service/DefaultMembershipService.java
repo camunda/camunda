@@ -13,6 +13,7 @@ import static java.util.Objects.requireNonNullElse;
 
 import io.camunda.authentication.active.ActiveUserChecker;
 import io.camunda.authentication.active.ActiveUserChecker.StoredUser;
+import io.camunda.authentication.source.LoginSources;
 import io.camunda.authentication.utils.OutageLog;
 import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.entities.GroupEntity;
@@ -125,9 +126,11 @@ public class DefaultMembershipService implements MembershipPort {
                     serviceRegistry
                         .mappingRuleServices(PhysicalTenantContext.current())
                         .getMatchingMappingRules(
-                            query.tokenClaims(),
+                            LoginSources.withoutLoginSource(query.tokenClaims()),
                             storedUser.attributes(),
-                            storedUser.groupAttributes(),
+                            storedUser.groups(),
+                            LoginSources.loginSource(query.tokenClaims()),
+                            storedUser.source(),
                             CamundaAuthentication.anonymous())
                         .map(MappingRuleEntity::mappingRuleId)
                         .collect(Collectors.toSet())));
@@ -143,7 +146,8 @@ public class DefaultMembershipService implements MembershipPort {
    * Stored user with its attributes and the attributes of its direct groups (not those derived from
    * mapping rules, which are resolved afterwards); unknown for clients or without a lookup.
    */
-  private static final StoredUser NO_STORED_USER = new StoredUser(true, null, Map.of(), List.of());
+  private static final StoredUser NO_STORED_USER =
+      new StoredUser(true, null, null, Map.of(), List.of());
 
   private StoredUser storedUser(final MembershipQuery query) {
     if (userLookup == null || query.principalType() != PrincipalType.USER) {

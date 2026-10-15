@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.service.GroupServices;
+import io.camunda.service.MappingRuleServices.SourcedAttributes;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -66,7 +67,8 @@ class ActiveUserCheckerTest {
     final var second = checker.user(TENANT, "jane");
 
     // then
-    assertThat(first.groupAttributes()).containsExactly(Map.of("region", "EMEA"));
+    assertThat(first.groups())
+        .containsExactly(new SourcedAttributes(null, Map.of("region", "EMEA")));
     assertThat(second).isSameAs(first);
     verify(groupServices, times(1)).getGroupsByMemberTypeAndMemberIds(any(), any());
   }
@@ -82,7 +84,7 @@ class ActiveUserCheckerTest {
     final var result = checker.user(TENANT, "jane");
 
     // then
-    assertThat(result.groupAttributes()).isEmpty();
+    assertThat(result.groups()).isEmpty();
     assertThat(result.active()).isFalse();
   }
 
