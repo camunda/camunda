@@ -82,14 +82,14 @@ test('should match the filters panel snapshot with populated optional filters', 
 	await expect(filtersPanel).toHaveScreenshot();
 });
 
-test('should match the date range dialog snapshot', async ({operatePreviewDecisionsPage, page}) => {
+test('should match the evaluation date range field snapshot', async ({operatePreviewDecisionsPage, page}) => {
 	await operatePreviewDecisionsPage.goto();
 	await operatePreviewDecisionsPage.moreFiltersButton.click();
-	await page.getByRole('menuitem', {name: 'Evaluation Date Range'}).click();
-	const dialog = page.getByTestId('date-range-modal');
-	await expect(dialog).toBeVisible();
+	await page.getByRole('menuitem', {name: 'Evaluation date range'}).click();
+	const dateRange = page.getByRole('group', {name: 'Evaluation date range'});
+	await expect(dateRange).toBeVisible();
 
-	await expect(dialog).toHaveScreenshot();
+	await expect(dateRange).toHaveScreenshot();
 });
 
 test('should match the instances table snapshot with evaluated and failed instances', async ({
@@ -138,7 +138,7 @@ test('should match the instances table snapshot when no instances match', async 
 	);
 	await page.goto(`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true`);
 
-	await expect(operatePreviewDecisionsPage.instancesTable.getByText(/no Instances matching/)).toBeVisible();
+	await expect(operatePreviewDecisionsPage.instancesTable.getByText(/no instances matching/)).toBeVisible();
 	await expect(operatePreviewDecisionsPage.instancesTable).toHaveScreenshot();
 });
 

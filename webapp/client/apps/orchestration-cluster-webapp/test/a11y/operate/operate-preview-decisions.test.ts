@@ -103,15 +103,15 @@ test('should have no accessibility violations with populated optional filters', 
 	expect(results.violations).toEqual([]);
 });
 
-test('should have no accessibility violations with the date range dialog open', async ({
+test('should have no accessibility violations with the evaluation date range field shown', async ({
 	page,
 	operatePreviewDecisionsPage,
 	makeAxeBuilder,
 }) => {
 	await operatePreviewDecisionsPage.goto();
 	await operatePreviewDecisionsPage.moreFiltersButton.click();
-	await page.getByRole('menuitem', {name: 'Evaluation Date Range'}).click();
-	await expect(page.getByTestId('date-range-modal')).toBeVisible();
+	await page.getByRole('menuitem', {name: 'Evaluation date range'}).click();
+	await expect(page.getByRole('group', {name: 'Evaluation date range'})).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
