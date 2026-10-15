@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.metrics;
 
+import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.Loggers;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -51,6 +52,9 @@ public final class MicrometerClientMetrics implements ClientMetrics {
 
   /** Prefix of the meters of the observation module, its default in {@code MetricConfig}. */
   static final String HTTP_METER_PREFIX = "http.client.";
+
+  /** Prefix of the job worker meters, see {@code MicrometerJobWorkerMetricsBuilder.Names}. */
+  static final String WORKER_METER_PREFIX = "camunda.client.worker.";
 
   private static final Logger LOG = Loggers.LOGGER;
 
@@ -110,6 +114,16 @@ public final class MicrometerClientMetrics implements ClientMetrics {
   }
 
   @Override
+  public JobWorkerMetrics jobWorkerMetrics(final String jobType) {
+    return JobWorkerMetrics.micrometer()
+        .withMeterRegistry(meterRegistry)
+        // tagged as client meters too, so that closing the client removes them, but not the
+        // worker meters of the Spring starter, which share name and the other tags
+        .withTags(clientTags.and("type", jobType))
+        .build();
+  }
+
+  @Override
   public void close() {
     // all meters of this client carry both tags, whether registered here or by the observation
     // module, but so may meters of the application: only remove those with the names of client
@@ -125,7 +139,7 @@ public final class MicrometerClientMetrics implements ClientMetrics {
   }
 
   private static boolean isClientMeterName(final String name) {
-    return name.startsWith(HTTP_METER_PREFIX);
+    return name.startsWith(HTTP_METER_PREFIX) || name.startsWith(WORKER_METER_PREFIX);
   }
 
   private static boolean isHttpObservationAvailable() {

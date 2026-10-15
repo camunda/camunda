@@ -25,6 +25,8 @@ import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 final class MicrometerClientMetricsTest {
 
@@ -73,6 +75,7 @@ final class MicrometerClientMetricsTest {
     final ClientMetrics metrics = new MicrometerClientMetrics(meterRegistry, "risk");
     final ClientMetrics otherTenantMetrics = new MicrometerClientMetrics(meterRegistry, "finance");
     metrics.instrumentHttpClient(newHttpClientBuilder());
+    metrics.jobWorkerMetrics("payment").jobActivated(1);
     otherTenantMetrics.instrumentHttpClient(newHttpClientBuilder());
     // like the Spring starter's job worker meters: same name and tags, but no client tag
     final Counter starterWorkerCounter =
@@ -95,6 +98,28 @@ final class MicrometerClientMetricsTest {
                 meter != sameTags
                     && "camunda".equals(meter.getId().getTag("client"))
                     && "risk".equals(meter.getId().getTag("physicalTenantId")));
+  }
+
+  @ParameterizedTest
+  @CsvSource({"' risk ', risk", ", default"})
+  void shouldTagJobWorkerMetricsWithJobTypeAndPhysicalTenant(
+      final String physicalTenantId, final String expectedTag) {
+    // given
+    final ClientMetrics metrics = new MicrometerClientMetrics(meterRegistry, physicalTenantId);
+
+    // when
+    metrics.jobWorkerMetrics("payment").jobActivated(3);
+
+    // then
+    assertThat(
+            meterRegistry
+                .get("camunda.client.worker.job.activated")
+                .tag("client", "camunda")
+                .tag("type", "payment")
+                .tag("physicalTenantId", expectedTag)
+                .counter()
+                .count())
+        .isEqualTo(3);
   }
 
   private static HttpAsyncClientBuilder newHttpClientBuilder() {

@@ -39,6 +39,10 @@ import io.camunda.client.impl.metrics.MicrometerCamundaClientMetricsBuilderImpl;
  * path, in the same version as {@code httpclient5}; without it, the client logs it once and records
  * none of them.
  *
+ * <p>The client also records job worker metrics ({@code camunda.client.worker.*}) for every worker
+ * that does not set its own via {@link
+ * io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3#metrics(io.camunda.client.api.worker.JobWorkerMetrics)}.
+ *
  * <p>All these meters are tagged with {@code physicalTenantId}: the client's {@link
  * io.camunda.client.CamundaClientBuilder#physicalTenantId(String) physical tenant}, or {@code
  * default} without one. Clients of different physical tenants can therefore share a registry.

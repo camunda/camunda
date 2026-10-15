@@ -24,6 +24,8 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.metrics.CamundaClientMetrics;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.client.api.worker.JobWorkerMetrics;
+import io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names;
 import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
@@ -234,6 +236,47 @@ final class ClientMetricsRestTest extends ClientRestTest {
     assertThat(meterRegistry.getMeters())
         .isNotEmpty()
         .allSatisfy(meter -> assertThat(meter.getId().getTag("name")).isEqualTo("second"));
+  }
+
+  @Test
+  void shouldRecordJobWorkerMetricsToClientRegistryByDefault() {
+    // given
+    final String jobType = uniqueJobType();
+    meteredClient = newClientBuilder(meterRegistry).build();
+
+    // when
+    try (final JobWorker ignored = openWorker(meteredClient, jobType)) {
+
+      // then
+      assertThat(
+              clientMeters(Names.JOB_ACTIVATED.asString(), "default")
+                  .tag("type", jobType)
+                  .counter())
+          .isNotNull();
+    }
+  }
+
+  @Test
+  void shouldRecordJobWorkerMetricsToWorkerRegistryWhenSetExplicitly() {
+    // given
+    final MeterRegistry workerRegistry = new SimpleMeterRegistry();
+    meteredClient = newClientBuilder(meterRegistry).build();
+
+    // when
+    try (final JobWorker ignored =
+        meteredClient
+            .newWorker()
+            .jobType(uniqueJobType())
+            .handler((c, j) -> {})
+            .metrics(JobWorkerMetrics.micrometer().withMeterRegistry(workerRegistry).build())
+            .open()) {
+
+      // then
+      assertThat(workerRegistry.find(Names.JOB_ACTIVATED.asString()).counter()).isNotNull();
+      assertThat(meterRegistry.find(Names.JOB_ACTIVATED.asString()).counter()).isNull();
+    } finally {
+      workerRegistry.close();
+    }
   }
 
   private static JobWorker openWorker(final CamundaClient client, final String jobType) {

@@ -158,6 +158,9 @@ final class ClientOptionalMetricsDependenciesTest extends ClientRestTest {
             client.newWorker().jobType("job").handler((c, j) -> {}).open()) {
           final String status = client.newStatusRequest().send().join().getStatus().name();
 
+          // only the HTTP client metrics are missing
+          assertThat(meterRegistry.find("camunda.client.worker.job.activated").counter())
+              .isNotNull();
           assertThat(meterRegistry.find("http.client.pool.leased").gauge()).isNull();
           return status;
         }

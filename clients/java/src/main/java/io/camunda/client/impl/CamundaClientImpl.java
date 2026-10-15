@@ -972,7 +972,8 @@ public final class CamundaClientImpl implements CamundaClient {
         jobClient,
         executorResource.scheduledExecutor(),
         executorResource.jobHandlingExecutor(),
-        closeables);
+        closeables,
+        clientMetrics);
   }
 
   @Override
