@@ -68,6 +68,10 @@ public class ActivateJobIT {
 
   @BeforeAll
   static void setup() {
+    // The CamundaMultiDBExtension resets RecordingExporter (maximumWaitTime → 5s) in its
+    // beforeAll, which runs before this method. Override to 30s to tolerate slow CI runners
+    // where gateway-issued FAIL commands can take longer to propagate.
+    RecordingExporter.setMaximumWaitTime(Duration.ofSeconds(30).toMillis());
     grpcClient = BROKER.newClientBuilder().preferRestOverGrpc(false).build();
     Awaitility.await("gRPC deploy succeeds once demo user is visible in secondary storage")
         .timeout(Duration.ofMinutes(2))
