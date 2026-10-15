@@ -11,6 +11,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.syspartition.SystemKeyValueWriter;
 import io.camunda.zeebe.broker.system.syspartition.SystemPartitionKeyType;
+import io.camunda.zeebe.broker.system.syspartition.detector.ticktock.RegionFailoverDecider.CommittedFailover;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import java.time.Duration;
@@ -49,7 +50,7 @@ final class TickPublisher {
   private @Nullable ScheduledTimer timer;
   private long nextTickId;
   private boolean tickPending;
-  private boolean failoverCommitted;
+  private @Nullable CommittedFailover lastFailover;
   // identifies the current leadership, so completions of earlier ones are ignored
   private long leadership;
 
@@ -76,16 +77,16 @@ final class TickPublisher {
    * @param writer the key-value writer of the leadership
    * @param lastTickId the id of the latest committed tick, or 0 if none
    * @param committedView the latest committed cluster view
-   * @param failoverCommitted whether a region failover was committed already
+   * @param lastFailover the latest committed region failover, if any
    */
   void start(
       final SystemKeyValueWriter writer,
       final long lastTickId,
       final Map<String, Long> committedView,
-      final boolean failoverCommitted) {
+      final @Nullable CommittedFailover lastFailover) {
     stop();
     this.writer = writer;
-    this.failoverCommitted = failoverCommitted;
+    this.lastFailover = lastFailover;
     nextTickId = lastTickId + 1;
     lastSeenTicks.putAll(committedView);
     communicationService.consume(Tock.SUBJECT, Tock::decode, this::onTock, actor::run);
@@ -137,21 +138,19 @@ final class TickPublisher {
     tocks.clear();
     final var putAt = System.nanoTime();
     final var tickPut = writer.put(SystemPartitionKeyType.TICK, tick);
-    if (!failoverCommitted) {
-      failoverDecider
-          .decide(tickId, lastSeenTicks, localMemberId)
-          .ifPresent(
-              failover -> {
-                failoverCommitted = true;
-                LOG.warn(
-                    "Every broker of region {} missed more ticks than the threshold at tick {};"
-                        + " putting a failover to region {}",
-                    failover.getFailedRegion(),
-                    tickId,
-                    failover.getTargetRegion());
-                writer.put(SystemPartitionKeyType.REGION_FAILOVER, failover);
-              });
-    }
+    failoverDecider
+        .decide(tickId, lastSeenTicks, localMemberId, lastFailover)
+        .ifPresent(
+            failover -> {
+              lastFailover = CommittedFailover.of(failover);
+              LOG.warn(
+                  "Every broker of region {} missed more ticks than the threshold at tick {};"
+                      + " putting a failover to region {}",
+                  failover.getFailedRegion(),
+                  tickId,
+                  failover.getTargetRegion());
+              writer.put(SystemPartitionKeyType.REGION_FAILOVER, failover);
+            });
     actor.runOnCompletion(
         tickPut,
         (position, error) -> {

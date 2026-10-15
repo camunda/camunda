@@ -189,6 +189,43 @@ final class SystemPartitionRegionFailoverIT {
   }
 
   @Test
+  void shouldCommitAnotherRegionFailoverWhenTheRegionFailsAgain() {
+    // given - region A failed over, and then came back
+    awaitEveryRegionActive(systemPartitionBrokers);
+    final var regionA = List.of(broker(REGION_A, 0), broker(REGION_A, 1), broker(REGION_A, 2));
+    final var survivors = List.of(broker(REGION_B, 0), broker(REGION_B, 1), broker(CONTROL, 0));
+    regionA.forEach(TestStandaloneBroker::stop);
+    final var first = awaitRegionFailover(survivors, 0);
+    regionA.forEach(TestStandaloneBroker::start);
+    Awaitility.await("every survivor sees region A active again")
+        .atMost(TIMEOUT)
+        .untilAsserted(
+            () ->
+                assertThat(survivors)
+                    .allSatisfy(
+                        survivor ->
+                            assertThat(regionState(survivor, REGION_A))
+                                .isEqualTo(RegionState.ACTIVE)));
+
+    // when
+    regionA.forEach(TestStandaloneBroker::stop);
+
+    // then - the failover is replaced by one decided after the first
+    final var second = awaitRegionFailover(survivors, first.getTickId());
+    assertThat(second.getFailedRegion()).isEqualTo(REGION_A);
+    assertThat(second.getTargetRegion()).isEqualTo(REGION_B);
+    Awaitility.await("every survivor reports the latest failover tick")
+        .atMost(TIMEOUT)
+        .untilAsserted(
+            () ->
+                assertThat(survivors)
+                    .allSatisfy(
+                        survivor ->
+                            assertThat(failoverTickMetric(survivor))
+                                .isEqualTo((double) second.getTickId())));
+  }
+
+  @Test
   void shouldNotFailOverWhileDataRegionHasLiveBroker() {
     // given
     awaitEveryRegionActive(systemPartitionBrokers);
@@ -219,6 +256,21 @@ final class SystemPartitionRegionFailoverIT {
               assertThat(regionFailover(observer)).isEmpty();
               assertThat(regionState(observer, REGION_A)).isEqualTo(RegionState.SUSPECT);
             });
+  }
+
+  /** Awaits every broker to apply the same failover decided after the given tick. */
+  private RegionFailoverValue awaitRegionFailover(
+      final List<TestStandaloneBroker> brokers, final long afterTick) {
+    return Awaitility.await("every broker applied a region failover after tick " + afterTick)
+        .atMost(TIMEOUT)
+        .until(
+            () -> brokers.stream().map(this::regionFailover).toList(),
+            failovers ->
+                failovers.stream()
+                    .allMatch(
+                        failover -> failover.isPresent() && failover.get().getTickId() > afterTick))
+        .getFirst()
+        .orElseThrow();
   }
 
   private TestStandaloneBroker broker(final String zone, final int nodeId) {
