@@ -150,8 +150,24 @@ public final class ClusterCfg implements ConfigurationEntry {
       throw new IllegalArgumentException(String.format(ZONE_NOT_FOUND_ERROR_MSG, zone, zoneNames));
     }
 
+    if (zones.stream().allMatch(ZoneCfg::isControl)) {
+      throw new IllegalArgumentException(
+          "Expected at least one data zone to host the data partitions, but every zone is a"
+              + " control zone.");
+    }
+
     zones.forEach(
         cfg -> {
+          if (cfg.isControl()) {
+            if (cfg.numberOfBrokers() < 1 || cfg.numberOfReplicas() != 0) {
+              throw new IllegalArgumentException(
+                  String.format(
+                      "Control zone '%s' must have at least 1 broker and 0 replicas, as it hosts no"
+                          + " data partitions.",
+                      cfg.name()));
+            }
+            return;
+          }
           if (cfg.numberOfReplicas() > cfg.numberOfBrokers()) {
             throw new IllegalArgumentException(
                 String.format(

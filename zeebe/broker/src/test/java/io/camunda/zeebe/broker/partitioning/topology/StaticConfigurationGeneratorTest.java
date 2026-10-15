@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
+import io.camunda.zeebe.broker.system.syspartition.RegionTopologyTestSupport;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -279,6 +280,33 @@ fixed:
     // Primary should be from the highest-priority zone (us-east)
     partitionDistribution.forEach(
         p -> assertThat(p.getPrimary().orElseThrow().isInZone("us-east")).isTrue());
+  }
+
+  @Test
+  void shouldNotPlaceDataPartitionsInControlZone() {
+    // given - 3x3x1: two data zones of 3 brokers and a control zone of 1 broker
+    final var brokerCfg = RegionTopologyTestSupport.threeByThreeByOne(5);
+    brokerCfg.getCluster().setPartitionsCount(3);
+    brokerCfg.setExporters(Map.of());
+
+    // when
+    final var staticConfiguration =
+        StaticConfigurationGenerator.getStaticConfiguration(
+            brokerCfg,
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, brokerCfg),
+            MemberId.from(RegionTopologyTestSupport.REGION_A, 0));
+
+    // then - the control broker is no member of the data cluster and hosts no replica
+    assertThat(staticConfiguration.clusterMembers())
+        .hasSize(6)
+        .noneMatch(member -> member.isInZone(RegionTopologyTestSupport.CONTROL));
+    assertThat(staticConfiguration.generatePartitionDistribution())
+        .hasSize(3)
+        .allSatisfy(
+            partition ->
+                assertThat(partition.members())
+                    .hasSize(4)
+                    .noneMatch(member -> member.isInZone(RegionTopologyTestSupport.CONTROL)));
   }
 
   @Test

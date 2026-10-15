@@ -13,7 +13,9 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.SystemPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -23,7 +25,9 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,9 +47,8 @@ import java.util.stream.Stream;
  * system-partition-0-*}) and data directory ({@code <data>/system/partitions/0}) never collide with
  * data partitions.
  *
- * <p>Its voters are derived from the static cluster configuration: every broker of every configured
- * zone (zone-aware partitioning), or node ids {@code 0..clusterSize-1} otherwise. Changing this
- * membership at runtime is out of scope for now.
+ * <p>Its voters are derived from the static cluster configuration, see {@link #members(BrokerCfg)}.
+ * Changing this membership at runtime is out of scope for now.
  */
 public final class SystemPartition {
   public static final String GROUP = "system";
@@ -192,28 +195,42 @@ public final class SystemPartition {
     return meterRegistry;
   }
 
-  /** Every broker of the cluster is a voter of the system partition. */
+  /**
+   * Returns the voters of the system partition: as many as its replication factor, every broker by
+   * default. With zone-aware partitioning, they are taken round-robin from the zones in their
+   * configured order, control zones included, each zone contributing its brokers by ascending node
+   * id: 5 voters over zones of 3, 3 and 1 brokers are the first 2, 2 and 1 brokers of each.
+   */
   public static Set<MemberId> members(final BrokerCfg brokerCfg) {
+    final var replicationFactor =
+        Objects.requireNonNullElse(
+            brokerCfg.getCluster().getSystemPartition().getReplicationFactor(),
+            SystemPartitionCfg.brokerCount(brokerCfg));
     final var partitioning = brokerCfg.getExperimental().getPartitioning();
-    if (partitioning.getScheme() == Scheme.ZONE_AWARE) {
-      return partitioning.getZoneAware().zones().stream()
-          .flatMap(
-              zone ->
-                  IntStream.range(0, zone.numberOfBrokers())
-                      .mapToObj(nodeId -> MemberId.from(zone.name(), nodeId)))
+    if (partitioning.getScheme() != Scheme.ZONE_AWARE) {
+      return IntStream.range(0, replicationFactor)
+          .mapToObj(nodeId -> MemberId.from(Integer.toString(nodeId)))
           .collect(Collectors.toUnmodifiableSet());
     }
 
-    return IntStream.range(0, brokerCfg.getCluster().getClusterSize())
-        .mapToObj(nodeId -> MemberId.from(Integer.toString(nodeId)))
-        .collect(Collectors.toUnmodifiableSet());
+    final var zones = partitioning.getZoneAware().zones();
+    final var largestZone = zones.stream().mapToInt(ZoneCfg::numberOfBrokers).max().orElse(0);
+    final var members = new HashSet<MemberId>();
+    for (int nodeId = 0; nodeId < largestZone && members.size() < replicationFactor; nodeId++) {
+      for (final var zone : zones) {
+        if (nodeId < zone.numberOfBrokers() && members.size() < replicationFactor) {
+          members.add(MemberId.from(zone.name(), nodeId));
+        }
+      }
+    }
+    return Set.copyOf(members);
   }
 
   static PartitionMetadata metadata(final BrokerCfg brokerCfg) {
-    final var members = members(brokerCfg).stream().sorted().toList();
+    final var members = byElectionPreference(brokerCfg);
     // Priority election derives election timeouts from priorities: voters with equal priorities
-    // time out together and keep splitting the vote. Distinct priorities avoid that; which voter
-    // is preferred as leader does not matter for the system partition.
+    // time out together and keep splitting the vote, so every voter gets a distinct one. Control
+    // zone voters come first and are thereby preferred as leader.
     final var priorities = new HashMap<MemberId, Integer>();
     for (int i = 0; i < members.size(); i++) {
       priorities.put(members.get(i), members.size() - i);
@@ -224,5 +241,23 @@ public final class SystemPartition {
         Map.copyOf(priorities),
         members.size(),
         members.getFirst());
+  }
+
+  private static List<MemberId> byElectionPreference(final BrokerCfg brokerCfg) {
+    final var partitioning = brokerCfg.getExperimental().getPartitioning();
+    final Set<String> controlZones =
+        partitioning.getScheme() == Scheme.ZONE_AWARE
+            ? partitioning.getZoneAware().zones().stream()
+                .filter(ZoneCfg::isControl)
+                .map(ZoneCfg::name)
+                .collect(Collectors.toUnmodifiableSet())
+            : Set.of();
+    return members(brokerCfg).stream()
+        .sorted(
+            Comparator.comparing(
+                    (MemberId member) ->
+                        controlZones.stream().noneMatch(zone -> member.isInZone(zone)))
+                .thenComparing(Comparator.naturalOrder()))
+        .toList();
   }
 }
