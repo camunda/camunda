@@ -96,6 +96,11 @@ public class ActorControl implements ConcurrencyControl {
         job -> new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, true));
   }
 
+  @Override
+  public ScheduledTimer scheduleAtFixedRate(final Duration delay, final Runnable runnable) {
+    return runAtFixedRate(delay, runnable);
+  }
+
   /**
    * Schedule a timer task at (or after) a timestamp.
    *
