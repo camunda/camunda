@@ -8,12 +8,22 @@
 package io.camunda.zeebe.dynamic.config.gossip;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
@@ -26,6 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -34,6 +45,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
@@ -160,6 +174,53 @@ final class ClusterConfigurationGossiperTest {
     Awaitility.await("The new listener was backfilled with the configuration")
         .untilAsserted(() -> assertThat(backfilled.get()).isEqualTo(node1Configuration));
     assertThat(backfilled.get().hasPartitionGroup("tenanta")).isTrue();
+  }
+
+  @Test
+  void shouldKeepSyncingWhenNoPeerIsKnownAtFirstTick() {
+    // given — a gossiper whose membership only contains the local member. The test executor queues
+    // scheduled tasks, so every sync tick is triggered explicitly rather than by waiting.
+    final var executor = new TestConcurrencyControl(true);
+    final var localMember = Member.member(MemberId.from("local"), Address.from("localhost:26501"));
+    final var peer = Member.member(MemberId.from("peer"), Address.from("localhost:26502"));
+    final var members = new CopyOnWriteArraySet<>(Set.of(localMember));
+    final var membershipService = mock(ClusterMembershipService.class);
+    when(membershipService.getLocalMember()).thenReturn(localMember);
+    when(membershipService.getMembers()).thenAnswer(i -> Set.copyOf(members));
+    final var communicationService = mock(ClusterCommunicationService.class);
+    when(communicationService.send(any(), any(), any(), any(), any(), any()))
+        .thenReturn(new CompletableFuture<>());
+    final var gossiper =
+        new ClusterConfigurationGossiper(
+            executor,
+            communicationService,
+            membershipService,
+            new ProtoBufSerializer(),
+            new ClusterConfigurationGossiperConfig(
+                Duration.ofMillis(100),
+                Duration.ofSeconds(1),
+                0,
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(1)),
+            ignored -> {},
+            topologyMetrics);
+    gossiper.start();
+    assertThat(executor.scheduledTasks()).as("first sync tick is scheduled").isOne();
+
+    // when — the first tick runs while no peer is known
+    executor.runAll();
+
+    // then — no request is sent, but the next tick is already scheduled
+    verify(communicationService, never()).send(any(), any(), any(), any(), any(), any());
+    assertThat(executor.scheduledTasks()).as("next sync tick is scheduled").isOne();
+
+    // when — a peer shows up and the next tick runs
+    members.add(peer);
+    executor.runAll();
+
+    // then
+    verify(communicationService)
+        .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer.id()), any());
   }
 
   private Node createNode(final String id) {
