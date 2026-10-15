@@ -21,10 +21,14 @@ const SEGMENT_MAX = [23, 59, 59];
 
 function stepTimeSegment(value: string, caret: number, delta: 1 | -1) {
 	const parts = value.split(':');
-	const base = parts.length === 3 && parts.every((part) => /^\d{1,2}$/.test(part)) ? parts.map(Number) : [0, 0, 0];
+	const isComplete = parts.length === 3 && parts.every((part) => /^\d{1,2}$/.test(part));
+	if (value !== '' && !isComplete) {
+		return undefined;
+	}
+	const base = isComplete ? parts.map(Number) : [0, 0, 0];
 	const segment = Math.min(Math.floor(caret / 3), 2);
-	const size = SEGMENT_MAX[segment] + 1;
-	base[segment] = (base[segment] + delta + size) % size;
+	const size = (SEGMENT_MAX[segment] ?? 59) + 1;
+	base[segment] = ((base[segment] ?? 0) + delta + size) % size;
 	return {value: base.map((part) => String(part).padStart(2, '0')).join(':'), segment};
 }
 
@@ -50,6 +54,9 @@ const TimeInput: React.FC<Props> = ({type, labelText}) => {
 								event.preventDefault();
 								const target = event.currentTarget;
 								const next = stepTimeSegment(input.value, target.selectionStart ?? 0, event.key === 'ArrowUp' ? 1 : -1);
+								if (next === undefined) {
+									return;
+								}
 								input.onChange(next.value);
 								requestAnimationFrame(() => target.setSelectionRange(next.segment * 3, next.segment * 3 + 2));
 							}}

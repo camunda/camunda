@@ -1402,6 +1402,7 @@
 				"toolbar": {
 					"delete": "Eliminar",
 					"discard": "Descartar",
+					"bulkActionsLabel": "Acciones en bloque",
 					"itemsSelected": "{{count}} elementos seleccionados",
 					"itemSelected": "{{count}} elemento seleccionado",
 					"itemsSelectedTruncated": "{{count}}+ elementos seleccionados",

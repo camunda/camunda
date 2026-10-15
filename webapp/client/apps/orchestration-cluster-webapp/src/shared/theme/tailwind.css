@@ -29,6 +29,7 @@
  * (nested `:has()` + attribute selector).
  */
 @source inline("[&_tbody_tr:has([aria-checked=true])]:bg-[var(--accent-background-subtle)]");
+@source inline("[&_tr:has([data-skeleton-edge])_[role=checkbox]]:hidden");
 
 /*
  * Same scanner limitation for the compound arbitrary-variant candidates that

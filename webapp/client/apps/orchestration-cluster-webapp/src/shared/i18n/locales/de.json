@@ -1402,6 +1402,7 @@
 				"toolbar": {
 					"delete": "Löschen",
 					"discard": "Verwerfen",
+					"bulkActionsLabel": "Massenaktionen",
 					"itemsSelected": "{{count}} Elemente ausgewählt",
 					"itemSelected": "{{count}} Element ausgewählt",
 					"itemsSelectedTruncated": "{{count}}+ Elemente ausgewählt",

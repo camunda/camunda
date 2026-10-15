@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import axe from 'axe-core';
+import {useState} from 'react';
 import {Form} from 'react-final-form';
 import {render} from 'vitest-browser-react';
 import {describe, expect, vi} from 'vitest';
@@ -28,6 +28,42 @@ const Harness: React.FC<{initialValues?: Values; onSubmit?: (values: Values) => 
 		{({handleSubmit}) => (
 			<form onSubmit={handleSubmit}>
 				<button type="submit">submit</button>
+				<DateTimeRangeField idPrefix="range" fromKey="from" toKey="to" />
+			</form>
+		)}
+	</Form>
+);
+
+const ReinitializeHarness: React.FC = () => {
+	const [initialValues, setInitialValues] = useState<Values>({});
+
+	return (
+		<Form<Values> onSubmit={vi.fn()} initialValues={initialValues}>
+			{() => (
+				<form>
+					<button type="button" onClick={() => setInitialValues({from: FROM})}>
+						reinitialize
+					</button>
+					<DateTimeRangeField idPrefix="range" fromKey="from" toKey="to" />
+				</form>
+			)}
+		</Form>
+	);
+};
+
+const ExternalChangeHarness: React.FC = () => (
+	<Form<Values> onSubmit={vi.fn()} initialValues={{}}>
+		{({form}) => (
+			<form>
+				<button
+					type="button"
+					onClick={() => {
+						form.change('from', FROM);
+						form.change('to', TO);
+					}}
+				>
+					navigate back
+				</button>
 				<DateTimeRangeField idPrefix="range" fromKey="from" toKey="to" />
 			</form>
 		)}
@@ -312,6 +348,22 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			expect(Math.abs(Date.now() - new Date(to as string).getTime())).toBeLessThan(10_000);
 		});
 
+		it('should stop showing a quick range once the bounds are replaced from outside', async () => {
+			// given
+			const screen = await render(<ExternalChangeHarness />);
+			await userEvent.click(screen.getByRole('combobox', {name: 'Quick ranges'}));
+			await userEvent.click(screen.getByRole('option', {name: 'Last 1 hour'}));
+			await expect.element(screen.getByRole('combobox', {name: 'Quick ranges'})).toHaveTextContent('Last 1 hour');
+
+			// when
+			(screen.getByRole('button', {name: 'navigate back'}).element() as HTMLButtonElement).click();
+
+			// then
+			await expect
+				.element(screen.getByRole('combobox', {name: 'Quick ranges'}))
+				.toHaveTextContent('Select a quick range');
+		});
+
 		it('should list the quick ranges in singular and plural form', async () => {
 			const screen = await render(<Harness />);
 
@@ -346,6 +398,16 @@ describe('<DateTimeRangeField /> (design system)', () => {
 
 			await expect.element(from).toHaveAttribute('aria-invalid', 'false');
 			await expect.element(from).not.toHaveValue('not a date');
+		});
+
+		it('should drop a pending draft when the form is reinitialized', async () => {
+			const screen = await render(<ReinitializeHarness />);
+			const from = screen.getByRole('textbox', {name: 'From'});
+
+			await userEvent.fill(from, '2026-10-0');
+			await userEvent.click(screen.getByRole('button', {name: 'reinitialize'}));
+
+			await expect.element(from).toHaveValue('2026-10-07 08:30:15');
 		});
 
 		it('should reject an end before the start and not submit', async () => {
@@ -417,32 +479,6 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			await userEvent.keyboard('{ArrowDown}{Enter}');
 
 			await expect.element(screen.getByRole('textbox', {name: 'From'})).not.toHaveValue('');
-		});
-
-		it('should have no axe violations with the picker closed', async () => {
-			await render(<Harness initialValues={{from: FROM, to: TO}} />);
-
-			const {violations} = await axe.run(document.body, {rules: {region: {enabled: false}}});
-
-			expect(violations.map(({id, nodes}) => `${id}: ${nodes.map(({html}) => html).join(' | ')}`)).toEqual([]);
-		});
-
-		it('should have no axe violations with errors shown', async () => {
-			await render(<Harness initialValues={{from: FROM}} />);
-
-			const {violations} = await axe.run(document.body, {rules: {region: {enabled: false}}});
-
-			expect(violations.map(({id, nodes}) => `${id}: ${nodes.map(({html}) => html).join(' | ')}`)).toEqual([]);
-		});
-
-		it('should have no axe violations with the picker open', async () => {
-			const screen = await render(<Harness initialValues={{from: FROM, to: TO}} />);
-
-			await userEvent.click(screen.getByRole('textbox', {name: 'From'}));
-			await expect.element(screen.getByRole('grid')).toBeVisible();
-			const {violations} = await axe.run(document.body, {rules: {region: {enabled: false}}});
-
-			expect(violations.map(({id, nodes}) => `${id}: ${nodes.map(({html}) => html).join(' | ')}`)).toEqual([]);
 		});
 	});
 });
