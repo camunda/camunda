@@ -3546,6 +3546,7 @@ final class JsonSerializableToJsonTest {
                     .setExternalId("ext-1")
                     .setActive(false)
                     .setAttributes(Map.of("department", "sales"))
+                    .setSource("entra")
                     .setChangedAttributes(Set.of(UserAttribute.ACTIVE)),
         """
                 {
@@ -3556,7 +3557,8 @@ final class JsonSerializableToJsonTest {
                   "password": "f00b4r",
                   "externalId": "ext-1",
                   "active": false,
-                  "attributes": {"department": "sales"}
+                  "attributes": {"department": "sales"},
+                  "source": "entra"
                 }
                 """
       },
@@ -3577,7 +3579,8 @@ final class JsonSerializableToJsonTest {
                   "password": "",
                   "externalId": "",
                   "active": true,
-                  "attributes": {}
+                  "attributes": {},
+                  "source": ""
                 }
                 """
       },
@@ -3960,6 +3963,7 @@ final class JsonSerializableToJsonTest {
                     .setExternalId("ext-1")
                     .setEntityIds(List.of("user1", "user2"))
                     .setAttributes(Map.of("costCenter", "cc-1"))
+                    .setSource("entra")
                     .setChangedAttributes(Set.of(GroupAttribute.NAME)),
         """
                 {
@@ -3971,7 +3975,8 @@ final class JsonSerializableToJsonTest {
                   "entityType": "USER",
                   "externalId": "ext-1",
                   "entityIds": ["user1", "user2"],
-                  "attributes": {"costCenter": "cc-1"}
+                  "attributes": {"costCenter": "cc-1"},
+                  "source": "entra"
                 }
                 """
       },
@@ -3993,7 +3998,8 @@ final class JsonSerializableToJsonTest {
                   "entityType": "UNSPECIFIED",
                   "externalId": "",
                   "entityIds": [],
-                  "attributes": {}
+                  "attributes": {},
+                  "source": ""
                 }
                 """
       },
@@ -4012,7 +4018,8 @@ final class JsonSerializableToJsonTest {
                     .setClaimValue("claimValue")
                     .setMappingRuleId("id1")
                     .setName("name")
-                    .setType(MappingRuleType.USER_ATTRIBUTE),
+                    .setType(MappingRuleType.USER_ATTRIBUTE)
+                    .setOrigin("entra"),
         """
                 {
                   "mappingRuleKey": 1,
@@ -4020,7 +4027,8 @@ final class JsonSerializableToJsonTest {
                   "claimValue": "claimValue",
                   "mappingRuleId": "id1",
                   "name": "name",
-                  "type": "USER_ATTRIBUTE"
+                  "type": "USER_ATTRIBUTE",
+                  "origin": "entra"
                 }
                 """
       },
@@ -4040,7 +4048,8 @@ final class JsonSerializableToJsonTest {
                   "claimName": "",
                   "claimValue": "",
                   "name": "",
-                  "type": "TOKEN_CLAIM"
+                  "type": "TOKEN_CLAIM",
+                  "origin": ""
                 }
                 """
       },
@@ -4149,7 +4158,8 @@ final class JsonSerializableToJsonTest {
                       "password": "password",
                       "externalId": "",
                       "active": true,
-                      "attributes": {}
+                      "attributes": {},
+                      "source": ""
                     },
                     {
                       "userKey": 4,
@@ -4159,7 +4169,8 @@ final class JsonSerializableToJsonTest {
                       "password": "qux",
                       "externalId": "",
                       "active": true,
-                      "attributes": {}
+                      "attributes": {},
+                      "source": ""
                     }
                   ],
                   "defaultTenant": {
@@ -4197,7 +4208,8 @@ final class JsonSerializableToJsonTest {
                       "claimName": "claim1",
                       "claimValue": "value1",
                       "name": "Claim 1",
-                      "type": "TOKEN_CLAIM"
+                      "type": "TOKEN_CLAIM",
+                      "origin": ""
                     },
                     {
                       "mappingRuleKey": 7,
@@ -4205,7 +4217,8 @@ final class JsonSerializableToJsonTest {
                       "claimName": "claim2",
                       "claimValue": "value2",
                       "name": "Claim 2",
-                      "type": "TOKEN_CLAIM"
+                      "type": "TOKEN_CLAIM",
+                      "origin": ""
                     }
                   ],
                   "authorizations": [
@@ -4230,7 +4243,8 @@ final class JsonSerializableToJsonTest {
                       "entityType": "UNSPECIFIED",
                       "externalId": "",
                       "entityIds": [],
-                      "attributes": {}
+                      "attributes": {},
+                      "source": ""
                     }
                   ],
                   "groupMembers": [
@@ -4243,7 +4257,8 @@ final class JsonSerializableToJsonTest {
                       "entityType": "USER",
                       "externalId": "",
                       "entityIds": [],
-                      "attributes": {}
+                      "attributes": {},
+                      "source": ""
                     }
                   ]
                 }

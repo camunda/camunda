@@ -99,6 +99,84 @@ public class MappingRuleTest {
   }
 
   @Test
+  public void shouldCreateMappingRuleWithoutOriginByDefault() {
+    // given
+    final var id = Strings.newRandomValidIdentityId();
+
+    // when
+    final var created =
+        engine
+            .mappingRule()
+            .newMappingRule(id)
+            .withClaimName(UUID.randomUUID().toString())
+            .withClaimValue("value")
+            .withName("name")
+            .create();
+
+    // then
+    assertThat(created.getValue()).hasOrigin("");
+    Assertions.assertThat(
+            engine.getProcessingState().getMappingRuleState().get(id).orElseThrow().getOrigin())
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldCreateMappingRuleWithOrigin() {
+    // given
+    final var id = Strings.newRandomValidIdentityId();
+
+    // when
+    final var created =
+        engine
+            .mappingRule()
+            .newMappingRule(id)
+            .withClaimName("$.department")
+            .withClaimValue("sales")
+            .withName("name")
+            .withType(MappingRuleType.USER_ATTRIBUTE)
+            .withOrigin("entra")
+            .create();
+
+    // then
+    assertThat(created.getValue()).hasOrigin("entra");
+    Assertions.assertThat(
+            engine.getProcessingState().getMappingRuleState().get(id).orElseThrow().getOrigin())
+        .isEqualTo("entra");
+  }
+
+  @Test
+  public void shouldUpdateMappingRuleOrigin() {
+    // given
+    final var id = Strings.newRandomValidIdentityId();
+    final var claimName = UUID.randomUUID().toString();
+    engine
+        .mappingRule()
+        .newMappingRule(id)
+        .withClaimName(claimName)
+        .withClaimValue("value")
+        .withName("name")
+        .withOrigin("entra")
+        .create();
+
+    // when
+    final var updated =
+        engine
+            .mappingRule()
+            .updateMappingRule(id)
+            .withClaimName(claimName)
+            .withClaimValue("value")
+            .withName("name")
+            .withOrigin("keycloak")
+            .update();
+
+    // then
+    assertThat(updated.getValue()).hasOrigin("keycloak");
+    Assertions.assertThat(
+            engine.getProcessingState().getMappingRuleState().get(id).orElseThrow().getOrigin())
+        .isEqualTo("keycloak");
+  }
+
+  @Test
   public void shouldUpdateMappingRuleType() {
     // given
     final var id = Strings.newRandomValidIdentityId();

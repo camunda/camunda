@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord.GroupAttribute;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -83,6 +84,21 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
+    final var ownership =
+        SourceOwnership.check(
+            "delete",
+            "group",
+            groupId,
+            persistedRecord.get().getSource(),
+            record.getSource(),
+            record.getChangedAttributes().contains(GroupAttribute.SOURCE));
+    if (ownership.isPresent()) {
+      final var rejection = ownership.get();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

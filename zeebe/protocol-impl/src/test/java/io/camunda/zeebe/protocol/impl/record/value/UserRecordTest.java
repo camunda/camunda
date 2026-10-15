@@ -32,7 +32,7 @@ final class UserRecordTest {
     assertThat(userRecordString)
         .isEqualTo(
             """
-      {"userKey":-1,"username":"myUser","name":"","email":"","password":"***","externalId":"","active":true,"changedAttributes":[],"attributes":"gA=="}""");
+      {"userKey":-1,"username":"myUser","name":"","email":"","password":"***","externalId":"","active":true,"changedAttributes":[],"attributes":"gA==","source":""}""");
   }
 
   @Test

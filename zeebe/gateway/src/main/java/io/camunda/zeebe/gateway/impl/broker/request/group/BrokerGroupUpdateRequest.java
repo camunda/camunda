@@ -53,6 +53,11 @@ public class BrokerGroupUpdateRequest extends BrokerExecuteCommand<GroupRecord> 
     return this;
   }
 
+  public BrokerGroupUpdateRequest setSource(final String source) {
+    requestDto.setSource(source);
+    return this;
+  }
+
   @Override
   public GroupRecord getRequestWriter() {
     return requestDto;

@@ -69,6 +69,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
     persistedMappingRule.setMappingRuleKey(mappingRuleRecord.getMappingRuleKey());
     persistedMappingRule.setMappingRuleId(mappingRuleId);
     persistedMappingRule.setType(mappingRuleRecord.getType());
+    persistedMappingRule.setOrigin(mappingRuleRecord.getOrigin());
 
     mappingRuleColumnFamily.insert(claim, persistedMappingRule);
     claimByIdColumnFamily.insert(this.mappingRuleId, fkClaim);
@@ -89,6 +90,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
               persistedMappingRule.setClaimName(mappingRuleRecord.getClaimName());
               persistedMappingRule.setClaimValue(mappingRuleRecord.getClaimValue());
               persistedMappingRule.setType(mappingRuleRecord.getType());
+              persistedMappingRule.setOrigin(mappingRuleRecord.getOrigin());
 
               claimName.wrapString(persistedMappingRule.getClaimName());
               claimValue.wrapString(persistedMappingRule.getClaimValue());

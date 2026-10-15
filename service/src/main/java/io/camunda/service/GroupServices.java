@@ -88,7 +88,8 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             .setName(groupDTO.name)
             .setDescription(groupDTO.description)
             .setExternalId(groupDTO.externalId)
-            .setAttributes(groupDTO.attributes),
+            .setAttributes(groupDTO.attributes)
+            .setSource(groupDTO.source),
         authentication);
   }
 
@@ -126,6 +127,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             .setDescription(groupDTO.description)
             .setExternalId(groupDTO.externalId)
             .setAttributes(groupDTO.attributes)
+            .setSource(groupDTO.source)
             .setChangedAttributes(
                 changedAttributes.stream()
                     .map(attribute -> GroupRecord.GroupAttribute.valueOf(attribute.name()))
@@ -138,12 +140,65 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
     return sendBrokerRequest(new BrokerGroupDeleteRequest(groupId), authentication);
   }
 
+  /**
+   * Deletes a group on behalf of a SCIM source: a group owned by another source does not exist for
+   * the source, and an unowned group is only deleted if {@code adoptUnowned} is set.
+   */
+  public CompletableFuture<GroupRecord> deleteGroup(
+      final String groupId,
+      final String source,
+      final boolean adoptUnowned,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerGroupDeleteRequest(groupId)
+            .setSource(source)
+            .setChangedAttributes(adoption(adoptUnowned)),
+        authentication);
+  }
+
+  private static List<GroupRecord.GroupAttribute> adoption(final boolean adoptUnowned) {
+    return adoptUnowned ? List.of(GroupRecord.GroupAttribute.SOURCE) : List.of();
+  }
+
   public CompletableFuture<GroupRecord> assignMember(
       final GroupMemberDTO groupMemberDTO, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createAddRequest(groupMemberDTO.groupId)
             .setMemberId(groupMemberDTO.memberId)
             .setMemberType(AuthzModelMapper.toProtocol(groupMemberDTO.memberType)),
+        authentication);
+  }
+
+  /**
+   * Assigns a member on behalf of a SCIM source: a member user must be owned by the same source,
+   * and an unowned group is adopted if {@code adoptUnowned} is set.
+   */
+  public CompletableFuture<GroupRecord> assignMember(
+      final GroupMemberDTO groupMemberDTO,
+      final String source,
+      final boolean adoptUnowned,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        BrokerGroupMemberRequest.createAddRequest(groupMemberDTO.groupId)
+            .setMemberId(groupMemberDTO.memberId)
+            .setMemberType(AuthzModelMapper.toProtocol(groupMemberDTO.memberType))
+            .setSource(source)
+            .setChangedAttributes(adoption(adoptUnowned)),
+        authentication);
+  }
+
+  /** Removes a member on behalf of a SCIM source, see {@link #assignMember}. */
+  public CompletableFuture<GroupRecord> removeMember(
+      final GroupMemberDTO groupMemberDTO,
+      final String source,
+      final boolean adoptUnowned,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        BrokerGroupMemberRequest.createRemoveRequest(groupMemberDTO.groupId)
+            .setMemberId(groupMemberDTO.memberId)
+            .setMemberType(AuthzModelMapper.toProtocol(groupMemberDTO.memberType))
+            .setSource(source)
+            .setChangedAttributes(adoption(adoptUnowned)),
         authentication);
   }
 
@@ -173,6 +228,23 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         authentication);
   }
 
+  /** Replaces the membership on behalf of a SCIM source, see {@link #assignMember}. */
+  public CompletableFuture<GroupRecord> setMembers(
+      final String groupId,
+      final EntityType memberType,
+      final Collection<String> memberIds,
+      final String source,
+      final boolean adoptUnowned,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerGroupSetEntitiesRequest(groupId)
+            .setEntityType(AuthzModelMapper.toProtocol(memberType))
+            .setEntityIds(memberIds)
+            .setSource(source)
+            .setChangedAttributes(adoption(adoptUnowned)),
+        authentication);
+  }
+
   public SearchQueryResult<GroupMemberEntity> searchMembers(
       final GroupMemberQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
@@ -189,7 +261,9 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
     DESCRIPTION,
     EXTERNAL_ID,
     ATTRIBUTES,
-    ATTRIBUTES_MERGE
+    ATTRIBUTES_MERGE,
+    /** Adopts an unowned group by setting the source of the request. */
+    SOURCE
   }
 
   public record GroupDTO(
@@ -197,18 +271,28 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
       String name,
       String description,
       String externalId,
-      Map<String, Object> attributes) {
+      Map<String, Object> attributes,
+      String source) {
+
+    public GroupDTO(
+        final String groupId,
+        final String name,
+        final String description,
+        final String externalId,
+        final Map<String, Object> attributes) {
+      this(groupId, name, description, externalId, attributes, "");
+    }
 
     public GroupDTO(
         final String groupId,
         final String name,
         final String description,
         final String externalId) {
-      this(groupId, name, description, externalId, Map.of());
+      this(groupId, name, description, externalId, Map.of(), "");
     }
 
     public GroupDTO(final String groupId, final String name, final String description) {
-      this(groupId, name, description, "", Map.of());
+      this(groupId, name, description, "", Map.of(), "");
     }
   }
 

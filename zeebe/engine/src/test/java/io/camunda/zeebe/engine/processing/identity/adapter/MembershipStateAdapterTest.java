@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity.adapter;
 
+import static io.camunda.zeebe.auth.Authorization.LOGIN_SOURCE;
 import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -235,6 +237,172 @@ final class MembershipStateAdapterTest {
 
     // then
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldOnlyMatchTokenClaimRuleWithOriginForLoginOfThatSource() {
+    // given
+    final var anyRule = createRule("department", "Finance", MappingRuleType.TOKEN_CLAIM, "");
+    final var entraRule = createRule("department", "Sales", MappingRuleType.TOKEN_CLAIM, "entra");
+    final var claims = Map.<String, Object>of("department", "Sales");
+
+    // when / then
+    assertThat(adapter.mappingRuleIds(loginQuery("alice", claims, "entra")))
+        .containsExactly(entraRule);
+    assertThat(adapter.mappingRuleIds(loginQuery("alice", claims, "keycloak"))).isEmpty();
+    assertThat(adapter.mappingRuleIds(loginQuery("alice", claims, null))).isEmpty();
+    assertThat(
+            adapter.mappingRuleIds(
+                loginQuery("alice", Map.of("department", "Finance"), "keycloak")))
+        .containsExactly(anyRule);
+  }
+
+  @Test
+  void shouldNotTakeLoginSourceFromTokenClaims() {
+    // given
+    createRule("department", "Sales", MappingRuleType.TOKEN_CLAIM, "entra");
+    final var claims = Map.<String, Object>of("department", "Sales", LOGIN_SOURCE, "entra");
+
+    // when
+    final var result = adapter.mappingRuleIds(loginQuery("alice", claims, null));
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldOnlyMatchUserAttributeRuleWithOriginForUserOfThatSource() {
+    // given
+    final var anyRule = createRule("$.department", "Finance", MappingRuleType.USER_ATTRIBUTE, "");
+    final var entraRule = createRule("$.team", "Finance", MappingRuleType.USER_ATTRIBUTE, "entra");
+    final var attributes = Map.<String, Object>of("department", "Finance", "team", "Finance");
+    createUser("entra-user", attributes, "entra");
+    createUser("keycloak-user", attributes, "keycloak");
+    createUser("unowned-user", attributes, "");
+
+    // when / then
+    assertThat(adapter.mappingRuleIds(userQuery("entra-user", Map.of())))
+        .containsExactlyInAnyOrder(anyRule, entraRule);
+    assertThat(adapter.mappingRuleIds(userQuery("keycloak-user", Map.of())))
+        .containsExactly(anyRule);
+    assertThat(adapter.mappingRuleIds(userQuery("unowned-user", Map.of())))
+        .containsExactly(anyRule);
+  }
+
+  @Test
+  void shouldIgnoreLoginSourceForUserAttributeRules() {
+    // given
+    createRule("$.department", "Finance", MappingRuleType.USER_ATTRIBUTE, "entra");
+    createUser("keycloak-user", Map.of("department", "Finance"), "keycloak");
+
+    // when
+    final var result = adapter.mappingRuleIds(loginQuery("keycloak-user", Map.of(), "entra"));
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldOnlyConsiderGroupsOfTheUsersSourceForGroupAttributeRules() {
+    // given
+    final var ruleId = createRule("$.region", "EMEA", MappingRuleType.GROUP_ATTRIBUTE, "");
+    createUser("alice", Map.of(), "entra");
+    createGroupWithAttributes("alice", EntityType.USER, Map.of("region", "EMEA"), "keycloak");
+    createUser("bob", Map.of(), "entra");
+    createGroupWithAttributes("bob", EntityType.USER, Map.of("region", "EMEA"), "entra");
+
+    // when / then
+    assertThat(adapter.mappingRuleIds(userQuery("alice", Map.of()))).isEmpty();
+    assertThat(adapter.mappingRuleIds(userQuery("bob", Map.of()))).containsExactly(ruleId);
+  }
+
+  @Test
+  void shouldNotMatchGroupAttributeRuleWithOriginForUserOfOtherSource() {
+    // given
+    createRule("$.region", "EMEA", MappingRuleType.GROUP_ATTRIBUTE, "entra");
+    createUser("alice", Map.of(), "keycloak");
+    createGroupWithAttributes("alice", EntityType.USER, Map.of("region", "EMEA"), "keycloak");
+
+    // when
+    final var result = adapter.mappingRuleIds(userQuery("alice", Map.of()));
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldMatchGroupAttributeRuleWithOriginForUserOfThatSource() {
+    // given
+    final var ruleId = createRule("$.region", "EMEA", MappingRuleType.GROUP_ATTRIBUTE, "entra");
+    createUser("alice", Map.of(), "entra");
+    createGroupWithAttributes("alice", EntityType.USER, Map.of("region", "EMEA"), "entra");
+
+    // when
+    final var result = adapter.mappingRuleIds(userQuery("alice", Map.of()));
+
+    // then
+    assertThat(result).containsExactly(ruleId);
+  }
+
+  private static MembershipQuery loginQuery(
+      final String username, final Map<String, Object> tokenClaims, final String loginSource) {
+    final Map<String, Object> claims = new HashMap<>();
+    claims.put(USER_TOKEN_CLAIMS, tokenClaims);
+    if (loginSource != null) {
+      claims.put(LOGIN_SOURCE, loginSource);
+    }
+    return new MembershipQuery(claims, username, PrincipalType.USER);
+  }
+
+  private void createGroupWithAttributes(
+      final String entityId,
+      final EntityType entityType,
+      final Map<String, Object> attributes,
+      final String source) {
+    final var groupKey = random.nextLong();
+    final var group =
+        new GroupRecord()
+            .setGroupKey(groupKey)
+            .setGroupId(Strings.newRandomValidIdentityId())
+            .setName(UUID.randomUUID().toString())
+            .setDescription(UUID.randomUUID().toString())
+            .setAttributes(attributes)
+            .setSource(source)
+            .setEntityId(entityId)
+            .setEntityType(entityType);
+    groupCreatedApplier.applyState(groupKey, group);
+    groupEntityAddedApplier.applyState(groupKey, group);
+  }
+
+  private String createRule(
+      final String path, final String value, final MappingRuleType type, final String origin) {
+    final var id = UUID.randomUUID().toString();
+    mappingRuleCreatedApplier.applyState(
+        random.nextLong(),
+        new MappingRuleRecord()
+            .setMappingRuleId(id)
+            .setName(Strings.newRandomValidIdentityId())
+            .setClaimName(path)
+            .setClaimValue(value)
+            .setType(type)
+            .setOrigin(origin));
+    return id;
+  }
+
+  private void createUser(
+      final String username, final Map<String, Object> attributes, final String source) {
+    final var userKey = random.nextLong();
+    new UserCreatedApplier(processingState.getUserState())
+        .applyState(
+            userKey,
+            new UserRecord()
+                .setUserKey(userKey)
+                .setUsername(username)
+                .setName(username)
+                .setEmail(username + "@example.com")
+                .setPassword("password")
+                .setAttributes(attributes)
+                .setSource(source));
   }
 
   private void createGroupWithAttributes(

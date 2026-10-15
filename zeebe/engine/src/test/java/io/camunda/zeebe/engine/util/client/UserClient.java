@@ -117,6 +117,16 @@ public final class UserClient {
       return this;
     }
 
+    public UserCreationClient withSource(final String source) {
+      userCreationRecord.setSource(source);
+      return this;
+    }
+
+    public UserCreationClient withChangedAttributes(final UserAttribute... changedAttributes) {
+      userCreationRecord.setChangedAttributes(Set.of(changedAttributes));
+      return this;
+    }
+
     public Record<UserRecordValue> create() {
       final long position = writer.writeCommand(intent, userCreationRecord);
       return expectation.apply(position);
@@ -204,6 +214,11 @@ public final class UserClient {
       return this;
     }
 
+    public UpdateUserClient withSource(final String source) {
+      userRecord.setSource(source);
+      return this;
+    }
+
     public Record<UserRecordValue> update() {
       final long position = writer.writeCommand(UserIntent.UPDATE, userRecord);
       return expectation.apply(position);
@@ -262,6 +277,16 @@ public final class UserClient {
 
     public DeleteUserClient withPassword(final String password) {
       userRecord.setPassword(password);
+      return this;
+    }
+
+    public DeleteUserClient withSource(final String source) {
+      userRecord.setSource(source);
+      return this;
+    }
+
+    public DeleteUserClient withChangedAttributes(final UserAttribute... changedAttributes) {
+      userRecord.setChangedAttributes(Set.of(changedAttributes));
       return this;
     }
 

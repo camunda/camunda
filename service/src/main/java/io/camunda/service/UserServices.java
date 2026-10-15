@@ -24,6 +24,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -76,7 +77,8 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             .setPassword(encodedPassword)
             .setExternalId(request.externalId())
             .setActive(request.active())
-            .setAttributes(request.attributes()),
+            .setAttributes(request.attributes())
+            .setSource(request.source()),
         authentication);
   }
 
@@ -136,6 +138,7 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             .setExternalId(request.externalId())
             .setActive(request.active())
             .setAttributes(request.attributes())
+            .setSource(request.source())
             .setChangedAttributes(
                 changedAttributes.stream()
                     .map(attribute -> UserRecord.UserAttribute.valueOf(attribute.name()))
@@ -148,6 +151,24 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
     return sendBrokerRequest(new BrokerUserDeleteRequest().setUsername(username), authentication);
   }
 
+  /**
+   * Deletes a user on behalf of a SCIM source: a user owned by another source does not exist for
+   * the source, and an unowned user is only deleted if {@code adoptUnowned} is set.
+   */
+  public CompletableFuture<UserRecord> deleteUser(
+      final String username,
+      final String source,
+      final boolean adoptUnowned,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerUserDeleteRequest()
+            .setUsername(username)
+            .setSource(source)
+            .setChangedAttributes(
+                adoptUnowned ? List.of(UserRecord.UserAttribute.SOURCE) : List.of()),
+        authentication);
+  }
+
   public enum UserAttribute {
     NAME,
     EMAIL,
@@ -155,7 +176,9 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
     EXTERNAL_ID,
     ACTIVE,
     ATTRIBUTES,
-    ATTRIBUTES_MERGE
+    ATTRIBUTES_MERGE,
+    /** Adopts an unowned user by setting the source of the request. */
+    SOURCE
   }
 
   public record UserDTO(
@@ -165,7 +188,19 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
       String password,
       String externalId,
       boolean active,
-      Map<String, Object> attributes) {
+      Map<String, Object> attributes,
+      String source) {
+
+    public UserDTO(
+        final String username,
+        final String name,
+        final String email,
+        final String password,
+        final String externalId,
+        final boolean active,
+        final Map<String, Object> attributes) {
+      this(username, name, email, password, externalId, active, attributes, "");
+    }
 
     public UserDTO(
         final String username,
@@ -174,12 +209,12 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
         final String password,
         final String externalId,
         final boolean active) {
-      this(username, name, email, password, externalId, active, Map.of());
+      this(username, name, email, password, externalId, active, Map.of(), "");
     }
 
     public UserDTO(
         final String username, final String name, final String email, final String password) {
-      this(username, name, email, password, "", true, Map.of());
+      this(username, name, email, password, "", true, Map.of(), "");
     }
   }
 }

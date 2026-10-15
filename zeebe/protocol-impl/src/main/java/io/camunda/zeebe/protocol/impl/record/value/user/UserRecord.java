@@ -36,6 +36,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   private final StringProperty externalIdProp = new StringProperty("externalId", "");
   private final BooleanProperty activeProp = new BooleanProperty("active", true);
   private final DocumentProperty attributesProp = new DocumentProperty("attributes");
+  private final StringProperty sourceProp = new StringProperty("source", "");
 
   /**
    * Command-only field mask. When non-empty, an update command only changes the listed attributes
@@ -46,7 +47,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
       new ArrayProperty<>("changedAttributes", StringValue::new);
 
   public UserRecord() {
-    super(9);
+    super(10);
     declareProperty(userKeyProp)
         .declareProperty(usernameProp)
         .declareProperty(nameProp)
@@ -55,7 +56,8 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
         .declareProperty(externalIdProp)
         .declareProperty(activeProp)
         .declareProperty(changedAttributesProp)
-        .declareProperty(attributesProp);
+        .declareProperty(attributesProp)
+        .declareProperty(sourceProp);
   }
 
   public UserRecord copy() {
@@ -169,6 +171,19 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   }
 
   @Override
+  public String getSource() {
+    return bufferAsString(sourceProp.getValue());
+  }
+
+  public UserRecord setSource(final String source) {
+    if (source == null) {
+      return this;
+    }
+    sourceProp.setValue(source);
+    return this;
+  }
+
+  @Override
   public Map<String, Object> getAttributes() {
     return MsgPackConverter.convertToMap(attributesProp.getValue());
   }
@@ -254,6 +269,8 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
      * Merges the attributes of the command into the stored ones: a null value removes the key, any
      * other value sets it.
      */
-    ATTRIBUTES_MERGE
+    ATTRIBUTES_MERGE,
+    /** Adopts an unowned user by setting the source of the command. */
+    SOURCE
   }
 }

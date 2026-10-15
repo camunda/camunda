@@ -25,15 +25,17 @@ public class PersistedMappingRule extends UnpackedObject
   private final StringProperty mappingRuleIdProp = new StringProperty("mappingRuleId", "");
   private final StringProperty typeProp =
       new StringProperty("type", MappingRuleType.TOKEN_CLAIM.name());
+  private final StringProperty originProp = new StringProperty("origin", "");
 
   public PersistedMappingRule() {
-    super(6);
+    super(7);
     declareProperty(mappingRuleKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp)
         .declareProperty(mappingRuleIdProp)
-        .declareProperty(typeProp);
+        .declareProperty(typeProp)
+        .declareProperty(originProp);
   }
 
   public PersistedMappingRule copy() {
@@ -95,6 +97,16 @@ public class PersistedMappingRule extends UnpackedObject
 
   public PersistedMappingRule setType(final MappingRuleType type) {
     typeProp.setValue(type.name());
+    return this;
+  }
+
+  /** Empty means the rule applies to any source. */
+  public String getOrigin() {
+    return BufferUtil.bufferAsString(originProp.getValue());
+  }
+
+  public PersistedMappingRule setOrigin(final String origin) {
+    originProp.setValue(origin);
     return this;
   }
 

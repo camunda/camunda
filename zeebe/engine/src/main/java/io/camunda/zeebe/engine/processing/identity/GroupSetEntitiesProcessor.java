@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord.GroupAttribute;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -32,6 +34,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 
@@ -109,6 +112,22 @@ public class GroupSetEntitiesProcessor implements DistributedTypedRecordProcesso
     }
 
     final var entityType = record.getEntityType();
+    final var ownershipRejection =
+        record.getEntityType() == EntityType.USER || !record.getSource().isEmpty()
+            ? SourceOwnership.check(
+                "set entities of",
+                "group",
+                groupId,
+                persistedGroup.get().getSource(),
+                record.getSource(),
+                record.getChangedAttributes().contains(GroupAttribute.SOURCE))
+            : Optional.<Rejection>empty();
+    if (ownershipRejection.isPresent()) {
+      final var rejection = ownershipRejection.get();
+      reject(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     if (!isSupportedType(entityType)) {
       final var errorMessage =
           "Expected to set entities of group with ID '%s', but the entity type '%s' is not supported."
@@ -128,7 +147,22 @@ public class GroupSetEntitiesProcessor implements DistributedTypedRecordProcesso
       }
     }
 
+    final var source = record.getSource();
+    if (!source.isEmpty() && entityType == EntityType.USER) {
+      for (final var entityId : targetIds) {
+        final var member = userState.getUser(entityId);
+        if (member.isPresent() && !member.get().getUser().getSource().equals(source)) {
+          final var rejection = SourceOwnership.memberNotOwned("set", groupId, entityId, source);
+          reject(command, rejection.type(), rejection.reason());
+          return;
+        }
+      }
+    }
+
     final var groupKey = persistedGroup.get().getGroupKey();
+    if (!source.isEmpty() && persistedGroup.get().getSource().isEmpty()) {
+      SourceOwnership.appendGroupAdoption(stateWriter, persistedGroup.get(), source);
+    }
     final var entitiesSet = appendEvents(groupKey, groupId, entityType, targetIds);
     responseWriter.writeAcceptedResponseOnCommand(
         groupKey, GroupIntent.ENTITIES_SET, entitiesSet, command);
@@ -146,6 +180,13 @@ public class GroupSetEntitiesProcessor implements DistributedTypedRecordProcesso
     final var groupId = record.getGroupId();
 
     if (groupState.get(groupId).isPresent()) {
+      final var source = record.getSource();
+      if (!source.isEmpty()) {
+        groupState
+            .get(groupId)
+            .filter(group -> group.getSource().isEmpty())
+            .ifPresent(group -> SourceOwnership.appendGroupAdoption(stateWriter, group, source));
+      }
       appendEvents(
           command.getKey(),
           groupId,

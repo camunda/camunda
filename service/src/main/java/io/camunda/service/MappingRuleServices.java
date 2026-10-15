@@ -73,7 +73,8 @@ public class MappingRuleServices
             .setClaimValue(request.claimValue())
             .setName(request.name())
             .setMappingRuleId(request.mappingRuleId())
-            .setType(request.type()),
+            .setType(request.type())
+            .setOrigin(request.origin()),
         authentication);
   }
 
@@ -85,7 +86,8 @@ public class MappingRuleServices
             .setClaimValue(request.claimValue())
             .setName(request.name())
             .setMappingRuleId(request.mappingRuleId())
-            .setType(request.type()),
+            .setType(request.type())
+            .setOrigin(request.origin()),
         authentication);
   }
 
@@ -131,12 +133,48 @@ public class MappingRuleServices
    * Additionally matches group-attribute rules against the attributes of each group the user is a
    * direct member of; a rule matches if any group's attributes match. Token claims are never used
    * for group-attribute rules.
+   *
+   * <p>This overload knows no sources, so it only matches rules without an origin.
    */
   public Stream<MappingRuleEntity> getMatchingMappingRules(
       final Map<String, Object> claims,
       final @Nullable Map<String, Object> userAttributes,
       final @Nullable List<Map<String, Object>> groupAttributes,
       final CamundaAuthentication authentication) {
+    return getMatchingMappingRules(
+        claims,
+        userAttributes,
+        groupAttributes == null
+            ? null
+            : groupAttributes.stream()
+                .map(attributes -> new SourcedAttributes("", attributes))
+                .toList(),
+        null,
+        null,
+        authentication);
+  }
+
+  /**
+   * Like the overload without sources, but a rule with an origin only applies to principals of that
+   * source:
+   *
+   * <ul>
+   *   <li>token-claim rules to the logins of {@code loginSource}; a null or empty login source
+   *       matches only rules without an origin;
+   *   <li>user-attribute and group-attribute rules to the users owned by {@code userSource}; a null
+   *       or empty user source matches only rules without an origin;
+   *   <li>a user with a source only considers the groups of the same source.
+   * </ul>
+   */
+  public Stream<MappingRuleEntity> getMatchingMappingRules(
+      final Map<String, Object> claims,
+      final @Nullable Map<String, Object> userAttributes,
+      final @Nullable List<SourcedAttributes> groups,
+      final @Nullable String loginSource,
+      final @Nullable String userSource,
+      final CamundaAuthentication authentication) {
+    final var login = loginSource == null ? "" : loginSource;
+    final var owner = userSource == null ? "" : userSource;
     final var rules =
         search(MappingRuleQuery.of(AbstractQueryBuilder::unlimited), authentication).items();
     final var tokenRules =
@@ -144,25 +182,33 @@ public class MappingRuleServices
             .filter(
                 r ->
                     !MappingRuleEntity.TYPE_USER_ATTRIBUTE.equals(r.type())
-                        && !MappingRuleEntity.TYPE_GROUP_ATTRIBUTE.equals(r.type()));
+                        && !MappingRuleEntity.TYPE_GROUP_ATTRIBUTE.equals(r.type()))
+            .filter(r -> appliesToSource(r, login));
     final var attributeRules =
         userAttributes == null || userAttributes.isEmpty()
             ? Stream.<MappingRuleEntity>empty()
-            : rules.stream().filter(r -> MappingRuleEntity.TYPE_USER_ATTRIBUTE.equals(r.type()));
+            : rules.stream()
+                .filter(r -> MappingRuleEntity.TYPE_USER_ATTRIBUTE.equals(r.type()))
+                .filter(r -> appliesToSource(r, owner));
+    final var groupAttributes =
+        groups == null
+            ? List.<Map<String, Object>>of()
+            : groups.stream()
+                .filter(group -> owner.isEmpty() || owner.equals(group.source()))
+                .map(SourcedAttributes::attributes)
+                .filter(attributes -> attributes != null && !attributes.isEmpty())
+                .toList();
     final var groupRules =
-        groupAttributes == null || groupAttributes.isEmpty()
+        groupAttributes.isEmpty()
             ? List.<MappingRuleEntity>of()
             : rules.stream()
                 .filter(r -> MappingRuleEntity.TYPE_GROUP_ATTRIBUTE.equals(r.type()))
+                .filter(r -> appliesToSource(r, owner))
                 .toList();
     final var groupMatches =
-        groupAttributes == null
-            ? Stream.<MappingRuleEntity>empty()
-            : groupAttributes.stream()
-                .filter(attributes -> attributes != null && !attributes.isEmpty())
-                .flatMap(
-                    attributes ->
-                        MappingRuleMatcher.matchingRules(groupRules.stream(), attributes));
+        groupAttributes.stream()
+            .flatMap(
+                attributes -> MappingRuleMatcher.matchingRules(groupRules.stream(), attributes));
     return Stream.of(
             MappingRuleMatcher.matchingRules(tokenRules, claims),
             MappingRuleMatcher.matchingRules(
@@ -172,20 +218,37 @@ public class MappingRuleServices
         .distinct();
   }
 
+  private static boolean appliesToSource(final MappingRuleEntity rule, final String source) {
+    return rule.origin().isEmpty() || rule.origin().equals(source);
+  }
+
+  /** The attributes of a group together with the id of the source that owns it; empty if none. */
+  public record SourcedAttributes(@Nullable String source, Map<String, Object> attributes) {}
+
   /** A null or missing {@code type} means {@link MappingRuleType#TOKEN_CLAIM}. */
   public record MappingRuleDTO(
       String claimName,
       String claimValue,
       String name,
       String mappingRuleId,
-      MappingRuleType type) {
+      MappingRuleType type,
+      String origin) {
+
+    public MappingRuleDTO(
+        final String claimName,
+        final String claimValue,
+        final String name,
+        final String mappingRuleId,
+        final MappingRuleType type) {
+      this(claimName, claimValue, name, mappingRuleId, type, "");
+    }
 
     public MappingRuleDTO(
         final String claimName,
         final String claimValue,
         final String name,
         final String mappingRuleId) {
-      this(claimName, claimValue, name, mappingRuleId, MappingRuleType.TOKEN_CLAIM);
+      this(claimName, claimValue, name, mappingRuleId, MappingRuleType.TOKEN_CLAIM, "");
     }
   }
 }

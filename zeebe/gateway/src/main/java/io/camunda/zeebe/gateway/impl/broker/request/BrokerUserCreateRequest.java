@@ -63,6 +63,11 @@ public class BrokerUserCreateRequest extends BrokerExecuteCommand<UserRecord> {
     return this;
   }
 
+  public BrokerUserCreateRequest setSource(final String source) {
+    requestDto.setSource(source);
+    return this;
+  }
+
   @Override
   public UserRecord getRequestWriter() {
     return requestDto;

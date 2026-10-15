@@ -58,4 +58,7 @@ public interface GroupRecordValue extends RecordValue {
 
   /** The custom attributes stored for the group, e.g. provisioned via SCIM; empty if none. */
   Map<String, Object> getAttributes();
+
+  /** The id of the SCIM source that owns the group; empty if the group is not owned by a source. */
+  String getSource();
 }

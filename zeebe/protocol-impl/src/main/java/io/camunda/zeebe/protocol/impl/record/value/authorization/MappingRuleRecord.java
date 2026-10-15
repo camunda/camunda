@@ -24,6 +24,7 @@ public class MappingRuleRecord extends UnifiedRecordValue implements MappingRule
   private static final StringValue CLAIM_VALUE_KEY = new StringValue("claimValue");
   private static final StringValue NAME_KEY = new StringValue("name");
   private static final StringValue TYPE_KEY = new StringValue("type");
+  private static final StringValue ORIGIN_KEY = new StringValue("origin");
 
   private final LongProperty mappingRuleKeyProp = new LongProperty(MAPPING_RULE_KEY_KEY, -1L);
   private final StringProperty mappingRuleIdProp = new StringProperty(MAPPING_RULE_ID_KEY);
@@ -32,15 +33,17 @@ public class MappingRuleRecord extends UnifiedRecordValue implements MappingRule
   private final StringProperty nameProp = new StringProperty(NAME_KEY, "");
   private final StringProperty typeProp =
       new StringProperty(TYPE_KEY, MappingRuleType.TOKEN_CLAIM.name());
+  private final StringProperty originProp = new StringProperty(ORIGIN_KEY, "");
 
   public MappingRuleRecord() {
-    super(6);
+    super(7);
     declareProperty(mappingRuleKeyProp)
         .declareProperty(mappingRuleIdProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp)
-        .declareProperty(typeProp);
+        .declareProperty(typeProp)
+        .declareProperty(originProp);
   }
 
   @Override
@@ -102,6 +105,16 @@ public class MappingRuleRecord extends UnifiedRecordValue implements MappingRule
 
   public MappingRuleRecord setType(final MappingRuleType type) {
     typeProp.setValue(type == null ? MappingRuleType.TOKEN_CLAIM.name() : type.name());
+    return this;
+  }
+
+  @Override
+  public String getOrigin() {
+    return BufferUtil.bufferAsString(originProp.getValue());
+  }
+
+  public MappingRuleRecord setOrigin(final String origin) {
+    originProp.setValue(origin == null ? "" : origin);
     return this;
   }
 }

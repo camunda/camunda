@@ -28,15 +28,17 @@ public class PersistedGroup extends UnpackedObject
   private final StringProperty nameProp = new StringProperty("name");
   private final StringProperty externalIdProp = new StringProperty("externalId", "");
   private final DocumentProperty attributesProp = new DocumentProperty("attributes");
+  private final StringProperty sourceProp = new StringProperty("source", "");
 
   public PersistedGroup() {
-    super(6);
+    super(7);
     declareProperty(groupKeyProp)
         .declareProperty(groupIdProp)
         .declareProperty(descriptionProp)
         .declareProperty(nameProp)
         .declareProperty(externalIdProp)
-        .declareProperty(attributesProp);
+        .declareProperty(attributesProp)
+        .declareProperty(sourceProp);
   }
 
   @Override
@@ -47,6 +49,7 @@ public class PersistedGroup extends UnpackedObject
     nameProp.setValue(group.getNameBuffer());
     externalIdProp.setValue(group.getExternalIdBuffer());
     attributesProp.setValue(group.getAttributesBuffer());
+    sourceProp.setValue(group.getSourceBuffer());
     return this;
   }
 
@@ -92,6 +95,15 @@ public class PersistedGroup extends UnpackedObject
 
   public PersistedGroup setExternalId(final String externalId) {
     externalIdProp.setValue(externalId);
+    return this;
+  }
+
+  public String getSource() {
+    return BufferUtil.bufferAsString(sourceProp.getValue());
+  }
+
+  public PersistedGroup setSource(final String source) {
+    sourceProp.setValue(source);
     return this;
   }
 

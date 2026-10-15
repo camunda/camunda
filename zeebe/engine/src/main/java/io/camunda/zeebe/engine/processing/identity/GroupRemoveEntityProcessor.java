@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord.GroupAttribute;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -29,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -92,6 +95,23 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       return;
     }
 
+    final var ownershipRejection =
+        record.getEntityType() == EntityType.USER || !record.getSource().isEmpty()
+            ? SourceOwnership.check(
+                "remove an entity from",
+                "group",
+                groupId,
+                persistedRecord.get().getSource(),
+                record.getSource(),
+                record.getChangedAttributes().contains(GroupAttribute.SOURCE))
+            : Optional.<Rejection>empty();
+    if (ownershipRejection.isPresent()) {
+      final var rejection = ownershipRejection.get();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
     if (!isEntityPresent(entityId, entityType)) {
@@ -112,6 +132,10 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     }
 
     final var groupKey = persistedRecord.get().getGroupKey();
+    final var source = record.getSource();
+    if (!source.isEmpty() && persistedRecord.get().getSource().isEmpty()) {
+      SourceOwnership.appendGroupAdoption(stateWriter, persistedRecord.get(), source);
+    }
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_REMOVED, record);
     responseWriter.writeAcceptedResponseOnCommand(
         groupKey, GroupIntent.ENTITY_REMOVED, record, command);
@@ -129,6 +153,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     final var record = command.getValue();
 
     if (isEntityAssigned(record)) {
+      adoptGroupIfNeeded(record);
       stateWriter.appendFollowUpEvent(
           command.getKey(), GroupIntent.ENTITY_REMOVED, command.getValue());
       invalidateMembershipCache();
@@ -139,6 +164,17 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void adoptGroupIfNeeded(final GroupRecord record) {
+    final var source = record.getSource();
+    if (source.isEmpty()) {
+      return;
+    }
+    groupState
+        .get(record.getGroupId())
+        .filter(group -> group.getSource().isEmpty())
+        .ifPresent(group -> SourceOwnership.appendGroupAdoption(stateWriter, group, source));
   }
 
   /**

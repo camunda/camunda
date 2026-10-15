@@ -98,6 +98,16 @@ public class GroupClient {
       return this;
     }
 
+    public GroupCreateClient withSource(final String source) {
+      groupRecord.setSource(source);
+      return this;
+    }
+
+    public GroupCreateClient withChangedAttributes(final GroupAttribute... changedAttributes) {
+      groupRecord.setChangedAttributes(Set.of(changedAttributes));
+      return this;
+    }
+
     public Record<GroupRecordValue> create() {
       final long position = writer.writeCommand(GroupIntent.CREATE, groupRecord);
       return expectation.apply(position);
@@ -166,6 +176,11 @@ public class GroupClient {
       return this;
     }
 
+    public GroupUpdateClient withSource(final String source) {
+      groupRecord.setSource(source);
+      return this;
+    }
+
     public Record<GroupRecordValue> update() {
       final long position = writer.writeCommand(GroupIntent.UPDATE, groupRecord);
       return expectation.apply(position);
@@ -217,6 +232,16 @@ public class GroupClient {
 
     public GroupAddEntityClient withEntityType(final EntityType entityType) {
       groupRecord.setEntityType(entityType);
+      return this;
+    }
+
+    public GroupAddEntityClient withSource(final String source) {
+      groupRecord.setSource(source);
+      return this;
+    }
+
+    public GroupAddEntityClient withChangedAttributes(final GroupAttribute... changedAttributes) {
+      groupRecord.setChangedAttributes(Set.of(changedAttributes));
       return this;
     }
 
@@ -274,6 +299,16 @@ public class GroupClient {
       return this;
     }
 
+    public GroupSetEntitiesClient withSource(final String source) {
+      groupRecord.setSource(source);
+      return this;
+    }
+
+    public GroupSetEntitiesClient withChangedAttributes(final GroupAttribute... changedAttributes) {
+      groupRecord.setChangedAttributes(Set.of(changedAttributes));
+      return this;
+    }
+
     public Record<GroupRecordValue> set() {
       final long position = writer.writeCommand(GroupIntent.SET_ENTITIES, groupRecord);
       return expectation.apply(position);
@@ -327,6 +362,17 @@ public class GroupClient {
       return this;
     }
 
+    public GroupRemoveEntityClient withSource(final String source) {
+      groupRecord.setSource(source);
+      return this;
+    }
+
+    public GroupRemoveEntityClient withChangedAttributes(
+        final GroupAttribute... changedAttributes) {
+      groupRecord.setChangedAttributes(Set.of(changedAttributes));
+      return this;
+    }
+
     public Record<GroupRecordValue> remove() {
       final long position = writer.writeCommand(GroupIntent.REMOVE_ENTITY, groupRecord);
       return expectation.apply(position);
@@ -373,6 +419,16 @@ public class GroupClient {
 
     public GroupDeleteClient withGroupKey(final long groupKey) {
       groupRecord.setGroupKey(groupKey);
+      return this;
+    }
+
+    public GroupDeleteClient withSource(final String source) {
+      groupRecord.setSource(source);
+      return this;
+    }
+
+    public GroupDeleteClient withChangedAttributes(final GroupAttribute... changedAttributes) {
+      groupRecord.setChangedAttributes(Set.of(changedAttributes));
       return this;
     }
 

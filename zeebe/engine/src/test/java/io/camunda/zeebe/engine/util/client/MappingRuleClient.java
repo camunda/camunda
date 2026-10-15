@@ -76,6 +76,11 @@ public class MappingRuleClient {
       return this;
     }
 
+    public MappingRuleCreateClient withOrigin(final String origin) {
+      mappingRuleRecord.setOrigin(origin);
+      return this;
+    }
+
     public MappingRuleCreateClient withName(final String name) {
       mappingRuleRecord.setName(name);
       return this;
@@ -193,6 +198,11 @@ public class MappingRuleClient {
 
     public MappingRuleUpdateClient withType(final MappingRuleType type) {
       mappingRuleRecord.setType(type);
+      return this;
+    }
+
+    public MappingRuleUpdateClient withOrigin(final String origin) {
+      mappingRuleRecord.setOrigin(origin);
       return this;
     }
 

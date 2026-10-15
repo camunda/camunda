@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.group.PersistedGroup;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord.GroupAttribute;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -79,6 +80,21 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
+    final var ownership =
+        SourceOwnership.check(
+            "update",
+            "group",
+            groupId,
+            persistedRecord.get().getSource(),
+            record.getSource(),
+            record.getChangedAttributes().contains(GroupAttribute.SOURCE));
+    if (ownership.isPresent()) {
+      final var rejection = ownership.get();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     updateExistingGroup(persistedRecord.get(), record);
     final var updatedRecord = updateState(command, persistedRecord.get());
 
@@ -116,6 +132,7 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
         case NAME -> persistedGroup.setName(updateRecord.getName());
         case DESCRIPTION -> persistedGroup.setDescription(updateRecord.getDescription());
         case EXTERNAL_ID -> persistedGroup.setExternalId(updateRecord.getExternalId());
+        case SOURCE -> persistedGroup.setSource(updateRecord.getSource());
         case ATTRIBUTES ->
             persistedGroup.setAttributes(withoutNullValues(updateRecord.getAttributes()));
         case ATTRIBUTES_MERGE ->
@@ -134,7 +151,8 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
             .setName(persistedGroup.getName())
             .setDescription(persistedGroup.getDescription())
             .setExternalId(persistedGroup.getExternalId())
-            .setAttributes(persistedGroup.getAttributes());
+            .setAttributes(persistedGroup.getAttributes())
+            .setSource(persistedGroup.getSource());
 
     stateWriter.appendFollowUpEvent(
         persistedGroup.getGroupKey(), GroupIntent.UPDATED, updatedRecord);

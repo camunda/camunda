@@ -42,4 +42,7 @@ public interface UserRecordValue extends RecordValue {
    * The custom attributes stored for the user, e.g. provisioned via SCIM; empty if there are none.
    */
   Map<String, Object> getAttributes();
+
+  /** The id of the SCIM source that owns the user; empty if the user is not owned by a source. */
+  String getSource();
 }

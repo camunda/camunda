@@ -49,6 +49,11 @@ public class BrokerMappingRuleCreateRequest extends BrokerExecuteCommand<Mapping
     return this;
   }
 
+  public BrokerMappingRuleCreateRequest setOrigin(final String origin) {
+    requestDto.setOrigin(origin);
+    return this;
+  }
+
   @Override
   public MappingRuleRecord getRequestWriter() {
     return requestDto;

@@ -40,6 +40,7 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
   private static final StringValue ENTITY_IDS_KEY = new StringValue("entityIds");
   private static final StringValue EXTERNAL_ID_KEY = new StringValue("externalId");
   private static final StringValue ATTRIBUTES_KEY = new StringValue("attributes");
+  private static final StringValue SOURCE_KEY = new StringValue("source");
   private static final StringValue CHANGED_ATTRIBUTES_KEY = new StringValue("changedAttributes");
 
   private final LongProperty groupKeyProp = new LongProperty(GROUP_KEY_KEY, -1L);
@@ -51,6 +52,7 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
       new EnumProperty<>(ENTITY_TYPE_KEY, EntityType.class, EntityType.UNSPECIFIED);
   private final StringProperty externalIdProp = new StringProperty(EXTERNAL_ID_KEY, "");
   private final DocumentProperty attributesProp = new DocumentProperty(ATTRIBUTES_KEY);
+  private final StringProperty sourceProp = new StringProperty(SOURCE_KEY, "");
   private final ArrayProperty<StringValue> entityIdsProp =
       new ArrayProperty<>(ENTITY_IDS_KEY, StringValue::new);
 
@@ -63,7 +65,7 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
       new ArrayProperty<>(CHANGED_ATTRIBUTES_KEY, StringValue::new);
 
   public GroupRecord() {
-    super(10);
+    super(11);
     declareProperty(groupKeyProp)
         .declareProperty(groupId)
         .declareProperty(nameProp)
@@ -73,7 +75,8 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
         .declareProperty(externalIdProp)
         .declareProperty(changedAttributesProp)
         .declareProperty(entityIdsProp)
-        .declareProperty(attributesProp);
+        .declareProperty(attributesProp)
+        .declareProperty(sourceProp);
   }
 
   @Override
@@ -172,6 +175,19 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
   }
 
   @Override
+  public String getSource() {
+    return BufferUtil.bufferAsString(sourceProp.getValue());
+  }
+
+  public GroupRecord setSource(final String source) {
+    if (source == null) {
+      return this;
+    }
+    sourceProp.setValue(source);
+    return this;
+  }
+
+  @Override
   public Map<String, Object> getAttributes() {
     return MsgPackConverter.convertToMap(attributesProp.getValue());
   }
@@ -225,6 +241,11 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
   }
 
   @JsonIgnore
+  public DirectBuffer getSourceBuffer() {
+    return sourceProp.getValue();
+  }
+
+  @JsonIgnore
   public DirectBuffer getExternalIdBuffer() {
     return externalIdProp.getValue();
   }
@@ -240,6 +261,8 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
      * Merges the attributes of the command into the stored ones: a null value removes the key, any
      * other value sets it.
      */
-    ATTRIBUTES_MERGE
+    ATTRIBUTES_MERGE,
+    /** Adopts an unowned group by setting the source of the command. */
+    SOURCE
   }
 }
