@@ -280,7 +280,8 @@ public class AnnotationUtil {
                       : new FromAnnotation<>(Duration.ofMillis(annotation.retryBackoff())),
                   fromSingletonArray(
                       annotation.tenantFilter(), "tenantFilter", methodInfo.getMethodName()),
-                  new Empty<>()))
+                  fromSingletonBooleanArray(
+                      annotation.withLease(), "withLease", methodInfo.getMethodName())))
           .map(
               v -> {
                 v.setMethodInfo(methodInfo);
