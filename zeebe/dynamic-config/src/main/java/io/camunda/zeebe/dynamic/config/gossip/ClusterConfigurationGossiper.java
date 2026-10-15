@@ -84,7 +84,7 @@ public final class ClusterConfigurationGossiper
   }
 
   private void internalStart() {
-    scheduleSync();
+    executor.scheduleAtFixedRate(config.syncDelay(), this::sync);
     registerSyncHandler();
     registerGossipHandler();
     registerMemberAddedListener();
@@ -120,14 +120,7 @@ public final class ClusterConfigurationGossiper
     communicationService.unsubscribe(GOSSIP_REQUEST_TOPIC);
   }
 
-  private void scheduleSync() {
-    executor.schedule(config.syncDelay(), this::sync);
-  }
-
   private void sync() {
-    // Schedule first, so that the loop survives whatever happens in this tick: no known member, a
-    // failing request, or an exception.
-    scheduleSync();
     refreshMembersToSync();
 
     if (membersToSync.isEmpty()) {
