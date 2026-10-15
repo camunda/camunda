@@ -637,24 +637,76 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  # Classifies the failing smoke-test legs and (once enabled) dispatches the fix
-  # agent, the same way docker-build-helm-integration.yml does; see
-  # .github/scripts/alwaysgreen/README.md. `base_ref: main` here is only the
-  # fallback for a failing job that is not a recognised per-version leg.
+  # Hands the failing smoke-test legs to the central AlwaysGreen triage in
+  # camunda/c8-cross-component-e2e-tests, the same way
+  # docker-build-helm-integration.yml does.
+  #
+  # `base_ref: main` is only the fallback for a failing job that is not a recognised
+  # per-version leg: this workflow deploys four refs in ONE run, and triage maps each
+  # rendered `Run <version> Smoke Tests` job to the branch it actually deployed.
   alwaysgreen-triage:
     name: AlwaysGreen triage and fix dispatch
     if: ${{ always() && github.event_name == 'schedule' && needs.test.result == 'failure' }}
     needs:
     - test
-    # Mirrors alwaysgreen-triage.yml's own block: it reads this run's jobs and
-    # artifacts, and dispatches alwaysgreen-fix.yml (actions: write). Repeated here
-    # because this workflow sets permissions per job rather than at the top level.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
-      actions: write
       contents: read
-      pull-requests: read
-    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
-    secrets: inherit
-    with:
-      base_ref: main
-      dry_run: false
+    steps:
+      - name: Generate a token that may dispatch to the triage repository
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: c8-cross-component-e2e-tests
+
+      # A disabled workflow accepts a repository_dispatch and runs nothing, so the
+      # POST below would succeed and the failure would simply never be triaged.
+      # Checked rather than assumed, and fatal rather than skipped: the SaaS
+      # dispatchers in that repository are routinely disabled by hand, and this one
+      # going the same way must not be silent.
+      - name: Refuse to dispatch at a disabled receiver
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          state=$(gh api repos/camunda/c8-cross-component-e2e-tests/actions/workflows/alwaysgreen-triage.yml \
+            --jq '.state' 2>/dev/null || echo "unknown")
+          if [ "$state" != "active" ]; then
+            echo "::error::the AlwaysGreen triage receiver is '${state}', so this failure would go untriaged"
+            exit 1
+          fi
+
+      # Deliberately NOT continue-on-error. A dispatch that fails to arrive means the
+      # failure is never triaged, which is the one outcome this system exists to
+      # prevent, so it fails the job and is visible.
+      - name: Hand the failure to the central triage
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          # No Slack coordinates: this workflow posts no failure alert of its own, so
+          # there is no thread to reply in. The receiver opens one when it has
+          # something to dispatch, which is what keeps the agents' replies together.
+          payload=$(jq -nc \
+            --arg repo "${GITHUB_REPOSITORY}" \
+            --arg run_id "${GITHUB_RUN_ID}" \
+            --arg base_ref "main" \
+            '{event_type: "alwaysgreen-triage",
+              client_payload: {source_repo: $repo,
+                               run_id: $run_id,
+                               base_ref: $base_ref}}')
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/camunda/c8-cross-component-e2e-tests/dispatches \
+            --input - <<<"$payload"
+          echo "Handed run ${GITHUB_RUN_ID} to the central triage." >> "$GITHUB_STEP_SUMMARY"
