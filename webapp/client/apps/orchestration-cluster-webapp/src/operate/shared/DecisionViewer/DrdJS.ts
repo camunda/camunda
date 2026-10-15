@@ -59,6 +59,13 @@ class DrdManager extends Manager {
 	}
 }
 
+class DrdUnavailableError extends Error {
+	constructor() {
+		super('DRD view is unavailable for the decision definition');
+		this.name = 'DrdUnavailableError';
+	}
+}
+
 class DrdJS {
 	#xml: string | null = null;
 	#manager: DrdManager | null = null;
@@ -142,7 +149,7 @@ class DrdJS {
 				this.onDefinitionsChange?.(manager.getDefinitions());
 				const activeViewer = manager.getActiveViewer();
 				if (activeViewer === undefined) {
-					throw new Error('DRD view is unavailable for the decision definition');
+					throw new DrdUnavailableError();
 				}
 				activeViewer.on('element.click', this.#handleDecisionSelection);
 				this.#activeViewer = activeViewer;
@@ -165,6 +172,9 @@ class DrdJS {
 			this.#manager = null;
 			this.#xml = null;
 			this.#importPromise = null;
+			if (error instanceof Error && error.message === 'no displayable contents') {
+				throw new DrdUnavailableError();
+			}
 			throw error;
 		}
 		if (renderVersion !== this.#renderVersion) {
@@ -173,7 +183,7 @@ class DrdJS {
 
 		const activeViewer = this.#manager.getActiveViewer();
 		if (activeViewer === undefined) {
-			throw new Error('DRD view is unavailable for the decision definition');
+			throw new DrdUnavailableError();
 		}
 		const canvas = activeViewer.get('canvas');
 		const registry = activeViewer.get('elementRegistry');
@@ -269,5 +279,5 @@ class DrdJS {
 	};
 }
 
-export {DrdJS};
+export {DrdJS, DrdUnavailableError};
 export type {DecisionStateOverlay};

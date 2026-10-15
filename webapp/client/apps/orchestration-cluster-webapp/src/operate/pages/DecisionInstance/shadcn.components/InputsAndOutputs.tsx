@@ -11,10 +11,10 @@ import {Heading} from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
-import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {useDecisionInstance} from '../decisionInstance.queries';
 import {InputOutputSkeleton} from './InputOutputSkeleton';
+import {InputsAndOutputsLayout} from './InputsAndOutputsLayout';
 import {inputColumnWidths, outputColumnWidths} from '../inputOutputColumns';
 
 type Props = {
@@ -61,14 +61,10 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 
 	return (
 		<div ref={containerRef} className="h-full">
-			<ResizablePanel
-				panelId="decision-instance-horizontal-panel"
-				direction={SplitDirection.Horizontal}
-				minWidths={[width / 3, width / 3]}
-			>
+			<InputsAndOutputsLayout minWidths={[width / 3, width / 3]}>
 				<section
 					aria-label={t('operate.decisionInstance.variablesPanel.inputVariables')}
-					className="grid h-full grid-rows-[auto_1fr] overflow-hidden"
+					className="grid h-full grid-rows-[auto_1fr] overflow-hidden max-sm:h-auto max-sm:shrink-0"
 				>
 					{!query.isError && (
 						<Heading as="h2" variant="heading-sm" className="m-0 mt-4 ml-4 text-muted-foreground">
@@ -102,7 +98,7 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 				</section>
 				<section
 					aria-label={t('operate.decisionInstance.variablesPanel.outputVariables')}
-					className="grid h-full grid-rows-[auto_1fr] overflow-hidden"
+					className="grid h-full grid-rows-[auto_1fr] overflow-hidden max-sm:h-auto max-sm:shrink-0"
 				>
 					{!query.isError && (
 						<Heading as="h2" variant="heading-sm" className="m-0 mt-4 ml-4 text-muted-foreground">
@@ -135,7 +131,7 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 						</div>
 					)}
 				</section>
-			</ResizablePanel>
+			</InputsAndOutputsLayout>
 		</div>
 	);
 };

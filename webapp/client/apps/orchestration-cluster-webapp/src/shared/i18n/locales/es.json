@@ -1518,6 +1518,39 @@
 				"panel": {
 					"label": "panel de decisión",
 					"unknownEvaluationFailure": "La evaluación falló con un error desconocido"
+				},
+				"ds": {
+					"drd": {
+						"title": "Diagrama de requisitos de decisión",
+						"resize": "Cambiar tamaño del panel DRD",
+						"maximize": "Maximizar panel DRD",
+						"minimize": "Minimizar panel DRD",
+						"close": "Cerrar panel DRD",
+						"zoomIn": "Acercar",
+						"zoomOut": "Alejar",
+						"resetZoom": "Restablecer zoom",
+						"unavailableTitle": "Diagrama no disponible",
+						"unavailableInfo": "Esta decisión no forma parte de un diagrama de requisitos de decisión.",
+						"content": "Contenido del diagrama de requisitos de decisión"
+					},
+					"header": {
+						"decisionInstanceKeyColumn": "Clave de instancia de decisión",
+						"evaluationDateColumn": "Fecha de evaluación",
+						"processInstanceColumn": "Clave de instancia de proceso",
+						"openDrdButton": "Abrir diagrama de requisitos de decisión"
+					},
+					"variablesPanel": {
+						"tabsLabel": "Pestañas del panel de variables",
+						"inputsAndOutputs": "Entradas y salidas"
+					},
+					"forbidden": {
+						"heading": "No tiene permiso para ver esta información"
+					},
+					"panel": {
+						"unknownEvaluationFailure": "La evaluación falló por un motivo desconocido. Revise los valores de entrada y la definición de decisión.",
+						"expandFailure": "Mostrar mensaje completo",
+						"collapseFailure": "Contraer mensaje"
+					}
 				}
 			},
 			"processInstance": {
