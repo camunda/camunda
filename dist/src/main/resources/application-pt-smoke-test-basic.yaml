@@ -1,0 +1,78 @@
+# Physical-tenant BASIC-auth smoke-test config (INTERIM — drop before review).
+#
+# Activated via the `pt-smoke-test-basic` profile (see spring.profiles.group.pt-smoke-test-basic in
+# application.properties). Unlike application-pt-smoke-test.yaml (OIDC + two Keycloak realms), this needs
+# no external IdP: basic-auth users are seeded per physical tenant via camunda.security.initialization.
+#
+# Basic-auth user resolution is per physical tenant — BasicAuthUserDetailsAdapter looks the user up
+# via serviceRegistry.userServices(<ptId>). alice is seeded (below) into the default/root store and
+# resolves on /v2/... and /physical-tenants/default/...; the tenanta chain resolves against a
+# SEPARATE store, so alice is rejected there (per-tenant routing isolation).
+#
+# Each physical tenant now gets its own auto-provisioned in-memory H2 store: the per-PT RDBMS path
+# (#52027) runs per-tenant Liquibase on startup, so both the default (ptbasicdefault) and tenanta
+# (ptbasictenanta) stores exist and bob is seeded into tenanta's. Confirm on the live run whether
+# bob authenticates on /physical-tenants/tenanta/... (the per-tenant seeding/exporter path).
+camunda:
+  data:
+    secondary-storage:
+      # In-memory H2 (RDBMS), per physical tenant — no external datastore needed. The per-PT RDBMS
+      # path (#52027) auto-creates each tenant's schema via per-tenant Liquibase on startup.
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:mem:ptbasicdefault;DB_CLOSE_DELAY=-1
+        username: sa
+        password:
+  security:
+    authorizations:
+      enabled: true
+    authentication:
+      method: basic
+    # Default/root tenant users live in the ptbasicdefault store. alice is the default admin.
+    # NOTE: users are created in secondary storage via the broker exporter, so they only become
+    # resolvable once the exporter is healthy and the initialization data has been exported — wait
+    # for that (a few seconds after "Tomcat started") before running the smoke.
+    initialization:
+      users:
+        - username: alice
+          password: alice
+          name: Alice Default
+          email: alice@default
+      defaultRoles:
+        admin:
+          users:
+            - alice
+  physical-tenants:
+    tenanta:
+      data:
+        secondary-storage:
+          rdbms:
+            # tenanta's own in-memory H2 store — bob lives here, not in the default store.
+            url: jdbc:h2:mem:ptbasictenanta;DB_CLOSE_DELAY=-1
+            username: sa
+            password:
+      security:
+        initialization:
+          users:
+            - username: bob
+              password: bob
+              name: Bob Tenanta
+              email: bob@tenanta
+          defaultRoles:
+            admin:
+              users:
+                - bob
+
+server:
+  port: 8080
+
+logging:
+  file:
+    name: /tmp/oc-basic.log
+  level:
+    io.camunda.authentication.pt: DEBUG
+    io.camunda.security: INFO
+    org.springframework.security: INFO
+    # DEBUG to surface the exact index/property the CamundaExporter's schema-readiness check flags
+    # as a mapping diff — the cause of repeated "Schema is not ready for use" on the broker exporter.
+    io.camunda.search.schema: DEBUG
