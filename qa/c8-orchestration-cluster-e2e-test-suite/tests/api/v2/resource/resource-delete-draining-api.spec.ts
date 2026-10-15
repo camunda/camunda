@@ -586,6 +586,16 @@ test.describe('Process Definition Draining Deletion API', () => {
       `all ${attempts} creates landed on the deployment partition`,
     ).toBeDefined();
     instancesToCancel.push(instance!.processInstanceKey);
+    // The helper's cancellations return once the command is accepted, not once
+    // termination completes, so a count of one alone can be met by a cancelled
+    // instance still indexed as ACTIVE while the kept one is not indexed yet.
+    // Waiting for the kept instance first, then for a total of one, proves no
+    // cancelled instance is still counted.
+    await expectProcessInstanceCount(
+      request,
+      {processInstanceKey: instance!.processInstanceKey, state: 'ACTIVE'},
+      1,
+    );
     await expectProcessInstanceCount(
       request,
       {processDefinitionId, state: 'ACTIVE'},
