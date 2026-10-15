@@ -12,15 +12,16 @@ import io.camunda.configuration.Secrets;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
+import io.camunda.configuration.Secrets.HashiCorpVaultStore;
 import io.camunda.configuration.physicaltenants.MapOverlaySpec.MapDescriptor;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Per-tenant {@link Secrets} resolution: registers the {@code stores.file}, {@code stores.aws} and
- * {@code stores.gcp} named maps so that {@link PhysicalTenantMapOverlay} deep-merges them per
- * physical tenant (the generic two-bind has a defect that drops unmentioned root entries when a
- * tenant overrides only some map keys).
+ * Per-tenant {@link Secrets} resolution: registers the {@code stores.file}, {@code stores.aws},
+ * {@code stores.gcp} and {@code stores.hashicorp-vault} named maps so that {@link
+ * PhysicalTenantMapOverlay} deep-merges them per physical tenant (the generic two-bind has a defect
+ * that drops unmentioned root entries when a tenant overrides only some map keys).
  */
 @NullMarked
 final class PhysicalTenantSecretConfigurations {
@@ -35,7 +36,11 @@ final class PhysicalTenantSecretConfigurations {
               new MapDescriptor<>(
                   "stores.aws", AwsSecretsManagerStore.class, s -> s.getStores().getAws()),
               new MapDescriptor<>(
-                  "stores.gcp", GcpSecretManagerStore.class, s -> s.getStores().getGcp())),
+                  "stores.gcp", GcpSecretManagerStore.class, s -> s.getStores().getGcp()),
+              new MapDescriptor<>(
+                  "stores.hashicorp-vault",
+                  HashiCorpVaultStore.class,
+                  s -> s.getStores().getHashicorpVault())),
           MapOverlaySpec.noHook(),
           Camunda::setSecrets);
 

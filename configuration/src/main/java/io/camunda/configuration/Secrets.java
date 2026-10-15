@@ -34,6 +34,18 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.stores.gcp.<id>.path-prefix}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.endpoint}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.container-secret-id}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.address}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.namespace}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.kv-version}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.mount}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.path-prefix}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.container-path}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.field}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.auth-method}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.role-id}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.secret-id-file}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.secret-id-env}
+ *   <li>{@code camunda.secrets.stores.hashicorp-vault.<id>.ca-bundle-path}
  * </ul>
  *
  * <p>Exactly one store per physical tenant is supported, and its {@code <id>} must be {@code
@@ -165,6 +177,7 @@ public class Secrets {
     private Map<String, FileStore> file = new LinkedHashMap<>();
     private Map<String, AwsSecretsManagerStore> aws = new LinkedHashMap<>();
     private Map<String, GcpSecretManagerStore> gcp = new LinkedHashMap<>();
+    private Map<String, HashiCorpVaultStore> hashicorpVault = new LinkedHashMap<>();
 
     public Map<String, FileStore> getFile() {
       return file;
@@ -201,6 +214,19 @@ public class Secrets {
 
     public void setGcp(final Map<String, GcpSecretManagerStore> gcp) {
       this.gcp = gcp;
+    }
+
+    /**
+     * @throws IllegalArgumentException if any store sets a blank value, a kv-version other than 1
+     *     or 2, or a non-positive call-timeout
+     */
+    public Map<String, HashiCorpVaultStore> getHashicorpVault() {
+      hashicorpVault.forEach((id, store) -> store.validate(id));
+      return hashicorpVault;
+    }
+
+    public void setHashicorpVault(final Map<String, HashiCorpVaultStore> hashicorpVault) {
+      this.hashicorpVault = hashicorpVault;
     }
   }
 
@@ -699,6 +725,312 @@ public class Secrets {
                   + fullLength);
         }
       }
+    }
+  }
+
+  /**
+   * Configuration for a HashiCorp Vault (or OpenBao) KV secrets engine store.
+   *
+   * <p>Credentials are never configured as values: the AppRole {@code secret_id} and a static token
+   * are read from a file or an environment variable named here, again on every sign-in, so a
+   * rotated credential is picked up without a restart. The store signs in, renews its token before
+   * it expires, and signs in again once the token can no longer be renewed.
+   *
+   * <p>Only present-value checks live here, so the validating {@link Stores#getHashicorpVault()}
+   * stays safe to call from the physical-tenant overlay; required fields, https, and the auth
+   * method's own requirements are enforced by the store implementation's config.
+   */
+  public static class HashiCorpVaultStore {
+
+    private static final int DEFAULT_KV_VERSION = 2;
+    private static final String DEFAULT_MOUNT = "secret";
+    private static final String DEFAULT_FIELD = "value";
+
+    /**
+     * Base URL of the HashiCorp Vault server, e.g. {@code https://vault.example:8200}. Required.
+     * Must use {@code https} unless {@link #allowInsecure} is set.
+     */
+    private @Nullable String address;
+
+    /**
+     * Optional HashiCorp Vault Enterprise / OpenBao namespace, e.g. {@code team-a}. Applies to
+     * sign-in as well as to reads, so the auth method must be mounted in that namespace.
+     */
+    private @Nullable String namespace;
+
+    /** Version of the KV secrets engine at {@link #mount}: {@code 1} or {@code 2}. */
+    private Integer kvVersion = DEFAULT_KV_VERSION;
+
+    /** Path the KV secrets engine is mounted at, e.g. {@code secret} or {@code kv/team-a}. */
+    private String mount = DEFAULT_MOUNT;
+
+    /**
+     * Optional path inside the mount prepended, with no separator inserted, to every reference
+     * name, e.g. {@code camunda/}: the reference {@code db-password} then reads the entry {@code
+     * camunda/db-password}. A store only ever reads below its prefix: reference names are single
+     * path segments ({@code [A-Za-z0-9._-]}), so {@code /} and {@code ..} are refused.
+     */
+    private @Nullable String pathPrefix;
+
+    /**
+     * Opt-in: instead of one KV entry per reference, read this one entry (below {@link
+     * #pathPrefix}) and treat each of its fields as a secret named after the field.
+     */
+    private @Nullable String containerPath;
+
+    /** The field read from each KV entry in per-entry mode. */
+    private String field = DEFAULT_FIELD;
+
+    /**
+     * How the store signs in: {@code approle} (default; for VMs, bare metal and C8Run), {@code
+     * kubernetes} (the pod's service account token), or {@code token} (a static token, for testing
+     * only).
+     */
+    private AuthMethod authMethod = AuthMethod.APPROLE;
+
+    /**
+     * Path the auth method is mounted at; defaults to {@code approle}, {@code kubernetes}, or
+     * {@code token}.
+     */
+    private @Nullable String authMount;
+
+    /** AppRole: the {@code role_id}. Not a credential on its own. */
+    private @Nullable String roleId;
+
+    /** AppRole: file containing the {@code secret_id}. Exclusive with {@link #secretIdEnv}. */
+    private @Nullable String secretIdFile;
+
+    /**
+     * AppRole: environment variable containing the {@code secret_id}. Exclusive with {@link
+     * #secretIdFile}.
+     */
+    private @Nullable String secretIdEnv;
+
+    /** Kubernetes: the HashiCorp Vault role to sign in as. */
+    private @Nullable String role;
+
+    /**
+     * Kubernetes: file containing the service account JWT; defaults to the projected token at
+     * {@code /var/run/secrets/kubernetes.io/serviceaccount/token}.
+     */
+    private @Nullable String jwtPath;
+
+    /** Token auth (testing only): file containing the token. Exclusive with {@link #tokenEnv}. */
+    private @Nullable String tokenFile;
+
+    /**
+     * Token auth (testing only): environment variable containing the token. Exclusive with {@link
+     * #tokenFile}.
+     */
+    private @Nullable String tokenEnv;
+
+    /**
+     * Optional PEM file with the CA certificate(s) to trust for {@link #address}, instead of the
+     * JVM's default trust store.
+     */
+    private @Nullable String caBundlePath;
+
+    /** Allow a plain {@code http} {@link #address}. For local development only. */
+    private boolean allowInsecure;
+
+    /**
+     * Upper bound on one HTTP call to HashiCorp Vault. The background secret resolution calls the
+     * store from an IO-bound actor thread shared with every partition's exporter, so an unbounded
+     * call there stalls exporting broker-wide (camunda/camunda#62869). Must be positive; HashiCorp
+     * Vault's client takes whole seconds, so it is rounded up.
+     */
+    private Duration callTimeout = DEFAULT_CALL_TIMEOUT;
+
+    public @Nullable String getAddress() {
+      return address;
+    }
+
+    public void setAddress(final @Nullable String address) {
+      this.address = address;
+    }
+
+    public @Nullable String getNamespace() {
+      return namespace;
+    }
+
+    public void setNamespace(final @Nullable String namespace) {
+      this.namespace = namespace;
+    }
+
+    public Integer getKvVersion() {
+      return kvVersion;
+    }
+
+    public void setKvVersion(final @Nullable Integer kvVersion) {
+      this.kvVersion = kvVersion == null ? DEFAULT_KV_VERSION : kvVersion;
+    }
+
+    public String getMount() {
+      return mount;
+    }
+
+    public void setMount(final @Nullable String mount) {
+      this.mount = mount == null ? DEFAULT_MOUNT : mount;
+    }
+
+    public @Nullable String getPathPrefix() {
+      return pathPrefix;
+    }
+
+    public void setPathPrefix(final @Nullable String pathPrefix) {
+      this.pathPrefix = pathPrefix;
+    }
+
+    public @Nullable String getContainerPath() {
+      return containerPath;
+    }
+
+    public void setContainerPath(final @Nullable String containerPath) {
+      this.containerPath = containerPath;
+    }
+
+    public String getField() {
+      return field;
+    }
+
+    public void setField(final @Nullable String field) {
+      this.field = field == null ? DEFAULT_FIELD : field;
+    }
+
+    public AuthMethod getAuthMethod() {
+      return authMethod;
+    }
+
+    public void setAuthMethod(final @Nullable AuthMethod authMethod) {
+      this.authMethod = authMethod == null ? AuthMethod.APPROLE : authMethod;
+    }
+
+    public @Nullable String getAuthMount() {
+      return authMount;
+    }
+
+    public void setAuthMount(final @Nullable String authMount) {
+      this.authMount = authMount;
+    }
+
+    public @Nullable String getRoleId() {
+      return roleId;
+    }
+
+    public void setRoleId(final @Nullable String roleId) {
+      this.roleId = roleId;
+    }
+
+    public @Nullable String getSecretIdFile() {
+      return secretIdFile;
+    }
+
+    public void setSecretIdFile(final @Nullable String secretIdFile) {
+      this.secretIdFile = secretIdFile;
+    }
+
+    public @Nullable String getSecretIdEnv() {
+      return secretIdEnv;
+    }
+
+    public void setSecretIdEnv(final @Nullable String secretIdEnv) {
+      this.secretIdEnv = secretIdEnv;
+    }
+
+    public @Nullable String getRole() {
+      return role;
+    }
+
+    public void setRole(final @Nullable String role) {
+      this.role = role;
+    }
+
+    public @Nullable String getJwtPath() {
+      return jwtPath;
+    }
+
+    public void setJwtPath(final @Nullable String jwtPath) {
+      this.jwtPath = jwtPath;
+    }
+
+    public @Nullable String getTokenFile() {
+      return tokenFile;
+    }
+
+    public void setTokenFile(final @Nullable String tokenFile) {
+      this.tokenFile = tokenFile;
+    }
+
+    public @Nullable String getTokenEnv() {
+      return tokenEnv;
+    }
+
+    public void setTokenEnv(final @Nullable String tokenEnv) {
+      this.tokenEnv = tokenEnv;
+    }
+
+    public @Nullable String getCaBundlePath() {
+      return caBundlePath;
+    }
+
+    public void setCaBundlePath(final @Nullable String caBundlePath) {
+      this.caBundlePath = caBundlePath;
+    }
+
+    public boolean isAllowInsecure() {
+      return allowInsecure;
+    }
+
+    public void setAllowInsecure(final boolean allowInsecure) {
+      this.allowInsecure = allowInsecure;
+    }
+
+    public Duration getCallTimeout() {
+      return callTimeout;
+    }
+
+    /**
+     * @param callTimeout the configured value, or {@code null}, bound to the default the same way
+     *     an unset property is, so an explicitly empty value does not leave the store unbounded
+     */
+    public void setCallTimeout(final @Nullable Duration callTimeout) {
+      this.callTimeout = callTimeout == null ? DEFAULT_CALL_TIMEOUT : callTimeout;
+    }
+
+    /**
+     * @throws IllegalArgumentException if a value is set but blank, kv-version is not 1 or 2, or
+     *     call-timeout is not positive
+     */
+    void validate(final String storeId) {
+      final var prefix = "camunda.secrets.stores.hashicorp-vault." + storeId + ".";
+      requireNotBlank(prefix + "address", address);
+      requireNotBlank(prefix + "namespace", namespace);
+      requireNotBlank(prefix + "mount", mount);
+      requireNotBlank(prefix + "container-path", containerPath);
+      requireNotBlank(prefix + "field", field);
+      requireNotBlank(prefix + "auth-mount", authMount);
+      requireNotBlank(prefix + "role-id", roleId);
+      requireNotBlank(prefix + "role", role);
+      if (kvVersion != 1 && kvVersion != 2) {
+        throw new IllegalArgumentException(
+            prefix + "kv-version must be 1 or 2, but was " + kvVersion);
+      }
+      if (!callTimeout.isPositive()) {
+        throw new IllegalArgumentException(
+            prefix + "call-timeout must be positive, but was " + callTimeout);
+      }
+    }
+
+    private static void requireNotBlank(final String property, final @Nullable String value) {
+      if (value != null && value.isBlank()) {
+        throw new IllegalArgumentException(property + " must not be blank");
+      }
+    }
+
+    public enum AuthMethod {
+      APPROLE,
+      KUBERNETES,
+      TOKEN
     }
   }
 }

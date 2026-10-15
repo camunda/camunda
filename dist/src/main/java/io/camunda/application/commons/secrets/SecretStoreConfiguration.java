@@ -13,6 +13,7 @@ import io.camunda.configuration.Secrets;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
+import io.camunda.configuration.Secrets.HashiCorpVaultStore;
 import io.camunda.configuration.Secrets.Stores;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.ConcurrentSecretStore;
@@ -25,11 +26,15 @@ import io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerStoreConfig;
+import io.camunda.secretstore.hashicorpvault.HashiCorpVaultSecretStore;
+import io.camunda.secretstore.hashicorpvault.HashiCorpVaultStoreConfig;
+import io.camunda.secretstore.hashicorpvault.HashiCorpVaultStoreConfig.AuthMethod;
 import io.camunda.zeebe.shared.management.ActorClockService;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -68,7 +73,12 @@ public class SecretStoreConfiguration {
           new StoreBinding<>(
               "aws", "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
           new StoreBinding<>(
-              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
+              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore),
+          new StoreBinding<>(
+              "hashicorp-vault",
+              "HashiCorp Vault",
+              Stores::getHashicorpVault,
+              SecretStoreConfiguration::hashicorpVaultStore));
 
   /**
    * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
@@ -173,7 +183,8 @@ public class SecretStoreConfiguration {
           e);
     }
     final Map<String, SecretStore> stores = new LinkedHashMap<>();
-    STORE_BINDINGS.forEach(binding -> binding.registerAll(config, stores, created, tenantId));
+    STORE_BINDINGS.forEach(
+        binding -> binding.registerAll(config, stores, created, tenantId, meterRegistry));
     if (stores.isEmpty()) {
       stores.put(SecretStoreRegistry.DEFAULT_STORE_ID, NOOP_STORE);
       LOG.info("No secret stores configured for physical tenant '{}', using noop store", tenantId);
@@ -307,7 +318,10 @@ public class SecretStoreConfiguration {
   }
 
   private static SecretStore fileStore(
-      final String storeId, final String tenantId, final FileStore config) {
+      final String storeId,
+      final String tenantId,
+      final FileStore config,
+      final MeterRegistry meterRegistry) {
     final var path = config.getPath();
     if (path.isBlank()) {
       throw new IllegalStateException(
@@ -321,7 +335,10 @@ public class SecretStoreConfiguration {
   }
 
   private static SecretStore awsStore(
-      final String storeId, final String tenantId, final AwsSecretsManagerStore config) {
+      final String storeId,
+      final String tenantId,
+      final AwsSecretsManagerStore config,
+      final MeterRegistry meterRegistry) {
     return AwsSecretsManagerSecretStore.fromConfig(
         new AwsSecretsManagerStoreConfig(
             config.getRegion(),
@@ -336,7 +353,10 @@ public class SecretStoreConfiguration {
   }
 
   private static SecretStore gcpStore(
-      final String storeId, final String tenantId, final GcpSecretManagerStore config) {
+      final String storeId,
+      final String tenantId,
+      final GcpSecretManagerStore config,
+      final MeterRegistry meterRegistry) {
     return GcpSecretManagerSecretStore.fromConfig(
         new GcpSecretManagerStoreConfig(
             config.getProjectId(),
@@ -345,6 +365,72 @@ public class SecretStoreConfiguration {
             config.getContainerSecretId(),
             false,
             config.getCallTimeout()));
+  }
+
+  /**
+   * Builds a HashiCorp Vault store. Unlike the cloud SDK stores, this one owns a session (sign-in
+   * and token renewal), so it publishes its own meters, tagged with the tenant and store id like
+   * the cache meters are.
+   */
+  private static SecretStore hashicorpVaultStore(
+      final String storeId,
+      final String tenantId,
+      final HashiCorpVaultStore config,
+      final MeterRegistry meterRegistry) {
+    final var address = config.getAddress();
+    if (address == null) {
+      throw new IllegalStateException(
+          "HashiCorp Vault store '"
+              + storeId
+              + "' for physical tenant '"
+              + tenantId
+              + "' has no address configured");
+    }
+    final var authMethod =
+        switch (config.getAuthMethod()) {
+          case APPROLE -> AuthMethod.APPROLE;
+          case KUBERNETES -> AuthMethod.KUBERNETES;
+          case TOKEN -> AuthMethod.TOKEN;
+        };
+    final HashiCorpVaultStoreConfig storeConfig;
+    try {
+      storeConfig =
+          new HashiCorpVaultStoreConfig(
+              URI.create(address),
+              config.getNamespace(),
+              config.getKvVersion(),
+              config.getMount(),
+              config.getPathPrefix(),
+              config.getContainerPath(),
+              config.getField(),
+              authMethod,
+              config.getAuthMount() != null ? config.getAuthMount() : authMethod.defaultMount(),
+              authMethod == AuthMethod.KUBERNETES ? config.getRole() : config.getRoleId(),
+              config.getSecretIdFile(),
+              config.getSecretIdEnv(),
+              config.getJwtPath() != null
+                  ? config.getJwtPath()
+                  : HashiCorpVaultStoreConfig.DEFAULT_KUBERNETES_JWT_PATH,
+              config.getTokenFile(),
+              config.getTokenEnv(),
+              config.getCaBundlePath(),
+              config.isAllowInsecure(),
+              config.getCallTimeout());
+    } catch (final IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          "HashiCorp Vault store '"
+              + storeId
+              + "' for physical tenant '"
+              + tenantId
+              + "' is misconfigured: "
+              + e.getMessage(),
+          e);
+    }
+    return HashiCorpVaultSecretStore.fromConfig(
+        storeConfig,
+        tenantId + "-" + storeId,
+        meterRegistry,
+        Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), tenantId, "store", storeId));
   }
 
   /**
@@ -375,7 +461,11 @@ public class SecretStoreConfiguration {
   /** Builds one {@link SecretStore} from a single configured entry of a given store type. */
   @FunctionalInterface
   private interface StoreFactory<C> {
-    SecretStore create(String storeId, String tenantId, C config);
+    /**
+     * @param meterRegistry the cluster-wide registry, for a store that publishes meters of its own;
+     *     it must tag them with the tenant, since a store id is unique only within one
+     */
+    SecretStore create(String storeId, String tenantId, C config, MeterRegistry meterRegistry);
   }
 
   /**
@@ -408,7 +498,8 @@ public class SecretStoreConfiguration {
         final Stores config,
         final Map<String, SecretStore> stores,
         final List<SecretStore> created,
-        final String tenantId) {
+        final String tenantId,
+        final MeterRegistry meterRegistry) {
       selector
           .apply(config)
           .forEach(
@@ -421,7 +512,7 @@ public class SecretStoreConfiguration {
                       displayName,
                       // the raw id is what the operator wrote, so it is what a factory names in its
                       // own validation errors
-                      factory.create(storeId, tenantId, entry)));
+                      factory.create(storeId, tenantId, entry, meterRegistry)));
     }
   }
 }

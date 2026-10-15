@@ -1905,6 +1905,7 @@ camunda: # Type: io.camunda.configuration.Camunda
       aws: null # Type: Map<String,io.camunda.configuration.Secrets$AwsSecretsManagerStore>, Env: CAMUNDA_SECRETS_STORES_AWS
       file: null # Type: Map<String,io.camunda.configuration.Secrets$FileStore>, Env: CAMUNDA_SECRETS_STORES_FILE
       gcp: null # Type: Map<String,io.camunda.configuration.Secrets$GcpSecretManagerStore>, Env: CAMUNDA_SECRETS_STORES_GCP
+      hashicorp-vault: null # Type: Map<String,io.camunda.configuration.Secrets$HashiCorpVaultStore>, Env: CAMUNDA_SECRETS_STORES_HASHICORPVAULT
   
   security: # Type: io.camunda.configuration.Security  
     authentication: # Type: io.camunda.security.api.model.config.AuthenticationConfiguration  

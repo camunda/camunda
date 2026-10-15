@@ -30,6 +30,7 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
+import io.camunda.secretstore.hashicorpvault.HashiCorpVaultSecretStore;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.shared.management.ActorClockEndpoint;
 import io.camunda.zeebe.shared.management.ActorClockService;
@@ -395,6 +396,65 @@ class SecretStoreConfigurationTest {
                 .get(SecretStoreRegistry.DEFAULT_STORE_ID)
                 .is(AwsSecretsManagerSecretStore.class))
         .isTrue();
+  }
+
+  @Test
+  void shouldBuildHashiCorpVaultStoreEvenWhenItCannotSignIn() {
+    // given a store whose sign-in fails (nothing listens on the address); like the AWS store, the
+    // startup probe only logs, so an outage at boot cannot stop the application from starting.
+    // Real resolution is covered by HashiCorpVaultSecretStoreIT, against a HashiCorp Vault
+    // container
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.hashicorp-vault.default.address", "http://127.0.0.1:1",
+                "camunda.secrets.stores.hashicorp-vault.default.allow-insecure", "true",
+                "camunda.secrets.stores.hashicorp-vault.default.role-id", "camunda",
+                "camunda.secrets.stores.hashicorp-vault.default.secret-id-env",
+                    "CAMUNDA_TEST_UNSET_SECRET_ID"));
+
+    // when
+    final var store =
+        CONFIG
+            .secretStoreRegistries(resolver, CLOCK_SERVICE, meterRegistry)
+            .byPhysicalTenant()
+            .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .getStores()
+            .get(SecretStoreRegistry.DEFAULT_STORE_ID);
+
+    // then the hashicorp-vault branch built the store, and its failed sign-in is counted under the
+    // tenant it belongs to
+    assertThat(store.is(HashiCorpVaultSecretStore.class)).isTrue();
+    assertThat(
+            meterRegistry
+                .get("camunda.secret.store.hashicorp.vault.session")
+                .tag(
+                    PartitionKeyNames.PHYSICAL_TENANT.asString(),
+                    PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .tag("operation", "login")
+                .tag("result", "failure")
+                .counter()
+                .count())
+        .isGreaterThanOrEqualTo(1);
+  }
+
+  @Test
+  void shouldRejectHashiCorpVaultStoreWithPlainHttpAddressBeforeSigningIn() {
+    // given
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.hashicorp-vault.default.address", "http://vault:8200",
+                "camunda.secrets.stores.hashicorp-vault.default.role-id", "camunda",
+                "camunda.secrets.stores.hashicorp-vault.default.secret-id-file", "/run/secret-id"));
+
+    // when / then
+    assertThatThrownBy(() -> registries(resolver))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("HashiCorp Vault store 'default'")
+        .hasMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .hasMessageContaining("https");
   }
 
   @Test
