@@ -990,6 +990,48 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  # Same as fossa-release, for the Optimize FOSSA project (separate scan from single-app).
+  # Flags impact:
+  # - includeOptimize=false: Skipped
+  # - With dryRun=true or releaseProcessDryRun=true: Runs in dry-run mode (no actual release creation)
+  fossa-release-optimize:
+    name: Create FOSSA releases and generate attribution/SBOM reports for Optimize
+    runs-on: ubuntu-latest
+    needs: [release, github, optimize-docker, camunda-docker]
+    if: ${{ always() && !cancelled() &&
+      inputs.includeOptimize &&
+      needs.release.result == 'success' &&
+      needs.github.result == 'success' &&
+      needs.optimize-docker.result == 'success' &&
+      needs.camunda-docker.result == 'success' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+          persist-credentials: false
+      - name: Create FOSSA releases and generate reports
+        uses: ./.github/actions/fossa-release-project
+        with:
+          project-id: "custom+50756/camunda/camunda@optimize"
+          attribution-release-group-id: "11294" # https://app.fossa.com/projects/group/11294
+          sbom-release-group-id: "11295"        # https://app.fossa.com/projects/group/11295
+          fossa-api-key-vault-path: secret/data/products/optimize/ci/fossa
+          release-number: ${{ env.RELEASE_VERSION }}
+          revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
+          dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   # Slack notification jobs send release status updates to the team's Slack channel.
   # Both jobs are conditional and only run for actual releases (not dry runs or E2E testing).
   # Flags impact:
@@ -1000,7 +1042,7 @@ jobs:
   notify-on-success:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
-    needs: [release, github, optimize-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, optimize-docker, camunda-docker, snyk, fossa-release, fossa-release-optimize]
     # Report release result to C8 always (including dry-runs)
     # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
@@ -1009,7 +1051,8 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' &&
       (needs.snyk.result == 'success' || needs.snyk.result == 'skipped') &&
-      (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped')
+      (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped') &&
+      (needs.fossa-release-optimize.result == 'success' || needs.fossa-release-optimize.result == 'skipped')
       ) }}
     timeout-minutes: 5
     permissions:
@@ -1150,7 +1193,7 @@ jobs:
   notify-if-failed:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
-    needs: [release, github, optimize-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, optimize-docker, camunda-docker, snyk, fossa-release, fossa-release-optimize]
     # Report release result to C8 always (including dry-runs)
     # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
@@ -1159,7 +1202,8 @@ jobs:
         needs.optimize-docker.result == 'failure' ||
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure' ||
-        needs.fossa-release.result == 'failure'
+        needs.fossa-release.result == 'failure' ||
+        needs.fossa-release-optimize.result == 'failure'
         ) }}
     timeout-minutes: 5
     permissions:
