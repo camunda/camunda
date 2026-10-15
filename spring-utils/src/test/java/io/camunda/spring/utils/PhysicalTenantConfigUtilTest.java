@@ -16,11 +16,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
 class PhysicalTenantConfigUtilTest {
@@ -123,6 +128,88 @@ class PhysicalTenantConfigUtilTest {
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
         .isThrownBy(() -> PhysicalTenantConfigUtil.discover(environment))
         .withMessageContaining("Invalid physical tenant id");
+  }
+
+  @TestFactory
+  Stream<DynamicTest> shouldRejectDiscoveredTenantIdWithDashOrCapitalAsWritten() {
+    // tenant ids that are only valid once dashes are stripped and letters lowercased
+    return Stream.of("tenant-a", "TenantA", "tenant_a")
+        .map(
+            tenantId ->
+                DynamicTest.dynamicTest(
+                    tenantId,
+                    () -> {
+                      // given
+                      final MockEnvironment environment =
+                          environmentWithTenantProperty(tenantId + ".cluster.size");
+
+                      // when / then the id is rejected as written, not registered as "tenanta"
+                      assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
+                          .isThrownBy(() -> PhysicalTenantConfigUtil.discover(environment))
+                          .withMessageContaining("Invalid physical tenant id '" + tenantId + "'")
+                          .withMessageContaining("Rename it to 'tenanta'");
+                    }));
+  }
+
+  @Test
+  void shouldNameNormalizedIdWhenItIsAValidTenantId() {
+    // given a declared id whose normalized form is exactly at the length limit
+    final String uniformId = "a".repeat(MAX_TENANT_ID_LENGTH);
+    final MockEnvironment environment = environmentWithTenantProperty(uniformId + "-.cluster.size");
+
+    // when / then
+    assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
+        .isThrownBy(() -> PhysicalTenantConfigUtil.discover(environment))
+        .withMessageContaining("Rename it to '" + uniformId + "'");
+  }
+
+  @Test
+  void shouldNotNameNormalizedIdWhenItIsNotAValidTenantId() {
+    // given a declared id whose normalized form is one character over the length limit
+    final MockEnvironment environment =
+        environmentWithTenantProperty("a".repeat(MAX_TENANT_ID_LENGTH + 1) + "-.cluster.size");
+
+    // when / then
+    assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
+        .isThrownBy(() -> PhysicalTenantConfigUtil.discover(environment))
+        .withMessageContaining("Invalid physical tenant id")
+        .withMessageNotContaining("Rename it to");
+  }
+
+  @Test
+  void shouldDiscoverOneTenantDeclaredInYamlAndAsEnvironmentVariable() {
+    // given the same tenant declared in yaml form and as an environment variable
+    final MockEnvironment environment = environmentWithTenantProperty("tenanta.cluster.size");
+    environment
+        .getPropertySources()
+        .addFirst(
+            new SystemEnvironmentPropertySource(
+                StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                Map.of("CAMUNDA_PHYSICALTENANTS_TENANTA_CLUSTER_NAME", "n")));
+
+    // when
+    final Set<String> tenantIds = PhysicalTenantConfigUtil.discover(environment);
+
+    // then
+    assertThat(tenantIds).containsExactly("tenanta");
+  }
+
+  @Test
+  void shouldDiscoverTenantIdFromEnvironmentVariable() {
+    // given a tenant declared only through an environment variable
+    final MockEnvironment environment = new MockEnvironment();
+    environment
+        .getPropertySources()
+        .addFirst(
+            new SystemEnvironmentPropertySource(
+                StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                Map.of("CAMUNDA_PHYSICALTENANTS_TENANTA_CLUSTER_SIZE", "4")));
+
+    // when
+    final Set<String> tenantIds = PhysicalTenantConfigUtil.discover(environment);
+
+    // then
+    assertThat(tenantIds).containsExactly("tenanta");
   }
 
   @Test
@@ -259,5 +346,14 @@ class PhysicalTenantConfigUtilTest {
     return PhysicalTenantConfigUtil.mapEntryNames(environment, "camunda.providers", key).stream()
         .map(name -> binder.bind(name.append("client-id"), Bindable.of(String.class)).orElse(null))
         .toList();
+  }
+
+  private static MockEnvironment environmentWithTenantProperty(final String relativeName) {
+    final MockEnvironment environment = new MockEnvironment();
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource("test", Map.of("camunda.physical-tenants." + relativeName, "4")));
+    return environment;
   }
 }

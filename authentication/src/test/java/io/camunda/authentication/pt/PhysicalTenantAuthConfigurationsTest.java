@@ -870,9 +870,7 @@ class PhysicalTenantAuthConfigurationsTest {
 
   @Test
   void shouldThrowWhenDiscoveredTenantIdIsMalformed() {
-    // given a tenant id exceeding the 64-char length limit — length is the only invalid form
-    // reachable through discovery (ids surface from the property-name walk already lowercased
-    // with dashes stripped, so only length survives to reach validation)
+    // given a tenant id exceeding the 64-char length limit
     final String tooLongTenantId = "a".repeat(MAX_TENANT_ID_LENGTH + 1);
     final MockEnvironment environment =
         env(

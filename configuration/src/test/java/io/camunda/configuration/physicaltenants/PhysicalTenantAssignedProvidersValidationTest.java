@@ -814,9 +814,7 @@ class PhysicalTenantAssignedProvidersValidationTest {
 
   @Test
   void shouldRejectTenantIdExceeding64Characters() {
-    // given a tenant id one character over the shared length limit — the only invalid form
-    // reachable through discovery, since ids surface from the property-name walk already
-    // lowercased with dashes stripped, leaving length as the only unnormalized property
+    // given a tenant id one character over the shared length limit
     final String tooLong = "a".repeat(MAX_TENANT_ID_LENGTH + 1);
     final Environment environment =
         environmentWith(Map.of("camunda.physical-tenants." + tooLong + ".cluster.size", 4));
@@ -825,6 +823,19 @@ class PhysicalTenantAssignedProvidersValidationTest {
     assertThatExceptionOfType(UnifiedConfigurationException.class)
         .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
         .withMessageContaining("Invalid physical tenant id");
+  }
+
+  @Test
+  void shouldRejectTenantIdWithDash() {
+    // given a tenant id with a dash, which would otherwise be registered as "tenanta"
+    final Environment environment =
+        environmentWith(Map.of("camunda.physical-tenants.tenant-a.cluster.size", 4));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("Invalid physical tenant id 'tenant-a'")
+        .withMessageContaining("Rename it to 'tenanta'");
   }
 
   // -------------------------------------------------------------------------
