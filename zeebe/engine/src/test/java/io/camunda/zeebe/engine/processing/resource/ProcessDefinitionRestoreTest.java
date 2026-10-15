@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -48,8 +50,7 @@ public class ProcessDefinitionRestoreTest {
     engine.start();
 
     // then - the cleanup runs its full lifecycle and flips the stray row back to ACTIVE
-    RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
-        .getFirst();
+    awaitRestoreFinishedAndCommitted();
 
     final var restored =
         RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.RESTORED)
@@ -148,8 +149,7 @@ public class ProcessDefinitionRestoreTest {
     engine.start();
 
     // then - only the stray is restored
-    RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
-        .getFirst();
+    awaitRestoreFinishedAndCommitted();
     final var restoredKeys =
         RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.RESTORED)
             .limit(1)
@@ -334,6 +334,8 @@ public class ProcessDefinitionRestoreTest {
             .filter(r -> r.getKey() == markerKey)
             .getFirst();
 
+    awaitCommitted(markerRecord);
+
     // then - no PROCESS_DEFINITION_RESTORE records were ever written
     assertThat(
             RecordingExporter.records()
@@ -397,8 +399,7 @@ public class ProcessDefinitionRestoreTest {
     engine.stop();
     engine.withEngineConfig(cfg -> cfg.setEnableProcessDefinitionRestore(true));
     engine.start();
-    RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
-        .getFirst();
+    awaitRestoreFinishedAndCommitted();
 
     // when - the in-memory cache is cleared, forcing a reload through the by-version lookup path
     final var processState = engine.getProcessingState().getProcessState();
@@ -423,8 +424,7 @@ public class ProcessDefinitionRestoreTest {
     engine.stop();
     engine.withEngineConfig(cfg -> cfg.setEnableProcessDefinitionRestore(true));
     engine.start();
-    RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
-        .getFirst();
+    awaitRestoreFinishedAndCommitted();
 
     // when - "latest" is resolved and an instance is created
     final var latest =
@@ -445,6 +445,24 @@ public class ProcessDefinitionRestoreTest {
             .getFirst();
     assertThat(started.getValue().getProcessDefinitionKey())
         .isEqualTo(v1.getProcessDefinitionKey());
+  }
+
+  /**
+   * Records are exported before the state transaction commits, so reading the state right after
+   * seeing a record races with the stream processor's own transaction.
+   */
+  private void awaitRestoreFinishedAndCommitted() {
+    awaitCommitted(
+        RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
+            .getFirst());
+  }
+
+  private void awaitCommitted(final Record<?> record) {
+    Awaitility.await("Await the command that produced the record to be fully processed")
+        .untilAsserted(
+            () ->
+                assertThat(engine.getLastProcessedPosition())
+                    .isGreaterThanOrEqualTo(record.getSourceRecordPosition()));
   }
 
   private static BpmnModelInstance simpleProcess(final String processId) {
