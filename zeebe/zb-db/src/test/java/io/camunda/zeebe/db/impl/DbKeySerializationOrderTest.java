@@ -31,7 +31,7 @@ final class DbKeySerializationOrderTest {
     final List<Long> ascending = List.of(0L, 1L, Long.MAX_VALUE, Long.MIN_VALUE, -2L, -1L);
 
     // when
-    final var serialized = ascending.stream().map(v -> serialize(long_(v))).toList();
+    final var serialized = ascending.stream().map(v -> serialize(longKey(v))).toList();
 
     // then
     assertThat(serialized).isSortedAccordingTo(UNSIGNED);
@@ -44,7 +44,7 @@ final class DbKeySerializationOrderTest {
     final List<Integer> ascending = List.of(0, 1, Integer.MAX_VALUE, Integer.MIN_VALUE, -2, -1);
 
     // when
-    final var serialized = ascending.stream().map(v -> serialize(int_(v))).toList();
+    final var serialized = ascending.stream().map(v -> serialize(intKey(v))).toList();
 
     // then
     assertThat(serialized).isSortedAccordingTo(UNSIGNED);
@@ -76,13 +76,13 @@ final class DbKeySerializationOrderTest {
     assertThat(serialized).isSortedAccordingTo(UNSIGNED);
   }
 
-  private static DbLong long_(final long value) {
+  private static DbLong longKey(final long value) {
     final var key = new DbLong();
     key.wrapLong(value);
     return key;
   }
 
-  private static DbInt int_(final int value) {
+  private static DbInt intKey(final int value) {
     final var key = new DbInt();
     key.wrapInt(value);
     return key;

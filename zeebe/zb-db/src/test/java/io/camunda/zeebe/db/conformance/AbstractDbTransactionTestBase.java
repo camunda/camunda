@@ -27,9 +27,6 @@ import org.junit.rules.TemporaryFolder;
  */
 public abstract class AbstractDbTransactionTestBase {
 
-  protected abstract <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-      ZeebeDbFactory<T> factory();
-
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   protected TransactionContext transactionContext;
@@ -44,6 +41,9 @@ public abstract class AbstractDbTransactionTestBase {
   protected DbLong twoKey;
   protected DbLong threeKey;
   protected DbLong threeValue;
+
+  protected abstract <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<T> factory();
 
   @Before
   public void setup() throws Exception {
