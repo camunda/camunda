@@ -150,7 +150,13 @@ public class DocumentDataConsumer<T>
 
   @Override
   public void releaseResources() {
-    // nothing to release
+    // AbstractAsyncResponseConsumer#failed only releases resources and never reaches our own
+    // #failed, so a cancelled or aborted exchange would otherwise leave a blocked reader waiting
+    // for data that never arrives
+    if (!problemDetail && !completed) {
+      inputStream.signalError(
+          new IOException("Document stream was released before the response was fully received"));
+    }
   }
 
   @Override
