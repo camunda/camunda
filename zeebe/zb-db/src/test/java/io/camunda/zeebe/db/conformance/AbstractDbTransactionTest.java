@@ -30,9 +30,6 @@ import org.junit.rules.TemporaryFolder;
 
 public abstract class AbstractDbTransactionTest {
 
-  protected abstract <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-      ZeebeDbFactory<T> factory();
-
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private TransactionContext transactionContext;
@@ -47,6 +44,9 @@ public abstract class AbstractDbTransactionTest {
   private DbLong twoKey;
   private DbLong threeKey;
   private DbLong threeValue;
+
+  protected abstract <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<T> factory();
 
   @Before
   public void setup() throws Exception {

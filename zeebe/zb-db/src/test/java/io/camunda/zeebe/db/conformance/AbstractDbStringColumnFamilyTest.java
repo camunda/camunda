@@ -25,13 +25,13 @@ import org.junit.rules.TemporaryFolder;
 
 public abstract class AbstractDbStringColumnFamilyTest {
 
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
-
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbString, DbString> columnFamily;
   private DbString key;
   private DbString value;
+
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
 
   @Before
   public void setup() throws Exception {

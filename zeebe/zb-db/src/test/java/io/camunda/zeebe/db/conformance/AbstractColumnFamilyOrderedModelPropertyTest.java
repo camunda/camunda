@@ -49,11 +49,11 @@ public abstract class AbstractColumnFamilyOrderedModelPropertyTest {
   private static final long[] EDGE_LONGS = {0, 1, 2, -1, -2, Long.MAX_VALUE, Long.MIN_VALUE};
   private static final String[] STRINGS = {"", "a", "b", "zz", "aa", "ab", "aaa", "zzz", "aä"};
 
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
-
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private Runnable clearColumnFamily = () -> {};
   private final TreeMap<byte[], Long> model = new TreeMap<>(Arrays::compareUnsigned);
+
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
 
   @BeforeProperty
   private void setup() {
