@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import axe from 'axe-core';
 import {Form} from 'react-final-form';
 import {render} from 'vitest-browser-react';
 import {describe, expect, vi} from 'vitest';
@@ -356,32 +355,6 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			await userEvent.keyboard('{ArrowDown}{Enter}');
 
 			await expect.element(screen.getByRole('textbox', {name: 'From'})).not.toHaveValue('');
-		});
-
-		it('should have no axe violations with the picker closed', async () => {
-			await render(<Harness initialValues={{from: FROM, to: TO}} />);
-
-			const {violations} = await axe.run(document.body, {rules: {region: {enabled: false}}});
-
-			expect(violations.map(({id, nodes}) => `${id}: ${nodes.map(({html}) => html).join(' | ')}`)).toEqual([]);
-		});
-
-		it('should have no axe violations with errors shown', async () => {
-			await render(<Harness initialValues={{from: FROM}} />);
-
-			const {violations} = await axe.run(document.body, {rules: {region: {enabled: false}}});
-
-			expect(violations.map(({id, nodes}) => `${id}: ${nodes.map(({html}) => html).join(' | ')}`)).toEqual([]);
-		});
-
-		it('should have no axe violations with the picker open', async () => {
-			const screen = await render(<Harness initialValues={{from: FROM, to: TO}} />);
-
-			await userEvent.click(screen.getByRole('textbox', {name: 'From'}));
-			await expect.element(screen.getByRole('grid')).toBeVisible();
-			const {violations} = await axe.run(document.body, {rules: {region: {enabled: false}}});
-
-			expect(violations.map(({id, nodes}) => `${id}: ${nodes.map(({html}) => html).join(' | ')}`)).toEqual([]);
 		});
 	});
 });

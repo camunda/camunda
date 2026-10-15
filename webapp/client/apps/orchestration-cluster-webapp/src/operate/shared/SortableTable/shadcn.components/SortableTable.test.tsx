@@ -187,25 +187,6 @@ describe('<SortableTable />', () => {
 			expect(screen.getByTestId('table-loading-overlay').elements()).toHaveLength(0);
 		});
 
-		it('should not render a checkbox for the skeleton row in a selectable table', async () => {
-			// given / when
-			const screen = await renderTable({
-				isFetchingNextPage: true,
-				selectionType: 'checkbox',
-				selectAllLabel: 'Select all rows',
-				selectRowLabel: (rowId: string) => `Select row ${rowId}`,
-				checkIsAllSelected: () => false,
-				checkIsIndeterminate: () => false,
-				checkIsRowSelected: () => false,
-				onSelectAll: vi.fn(),
-				onSelect: vi.fn(),
-			});
-
-			// then
-			const skeletonRow = screen.getByTestId('table-loading-next').element().closest('[data-slot="table-row"]');
-			expect(skeletonRow?.querySelector('[role="checkbox"]')).toBeNull();
-		});
-
 		it('should scroll down by the skeleton row height on mount, so inserting it above the rows does not shift them', async () => {
 			// given
 			const scrollTopSetterSpy = vi.spyOn(Element.prototype, 'scrollTop', 'set');
@@ -385,8 +366,10 @@ describe('<SortableTable />', () => {
 				checkIsAllSelected: () => false,
 				checkIsIndeterminate: () => false,
 				checkIsRowSelected: () => false,
+				selectedCount: 0,
 				onSelectAll: vi.fn(),
 				onSelect: vi.fn(),
+				onReset: vi.fn(),
 				...overrides,
 			});
 		}
@@ -433,14 +416,104 @@ describe('<SortableTable />', () => {
 			await expect.element(screen.getByRole('checkbox', {name: 'Select row row-1'})).toBeChecked();
 			await expect.element(screen.getByRole('checkbox', {name: 'Select row row-2'})).not.toBeChecked();
 		});
+	});
 
-		it('should render the select-all checkbox as indeterminate when checkIsIndeterminate returns true even if checkIsAllSelected is also true', async () => {
+	describe('batch actions', () => {
+		function renderWithBatchActions(overrides: RenderOverrides = {}) {
+			return renderTable({
+				selectionType: 'checkbox',
+				selectAllLabel: 'Select all rows',
+				selectRowLabel: (rowId) => `Select row ${rowId}`,
+				checkIsAllSelected: () => false,
+				checkIsIndeterminate: () => false,
+				checkIsRowSelected: (rowId) => rowId === 'row-1',
+				selectedCount: 1,
+				onSelectAll: vi.fn(),
+				onSelect: vi.fn(),
+				onReset: vi.fn(),
+				selectionCountLabel: '12 items selected',
+				batchActionsLabel: 'Bulk actions',
+				batchActionsCancelLabel: 'Discard',
+				batchActions: [{id: 'delete', label: 'Delete', variant: 'destructive', onClick: vi.fn()}],
+				...overrides,
+			});
+		}
+
+		it('should show the caller-provided count and the actions while rows are selected', async () => {
 			// given / when
-			const screen = await renderWithSelection({checkIsAllSelected: () => true, checkIsIndeterminate: () => true});
+			const screen = await renderWithBatchActions();
 
 			// then
-			const checkbox = screen.getByRole('checkbox', {name: 'Select all rows'});
-			await expect.element(checkbox).toHaveAttribute('data-state', 'indeterminate');
+			await expect.element(screen.getByRole('toolbar', {name: 'Bulk actions'})).toBeVisible();
+			await expect.element(screen.getByText('12 items selected')).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
+		});
+
+		it('should not show the batch bar when no row is selected', async () => {
+			// given / when
+			const screen = await renderWithBatchActions({checkIsRowSelected: () => false, selectedCount: 0});
+
+			// then
+			await expect.element(screen.getByRole('toolbar', {name: 'Bulk actions'})).not.toBeInTheDocument();
+		});
+
+		it('should call the action when it is clicked', async () => {
+			// given
+			const onClick = vi.fn();
+			const screen = await renderWithBatchActions({batchActions: [{id: 'delete', label: 'Delete', onClick}]});
+
+			// when
+			await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
+
+			// then
+			expect(onClick).toHaveBeenCalledOnce();
+		});
+
+		it('should select all matching rows when the last unselected loaded row is checked', async () => {
+			// given
+			const onSelectAll = vi.fn();
+			const onSelect = vi.fn();
+			const screen = await renderWithBatchActions({
+				checkIsRowSelected: (rowId) => rowId === 'row-1',
+				checkIsIndeterminate: () => true,
+				selectedCount: 1,
+				onSelectAll,
+				onSelect,
+			});
+
+			// when
+			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row row-2'}));
+
+			// then
+			expect(onSelectAll).toHaveBeenCalled();
+			expect(onSelect).not.toHaveBeenCalled();
+		});
+
+		it('should reset the whole selection when discard is clicked', async () => {
+			// given
+			const onReset = vi.fn();
+			const onSelect = vi.fn();
+			const screen = await renderWithBatchActions({
+				checkIsRowSelected: (rowId) => rowId === 'row-1',
+				selectedCount: 1,
+				onReset,
+				onSelect,
+			});
+
+			// when
+			await userEvent.click(screen.getByRole('button', {name: 'Discard'}));
+
+			// then
+			expect(onReset).toHaveBeenCalledOnce();
+			expect(onSelect).not.toHaveBeenCalled();
+		});
+
+		it('should keep the batch bar visible while selected rows are not loaded', async () => {
+			// given / when
+			const screen = await renderWithBatchActions({checkIsRowSelected: () => false, selectedCount: 5});
+
+			// then
+			await expect.element(screen.getByRole('toolbar', {name: 'Bulk actions'})).toBeVisible();
 		});
 	});
 

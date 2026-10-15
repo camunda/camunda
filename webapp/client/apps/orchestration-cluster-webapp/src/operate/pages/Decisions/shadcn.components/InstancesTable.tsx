@@ -21,7 +21,7 @@ import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatEvaluationDate} from '#/operate/shared/utils/formatEvaluationDate';
 import {useDecisionInstancesSearch} from '../useDecisionInstancesSearch';
 import type {DecisionsSearch} from '../decisionsFilter';
-import {Toolbar} from './Toolbar';
+import {useBulkDelete} from './useBulkDelete';
 
 type Props = {
 	search: DecisionsSearch;
@@ -55,6 +55,15 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 
 	const isRefreshing = isFetching && !isFetchingPreviousPage && !isFetchingNextPage;
 	const selection = useInstancesSelection(totalCount);
+
+	const bulkDelete = useBulkDelete({
+		selectedCount: selection.selectedCount,
+		includedIds: selection.includedIds,
+		excludedIds: selection.excludedIds,
+		filter,
+		onDeleted: selection.reset,
+		onDiscard: selection.reset,
+	});
 
 	const searchKey = JSON.stringify(search);
 	const [appliedSearchKey, setAppliedSearchKey] = useState(searchKey);
@@ -165,16 +174,6 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
 			/>
-			{filter !== undefined && (
-				<Toolbar
-					selectedCount={selection.selectedCount}
-					includedIds={selection.includedIds}
-					excludedIds={selection.excludedIds}
-					filter={filter}
-					onDeleted={selection.reset}
-					onDiscard={selection.reset}
-				/>
-			)}
 			<PaginatedSortableTable<DecisionInstance>
 				columns={columns}
 				rows={decisionInstances}
@@ -190,8 +189,14 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				checkIsAllSelected={() => selection.isAllSelected}
 				checkIsIndeterminate={() => selection.isIndeterminate}
 				checkIsRowSelected={selection.isRowSelected}
+				selectedCount={selection.selectedCount}
 				onSelectAll={selection.selectAll}
 				onSelect={selection.select}
+				onReset={selection.reset}
+				batchActions={filter !== undefined ? bulkDelete.batchActions : undefined}
+				selectionCountLabel={bulkDelete.selectionCountLabel}
+				batchActionsLabel={t('operate.decisions.toolbar.bulkActionsLabel')}
+				batchActionsCancelLabel={t('operate.decisions.toolbar.discard')}
 				pagination={{
 					hasPreviousPage: hasPreviousPage && !isRefreshing,
 					hasNextPage: hasNextPage && !isRefreshing,
@@ -203,6 +208,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				className={TABLE_CONTAINER_CLASSES}
 				data-testid="decision-instances-table"
 			/>
+			{bulkDelete.dialog}
 		</section>
 	);
 };
