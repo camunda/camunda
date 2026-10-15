@@ -12,7 +12,11 @@ import {
   type APIResponse,
 } from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {createSingleInstance, deployWithSubstitutions} from '../zeebeClient';
+import {
+  cancelProcessInstance,
+  createSingleInstance,
+  deployWithSubstitutions,
+} from '../zeebeClient';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 import {sleep} from '../sleep';
 import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
@@ -189,4 +193,66 @@ export async function deployUserTaskProcess(
       : {}),
   });
   return deployment.processes[0];
+}
+export async function partitionsCount(
+  request: APIRequestContext,
+): Promise<number> {
+  const res = await request.get(buildUrl('/topology'), {
+    headers: jsonHeaders(),
+  });
+  await assertStatusCode(res, 200);
+  return (await res.json()).partitionsCount as number;
+}
+
+/**
+ * The partition that minted a key, encoded in its high bits. A definition key
+ * is minted on the deployment partition, which therefore serves every delete of
+ * that definition.
+ */
+export function partitionOf(key: string): number {
+  return Number(BigInt(key) >> 51n);
+}
+
+/**
+ * Starts instances of `processDefinitionId` until one lands on `partition`,
+ * returning all of them.
+ *
+ * Placement is round-robin and the gateway's offset is shared with the specs
+ * running in parallel, so a fixed instance count cannot guarantee a given
+ * partition is covered.
+ */
+export async function createInstancesUntilOn(
+  processDefinitionId: string,
+  partition: number,
+  maxAttempts: number,
+) {
+  const instances = [];
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+    instances.push(instance);
+    if (partitionOf(instance.processInstanceKey) === partition) {
+      break;
+    }
+  }
+  return instances;
+}
+
+/**
+ * Starts one instance of `processDefinitionId` away from `partition`,
+ * cancelling any that land on it so that partition keeps none of the
+ * definition's running instances. Returns undefined if none landed elsewhere.
+ */
+export async function createInstanceAwayFrom(
+  processDefinitionId: string,
+  partition: number,
+  maxAttempts: number,
+) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+    if (partitionOf(instance.processInstanceKey) !== partition) {
+      return instance;
+    }
+    await cancelProcessInstance(instance.processInstanceKey);
+  }
+  return undefined;
 }
