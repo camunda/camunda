@@ -89,16 +89,12 @@ public class ActorControl implements ConcurrencyControl {
    * @param runnable
    * @return
    */
+  @Override
   public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runAtFixedRate(...)");
     return scheduleTimerSubscription(
         runnable,
         job -> new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, true));
-  }
-
-  @Override
-  public ScheduledTimer scheduleAtFixedRate(final Duration delay, final Runnable runnable) {
-    return runAtFixedRate(delay, runnable);
   }
 
   /**

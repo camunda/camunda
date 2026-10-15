@@ -95,7 +95,7 @@ public final class ClusterConfigurationGossiper
     if (closed) {
       return;
     }
-    syncTimer = executor.scheduleAtFixedRate(config.syncDelay(), this::sync);
+    syncTimer = executor.runAtFixedRate(config.syncDelay(), this::sync);
     registerSyncHandler();
     registerGossipHandler();
     registerMemberAddedListener();
