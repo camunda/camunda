@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.service.businessvalue;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
@@ -491,9 +489,9 @@ public class BusinessValueOverviewComputeService {
    * user pick that tenant, so a key-level set would measure a definition for tenants nobody asked
    * about and attribute one tenant's answer to another.
    *
-   * <p>A cleared target leaves its document behind with null fields rather than deleting it, so
-   * presence alone is not enough — the definition stops being measured only once every target field
-   * is null, which is what clearing is supposed to mean.
+   * <p>A cleared target leaves its document behind with null fields rather than deleting it. The
+   * repository already leaves those out of the scan; the {@link #hasAnyTarget} filter here keeps
+   * the selection correct on its own rather than resting on that query.
    */
   private Set<String> targetedDocIds() {
     return readTargets().entrySet().stream()
@@ -719,16 +717,6 @@ public class BusinessValueOverviewComputeService {
 
   private Map<String, BusinessValueTargetDto> readTargets() {
     final List<BusinessValueTargetDto> all = targetRepository.scanAll();
-    if (all.size() >= LIST_FETCH_LIMIT) {
-      // scanAll() is capped at LIST_FETCH_LIMIT. Any target rows beyond the cap are treated as
-      // absent by the sweep and would overwrite existing overview rows with null targets. Log so
-      // this is visible before it becomes a silent regression; paginated scan is a follow-up.
-      LOG.warn(
-          "Business-value target scan returned {} rows — at or past the LIST_FETCH_LIMIT cap. "
-              + "Targets beyond the cap are missing from this sweep and their overview rows will "
-              + "show no target until paginated scan is implemented.",
-          all.size());
-    }
     final Map<String, BusinessValueTargetDto> byId = new HashMap<>(all.size());
     for (final BusinessValueTargetDto row : all) {
       byId.put(targetDocId(row.getTenantId(), row.getProcessDefinitionKey()), row);
