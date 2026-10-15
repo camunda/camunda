@@ -8,6 +8,9 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.api.Grpc;
+import io.camunda.configuration.api.LongPolling;
+import io.camunda.configuration.api.Rest;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 

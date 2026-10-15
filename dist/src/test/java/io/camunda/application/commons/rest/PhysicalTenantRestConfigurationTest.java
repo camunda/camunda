@@ -13,8 +13,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.JobMetricsConfig;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.monitoring.metrics.JobMetricsConfig;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import java.time.Duration;
 import java.util.Map;

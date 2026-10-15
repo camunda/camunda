@@ -14,7 +14,7 @@ import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.ZONE_B;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Zone;
+import io.camunda.configuration.cluster.Zone;
 import io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;

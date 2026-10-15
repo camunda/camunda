@@ -12,8 +12,8 @@ import static io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverri
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.management.cluster.BrokerState;

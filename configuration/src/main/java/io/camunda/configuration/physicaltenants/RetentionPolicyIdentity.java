@@ -7,8 +7,8 @@
  */
 package io.camunda.configuration.physicaltenants;
 
-import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageDatabase;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
 

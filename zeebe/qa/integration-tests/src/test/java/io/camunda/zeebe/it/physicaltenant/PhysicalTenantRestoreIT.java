@@ -14,8 +14,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.it.cluster.backup.InProcessRestoreTestUtil;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
@@ -320,7 +320,8 @@ final class PhysicalTenantRestoreIT {
   }
 
   private static void configureBackup(
-      final io.camunda.configuration.PrimaryStorageBackup backup, final Path directory) {
+      final io.camunda.configuration.data.primarystorage.PrimaryStorageBackup backup,
+      final Path directory) {
     backup.setStore(BackupStoreType.FILESYSTEM);
     backup.getFilesystem().setBasePath(directory.toString());
   }

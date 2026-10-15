@@ -8,12 +8,12 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
-import io.camunda.configuration.ExtensionProperties;
-import io.camunda.configuration.InterceptorPlugin;
-import io.camunda.configuration.Opensearch;
-import io.camunda.configuration.Retention;
-import io.camunda.configuration.SecondaryStorage;
+import io.camunda.configuration.data.ExtensionProperties;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.secondarystorage.Opensearch;
+import io.camunda.configuration.data.secondarystorage.Retention;
+import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageDatabase;
+import io.camunda.configuration.data.secondarystorage.documentbased.InterceptorPlugin;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.BulkConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;

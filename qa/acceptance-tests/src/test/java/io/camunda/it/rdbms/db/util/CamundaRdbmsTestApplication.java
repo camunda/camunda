@@ -10,7 +10,7 @@ package io.camunda.it.rdbms.db.util;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;

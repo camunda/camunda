@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.cluster.backup;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Gcs;
-import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.backup.Gcs;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;

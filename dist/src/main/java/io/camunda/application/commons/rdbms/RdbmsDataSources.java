@@ -8,7 +8,7 @@
 package io.camunda.application.commons.rdbms;
 
 import com.zaxxer.hikari.HikariDataSource;
-import io.camunda.configuration.Rdbms;
+import io.camunda.configuration.data.secondarystorage.Rdbms;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.zeebe.util.VisibleForTesting;

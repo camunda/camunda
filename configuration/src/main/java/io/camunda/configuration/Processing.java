@@ -8,6 +8,8 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.processing.Engine;
+import io.camunda.configuration.processing.FlowControl;
 import java.time.Duration;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;

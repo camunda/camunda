@@ -8,8 +8,8 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;

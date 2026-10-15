@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.cluster.clustering.zoneaware;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Zone;
+import io.camunda.configuration.cluster.Zone;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator.PartitionStatus;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;

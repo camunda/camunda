@@ -15,7 +15,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     # (the gRPC API itself is controlled independently by how the process is started) — mirroring the
     # scope the legacy `zeebe.broker.gateway.enable` property already had before this property existed.
     enabled: true # Type: Boolean, Env: CAMUNDA_API_ENABLED
-    grpc: # Type: io.camunda.configuration.Grpc  
+    grpc: # Type: io.camunda.configuration.api.Grpc  
       # Sets the address the gateway binds to
       address: null # Type: String, Env: CAMUNDA_API_GRPC_ADDRESS
       # Sets the maximum number of threads the gateway will use to handle gRPC requests
@@ -23,7 +23,7 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Sets the minimum number of threads the gateway will use to handle gRPC requests
       grpc-min-threads: null # Type: Integer, Env: CAMUNDA_API_GRPC_GRPCMINTHREADS
       # Sets the interceptors
-      interceptors: null # Type: List<io.camunda.configuration.Interceptor>, Env: CAMUNDA_API_GRPC_INTERCEPTORS
+      interceptors: null # Type: List<io.camunda.configuration.api.grpc.Interceptor>, Env: CAMUNDA_API_GRPC_INTERCEPTORS
       # Sets the number of threads the gateway will use to communicate with the broker cluster
       management-threads: null # Type: Integer, Env: CAMUNDA_API_GRPC_MANAGEMENTTHREADS
       # Sets the maximum age of a gRPC connection before the gateway proactively closes it (via GOAWAY),
@@ -42,9 +42,9 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Sets the port the gateway binds to
       port: null # Type: Integer, Env: CAMUNDA_API_GRPC_PORT
       # Sets the ssl configuration for the gateway
-      ssl: null # Type: io.camunda.configuration.Ssl, Env: CAMUNDA_API_GRPC_SSL
+      ssl: null # Type: io.camunda.configuration.api.grpc.Ssl, Env: CAMUNDA_API_GRPC_SSL
     
-    long-polling: # Type: io.camunda.configuration.LongPolling  
+    long-polling: # Type: io.camunda.configuration.api.LongPolling  
       # Enables long polling for available jobs
       enabled: null # Type: Boolean, Env: CAMUNDA_API_LONGPOLLING_ENABLED
       # Set the number of minimum empty responses, a minimum number of responses with jobCount of 0 infers
@@ -59,13 +59,13 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Set the timeout for long polling in milliseconds
       timeout: null # Type: Long, Env: CAMUNDA_API_LONGPOLLING_TIMEOUT
     
-    rest: # Type: io.camunda.configuration.Rest  
-      cluster-variable: # Type: io.camunda.configuration.ClusterVariable  
+    rest: # Type: io.camunda.configuration.api.Rest  
+      cluster-variable: # Type: io.camunda.configuration.api.rest.ClusterVariable  
         # Maximum allowed size (in UTF-8 bytes) of a cluster variable's serialized metadata JSON. When unset,
         # the built-in default is used.
         max-metadata-size: null # Type: Integer, Env: CAMUNDA_API_REST_CLUSTERVARIABLE_MAXMETADATASIZE
       
-      executor: # Type: io.camunda.configuration.Executor  
+      executor: # Type: io.camunda.configuration.api.rest.Executor  
         # Multiplier applied to the number of available processors to compute the executor's core pool size
         # (minimum number of threads kept alive).
         # Effective value: `corePoolSize = availableProcessors * corePoolSizeMultiplier`.
@@ -90,7 +90,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Default value: 64 (as defined in ApiExecutorConfiguration#DEFAULT_QUEUE_CAPACITY)
         queue-capacity: 64 # Type: Integer, Env: CAMUNDA_API_REST_EXECUTOR_QUEUECAPACITY
       
-      process-cache: # Type: io.camunda.configuration.ProcessCache  
+      process-cache: # Type: io.camunda.configuration.api.rest.ProcessCache  
         # Process cache expiration
         expiration-idle: "0ms" # Type: Duration, Env: CAMUNDA_API_REST_PROCESSCACHE_EXPIRATIONIDLE
         # Process cache max size
@@ -119,7 +119,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     # To guarantee the cluster can survive network partitions, all nodes must be specified as initial
     # contact points.
     initial-contact-points: null # Type: List<String>, Env: CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
-    membership: # Type: io.camunda.configuration.Membership  
+    membership: # Type: io.camunda.configuration.cluster.Membership  
       # Configure whether to broadcast disputes to all members. If set to true the network traffic may
       # increase but it reduce the time to detect membership changes.
       broadcast-disputes: true # Type: Boolean, Env: CAMUNDA_CLUSTER_MEMBERSHIP_BROADCASTDISPUTES
@@ -144,7 +144,7 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Sets the interval at which this member synchronizes its membership information with a random member.
       sync-interval: "10000ms" # Type: Duration, Env: CAMUNDA_CLUSTER_MEMBERSHIP_SYNCINTERVAL
     
-    metadata: # Type: io.camunda.configuration.Metadata  
+    metadata: # Type: io.camunda.configuration.cluster.Metadata  
       # The maximum time to wait for a sync response with an initialized configuration before falling back
       # to generating a new configuration from the static configuration.
       bootstrap-timeout: null # Type: Duration, Env: CAMUNDA_CLUSTER_METADATA_BOOTSTRAPTIMEOUT
@@ -159,13 +159,13 @@ camunda: # Type: io.camunda.configuration.Camunda
     
     # Set the name of the cluster
     name: null # Type: String, Env: CAMUNDA_CLUSTER_NAME
-    network: # Type: io.camunda.configuration.Network  
+    network: # Type: io.camunda.configuration.cluster.Network  
       # Controls the advertised host. This is particularly useful if your broker stands behind a proxy. If
       # not set, its default is computed as: - If camunda.cluster.network.host was explicitly, use this. -
       # If not, try to resolve the machine's hostname to an IP address and use that. - If the hostname is
       # not resolvable, use the first non-loopback IP address. - If there is none, use the loopback address.
       advertised-host: null # Type: String, Env: CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST
-      command-api: # Type: io.camunda.configuration.CommandApi  
+      command-api: # Type: io.camunda.configuration.cluster.network.CommandApi  
         # Controls the advertised host. This is particularly useful if your broker stands behind a proxy. If
         # omitted, defaults to:  If zeebe.broker.network.commandApi.host was set, use this. Use the resolved
         # value of zeebe.broker.network.advertisedHost
@@ -186,7 +186,7 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Controls the default host the broker should bind to. Can be overwritten on a per-binding basis for
       # client, management and replication
       host: null # Type: String, Env: CAMUNDA_CLUSTER_NETWORK_HOST
-      internal-api: # Type: io.camunda.configuration.InternalApi  
+      internal-api: # Type: io.camunda.configuration.cluster.network.InternalApi  
         # Controls the advertised host. This is particularly useful if your broker stands behind a proxy.
         # If omitted, defaults to:  If zeebe.broker.network.internalApi.host was set, use this. Use the
         # resolved value of zeebe.broker.network.advertisedHost
@@ -214,24 +214,24 @@ camunda: # Type: io.camunda.configuration.Camunda
       socket-send-buffer: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_CLUSTER_NETWORK_SOCKETSENDBUFFER
     
     node-id: null # Type: Integer, Env: CAMUNDA_CLUSTER_NODEID
-    node-id-provider: # Type: io.camunda.configuration.NodeIdProvider  
+    node-id-provider: # Type: io.camunda.configuration.cluster.NodeIdProvider  
       # Set the {@link Type} of the implementation for the provider of dynamic node id. {@link Type#FIXED}
       # refers to no provider.
-      type: "fixed" # Type: io.camunda.configuration.NodeIdProvider$Type, Env: CAMUNDA_CLUSTER_NODEIDPROVIDER_TYPE
+      type: "fixed" # Type: io.camunda.configuration.cluster.NodeIdProvider$Type, Env: CAMUNDA_CLUSTER_NODEIDPROVIDER_TYPE
     
     # The number of partitions in the cluster.
     partition-count: 1 # Type: Integer, Env: CAMUNDA_CLUSTER_PARTITIONCOUNT
-    partitioning: # Type: io.camunda.configuration.Partitioning  
+    partitioning: # Type: io.camunda.configuration.cluster.Partitioning  
       # The list of fixed partition configurations for this partitioning setup. Initialized as an empty,
       # list by default. Used when the {@link Scheme#FIXED} partitioning scheme is selected.
-      fixed: null # Type: List<io.camunda.configuration.FixedPartition>, Env: CAMUNDA_CLUSTER_PARTITIONING_FIXED
+      fixed: null # Type: List<io.camunda.configuration.cluster.partitioning.FixedPartition>, Env: CAMUNDA_CLUSTER_PARTITIONING_FIXED
       # The partitioning scheme used for assigning partitions to nodes. Defaults to {@link
       # Scheme#ROUND_ROBIN}.
-      scheme: "round-robin" # Type: io.camunda.configuration.Partitioning$Scheme, Env: CAMUNDA_CLUSTER_PARTITIONING_SCHEME
-      zone-aware: # Type: io.camunda.configuration.ZoneAware  
-        zones: null # Type: List<io.camunda.configuration.Zone>, Env: CAMUNDA_CLUSTER_PARTITIONING_ZONEAWARE_ZONES
+      scheme: "round-robin" # Type: io.camunda.configuration.cluster.Partitioning$Scheme, Env: CAMUNDA_CLUSTER_PARTITIONING_SCHEME
+      zone-aware: # Type: io.camunda.configuration.cluster.partitioning.ZoneAware  
+        zones: null # Type: List<io.camunda.configuration.cluster.Zone>, Env: CAMUNDA_CLUSTER_PARTITIONING_ZONEAWARE_ZONES
     
-    raft: # Type: io.camunda.configuration.Raft  
+    raft: # Type: io.camunda.configuration.cluster.Raft  
       # Sets the timeout for configuration change requests such as joining or leaving. Since changes are
       # usually a multi-step process with multiple commits, a higher timeout than the default requestTimeout
       # is recommended.
@@ -303,7 +303,7 @@ camunda: # Type: io.camunda.configuration.Camunda
       # voting member. Promoting a learner that still lags would shrink the effective quorum, so the leader
       # waits until the learner is within this threshold.
       promotion-lag-threshold: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_CLUSTER_RAFT_PROMOTIONLAGTHRESHOLD
-      rebalance: # Type: io.camunda.configuration.Raft$Rebalance  
+      rebalance: # Type: io.camunda.configuration.cluster.Raft$Rebalance  
         # How long the coordinator waits for a partition with no contactable leader to get one before giving
         # up with `NO_LEADER`.
         leader-wait-timeout: "1m" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_LEADERWAITTIMEOUT
@@ -353,21 +353,21 @@ camunda: # Type: io.camunda.configuration.Camunda
     zone: null # Type: String, Env: CAMUNDA_CLUSTER_ZONE
   
   data: # Type: io.camunda.configuration.Data  
-    audit-log: # Type: io.camunda.configuration.AuditLog  
-      client: # Type: io.camunda.configuration.AuditLogEntry  
+    audit-log: # Type: io.camunda.configuration.data.AuditLog  
+      client: # Type: io.camunda.configuration.data.auditlog.AuditLogEntry  
         categories: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogOperationCategory>, Env: CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES
         excludes: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogEntityType>, Env: CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES
       
       enabled: true # Type: Boolean, Env: CAMUNDA_DATA_AUDITLOG_ENABLED
-      unknown: # Type: io.camunda.configuration.AuditLogEntry  
+      unknown: # Type: io.camunda.configuration.data.auditlog.AuditLogEntry  
         categories: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogOperationCategory>, Env: CAMUNDA_DATA_AUDITLOG_UNKNOWN_CATEGORIES
         excludes: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogEntityType>, Env: CAMUNDA_DATA_AUDITLOG_UNKNOWN_EXCLUDES
       
-      user: # Type: io.camunda.configuration.AuditLogEntry  
+      user: # Type: io.camunda.configuration.data.auditlog.AuditLogEntry  
         categories: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogOperationCategory>, Env: CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES
         excludes: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogEntityType>, Env: CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES
     
-    export: # Type: io.camunda.configuration.Export  
+    export: # Type: io.camunda.configuration.data.Export  
       # Configures the rate at which exporter positions are distributed to the followers. This is useful for
       # fail-over and taking snapshots. The follower is able to take snapshots based on replayed and
       # distributed export position. When a follower takes over it can recover from the snapshot, it doesn't
@@ -392,13 +392,13 @@ camunda: # Type: io.camunda.configuration.Camunda
       skip-records: null # Type: Map<Integer,Set<Long>>, Env: CAMUNDA_DATA_EXPORT_SKIPRECORDS
     
     # This section allows configuring exporters
-    exporters: null # Type: Map<String,io.camunda.configuration.Exporter>, Env: CAMUNDA_DATA_EXPORTERS
+    exporters: null # Type: Map<String,io.camunda.configuration.data.Exporter>, Env: CAMUNDA_DATA_EXPORTERS
     # Manifest of the generic exporters active for a physical tenant. Must not list the autoconfigured
     # 'camundaexporter' or 'rdbms' exporters — only custom exporters may be listed here. Must not be set
     # at the root level; it is only relevant per physical tenant and must be set under
     # 'camunda.physical-tenants.[tenant-id].data.exporters-assigned'.
     exporters-assigned: null # Type: List<String>, Env: CAMUNDA_DATA_EXPORTERSASSIGNED
-    extension-properties: # Type: io.camunda.configuration.ExtensionProperties  
+    extension-properties: # Type: io.camunda.configuration.data.ExtensionProperties  
       # The extension property name whose value is exported as the `inboundConnectorType` attribute.
       inbound-connector-type-property: null # Type: String, Env: CAMUNDA_DATA_EXTENSIONPROPERTIES_INBOUNDCONNECTORTYPEPROPERTY
       # The extension property name whose value is exported as the `toolName` attribute.
@@ -407,15 +407,15 @@ camunda: # Type: io.camunda.configuration.Camunda
       # attribute. Only extension properties whose names start with this prefix are exported.
       tool-properties-prefix: null # Type: String, Env: CAMUNDA_DATA_EXTENSIONPROPERTIES_TOOLPROPERTIESPREFIX
     
-    history-deletion: # Type: io.camunda.configuration.HistoryDeletion  
+    history-deletion: # Type: io.camunda.configuration.data.HistoryDeletion  
       delay-between-runs: "1s" # Type: Duration, Env: CAMUNDA_DATA_HISTORYDELETION_DELAYBETWEENRUNS
       dependent-row-limit: 10000 # Type: Integer, Env: CAMUNDA_DATA_HISTORYDELETION_DEPENDENTROWLIMIT
       max-delay-between-runs: "15s" # Type: Duration, Env: CAMUNDA_DATA_HISTORYDELETION_MAXDELAYBETWEENRUNS
       queue-batch-size: 100 # Type: Integer, Env: CAMUNDA_DATA_HISTORYDELETION_QUEUEBATCHSIZE
     
-    primary-storage: # Type: io.camunda.configuration.PrimaryStorage  
-      backup: # Type: io.camunda.configuration.PrimaryStorageBackup  
-        azure: # Type: io.camunda.configuration.Azure  
+    primary-storage: # Type: io.camunda.configuration.data.PrimaryStorage  
+      backup: # Type: io.camunda.configuration.data.primarystorage.PrimaryStorageBackup  
+        azure: # Type: io.camunda.configuration.data.primarystorage.backup.Azure  
           # Account key that is used to authenticate with Azure. Can only be used in combination with an account
           # name. If account credentials or connection string are not provided, authentication will use
           # credentials from the runtime environment:
@@ -440,25 +440,25 @@ camunda: # Type: io.camunda.configuration.Camunda
           create-container: true # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_CREATECONTAINER
           # Azure endpoint to connect to. Required unless a connection string is specified.
           endpoint: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_ENDPOINT
-          sas-token: # Type: io.camunda.configuration.SasToken  
+          sas-token: # Type: io.camunda.configuration.data.primarystorage.backup.azure.SasToken  
             # The SAS token must be of the following types: "delegation", "service" or "account".
-            type: null # Type: io.camunda.configuration.SasToken$SasTokenType, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_SASTOKEN_TYPE
+            type: null # Type: io.camunda.configuration.data.primarystorage.backup.azure.SasToken$SasTokenType, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_SASTOKEN_TYPE
             # Specifies the key value of the SAS token.
             value: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_SASTOKEN_VALUE
         
         checkpoint-interval: null # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CHECKPOINTINTERVAL
         continuous: false # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CONTINUOUS
-        filesystem: # Type: io.camunda.configuration.Filesystem  
+        filesystem: # Type: io.camunda.configuration.data.primarystorage.backup.Filesystem  
           # Set the base path to store all related backup files in.
           base-path: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_FILESYSTEM_BASEPATH
         
-        gcs: # Type: io.camunda.configuration.Gcs  
+        gcs: # Type: io.camunda.configuration.data.primarystorage.backup.Gcs  
           # Configures which authentication method is used for connecting to GCS. Can be either 'auto' or
           # 'none'. Choosing 'auto' means that the GCS client uses application default credentials which
           # automatically discovers appropriate credentials from the runtime environment:
           # https://cloud.google.com/docs/authentication/application-default-credentials Choosing 'none' means
           # that no authentication is attempted which is only applicable for testing with emulated GCS.
-          auth: "auto" # Type: io.camunda.configuration.Gcs$GcsBackupStoreAuth, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_AUTH
+          auth: "auto" # Type: io.camunda.configuration.data.primarystorage.backup.Gcs$GcsBackupStoreAuth, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_AUTH
           # When set, all blobs in the bucket will use this prefix. Useful for using the same bucket for
           # multiple Zeebe clusters. In this case, basePath must be unique. Should not start or end with '/'
           # character. Must be non-empty and not consist of only '/' characters.
@@ -480,7 +480,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         retention: # Type: io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerRetentionCfg  
           window: null # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_RETENTION_WINDOW
         
-        s3: # Type: io.camunda.configuration.S3  
+        s3: # Type: io.camunda.configuration.data.primarystorage.backup.S3  
           # Configure access credentials. If either accessKey or secretKey is not provided, the credentials will
           # be determined as documented in
           # https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain
@@ -540,13 +540,13 @@ camunda: # Type: io.camunda.configuration.Camunda
         # (https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) Use FILESYSTEM to
         # use filesystem storage
         # Note: This configuration applies to the backup of primary storage.
-        store: "none" # Type: io.camunda.configuration.PrimaryStorageBackup$BackupStoreType, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_STORE
+        store: "none" # Type: io.camunda.configuration.data.primarystorage.PrimaryStorageBackup$BackupStoreType, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_STORE
         write-timeout: null # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_WRITETIMEOUT
       
       # Specify the directory in which data is stored.
       directory: "data" # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_DIRECTORY
-      disk: # Type: io.camunda.configuration.Disk  
-        free-space: # Type: io.camunda.configuration.FreeSpace  
+      disk: # Type: io.camunda.configuration.data.primarystorage.Disk  
+        free-space: # Type: io.camunda.configuration.data.primarystorage.disk.FreeSpace  
           # When the free space available is less than this value, this broker rejects all client commands and
           # pause processing.
           processing: "2GB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_DISK_FREESPACE_PROCESSING
@@ -564,7 +564,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Sets the interval at which the disk usage is monitored
         monitoring-interval: "1s" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_DISK_MONITORINGINTERVAL
       
-      log-stream: # Type: io.camunda.configuration.LogStream  
+      log-stream: # Type: io.camunda.configuration.data.primarystorage.LogStream  
         # The density of the log index, which determines how frequently index entries are created in the log.
         # This value specifies the number of log entries between each index entry. A lower value increases the
         # number of index entries (improving lookup speed but using more memory), while a higher value reduces
@@ -574,11 +574,11 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The size of data log segment files.
         log-segment-size: "128MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_LOGSTREAM_LOGSEGMENTSIZE
       
-      rocks-db: # Type: io.camunda.configuration.RocksDb  
+      rocks-db: # Type: io.camunda.configuration.data.primarystorage.RocksDb  
         # Configures which, if any, RocksDB column family access metrics are exposed. Valid values are none
         # (the default), and fine which exposes many metrics covering the read, write, delete and iteration
         # latency per partition and column family.
-        access-metrics: "none" # Type: io.camunda.configuration.RocksDb$AccessMetricsKind, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_ACCESSMETRICS
+        access-metrics: "none" # Type: io.camunda.configuration.data.primarystorage.RocksDb$AccessMetricsKind, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_ACCESSMETRICS
         # Specify custom column family options overwriting Zeebe's own defaults. WARNING: This setting
         # requires in-depth knowledge of Zeebe's embedded database: RocksDB. The expected property key names
         # and values are derived from RocksDB's C implementation, and are not limited to the provided examples
@@ -656,15 +656,15 @@ camunda: # Type: io.camunda.configuration.Camunda
       # this count will be deleted after the current version is validated.
       versioned-directory-retention-count: 2 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_VERSIONEDDIRECTORYRETENTIONCOUNT
     
-    secondary-storage: # Type: io.camunda.configuration.SecondaryStorage  
+    secondary-storage: # Type: io.camunda.configuration.data.SecondaryStorage  
       # When enabled, the default exporter camundaexporter is automatically configured using the
       # secondary-storage properties. Manual configuration of camundaexporter is not necessary. If disabled,
       # camundaexporter will not be configured automatically, but can still be enabled through manual
       # configuration if required. Manual configuration of camundaexporter is generally not recommended, and
       # can result in unexpected behavior if not configured correctly.
       autoconfigure-camunda-exporter: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_AUTOCONFIGURECAMUNDAEXPORTER
-      elasticsearch: # Type: io.camunda.configuration.Elasticsearch  
-        backup: # Type: io.camunda.configuration.DocumentBasedSecondaryStorageBackup  
+      elasticsearch: # Type: io.camunda.configuration.data.secondarystorage.Elasticsearch  
+        backup: # Type: io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageBackup  
           # Defines the timeout period for determining whether an incomplete backup should be considered as
           # failed or still in progress. This property helps distinguish between backups that are actively
           # running versus those that may have stalled or failed silently.
@@ -679,17 +679,17 @@ camunda: # Type: io.camunda.configuration.Camunda
           # Note: This setting applies to backups of secondary storage.
           snapshot-timeout: 0 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BACKUP_SNAPSHOTTIMEOUT
         
-        batch-operation-cache: # Type: io.camunda.configuration.Cache  
+        batch-operation-cache: # Type: io.camunda.configuration.data.secondarystorage.documentbased.Cache  
           # Maximum cache size
           max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONCACHE_MAXSIZE
         
-        batch-operations: # Type: io.camunda.configuration.BatchOperation  
+        batch-operations: # Type: io.camunda.configuration.data.secondarystorage.documentbased.BatchOperation  
           # Export the batch operation items when the initial chunk records are processed. If set to  false, the
           # batch operation items will be exported only when they have been processed and are completed or
           # failed.
           export-items-on-creation: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BATCHOPERATIONS_EXPORTITEMSONCREATION
         
-        bulk: # Type: io.camunda.configuration.Bulk  
+        bulk: # Type: io.camunda.configuration.data.secondarystorage.documentbased.Bulk  
           # Delay before forced flush (in seconds)
           delay: "1s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_BULK_DELAY
           # Bulk memory utilisation before flush (in MB)
@@ -705,17 +705,17 @@ camunda: # Type: io.camunda.configuration.Camunda
         create-schema: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CREATESCHEMA
         # The date format for ES and OS
         date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZZ" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DATEFORMAT
-        decision-requirements-cache: # Type: io.camunda.configuration.Cache  
+        decision-requirements-cache: # Type: io.camunda.configuration.data.secondarystorage.documentbased.Cache  
           # Maximum cache size
           max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_DECISIONREQUIREMENTSCACHE_MAXSIZE
         
-        form-cache: # Type: io.camunda.configuration.Cache  
+        form-cache: # Type: io.camunda.configuration.data.secondarystorage.documentbased.Cache  
           # Maximum cache size
           max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_FORMCACHE_MAXSIZE
         
         # Whether to verify the cluster health of the search engine
         health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HEALTHCHECKENABLED
-        history: # Type: io.camunda.configuration.DocumentBasedHistory  
+        history: # Type: io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedHistory  
           archive-by-id-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ARCHIVEBYIDENABLED
           # Maximum number of retries for archive-by-id batch operations on retryable errors
           archive-by-id-max-retry-attempts: 3 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_ARCHIVEBYIDMAXRETRYATTEMPTS
@@ -745,7 +745,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           # archived.
           wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
         
-        incident-notifier: # Type: io.camunda.configuration.IncidentNotifier  
+        incident-notifier: # Type: io.camunda.configuration.data.secondarystorage.documentbased.IncidentNotifier  
           # Defines the domain which the user always sees
           auth0-domain: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_AUTH0DOMAIN
           auth0-protocol: "https" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_AUTH0PROTOCOL
@@ -757,7 +757,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Prefix to apply to the indexes.
         index-prefix: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX
         # Sets the interceptor plugins
-        interceptor-plugins: null # Type: List<io.camunda.configuration.InterceptorPlugin>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INTERCEPTORPLUGINS
+        interceptor-plugins: null # Type: List<io.camunda.configuration.data.secondarystorage.documentbased.InterceptorPlugin>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INTERCEPTORPLUGINS
         # Total number of connections allowed in the ES and OS connector connection pool.
         max-connections: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_MAXCONNECTIONS
         # Maximum number of connections allowed per route in the ES and OS connector connection pool.
@@ -771,7 +771,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # single shard whatever this is set to. Use number-of-shards-per-index to override an individual
         # index.
         number-of-shards: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDS
-        number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex  
+        number-of-shards-per-index: # Type: io.camunda.configuration.data.secondarystorage.documentbased.NumberOfShardsPerIndex  
           # Primary shards for the agent definition index (agent-definition).
           agent-definition: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AGENTDEFINITION
           # Primary shards for the agent history index (agent-history).
@@ -859,13 +859,13 @@ camunda: # Type: io.camunda.configuration.Camunda
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PASSWORD
         # Whether to schedule the cleanup of legacy indexes
         perform-cleanup: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PERFORMCLEANUP
-        post-export: # Type: io.camunda.configuration.PostExport  
+        post-export: # Type: io.camunda.configuration.data.secondarystorage.documentbased.PostExport  
           batch-size: 100 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_BATCHSIZE
           delay-between-runs: "2s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_DELAYBETWEENRUNS
           ignore-missing-data: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_IGNOREMISSINGDATA
           max-delay-between-runs: "5s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_POSTEXPORT_MAXDELAYBETWEENRUNS
         
-        process-cache: # Type: io.camunda.configuration.Cache  
+        process-cache: # Type: io.camunda.configuration.data.secondarystorage.documentbased.Cache  
           # Maximum cache size
           max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_MAXSIZE
         
@@ -881,12 +881,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         refresh-interval: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVAL
         # Per-index refresh interval overrides.
         refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVALBYINDEXNAME
-        retry: # Type: io.camunda.configuration.SchemaManagerRetry  
+        retry: # Type: io.camunda.configuration.data.secondarystorage.documentbased.SchemaManagerRetry  
           max-retries: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_RETRY_MAXRETRIES
           max-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_RETRY_MAXRETRYDELAY
           min-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_RETRY_MINRETRYDELAY
         
-        security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
+        security: # Type: io.camunda.configuration.data.secondarystorage.SecondaryStorageSecurity  
           # Path to certificate used by Elasticsearch or Opensearch
           certificate-path: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_CERTIFICATEPATH
           # Enable security
@@ -911,9 +911,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Variable size threshold for the database configured as secondary storage.
         variable-size-threshold: 8191 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_VARIABLESIZETHRESHOLD
       
-      opensearch: # Type: io.camunda.configuration.Opensearch  
+      opensearch: # Type: io.camunda.configuration.data.secondarystorage.Opensearch  
         aws-enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_AWSENABLED
-        backup: # Type: io.camunda.configuration.DocumentBasedSecondaryStorageBackup  
+        backup: # Type: io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageBackup  
           # Defines the timeout period for determining whether an incomplete backup should be considered as
           # failed or still in progress. This property helps distinguish between backups that are actively
           # running versus those that may have stalled or failed silently.
@@ -928,17 +928,17 @@ camunda: # Type: io.camunda.configuration.Camunda
           # Note: This setting applies to backups of secondary storage.
           snapshot-timeout: 0 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BACKUP_SNAPSHOTTIMEOUT
         
-        batch-operation-cache: # Type: io.camunda.configuration.Cache  
+        batch-operation-cache: # Type: io.camunda.configuration.data.secondarystorage.documentbased.Cache  
           # Maximum cache size
           max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONCACHE_MAXSIZE
         
-        batch-operations: # Type: io.camunda.configuration.BatchOperation  
+        batch-operations: # Type: io.camunda.configuration.data.secondarystorage.documentbased.BatchOperation  
           # Export the batch operation items when the initial chunk records are processed. If set to  false, the
           # batch operation items will be exported only when they have been processed and are completed or
           # failed.
           export-items-on-creation: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BATCHOPERATIONS_EXPORTITEMSONCREATION
         
-        bulk: # Type: io.camunda.configuration.Bulk  
+        bulk: # Type: io.camunda.configuration.data.secondarystorage.documentbased.Bulk  
           # Delay before forced flush (in seconds)
           delay: "1s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_BULK_DELAY
           # Bulk memory utilisation before flush (in MB)
@@ -954,17 +954,17 @@ camunda: # Type: io.camunda.configuration.Camunda
         create-schema: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_CREATESCHEMA
         # The date format for ES and OS
         date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZZ" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DATEFORMAT
-        decision-requirements-cache: # Type: io.camunda.configuration.Cache  
+        decision-requirements-cache: # Type: io.camunda.configuration.data.secondarystorage.documentbased.Cache  
           # Maximum cache size
           max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_DECISIONREQUIREMENTSCACHE_MAXSIZE
         
-        form-cache: # Type: io.camunda.configuration.Cache  
+        form-cache: # Type: io.camunda.configuration.data.secondarystorage.documentbased.Cache  
           # Maximum cache size
           max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_FORMCACHE_MAXSIZE
         
         # Whether to verify the cluster health of the search engine
         health-check-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HEALTHCHECKENABLED
-        history: # Type: io.camunda.configuration.DocumentBasedHistory  
+        history: # Type: io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedHistory  
           archive-by-id-enabled: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ARCHIVEBYIDENABLED
           # Maximum number of retries for archive-by-id batch operations on retryable errors
           archive-by-id-max-retry-attempts: 3 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_ARCHIVEBYIDMAXRETRYATTEMPTS
@@ -994,7 +994,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           # archived.
           wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
         
-        incident-notifier: # Type: io.camunda.configuration.IncidentNotifier  
+        incident-notifier: # Type: io.camunda.configuration.data.secondarystorage.documentbased.IncidentNotifier  
           # Defines the domain which the user always sees
           auth0-domain: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_AUTH0DOMAIN
           auth0-protocol: "https" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_AUTH0PROTOCOL
@@ -1006,7 +1006,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Prefix to apply to the indexes.
         index-prefix: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
         # Sets the interceptor plugins
-        interceptor-plugins: null # Type: List<io.camunda.configuration.InterceptorPlugin>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INTERCEPTORPLUGINS
+        interceptor-plugins: null # Type: List<io.camunda.configuration.data.secondarystorage.documentbased.InterceptorPlugin>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INTERCEPTORPLUGINS
         # Total number of connections allowed in the ES and OS connector connection pool.
         max-connections: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_MAXCONNECTIONS
         # Maximum number of connections allowed per route in the ES and OS connector connection pool.
@@ -1020,7 +1020,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # single shard whatever this is set to. Use number-of-shards-per-index to override an individual
         # index.
         number-of-shards: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDS
-        number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex  
+        number-of-shards-per-index: # Type: io.camunda.configuration.data.secondarystorage.documentbased.NumberOfShardsPerIndex  
           # Primary shards for the agent definition index (agent-definition).
           agent-definition: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AGENTDEFINITION
           # Primary shards for the agent history index (agent-history).
@@ -1108,13 +1108,13 @@ camunda: # Type: io.camunda.configuration.Camunda
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PASSWORD
         # Whether to schedule the cleanup of legacy indexes
         perform-cleanup: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PERFORMCLEANUP
-        post-export: # Type: io.camunda.configuration.PostExport  
+        post-export: # Type: io.camunda.configuration.data.secondarystorage.documentbased.PostExport  
           batch-size: 100 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_BATCHSIZE
           delay-between-runs: "2s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_DELAYBETWEENRUNS
           ignore-missing-data: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_IGNOREMISSINGDATA
           max-delay-between-runs: "5s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_POSTEXPORT_MAXDELAYBETWEENRUNS
         
-        process-cache: # Type: io.camunda.configuration.Cache  
+        process-cache: # Type: io.camunda.configuration.data.secondarystorage.documentbased.Cache  
           # Maximum cache size
           max-size: 10000 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_MAXSIZE
         
@@ -1130,12 +1130,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         refresh-interval: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVAL
         # Per-index refresh interval overrides.
         refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVALBYINDEXNAME
-        retry: # Type: io.camunda.configuration.SchemaManagerRetry  
+        retry: # Type: io.camunda.configuration.data.secondarystorage.documentbased.SchemaManagerRetry  
           max-retries: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_RETRY_MAXRETRIES
           max-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_RETRY_MAXRETRYDELAY
           min-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_RETRY_MINRETRYDELAY
         
-        security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
+        security: # Type: io.camunda.configuration.data.secondarystorage.SecondaryStorageSecurity  
           # Path to certificate used by Elasticsearch or Opensearch
           certificate-path: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_CERTIFICATEPATH
           # Enable security
@@ -1160,8 +1160,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Variable size threshold for the database configured as secondary storage.
         variable-size-threshold: 8191 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_VARIABLESIZETHRESHOLD
       
-      rdbms: # Type: io.camunda.configuration.Rdbms  
-        async-replication: # Type: io.camunda.configuration.RdbmsAsyncReplication  
+      rdbms: # Type: io.camunda.configuration.data.secondarystorage.Rdbms  
+        async-replication: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsAsyncReplication  
           delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_ASYNCREPLICATION_DELAY
           enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_ASYNCREPLICATION_ENABLED
           max-lag: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_ASYNCREPLICATION_MAXLAG
@@ -1175,11 +1175,11 @@ camunda: # Type: io.camunda.configuration.Camunda
         # If true, the database schema is automatically created and updated on application startup.
         auto-ddl: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_AUTODDL
         # Batch operation cache configuration. Defines the size of the batch operation cache.
-        batch-operation-cache: null # Type: io.camunda.configuration.RdbmsCache, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_BATCHOPERATIONCACHE
+        batch-operation-cache: null # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsCache, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_BATCHOPERATIONCACHE
         # The number of batch operation items to insert in a single batched SQL when creating the items for a
         # batch operation. This is only relevant when exportBatchOperationItemsOnCreation is set to true.
         batch-operation-item-insert-block-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_BATCHOPERATIONITEMINSERTBLOCKSIZE
-        connection-pool: # Type: io.camunda.configuration.RdbmsConnectionPool  
+        connection-pool: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsConnectionPool  
           # Maximum time the pool waits for a connection before throwing.
           connection-timeout: "30000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_CONNECTIONTIMEOUT
           # Maximum time a connection is allowed to sit idle in the pool before being evicted.
@@ -1216,7 +1216,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         export-batch-operation-items-on-creation: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_EXPORTBATCHOPERATIONITEMSONCREATION
         # The interval at which the exporters execution queue is flushed.
         flush-interval: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_FLUSHINTERVAL
-        history: # Type: io.camunda.configuration.RdbmsHistory  
+        history: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsHistory  
           # The default time to live for cancel process instance batch operations. Specified in Java Duration
           # format.
           batch-operation-cancel-process-instance-history-t-t-l: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_BATCHOPERATIONCANCELPROCESSINSTANCEHISTORYTTL
@@ -1255,7 +1255,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           # The default time to live for usage metrics. Specified in Java Duration format.
           usage-metrics-t-t-l: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_USAGEMETRICSTTL
         
-        insert-batching: # Type: io.camunda.configuration.RdbmsInsertBatching  
+        insert-batching: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsInsertBatching  
           max-audit-log-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXAUDITLOGINSERTBATCHSIZE
           max-flow-node-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXFLOWNODEINSERTBATCHSIZE
           max-job-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXJOBINSERTBATCHSIZE
@@ -1264,7 +1264,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The maximum length of varchar fields in the database. This is relevant for user defined string
         # fields like ids and names.
         max-varchar-field-length: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_MAXVARCHARFIELDLENGTH
-        metrics: # Type: io.camunda.configuration.RdbmsMetrics  
+        metrics: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsMetrics  
           # The duration for which the table row count metrics are cached before being refreshed from the
           # database. This helps avoid performance impact on the database.
           table-row-count-cache-duration: "5m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_METRICS_TABLEROWCOUNTCACHEDURATION
@@ -1275,8 +1275,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         # because the generated table names it is prepended to are upper case.
         prefix: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PREFIX
         # Process definition cache configuration. Defines the size of the process definition cache.
-        process-cache: null # Type: io.camunda.configuration.RdbmsCache, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PROCESSCACHE
-        query: # Type: io.camunda.configuration.RdbmsQuery  
+        process-cache: null # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsCache, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PROCESSCACHE
+        query: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsQuery  
           # The maximum number of total hits to return in search results.
           max-total-hits: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUERY_MAXTOTALHITS
         
@@ -1285,7 +1285,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         queue-memory-limit: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUEMEMORYLIMIT
         # The maximum size of the exporters execution queue before it is flushed to the database.
         queue-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUESIZE
-        retry: # Type: io.camunda.configuration.SchemaManagerRetry  
+        retry: # Type: io.camunda.configuration.data.secondarystorage.documentbased.SchemaManagerRetry  
           max-retries: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_RETRY_MAXRETRIES
           max-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_RETRY_MAXRETRYDELAY
           min-retry-delay: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_RETRY_MINRETRYDELAY
@@ -1303,7 +1303,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Username for the database configured as secondary storage.
         username: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME
       
-      retention: # Type: io.camunda.configuration.Retention  
+      retention: # Type: io.camunda.configuration.data.secondarystorage.Retention  
         # if true, the ILM Policy is created and applied to the index templates
         enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_ENABLED
         # defines how old the data must be, before the data is deleted as a duration
@@ -1312,11 +1312,11 @@ camunda: # Type: io.camunda.configuration.Camunda
         usage-metrics-minimum-age: "730d" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_USAGEMETRICSMINIMUMAGE
       
       # Determines the type of the secondary storage database.
-      type: "elasticsearch" # Type: io.camunda.configuration.SecondaryStorage$SecondaryStorageType, Env: CAMUNDA_DATA_SECONDARYSTORAGE_TYPE
+      type: "elasticsearch" # Type: io.camunda.configuration.data.SecondaryStorage$SecondaryStorageType, Env: CAMUNDA_DATA_SECONDARYSTORAGE_TYPE
     
     # How often we take snapshots of streams (time unit)
     snapshot-period: "5m" # Type: Duration, Env: CAMUNDA_DATA_SNAPSHOTPERIOD
-    wait-states: # Type: io.camunda.configuration.WaitStates  
+    wait-states: # Type: io.camunda.configuration.data.WaitStates  
       enabled: true # Type: Boolean, Env: CAMUNDA_DATA_WAITSTATES_ENABLED
   
   database: # Type: io.camunda.configuration.beans.LegacySearchEngineConnectProperties  
@@ -1396,12 +1396,12 @@ camunda: # Type: io.camunda.configuration.Camunda
   mode: null # Type: String, Env: CAMUNDA_MODE
   monitoring: # Type: io.camunda.configuration.Monitoring  
     jfr: null # Type: Boolean, Env: CAMUNDA_MONITORING_JFR
-    metrics: # Type: io.camunda.configuration.Metrics  
+    metrics: # Type: io.camunda.configuration.monitoring.Metrics  
       # Controls whether to collect metrics about actor usage such as actor job execution latencies
       actor: false # Type: Boolean, Env: CAMUNDA_MONITORING_METRICS_ACTOR
       # Enable exporter execution metrics
       enable-exporter-execution-metrics: false # Type: Boolean, Env: CAMUNDA_MONITORING_METRICS_ENABLEEXPORTEREXECUTIONMETRICS
-      job-metrics: # Type: io.camunda.configuration.JobMetricsConfig  
+      job-metrics: # Type: io.camunda.configuration.monitoring.metrics.JobMetricsConfig  
         # Whether job metrics export is enabled.
         enabled: true # Type: Boolean, Env: CAMUNDA_MONITORING_METRICS_JOBMETRICS_ENABLED
         # The interval at which job metrics are exported.
@@ -1415,7 +1415,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The maximum length of the worker name used in job metrics labels.
         max-worker-name-length: 100 # Type: Integer, Env: CAMUNDA_MONITORING_METRICS_JOBMETRICS_MAXWORKERNAMELENGTH
       
-      usage-metrics: # Type: io.camunda.configuration.UsageMetricsConfig  
+      usage-metrics: # Type: io.camunda.configuration.monitoring.metrics.UsageMetricsConfig  
         # The interval at which usage metrics are exported.
         # Defaults to {@link
         # io.camunda.zeebe.engine.EngineConfiguration#DEFAULT_USAGE_METRICS_EXPORT_INTERVAL}.
@@ -1593,8 +1593,8 @@ camunda: # Type: io.camunda.configuration.Camunda
     # described above. However, under consistent high load it may happen that the activated timers will
     # fall behind real time, if more timers become due than can be activated during a certain time period.
     enable-yielding-due-date-checker: true # Type: Boolean, Env: CAMUNDA_PROCESSING_ENABLEYIELDINGDUEDATECHECKER
-    engine: # Type: io.camunda.configuration.Engine  
-      batch-operations: # Type: io.camunda.configuration.EngineBatchOperation  
+    engine: # Type: io.camunda.configuration.processing.Engine  
+      batch-operations: # Type: io.camunda.configuration.processing.engine.EngineBatchOperation  
         # Number of itemKeys in one BatchOperationChunkRecord.
         # To avoid too large records, the set of executed items ina batch operation is split into multiple
         # chunks. Smaller values lead to more records needed to transport the items and the more metadata
@@ -1658,7 +1658,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Defaults to {@link #DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL}.
         scheduler-interval: "1s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_SCHEDULERINTERVAL
       
-      caches: # Type: io.camunda.configuration.EngineCaches  
+      caches: # Type: io.camunda.configuration.processing.engine.EngineCaches  
         # Configures the maximum number of authorization decisions to cache.
         authorizations-cache-capacity: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_AUTHORIZATIONSCACHECAPACITY
         # Configures how long a cached authorization decision remains valid before it expires.
@@ -1679,7 +1679,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Configures the maximum number of resources (e.g. RPA scripts) to cache.
         resource-cache-capacity: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_RESOURCECACHECAPACITY
       
-      distribution: # Type: io.camunda.configuration.Distribution  
+      distribution: # Type: io.camunda.configuration.processing.engine.Distribution  
         # Allows configuring the maximum backoff duration for command redistribution retries. The retry
         # interval is doubled after each retry until it reaches this maximum duration.
         max-backoff-duration: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_DISTRIBUTION_MAXBACKOFFDURATION
@@ -1689,29 +1689,29 @@ camunda: # Type: io.camunda.configuration.Camunda
         # retrying command distributions that have not been acknowledged.
         redistribution-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_DISTRIBUTION_REDISTRIBUTIONINTERVAL
       
-      job: # Type: io.camunda.configuration.EngineJob  
+      job: # Type: io.camunda.configuration.processing.engine.EngineJob  
         include-variables-in-job-completed-event: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_JOB_INCLUDEVARIABLESINJOBCOMPLETEDEVENT
         # Configures the maximum number of timed-out jobs processed per timeout check.
         timeout-checker-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_JOB_TIMEOUTCHECKERBATCHLIMIT
         # Configures the interval at which jobs are checked for timeouts.
         timeout-checker-polling-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_JOB_TIMEOUTCHECKERPOLLINGINTERVAL
       
-      mappings: # Type: io.camunda.configuration.EngineMappings  
-        input-comparison-mode: null # Type: io.camunda.configuration.EngineMappings$InputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTCOMPARISONMODE
-        input-mode: "combined" # Type: io.camunda.configuration.EngineMappings$InputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTMODE
-        output-comparison-mode: null # Type: io.camunda.configuration.EngineMappings$OutputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTCOMPARISONMODE
-        output-mode: "combined" # Type: io.camunda.configuration.EngineMappings$OutputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTMODE
+      mappings: # Type: io.camunda.configuration.processing.engine.EngineMappings  
+        input-comparison-mode: null # Type: io.camunda.configuration.processing.engine.EngineMappings$InputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTCOMPARISONMODE
+        input-mode: "combined" # Type: io.camunda.configuration.processing.engine.EngineMappings$InputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTMODE
+        output-comparison-mode: null # Type: io.camunda.configuration.processing.engine.EngineMappings$OutputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTCOMPARISONMODE
+        output-mode: "combined" # Type: io.camunda.configuration.processing.engine.EngineMappings$OutputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTMODE
       
       # Configures the maximum depth of nested call activities allowed before an incident is raised, to
       # guard against unbounded process recursion.
       max-process-depth: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MAXPROCESSDEPTH
-      messages: # Type: io.camunda.configuration.EngineMessages  
+      messages: # Type: io.camunda.configuration.processing.engine.EngineMessages  
         # Configures the maximum number of expired messages processed per Time-To-Live check.
         ttl-checker-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_TTLCHECKERBATCHLIMIT
         # Configures the interval at which buffered messages are checked for expiry.
         ttl-checker-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_TTLCHECKERINTERVAL
       
-      secrets: # Type: io.camunda.configuration.EngineSecrets  
+      secrets: # Type: io.camunda.configuration.processing.engine.EngineSecrets  
         batch-resolution-limit: 20 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_BATCHRESOLUTIONLIMIT
         interval: "5s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_INTERVAL
         retry-backoff-factor: 2 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYBACKOFFFACTOR
@@ -1720,19 +1720,19 @@ camunda: # Type: io.camunda.configuration.Camunda
         retry-max-delay: "30s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYMAXDELAY
         wake-delay: "50ms" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_WAKEDELAY
       
-      startup: # Type: io.camunda.configuration.EngineStartup  
+      startup: # Type: io.camunda.configuration.processing.engine.EngineStartup  
         # Configures whether the one-time migration that re-exports existing RPA resources runs on broker
         # startup.
         rpa-reexport-migration-enabled: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STARTUP_RPAREEXPORTMIGRATIONENABLED
       
-      storage-ordinals: # Type: io.camunda.configuration.EngineStorageOrdinals  
+      storage-ordinals: # Type: io.camunda.configuration.processing.engine.EngineStorageOrdinals  
         # Controls whether the archiverless mode is enabled.
         enable-archiverless: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_ENABLEARCHIVERLESS
         # Override default storage ordinal with fixed value, mainly used during initial testing. The default
         # value of -1 means no override is applied.
         fixed-storage-ordinal: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINAL
       
-      validators: # Type: io.camunda.configuration.EngineValidators  
+      validators: # Type: io.camunda.configuration.processing.engine.EngineValidators  
         # Configures the maximum size, in bytes, of the validation error output produced when deploying an
         # invalid BPMN or DMN resource.
         results-output-max-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_VALIDATORS_RESULTSOUTPUTMAXSIZE
@@ -1742,9 +1742,9 @@ camunda: # Type: io.camunda.configuration.Camunda
     # consistent with timer duration, message name, and signal name expressions. When disabled, restores
     # the previous behavior where the expression is evaluated in the flow scope instead.
     evaluate-boundary-event-correlation-key-in-activity-scope: true # Type: Boolean, Env: CAMUNDA_PROCESSING_EVALUATEBOUNDARYEVENTCORRELATIONKEYINACTIVITYSCOPE
-    flow-control: # Type: io.camunda.configuration.FlowControl  
-      request: # Type: io.camunda.configuration.Limit  
-        aimd: # Type: io.camunda.configuration.Aimd  
+    flow-control: # Type: io.camunda.configuration.processing.FlowControl  
+      request: # Type: io.camunda.configuration.processing.flowcontrol.Limit  
+        aimd: # Type: io.camunda.configuration.processing.flowcontrol.request.Aimd  
           # The backoff ratio
           backoff-ratio: 0.9 # Type: Double, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_AIMD_BACKOFFRATIO
           # The initial limit
@@ -1760,11 +1760,11 @@ camunda: # Type: io.camunda.configuration.Camunda
         algorithm: "aimd" # Type: String, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_ALGORITHM
         # Enable request limit
         enabled: true # Type: Boolean, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_ENABLED
-        fixed: # Type: io.camunda.configuration.Fixed  
+        fixed: # Type: io.camunda.configuration.processing.flowcontrol.request.Fixed  
           # The limit
           limit: 20 # Type: Integer, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_FIXED_LIMIT
         
-        gradient: # Type: io.camunda.configuration.Gradient  
+        gradient: # Type: io.camunda.configuration.processing.flowcontrol.request.Gradient  
           # The initial limit
           initial-limit: 20 # Type: Integer, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_GRADIENT_INITIALLIMIT
           # The minimum limit
@@ -1772,7 +1772,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           # The RTT tolerance
           rtt-tolerance: 2 # Type: Double, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_GRADIENT_RTTTOLERANCE
         
-        gradient2: # Type: io.camunda.configuration.Gradient2  
+        gradient2: # Type: io.camunda.configuration.processing.flowcontrol.request.Gradient2  
           # The initial limit
           initial-limit: 20 # Type: Integer, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_GRADIENT2_INITIALLIMIT
           # The long window
@@ -1782,7 +1782,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           # The RTT tolerance
           rtt-tolerance: 2 # Type: Double, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_GRADIENT2_RTTTOLERANCE
         
-        legacy-vegas: # Type: io.camunda.configuration.LegacyVegas  
+        legacy-vegas: # Type: io.camunda.configuration.processing.flowcontrol.request.LegacyVegas  
           # The alpha limit
           alpha-limit: 0.7 # Type: Double, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_LEGACYVEGAS_ALPHALIMIT
           # The beta limit
@@ -1792,7 +1792,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           # The max concurrency
           max-concurrency: null # Type: Integer, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_LEGACYVEGAS_MAXCONCURRENCY
         
-        vegas: # Type: io.camunda.configuration.Vegas  
+        vegas: # Type: io.camunda.configuration.processing.flowcontrol.request.Vegas  
           # The alpha value
           alpha: 3 # Type: Integer, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_VEGAS_ALPHA
           # The beta value
@@ -1803,14 +1803,14 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Use windowed limit
         windowed: true # Type: Boolean, Env: CAMUNDA_PROCESSING_FLOWCONTROL_REQUEST_WINDOWED
       
-      write: # Type: io.camunda.configuration.Write  
+      write: # Type: io.camunda.configuration.processing.flowcontrol.Write  
         # Enable rate limit
         enabled: false # Type: Boolean, Env: CAMUNDA_PROCESSING_FLOWCONTROL_WRITE_ENABLED
         # Sets the maximum number of records written per second
         limit: 0 # Type: Integer, Env: CAMUNDA_PROCESSING_FLOWCONTROL_WRITE_LIMIT
         # Sets the ramp up time, for example 10s
         ramp-up: 0 # Type: Duration, Env: CAMUNDA_PROCESSING_FLOWCONTROL_WRITE_RAMPUP
-        throttle: # Type: io.camunda.configuration.Throttle  
+        throttle: # Type: io.camunda.configuration.processing.flowcontrol.write.Throttle  
           # When exporting is a bottleneck, the write rate is throttled to keep the backlog at this value.
           acceptable-backlog: 100000 # Type: Integer, Env: CAMUNDA_PROCESSING_FLOWCONTROL_WRITE_THROTTLE_ACCEPTABLEBACKLOG
           # Enable throttling. If enabled, throttle the write rate based on exporting backlog
@@ -1915,14 +1915,14 @@ camunda: # Type: io.camunda.configuration.Camunda
         assigned: null # Type: List<String>, Env: CAMUNDA_SECURITY_AUTHENTICATION_PROVIDERS_ASSIGNED
     
     authorizations: null # Type: io.camunda.security.api.model.config.AuthorizationsConfiguration, Env: CAMUNDA_SECURITY_AUTHORIZATIONS
-    cluster-admin: # Type: io.camunda.configuration.ClusterAdmin  
-      basic: # Type: io.camunda.configuration.ClusterAdminBasic  
+    cluster-admin: # Type: io.camunda.configuration.security.ClusterAdmin  
+      basic: # Type: io.camunda.configuration.security.clusteradmin.ClusterAdminBasic  
         # Statically configured cluster-admin users for HTTP Basic authentication.
-        users: null # Type: List<io.camunda.configuration.ClusterAdminUser>, Env: CAMUNDA_SECURITY_CLUSTERADMIN_BASIC_USERS
+        users: null # Type: List<io.camunda.configuration.security.clusteradmin.ClusterAdminUser>, Env: CAMUNDA_SECURITY_CLUSTERADMIN_BASIC_USERS
       
-      oidc: # Type: io.camunda.configuration.ClusterAdminOidc  
+      oidc: # Type: io.camunda.configuration.security.clusteradmin.ClusterAdminOidc  
         # Generic `name`/`value` claim matchers granting cluster-admin.
-        claims: null # Type: List<io.camunda.configuration.ClusterAdminClaim>, Env: CAMUNDA_SECURITY_CLUSTERADMIN_OIDC_CLAIMS
+        claims: null # Type: List<io.camunda.configuration.security.clusteradmin.ClusterAdminClaim>, Env: CAMUNDA_SECURITY_CLUSTERADMIN_OIDC_CLAIMS
         # Client ids granted cluster-admin, matched against the provider's `client-id-claim`.
         clients: null # Type: List<String>, Env: CAMUNDA_SECURITY_CLUSTERADMIN_OIDC_CLIENTS
         # Groups granted cluster-admin, matched against the provider's `groups-claim`.
@@ -1935,23 +1935,23 @@ camunda: # Type: io.camunda.configuration.Camunda
     multi-tenancy: null # Type: io.camunda.security.api.model.config.MultiTenancyConfiguration, Env: CAMUNDA_SECURITY_MULTITENANCY
     saas: null # Type: io.camunda.security.api.model.config.SaasConfiguration, Env: CAMUNDA_SECURITY_SAAS
     session: null # Type: io.camunda.security.api.model.config.SessionConfiguration, Env: CAMUNDA_SECURITY_SESSION
-    transport-layer-security: # Type: io.camunda.configuration.Tls  
-      cluster: # Type: io.camunda.configuration.TlsCluster  
+    transport-layer-security: # Type: io.camunda.configuration.security.Tls  
+      cluster: # Type: io.camunda.configuration.security.transportlayersecurity.TlsCluster  
         # Sets the path to the certificate chain file
         certificate-chain-path: null # Type: java.io.File, Env: CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATECHAINPATH
         # Sets the path to the private key file location
         certificate-private-key-path: null # Type: java.io.File, Env: CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATEPRIVATEKEYPATH
         # Enables TLS authentication between this gateway and other nodes in the cluster
         enabled: false # Type: Boolean, Env: CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_ENABLED
-        key-store: # Type: io.camunda.configuration.KeyStore  
+        key-store: # Type: io.camunda.configuration.security.KeyStore  
           # The path for keystore file
           file-path: null # Type: java.io.File, Env: CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_KEYSTORE_FILEPATH
           # Sets the password for the keystore file, if not set it is assumed there is no password
           password: null # Type: String, Env: CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_KEYSTORE_PASSWORD
   
   system: # Type: io.camunda.configuration.System  
-    actor: # Type: io.camunda.configuration.Actor  
-      idle: # Type: io.camunda.configuration.ActorIdleStrategy  
+    actor: # Type: io.camunda.configuration.system.Actor  
+      idle: # Type: io.camunda.configuration.system.actor.ActorIdleStrategy  
         max-park-period: null # Type: Duration, Env: CAMUNDA_SYSTEM_ACTOR_IDLE_MAXPARKPERIOD
         max-spins: null # Type: Long, Env: CAMUNDA_SYSTEM_ACTOR_IDLE_MAXSPINS
         max-yields: null # Type: Long, Env: CAMUNDA_SYSTEM_ACTOR_IDLE_MAXYIELDS
@@ -1968,15 +1968,15 @@ camunda: # Type: io.camunda.configuration.Camunda
     # Controls the number of io threads to be used. These threads are used for workloads that write data
     # to disk. While writing, these threads are blocked which means that they yield the CPU.
     io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_IOTHREADCOUNT
-    legacy-query-api: # Type: io.camunda.configuration.LegacyQueryApi  
+    legacy-query-api: # Type: io.camunda.configuration.system.LegacyQueryApi  
       # Enables the broker's internal legacy query API.
       enabled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_LEGACYQUERYAPI_ENABLED
     
-    restore: # Type: io.camunda.configuration.Restore  
+    restore: # Type: io.camunda.configuration.system.Restore  
       ignore-files-in-target: null # Type: List<String>, Env: CAMUNDA_SYSTEM_RESTORE_IGNOREFILESINTARGET
       validate-config: true # Type: Boolean, Env: CAMUNDA_SYSTEM_RESTORE_VALIDATECONFIG
     
-    upgrade: # Type: io.camunda.configuration.Upgrade  
+    upgrade: # Type: io.camunda.configuration.system.Upgrade  
       # Toggles the version check restriction, used for migration. Useful for testing migration logic on
       # snapshot or alpha versions. Default: True, means it is not allowed to migrate to incompatible
       # version like: SNAPSHOT or alpha.
@@ -1992,21 +1992,21 @@ camunda: # Type: io.camunda.configuration.Camunda
     new-design-system-enabled: null # Type: Boolean, Env: CAMUNDA_WEBAPP_NEWDESIGNSYSTEMENABLED
   
   webapps: # Type: io.camunda.configuration.Webapps  
-    identity: # Type: io.camunda.configuration.Webapp  
+    identity: # Type: io.camunda.configuration.webapps.Webapp  
       # Whether the webapp is enabled or not. This also affects the webapp API.
       enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_IDENTITY_ENABLED
       # Whether the webapp UI is enabled or not. If false, the webapp API will still be available, but the
       # webapp itself will not be accessible with a web browser.
       ui-enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_IDENTITY_UIENABLED
     
-    operate: # Type: io.camunda.configuration.Webapp  
+    operate: # Type: io.camunda.configuration.webapps.Webapp  
       # Whether the webapp is enabled or not. This also affects the webapp API.
       enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_OPERATE_ENABLED
       # Whether the webapp UI is enabled or not. If false, the webapp API will still be available, but the
       # webapp itself will not be accessible with a web browser.
       ui-enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_OPERATE_UIENABLED
     
-    tasklist: # Type: io.camunda.configuration.Webapp  
+    tasklist: # Type: io.camunda.configuration.webapps.Webapp  
       # Whether the webapp is enabled or not. This also affects the webapp API.
       enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_TASKLIST_ENABLED
       # Whether the webapp UI is enabled or not. If false, the webapp API will still be available, but the

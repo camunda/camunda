@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Zone;
+import io.camunda.configuration.cluster.Zone;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;

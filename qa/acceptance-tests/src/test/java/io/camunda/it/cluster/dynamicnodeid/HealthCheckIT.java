@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import eu.rekawek.toxiproxy.model.ToxicDirection;
-import io.camunda.configuration.NodeIdProvider.Type;
+import io.camunda.configuration.cluster.NodeIdProvider.Type;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;

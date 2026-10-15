@@ -10,8 +10,8 @@ package io.camunda.qa.util.multidb;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TEST_INTEGRATION_RDBMS_FAST_INIT;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;

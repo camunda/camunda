@@ -13,6 +13,12 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.cluster.Membership;
+import io.camunda.configuration.cluster.Metadata;
+import io.camunda.configuration.cluster.Network;
+import io.camunda.configuration.cluster.NodeIdProvider;
+import io.camunda.configuration.cluster.Partitioning;
+import io.camunda.configuration.cluster.Raft;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.util.MemberIdUtil;
@@ -29,7 +35,7 @@ public class Cluster implements Cloneable {
   // Property names for initial contact points configuration
   public static final String LEGACY_INITIAL_CONTACT_POINTS_PROPERTY;
   public static final String LEGACY_NODE_ID_PROPERTY;
-  static final String PREFIX = "camunda.cluster";
+  public static final String PREFIX = "camunda.cluster";
   public static final String UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY =
       PREFIX + ".initial-contact-points";
 

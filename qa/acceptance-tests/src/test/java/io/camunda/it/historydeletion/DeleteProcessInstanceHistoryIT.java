@@ -23,7 +23,7 @@ import io.camunda.client.api.response.DeleteProcessInstanceResponse;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.configuration.HistoryDeletion;
+import io.camunda.configuration.data.HistoryDeletion;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
