@@ -104,7 +104,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
   public String toString() {
     return "OpensearchExporterConfiguration{"
         + "url='"
-        + UrlRedaction.redactUserInfo(url)
+        + UrlRedaction.describe(url)
         + '\''
         + ", index="
         + index
