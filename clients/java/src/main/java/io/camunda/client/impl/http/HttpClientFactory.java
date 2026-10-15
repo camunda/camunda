@@ -58,6 +58,7 @@ import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
@@ -260,6 +261,12 @@ public class HttpClientFactory {
             .evictIdleConnections(TimeValue.ofSeconds(30))
             .setRetryStrategy(new HttpRetryStrategy())
             .useSystemProperties(); // allow users to customize via system properties
+
+    // the HttpClient default of one I/O thread per available processor, set explicitly so that it
+    // can be reported
+    final int ioThreadCount = IOReactorConfig.DEFAULT.getIoThreadCount();
+    builder.setIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(ioThreadCount).build());
+    clientMetrics.ioThreadCount(ioThreadCount);
 
     // Register a request-level interceptor that injects the Authorization header at the
     // latest possible point — inside httpProcessor.process(), which runs AFTER connection

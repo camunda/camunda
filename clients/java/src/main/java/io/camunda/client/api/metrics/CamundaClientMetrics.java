@@ -43,6 +43,9 @@ import io.camunda.client.impl.metrics.MicrometerCamundaClientMetricsBuilderImpl;
  * that does not set its own via {@link
  * io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3#metrics(io.camunda.client.api.worker.JobWorkerMetrics)}.
  *
+ * <p>The gauge {@code camunda.client.http.io.threads} reports the number of I/O threads of the REST
+ * client.
+ *
  * <p>All these meters are tagged with {@code physicalTenantId}: the client's {@link
  * io.camunda.client.CamundaClientBuilder#physicalTenantId(String) physical tenant}, or {@code
  * default} without one. Clients of different physical tenants can therefore share a registry.

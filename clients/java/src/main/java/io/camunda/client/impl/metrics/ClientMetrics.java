@@ -35,6 +35,12 @@ public interface ClientMetrics {
   default void instrumentHttpClient(final HttpAsyncClientBuilder builder) {}
 
   /**
+   * Reports the number of I/O threads of the REST client, which bounds how many connections it can
+   * serve concurrently.
+   */
+  default void ioThreadCount(final int ioThreadCount) {}
+
+  /**
    * Removes the meters of the client from the registry; called once the client is closed. Without
    * it, the gauges stay bound to the closed client and a client rebuilt with the same tags would
    * get them back instead of its own.

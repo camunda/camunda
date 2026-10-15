@@ -70,12 +70,32 @@ final class MicrometerClientMetricsTest {
   }
 
   @Test
+  void shouldReportIoThreadCount() {
+    // given
+    final ClientMetrics metrics = new MicrometerClientMetrics(meterRegistry, null);
+
+    // when
+    metrics.ioThreadCount(3);
+
+    // then
+    assertThat(
+            meterRegistry
+                .get("camunda.client.http.io.threads")
+                .tag("client", "camunda")
+                .tag("physicalTenantId", "default")
+                .gauge()
+                .value())
+        .isEqualTo(3);
+  }
+
+  @Test
   void shouldRemoveOnlyMetersOfClosedClient() {
     // given
     final ClientMetrics metrics = new MicrometerClientMetrics(meterRegistry, "risk");
     final ClientMetrics otherTenantMetrics = new MicrometerClientMetrics(meterRegistry, "finance");
     metrics.instrumentHttpClient(newHttpClientBuilder());
     metrics.jobWorkerMetrics("payment").jobActivated(1);
+    metrics.ioThreadCount(2);
     otherTenantMetrics.instrumentHttpClient(newHttpClientBuilder());
     // like the Spring starter's job worker meters: same name and tags, but no client tag
     final Counter starterWorkerCounter =
