@@ -9,11 +9,17 @@ package io.camunda.application.commons.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.Either;
+import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.auth.RequiredAuthorization;
@@ -25,10 +31,17 @@ import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.authz.AuthorizationCheckerConfiguration;
 import io.camunda.security.spring.authz.AuthorizationConfiguration;
+import io.camunda.security.spring.spi.WebAppAuthorizationEnabledPort;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Proves that the host-supplied {@link TenantAwareAuthorizationCheckPort} wins the
@@ -39,6 +52,12 @@ import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
  * {@code @ImportAutoConfiguration}-imported library configurations.
  */
 class WebAppAuthorizationCheckPortConfigurationTest {
+
+  private static final PhysicalTenantSecurityProperties DEFAULT_SECURITY_PROPERTIES =
+      new PhysicalTenantSecurityProperties(
+          Map.of(
+              "default", new CamundaSecurityLibraryProperties(),
+              "tenant-a", new CamundaSecurityLibraryProperties()));
 
   private final WebApplicationContextRunner runner =
       new WebApplicationContextRunner()
@@ -59,6 +78,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
 
     // when / then
     runner
+        .withBean(PhysicalTenantSecurityProperties.class, () -> DEFAULT_SECURITY_PROPERTIES)
         .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
             ctx -> {
@@ -84,6 +104,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
             () -> mock(AuthorizationScopeRepositoryPort.class))
         .withBean(MembershipPort.class, () -> mock(MembershipPort.class))
         .withBean(CamundaSecurityLibraryProperties.class, CamundaSecurityLibraryProperties::new)
+        .withBean(PhysicalTenantSecurityProperties.class, () -> DEFAULT_SECURITY_PROPERTIES)
         .withConfiguration(
             AutoConfigurations.of(
                 AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
@@ -122,6 +143,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
             AuthorizationScopeRepositoryPort.class,
             () -> mock(AuthorizationScopeRepositoryPort.class))
         .withBean(CamundaSecurityLibraryProperties.class, CamundaSecurityLibraryProperties::new)
+        .withBean(PhysicalTenantSecurityProperties.class, () -> DEFAULT_SECURITY_PROPERTIES)
         .withConfiguration(
             AutoConfigurations.of(
                 AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
@@ -178,6 +200,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
         .withBean(PhysicalTenantSearchClientReaders.class, () -> perTenantReaders)
         .withBean(MembershipPort.class, () -> mock(MembershipPort.class))
         .withBean(CamundaSecurityLibraryProperties.class, CamundaSecurityLibraryProperties::new)
+        .withBean(PhysicalTenantSecurityProperties.class, () -> DEFAULT_SECURITY_PROPERTIES)
         .withConfiguration(
             AutoConfigurations.of(
                 AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
@@ -201,6 +224,138 @@ class WebAppAuthorizationCheckPortConfigurationTest {
             });
   }
 
+  @ParameterizedTest(name = "root authorizations enabled: {0}")
+  @ValueSource(booleans = {true, false})
+  void shouldApplyEachPhysicalTenantsOwnAuthorizationsFlag(
+      final boolean rootAuthorizationsEnabled) {
+    // given: tenanta on, tenantb off, whatever the root value; nobody holds any grant
+    final var perTenantReaders =
+        new PhysicalTenantSearchClientReaders(
+            Map.of("tenanta", readersWithoutGrants(), "tenantb", readersWithoutGrants()));
+    final var securityProperties =
+        new PhysicalTenantSecurityProperties(
+            Map.of(
+                "tenanta", securityProperties(true),
+                "tenantb", securityProperties(false)));
+
+    new WebApplicationContextRunner()
+        .withBean(
+            AuthorizationScopeRepositoryPort.class,
+            () -> mock(AuthorizationScopeRepositoryPort.class))
+        .withBean(PhysicalTenantSearchClientReaders.class, () -> perTenantReaders)
+        .withBean(PhysicalTenantSecurityProperties.class, () -> securityProperties)
+        .withBean(MembershipPort.class, () -> mock(MembershipPort.class))
+        .withBean(
+            CamundaSecurityLibraryProperties.class,
+            () -> securityProperties(rootAuthorizationsEnabled))
+        .withConfiguration(
+            AutoConfigurations.of(
+                AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              final AuthorizationCheckPort port = ctx.getBean(AuthorizationCheckPort.class);
+
+              // when
+              final var tenantaResult = checkOperateAccessInPhysicalTenant(port, "tenanta");
+              final var tenantbResult = checkOperateAccessInPhysicalTenant(port, "tenantb");
+
+              // then
+              assertThat(tenantaResult.isLeft()).isTrue();
+              assertThat(tenantbResult.isRight()).isTrue();
+            });
+  }
+
+  @Test
+  void shouldResolveWebAppAuthorizationFlagFromRequestPhysicalTenant() {
+    // given: the default tenant has authorizations off, tenanta on, tenantb off
+    final var securityProperties =
+        new PhysicalTenantSecurityProperties(
+            Map.of(
+                "default", securityProperties(false),
+                "tenanta", securityProperties(true),
+                "tenantb", securityProperties(false)));
+
+    runner
+        .withBean(PhysicalTenantSecurityProperties.class, () -> securityProperties)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              final var enabledPort = ctx.getBean(WebAppAuthorizationEnabledPort.class);
+
+              // when / then
+              assertThat(enabledPort.isAuthorizationEnabled(requestInPhysicalTenant("tenanta")))
+                  .isTrue();
+              assertThat(enabledPort.isAuthorizationEnabled(requestInPhysicalTenant("tenantb")))
+                  .isFalse();
+              assertThat(enabledPort.isAuthorizationEnabled(new MockHttpServletRequest()))
+                  .isFalse();
+            });
+  }
+
+  @Test
+  void shouldApplyDefaultPhysicalTenantFlagWithoutSecondaryStorage() {
+    // given: root authorizations on, the default tenant off, no per-tenant secondary storage;
+    // nobody holds any grant
+    final var securityProperties =
+        new PhysicalTenantSecurityProperties(Map.of("default", securityProperties(false)));
+
+    runner
+        .withBean(PhysicalTenantSecurityProperties.class, () -> securityProperties)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              // when
+              final var result =
+                  checkOperateAccessInPhysicalTenant(
+                      ctx.getBean(AuthorizationCheckPort.class), "default");
+
+              // then
+              assertThat(result.isRight()).isTrue();
+            });
+  }
+
+  @Test
+  void shouldFailFastAtStartupWhenPhysicalTenantHasNoSecurityProperties() {
+    // given: readers exist for a physical tenant that has no security properties
+    final var readers =
+        new PhysicalTenantSearchClientReaders(Map.of("tenant-missing", readersWithoutGrants()));
+
+    runner
+        .withBean(PhysicalTenantSearchClientReaders.class, () -> readers)
+        .withBean(PhysicalTenantSecurityProperties.class, () -> DEFAULT_SECURITY_PROPERTIES)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              // then
+              assertThat(ctx).hasFailed();
+              assertThat(ctx.getStartupFailure())
+                  .hasRootCauseInstanceOf(IllegalStateException.class)
+                  .hasRootCauseMessage(
+                      "No security properties for physical tenant 'tenant-missing'");
+            });
+  }
+
+  @Test
+  void shouldTreatWebAppAuthorizationAsEnabledForUnknownPhysicalTenant() {
+    // given: every known tenant has authorizations off
+    final var securityProperties =
+        new PhysicalTenantSecurityProperties(Map.of("default", securityProperties(false)));
+
+    runner
+        .withBean(PhysicalTenantSecurityProperties.class, () -> securityProperties)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              final var enabledPort = ctx.getBean(WebAppAuthorizationEnabledPort.class);
+
+              // when / then: the request reaches the check port, which fails hard for the tenant
+              assertThat(
+                      enabledPort.isAuthorizationEnabled(requestInPhysicalTenant("tenant-unknown")))
+                  .isTrue();
+            });
+  }
+
   @Test
   void shouldFailFastAtStartupWhenPerTenantScopesReportedButNoTenantsDeclared() {
     // given: a PhysicalTenantSearchClientReaders bean is present but backed by an empty map --
@@ -217,6 +372,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
         .withBean(PhysicalTenantSearchClientReaders.class, () -> emptyReaders)
         .withBean(MembershipPort.class, () -> mock(MembershipPort.class))
         .withBean(CamundaSecurityLibraryProperties.class, CamundaSecurityLibraryProperties::new)
+        .withBean(PhysicalTenantSecurityProperties.class, () -> DEFAULT_SECURITY_PROPERTIES)
         .withConfiguration(
             AutoConfigurations.of(
                 AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
@@ -234,5 +390,43 @@ class WebAppAuthorizationCheckPortConfigurationTest {
                           + "including default-tenant ones, would otherwise fail hard per request "
                           + "instead of at startup.");
             });
+  }
+
+  private static SearchClientReaders readersWithoutGrants() {
+    final var authorizationReader = mock(AuthorizationReader.class);
+    when(authorizationReader.search(any(), any())).thenReturn(SearchQueryResult.empty());
+    final var readers = mock(SearchClientReaders.class);
+    when(readers.authorizationReader()).thenReturn(authorizationReader);
+    return readers;
+  }
+
+  private static CamundaSecurityLibraryProperties securityProperties(
+      final boolean authorizationsEnabled) {
+    final var properties = new CamundaSecurityLibraryProperties();
+    properties.getAuthorizations().setEnabled(authorizationsEnabled);
+    return properties;
+  }
+
+  private static MockHttpServletRequest requestInPhysicalTenant(final String physicalTenantId) {
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, physicalTenantId);
+    return request;
+  }
+
+  private static Either<AuthorizationRejection, Void> checkOperateAccessInPhysicalTenant(
+      final AuthorizationCheckPort port, final String physicalTenantId) {
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(requestInPhysicalTenant(physicalTenantId)));
+    try {
+      return port.check(
+          CamundaAuthentication.of(b -> b.user("alice")),
+          RequiredAuthorization.<Void>of(
+                  b ->
+                      b.resourceType(AuthorizationResourceType.COMPONENT)
+                          .permissionType(PermissionType.ACCESS))
+              .withResourceId("operate"));
+    } finally {
+      RequestContextHolder.resetRequestAttributes();
+    }
   }
 }
