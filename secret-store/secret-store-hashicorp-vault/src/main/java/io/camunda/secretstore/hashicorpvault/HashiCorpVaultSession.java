@@ -15,8 +15,11 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,6 +43,13 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Credentials are read from their file or environment variable on every sign-in, so a rotated
  * {@code secret_id} file or projected service account token is picked up without a restart.
+ *
+ * <p>Once HashiCorp Vault rejects a credential (HTTP 400 or 403 on sign-in), the same credential is
+ * not sent again until it changes or {@link #REJECTED_CREDENTIAL_COOL_DOWN} has passed. Retrying a
+ * wrong {@code secret_id} would otherwise trip HashiCorp Vault's user lockout within seconds, which
+ * locks the role out for every node sharing it, including nodes with a correct {@code secret_id}.
+ * The cool-down exists because a lockout caused elsewhere also answers a correct credential with
+ * 403; three attempts per 15 minutes stay below the default lockout threshold.
  */
 final class HashiCorpVaultSession implements AutoCloseable {
 
@@ -48,6 +58,7 @@ final class HashiCorpVaultSession implements AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(HashiCorpVaultSession.class);
   private static final Duration MIN_RETRY_DELAY = Duration.ofSeconds(1);
   private static final Duration MAX_RETRY_DELAY = Duration.ofSeconds(30);
+  static final Duration REJECTED_CREDENTIAL_COOL_DOWN = Duration.ofMinutes(5);
 
   private final HashiCorpVaultStoreConfig config;
   private final HashiCorpVaultClients clients;
@@ -66,6 +77,8 @@ final class HashiCorpVaultSession implements AutoCloseable {
   private Duration retryDelay = MIN_RETRY_DELAY;
   private @Nullable ScheduledFuture<?> scheduled;
   private boolean closed;
+  private byte @Nullable [] rejectedCredential;
+  private long rejectedAtNanos;
 
   HashiCorpVaultSession(
       final HashiCorpVaultStoreConfig config,
@@ -155,6 +168,40 @@ final class HashiCorpVaultSession implements AutoCloseable {
   // ---------------------------------------------------------------------------------------------
 
   private Vault signIn() {
+    final String credential;
+    try {
+      credential =
+          switch (config.authMethod()) {
+            case APPROLE ->
+                readCredential("secret_id", config.secretIdFile(), config.secretIdEnv());
+            case KUBERNETES -> readCredential("service account JWT", config.jwtPath(), null);
+            case TOKEN -> readCredential("token", config.tokenFile(), config.tokenEnv());
+          };
+    } catch (final SecretStoreUnavailableException e) {
+      loginFailure.increment();
+      LOG.warn(
+          "Failed to sign in to HashiCorp Vault for secret store '{}': {}",
+          storeName,
+          e.getMessage());
+      throw e;
+    }
+
+    final var fingerprint = fingerprint(credential);
+    if (wasRejectedRecently(fingerprint)) {
+      LOG.debug(
+          "Not signing in to HashiCorp Vault for secret store '{}': its credential was rejected"
+              + " and has not changed",
+          storeName);
+      throw new SecretStoreUnavailableException(
+          "HashiCorp Vault rejected the "
+              + config.authMethod()
+              + " credential of secret store '"
+              + storeName
+              + "'; not signing in again until it changes or "
+              + REJECTED_CREDENTIAL_COOL_DOWN.toMinutes()
+              + " minutes have passed");
+    }
+
     final Vault vault;
     final long ttl;
     final boolean renewable;
@@ -165,10 +212,7 @@ final class HashiCorpVaultSession implements AutoCloseable {
               clients
                   .create(null)
                   .auth()
-                  .loginByAppRole(
-                      config.authMount(),
-                      config.role(),
-                      readCredential("secret_id", config.secretIdFile(), config.secretIdEnv()));
+                  .loginByAppRole(config.authMount(), config.role(), credential);
           vault = clients.create(response.getAuthClientToken());
           ttl = response.getAuthLeaseDuration();
           renewable = response.isAuthRenewable();
@@ -179,16 +223,13 @@ final class HashiCorpVaultSession implements AutoCloseable {
               clients
                   .create(null)
                   .auth()
-                  .loginByKubernetes(
-                      config.role(),
-                      readCredential("service account JWT", config.jwtPath(), null),
-                      "auth/" + config.authMount());
+                  .loginByKubernetes(config.role(), credential, "auth/" + config.authMount());
           vault = clients.create(response.getAuthClientToken());
           ttl = response.getAuthLeaseDuration();
           renewable = response.isAuthRenewable();
         }
         case TOKEN -> {
-          vault = clients.create(readCredential("token", config.tokenFile(), config.tokenEnv()));
+          vault = clients.create(credential);
           final var lookup = vault.auth().lookupSelf(config.authMount());
           ttl = lookup.getTTL();
           renewable = lookup.isRenewable();
@@ -198,21 +239,19 @@ final class HashiCorpVaultSession implements AutoCloseable {
     } catch (final VaultException e) {
       loginFailure.increment();
       final var status = e.getHttpStatusCode();
+      if (status == 400 || status == 403) {
+        rejectedCredential = fingerprint;
+        rejectedAtNanos = System.nanoTime();
+      }
       LOG.warn(
           "Failed to sign in to HashiCorp Vault for secret store '{}' with {} auth: {}",
           storeName,
           config.authMethod(),
           status == 0 ? e.getMessage() : "HTTP " + status);
       throw HashiCorpVaultErrors.storeUnavailable(e);
-    } catch (final SecretStoreUnavailableException e) {
-      loginFailure.increment();
-      LOG.warn(
-          "Failed to sign in to HashiCorp Vault for secret store '{}': {}",
-          storeName,
-          e.getMessage());
-      throw e;
     }
 
+    rejectedCredential = null;
     loginSuccess.increment();
     current.set(vault);
     loginTtlSeconds = ttl;
@@ -335,6 +374,22 @@ final class HashiCorpVaultSession implements AutoCloseable {
       return value.strip();
     }
     throw new IllegalStateException("No source configured for HashiCorp Vault " + what);
+  }
+
+  private boolean wasRejectedRecently(final byte[] fingerprint) {
+    return rejectedCredential != null
+        && MessageDigest.isEqual(rejectedCredential, fingerprint)
+        && System.nanoTime() - rejectedAtNanos < REJECTED_CREDENTIAL_COOL_DOWN.toNanos();
+  }
+
+  // a digest, so the rejected credential itself does not stay in memory
+  private static byte[] fingerprint(final String credential) {
+    try {
+      return MessageDigest.getInstance("SHA-256")
+          .digest(credential.getBytes(StandardCharsets.UTF_8));
+    } catch (final NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   private static Counter counter(

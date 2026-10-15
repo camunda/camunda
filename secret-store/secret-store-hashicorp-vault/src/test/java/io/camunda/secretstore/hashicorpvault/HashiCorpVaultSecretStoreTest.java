@@ -208,6 +208,34 @@ final class HashiCorpVaultSecretStoreTest {
   }
 
   @Test
+  void shouldNotSendRejectedSecretIdAgainUntilItChanges() throws IOException {
+    // given
+    hashiCorpVault.entries.put("db-password", "{\"value\":\"s3cr3t\"}");
+    Files.writeString(secretIdFile, "wrong");
+    store = createStore(config(null, null));
+    assertThatThrownBy(() -> store.resolve(Set.of("db-password")))
+        .isInstanceOf(SecretStoreUnavailableException.class);
+
+    // when: resolution keeps being retried with the same rejected secret_id
+    for (int i = 0; i < 5; i++) {
+      assertThatThrownBy(() -> store.resolve(Set.of("db-password")))
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessageContaining("not signing in again until it changes");
+    }
+
+    // then: HashiCorp Vault saw a single failed sign-in, staying below its lockout threshold
+    assertThat(hashiCorpVault.loginAttempts).hasValue(1);
+
+    // when: the secret_id file is fixed
+    Files.writeString(secretIdFile, hashiCorpVault.acceptedSecretId);
+
+    // then: the next resolution signs in right away, without waiting for a cool-down
+    assertThat(store.resolve(Set.of("db-password")))
+        .containsEntry("db-password", new Resolved("s3cr3t"));
+    assertThat(hashiCorpVault.loginAttempts).hasValue(2);
+  }
+
+  @Test
   void shouldReadSecretIdAgainOnEverySignIn() throws IOException {
     // given
     hashiCorpVault.entries.put("db-password", "{\"value\":\"s3cr3t\"}");

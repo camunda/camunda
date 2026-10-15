@@ -30,6 +30,7 @@ final class FakeHashiCorpVault implements AutoCloseable {
   final Map<String, String> entries = new ConcurrentHashMap<>();
   final Set<String> deniedPaths = ConcurrentHashMap.newKeySet();
   final AtomicInteger logins = new AtomicInteger();
+  final AtomicInteger loginAttempts = new AtomicInteger();
   final AtomicInteger renewals = new AtomicInteger();
   final AtomicInteger revocations = new AtomicInteger();
   final AtomicInteger reads = new AtomicInteger();
@@ -72,6 +73,7 @@ final class FakeHashiCorpVault implements AutoCloseable {
         return;
       }
       if (path.equals("/v1/auth/approle/login")) {
+        loginAttempts.incrementAndGet();
         if (!body.contains("\"role_id\":\"" + ROLE_ID + "\"")
             || !body.contains("\"secret_id\":\"" + acceptedSecretId + "\"")) {
           respond(exchange, 400, "{\"errors\":[\"invalid role or secret ID\"]}");
