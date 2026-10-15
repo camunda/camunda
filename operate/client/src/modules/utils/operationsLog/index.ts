@@ -102,7 +102,12 @@ const mapToCellEntityKeyData = (
       }
     case 'USER_TASK':
       return {
-        link: tasklistUrl ? `${tasklistUrl}/${item.entityKey}` : undefined,
+        link: tasklistUrl
+          ? new URL(
+              `${tasklistUrl}/${item.entityKey}`,
+              window.location.origin,
+            ).toString()
+          : undefined,
         linkLabel: `View user task ${item.entityKey}`,
         label: item.entityKey,
       };
