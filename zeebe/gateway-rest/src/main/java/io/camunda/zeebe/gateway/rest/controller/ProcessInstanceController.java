@@ -35,6 +35,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -45,6 +46,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.context.request.async.DeferredResult;
 
 @CamundaRestController
 @RequestMapping("/v2/process-instances")
@@ -64,10 +66,16 @@ public class ProcessInstanceController {
   }
 
   @CamundaPostMapping
-  public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
+  public DeferredResult<ResponseEntity<Object>> createProcessInstance(
       @RequestBody final ProcessInstanceCreationInstruction request) {
     return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createProcessInstance);
+        .fold(
+            problem ->
+                RequestExecutor.toDeferredResult(
+                    RestErrorMapper.mapProblemToCompletedResponse(problem), null),
+            mapped ->
+                RequestExecutor.toDeferredResult(
+                    createProcessInstance(mapped), mapped.awaitCompletion() ? -1L : null));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/cancellation")
