@@ -1,0 +1,59 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.db.impl.sqlite;
+
+import static java.util.Objects.requireNonNull;
+
+import io.camunda.zeebe.db.CloseMode;
+import io.camunda.zeebe.db.StorageCapabilities;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.protocol.ScopedColumnFamily;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.File;
+import java.util.function.Supplier;
+
+/** Creates SQLite backed databases, see {@link SqliteDb}. */
+public final class SqliteDbFactory<
+        ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+    implements ZeebeDbFactory<ColumnFamilyType> {
+
+  private final Supplier<MeterRegistry> meterRegistryFactory;
+
+  public SqliteDbFactory() {
+    this(SimpleMeterRegistry::new);
+  }
+
+  public SqliteDbFactory(final Supplier<MeterRegistry> meterRegistryFactory) {
+    this.meterRegistryFactory = requireNonNull(meterRegistryFactory);
+  }
+
+  @Override
+  public ZeebeDb<ColumnFamilyType> createDb(final File pathName, final CloseMode closeMode) {
+    return SqliteDb.open(pathName.toPath(), meterRegistryFactory.get());
+  }
+
+  @Override
+  public ZeebeDb<ColumnFamilyType> createDb(final File pathName) {
+    return createDb(pathName, CloseMode.FAST);
+  }
+
+  @Override
+  public ZeebeDb<ColumnFamilyType> openSnapshotOnlyDb(final File path) {
+    throw new UnsupportedOperationException(
+        "Opening a SQLite database for snapshots only is not implemented yet");
+  }
+
+  /** Same as RocksDB, so that wiring which depends on the capabilities is unaffected. */
+  @Override
+  public StorageCapabilities capabilities() {
+    return new StorageCapabilities(true, true, true);
+  }
+}
