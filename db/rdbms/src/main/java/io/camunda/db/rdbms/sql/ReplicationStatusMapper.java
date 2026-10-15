@@ -14,6 +14,7 @@ public interface ReplicationStatusMapper {
 
   long getCurrentLogStatus();
 
+  /** Returns per-replica status plus a synthetic entry for the primary itself. */
   List<ReplicationLsnStatus> getReplicationStatus();
 
   /**
@@ -40,6 +41,6 @@ public interface ReplicationStatusMapper {
   /** Returns the primary's current durable LSN for Aurora Global Database. */
   long getAuroraCurrentLogStatus();
 
-  /** Returns per-replica replication status for Aurora Global Database. */
+  /** Returns every Aurora Global Database instance's row - primary and secondaries alike. */
   List<ReplicationLsnStatus> getAuroraReplicationStatus();
 }

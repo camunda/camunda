@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.read.replication.ReplicationLagProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLagStatus;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.RegionConfiguration;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -30,11 +31,25 @@ class TimeMonitoringReplicationSignalStrategyTest {
   void setUp() {
     statusProvider = mock(ReplicationLagProvider.class);
     config = new ReplicationConfiguration();
-    config.setMinSyncReplicas(1);
+    config.setRegions(List.of(flatRegion(1)));
   }
 
   private TimeMonitoringReplicationSignalStrategy createStrategy() {
     return new TimeMonitoringReplicationSignalStrategy(statusProvider, config);
+  }
+
+  /** A single region matching every replica - the flat quorum, degenerate case of regions. */
+  private static RegionConfiguration flatRegion(final int minReplicas) {
+    return region("default", ".*", minReplicas);
+  }
+
+  private static RegionConfiguration region(
+      final String name, final String pattern, final int minReplicas) {
+    final var region = new RegionConfiguration();
+    region.setName(name);
+    region.setPattern(pattern);
+    region.setMinReplicas(minReplicas);
+    return region;
   }
 
   @Test
@@ -75,8 +90,8 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnUnconfirmedWhenFewerThanMinSyncReplicasConnected() {
-      // given - minSyncReplicas=2, but only one replica reporting
-      config.setMinSyncReplicas(2);
+      // given - minReplicas=2, but only one replica reporting
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses = List.of(new ReplicationLagStatus("r1", 5_000L, 20_000L));
 
@@ -89,9 +104,9 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnLowestAsOfAmongTheTopMinSyncReplicas() {
-      // given - minSyncReplicas=2 with 3 replicas connected; the worst of the two BEST replicas
+      // given - minReplicas=2 with 3 replicas connected; the worst of the two BEST replicas
       // determines the confirmed point, mirroring LsnReplicationSignalStrategy's LSN computation
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses =
           List.of(
@@ -109,7 +124,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldIgnoreNullAsOfFromReplicaBeyondQuorum() {
-      // given - minSyncReplicas=1, one replica genuinely confirmed, one extra with an unknown
+      // given - minReplicas=1, one replica genuinely confirmed, one extra with an unknown
       // as-of point; the extra replica falls outside the required quorum
       final var strategy = createStrategy();
       final var statuses =
@@ -126,9 +141,9 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldTreatNullAsOfAsWorstCaseWhenWithinQuorum() {
-      // given - minSyncReplicas=2 with exactly 2 replicas connected, so both fall within the
+      // given - minReplicas=2 with exactly 2 replicas connected, so both fall within the
       // required quorum; the unknown as-of point must not look like "confirmed up to now"
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses =
           List.of(
@@ -141,6 +156,20 @@ class TimeMonitoringReplicationSignalStrategyTest {
       // then
       assertThat(asOfMs).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
     }
+
+    @Test
+    void shouldCountThePrimarysOwnEntryLikeAnyOtherTowardTheFlatRegion() {
+      // given - the primary's own entry alone satisfies the flat ".*" region's minReplicas=1
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(new ReplicationLagStatus("primary", 0L, 90_000L, "primary-label", true));
+
+      // when
+      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+
+      // then
+      assertThat(asOfMs).isEqualTo(90_000L);
+    }
   }
 
   @Nested
@@ -148,7 +177,7 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnPauseWorstCaseForEmptyListWhenQuorumRequired() {
-      // given - minSyncReplicas=1 (default), no replicas connected
+      // given - minReplicas=1 (default), no replicas connected
       final var strategy = createStrategy();
 
       // when
@@ -160,8 +189,8 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnPauseWorstCaseWhenQuorumNotMetAndQueueEmpty() {
-      // given - minSyncReplicas=2, only one replica reporting, and no queue-head signal available
-      config.setMinSyncReplicas(2);
+      // given - minReplicas=2, only one replica reporting, and no queue-head signal available
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses = List.of(new ReplicationLagStatus("r1", 1_000L, 0L));
 
@@ -174,9 +203,9 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnQueueHeadAgeWhenQuorumNotMetButQueueNonEmpty() {
-      // given - minSyncReplicas=2, only one replica reporting (with a much smaller reported lag
+      // given - minReplicas=2, only one replica reporting (with a much smaller reported lag
       // than the queue-head age), and a position is queued and waiting
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses = List.of(new ReplicationLagStatus("r1", 100L, 0L));
 
@@ -205,10 +234,10 @@ class TimeMonitoringReplicationSignalStrategyTest {
 
     @Test
     void shouldReturnWorstLagAmongTheTopMinSyncReplicas() {
-      // given - minSyncReplicas=2 with 3 replicas connected; only the worst of the two BEST
+      // given - minReplicas=2 with 3 replicas connected; only the worst of the two BEST
       // (lowest-lag) replicas determines the pause decision, mirroring
       // computeConfirmedMarker's top-N handling
-      config.setMinSyncReplicas(2);
+      config.setRegions(List.of(flatRegion(2)));
       final var strategy = createStrategy();
       final var statuses =
           List.of(
@@ -253,6 +282,101 @@ class TimeMonitoringReplicationSignalStrategyTest {
       assertThat(lagWithNoQueueAge)
           .isEqualTo(lagWithHugeQueueAge)
           .isEqualTo(Duration.ofMillis(5_000L));
+    }
+  }
+
+  @Nested
+  class RegionAwareTest {
+
+    @BeforeEach
+    void setUpRegions() {
+      config.setRegions(
+          List.of(region("us-east", "us-east-.*", 2), region("us-west", "us-west-.*", 1)));
+    }
+
+    @Test
+    void shouldReturnUnconfirmedWhenOneMandatoryRegionFallsShort() {
+      // given - us-east needs 2 replicas but only 1 is reporting; us-west is fully healthy
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLagStatus("r1", 1_000L, 20_000L, "us-east-1"),
+              new ReplicationLagStatus("r2", 1_000L, 20_000L, "us-west-1"));
+
+      // when
+      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+
+      // then
+      assertThat(asOfMs).isEqualTo(ReplicationSignalStrategy.UNCONFIRMED);
+    }
+
+    @Test
+    void shouldConfirmWorstAsOfAcrossAllMandatoryRegions() {
+      // given - us-east's own top 2 are 20_000 and 10_000 (worst: 10_000); us-west's top 1 is
+      // 5_000 (worst: 5_000); the overall confirmed point can't be later than either
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLagStatus("r1", 1_000L, 20_000L, "us-east-1"),
+              new ReplicationLagStatus("r2", 1_000L, 10_000L, "us-east-2"),
+              new ReplicationLagStatus("r3", 1_000L, 5_000L, "us-west-1"));
+
+      // when
+      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+
+      // then
+      assertThat(asOfMs).isEqualTo(5_000L);
+    }
+
+    @Test
+    void shouldCountThePrimarysOwnEntryTowardItsResolvedRegion() {
+      // given - us-east needs 2 nodes total; the primary plus one real secondary satisfies that
+      config.setRegions(List.of(region("us-east", "us-east-.*", 2)));
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLagStatus("r1", 1_000L, 30_000L, "us-east-1"),
+              new ReplicationLagStatus("primary", 0L, 90_000L, "us-east-primary", true));
+
+      // when
+      final long asOfMs = strategy.computeConfirmedMarker(statuses);
+
+      // then - the worse of the primary's (90_000) and the secondary's (30_000) is returned
+      assertThat(asOfMs).isEqualTo(30_000L);
+    }
+
+    @Test
+    void shouldPauseWithWorstLagAcrossAllMandatoryRegionsWhenQuorumIsMet() {
+      // given - us-east's own best 2 by lag are r1 (1_000) and r2 (2_000), worst of those is
+      // 2_000; us-west's best 1 is r3 (500); the overall pause lag is the worst across regions
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLagStatus("r1", 1_000L, 0L, "us-east-1"),
+              new ReplicationLagStatus("r2", 2_000L, 0L, "us-east-2"),
+              new ReplicationLagStatus("r3", 500L, 0L, "us-west-1"));
+
+      // when
+      final Duration lag = strategy.computePauseLag(statuses, Optional.empty());
+
+      // then
+      assertThat(lag).isEqualTo(Duration.ofMillis(2_000L));
+    }
+
+    @Test
+    void shouldFallBackToQueueHeadAgeWhenAMandatoryRegionFallsShort() {
+      // given - us-west needs 1 replica but has none; us-east is fully healthy
+      final var strategy = createStrategy();
+      final var statuses =
+          List.of(
+              new ReplicationLagStatus("r1", 1_000L, 0L, "us-east-1"),
+              new ReplicationLagStatus("r2", 1_000L, 0L, "us-east-2"));
+
+      // when
+      final Duration lag = strategy.computePauseLag(statuses, Optional.of(Duration.ofSeconds(4)));
+
+      // then
+      assertThat(lag).isEqualTo(Duration.ofSeconds(4));
     }
   }
 }

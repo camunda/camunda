@@ -18,9 +18,6 @@ public interface ReplicationLagProvider {
   /** Returns the primary's own clock, read directly from the database. */
   long getCurrentDbTime();
 
-  /**
-   * Returns per-replica state: a stable unique identifier and the DB-reported replication lag in
-   * milliseconds.
-   */
+  /** Returns per-replica state, including a synthetic entry for the primary itself. */
   List<ReplicationLagStatus> getReplicationStatuses();
 }
