@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="d" targetNamespace="http://camunda.org">
+  <bpmn:process id="la-manual" isExecutable="true">
+    <bpmn:startEvent id="start"/>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="task"/>
+    <bpmn:serviceTask id="task"><bpmn:extensionElements><zeebe:taskDefinition type="la-job"/></bpmn:extensionElements></bpmn:serviceTask>
+    <bpmn:sequenceFlow id="f2" sourceRef="task" targetRef="end"/>
+    <bpmn:endEvent id="end"/>
+  </bpmn:process>
+</bpmn:definitions>

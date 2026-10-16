@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Shared settings for the log archive manual test. Source this file.
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
+export DIST="${DIST:-$REPO_ROOT/dist/target/camunda-zeebe}"
+export WORK="${WORK:-/tmp/log-archive-manual}"
+export STORE="$WORK/store"   # filesystem backup store, one folder per scenario
+export BROKERS=3
+export PARTITIONS=2
+export REST_BASE=8080   # broker i serves REST on 8080+i
+export MGMT_BASE=9600   # broker i serves the management API on 9600+i
+
+# Scenario switches, set by cluster.sh from the scenario name
+broker_env() {
+  local i=$1 scenario=$2
+  local env=(
+    "CAMUNDA_CLUSTER_NODEID=$i"
+    "CAMUNDA_CLUSTER_SIZE=$BROKERS"
+    "CAMUNDA_CLUSTER_PARTITIONCOUNT=$PARTITIONS"
+    "CAMUNDA_CLUSTER_REPLICATIONFACTOR=3"
+    "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS=localhost:26502,localhost:26512,localhost:26522"
+    "CAMUNDA_CLUSTER_NETWORK_HOST=localhost"
+    "CAMUNDA_CLUSTER_NETWORK_COMMANDAPI_PORT=$((26501 + 10 * i))"
+    "CAMUNDA_CLUSTER_NETWORK_INTERNALAPI_PORT=$((26502 + 10 * i))"
+    "CAMUNDA_API_GRPC_PORT=$((26500 + 10 * i))"
+    "SERVER_PORT=$((REST_BASE + i))"
+    "MANAGEMENT_SERVER_PORT=$((MGMT_BASE + i))"
+    "CAMUNDA_DATA_PRIMARYSTORAGE_DIRECTORY=$WORK/broker-$i/data"
+    "CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=none"
+    "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true"
+    "CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false"
+    "CAMUNDA_DATA_SNAPSHOTPERIOD=PT1M"
+    "CAMUNDA_DATA_PRIMARYSTORAGE_LOGSTREAM_LOGSEGMENTSIZE=8MB"
+    "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_STORE=FILESYSTEM"
+    "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_FILESYSTEM_BASEPATH=$STORE/$scenario"
+  )
+  case "$scenario" in
+    a-classic) ;;
+    b-continuous|d-both)
+      env+=("CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CONTINUOUS=true"
+            "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE=PT1M"
+            "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CHECKPOINTINTERVAL=PT15S"
+            "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_RETENTION_WINDOW=P1D"
+            "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_RETENTION_CLEANUPSCHEDULE=PT1H") ;;
+  esac
+  case "$scenario" in
+    c-archive|d-both|e-kill|f-outage)
+      env+=("ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_ENABLED=true"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CUTINTERVAL=PT1S"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_SNAPSHOTUPLOADINTERVAL=PT1M"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CHUNKSIZE=50"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_ROOTEVERY=20") ;;
+  esac
+  printf '%s\n' "${env[@]}"
+}
+
