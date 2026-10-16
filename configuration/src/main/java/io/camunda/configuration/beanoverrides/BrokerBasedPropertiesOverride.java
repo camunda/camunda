@@ -854,6 +854,7 @@ public class BrokerBasedPropertiesOverride {
       final BrokerBasedProperties override, final Camunda camunda) {
     final var primaryStorage = camunda.getData().getPrimaryStorage();
     final var data = override.getData();
+    data.setPrimaryStorageType(primaryStorage.getType());
     data.setDirectory(primaryStorage.getDirectory());
     data.setRuntimeDirectory(primaryStorage.getRuntimeDirectory());
     data.setLogIndexDensity(primaryStorage.getLogStream().getLogIndexDensity());

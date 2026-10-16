@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
+import io.camunda.zeebe.db.PrimaryStorageType;
 import java.io.File;
 import java.time.Duration;
 import java.util.Optional;
@@ -20,6 +21,8 @@ public final class DataCfg implements ConfigurationEntry {
   public static final String DEFAULT_DIRECTORY = "data";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(128);
+
+  private PrimaryStorageType primaryStorageType = PrimaryStorageType.ROCKSDB;
 
   private String directory = DEFAULT_DIRECTORY;
 
@@ -82,6 +85,14 @@ public final class DataCfg implements ConfigurationEntry {
   private DataSize convertWatermarkToFreeSpace(final Double watermark) {
     final var directoryFile = new File(getDirectory());
     return DataSize.ofBytes(Math.round(directoryFile.getTotalSpace() * (1 - watermark)));
+  }
+
+  public PrimaryStorageType getPrimaryStorageType() {
+    return primaryStorageType;
+  }
+
+  public void setPrimaryStorageType(final PrimaryStorageType primaryStorageType) {
+    this.primaryStorageType = primaryStorageType;
   }
 
   public String getDirectory() {
@@ -167,7 +178,9 @@ public final class DataCfg implements ConfigurationEntry {
   @Override
   public String toString() {
     return "DataCfg{"
-        + "directory='"
+        + "primaryStorageType="
+        + primaryStorageType
+        + ", directory='"
         + directory
         + '\''
         + ", stateDirectory='"

@@ -21,12 +21,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.db.AccessMetricsConfiguration;
-import io.camunda.zeebe.db.ConsistencyChecksSettings;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
@@ -54,7 +49,6 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -96,20 +90,6 @@ public final class RecoveryPartitionManager
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoveryPartitionManager.class);
 
-  // Dedicated to the ephemeral open-and-close sanity check after restore: the restored partition
-  // is not yet running as a ZeebePartition, so there is no shared factory/resources to reuse here.
-  private static final RocksDbConfiguration SANITY_CHECK_DB_CONFIG = new RocksDbConfiguration();
-  // Deliberately bypasses the StorageCapabilities guards: this is a RocksDB-specific recovery
-  // check,
-  // so a future non-RocksDB backend must not be routed through it.
-  private static final ZeebeRocksDbFactory<?> SANITY_CHECK_DB_FACTORY =
-      new ZeebeRocksDbFactory<>(
-          SANITY_CHECK_DB_CONFIG,
-          new ConsistencyChecksSettings(true, true),
-          new AccessMetricsConfiguration(AccessMetricsConfiguration.Kind.NONE),
-          SimpleMeterRegistry::new,
-          RocksDbResources.of(SANITY_CHECK_DB_CONFIG, new RocksDbResources.RuntimeInfo(1)));
-
   private final List<RecoveryPartition> recoveryPartitions = new ArrayList<>();
   private final List<Integer> failedPartitionIds = new ArrayList<>();
   private final String partitionGroup;
@@ -120,6 +100,9 @@ public final class RecoveryPartitionManager
   private final TopologyManagerImpl topologyManager;
   private final MeterRegistry meterRegistry;
   private final BrokerCfg brokerCfg;
+  // The restored state is opened and closed once to validate it, outside of a running partition,
+  // so this does not share the broker's resources.
+  private final PrimaryStorageBackend storage;
   private final BrokerInfo brokerInfo;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
@@ -154,6 +137,7 @@ public final class RecoveryPartitionManager
     this.meterRegistry = meterRegistry;
     this.membershipService = membershipService;
     this.brokerCfg = brokerCfg;
+    storage = PrimaryStorageBackend.forSanityCheck(brokerCfg.getData().getPrimaryStorageType());
     this.brokerInfo = brokerInfo;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.exportedPositionSupplier = exportedPositionSupplier;
@@ -562,7 +546,7 @@ public final class RecoveryPartitionManager
               store,
               factory.createRaftPartition(metadata, registry),
               brokerInfo.getNodeId(),
-              new RocksDBSnapshotFileInfoProvider(),
+              storage.snapshotFileInfoProvider(),
               registry);
       restoreService.restore(backupIds, BackupValidator.none());
     } catch (final Exception e) {
@@ -580,7 +564,7 @@ public final class RecoveryPartitionManager
           "Expected restored partition %s to have data, but directory %s is empty or missing"
               .formatted(metadata.id(), partitionDir));
     }
-    verifyRestoredRocksDb(metadata);
+    verifyRestoredState(metadata);
   }
 
   private static boolean directoryHasEntries(final Path directory) {
@@ -589,19 +573,23 @@ public final class RecoveryPartitionManager
   }
 
   /**
-   * Opens the restored partition's latest snapshot, if any, through {@link
-   * ZeebeRocksDbFactory#openSnapshotOnlyDb(java.io.File)} and immediately closes it. RocksDB
-   * validates the on-disk SST files as part of opening (paranoid checks), so this surfaces
-   * corruption that {@link #directoryHasEntries} cannot detect.
+   * Opens the restored partition's latest snapshot, if any, through the configured backend's {@link
+   * ZeebeDbFactory#openSnapshotOnlyDb(java.io.File)} and immediately closes it. The backend
+   * validates the on-disk files as part of opening (RocksDB's paranoid checks, SQLite reading the
+   * database), so this surfaces corruption that {@link #directoryHasEntries} cannot detect.
+   *
+   * <p>This is not RocksDB specific: opening a snapshot, copying it to a runtime directory and
+   * opening that is what any backend does on recovery, and it is done with the backend the
+   * partition will run on. It needs {@code fileSnapshots} for that reason.
    */
-  private void verifyRestoredRocksDb(final PartitionMetadata metadata) {
+  private void verifyRestoredState(final PartitionMetadata metadata) {
     final var partitionDir = partitionDirectory(metadata.id());
     final var snapshotStore =
         new FileBasedSnapshotStore(
             brokerInfo.getNodeId(),
             metadata.id(),
             partitionDir,
-            new RocksDBSnapshotFileInfoProvider(),
+            storage.snapshotFileInfoProvider(),
             meterRegistry);
     try {
       actorSchedulingService.submitActor(snapshotStore, SchedulingHints.ioBound()).join();
@@ -610,16 +598,17 @@ public final class RecoveryPartitionManager
       // disk. getAvailableSnapshots() runs via actor.call(), so joining it first forces correct
       // ordering.
       snapshotStore.getAvailableSnapshots().join();
-      verifyRocksDbOpens(metadata.id(), snapshotStore, partitionDir);
+      verifyStateOpens(metadata.id(), snapshotStore, partitionDir);
     } finally {
       snapshotStore.close();
     }
   }
 
-  private void verifyRocksDbOpens(
+  private void verifyStateOpens(
       final PartitionId partitionId,
       final FileBasedSnapshotStore snapshotStore,
       final Path partitionDir) {
+    storage.dbFactory().capabilities().requireFileSnapshots("The restore sanity check");
     final var snapshot = snapshotStore.getLatestSnapshot();
     if (snapshot.isEmpty()) {
       if (hasSnapshotDirectoryEntries(partitionDir)) {
@@ -643,21 +632,21 @@ public final class RecoveryPartitionManager
     final var runtimeDir = scratchRoot.resolve("runtime");
     try {
       try (final var snapshotOnlyDb =
-          SANITY_CHECK_DB_FACTORY.openSnapshotOnlyDb(snapshot.get().getPath().toFile())) {
+          storage.dbFactory().openSnapshotOnlyDb(snapshot.get().getPath().toFile())) {
         snapshotOnlyDb.createSnapshot(runtimeDir.toFile());
       }
       // The snapshot-only open above only parses the manifest; a full read-write open of the
       // copy is what actually validates every on-disk SST file, surfacing corruption the
       // earlier open does not (mirrors StateControllerImpl.recoverFromSnapshot() + openDb()).
-      SANITY_CHECK_DB_FACTORY.createDb(runtimeDir.toFile()).close();
+      storage.dbFactory().createDb(runtimeDir.toFile()).close();
     } catch (final Exception e) {
       throw new IllegalStateException(
-          "RocksDB sanity check failed for restored partition %s".formatted(partitionId), e);
+          "Storage sanity check failed for restored partition %s".formatted(partitionId), e);
     } finally {
       try {
         FileUtil.deleteFolderIfExists(scratchRoot);
       } catch (final IOException e) {
-        LOG.warn("Failed to delete RocksDB sanity check scratch directory {}", scratchRoot, e);
+        LOG.warn("Failed to delete storage sanity check scratch directory {}", scratchRoot, e);
       }
     }
   }

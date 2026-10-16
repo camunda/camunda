@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.db.PrimaryStorageType;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -19,6 +20,14 @@ public class PrimaryStorage {
       Set.of("zeebe.broker.data.directory");
   private static final Set<String> LEGACY_RUNTIME_DIRECTORY_PROPERTIES =
       Set.of("zeebe.broker.data.runtimeDirectory");
+
+  /**
+   * The storage backend of the partitions' primary state: {@code rocksdb} or {@code sqlite}. The
+   * on-disk state is backend specific. A partition whose runtime or snapshot directory holds state
+   * of the other backend fails to open, so changing this on a cluster that has data requires
+   * starting from a fresh data directory.
+   */
+  private PrimaryStorageType type = PrimaryStorageType.ROCKSDB;
 
   /** Specify the directory in which data is stored. */
   private String directory = "data";
@@ -56,6 +65,14 @@ public class PrimaryStorage {
   @NestedConfigurationProperty private LogStream logStream = new LogStream();
   @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();
   @NestedConfigurationProperty private PrimaryStorageBackup backup = new PrimaryStorageBackup();
+
+  public PrimaryStorageType getType() {
+    return type;
+  }
+
+  public void setType(final PrimaryStorageType type) {
+    this.type = type;
+  }
 
   public String getDirectory() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
