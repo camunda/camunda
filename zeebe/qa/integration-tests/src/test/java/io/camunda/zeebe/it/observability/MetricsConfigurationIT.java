@@ -34,6 +34,23 @@ final class MetricsConfigurationIT {
 
   @Nested
   final class PrometheusIT {
+    /**
+     * Zeebe's own series, one per subsystem, that a freshly started broker exposes without any
+     * load. Asserted in addition to the generic {@code jvm_info} because in 8.4.21 the scrape
+     * endpoint stayed healthy and kept serving JVM/Micrometer meters while every {@code zeebe_*}
+     * series silently vanished (Zeebe still registered on the legacy simpleclient registry while
+     * the actuator served the new Prometheus client). A {@code jvm_info}-only assertion passes in
+     * exactly that broken state, so do not "simplify" this back to it.
+     */
+    private static final List<String> ZEEBE_SERIES =
+        List.of(
+            // partition health, from the broker's health monitoring
+            "zeebe_health",
+            // partition role, from the embedded gateway's broker client topology
+            "zeebe_gateway_topology_partition_roles",
+            // last appended position, from the leader's log stream appender
+            "zeebe_log_appender_last_appended_position");
+
     @TestZeebe private final TestStandaloneBroker broker = new TestStandaloneBroker();
 
     @Test
@@ -53,6 +70,23 @@ final class MetricsConfigurationIT {
               PrometheusMeterRegistry.class)
           .isNotInstanceOf(CompositeMeterRegistry.class)
           .isInstanceOf(PrometheusMeterRegistry.class);
+
+      // the leader-scoped meters are only registered once the partition has transitioned, so poll
+      // instead of relying on the single scrape above
+      Awaitility.await("until Zeebe's own series are exposed on the scrape endpoint")
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var polled = actuator.metrics();
+                for (final var series : ZEEBE_SERIES) {
+                  assertThat(polled)
+                      .as(
+                          "should expose at least one sample line for '%s', not just a HELP/TYPE"
+                              + " header",
+                          series)
+                      .containsPattern("(?m)^" + series + "(\\{|\\s)");
+                }
+              });
     }
   }
 
