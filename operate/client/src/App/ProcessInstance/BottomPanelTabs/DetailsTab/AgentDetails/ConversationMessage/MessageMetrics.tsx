@@ -66,7 +66,7 @@ const MessageMetrics: React.FC<Props> = memo(function MessageMetrics({
           description={
             <>
               {tooltipLines.map((line, index) => (
-                <Fragment key={line}>
+                <Fragment key={index}>
                   {index > 0 && <br />}
                   {line}
                 </Fragment>
