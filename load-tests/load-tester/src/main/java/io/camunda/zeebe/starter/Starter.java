@@ -249,8 +249,7 @@ public class Starter implements CommandLineRunner {
                       .newProcessInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
                       .sort(s -> s.startDate().asc())
-                      // the meter already caps the keys to a single page, so one page suffices
-                      .page(p -> p.limit(2500))
+                      .page(p -> p.limit(ProcessInstanceStartMeter.AVAILABILITY_CHECK_BATCH_SIZE))
                       .send();
 
               return send.thenApply(

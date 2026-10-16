@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -350,8 +351,8 @@ class ProcessInstanceStartMeterTest {
 
   @Test
   void shouldQueryAtMostBatchSizeOldestInstances() {
-    // given - more pending instances than fit on a single availability-check batch (2500)
-    final int batchSize = 2500;
+    // given - more pending instances than fit on a single availability-check batch
+    final int batchSize = ProcessInstanceStartMeter.AVAILABILITY_CHECK_BATCH_SIZE;
     final int pendingCount = batchSize + 100;
     final AtomicReference<List<Long>> queriedKeys = new AtomicReference<>();
     availabilityChecker =
@@ -374,7 +375,7 @@ class ProcessInstanceStartMeterTest {
         .untilAsserted(() -> assertThat(queriedKeys.get()).isNotNull());
 
     final var expectedOldestKeys =
-        java.util.stream.LongStream.range(0, batchSize)
+        LongStream.range(0, batchSize)
             .mapToObj(i -> Protocol.encodePartitionId(1, (int) i + 1))
             .toList();
     assertThat(queriedKeys.get())
@@ -394,7 +395,7 @@ class ProcessInstanceStartMeterTest {
             interval,
             (list) -> availabilityChecker.findAvailableInstances(list));
 
-    final int batchSize = 2500;
+    final int batchSize = ProcessInstanceStartMeter.AVAILABILITY_CHECK_BATCH_SIZE;
     // five checks cannot all complete within one second if each waited a full 500ms interval
     final CountDownLatch invocations = new CountDownLatch(5);
     availabilityChecker =
