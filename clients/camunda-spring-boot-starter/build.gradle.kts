@@ -75,6 +75,11 @@ val generateJobWorkerPermutations =
     argumentProviders.add(CommandLineArgumentProvider { listOf(outputDir.get().asFile.absolutePath) })
   }
 
+// The Spring configuration processor reads field initializers to emit defaultValue. After an
+// incremental recompile it drops defaults for classes it did not see again, so always recompile
+// fully, like Maven.
+tasks.named<JavaCompile>("compileJava") { options.isIncremental = false }
+
 dependencies {
   implementation(libs.org.slf4j.slf4j.api)
   annotationProcessor(libs.org.springframework.boot.spring.boot.configuration.processor)
