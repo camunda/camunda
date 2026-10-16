@@ -14,11 +14,14 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.search.filter.Operation;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.ProblemDetail;
 
@@ -337,5 +340,253 @@ class ProcessInstanceRequestValidatorTest {
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
 
     assertThat(result).isEmpty();
+  }
+
+  private static io.camunda.search.filter.ProcessInstanceFilter.Builder searchFilter() {
+    return new io.camunda.search.filter.ProcessInstanceFilter.Builder();
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateEqForSuspend() {
+    // given
+    final var filter = searchFilter().states("COMPLETED").build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(result.get().getStatus()).isEqualTo(400);
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'COMPLETED' but must be one of [ACTIVE].");
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateInForSuspend() {
+    // given
+    final var filter = searchFilter().stateOperations(Operation.in("ACTIVE", "SUSPENDED")).build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'SUSPENDED' but must be one of [ACTIVE].");
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateEqForResume() {
+    // given
+    final var filter = searchFilter().states("ACTIVE").build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'ACTIVE' but must be one of [SUSPENDED].");
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateInForResume() {
+    // given
+    final var filter =
+        searchFilter().stateOperations(Operation.in("SUSPENDED", "COMPLETED")).build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'COMPLETED' but must be one of [SUSPENDED].");
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateEqForCancel() {
+    // given
+    final var filter = searchFilter().states("COMPLETED").build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'COMPLETED' but must be one of [ACTIVE, SUSPENDED].");
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateInForCancel() {
+    // given
+    final var filter = searchFilter().stateOperations(Operation.in("ACTIVE", "COMPLETED")).build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'COMPLETED' but must be one of [ACTIVE, SUSPENDED].");
+  }
+
+  @Test
+  void shouldReportCanceledAsTerminatedForCancel() {
+    // given
+    final var filter = searchFilter().states("CANCELED").build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'TERMINATED' but must be one of [ACTIVE, SUSPENDED].");
+  }
+
+  @Test
+  void shouldReportEachDistinctInvalidStateForCancel() {
+    // given
+    final var filter =
+        searchFilter()
+            .stateOperations(Operation.in("COMPLETED", "CANCELED", "COMPLETED", "ACTIVE"))
+            .build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .contains("The value for state is 'COMPLETED' but must be one of [ACTIVE, SUSPENDED]")
+        .contains("The value for state is 'TERMINATED' but must be one of [ACTIVE, SUSPENDED]");
+  }
+
+  @Test
+  void shouldAcceptValidStatesForSuspend() {
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(
+                searchFilter().states("ACTIVE").build()))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(
+                searchFilter().build()))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldAcceptValidStatesForResume() {
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(
+                searchFilter().states("SUSPENDED").build()))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(
+                searchFilter().build()))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldAcceptValidStatesForCancel() {
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                searchFilter().stateOperations(Operation.in("ACTIVE", "SUSPENDED")).build()))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                searchFilter().states("ACTIVE").build()))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                searchFilter().build()))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldNotValidateStatesInsideOrFilters() {
+    // given
+    final var filter =
+        searchFilter()
+            .addOrOperation(searchFilter().states("COMPLETED").build())
+            .addOrOperation(searchFilter().processInstanceKeys(42L).build())
+            .build();
+
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+  }
+
+  static Stream<Operation<String>> nonRestrictingStateOperations() {
+    return Stream.of(
+        Operation.neq("COMPLETED"),
+        Operation.exists(true),
+        Operation.exists(false),
+        Operation.like("COMP*"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonRestrictingStateOperations")
+  void shouldNotValidateOtherStateOperators(final Operation<String> stateOperation) {
+    // given
+    final var filter = searchFilter().stateOperations(stateOperation).build();
+
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldNeverRejectParentProcessInstanceKeyFilter() {
+    // given
+    final var filter = searchFilter().parentProcessInstanceKeys(12345L).build();
+
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
   }
 }
