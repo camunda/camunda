@@ -6,15 +6,37 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useNavigate, useSearch} from '@tanstack/react-router';
+import {Form} from 'react-final-form';
 import {Heading, PageLayout, Separator, Text} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/shadcn.components/FiltersPanel';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
+import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
+import type {DecisionsSearch} from '../decisionsFilter';
+import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
+import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 
 const Decisions: React.FC = () => {
 	const {t} = useTranslation();
+	const navigate = useNavigate();
+	const search: Partial<DecisionsSearch> = useSearch({strict: false});
+	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+	const {decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo} = search;
+	const optionalFilterValues = useMemo<OptionalFilterValues>(
+		() => ({decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo}),
+		[decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo],
+	);
+	const isResetDisabled =
+		(search.evaluated ?? true) &&
+		(search.failed ?? true) &&
+		!search.decisionDefinitionId &&
+		search.decisionDefinitionVersion === undefined &&
+		search.tenantId === undefined &&
+		Object.values(optionalFilterValues).every((value) => value === undefined) &&
+		visibleFilters.length === 0;
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
 	const panelClassName = cn('h-full overflow-auto bg-neutral-background p-4');
@@ -30,11 +52,43 @@ const Decisions: React.FC = () => {
 				<Heading as="h1" className="sr-only">
 					{t('operate.decisions.title')}
 				</Heading>
-				<FiltersPanel localStorageKey="isDecisionsFiltersCollapsed" isResetButtonDisabled>
-					<Text as="p" className="text-sm text-neutral-foreground-subtle">
-						{t('operate.decisions.scaffold.filtersPanelPlaceholder')}
-					</Text>
-				</FiltersPanel>
+				<Form<OptionalFilterValues>
+					onSubmit={(values) => {
+						void navigate({
+							to: '.',
+							search: (prev) => ({
+								...prev,
+								decisionEvaluationInstanceKey: values.decisionEvaluationInstanceKey || undefined,
+								processInstanceKey: values.processInstanceKey || undefined,
+								businessId: values.businessId || undefined,
+								evaluationDateFrom: values.evaluationDateFrom || undefined,
+								evaluationDateTo: values.evaluationDateTo || undefined,
+							}),
+						});
+					}}
+					initialValues={optionalFilterValues}
+				>
+					{({handleSubmit, form}) => (
+						<form onSubmit={handleSubmit} className="flex h-full min-h-0">
+							<AutoSubmit />
+							<FiltersPanel
+								localStorageKey="isDecisionsFiltersCollapsed"
+								isResetButtonDisabled={isResetDisabled}
+								onResetClick={() => {
+									form.reset();
+									setVisibleFilters([]);
+									void navigate({to: '.', search: {evaluated: true, failed: true}});
+								}}
+							>
+								<OptionalFiltersFormGroup
+									filters={optionalFilterValues}
+									visibleFilters={visibleFilters}
+									onVisibleFilterChange={setVisibleFilters}
+								/>
+							</FiltersPanel>
+						</form>
+					)}
+				</Form>
 				<div ref={containerRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
 					<ResizablePanel
 						panelId="decisions-instances-vertical-panel"
