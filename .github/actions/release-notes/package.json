@@ -10,7 +10,8 @@
   "scripts": {
     "build:lint": "ncc build src/lint.ts -o lint/dist --no-source-map-register",
     "build:generate": "ncc build src/generate.ts -o generate/dist --no-source-map-register",
-    "build": "npm run build:lint && npm run build:generate",
+    "build:apply": "ncc build src/apply-main.ts -o apply/dist --no-source-map-register",
+    "build": "npm run build:lint && npm run build:generate && npm run build:apply",
     "test": "node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
