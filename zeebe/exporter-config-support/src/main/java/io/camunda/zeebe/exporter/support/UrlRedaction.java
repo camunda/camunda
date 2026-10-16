@@ -53,8 +53,10 @@ public final class UrlRedaction {
     if (uri.getScheme() == null || uri.getHost() == null) {
       return null;
     }
-    // an '@' outside the authority means a '/', '?' or '#' in the password cut the authority short
-    if (url.indexOf('@') >= 0 && uri.getRawUserInfo() == null) {
+    // the only '@' allowed is the one closing the user info. Any other means a '/', '?', '#' or '@'
+    // in the credentials moved the authority boundary, so the host would be credential text
+    final var userInfoDelimiters = uri.getRawUserInfo() == null ? 0 : 1;
+    if (url.chars().filter(c -> c == '@').count() != userInfoDelimiters) {
       return null;
     }
     final var result = new StringBuilder(uri.getScheme()).append("://");
