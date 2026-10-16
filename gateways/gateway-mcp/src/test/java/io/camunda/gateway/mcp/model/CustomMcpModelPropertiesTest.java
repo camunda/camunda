@@ -128,6 +128,7 @@ public class CustomMcpModelPropertiesTest {
                 "processDefinitionId",
                 "processDefinitionKey",
                 "processDefinitionVersion",
+                "processDefinitionVersionTag",
                 "requestTimeout",
                 "tags",
                 "tenantId",

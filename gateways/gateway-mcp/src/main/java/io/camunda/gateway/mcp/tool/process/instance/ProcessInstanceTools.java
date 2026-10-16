@@ -100,7 +100,8 @@ public class ProcessInstanceTools {
       description =
           """
           Create a new process instance of the given process definition. Either a processDefinitionKey or
-          a processDefinitionId (with an optional processDefinitionVersion) need to be passed.
+          a processDefinitionId (with an optional processDefinitionVersion or processDefinitionVersionTag)
+          need to be passed.
 
           When using the awaitCompletion flag, the tool will wait for the process instance to complete
           and return its result variables. When using awaitCompletion, always include a unique tag
