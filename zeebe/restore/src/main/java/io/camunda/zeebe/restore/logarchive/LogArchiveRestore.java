@@ -183,6 +183,12 @@ public final class LogArchiveRestore {
     return sourceTimelineId + ".r" + checkpointId;
   }
 
+  /** The timeline a partition restored from a classic backup archives to. */
+  public static String classicRestoredTimelineId(
+      final String configuredTimeline, final long backupId) {
+    return configuredTimeline + ".b" + backupId;
+  }
+
   private static void ensureEmptyDirectory(final Path directory) throws IOException {
     if (Files.exists(directory) && !FileUtil.isEmpty(directory)) {
       throw new LogArchiveRestoreException(
@@ -370,7 +376,11 @@ public final class LogArchiveRestore {
     return decoded;
   }
 
-  private static void writeTimelineFile(final Path dataDirectory, final String timelineId)
+  /**
+   * Durably writes the timeline the partition in the data directory archives to from now on; the
+   * archiver prefers it over the configured timeline.
+   */
+  public static void writeTimelineFile(final Path dataDirectory, final String timelineId)
       throws IOException {
     final var file = dataDirectory.resolve(TIMELINE_FILE_NAME);
     final var temporary = dataDirectory.resolve(TIMELINE_FILE_NAME + ".tmp");

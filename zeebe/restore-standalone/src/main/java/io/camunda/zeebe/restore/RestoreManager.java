@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
+import io.camunda.zeebe.restore.logarchive.LogArchiveRestore;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
@@ -27,8 +28,10 @@ import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -263,6 +266,24 @@ public class RestoreManager implements CloseableSilently {
     }
   }
 
+  /**
+   * The restored state carries the log archive's replicated state from the past; a new timeline
+   * keeps the restored partition from continuing the old one.
+   */
+  @VisibleForTesting
+  static void writeLogArchiveTimeline(
+      final BrokerCfg configuration, final Path dataDirectory, final long[] backupIds)
+      throws IOException {
+    final var logArchive = configuration.getData().getBackup().getLogArchive();
+    if (!logArchive.isEnabled()) {
+      return;
+    }
+    final long lastBackupId = Arrays.stream(backupIds).max().orElseThrow();
+    LogArchiveRestore.writeTimelineFile(
+        dataDirectory,
+        LogArchiveRestore.classicRestoredTimelineId(logArchive.getTimeline(), lastBackupId));
+  }
+
   private void restorePartition(
       final InstrumentedRaftPartition partition,
       final long[] backupIds,
@@ -289,6 +310,7 @@ public class RestoreManager implements CloseableSilently {
             partition.registry());
     try {
       restoreService.restore(backupIds, validator);
+      writeLogArchiveTimeline(configuration, raftPartition.dataDirectory().toPath(), backupIds);
       LOG.info(
           "Successfully restored partition {} from backups {}.",
           raftPartition.id().number(),
