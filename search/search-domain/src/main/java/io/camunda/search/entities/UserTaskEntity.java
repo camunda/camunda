@@ -43,7 +43,9 @@ public record UserTaskEntity(
     List<String> candidateGroups,
     List<String> candidateUsers,
     @Nullable String externalFormReference,
-    Integer processDefinitionVersion,
+    // absent on user tasks imported by the Tasklist 8.5/8.6 importer-850; UserTaskServices fills
+    // it from the process cache.
+    @Nullable Integer processDefinitionVersion,
     Map<String, String> customHeaders,
     @Nullable Integer priority,
     Set<String> tags,
@@ -60,7 +62,6 @@ public record UserTaskEntity(
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");
     Objects.requireNonNull(elementInstanceKey, "elementInstanceKey");
     Objects.requireNonNull(tenantId, "tenantId");
-    Objects.requireNonNull(processDefinitionVersion, "processDefinitionVersion");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
@@ -128,6 +129,35 @@ public record UserTaskEntity(
         priority,
         tags,
         isSuspended);
+  }
+
+  public UserTaskEntity withProcessDefinitionVersion(final Integer newProcessDefinitionVersion) {
+    return new UserTaskEntity(
+        userTaskKey,
+        elementId,
+        name,
+        processDefinitionId,
+        processName,
+        creationDate,
+        completionDate,
+        assignee,
+        state,
+        formKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        businessId,
+        elementInstanceKey,
+        tenantId,
+        dueDate,
+        followUpDate,
+        candidateGroups,
+        candidateUsers,
+        externalFormReference,
+        newProcessDefinitionVersion,
+        customHeaders,
+        priority,
+        tags);
   }
 
   public boolean hasName() {

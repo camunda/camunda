@@ -99,13 +99,18 @@ public class ProcessDefinitionProvider {
                     .map(fn -> new ProcessElement(fn.getId(), fn.getName()))
                     .forEach(fn -> elements.put(fn.id(), fn.name())));
 
-    return new ProcessCacheData(processDefinition.name(), Collections.unmodifiableMap(elements));
+    return new ProcessCacheData(
+        processDefinition.name(),
+        Collections.unmodifiableMap(elements),
+        processDefinition.version());
   }
 
   public record ProcessElement(String id, String name) {}
 
-  public record ProcessCacheData(String processName, Map<String, String> elementIdNameMap) {
+  public record ProcessCacheData(
+      String processName, Map<String, String> elementIdNameMap, Integer processDefinitionVersion) {
 
-    public static final ProcessCacheData EMPTY = new ProcessCacheData(null, Collections.emptyMap());
+    public static final ProcessCacheData EMPTY =
+        new ProcessCacheData(null, Collections.emptyMap(), null);
   }
 }
