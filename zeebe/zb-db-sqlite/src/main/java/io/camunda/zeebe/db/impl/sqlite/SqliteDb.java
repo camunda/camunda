@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.sqlite;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
@@ -25,8 +26,11 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -57,17 +61,26 @@ public final class SqliteDb<
 
   private final Connection connection;
   private final MeterRegistry meterRegistry;
+  private final ConsistencyChecksSettings consistencyChecksSettings;
   private final Map<String, PreparedStatement> statements = new HashMap<>();
+  private final Map<String, Deque<PreparedStatement>> idleCursorStatements = new HashMap<>();
   private final Map<String, ColumnFamilyType> tables = new HashMap<>();
+  private final Map<String, TableState> tableStates = new HashMap<>();
   private @Nullable SqliteTransactionContext activeContext;
 
-  private SqliteDb(final Connection connection, final MeterRegistry meterRegistry) {
+  private SqliteDb(
+      final Connection connection,
+      final MeterRegistry meterRegistry,
+      final ConsistencyChecksSettings consistencyChecksSettings) {
     this.connection = connection;
     this.meterRegistry = meterRegistry;
+    this.consistencyChecksSettings = consistencyChecksSettings;
   }
 
   static <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily> SqliteDb<T> open(
-      final Path directory, final MeterRegistry meterRegistry) {
+      final Path directory,
+      final MeterRegistry meterRegistry,
+      final ConsistencyChecksSettings consistencyChecksSettings) {
     Connection connection = null;
     try {
       Files.createDirectories(directory);
@@ -79,7 +92,7 @@ public final class SqliteDb<
         statement.execute("PRAGMA synchronous=OFF");
         statement.execute("PRAGMA temp_store=MEMORY");
       }
-      return new SqliteDb<>(connection, meterRegistry);
+      return new SqliteDb<>(connection, meterRegistry, consistencyChecksSettings);
     } catch (final SQLException | IOException e) {
       if (connection != null) {
         try {
@@ -112,11 +125,14 @@ public final class SqliteDb<
               .formatted(existing, columnFamily, table));
     }
 
-    final var layout = KeyLayout.of(keyInstance);
-    execute(layout.createTable(table));
-    assertTableMatches(table, layout);
+    final var state = tableState(table, KeyLayout.of(keyInstance));
     return new SqliteColumnFamily<>(
-        this, columnFamily, table, layout, context, keyInstance, valueInstance);
+        this, columnFamily, table, state, context, keyInstance, valueInstance);
+  }
+
+  /** Whether the checks that are too expensive for production are enabled. */
+  boolean preconditionsEnabled() {
+    return consistencyChecksSettings.enablePreconditions();
   }
 
   /**
@@ -196,11 +212,31 @@ public final class SqliteDb<
   }
 
   /**
+   * A prepared statement for a cursor over the SQL that no other open cursor uses. Unlike {@link
+   * #prepare(String)} this can be called while a cursor with the same SQL is open, which happens
+   * when iterations are nested.
+   */
+  PreparedStatement acquireCursorStatement(final String sql) throws SQLException {
+    final var idle = idleCursorStatements.get(sql);
+    if (idle != null && !idle.isEmpty()) {
+      return idle.pop();
+    }
+    return connection.prepareStatement(sql);
+  }
+
+  /** Hands the statement back once its result set is closed. */
+  void releaseCursorStatement(final String sql, final PreparedStatement statement) {
+    idleCursorStatements.computeIfAbsent(sql, k -> new ArrayDeque<>()).push(statement);
+  }
+
+  /**
    * SQLite JDBC leaves a prepared write statement active after it ran, which makes {@code VACUUM}
    * fail. Closing the cached statements is cheap, they are prepared again on next use.
    */
   private void closeStatements() {
-    for (final var statement : statements.values()) {
+    final var all = new ArrayList<>(statements.values());
+    idleCursorStatements.values().forEach(all::addAll);
+    for (final var statement : all) {
       try {
         statement.close();
       } catch (final SQLException e) {
@@ -208,6 +244,7 @@ public final class SqliteDb<
       }
     }
     statements.clear();
+    idleCursorStatements.clear();
   }
 
   void begin(final SqliteTransactionContext context) {
@@ -248,17 +285,108 @@ public final class SqliteDb<
   }
 
   /**
-   * A table is created from the first key a column family is used with. Using the same column
-   * family with a differently shaped key afterwards, in this or an earlier session, would bind
-   * values to columns of the wrong type, so it is rejected.
+   * The state of the table of a column family, which is created from the first key the column
+   * family is used with.
+   *
+   * <p>A table with typed columns can hold only one key shape, but the engine uses the same column
+   * family with an old and a new key shape while it migrates, see the legacy states of the 8.3
+   * multi-tenancy migration. When a second shape arrives, the table falls back to a single opaque
+   * {@code k BLOB PRIMARY KEY} column that holds the serialized key. SQLite orders {@code BLOB}s
+   * with {@code memcmp} like RocksDB orders its keys, so only queryability is lost.
+   *
+   * <p>If the table holds rows already, they are rewritten in the opaque form, so they stay
+   * readable. That needs the layout the rows were written with, which is only known from earlier in
+   * this session. A typed table from an earlier session that does not match the key is therefore
+   * rejected, as binding a key to the wrong columns would corrupt it silently.
    */
-  private void assertTableMatches(final String table, final KeyLayout layout) {
+  private TableState tableState(final String table, final KeyLayout layout) {
+    final var known = tableStates.get(table);
+    if (known != null) {
+      if (!known.layout().isOpaque() && !known.layout().sameShape(layout)) {
+        migrateToOpaque(table, known);
+      }
+      return known;
+    }
+
+    final var actual = columns(table);
+    final var state = new TableState(layout);
+    if (actual.isEmpty()) {
+      execute(layout.createTable(table));
+    } else if (!actual.equals(expectedColumns(layout))) {
+      if (!actual.equals(expectedColumns(layout.asOpaque()))) {
+        throw new IllegalStateException(
+            "Expected the table %s to have the columns %s for this key, but it has %s; a column family must always be used with the same key structure"
+                .formatted(table, expectedColumns(layout), actual));
+      }
+      state.layout(layout.asOpaque());
+    }
+    tableStates.put(table, state);
+    return state;
+  }
+
+  /**
+   * Rewrites the table with a single opaque key column. It runs in a savepoint, so it joins an open
+   * transaction and either completes entirely or not at all.
+   */
+  private void migrateToOpaque(final String table, final TableState state) {
+    final var old = state.layout();
+    final var opaque = old.asOpaque();
+    final var migrated = table + "_opaque";
+    LOG.info(
+        "Column family table {} is used with more than one key structure, storing its keys as opaque blobs",
+        table);
+
+    closeStatements();
+    execute("SAVEPOINT zb_opaque_migration");
+    try {
+      execute("DROP TABLE IF EXISTS " + migrated);
+      execute(opaque.createTable(migrated));
+      try (final var select = connection.createStatement();
+          final var rows =
+              select.executeQuery(
+                  "SELECT %s, %s FROM %s"
+                      .formatted(
+                          String.join(", ", old.columnNames()), KeyLayout.VALUE_COLUMN, table));
+          final var insert =
+              connection.prepareStatement(
+                  "INSERT INTO %s (%s, %s) VALUES (?, ?)"
+                      .formatted(migrated, opaque.columnNames().get(0), KeyLayout.VALUE_COLUMN))) {
+        final int valueColumn = old.columnNames().size() + 1;
+        while (rows.next()) {
+          insert.setBytes(1, old.readKey(rows, 1));
+          insert.setBytes(2, rows.getBytes(valueColumn));
+          insert.executeUpdate();
+        }
+      }
+      execute("DROP TABLE " + table);
+      execute("ALTER TABLE %s RENAME TO %s".formatted(migrated, table));
+      execute("RELEASE zb_opaque_migration");
+    } catch (final SQLException | RuntimeException e) {
+      try {
+        execute("ROLLBACK TO zb_opaque_migration");
+        execute("RELEASE zb_opaque_migration");
+      } catch (final RuntimeException rollbackFailure) {
+        e.addSuppressed(rollbackFailure);
+      }
+      if (e instanceof final SQLException sql) {
+        throw translate("Failed to store the keys of table " + table + " as opaque blobs", sql);
+      }
+      throw (RuntimeException) e;
+    }
+    state.layout(opaque);
+  }
+
+  private List<String> expectedColumns(final KeyLayout layout) {
     final var expected = new ArrayList<String>();
     for (int i = 0; i < layout.columnNames().size(); i++) {
       expected.add(layout.columnNames().get(i) + " " + layout.columnType(i));
     }
     expected.add(KeyLayout.VALUE_COLUMN + " BLOB");
+    return expected;
+  }
 
+  /** The names and types of the columns of the table, empty if it does not exist. */
+  private List<String> columns(final String table) {
     final var actual = new ArrayList<String>();
     try (final var statement = connection.createStatement();
         final var result = statement.executeQuery("PRAGMA table_info(" + table + ")")) {
@@ -268,12 +396,7 @@ public final class SqliteDb<
     } catch (final SQLException e) {
       throw translate("Failed to read the columns of table " + table, e);
     }
-
-    if (!expected.equals(actual)) {
-      throw new IllegalStateException(
-          "Expected the table %s to have the columns %s for this key, but it has %s; a column family must always be used with the same key structure"
-              .formatted(table, expected, actual));
-    }
+    return actual;
   }
 
   private boolean tableExists(final String table) {

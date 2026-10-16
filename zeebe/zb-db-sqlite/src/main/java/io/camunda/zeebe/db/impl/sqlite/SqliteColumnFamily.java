@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.impl.sqlite;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
@@ -15,6 +17,8 @@ import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.impl.sqlite.KeyLayout.PrefixShape;
+import io.camunda.zeebe.db.impl.sqlite.KeyLayout.ScanSpec;
+import io.camunda.zeebe.db.impl.sqlite.TableState.Cursor;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.sql.PreparedStatement;
@@ -30,10 +34,14 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Point operations and counting on the table of one column family. Iteration is not implemented
- * yet, those methods throw {@link UnsupportedOperationException}.
+ * Point operations, counting and iteration on the table of one column family.
  *
- * <p>Prepared statements are created on first use and cached by the database.
+ * <p>Prepared statements are created on first use and cached by the database. Iterations use
+ * statements of their own, which are not shared while a cursor is open, so that they can be nested.
+ *
+ * <p>SQLite cursors tolerate the deletion of the key they just visited but silently skip rows when
+ * a key ahead of them is deleted, which RocksDB iterators do not. With preconditions enabled, such
+ * a delete is rejected.
  */
 final class SqliteColumnFamily<
         ColumnFamilyType extends Enum<?> & ScopedColumnFamily,
@@ -41,13 +49,14 @@ final class SqliteColumnFamily<
         ValueType extends DbValue>
     implements ColumnFamily<KeyType, ValueType> {
 
-  private static final String ITERATION_NOT_IMPLEMENTED =
-      "Iteration is not implemented yet, milestone M5 implements it";
+  /** The same limit as RocksDB's, which has two prefix buffers per column family. */
+  private static final int MAX_NESTED_ITERATIONS = 2;
 
   private final SqliteDb<?> db;
   private final ColumnFamilyType columnFamily;
   private final String table;
-  private final KeyLayout layout;
+  private final TableState state;
+  private KeyLayout layout;
   private final TransactionContext context;
   private final KeyType keyInstance;
   private final ValueType valueInstance;
@@ -55,32 +64,39 @@ final class SqliteColumnFamily<
   private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
   private final ExpandableArrayBuffer valueBuffer = new ExpandableArrayBuffer();
 
-  private final String insertSql;
-  private final String updateSql;
-  private final String upsertSql;
-  private final String getSql;
-  private final String deleteSql;
-  private final String existsSql;
-  private final String isEmptySql;
-  private final String countSql;
+  private String insertSql;
+  private String updateSql;
+  private String upsertSql;
+  private String getSql;
+  private String deleteSql;
+  private String existsSql;
+  private String isEmptySql;
+  private String countSql;
   private final Map<PrefixShape, String> countPrefixSql = new HashMap<>();
+  private final Map<ScanSpec, String> scanSql = new HashMap<>();
+  private int iterationDepth;
 
   SqliteColumnFamily(
       final SqliteDb<?> db,
       final ColumnFamilyType columnFamily,
       final String table,
-      final KeyLayout layout,
+      final TableState state,
       final TransactionContext context,
       final KeyType keyInstance,
       final ValueType valueInstance) {
     this.db = db;
     this.columnFamily = columnFamily;
     this.table = table;
-    this.layout = layout;
+    this.state = state;
     this.context = context;
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
+    layout = state.layout();
+    buildSql();
+  }
 
+  /** The layout of the table changes if it falls back to an opaque key, the SQL follows. */
+  private void buildSql() {
     final var columns = layout.columnNames();
     final var where = String.join(" AND ", columns.stream().map(c -> c + " = ?").toList());
     final var keyColumns = String.join(", ", columns);
@@ -98,6 +114,8 @@ final class SqliteColumnFamily<
     existsSql = "SELECT 1 FROM %s WHERE %s".formatted(table, where);
     isEmptySql = "SELECT EXISTS(SELECT 1 FROM %s)".formatted(table);
     countSql = "SELECT count(*) FROM " + table;
+    countPrefixSql.clear();
+    scanSql.clear();
   }
 
   @Override
@@ -271,9 +289,35 @@ final class SqliteColumnFamily<
 
   private int delete(final KeyType key) throws SQLException {
     final var keyLength = key.write(keyBuffer, 0);
+    if (db.preconditionsEnabled()) {
+      assertNotAheadOfIteration(key, keyLength);
+    }
     final var statement = statement(deleteSql);
     layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
     return statement.executeUpdate();
+  }
+
+  /**
+   * SQLite skips rows that are deleted ahead of a cursor without any notice, so this turns the
+   * silent loss of rows into a failure. Deleting a key that does not exist skips nothing.
+   */
+  private void assertNotAheadOfIteration(final KeyType key, final int keyLength)
+      throws SQLException {
+    for (final var cursor : state.cursors()) {
+      if (cursor.isAhead(keyBuffer.byteArray(), keyLength)) {
+        final var statement = statement(existsSql);
+        layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
+        try (final var result = statement.executeQuery()) {
+          if (result.next()) {
+            throw new IllegalStateException(
+                ("Expected to delete key %s of ColumnFamily %s only at or before the position of its running iteration, "
+                        + "but it is ahead of it, and SQLite would silently skip rows that are deleted ahead of a cursor")
+                    .formatted(key, columnFamily));
+          }
+        }
+        return;
+      }
+    }
   }
 
   private byte[] valueBytes(final ValueType value) {
@@ -290,6 +334,10 @@ final class SqliteColumnFamily<
     context.runInTransaction(
         () -> {
           try {
+            if (state.layout() != layout) {
+              layout = state.layout();
+              buildSql();
+            }
             operation.run();
           } catch (final SQLException e) {
             throw SqliteDb.translate(
@@ -302,35 +350,59 @@ final class SqliteColumnFamily<
 
   @Override
   public void forEach(final Consumer<ValueType> consumer) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(
+        null,
+        null,
+        false,
+        true,
+        () -> {
+          consumer.accept(valueInstance);
+          return true;
+        });
   }
 
   @Override
   public void forEach(final BiConsumer<KeyType, ValueType> consumer) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(
+        null,
+        null,
+        false,
+        true,
+        () -> {
+          consumer.accept(keyInstance, valueInstance);
+          return true;
+        });
   }
 
   @Override
   public void whileTrue(
       final @Nullable KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(null, startAtKey, false, true, () -> visitor.visit(keyInstance, valueInstance));
   }
 
   @Override
   public void whileTrue(final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(null, null, false, true, () -> visitor.visit(keyInstance, valueInstance));
   }
 
   @Override
   public void whileEqualPrefix(
       final DbKey keyPrefix, final BiConsumer<KeyType, ValueType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(
+        keyPrefix,
+        null,
+        false,
+        true,
+        () -> {
+          visitor.accept(keyInstance, valueInstance);
+          return true;
+        });
   }
 
   @Override
   public void whileEqualPrefix(
       final DbKey keyPrefix, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(keyPrefix, null, false, true, () -> visitor.visit(keyInstance, valueInstance));
   }
 
   @Override
@@ -338,49 +410,170 @@ final class SqliteColumnFamily<
       final DbKey keyPrefix,
       final @Nullable KeyType startAtKey,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(keyPrefix, startAtKey, false, true, () -> visitor.visit(keyInstance, valueInstance));
   }
 
   @Override
   public void whileTrueReverse(
       final KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(
+        null,
+        requireNonNull(startAtKey),
+        true,
+        true,
+        () -> visitor.visit(keyInstance, valueInstance));
   }
 
   @Override
   public void forEachKey(final Consumer<KeyType> consumer) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(
+        null,
+        null,
+        false,
+        false,
+        () -> {
+          consumer.accept(keyInstance);
+          return true;
+        });
   }
 
   @Override
   public void whileTrue(final KeyVisitor<KeyType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(null, null, false, false, () -> visitor.visit(keyInstance));
   }
 
   @Override
   public void whileTrue(final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(null, startAtKey, false, false, () -> visitor.visit(keyInstance));
   }
 
   @Override
   public void whileEqualPrefix(final DbKey keyPrefix, final Consumer<KeyType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(
+        keyPrefix,
+        null,
+        false,
+        false,
+        () -> {
+          visitor.accept(keyInstance);
+          return true;
+        });
   }
 
   @Override
   public void whileEqualPrefix(final DbKey keyPrefix, final KeyVisitor<KeyType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(keyPrefix, null, false, false, () -> visitor.visit(keyInstance));
   }
 
   @Override
   public void whileEqualPrefix(
       final DbKey keyPrefix, final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(keyPrefix, startAtKey, false, false, () -> visitor.visit(keyInstance));
   }
 
   @Override
   public void whileTrueReverse(final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
-    throw new UnsupportedOperationException(ITERATION_NOT_IMPLEMENTED);
+    scan(null, requireNonNull(startAtKey), true, false, () -> visitor.visit(keyInstance));
+  }
+
+  /**
+   * Visits the rows in key order, wrapping the shared key and value instances before each call. The
+   * value is neither read nor deserialized if {@code withValue} is false.
+   *
+   * @param prefix restricts a forward scan to the keys starting with it
+   * @param startAt the first key to visit, or if it does not exist the next one in the direction of
+   *     the scan
+   * @param reverse scans towards smaller keys, starting at or before {@code startAt}
+   * @param visitor called with the instances wrapped, returns whether to continue
+   */
+  private void scan(
+      final @Nullable DbKey prefix,
+      final @Nullable DbKey startAt,
+      final boolean reverse,
+      final boolean withValue,
+      final RowVisitor visitor) {
+    inTransaction(
+        () -> {
+          if (iterationDepth >= MAX_NESTED_ITERATIONS) {
+            throw new IllegalStateException(
+                "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
+          }
+          iterationDepth++;
+          try {
+            runScan(prefix, startAt, reverse, withValue, visitor);
+          } finally {
+            iterationDepth--;
+          }
+        });
+  }
+
+  private void runScan(
+      final @Nullable DbKey prefix,
+      final @Nullable DbKey startAt,
+      final boolean reverse,
+      final boolean withValue,
+      final RowVisitor visitor)
+      throws SQLException {
+    // the buffers are shared with point operations of the visitor, so copy the keys right away
+    byte[] prefixBytes = new byte[0];
+    var shape = new PrefixShape(0, 0);
+    if (prefix != null) {
+      final int length = prefix.write(keyBuffer, 0);
+      prefixBytes = Arrays.copyOf(keyBuffer.byteArray(), length);
+      shape = layout.prefixShape(prefixBytes, length);
+    }
+    byte[] startBytes = new byte[0];
+    if (startAt != null) {
+      final int length = startAt.write(keyBuffer, 0);
+      startBytes = Arrays.copyOf(keyBuffer.byteArray(), length);
+    }
+
+    boolean hasUpperBound = false;
+    if (shape.partialBytes() > 0) {
+      final var partial =
+          Arrays.copyOfRange(
+              prefixBytes, prefixBytes.length - shape.partialBytes(), prefixBytes.length);
+      hasUpperBound = KeyLayout.upperBound(partial) != null;
+    }
+    final var spec = new ScanSpec(shape, hasUpperBound, startAt != null, reverse, withValue);
+    final var sql = scanSql.computeIfAbsent(spec, s -> layout.scanSql(table, s));
+
+    final var statement = db.acquireCursorStatement(sql);
+    final @Nullable Cursor cursor =
+        db.preconditionsEnabled() ? new Cursor(reverse, prefixBytes) : null;
+    try {
+      layout.bindScan(
+          statement, spec, prefixBytes, prefixBytes.length, startBytes, startBytes.length);
+      if (cursor != null) {
+        state.cursors().add(cursor);
+      }
+      try (final var rows = statement.executeQuery()) {
+        final int keyColumns = layout.columnNames().size();
+        boolean visitNext = true;
+        while (visitNext && rows.next()) {
+          final var keyBytes = layout.readKey(rows, 1);
+          if (cursor != null) {
+            cursor.moveTo(keyBytes);
+          }
+          keyInstance.wrap(new UnsafeBuffer(keyBytes), 0, keyBytes.length);
+          if (withValue) {
+            final var valueBytes = rows.getBytes(keyColumns + 1);
+            valueInstance.wrap(new UnsafeBuffer(valueBytes), 0, valueBytes.length);
+          }
+          visitNext = visitor.visit();
+        }
+      }
+    } finally {
+      if (cursor != null) {
+        state.cursors().remove(cursor);
+      }
+      db.releaseCursorStatement(sql, statement);
+    }
+  }
+
+  @FunctionalInterface
+  private interface RowVisitor {
+    boolean visit();
   }
 
   @FunctionalInterface

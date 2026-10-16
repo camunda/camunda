@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl.sqlite;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.db.CloseMode;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -25,6 +26,7 @@ public final class SqliteDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDbFactory<ColumnFamilyType> {
 
+  private final ConsistencyChecksSettings consistencyChecksSettings;
   private final Supplier<MeterRegistry> meterRegistryFactory;
 
   public SqliteDbFactory() {
@@ -32,12 +34,23 @@ public final class SqliteDbFactory<
   }
 
   public SqliteDbFactory(final Supplier<MeterRegistry> meterRegistryFactory) {
+    this(new ConsistencyChecksSettings(), meterRegistryFactory);
+  }
+
+  public SqliteDbFactory(final ConsistencyChecksSettings consistencyChecksSettings) {
+    this(consistencyChecksSettings, SimpleMeterRegistry::new);
+  }
+
+  public SqliteDbFactory(
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final Supplier<MeterRegistry> meterRegistryFactory) {
+    this.consistencyChecksSettings = requireNonNull(consistencyChecksSettings);
     this.meterRegistryFactory = requireNonNull(meterRegistryFactory);
   }
 
   @Override
   public ZeebeDb<ColumnFamilyType> createDb(final File pathName, final CloseMode closeMode) {
-    return SqliteDb.open(pathName.toPath(), meterRegistryFactory.get());
+    return SqliteDb.open(pathName.toPath(), meterRegistryFactory.get(), consistencyChecksSettings);
   }
 
   @Override

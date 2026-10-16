@@ -26,13 +26,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Point operations and transactions of the SQLite backend.
- *
- * <p>The shared conformance suites that mix point operations with iteration can not run against
- * SQLite until iteration is implemented, so this pins the same point-operation semantics in the
- * meantime.
- */
+/** Point operations, transactions and snapshots of the SQLite backend. */
 final class SqlitePointOperationsTest extends ConformanceDbTestBase {
 
   @TempDir Path snapshotParent;
@@ -263,18 +257,6 @@ final class SqlitePointOperationsTest extends ConformanceDbTestBase {
   }
 
   @Test
-  void shouldRejectUsingColumnFamilyWithDifferentKeyStructure() {
-    // given
-    longColumnFamily(Cf.ONE);
-
-    // then
-    assertThatThrownBy(
-            () -> columnFamily(Cf.ONE, new DbForeignKey<>(new DbLong(), Cf.TWO), new DbLong()))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("same key structure");
-  }
-
-  @Test
   void shouldReportColumnFamilyThatWasNeverCreatedAsEmpty() {
     // then
     assertThat(db.isEmpty(Cf.THREE, context)).isTrue();
@@ -367,17 +349,6 @@ final class SqlitePointOperationsTest extends ConformanceDbTestBase {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("another context"));
     assertThat(cf.isEmpty()).isTrue();
-  }
-
-  @Test
-  void shouldDeferIterationToTheNextMilestone() {
-    // given
-    final var cf = longColumnFamily(Cf.ONE);
-
-    // then
-    assertThatThrownBy(() -> cf.forEach(value -> {}))
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("M5");
   }
 
   @Test

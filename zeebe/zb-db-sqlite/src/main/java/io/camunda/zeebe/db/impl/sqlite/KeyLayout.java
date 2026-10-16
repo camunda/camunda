@@ -13,11 +13,14 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.KeyStructure;
 import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import org.agrona.ExpandableArrayBuffer;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -118,6 +121,29 @@ final class KeyLayout {
     return opaque;
   }
 
+  /** The same key stored as one opaque {@code BLOB} column holding the serialized key. */
+  KeyLayout asOpaque() {
+    return opaque ? this : new KeyLayout(components, true);
+  }
+
+  /**
+   * Whether keys of the other layout can be bound to the columns of this one: same component types
+   * in the same order. Component names are irrelevant, they only name columns.
+   */
+  boolean sameShape(final KeyLayout other) {
+    if (opaque != other.opaque || components.size() != other.components.size()) {
+      return false;
+    }
+    for (int i = 0; i < components.size(); i++) {
+      final var mine = components.get(i);
+      final var theirs = other.components.get(i);
+      if (mine.type() != theirs.type() || mine.nonNegative() != theirs.nonNegative()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   List<String> columnNames() {
     return columnNames;
   }
@@ -152,6 +178,23 @@ final class KeyLayout {
       final byte[] key,
       final int length)
       throws SQLException {
+    return bindKeyColumns(statement, firstParameter, key, length, 0, columnNames.size());
+  }
+
+  /**
+   * Binds {@code count} columns of a complete serialized key, starting at column {@code from}, to
+   * consecutive parameters. The whole key is still validated.
+   *
+   * @return the index of the next free parameter
+   */
+  int bindKeyColumns(
+      final PreparedStatement statement,
+      final int firstParameter,
+      final byte[] key,
+      final int length,
+      final int from,
+      final int count)
+      throws SQLException {
     if (opaque) {
       statement.setBytes(firstParameter, Arrays.copyOf(key, length));
       return firstParameter + 1;
@@ -159,14 +202,17 @@ final class KeyLayout {
 
     int position = 0;
     int parameter = firstParameter;
-    for (final var component : components) {
+    for (int i = 0; i < components.size(); i++) {
+      final var component = components.get(i);
       final int width = component.width(key, position, length);
       if (width < 0 || position + width > length) {
         throw new IllegalStateException(
             "Expected a complete %s component at offset %d of the %d byte key, but it is truncated"
                 .formatted(component.type(), position, length));
       }
-      bind(statement, parameter++, component, key, position, width);
+      if (i >= from && i < from + count) {
+        bind(statement, parameter++, component, key, position, width);
+      }
       position += width;
     }
     if (position != length) {
@@ -174,6 +220,178 @@ final class KeyLayout {
           "Expected the key to end at offset %d, but it has %d bytes".formatted(position, length));
     }
     return parameter;
+  }
+
+  /**
+   * Rebuilds the serialized key from the key columns of the current row, which start at the given
+   * result set column.
+   *
+   * @return a fresh array holding the serialized key
+   */
+  byte[] readKey(final ResultSet row, final int firstColumn) throws SQLException {
+    if (opaque) {
+      return bytes(row, firstColumn);
+    }
+
+    final var buffer = new ExpandableArrayBuffer();
+    int position = 0;
+    int column = firstColumn;
+    for (final var component : components) {
+      if (component.isInteger()) {
+        final long value = row.getLong(column++);
+        switch (component.type()) {
+          case INT64 -> {
+            buffer.putLong(position, value, ZB_DB_BYTE_ORDER);
+            position += Long.BYTES;
+          }
+          case INT32 -> {
+            buffer.putInt(position, (int) value, ZB_DB_BYTE_ORDER);
+            position += Integer.BYTES;
+          }
+          case INT16 -> {
+            buffer.putShort(position, (short) value, ZB_DB_BYTE_ORDER);
+            position += Short.BYTES;
+          }
+          default -> buffer.putByte(position++, (byte) value);
+        }
+      } else {
+        final var bytes = bytes(row, column++);
+        buffer.putBytes(position, bytes);
+        position += bytes.length;
+      }
+    }
+    return Arrays.copyOf(buffer.byteArray(), position);
+  }
+
+  private static byte[] bytes(final ResultSet row, final int column) throws SQLException {
+    final var bytes = row.getBytes(column);
+    return bytes == null ? new byte[0] : bytes;
+  }
+
+  /** The key columns, followed by the value column if requested, as selected by a scan. */
+  private String selectList(final boolean withValue) {
+    final var columns = new ArrayList<>(columnNames);
+    if (withValue) {
+      columns.add(VALUE_COLUMN);
+    }
+    return String.join(", ", columns);
+  }
+
+  /**
+   * The statement of a scan, which returns the key columns and optionally the value column in key
+   * order, ascending for a forward scan and descending for a reverse one.
+   *
+   * <p>A forward scan with a prefix compares the columns the prefix covers by equality, a prefix
+   * that ends inside a {@code BLOB} column by range, and a start key on the remaining columns. The
+   * first remaining column is also compared on its own if there are several, because a row value
+   * comparison next to equality terms stops SQLite from using the index for the range.
+   */
+  String scanSql(final String table, final ScanSpec spec) {
+    final var conditions = new ArrayList<String>();
+    final String order;
+    if (spec.reverse()) {
+      conditions.add(rowValue(0) + " <= " + placeholders(columnNames.size()));
+      order = String.join(" DESC, ", columnNames) + " DESC";
+    } else {
+      final var shape = spec.prefix();
+      for (int i = 0; i < shape.equalColumns(); i++) {
+        conditions.add(columnNames.get(i) + " = ?");
+      }
+      if (shape.partialBytes() > 0) {
+        final var column = columnNames.get(shape.equalColumns());
+        conditions.add(column + " >= ?");
+        if (spec.hasUpperBound()) {
+          conditions.add(column + " < ?");
+        }
+      }
+      if (spec.hasStart()) {
+        addStartConditions(conditions, shape.equalColumns());
+      }
+      order = String.join(", ", columnNames);
+    }
+    final var where = conditions.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditions);
+    return "SELECT %s FROM %s%s ORDER BY %s"
+        .formatted(selectList(spec.withValue()), table, where, order);
+  }
+
+  private void addStartConditions(final List<String> conditions, final int first) {
+    final int remaining = columnNames.size() - first;
+    if (remaining == 1) {
+      conditions.add(columnNames.get(first) + " >= ?");
+    } else if (remaining > 1) {
+      if (first > 0) {
+        conditions.add(columnNames.get(first) + " >= ?");
+      }
+      conditions.add(rowValue(first) + " >= " + placeholders(remaining));
+    }
+  }
+
+  private String rowValue(final int from) {
+    final var columns = columnNames.subList(from, columnNames.size());
+    return columns.size() == 1 ? columns.get(0) : "(" + String.join(", ", columns) + ")";
+  }
+
+  private static String placeholders(final int count) {
+    return count == 1 ? "?" : "(" + String.join(", ", Collections.nCopies(count, "?")) + ")";
+  }
+
+  /**
+   * Binds the parameters of {@link #scanSql(String, ScanSpec)}.
+   *
+   * @param prefix the serialized prefix, ignored unless the spec has one
+   * @param start the serialized start key, ignored unless the spec has one or is a reverse scan
+   */
+  void bindScan(
+      final PreparedStatement statement,
+      final ScanSpec spec,
+      final byte[] prefix,
+      final int prefixLength,
+      final byte[] start,
+      final int startLength)
+      throws SQLException {
+    if (spec.reverse()) {
+      bindKey(statement, 1, start, startLength);
+      return;
+    }
+
+    final var shape = spec.prefix();
+    bindPrefix(statement, shape, prefix, prefixLength);
+    int parameter = 1 + shape.equalColumns();
+    if (shape.partialBytes() > 0) {
+      parameter++;
+      if (spec.hasUpperBound()) {
+        final var partial =
+            Arrays.copyOfRange(prefix, prefixLength - shape.partialBytes(), prefixLength);
+        statement.setBytes(parameter++, upperBound(partial));
+      }
+    }
+    if (spec.hasStart()) {
+      final int first = shape.equalColumns();
+      final int remaining = columnNames.size() - first;
+      if (remaining > 1 && first > 0) {
+        parameter = bindKeyColumns(statement, parameter, start, startLength, first, 1);
+      }
+      if (remaining > 0) {
+        bindKeyColumns(statement, parameter, start, startLength, first, remaining);
+      }
+    }
+  }
+
+  /**
+   * The smallest byte string that is greater than every string starting with the prefix, or {@code
+   * null} if there is none because the prefix consists of {@code 0xFF} bytes only.
+   */
+  static byte @Nullable [] upperBound(final byte[] prefix) {
+    int length = prefix.length;
+    while (length > 0 && prefix[length - 1] == (byte) 0xFF) {
+      length--;
+    }
+    if (length == 0) {
+      return null;
+    }
+    final var bound = Arrays.copyOf(prefix, length);
+    bound[length - 1]++;
+    return bound;
   }
 
   /**
@@ -275,6 +493,23 @@ final class KeyLayout {
    *     the prefix, zero if the prefix ends on a column boundary
    */
   record PrefixShape(int equalColumns, int partialBytes) {}
+
+  /**
+   * The variable parts of a scan statement, which is therefore cacheable by it.
+   *
+   * @param prefix which columns the prefix of a forward scan constrains
+   * @param hasUpperBound whether a prefix that ends inside a column has a range end, which it has
+   *     unless the prefix consists of {@code 0xFF} bytes only
+   * @param hasStart whether a forward scan starts at a key
+   * @param reverse whether the scan is a reverse scan from a start key, which has no prefix
+   * @param withValue whether the value column is selected
+   */
+  record ScanSpec(
+      PrefixShape prefix,
+      boolean hasUpperBound,
+      boolean hasStart,
+      boolean reverse,
+      boolean withValue) {}
 
   enum Type {
     INT64(8),
