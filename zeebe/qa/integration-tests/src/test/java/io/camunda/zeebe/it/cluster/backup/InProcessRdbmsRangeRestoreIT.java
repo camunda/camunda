@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,10 +55,10 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
   @Test
   void shouldInvokeLiquibaseDuringPrimaryRestore() throws Exception {
     // given
-    final Interval interval;
+    final RestoreTarget timeRange;
     try (final var client = broker.newClientBuilder().build()) {
       final var processKey = deployTestProcess(client);
-      interval = createProcessInstancesAndTakeBackups(client, processKey);
+      timeRange = createProcessInstancesAndTakeBackups(client, processKey);
     }
     takeAndAwaitBackup();
     ExportersActuator.of(broker).disableExporter(RDBMS_EXPORTER_NAME);
@@ -84,9 +85,7 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
 
     // when
     try (final var client = broker.newClientBuilder().build()) {
-      final var changeId =
-          InProcessRestoreTestUtil.triggerRestore(
-              client, Map.of("from", interval.start().toString(), "to", interval.end().toString()));
+      final var changeId = InProcessRestoreTestUtil.triggerRestore(client, requestBody(timeRange));
       awaitChangeCompletesAndBrokerActive(clusterActuator, changeId);
     }
 
@@ -243,39 +242,36 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
   }
 
   @Override
-  void restoreFromTimeRange(final Interval interval) throws Exception {
+  void restore(final RestoreTarget target) {
     final var clusterActuator = enterRecovering();
     final long changeId;
     try (final var client = broker.newClientBuilder().build()) {
-      changeId =
-          InProcessRestoreTestUtil.triggerRestore(
-              client, Map.of("from", interval.start().toString(), "to", interval.end().toString()));
+      changeId = InProcessRestoreTestUtil.triggerRestore(client, requestBody(target));
     }
     awaitChangeCompletesAndBrokerActive(clusterActuator, changeId);
   }
 
   @Override
-  void restoreWithoutArguments() throws Exception {
-    final var clusterActuator = enterRecovering();
-    final long changeId;
-    try (final var client = broker.newClientBuilder().build()) {
-      changeId = InProcessRestoreTestUtil.triggerRestore(client, Map.of());
-    }
-    awaitChangeCompletesAndBrokerActive(clusterActuator, changeId);
-  }
-
-  @Override
-  void assertRestoreFailsForMissingBackup(final Interval interval) throws Exception {
+  void assertRestoreFails(final RestoreTarget target, final String expectedMessage) {
     enterRecovering();
     try (final var client = broker.newClientBuilder().build()) {
-      final var response =
-          InProcessRestoreTestUtil.sendRestoreRequest(
-              client, Map.of("from", interval.start().toString(), "to", interval.end().toString()));
+      final var response = InProcessRestoreTestUtil.sendRestoreRequest(client, requestBody(target));
       assertThat(response.statusCode())
           .describedAs("restore REST response: %s".formatted(response.body()))
           .isEqualTo(409);
-      assertThat(response.body()).contains("No usable range found");
+      assertThat(response.body()).contains(expectedMessage);
     }
+  }
+
+  private static Map<String, Object> requestBody(final RestoreTarget target) {
+    final Map<String, Object> body = new HashMap<>();
+    if (target.from() != null) {
+      body.put("from", target.from().toString());
+    }
+    if (target.to() != null) {
+      body.put("to", target.to().toString());
+    }
+    return body;
   }
 
   @Override
