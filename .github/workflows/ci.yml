@@ -2897,12 +2897,16 @@ jobs:
         with:
           node-version: 26
       # Retry to absorb transient npm-registry slowness when npx resolves renovate
-      # and its transitive deps on a fresh run (see INC-6869, INC-7810).
+      # and its transitive deps on a fresh run (see INC-6869, INC-7810, INC-8727).
+      # retry_on: any, not error — nick-fields/retry treats a timeout_minutes kill as a
+      # distinct event that retry_on: error does NOT retry. The slow install trips the
+      # per-attempt timeout, so retry_on: error left the guard inert and INC-8727 failed
+      # on a single attempt; retry_on: any retries both the timeout and transient errors.
       - name: Validate Renovate config
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
-          retry_on: error
+          retry_on: any
           retry_wait_seconds: 15
           # 6 min/attempt keeps all 3 attempts (~18.5 min worst case) within
           # the 22-min job timeout; validation normally completes in well
