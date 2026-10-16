@@ -174,6 +174,17 @@ public class ProcessInstanceSpecificFilterIT {
                 .build(),
             21,
             5,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder()
+                .processInstanceKeys(42L)
+                .orFilters(
+                    List.of(
+                        new Builder().build(),
+                        new Builder().states(ProcessInstanceState.COMPLETED.name()).build()))
+                .build(),
+            1,
+            1,
             List.of(42L)));
   }
 }

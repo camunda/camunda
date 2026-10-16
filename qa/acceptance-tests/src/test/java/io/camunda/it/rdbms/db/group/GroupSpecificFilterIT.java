@@ -166,6 +166,31 @@ public class GroupSpecificFilterIT {
   }
 
   @Test
+  public void shouldTreatEmptyOrFilterGroupAsMatchingEverything() {
+    final var matchingGroup = createRandomized(b -> b);
+    final var nonMatchingGroup = createRandomized(b -> b);
+    createAndSaveGroup(rdbmsWriters, matchingGroup);
+    createAndSaveGroup(rdbmsWriters, nonMatchingGroup);
+
+    final var searchResult =
+        groupReader.search(
+            new GroupQuery(
+                new GroupFilter.Builder()
+                    .groupIds(matchingGroup.groupId())
+                    .orFilters(
+                        List.of(
+                            new GroupFilter.Builder().build(),
+                            new GroupFilter.Builder().groupIds(nonMatchingGroup.groupId()).build()))
+                    .build(),
+                GroupSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    // an empty $or group has no criteria of its own, so it matches everything; the whole $or
+    // clause collapses into a no-op instead of narrowing to the other, non-matching branch
+    assertThat(searchResult.total()).isEqualTo(1);
+  }
+
+  @Test
   public void shouldFilterGroupsByNameLike() {
     final var matchingName = "like-test-name-" + java.util.UUID.randomUUID();
     final var matchingGroup = createRandomized(b -> b.name(matchingName));
