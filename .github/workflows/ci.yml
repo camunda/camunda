@@ -125,11 +125,18 @@ jobs:
           echo "run-tests=true" >> "$GITHUB_OUTPUT"
 
           # Spec files only, path relative to the suite root (matching the
-          # Playwright report), restricted to the test roots the PR run executes.
+          # Playwright report). Restricted to the specs the PR matrix actually
+          # executes (the api-tests + chromium projects), so the gate never
+          # greens a changed spec it did not run: v2-stateless-tests (needs
+          # V2_STATELESS_TESTS=true, which swaps the whole project list),
+          # analytics-exporter (its own isolated project) and optimize (its own
+          # projects) are excluded here — they are covered by their dedicated
+          # nightly workflows, exactly as the on-demand run leaves them out.
           changed_specs="$(printf '%s\n' "$suite_changed" \
             | sed -n "s#^${SUITE_PREFIX}##p" \
             | grep -E '\.spec\.ts$' \
-            | grep -E '^(tests/|v2-stateless-tests/)' || true)"
+            | grep -E '^tests/' \
+            | grep -Ev '^tests/api/v2/(analytics-exporter|optimize)/' || true)"
 
           echo "Spec files gating this PR:"
           printf '%s\n' "${changed_specs:-<none>}"
