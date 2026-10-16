@@ -74,6 +74,14 @@ export class Client {
     );
   }
 
+  // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/evaluate-decision/
+  decisionDefinitionEvaluation(decisionDefinitionId, variables = {}) {
+    return this.post("/v2/decision-definitions/evaluation", {
+      decisionDefinitionId: decisionDefinitionId,
+      variables: variables,
+    });
+  }
+
   // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/search-process-definitions/
   searchProcessDefinitions() {
     return this.post("/v2/process-definitions/search", {
