@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.FormServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
@@ -33,7 +32,6 @@ public class FormControllerTest extends RestControllerTest {
   private static final String FORMS_GET_URL = "/v2/forms/%s";
 
   @MockitoBean FormServices formServices;
-  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
 

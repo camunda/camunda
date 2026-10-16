@@ -9,10 +9,10 @@ package io.camunda.zeebe.gateway.rest.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.BackupType;
-import io.camunda.gateway.protocol.model.CheckpointType;
 import io.camunda.gateway.protocol.model.PartitionBackupRange;
 import io.camunda.gateway.protocol.model.StateCode;
 import io.camunda.service.ClusterHistoryBackupServices.ClusterHistoryBackup;
@@ -39,8 +39,10 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.CheckpointIn
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -204,39 +206,22 @@ final class BackupResponseMapperTest {
     // given
     final var checkpointState = new CheckpointStateResponse();
     checkpointState.setCheckpointStates(
-        Set.of(
-            checkpointState(
-                2,
-                11L,
-                io.camunda.zeebe.protocol.record.value.management.CheckpointType.MANUAL_BACKUP),
-            checkpointState(
-                1,
-                10L,
-                io.camunda.zeebe.protocol.record.value.management.CheckpointType
-                    .SCHEDULED_BACKUP)));
+        new LinkedHashSet<>(
+            List.of(
+                checkpointState(2, 11L, CheckpointType.MANUAL_BACKUP),
+                checkpointState(1, 10L, CheckpointType.SCHEDULED_BACKUP))));
     checkpointState.setBackupStates(
-        Set.of(
-            checkpointState(
-                2,
-                21L,
-                io.camunda.zeebe.protocol.record.value.management.CheckpointType.MANUAL_BACKUP),
-            checkpointState(
-                1,
-                20L,
-                io.camunda.zeebe.protocol.record.value.management.CheckpointType
-                    .SCHEDULED_BACKUP)));
+        new LinkedHashSet<>(
+            List.of(
+                checkpointState(2, 21L, CheckpointType.MANUAL_BACKUP),
+                checkpointState(1, 20L, CheckpointType.SCHEDULED_BACKUP))));
     final var ranges = new BackupRangesResponse();
     ranges.setRanges(
         List.of(
             new BackupRangesResponse.PartitionBackupRange(
                 2,
-                checkpointInfo(
-                    30L,
-                    io.camunda.zeebe.protocol.record.value.management.CheckpointType.MANUAL_BACKUP),
-                checkpointInfo(
-                    31L,
-                    io.camunda.zeebe.protocol.record.value.management.CheckpointType
-                        .SCHEDULED_BACKUP)),
+                checkpointInfo(30L, CheckpointType.MANUAL_BACKUP),
+                checkpointInfo(31L, CheckpointType.SCHEDULED_BACKUP)),
             new BackupRangesResponse.PartitionBackupRange(1, null, null)));
 
     // when
@@ -247,15 +232,14 @@ final class BackupResponseMapperTest {
     assertThat(state.getCheckpointStates())
         .extracting(s -> s.getPartitionId(), s -> s.getCheckpointId(), s -> s.getCheckpointType())
         .containsExactly(
-            org.assertj.core.groups.Tuple.tuple(1, 10L, CheckpointType.SCHEDULED_BACKUP),
-            org.assertj.core.groups.Tuple.tuple(2, 11L, CheckpointType.MANUAL_BACKUP));
+            tuple(1, 10L, io.camunda.gateway.protocol.model.CheckpointType.SCHEDULED_BACKUP),
+            tuple(2, 11L, io.camunda.gateway.protocol.model.CheckpointType.MANUAL_BACKUP));
     assertThat(state.getCheckpointStates().getFirst().getCheckpointTimestamp())
         .isEqualTo(ResponseMapper.formatDate(OffsetDateTime.parse("2024-03-04T05:06:07Z")));
     assertThat(state.getBackupStates())
         .extracting(s -> s.getPartitionId(), s -> s.getCheckpointId(), s -> s.getCheckpointType())
         .containsExactly(
-            org.assertj.core.groups.Tuple.tuple(1, 20L, BackupType.SCHEDULED_BACKUP),
-            org.assertj.core.groups.Tuple.tuple(2, 21L, BackupType.MANUAL_BACKUP));
+            tuple(1, 20L, BackupType.SCHEDULED_BACKUP), tuple(2, 21L, BackupType.MANUAL_BACKUP));
     assertThat(state.getRanges())
         .extracting(PartitionBackupRange::getPartitionId)
         .containsExactly(1, 2);
@@ -286,13 +270,8 @@ final class BackupResponseMapperTest {
         List.of(
             new BackupRangesResponse.PartitionBackupRange(
                 4,
-                checkpointInfo(
-                    30L,
-                    io.camunda.zeebe.protocol.record.value.management.CheckpointType.MANUAL_BACKUP),
-                checkpointInfo(
-                    31L,
-                    io.camunda.zeebe.protocol.record.value.management.CheckpointType
-                        .SCHEDULED_BACKUP))));
+                checkpointInfo(30L, CheckpointType.MANUAL_BACKUP),
+                checkpointInfo(31L, CheckpointType.SCHEDULED_BACKUP))));
 
     // when
     final var state =
@@ -317,9 +296,7 @@ final class BackupResponseMapperTest {
   void shouldMapMarkerCheckpointTypeToCheckpointTypeButNotToBackupType() {
     // given
     final var checkpointState = new CheckpointStateResponse();
-    final var marker =
-        checkpointState(
-            1, 10L, io.camunda.zeebe.protocol.record.value.management.CheckpointType.MARKER);
+    final var marker = checkpointState(1, 10L, CheckpointType.MARKER);
     checkpointState.setCheckpointStates(Set.of(marker));
     checkpointState.setBackupStates(Set.of(marker));
 
@@ -330,7 +307,7 @@ final class BackupResponseMapperTest {
 
     // then
     assertThat(state.getCheckpointStates().getFirst().getCheckpointType())
-        .isEqualTo(CheckpointType.MARKER);
+        .isEqualTo(io.camunda.gateway.protocol.model.CheckpointType.MARKER);
     assertThat(state.getBackupStates().getFirst().getCheckpointType()).isNull();
   }
 
@@ -406,23 +383,6 @@ final class BackupResponseMapperTest {
     assertThat(info.getState().name()).isEqualTo(code.name());
   }
 
-  @Test
-  void shouldMapHistoryBackupInfoList() {
-    // given
-    final var first =
-        new HistoryBackupState(
-            1L, io.camunda.service.backup.HistoryBackupStateCode.COMPLETED, null, List.of());
-    final var second =
-        new HistoryBackupState(
-            2L, io.camunda.service.backup.HistoryBackupStateCode.INCOMPLETE, null, List.of());
-
-    // when
-    final var infos = BackupResponseMapper.toHistoryBackupInfoList(List.of(first, second));
-
-    // then
-    assertThat(infos).extracting(info -> info.getBackupId()).containsExactly(1L, 2L);
-  }
-
   @ParameterizedTest
   @EnumSource(TakeOutcome.class)
   void shouldMapClusterRuntimeTakeOutcomes(final TakeOutcome outcome) {
@@ -492,29 +452,11 @@ final class BackupResponseMapperTest {
   }
 
   @Test
-  void shouldMapClusterRuntimeBackupInfoList() {
-    // given
-    final var first = new ClusterRuntimeBackup(1L, State.COMPLETED, null, List.of());
-    final var second = new ClusterRuntimeBackup(2L, State.FAILED, "boom", List.of());
-
-    // when
-    final var infos = BackupResponseMapper.toClusterRuntimeBackupInfoList(List.of(first, second));
-
-    // then
-    assertThat(infos).extracting(info -> info.getBackupId()).containsExactly(1L, 2L);
-  }
-
-  @Test
   void shouldMapClusterRuntimeBackupState() {
     // given
     final var checkpointState = new CheckpointStateResponse();
     checkpointState.setCheckpointStates(
-        Set.of(
-            checkpointState(
-                1,
-                10L,
-                io.camunda.zeebe.protocol.record.value.management.CheckpointType
-                    .SCHEDULED_BACKUP)));
+        Set.of(checkpointState(1, 10L, CheckpointType.SCHEDULED_BACKUP)));
     final var states =
         new ClusterRuntimeBackupStates(
             List.of(
@@ -529,7 +471,9 @@ final class BackupResponseMapperTest {
     assertThat(state.getPhysicalTenants()).hasSize(1);
     final var tenant = state.getPhysicalTenants().getFirst();
     assertThat(tenant.getPhysicalTenantId()).isEqualTo("tenant-a");
-    assertThat(tenant.getState().getCheckpointStates()).hasSize(1);
+    assertThat(tenant.getState().getCheckpointStates())
+        .extracting(c -> c.getPartitionId(), c -> c.getCheckpointId())
+        .containsExactly(tuple(1, 10L));
   }
 
   @Test
@@ -580,19 +524,6 @@ final class BackupResponseMapperTest {
     assertThat(tenant.getDetails()).extracting(d -> d.getSnapshotName()).containsExactly("snap-a");
   }
 
-  @Test
-  void shouldMapClusterHistoryBackupInfoList() {
-    // given
-    final var first = new ClusterHistoryBackup(1L, List.of());
-    final var second = new ClusterHistoryBackup(2L, List.of());
-
-    // when
-    final var infos = BackupResponseMapper.toClusterHistoryBackupInfoList(List.of(first, second));
-
-    // then
-    assertThat(infos).extracting(info -> info.getBackupId()).containsExactly(1L, 2L);
-  }
-
   private static PartitionBackupStatus partitionWithStatus(final BackupStatusCode code) {
     return new PartitionBackupStatus(
         1,
@@ -608,16 +539,12 @@ final class BackupResponseMapperTest {
   }
 
   private static PartitionCheckpointState checkpointState(
-      final int partitionId,
-      final long checkpointId,
-      final io.camunda.zeebe.protocol.record.value.management.CheckpointType type) {
+      final int partitionId, final long checkpointId, final CheckpointType type) {
     return new PartitionCheckpointState(
         partitionId, checkpointId, type, CHECKPOINT_INSTANT.toEpochMilli(), 200L, 100L);
   }
 
-  private static CheckpointInfo checkpointInfo(
-      final long checkpointId,
-      final io.camunda.zeebe.protocol.record.value.management.CheckpointType type) {
+  private static CheckpointInfo checkpointInfo(final long checkpointId, final CheckpointType type) {
     return new CheckpointInfo(checkpointId, 100L, 200L, type, CHECKPOINT_INSTANT);
   }
 
