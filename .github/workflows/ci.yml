@@ -2845,6 +2845,8 @@ jobs:
         run: bats .github/scripts/validate-flattened-poms.bats
       - name: Run release merge-back script tests
         run: bats .github/scripts/mergeback/mergeback.bats
+      - name: Run scoped-run verdict tests
+        run: node --test .github/scripts/scoped-run-junit-verdict.test.mjs
       - name: Run failing-test owner resolver tests
         run: bats .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.bats
       - name: Run OC nightly suite-health tests
