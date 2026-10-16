@@ -145,6 +145,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	const matchRoute = useMatchRoute();
 	const {authorizedComponents} = currentUser;
 	const isProcessesRoute = matchRoute({to: tabRoutes['tasklistProcesses'], fuzzy: true}) !== false;
+	const isThemeEditorRoute = matchRoute({to: '/tasklist/theme-editor'}) !== false;
 	const activeComponentHomeRoute = useActiveComponentHomeRoute();
 	const isTasklistRoute = activeComponentHomeRoute === tabRoutes['tasklistIndex'];
 	const isAdminRoute = activeComponentHomeRoute === tabRoutes['adminIndex'];
@@ -166,7 +167,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							key: 'tasks',
 							label: t('tasklist.headerNavItemTasks'),
 							icon: ListTodo,
-							isActive: !isProcessesRoute,
+							isActive: !isProcessesRoute && !isThemeEditorRoute,
 							linkProps: {
 								to: tabRoutes['tasklistIndex'],
 								activeOptions: {

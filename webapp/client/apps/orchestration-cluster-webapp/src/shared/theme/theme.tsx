@@ -20,11 +20,15 @@ function isThemeOption(theme: unknown): theme is ThemeOption {
 
 class Theme {
 	selectedTheme: ThemeOption = INITIAL_THEME;
+	/** Temporary theme set by the Tasklist theme editor. Not persisted. */
+	previewTheme: 'dark' | 'light' | null = null;
 	#systemDefault: 'dark' | 'light' = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
 	constructor() {
 		makeObservable(this, {
 			selectedTheme: observable,
+			previewTheme: observable,
+			setPreviewTheme: action,
 			changeTheme: action,
 			actualTheme: computed,
 			reset: action,
@@ -33,10 +37,19 @@ class Theme {
 
 	changeTheme = (theme: ThemeOption) => {
 		this.selectedTheme = theme;
+		this.previewTheme = null;
 		storeStateLocally('theme', theme);
 	};
 
+	setPreviewTheme = (theme: 'dark' | 'light' | null) => {
+		this.previewTheme = theme;
+	};
+
 	get actualTheme() {
+		if (this.previewTheme !== null) {
+			return this.previewTheme;
+		}
+
 		return this.selectedTheme === 'system' ? this.#systemDefault : this.selectedTheme;
 	}
 

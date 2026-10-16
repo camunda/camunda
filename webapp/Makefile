@@ -1,9 +1,12 @@
 skip-fe-build ?= true
+# Directory added to the classpath so CustomCssController picks up custom.css.
+# Override with `make env-up custom-css-dir=/path/to/dir`.
+custom-css-dir ?= $(CURDIR)/custom-css
 
 .PHONY: env-up
 env-up:
 	docker compose -f docker-compose.yml up -d elasticsearch \
-	&& mvn install -DskipTests=true -Dskip.fe.build=${skip-fe-build}  -DskipChecks -DskipQaBuild \
+	&& mvn install -DskipTests=true -Dskip.fe.build=false  -DskipChecks -DskipQaBuild \
 	&& CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo \
 	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo \
 	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
@@ -25,6 +28,7 @@ env-up:
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
 		-Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
+# 		-Dspring-boot.run.additional-classpath-elements="$(custom-css-dir)" \
 		-Dspring-boot.run.profiles=tasklist,broker,dev,dev-data,consolidated-auth
 
 .PHONY: env-down
