@@ -84,11 +84,11 @@ jobs:
             }}
       - name: Compile
         run: |
-          ./gradlew --console=plain --parallel -Pskip.fe.build \
+          ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
             testClasses
       - name: Package distribution
         run: |
-          ./gradlew --console=plain --parallel -Pskip.fe.build \
+          ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
             :camunda-zeebe:distZip
       - name: Verify Gradle cache reuse
         run: |
@@ -126,6 +126,15 @@ jobs:
         run: |
           ./gradlew --no-configuration-cache --console=plain -Pskip.fe.build \
             :camunda-zeebe:writeDistDependencyReport
+
+      - name: Upload Gradle build reports
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: gradle-build-reports
+          path: build/reports/profile/
+          retention-days: 14
+          if-no-files-found: warn
 
       - name: Build Maven distribution
         if: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.gradle-changes == 'true' }}
