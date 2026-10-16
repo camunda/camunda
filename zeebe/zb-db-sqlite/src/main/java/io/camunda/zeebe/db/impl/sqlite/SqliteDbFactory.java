@@ -60,8 +60,7 @@ public final class SqliteDbFactory<
 
   @Override
   public ZeebeDb<ColumnFamilyType> openSnapshotOnlyDb(final File path) {
-    throw new UnsupportedOperationException(
-        "Opening a SQLite database for snapshots only is not implemented yet");
+    return SqliteSnapshotOnlyDb.open(path.toPath());
   }
 
   /** Same as RocksDB, so that wiring which depends on the capabilities is unaffected. */

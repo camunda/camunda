@@ -14,7 +14,6 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.KeyVisitor;
-import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.impl.sqlite.KeyLayout.PrefixShape;
 import io.camunda.zeebe.db.impl.sqlite.KeyLayout.ScanSpec;
@@ -36,7 +35,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Point operations, counting and iteration on the table of one column family.
  *
- * <p>Prepared statements are created on first use and cached by the database. Iterations use
+ * <p>Prepared statements are created on first use and cached by the connection. Iterations use
  * statements of their own, which are not shared while a cursor is open, so that they can be nested.
  *
  * <p>SQLite cursors tolerate the deletion of the key they just visited but silently skip rows when
@@ -57,7 +56,7 @@ final class SqliteColumnFamily<
   private final String table;
   private final TableState state;
   private KeyLayout layout;
-  private final TransactionContext context;
+  private final SqliteTransactionContext context;
   private final KeyType keyInstance;
   private final ValueType valueInstance;
 
@@ -81,7 +80,7 @@ final class SqliteColumnFamily<
       final ColumnFamilyType columnFamily,
       final String table,
       final TableState state,
-      final TransactionContext context,
+      final SqliteTransactionContext context,
       final KeyType keyInstance,
       final ValueType valueInstance) {
     this.db = db;
@@ -129,7 +128,7 @@ final class SqliteColumnFamily<
         () -> {
           final var keyLength = key.write(keyBuffer, 0);
           final var valueBytes = valueBytes(value);
-          final var statement = statement(insertSql);
+          final var statement = writeStatement(insertSql);
           final int next = layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
           statement.setBytes(next, valueBytes);
           try {
@@ -149,7 +148,7 @@ final class SqliteColumnFamily<
     inTransaction(
         () -> {
           final var keyLength = key.write(keyBuffer, 0);
-          final var statement = statement(updateSql);
+          final var statement = writeStatement(updateSql);
           statement.setBytes(1, valueBytes(value));
           layout.bindKey(statement, 2, keyBuffer.byteArray(), keyLength);
           if (statement.executeUpdate() == 0) {
@@ -165,7 +164,7 @@ final class SqliteColumnFamily<
         () -> {
           final var keyLength = key.write(keyBuffer, 0);
           final var valueBytes = valueBytes(value);
-          final var statement = statement(upsertSql);
+          final var statement = writeStatement(upsertSql);
           final int next = layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
           statement.setBytes(next, valueBytes);
           statement.executeUpdate();
@@ -215,7 +214,7 @@ final class SqliteColumnFamily<
     inTransaction(
         () -> {
           final var keyLength = key.write(keyBuffer, 0);
-          final var statement = statement(existsSql);
+          final var statement = readStatement(existsSql);
           layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
           try (final var result = statement.executeQuery()) {
             exists[0] = result.next();
@@ -229,7 +228,7 @@ final class SqliteColumnFamily<
     final boolean[] empty = new boolean[1];
     inTransaction(
         () -> {
-          try (final var result = statement(isEmptySql).executeQuery()) {
+          try (final var result = readStatement(isEmptySql).executeQuery()) {
             empty[0] = !result.next() || result.getInt(1) == 0;
           }
         });
@@ -241,7 +240,7 @@ final class SqliteColumnFamily<
     final long[] count = new long[1];
     inTransaction(
         () -> {
-          try (final var result = statement(countSql).executeQuery()) {
+          try (final var result = readStatement(countSql).executeQuery()) {
             count[0] = result.next() ? result.getLong(1) : 0;
           }
         });
@@ -257,7 +256,7 @@ final class SqliteColumnFamily<
           final var prefixBytes = keyBuffer.byteArray();
           final var shape = layout.prefixShape(prefixBytes, prefixLength);
           final var sql = countPrefixSql.computeIfAbsent(shape, this::countPrefixSql);
-          final var statement = statement(sql);
+          final var statement = readStatement(sql);
           layout.bindPrefix(statement, shape, prefixBytes, prefixLength);
           try (final var result = statement.executeQuery()) {
             count[0] = result.next() ? result.getLong(1) : 0;
@@ -276,7 +275,7 @@ final class SqliteColumnFamily<
     inTransaction(
         () -> {
           final var keyLength = key.write(keyBuffer, 0);
-          final var statement = statement(getSql);
+          final var statement = readStatement(getSql);
           layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
           try (final var result = statement.executeQuery()) {
             if (result.next()) {
@@ -288,11 +287,12 @@ final class SqliteColumnFamily<
   }
 
   private int delete(final KeyType key) throws SQLException {
+    context.write();
     final var keyLength = key.write(keyBuffer, 0);
     if (db.preconditionsEnabled()) {
       assertNotAheadOfIteration(key, keyLength);
     }
-    final var statement = statement(deleteSql);
+    final var statement = writeStatement(deleteSql);
     layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
     return statement.executeUpdate();
   }
@@ -304,8 +304,11 @@ final class SqliteColumnFamily<
   private void assertNotAheadOfIteration(final KeyType key, final int keyLength)
       throws SQLException {
     for (final var cursor : state.cursors()) {
+      if (cursor.owner() != context) {
+        continue;
+      }
       if (cursor.isAhead(keyBuffer.byteArray(), keyLength)) {
-        final var statement = statement(existsSql);
+        final var statement = readStatement(existsSql);
         layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
         try (final var result = statement.executeQuery()) {
           if (result.next()) {
@@ -325,8 +328,14 @@ final class SqliteColumnFamily<
     return Arrays.copyOf(valueBuffer.byteArray(), length);
   }
 
-  private PreparedStatement statement(final String sql) throws SQLException {
-    return db.prepare(sql);
+  /** Reads through the writer if the transaction has written, so it sees its own changes. */
+  private PreparedStatement readStatement(final String sql) throws SQLException {
+    return context.read().prepare(sql);
+  }
+
+  /** Takes the write lease if the transaction does not hold it yet. */
+  private PreparedStatement writeStatement(final String sql) throws SQLException {
+    return context.write().prepare(sql);
   }
 
   /** Every public operation runs in a transaction, which joins the open one if there is one. */
@@ -538,9 +547,10 @@ final class SqliteColumnFamily<
     final var spec = new ScanSpec(shape, hasUpperBound, startAt != null, reverse, withValue);
     final var sql = scanSql.computeIfAbsent(spec, s -> layout.scanSql(table, s));
 
-    final var statement = db.acquireCursorStatement(sql);
+    final var connection = context.read();
+    final var statement = connection.acquireCursorStatement(sql);
     final @Nullable Cursor cursor =
-        db.preconditionsEnabled() ? new Cursor(reverse, prefixBytes) : null;
+        db.preconditionsEnabled() ? new Cursor(context, reverse, prefixBytes) : null;
     try {
       layout.bindScan(
           statement, spec, prefixBytes, prefixBytes.length, startBytes, startBytes.length);
@@ -567,7 +577,7 @@ final class SqliteColumnFamily<
       if (cursor != null) {
         state.cursors().remove(cursor);
       }
-      db.releaseCursorStatement(sql, statement);
+      connection.releaseCursorStatement(sql, statement);
     }
   }
 

@@ -336,22 +336,6 @@ final class SqlitePointOperationsTest extends ConformanceDbTestBase {
   }
 
   @Test
-  void shouldRejectTransactionOfSecondContextWhileFirstIsOpen() {
-    // given
-    final var cf = longColumnFamily(Cf.ONE);
-    final var otherContext = db.createContext();
-    final var other = db.createColumnFamily(Cf.ONE, otherContext, new DbLong(), new DbLong());
-
-    // then
-    context.runInTransaction(
-        () ->
-            assertThatThrownBy(() -> other.insert(dbLong(1), dbLong(10)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("another context"));
-    assertThat(cf.isEmpty()).isTrue();
-  }
-
-  @Test
   void shouldRecoverFromSnapshot() throws Exception {
     // given
     final var cf = longColumnFamily(Cf.ONE);
