@@ -17,7 +17,7 @@ import {Login} from './index';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {authenticationStore} from 'modules/stores/authentication';
-import {mockLogin} from 'modules/mocks/api/login';
+import {mockLogin, mockLoginCsrfToken} from 'modules/mocks/api/login';
 import {Paths} from 'modules/Routes';
 
 function createWrapper(
@@ -50,6 +50,7 @@ describe('<Login />', () => {
   });
 
   it('should login', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess(null);
 
     const {user} = render(<Login />, {
@@ -66,6 +67,7 @@ describe('<Login />', () => {
   });
 
   it('should show a loading spinner', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withServerError();
 
     const {user} = render(<Login />, {
@@ -79,6 +81,7 @@ describe('<Login />', () => {
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
 
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess(null);
 
     await user.click(screen.getByRole('button', {name: 'Login'}));
@@ -88,6 +91,7 @@ describe('<Login />', () => {
   });
 
   it('should redirect to the previous page', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess(null);
 
     const {user} = render(<Login />, {
@@ -106,6 +110,7 @@ describe('<Login />', () => {
   });
 
   it('should not allow the form to be submitted with empty fields', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess(null);
     const {user} = render(<Login />, {
       wrapper: createWrapper(),
@@ -160,6 +165,7 @@ describe('<Login />', () => {
   });
 
   it('should handle wrong credentials', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withServerError(401);
 
     const {user} = render(<Login />, {
@@ -174,6 +180,7 @@ describe('<Login />', () => {
   });
 
   it('should handle generic errors', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withServerError();
 
     const {user} = render(<Login />, {
@@ -192,6 +199,7 @@ describe('<Login />', () => {
       .spyOn(global.console, 'error')
       .mockImplementation();
 
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withNetworkError();
 
     const {user} = render(<Login />, {

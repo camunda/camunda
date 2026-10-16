@@ -9,6 +9,7 @@
 import {makeObservable, observable, action, computed} from 'mobx';
 import {getUser, UserDto} from 'modules/api/getUser';
 import {login, Credentials} from 'modules/api/login';
+import {requestCsrfToken} from 'modules/request';
 import {logout} from 'modules/api/logout';
 import {NetworkError} from 'modules/networkError';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
@@ -117,6 +118,10 @@ class Authentication {
   };
 
   handleLogin = async (credentials: Credentials): Promise<Error | void> => {
+    // The login endpoint rejects a POST without a CSRF token, and a GET of the login endpoint is
+    // where the server sends one.
+    await requestCsrfToken('/api/login');
+
     const response = await login(credentials);
 
     if (!response.isSuccess) {

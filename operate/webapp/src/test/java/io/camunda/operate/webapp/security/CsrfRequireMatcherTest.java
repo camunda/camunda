@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.security;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,14 +38,41 @@ class CsrfRequireMatcherTest {
   }
 
   @Test
-  void shouldNotMatchPaths() {
+  void shouldNotMatchLogout() {
     when(request.getMethod()).thenReturn("POST");
-    Stream.of(LOGIN_RESOURCE, LOGOUT_RESOURCE)
-        .forEach(
-            path -> {
-              when(request.getServletPath()).thenReturn(path);
-              assertThat(csrfRequireMatcher.matches(request)).isFalse();
-            });
+    when(request.getServletPath()).thenReturn(LOGOUT_RESOURCE);
+    assertThat(csrfRequireMatcher.matches(request)).isFalse();
+  }
+
+  @Test
+  void shouldMatchLogin() {
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getServletPath()).thenReturn(LOGIN_RESOURCE);
+    assertThat(csrfRequireMatcher.matches(request)).isTrue();
+  }
+
+  @Test
+  void shouldMatchLoginEvenWithBearerTokenAndSwaggerReferer() {
+    // given a login request that would be exempt under the Swagger or Bearer rules
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getServletPath()).thenReturn(LOGIN_RESOURCE);
+    lenient()
+        .when(request.getHeader("Referer"))
+        .thenReturn("http://localhost:8080/swagger-ui.html");
+    lenient()
+        .when(request.getRequestURL())
+        .thenReturn(new StringBuffer("http://localhost:8080" + LOGIN_RESOURCE));
+    lenient().when(request.getHeader("Authorization")).thenReturn("Bearer eyBlackCoffee");
+
+    // when / then
+    assertThat(csrfRequireMatcher.matches(request)).isTrue();
+  }
+
+  @Test
+  void shouldNotMatchGetOfLogin() {
+    // a GET of the login endpoint is how a visitor without a session obtains its first token
+    when(request.getMethod()).thenReturn("GET");
+    assertThat(csrfRequireMatcher.matches(request)).isFalse();
   }
 
   @Test

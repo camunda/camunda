@@ -38,6 +38,7 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -50,7 +51,8 @@ import org.springframework.web.client.RestTemplate;
 @Scope(SCOPE_PROTOTYPE)
 public class StatefulRestTemplate extends RestTemplate {
 
-  private static final String LOGIN_URL_PATTERN = "/api/login?username=%s&password=%s";
+  private static final String LOGIN_URL = "/api/login";
+  private static final String LOGIN_URL_PATTERN = LOGIN_URL + "?username=%s&password=%s";
   private static final String CSRF_TOKEN_HEADER_NAME = "X-CSRF-TOKEN";
 
   private static final String USERNAME_DEFAULT = "demo";
@@ -156,11 +158,13 @@ public class StatefulRestTemplate extends RestTemplate {
     try {
       return RetryOperation.<ResponseEntity<Object>>newBuilder()
           .retryConsumer(
-              () ->
-                  postForEntity(
-                      getURL(String.format(LOGIN_URL_PATTERN, username, password)),
-                      null,
-                      Object.class))
+              () -> {
+                fetchLoginCsrfToken();
+                return postForEntity(
+                    getURL(String.format(LOGIN_URL_PATTERN, username, password)),
+                    null,
+                    Object.class);
+              })
           // retry for 5 minutes
           .noOfRetry(50)
           .delayInterval(6, TimeUnit.SECONDS)
@@ -173,12 +177,32 @@ public class StatefulRestTemplate extends RestTemplate {
     }
   }
 
+  /**
+   * The login endpoint rejects a POST without a CSRF token, and a GET of it is where the server
+   * hands one to a client without a session. Only the token header matters, not the status.
+   */
+  private void fetchLoginCsrfToken() {
+    HttpHeaders headers;
+    try {
+      headers = exchange(RequestEntity.get(getURL(LOGIN_URL)).build(), Void.class).getHeaders();
+    } catch (final HttpStatusCodeException e) {
+      headers = e.getResponseHeaders();
+    }
+    if (headers != null) {
+      saveCSRFTokenWhenAvailable(headers);
+    }
+  }
+
   private ResponseEntity<?> saveCSRFTokenWhenAvailable(final ResponseEntity<?> response) {
-    final List<String> csrfHeaders = response.getHeaders().get(CSRF_TOKEN_HEADER_NAME);
+    saveCSRFTokenWhenAvailable(response.getHeaders());
+    return response;
+  }
+
+  private void saveCSRFTokenWhenAvailable(final HttpHeaders headers) {
+    final List<String> csrfHeaders = headers.get(CSRF_TOKEN_HEADER_NAME);
     if (csrfHeaders != null && !csrfHeaders.isEmpty()) {
       csrfToken = csrfHeaders.get(0);
     }
-    return response;
   }
 
   public URI getURL(final String urlPart) {

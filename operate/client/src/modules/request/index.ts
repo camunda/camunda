@@ -18,6 +18,35 @@ type RequestParams = {
   signal?: RequestInit['signal'];
 };
 
+function storeCsrfTokenFromResponse(response: Response) {
+  const csrfToken = response.headers.get('X-CSRF-TOKEN');
+
+  if (csrfToken !== null) {
+    sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
+  }
+}
+
+/**
+ * Gets a CSRF token and keeps it for the requests that follow. Does not change the session state,
+ * because this request does not tell us if the user has a session.
+ */
+async function requestCsrfToken(url: string) {
+  try {
+    storeCsrfTokenFromResponse(
+      await fetch(mergePathname(window.clientConfig?.contextPath ?? '/', url), {
+        method: 'GET',
+        credentials: 'include',
+        mode: 'cors',
+      }),
+    );
+  } catch (error) {
+    // The request that needs the token reports the failure to the user, which looks like a
+    // rejected login. Log the cause so a broken token request is distinguishable from that.
+    logger.error(`Failed to fetch a CSRF token from ${url}`);
+    logger.error(error);
+  }
+}
+
 async function request({url, method, body, headers, signal}: RequestParams) {
   const csrfToken = sessionStorage.getItem('X-CSRF-TOKEN');
   const hasCsrfToken =
@@ -47,11 +76,7 @@ async function request({url, method, body, headers, signal}: RequestParams) {
 
   if (response.ok) {
     authenticationStore.handleThirdPartySessionSuccess();
-
-    const csrfToken = response.headers.get('X-CSRF-TOKEN');
-    if (csrfToken !== null) {
-      sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
-    }
+    storeCsrfTokenFromResponse(response);
   }
 
   return response;
@@ -119,4 +144,4 @@ async function requestAndParse<T>(
   }
 }
 
-export {request, requestAndParse};
+export {request, requestAndParse, requestCsrfToken};

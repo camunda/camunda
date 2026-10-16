@@ -219,13 +219,32 @@ public abstract class BaseWebConfigurer {
     return response;
   }
 
+  /**
+   * Whether to write the CSRF token onto the response: on every authenticated GET, and on any
+   * request to the login endpoint regardless of authentication state.
+   *
+   * <p>The login endpoint is special-cased because {@code POST} to it requires a valid CSRF token
+   * unconditionally (see {@link CsrfRequireMatcher}), so a first-time visitor must be able to
+   * obtain one with a {@code GET} of it before submitting credentials. Handing a visitor without a
+   * session a CSRF token is safe: the token has no meaning on its own, and revealing it to whoever
+   * submits the login form next is how the double-submit pattern works.
+   *
+   * <p>Uses {@link HttpServletRequest#getServletPath()} and exact equality, not the request URI and
+   * {@code contains}: the URI includes any configured context path, and {@code contains} would also
+   * match a path that merely contains the login or logout path as part of a longer one.
+   */
   boolean shouldAddCSRF(final HttpServletRequest request) {
+    final String path = request.getServletPath();
+    if (LOGOUT_RESOURCE.equals(path)) {
+      return false;
+    }
+    if (LOGIN_RESOURCE.equals(path)) {
+      return true;
+    }
+    if (!"GET".equalsIgnoreCase(request.getMethod())) {
+      return false;
+    }
     final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    final String path = request.getRequestURI();
-    final String method = request.getMethod();
-
-    return (auth != null && auth.isAuthenticated())
-        && (path == null || !path.contains(LOGOUT_RESOURCE))
-        && ("GET".equalsIgnoreCase(method) || (path != null && (path.contains(LOGIN_RESOURCE))));
+    return auth != null && auth.isAuthenticated();
   }
 }
