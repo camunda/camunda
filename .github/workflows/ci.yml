@@ -109,9 +109,13 @@ jobs:
           echo "base=${BASE_REF}" >> "$GITHUB_OUTPUT"
 
           # One listing, carrying each file's status, so the run decision and the
-          # gating scope can read it differently.
+          # gating scope can read it differently. Each rename also emits a
+          # synthetic "removed<TAB>previous_filename" entry so a file moved OUT of
+          # the suite still counts for the run decision (via its old suite path);
+          # the changed-specs filter below drops the removed entry and keeps only
+          # the destination.
           files="$(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
-            --jq '.[] | "\(.status)\t\(.filename)"')"
+            --jq '.[] | ("\(.status)\t\(.filename)"), (select(.previous_filename != null) | "removed\t\(.previous_filename)")')"
 
           # Run decision: ANY suite file changed, including deletions — a PR that
           # only removes a fixture, resource or spec can still break the suite and
