@@ -2847,6 +2847,16 @@ jobs:
         run: bats .github/scripts/mergeback/mergeback.bats
       - name: Run scoped-run verdict tests
         run: node --test .github/scripts/scoped-run-junit-verdict.test.mjs
+      # planned-for-paths.mjs imports the plan parser, which imports `yaml`;
+      # this job installs only bats and xmllint, so without these it dies with
+      # ERR_MODULE_NOT_FOUND before a single assertion runs.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+      - name: Install coverage-plan dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: .github/scripts/coverage-plan-check
       - name: Run coverage-plan planned-for-paths tests
         run: node --test .github/scripts/coverage-plan-check/planned-for-paths.test.mjs
 
