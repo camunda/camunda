@@ -499,7 +499,7 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(result.rootProcessInstanceKey()))
         .elementId(result.flowNodeId())
         .processDefinitionId(result.processDefinitionId())
-        .processDefinitionKey(keyToString(result.processDefinitionKey()))
+        .processDefinitionKey(keyToStringOrNull(result.processDefinitionKey()))
         .processInstanceKey(keyToString(result.processInstanceKey()))
         .sequenceFlowId(result.sequenceFlowId())
         .tenantId(result.tenantId())
@@ -950,7 +950,7 @@ public final class SearchQueryResponseMapper {
         .listenerEventType(JobListenerEventTypeEnum.fromValue(job.listenerEventType().name()))
         .priority(requireNonNullElse(job.priority(), 0))
         .processDefinitionId(job.processDefinitionId())
-        .processDefinitionKey(keyToString(job.processDefinitionKey()))
+        .processDefinitionKey(keyToStringOrNull(job.processDefinitionKey()))
         .processInstanceKey(keyToString(job.processInstanceKey()))
         .retries(job.retries())
         .state(JobStateEnum.fromValue(job.state().name()))
@@ -966,7 +966,7 @@ public final class SearchQueryResponseMapper {
         .errorCode(job.errorCode())
         .errorMessage(job.errorMessage())
         .isDenied(job.isDenied())
-        .lastUpdateTime(formatDate(job.lastUpdateTime()))
+        .lastUpdateTime(formatDateOrNull(job.lastUpdateTime()))
         .build();
   }
 
@@ -1246,7 +1246,7 @@ public final class SearchQueryResponseMapper {
         .tenantId(instance.tenantId())
         .elementInstanceKey(keyToString(instance.flowNodeInstanceKey()))
         .processInstanceKey(keyToString(instance.processInstanceKey()))
-        .processDefinitionKey(keyToString(instance.processDefinitionKey()))
+        .processDefinitionKey(keyToStringOrNull(instance.processDefinitionKey()))
         .rootProcessInstanceKey(keyToStringOrNull(instance.rootProcessInstanceKey()))
         .endDate(formatDateOrNull(instance.endDate()))
         .incidentKey(keyToStringOrNull(instance.incidentKey()))
@@ -1382,7 +1382,8 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(
             keyToStringOrNull(correlatedMessageSubscription.rootProcessInstanceKey()))
         .elementInstanceKey(keyToStringOrNull(correlatedMessageSubscription.flowNodeInstanceKey()))
-        .processDefinitionKey(keyToString(correlatedMessageSubscription.processDefinitionKey()))
+        .processDefinitionKey(
+            keyToStringOrNull(correlatedMessageSubscription.processDefinitionKey()))
         .build();
   }
 

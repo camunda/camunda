@@ -59,8 +59,14 @@ public class BatchOperationItemEntityTransformer
     return new BatchOperationItemEntity(
         source.getBatchOperationId(),
         source.getType() != null ? BatchOperationType.valueOf(source.getType().name()) : null,
-        // in legacy items only one of the following is set (processInstanceKey as default)
-        ObjectUtils.firstNonNull(source.getIncidentKey(), source.getProcessInstanceKey()),
+        // in legacy items only one of the following is set: incidentKey for incident operations,
+        // processInstanceKey for process-instance operations, and processDefinitionKey or
+        // decisionDefinitionKey for DELETE_PROCESS_DEFINITION / DELETE_DECISION_DEFINITION
+        ObjectUtils.firstNonNull(
+            source.getIncidentKey(),
+            source.getProcessInstanceKey(),
+            source.getProcessDefinitionKey(),
+            source.getDecisionDefinitionKey()),
         source.getProcessInstanceKey(),
         source.getRootProcessInstanceKey(),
         map(source.getState()),

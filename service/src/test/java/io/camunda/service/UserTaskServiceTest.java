@@ -550,7 +550,7 @@ public class UserTaskServiceTest {
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
           .thenReturn(
-              new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
+              new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name"), null));
 
       final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
 
@@ -565,7 +565,7 @@ public class UserTaskServiceTest {
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
           .thenReturn(
-              new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
+              new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name"), null));
 
       final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
 
@@ -579,12 +579,32 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
-          .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
+          .thenReturn(
+              new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name"), null));
 
       final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
 
       assertThat(foundEntity.name()).isEqualTo(entity.elementId());
       assertThat(foundEntity.processName()).isEqualTo(entity.processName());
+    }
+
+    @Test
+    void shouldReturnUserTaskWithCachedProcessDefinitionVersion() {
+      // given - user tasks imported by the Tasklist 8.5/8.6 importer-850 have no version
+      final var entity =
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::processDefinitionVersion), null)
+              .create();
+
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(processCache.getCacheItem(entity.processDefinitionKey()))
+          .thenReturn(new ProcessCacheItem("ProcessName", Map.of(), 3));
+
+      // when
+      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
+
+      // then
+      assertThat(foundEntity.processDefinitionVersion()).isEqualTo(3);
     }
 
     @Test
@@ -628,7 +648,11 @@ public class UserTaskServiceTest {
       when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
           .thenReturn(
               ProcessCacheResult.of(
-                  entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
+                  entity.processDefinitionKey(),
+                  "ProcessName",
+                  entity.elementId(),
+                  "cached name",
+                  entity.processDefinitionVersion()));
 
       final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
 
@@ -643,7 +667,11 @@ public class UserTaskServiceTest {
       when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
           .thenReturn(
               ProcessCacheResult.of(
-                  entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
+                  entity.processDefinitionKey(),
+                  "ProcessName",
+                  entity.elementId(),
+                  "cached name",
+                  entity.processDefinitionVersion()));
 
       final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
 
@@ -659,6 +687,31 @@ public class UserTaskServiceTest {
       final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
 
       assertThat(searchQueryResult.items()).contains(entity.withName(entity.elementId()));
+    }
+
+    @Test
+    void shouldReturnUserTaskWithCachedProcessDefinitionVersion() {
+      // given - user tasks imported by the Tasklist 8.5/8.6 importer-850 have no version
+      final var entity =
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::processDefinitionVersion), null)
+              .create();
+      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
+      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
+          .thenReturn(
+              new ProcessCacheResult(
+                  Map.of(
+                      entity.processDefinitionKey(),
+                      new ProcessCacheItem("ProcessName", Map.of(), 3))));
+
+      // when
+      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
+
+      // then
+      assertThat(searchQueryResult.items())
+          .singleElement()
+          .extracting(UserTaskEntity::processDefinitionVersion)
+          .isEqualTo(3);
     }
   }
 }

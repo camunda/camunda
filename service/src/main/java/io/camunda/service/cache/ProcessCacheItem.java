@@ -11,9 +11,11 @@ import io.camunda.service.cache.ProcessDefinitionProvider.ProcessCacheData;
 import java.util.Collections;
 import java.util.Map;
 
-public record ProcessCacheItem(String processName, Map<String, String> elementIdNameMap) {
+public record ProcessCacheItem(
+    String processName, Map<String, String> elementIdNameMap, Integer processDefinitionVersion) {
 
-  public static final ProcessCacheItem EMPTY = new ProcessCacheItem(null, Collections.emptyMap());
+  public static final ProcessCacheItem EMPTY =
+      new ProcessCacheItem(null, Collections.emptyMap(), null);
 
   public String getProcessName() {
     return processName;
@@ -23,9 +25,14 @@ public record ProcessCacheItem(String processName, Map<String, String> elementId
     return elementIdNameMap.getOrDefault(elementId, elementId);
   }
 
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
   public static ProcessCacheItem from(ProcessCacheData processCacheData) {
     return new ProcessCacheItem(
         processCacheData.processName(),
-        Collections.unmodifiableMap(processCacheData.elementIdNameMap()));
+        Collections.unmodifiableMap(processCacheData.elementIdNameMap()),
+        processCacheData.processDefinitionVersion());
   }
 }
