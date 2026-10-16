@@ -57,6 +57,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 final class RestoreValidatorResolverTest {
 
   private static final Instant CHECKPOINT_TIMESTAMP = Instant.parse("2026-01-01T10:00:00Z");
+  private static final long CHECKPOINT_POSITION = 100L;
 
   /**
    * Matches how {@code RestoreApp} wires an rdbms secondary storage: an exported-position supplier
@@ -198,7 +199,7 @@ final class RestoreValidatorResolverTest {
     final var checkpoint =
         new CheckpointEntry(
             checkpointId,
-            100L,
+            CHECKPOINT_POSITION,
             CHECKPOINT_TIMESTAMP,
             CheckpointType.SCHEDULED_BACKUP,
             OptionalLong.of(1L));
@@ -747,25 +748,7 @@ final class RestoreValidatorResolverTest {
       stubBackupPartitionCount(5L, 2);
       stubBackupPartitionCount(6L, 3);
       final var restorableBackups =
-          new RestorableBackups(
-              5L,
-              Map.of(
-                  1,
-                      List.of(
-                          new CheckpointEntry(
-                              5L,
-                              100L,
-                              CHECKPOINT_TIMESTAMP,
-                              CheckpointType.SCHEDULED_BACKUP,
-                              OptionalLong.of(1L))),
-                  2,
-                      List.of(
-                          new CheckpointEntry(
-                              6L,
-                              100L,
-                              CHECKPOINT_TIMESTAMP,
-                              CheckpointType.SCHEDULED_BACKUP,
-                              OptionalLong.of(1L)))));
+          new RestorableBackups(5L, Map.of(1, lastBackupAt(5L), 2, lastBackupAt(6L)));
       final var validator = new RestoreValidator(3, backupStore, null);
 
       // when / then
@@ -774,6 +757,10 @@ final class RestoreValidatorResolverTest {
           .hasMessage(
               "Cannot restore: backup 6 was taken with 3 partitions, but the RDBMS holds exported "
                   + "positions for 2");
+    }
+
+    private static PartitionRestore lastBackupAt(final long checkpointId) {
+      return PartitionRestore.ofBackups(checkpointId);
     }
 
     private static RestoreRequest rdbmsRequestWithBackupIds(final long backupId) {
