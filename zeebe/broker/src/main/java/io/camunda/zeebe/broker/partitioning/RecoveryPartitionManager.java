@@ -43,6 +43,7 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -550,6 +551,16 @@ public final class RecoveryPartitionManager
               registry);
       restoreService.restore(backupIds, BackupValidator.none());
     } catch (final Exception e) {
+      // The snapshot store rejects a snapshot of another backend with a generic error, as its
+      // file info provider cannot read it. Report the mismatch instead, if that is the cause.
+      try {
+        PrimaryStorageBackend.requireSnapshotsOfBackend(
+            brokerCfg.getData().getPrimaryStorageType(), partitionDirectory(metadata.id()));
+      } catch (final RuntimeException mismatch) {
+        mismatch.addSuppressed(e);
+        throw new CompletionException(
+            "Failed to restore partition %s".formatted(metadata.id()), mismatch);
+      }
       throw new CompletionException("Failed to restore partition %s".formatted(metadata.id()), e);
     } finally {
       MicrometerUtil.close(registry);
@@ -557,8 +568,11 @@ public final class RecoveryPartitionManager
   }
 
   /** Blocks the calling thread; must only run on {@link #restoreExecutor}. */
-  private void verifyRestoredPartition(final PartitionMetadata metadata) {
+  @VisibleForTesting
+  void verifyRestoredPartition(final PartitionMetadata metadata) {
     final var partitionDir = partitionDirectory(metadata.id());
+    PrimaryStorageBackend.requireSnapshotsOfBackend(
+        brokerCfg.getData().getPrimaryStorageType(), partitionDir);
     if (!directoryHasEntries(partitionDir)) {
       throw new IllegalStateException(
           "Expected restored partition %s to have data, but directory %s is empty or missing"

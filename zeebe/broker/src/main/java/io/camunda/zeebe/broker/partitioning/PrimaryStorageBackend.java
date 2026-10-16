@@ -27,9 +27,12 @@ import io.camunda.zeebe.db.impl.sqlite.SqliteSnapshotCopy;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Supplier;
@@ -39,10 +42,13 @@ import java.util.function.Supplier;
  * and the {@link SnapshotCopy} and {@link SnapshotFileInfoProvider} that belong to it. This is the
  * one place that maps the configured type to its implementations.
  *
- * <p>The factory is guarded against state of the other backend. A partition's on-disk state is
- * backend specific, and opening a directory that holds the other backend's state would not fail but
- * create an empty database beside it, which looks like total data loss. Opening, recovering from or
- * copying such a directory fails with a message that names both backends instead.
+ * <p>Snapshots are guarded against state of the other backend. A partition's on-disk state is
+ * backend specific, and opening a snapshot that holds the other backend's state would not fail but
+ * create an empty database beside it, which looks like total data loss. Opening a snapshot through
+ * the factory, copying one, and loading the snapshots of a partition directory ({@link
+ * #requireSnapshotsOfBackend}) fail with a message that names both backends instead. The runtime
+ * directory is not covered: it is deleted before it is recovered from a snapshot, so it never holds
+ * state that is opened as is.
  *
  * @param type the selected backend
  * @param dbFactory opens the runtime database and snapshots, failing on state of another backend
@@ -132,6 +138,31 @@ public record PrimaryStorageBackend(
           snapshotCopy.copySnapshot(from, to, scope);
         },
         snapshotFileInfoProvider(type));
+  }
+
+  /**
+   * Checks the snapshots in the partition directory before a snapshot store loads them. This has to
+   * run first: the store computes checksums with the backend's {@link SnapshotFileInfoProvider},
+   * which fails on a snapshot of another backend with an error of its own, and the store treats a
+   * failure there as a snapshot it cannot load and skips it.
+   *
+   * @throws IllegalStateException if a snapshot holds state written by a backend other than the
+   *     configured one
+   */
+  public static void requireSnapshotsOfBackend(
+      final PrimaryStorageType configured, final Path partitionDirectory) {
+    final var snapshots =
+        partitionDirectory.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY);
+    if (!Files.isDirectory(snapshots)) {
+      return;
+    }
+    try (final var directories = Files.newDirectoryStream(snapshots, Files::isDirectory)) {
+      for (final var snapshot : directories) {
+        requireNoStateOfOtherBackend(configured, snapshot);
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to list the snapshots in " + snapshots, e);
+    }
   }
 
   /**

@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.SnapshotInitializationUtil;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
@@ -34,13 +35,19 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
 
   @Override
   public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
+    final var storageType = context.brokerConfig().getData().getPrimaryStorageType();
+    try {
+      PrimaryStorageBackend.requireSnapshotsOfBackend(storageType, context.partitionDirectory());
+    } catch (final RuntimeException e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
+
     final var snapshotStore =
         new FileBasedSnapshotStore(
             context.brokerConfig().getCluster().getNodeId(),
             context.partitionMetadata().id(),
             context.partitionDirectory(),
-            PrimaryStorageBackend.snapshotFileInfoProvider(
-                context.brokerConfig().getData().getPrimaryStorageType()),
+            PrimaryStorageBackend.snapshotFileInfoProvider(storageType),
             context.partitionMeterRegistry());
 
     var result =
