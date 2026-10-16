@@ -231,6 +231,8 @@ public final class LogArchiveRecordsProcessor
       default -> throw new IllegalStateException("Unexpected intent " + intent);
     }
 
+    final long openObjectsBefore = state.openObjectCount();
+
     // applying completes the event with F and the covered checkpoints, so it must happen before
     // the event is appended
     final var commitEntryJson =
@@ -246,7 +248,8 @@ public final class LogArchiveRecordsProcessor
             .rejectionReason(""));
 
     final var newMeta = state.meta();
-    final var request = publishRequestFor(eventIntent, event, newMeta, commitEntryJson);
+    final var request =
+        publishRequestFor(eventIntent, event, newMeta, commitEntryJson, openObjectsBefore);
     final String snapshotId =
         eventIntent == LogArchiveIntent.SNAPSHOT_ARCHIVED ? event.getSnapshot().getId() : "";
     final long chunkNo =
@@ -281,15 +284,21 @@ public final class LogArchiveRecordsProcessor
       final LogArchiveIntent eventIntent,
       final LogArchiveRecord event,
       final LogArchiveMeta meta,
-      final byte @Nullable [] commitEntryJson) {
+      final byte @Nullable [] commitEntryJson,
+      final long openObjectsBefore) {
     if (commitEntryJson == null) {
       return null;
     }
     final long seq = event.getSeq();
     final boolean sealed = eventIntent == LogArchiveIntent.INDEX_SEALED;
     final byte[] rootJson = sealed || seq % config.rootEvery() == 0 ? rootJson(meta, seq) : null;
-    final var seal =
-        sealed || eventIntent == LogArchiveIntent.LOG_ARCHIVED ? pendingSeal(meta) : null;
+    // A full chunk is requested once when it becomes due; the publisher keeps it pending until the
+    // SEAL_INDEX is processed. Asking on every LOG_ARCHIVED would repeat the same seal.
+    final boolean crossedThreshold =
+        eventIntent == LogArchiveIntent.LOG_ARCHIVED
+            && openObjectsBefore < config.chunkSize()
+            && state.openObjectCount() >= config.chunkSize();
+    final var seal = sealed || crossedThreshold ? pendingSeal(meta) : null;
     return new PublishRequest(event.getTimelineId(), seq, commitEntryJson, rootJson, seal);
   }
 
@@ -351,8 +360,18 @@ public final class LogArchiveRecordsProcessor
 
     final long archivedIndex = meta.getArchivedIndex();
     final var snapshotId = commandValue.getSnapshot().getId();
+    // a lost or invalid seal is retried once per rejection while the chunk is still full
+    final var retrySeal =
+        intent == LogArchiveIntent.SEAL_INDEX && !meta.getTimelineId().isEmpty()
+            ? pendingSeal(meta)
+            : null;
+    final var timelineId = meta.getTimelineId();
     resultBuilder.appendPostCommitTask(
         () -> {
+          final var currentPublication = publication;
+          if (retrySeal != null && currentPublication != null) {
+            currentPublication.publish(new PublishRequest(timelineId, -1, null, null, retrySeal));
+          }
           final var currentListener = listener;
           if (currentListener == null) {
             return;
