@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl;
 import io.camunda.zeebe.db.ContainsForeignKeys;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.KeyStructure;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,6 +47,12 @@ public class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends Db
     first.wrap(directBuffer, offset, length);
     final int firstKeyLength = first.getLength();
     second.wrap(directBuffer, offset + firstKeyLength, length - firstKeyLength);
+  }
+
+  @Override
+  public void describe(final KeyStructure structure) {
+    first.describe(structure);
+    second.describe(structure);
   }
 
   @Override

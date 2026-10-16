@@ -9,6 +9,7 @@ package io.camunda.zeebe.db.impl;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.KeyStructure;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -52,6 +53,11 @@ public final class DbEnumValue<T extends Enum<T>> implements DbKey, DbValue {
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     value.wrap(buffer, offset, length);
+  }
+
+  @Override
+  public void describe(final KeyStructure structure) {
+    structure.enumOrdinal(null);
   }
 
   @Override

@@ -11,12 +11,14 @@ import static io.camunda.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.KeyStructure;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public final class DbLong implements DbKey, DbValue {
 
   private long longValue;
+  private boolean nonNegative;
 
   public void wrapLong(final long value) {
     longValue = value;
@@ -25,6 +27,20 @@ public final class DbLong implements DbKey, DbValue {
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     longValue = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
+  }
+
+  /**
+   * Marks this component as known to never hold a negative value. The default is "may be negative",
+   * because signedness is a property of how a key is used, not of its class.
+   */
+  public DbLong nonNegative() {
+    nonNegative = true;
+    return this;
+  }
+
+  @Override
+  public void describe(final KeyStructure structure) {
+    structure.int64(null, nonNegative);
   }
 
   @Override

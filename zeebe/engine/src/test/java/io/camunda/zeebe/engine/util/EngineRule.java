@@ -17,6 +17,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.KeyStructure;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -814,6 +815,11 @@ public final class EngineRule extends ExternalResource {
     @Override
     public void wrap(final DirectBuffer buffer, final int offset, final int length) {
       genericBuffer.wrap(buffer, offset, length);
+    }
+
+    @Override
+    public void describe(final KeyStructure structure) {
+      structure.bytes(null);
     }
 
     @Override

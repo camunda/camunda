@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.jobmetrics;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.KeyStructure;
 import io.camunda.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -71,6 +72,13 @@ public final class MetricsKey implements DbKey, DbValue {
     jobTypeIndex = buffer.getInt(offset, Protocol.ENDIANNESS);
     tenantIdIndex = buffer.getInt(offset + Integer.BYTES, Protocol.ENDIANNESS);
     workerNameIndex = buffer.getInt(offset + 2 * Integer.BYTES, Protocol.ENDIANNESS);
+  }
+
+  @Override
+  public void describe(final KeyStructure structure) {
+    structure.int32("jobTypeIndex", false);
+    structure.int32("tenantIdIndex", false);
+    structure.int32("workerNameIndex", false);
   }
 
   @Override

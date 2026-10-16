@@ -11,6 +11,7 @@ import static io.camunda.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.KeyStructure;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -36,6 +37,11 @@ public final class DbString implements DbKey, DbValue {
     final byte[] b = new byte[stringLen];
     directBuffer.getBytes(offset, b);
     bytes.wrap(b);
+  }
+
+  @Override
+  public void describe(final KeyStructure structure) {
+    structure.string(null);
   }
 
   @Override

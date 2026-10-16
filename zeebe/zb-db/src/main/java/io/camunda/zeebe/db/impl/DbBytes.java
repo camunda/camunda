@@ -9,6 +9,7 @@ package io.camunda.zeebe.db.impl;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.KeyStructure;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -27,6 +28,11 @@ public final class DbBytes implements DbKey, DbValue {
     final byte[] bytesToWrap = new byte[length];
     directBuffer.getBytes(offset, bytesToWrap, 0, bytesToWrap.length);
     bytes.wrap(bytesToWrap);
+  }
+
+  @Override
+  public void describe(final KeyStructure structure) {
+    structure.bytes(null);
   }
 
   @Override
