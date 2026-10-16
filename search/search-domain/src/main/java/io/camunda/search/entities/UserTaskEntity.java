@@ -128,7 +128,8 @@ public record UserTaskEntity(
         tags);
   }
 
-  public UserTaskEntity withProcessDefinitionVersion(final Integer newProcessDefinitionVersion) {
+  public UserTaskEntity withProcessDefinitionVersion(
+      final @Nullable Integer newProcessDefinitionVersion) {
     return new UserTaskEntity(
         userTaskKey,
         elementId,
