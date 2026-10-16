@@ -41,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
@@ -60,7 +61,6 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -109,7 +109,7 @@ final class RestoreRequestTransformerTest {
   }
 
   private static RestoreResolvedRequest resolvedRequest() {
-    return new RestoreResolvedRequest(Map.of(1, new long[] {1L}), false);
+    return new RestoreResolvedRequest(Map.of(1, PartitionRestore.ofBackups(1L)), false);
   }
 
   private static ClusterConfigurationRequestValidator<RestoreRequest, RestoreResolvedRequest>
@@ -314,7 +314,8 @@ final class RestoreRequestTransformerTest {
                 BrokerPartitionState.initialize(partitionState).setMode(Mode.RECOVERING),
                 memberTwo,
                 BrokerPartitionState.initialize(partitionState).setMode(Mode.RECOVERING)));
-    final var resolved = new RestoreResolvedRequest(Map.of(1, new long[] {1L, 2L}), false);
+    final var resolved =
+        new RestoreResolvedRequest(Map.of(1, PartitionRestore.ofBackups(1L, 2L)), false);
     final var transformer =
         new RestoreRequestTransformer(
             restoreRequest(), registryWithValidator(validatorReturning(Either.right(resolved))));
@@ -329,8 +330,8 @@ final class RestoreRequestTransformerTest {
             new SchemaInitializationOperation(memberOne),
             new PartitionPreRestoreOperation(memberOne, 1),
             new PartitionPreRestoreOperation(memberTwo, 1),
-            new PartitionRestoreOperation(memberOne, 1, new TreeSet<>(List.of(1L, 2L))),
-            new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L, 2L))),
+            new PartitionRestoreOperation(memberOne, 1, PartitionRestore.ofBackups(1L, 2L)),
+            new PartitionRestoreOperation(memberTwo, 1, PartitionRestore.ofBackups(1L, 2L)),
             routeOver(memberOne, 1),
             new ModeChangeOperation(memberOne, Mode.PROCESSING),
             new ModeChangeOperation(memberTwo, Mode.PROCESSING),
@@ -344,7 +345,8 @@ final class RestoreRequestTransformerTest {
     // given - both brokers of the tenant's partition group replicate partition 1 and are recovering
     final var memberOne = MemberId.from("0");
     final var memberTwo = MemberId.from("1");
-    final var resolved = new RestoreResolvedRequest(Map.of(1, new long[] {1L, 2L}), false);
+    final var resolved =
+        new RestoreResolvedRequest(Map.of(1, PartitionRestore.ofBackups(1L, 2L)), false);
     final var transformer =
         new RestoreRequestTransformer(
             restoreRequest(), registryWithValidator(validatorReturning(Either.right(resolved))));
@@ -368,8 +370,8 @@ final class RestoreRequestTransformerTest {
                 List.of(
                     new PartitionPreRestoreOperation(memberOne, 1),
                     new PartitionPreRestoreOperation(memberTwo, 1),
-                    new PartitionRestoreOperation(memberOne, 1, new TreeSet<>(List.of(1L, 2L))),
-                    new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L, 2L))),
+                    new PartitionRestoreOperation(memberOne, 1, PartitionRestore.ofBackups(1L, 2L)),
+                    new PartitionRestoreOperation(memberTwo, 1, PartitionRestore.ofBackups(1L, 2L)),
                     routeOver(memberOne, 1),
                     new ModeChangeOperation(memberOne, Mode.PROCESSING),
                     new ModeChangeOperation(memberTwo, Mode.PROCESSING),
@@ -406,7 +408,7 @@ final class RestoreRequestTransformerTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 List.of(
                     new PartitionPreRestoreOperation(memberTwo, 1),
-                    new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L))),
+                    new PartitionRestoreOperation(memberTwo, 1, PartitionRestore.ofBackups(1L)),
                     routeOver(memberTwo, 1),
                     new ModeChangeOperation(memberTwo, Mode.PROCESSING),
                     new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
@@ -532,7 +534,12 @@ final class RestoreRequestTransformerTest {
                 validatorReturning(
                     Either.right(
                         new RestoreResolvedRequest(
-                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+                            Map.of(
+                                1,
+                                PartitionRestore.ofBackups(1L),
+                                2,
+                                PartitionRestore.ofBackups(2L)),
+                            false)))));
 
     // when
     final var result =
@@ -611,7 +618,12 @@ final class RestoreRequestTransformerTest {
                 validatorReturning(
                     Either.right(
                         new RestoreResolvedRequest(
-                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+                            Map.of(
+                                1,
+                                PartitionRestore.ofBackups(1L),
+                                2,
+                                PartitionRestore.ofBackups(2L)),
+                            false)))));
 
     // when
     final var result =
@@ -663,7 +675,12 @@ final class RestoreRequestTransformerTest {
                 validatorReturning(
                     Either.right(
                         new RestoreResolvedRequest(
-                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+                            Map.of(
+                                1,
+                                PartitionRestore.ofBackups(1L),
+                                2,
+                                PartitionRestore.ofBackups(2L)),
+                            false)))));
 
     // when
     final var result =
@@ -709,7 +726,12 @@ final class RestoreRequestTransformerTest {
                 validatorReturning(
                     Either.right(
                         new RestoreResolvedRequest(
-                            Map.of(1, new long[] {1L}, 2, new long[] {1L}), false)))));
+                            Map.of(
+                                1,
+                                PartitionRestore.ofBackups(1L),
+                                2,
+                                PartitionRestore.ofBackups(1L)),
+                            false)))));
     final var scaledUp = new RoutingState(4, new AllPartitions(2), new HashMod(1));
 
     // when
@@ -732,7 +754,9 @@ final class RestoreRequestTransformerTest {
             restoreRequest(),
             registryWithValidator(
                 validatorReturning(
-                    Either.right(new RestoreResolvedRequest(Map.of(1, new long[] {1L}), false)))));
+                    Either.right(
+                        new RestoreResolvedRequest(
+                            Map.of(1, PartitionRestore.ofBackups(1L)), false)))));
     final var scaledUp = new RoutingState(4, new AllPartitions(2), new HashMod(1));
 
     // when
@@ -759,7 +783,9 @@ final class RestoreRequestTransformerTest {
             restoreRequest(),
             registryWithValidator(
                 validatorReturning(
-                    Either.right(new RestoreResolvedRequest(Map.of(1, new long[] {1L}), false)))));
+                    Either.right(
+                        new RestoreResolvedRequest(
+                            Map.of(1, PartitionRestore.ofBackups(1L)), false)))));
 
     // when
     final var result =
@@ -811,7 +837,12 @@ final class RestoreRequestTransformerTest {
                 validatorReturning(
                     Either.right(
                         new RestoreResolvedRequest(
-                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+                            Map.of(
+                                1,
+                                PartitionRestore.ofBackups(1L),
+                                2,
+                                PartitionRestore.ofBackups(2L)),
+                            false)))));
 
     // when
     final var result =
@@ -854,7 +885,12 @@ final class RestoreRequestTransformerTest {
                 validatorReturning(
                     Either.right(
                         new RestoreResolvedRequest(
-                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+                            Map.of(
+                                1,
+                                PartitionRestore.ofBackups(1L),
+                                2,
+                                PartitionRestore.ofBackups(2L)),
+                            false)))));
 
     // when
     final var result =

@@ -69,6 +69,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -1267,7 +1268,7 @@ final class ClusterApiUtilsTest {
         new PartitionEnableExporterOperation(memberId1, 1, "test-exporter", emptyExporterId),
         new ExportingStateChangeOperation(memberId1, ExportingState.PAUSED),
         new PartitionPreRestoreOperation(memberId1, 1),
-        new PartitionRestoreOperation(memberId1, 1, new TreeSet<>(Set.of(1L, 2L))),
+        new PartitionRestoreOperation(memberId1, 1, PartitionRestore.ofBackups(1L, 2L)),
         new SchemaInitializationOperation(memberId1),
 
         // PartitionDistributorConfig

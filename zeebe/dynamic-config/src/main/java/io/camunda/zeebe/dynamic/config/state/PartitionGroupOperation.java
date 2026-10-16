@@ -280,6 +280,16 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
       public PartitionRestoreOperation {
         backupIds = ImmutableSortedSet.copyOf(backupIds);
       }
+
+      public PartitionRestoreOperation(
+          final MemberId memberId, final int partitionId, final PartitionRestore restore) {
+        this(memberId, partitionId, restore.backupIds());
+      }
+
+      /** What the partition is restored from. */
+      public PartitionRestore restore() {
+        return new PartitionRestore(backupIds);
+      }
     }
   }
 }

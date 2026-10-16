@@ -32,6 +32,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
@@ -45,7 +46,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
@@ -148,7 +148,7 @@ final class ClusterRestoreRequestTransformerTest {
       final List<Long> backupIds, final int partitionCount) {
     return List.of(
         new PartitionPreRestoreOperation(MEMBER, 1),
-        new PartitionRestoreOperation(MEMBER, 1, new TreeSet<>(backupIds)),
+        new PartitionRestoreOperation(MEMBER, 1, PartitionRestore.ofBackups(backupIds)),
         new UpdateRoutingState(
             MEMBER, Optional.of(RoutingState.initializeWithPartitionCount(partitionCount))),
         new ModeChangeOperation(MEMBER, Mode.PROCESSING),
@@ -160,7 +160,7 @@ final class ClusterRestoreRequestTransformerTest {
       final List<Long> backupIds, final int partitionCount) {
     return List.of(
         new PartitionPreRestoreOperation(MEMBER, 2),
-        new PartitionRestoreOperation(MEMBER, 2, new TreeSet<>(backupIds)),
+        new PartitionRestoreOperation(MEMBER, 2, PartitionRestore.ofBackups(backupIds)),
         new UpdateRoutingState(
             MEMBER, Optional.of(RoutingState.initializeWithPartitionCount(partitionCount))),
         new ModeChangeOperation(MEMBER, Mode.PROCESSING),
@@ -172,7 +172,7 @@ final class ClusterRestoreRequestTransformerTest {
       final List<Long> backupIds, final int partitionCount) {
     return List.of(
         new PartitionPreRestoreOperation(MEMBER, 3),
-        new PartitionRestoreOperation(MEMBER, 3, new TreeSet<>(backupIds)),
+        new PartitionRestoreOperation(MEMBER, 3, PartitionRestore.ofBackups(backupIds)),
         new UpdateRoutingState(
             MEMBER, Optional.of(RoutingState.initializeWithPartitionCount(partitionCount))),
         new ModeChangeOperation(MEMBER, Mode.PROCESSING),
@@ -267,15 +267,13 @@ final class ClusterRestoreRequestTransformerTest {
 
           @Override
           public Either<Exception, RestoreResolvedRequest> validate(final RestoreRequest request) {
-            final var backupIds =
-                request.arguments().parameters().backupIds().stream()
-                    .mapToLong(Long::longValue)
-                    .toArray();
-            final var backups = new HashMap<Integer, long[]>();
+            final var restore =
+                PartitionRestore.ofBackups(request.arguments().parameters().backupIds());
+            final var partitions = new HashMap<Integer, PartitionRestore>();
             for (final int partitionId : partitionIds) {
-              backups.put(partitionId, backupIds);
+              partitions.put(partitionId, restore);
             }
-            return Either.right(new RestoreResolvedRequest(backups, false));
+            return Either.right(new RestoreResolvedRequest(partitions, false));
           }
         });
     return registry;

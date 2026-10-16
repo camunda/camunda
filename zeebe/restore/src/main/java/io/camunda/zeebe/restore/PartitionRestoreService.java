@@ -17,6 +17,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
@@ -33,9 +34,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.SortedSet;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,18 +74,18 @@ public class PartitionRestoreService {
    */
   public void restore(final long backupId, final BackupValidator validator)
       throws IOException, FlushException {
-    restore(new long[] {backupId}, validator);
+    restore(PartitionRestore.ofBackups(backupId), validator);
   }
 
   /**
    * Downloads backups, restores them to the partition's data directory. Backups are truncated to
    * checkpoint positions.
    *
-   * @param backupIds ids of the backups to restore from
+   * @param restore what the partition is restored from
    */
-  public void restore(final long[] backupIds, final BackupValidator validator)
+  public void restore(final PartitionRestore restore, final BackupValidator validator)
       throws IOException, FlushException {
-    validateAndSortBackupIds(backupIds);
+    validateBackupIds(restore.backupIds());
 
     try (final var restoredJournal =
         SegmentedJournal.builder(partition.getMeterRegistry())
@@ -93,7 +94,7 @@ public class PartitionRestoreService {
             .withMetaStore(new InMemory())
             .build()) {
       Backup previousBackup = null;
-      for (final var backupId : backupIds) {
+      for (final var backupId : restore.backupIds()) {
         final var restoreTarget =
             rootDirectory.resolve("restoring-partition" + partitionId + "-backup-" + backupId);
         FileUtil.ensureDirectoryExists(restoreTarget);
@@ -115,18 +116,14 @@ public class PartitionRestoreService {
     // - Verify journal.lastEntry.asqn == checkpointPosition
   }
 
-  /** Ensures that we have a valid array of backup ids. */
-  private static void validateAndSortBackupIds(final long[] backupIds) {
-    if (backupIds.length == 0) {
+  private static void validateBackupIds(final SortedSet<Long> backupIds) {
+    if (backupIds.isEmpty()) {
       throw new IllegalArgumentException("No backups to restore");
     }
-
-    for (final long backupId : backupIds) {
-      if (backupId < 0) {
-        throw new IllegalArgumentException("Backup id must not be negative but was " + backupId);
-      }
+    if (backupIds.first() < 0) {
+      throw new IllegalArgumentException(
+          "Backup id must not be negative but was " + backupIds.first());
     }
-    Arrays.sort(backupIds);
   }
 
   /**

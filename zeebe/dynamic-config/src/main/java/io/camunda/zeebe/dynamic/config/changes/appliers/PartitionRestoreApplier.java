@@ -12,9 +12,9 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChange
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
-import java.util.SortedSet;
 import java.util.function.UnaryOperator;
 
 /**
@@ -33,17 +33,17 @@ public final class PartitionRestoreApplier implements PartitionGroupConfiguratio
 
   private final MemberId memberId;
   private final int partitionId;
-  private final SortedSet<Long> backupIds;
+  private final PartitionRestore restore;
   private final RestoreChangeExecutor restoreChangeExecutor;
 
   public PartitionRestoreApplier(
       final MemberId memberId,
       final int partitionId,
-      final SortedSet<Long> backupIds,
+      final PartitionRestore restore,
       final RestoreChangeExecutor restoreChangeExecutor) {
     this.memberId = memberId;
     this.partitionId = partitionId;
-    this.backupIds = backupIds;
+    this.restore = restore;
     this.restoreChangeExecutor = restoreChangeExecutor;
   }
 
@@ -58,7 +58,7 @@ public final class PartitionRestoreApplier implements PartitionGroupConfiguratio
   @Override
   public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
     return restoreChangeExecutor
-        .restore(partitionId, backupIds)
+        .restore(partitionId, restore)
         .thenApply(ignored -> UnaryOperator.identity());
   }
 }

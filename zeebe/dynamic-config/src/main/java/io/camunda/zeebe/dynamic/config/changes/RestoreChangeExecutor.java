@@ -9,9 +9,9 @@ package io.camunda.zeebe.dynamic.config.changes;
 
 import static io.camunda.zeebe.util.Unit.unit;
 
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.util.SortedSet;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -31,12 +31,12 @@ public interface RestoreChangeExecutor {
   ActorFuture<Void> initializeSchema();
 
   /**
-   * Restores the given local partition from the given backups.
+   * Restores the given local partition.
    *
    * @param partitionId the partition to restore
-   * @param backupIds the ids of the backups to restore, in ascending order
+   * @param restore what the partition is restored from
    */
-  ActorFuture<Void> restore(int partitionId, SortedSet<Long> backupIds);
+  ActorFuture<Void> restore(int partitionId, PartitionRestore restore);
 
   /** No-op executor for plan simulation, where operations must succeed without side effects. */
   final class NoopRestoreChangeExecutor implements RestoreChangeExecutor {
@@ -52,7 +52,7 @@ public interface RestoreChangeExecutor {
     }
 
     @Override
-    public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
+    public ActorFuture<Void> restore(final int partitionId, final PartitionRestore restore) {
       return CompletableActorFuture.completed(unit());
     }
   }
@@ -74,7 +74,7 @@ public interface RestoreChangeExecutor {
     }
 
     @Override
-    public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
+    public ActorFuture<Void> restore(final int partitionId, final PartitionRestore restore) {
       return denied();
     }
 

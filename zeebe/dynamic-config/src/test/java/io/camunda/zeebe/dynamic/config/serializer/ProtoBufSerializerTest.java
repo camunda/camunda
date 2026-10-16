@@ -65,6 +65,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -78,7 +79,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -564,7 +564,8 @@ final class ProtoBufSerializerTest {
             new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
             new SchemaInitializationOperation(MemberId.from("1")),
             new PartitionPreRestoreOperation(MemberId.from("1"), 1),
-            new PartitionRestoreOperation(MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L))));
+            new PartitionRestoreOperation(
+                MemberId.from("1"), 1, PartitionRestore.ofBackups(1L, 2L)));
     final List<Phase> phases =
         List.of(
             new GlobalPhase(List.of(new MemberLeaveOperation(MemberId.from("1")))),
@@ -580,7 +581,7 @@ final class ProtoBufSerializerTest {
                         new SchemaInitializationOperation(MemberId.from("1")),
                         new PartitionPreRestoreOperation(MemberId.from("1"), 1),
                         new PartitionRestoreOperation(
-                            MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L)))))));
+                            MemberId.from("1"), 1, PartitionRestore.ofBackups(1L, 2L))))));
     final var currentMultiConfiguration = CurrentClusterConfiguration.init();
     final var expectedMultiConfiguration =
         CurrentClusterConfiguration.fromLegacy(
@@ -692,7 +693,7 @@ final class ProtoBufSerializerTest {
                         groupId,
                         List.of(
                             new PartitionRestoreOperation(
-                                MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L))))))),
+                                MemberId.from("1"), 1, PartitionRestore.ofBackups(1L, 2L)))))),
             Instant.now());
     final var configuration =
         new CurrentClusterConfiguration(

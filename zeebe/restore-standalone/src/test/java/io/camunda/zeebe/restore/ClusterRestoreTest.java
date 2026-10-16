@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
@@ -60,10 +61,11 @@ final class ClusterRestoreTest {
         .hasMessageContaining("at least one physical tenant");
   }
 
-  private static Map<String, Map<Integer, long[]>> selection(final String... physicalTenantIds) {
-    final Map<String, Map<Integer, long[]>> selection = new LinkedHashMap<>();
+  private static Map<String, Map<Integer, PartitionRestore>> selection(
+      final String... physicalTenantIds) {
+    final Map<String, Map<Integer, PartitionRestore>> selection = new LinkedHashMap<>();
     for (final var physicalTenantId : physicalTenantIds) {
-      selection.put(physicalTenantId, Map.of(1, new long[] {1L}));
+      selection.put(physicalTenantId, Map.of(1, PartitionRestore.ofBackups(1L)));
     }
     return selection;
   }
@@ -185,7 +187,7 @@ final class ClusterRestoreTest {
       assertThatThrownBy(
               () ->
                   clusterRestore.restore(
-                      Map.of("default", Map.<Integer, long[]>of()),
+                      Map.of("default", Map.<Integer, PartitionRestore>of()),
                       REQUIRE_EMPTY,
                       false,
                       List.of(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)))
@@ -594,10 +596,12 @@ final class ClusterRestoreTest {
           .doesNotThrowAnyException();
     }
 
-    private static Map<Integer, long[]> backupsOf(final int partitionCount) {
+    private static Map<Integer, PartitionRestore> backupsOf(final int partitionCount) {
       return IntStream.rangeClosed(1, partitionCount)
           .boxed()
-          .collect(Collectors.toMap(partition -> partition, partition -> new long[] {1L}));
+          .collect(
+              Collectors.toMap(
+                  partition -> partition, partition -> PartitionRestore.ofBackups(1L)));
     }
 
     @Test

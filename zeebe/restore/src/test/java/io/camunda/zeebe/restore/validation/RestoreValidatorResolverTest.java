@@ -31,20 +31,18 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.IntFunction;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -86,12 +84,12 @@ final class RestoreValidatorResolverTest {
 
   private static void assertValid(
       final Either<Exception, RestoreResolvedRequest> result,
-      final Map<Integer, long[]> expectedBackups,
+      final Map<Integer, PartitionRestore> expectedPartitions,
       final boolean expectedDryRun) {
     assertThat(result.isRight()).isTrue();
     final var resolved = result.get();
     assertThat(resolved.dryRun()).isEqualTo(expectedDryRun);
-    assertThat(toComparable(resolved.backups())).isEqualTo(toComparable(expectedBackups));
+    assertThat(resolved.partitions()).isEqualTo(expectedPartitions);
   }
 
   private static RuntimeException assertInvalid(
@@ -99,12 +97,6 @@ final class RestoreValidatorResolverTest {
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft()).isInstanceOf(RuntimeException.class);
     return (RuntimeException) result.getLeft();
-  }
-
-  private static Map<Integer, List<Long>> toComparable(final Map<Integer, long[]> backups) {
-    return backups.entrySet().stream()
-        .collect(
-            Collectors.toMap(Entry::getKey, e -> Arrays.stream(e.getValue()).boxed().toList()));
   }
 
   private void stubMetadata(final int partitionId, final BackupMetadata metadata) {
@@ -233,7 +225,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}), false);
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
     }
 
     @Test
@@ -251,7 +243,15 @@ final class RestoreValidatorResolverTest {
 
       // then
       assertValid(
-          result, Map.of(1, new long[] {1L}, 2, new long[] {1L}, 3, new long[] {1L}), false);
+          result,
+          Map.of(
+              1,
+              PartitionRestore.ofBackups(1L),
+              2,
+              PartitionRestore.ofBackups(1L),
+              3,
+              PartitionRestore.ofBackups(1L)),
+          false);
     }
 
     @Test
@@ -276,7 +276,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}), false);
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
     }
 
     @Test
@@ -299,7 +299,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}), false);
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
     }
 
     @Test
@@ -325,7 +325,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}), false);
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
     }
 
     @Test
@@ -340,7 +340,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}), false);
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
     }
 
     @Test
@@ -373,7 +373,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}), true);
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), true);
     }
 
     @Test
@@ -459,7 +459,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}), false);
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
     }
 
     @Test
@@ -479,7 +479,15 @@ final class RestoreValidatorResolverTest {
 
       // then
       assertValid(
-          result, Map.of(1, new long[] {42L}, 2, new long[] {42L}, 3, new long[] {42L}), false);
+          result,
+          Map.of(
+              1,
+              PartitionRestore.ofBackups(42L),
+              2,
+              PartitionRestore.ofBackups(42L),
+              3,
+              PartitionRestore.ofBackups(42L)),
+          false);
     }
 
     @Test
@@ -522,7 +530,10 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+      assertValid(
+          result,
+          Map.of(1, PartitionRestore.ofBackups(1L), 2, PartitionRestore.ofBackups(1L)),
+          false);
     }
 
     @ParameterizedTest
@@ -584,7 +595,10 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(elasticsearchRequest(7L));
 
       // then
-      assertValid(result, Map.of(1, new long[] {7L}, 2, new long[] {7L}), false);
+      assertValid(
+          result,
+          Map.of(1, PartitionRestore.ofBackups(7L), 2, PartitionRestore.ofBackups(7L)),
+          false);
     }
 
     @Test
@@ -618,7 +632,10 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(rdbmsRequest());
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+      assertValid(
+          result,
+          Map.of(1, PartitionRestore.ofBackups(1L), 2, PartitionRestore.ofBackups(1L)),
+          false);
     }
 
     @Test
@@ -676,7 +693,10 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+      assertValid(
+          result,
+          Map.of(1, PartitionRestore.ofBackups(1L), 2, PartitionRestore.ofBackups(1L)),
+          false);
     }
 
     @Test
@@ -692,7 +712,10 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+      assertValid(
+          result,
+          Map.of(1, PartitionRestore.ofBackups(1L), 2, PartitionRestore.ofBackups(1L)),
+          false);
     }
 
     @Test
@@ -711,7 +734,10 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
 
       // then
-      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+      assertValid(
+          result,
+          Map.of(1, PartitionRestore.ofBackups(1L), 2, PartitionRestore.ofBackups(1L)),
+          false);
     }
 
     @Test
