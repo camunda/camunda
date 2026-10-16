@@ -117,16 +117,38 @@ for (const spec of specs) {
   }
 }
 
+// A spec that throws while it is being loaded (a syntax error, a failing
+// top-level import) never becomes a failing spec in the tree — Playwright
+// records it in the report's top-level `errors` instead and exits non-zero.
+// Walking only `suites` would miss it and let the wrapper turn that non-zero
+// exit into a pass. So a changed spec named by such an error blocks, and an
+// error with no file at all (a global-setup or config failure that invalidates
+// the whole run) blocks too, since the run then proves nothing about the
+// changed tests. An error attributable to an untouched spec does not block.
+const errorFileBlocking = [];
+let globalError = false;
+for (const err of report?.errors ?? []) {
+  const file = err?.location?.file;
+  if (!file) {
+    globalError = true;
+  } else if (changed.has(normalize(file))) {
+    errorFileBlocking.push(normalize(file));
+  }
+}
+
 const uniq = (arr) => [...new Set(arr)].sort();
-const blocking = uniq(failedChanged);
+const blocking = uniq([...failedChanged, ...errorFileBlocking]);
 const nonBlocking = uniq(failedUntouched);
 
 const summary = [
   `Changed specs in this PR: ${changed.size}`,
   `Specs executed in this job: ${specs.length}`,
   blocking.length
-    ? `BLOCKING — changed specs that failed:\n  - ${blocking.join('\n  - ')}`
-    : 'BLOCKING — changed specs that failed: none',
+    ? `BLOCKING — changed specs that failed or errored:\n  - ${blocking.join('\n  - ')}`
+    : 'BLOCKING — changed specs that failed or errored: none',
+  globalError
+    ? 'BLOCKING — a run-level error with no spec location was reported'
+    : 'Run-level errors: none',
   nonBlocking.length
     ? `Non-blocking — untouched specs that failed (reported, not gating):\n  - ${nonBlocking.join('\n  - ')}`
     : 'Non-blocking — untouched specs that failed: none',
@@ -141,10 +163,11 @@ if (process.env.GITHUB_STEP_SUMMARY) {
   );
 }
 
-if (blocking.length) {
-  console.error(
-    `::error::${blocking.length} test(s) this PR added or modified failed; see the uploaded report.`,
-  );
+if (blocking.length || globalError) {
+  const reason = globalError
+    ? 'a run-level error prevented the changed tests from being validated'
+    : `${blocking.length} test(s) this PR added or modified failed`;
+  console.error(`::error::${reason}; see the uploaded report.`);
   process.exit(1);
 }
 process.exit(0);
