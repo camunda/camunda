@@ -1323,10 +1323,15 @@ jobs:
   # Final job: hand a failed run to the triage agent. github.run_id here is this run,
   # so the classifier reads this run's own artifacts.
   #
-  # `continue-on-error` is not available on a job that calls a reusable workflow, so
-  # alwaysgreen-triage.yml keeps its own fallible steps continue-on-error instead. That
-  # is what stops a triage bug turning a one-job failure into two and skewing the
-  # streak detector's counts.
+  # Hands the failure to the central AlwaysGreen triage in
+  # camunda/c8-cross-component-e2e-tests, which classifies it and dispatches this
+  # repository's fix agent back. The triage scripts used to live here; they now live
+  # once, there, for every consumer. See camunda/team-test-automation#163.
+  #
+  # A dispatch rather than `uses:` because that is the only mechanism that works for
+  # every consumer: GitHub refuses `uses: <internal repo>/...` from a public
+  # repository, and this one is public. It is also already how this workflow asks
+  # that repository to run the SaaS E2E suite.
   alwaysgreen-triage:
     name: AlwaysGreen triage and fix dispatch
     needs:
@@ -1342,21 +1347,90 @@ jobs:
     # Same draft gate as the Slack alert above, for the same reason: unfinished work
     # is expected to fail, and dispatching a fix agent at it wastes an agent run and
     # can open a PR against a moving target. No-op until a pull_request trigger is
-    # added — merge_group is never a draft and push carries no PR.
+    # added -- merge_group is never a draft and push carries no PR.
     if: ${{ always() && contains(needs.*.result, 'failure')
             && !github.event.pull_request.draft }}
-    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
-    secrets: inherit
-    with:
-      # On a merge_group run this is gh-readonly-queue/<base>/pr-<n>-<sha> rather than the
-      # target branch. Triage normalises it (classify.normalise_base_ref) before anything
-      # derives from it, because the ref is part of every fingerprint and a per-PR value
-      # would defeat dedupe.
-      base_ref: ${{ github.ref_name }}
-      chart_version: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.11' }}
-      # Whichever stage posted feedback owns the thread. Helm wins when both failed:
-      # an install failure is the more likely root cause of a SaaS failure than the
-      # reverse. Empty when neither stage failed, or Slack was unavailable; triage
-      # then posts its own parent message instead of threading.
-      parent_slack_ts: ${{ needs.helm-deploy-status.outputs.slack_ts || needs.trigger-saas-e2e.outputs.slack_ts }}
-      parent_slack_channel: ${{ needs.helm-deploy-status.outputs.slack_channel || needs.trigger-saas-e2e.outputs.slack_channel }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (for observe-build-status)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Generate a token that may dispatch to the triage repository
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: c8-cross-component-e2e-tests
+
+      # A disabled workflow accepts a repository_dispatch and runs nothing, so the
+      # POST below would succeed and the failure would simply never be triaged.
+      # Checked rather than assumed, and fatal rather than skipped: the SaaS
+      # dispatchers in that repository are routinely disabled by hand, and this one
+      # going the same way must not be silent.
+      - name: Refuse to dispatch at a disabled receiver
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          state=$(gh api repos/camunda/c8-cross-component-e2e-tests/actions/workflows/alwaysgreen-triage.yml \
+            --jq '.state' 2>/dev/null || echo "unknown")
+          if [ "$state" != "active" ]; then
+            echo "::error::the AlwaysGreen triage receiver is '${state}', so this failure would go untriaged"
+            exit 1
+          fi
+
+      # Deliberately NOT continue-on-error. A dispatch that fails to arrive means the
+      # failure is never triaged, which is the one outcome this system exists to
+      # prevent, so it fails the job and is visible.
+      - name: Hand the failure to the central triage
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          SLACK_TS: ${{ needs.helm-deploy-status.outputs.slack_ts || needs.trigger-saas-e2e.outputs.slack_ts }}
+          SLACK_CHANNEL: ${{ needs.helm-deploy-status.outputs.slack_channel || needs.trigger-saas-e2e.outputs.slack_channel }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -nc \
+            --arg repo "${GITHUB_REPOSITORY}" \
+            --arg run_id "${GITHUB_RUN_ID}" \
+            --arg base_ref "${GITHUB_REF_NAME}" \
+            --arg ts "${SLACK_TS:-}" \
+            --arg channel "${SLACK_CHANNEL:-}" \
+            '{event_type: "alwaysgreen-triage",
+              client_payload: {source_repo: $repo,
+                               run_id: $run_id,
+                               base_ref: $base_ref,
+                               slack_ts: $ts,
+                               slack_channel: $channel}}')
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/camunda/c8-cross-component-e2e-tests/dispatches \
+            --input - <<<"$payload"
+          echo "Handed run ${GITHUB_RUN_ID} to the central triage." >> "$GITHUB_STEP_SUMMARY"
+
+      # Same CI Health observability hook every other job here uses. The job this
+      # replaced was a reusable-workflow call, which carried its own; a steps-based
+      # job has to send its own or the Monorepo CI Health linter fails the lint.
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: alwaysgreen-triage
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
