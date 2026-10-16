@@ -31,9 +31,11 @@ import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +44,16 @@ import org.slf4j.LoggerFactory;
  * (spec section 8.3). A failed step is retried with exponential backoff; nothing is skipped or
  * reordered. Pending requests are dropped on close or recovery because a new leader republishes
  * everything.
+ *
+ * <p><b>Recovery check (spec section 8.4).</b> Nothing is written before {@link
+ * #onRecovered(LogArchiveMeta)} and a successful check of the bucket against the recovered state.
+ * The processor calls {@code onRecovered} before it hands over the outbox, and both hop onto this
+ * actor in that order, so the check always runs before any republish: the requests queue up behind
+ * it. If the bucket already holds {@code commits/<nextSeq>} of the recovered timeline, the state
+ * was rolled back behind the bucket (e.g. by a classic restore). Republishing would then overwrite
+ * that history with a diverging one, so every request for that timeline is dropped, now and later,
+ * and the {@link LogArchiveRecoveryListener} (the archiver) forks a new timeline. The outcome is
+ * delivered to the listener in both cases.
  */
 @NullMarked
 public final class LogArchivePublisher extends Actor
@@ -55,6 +67,7 @@ public final class LogArchivePublisher extends Actor
   private final int partitionId;
   private final LogArchiveStore store;
   private final LogStreamWriter writer;
+  private final LogArchiveRecoveryListener recoveryListener;
 
   // all fields below are only accessed on the actor thread
   private final Queue<PublishRequest> queue = new ArrayDeque<>();
@@ -65,9 +78,19 @@ public final class LogArchivePublisher extends Actor
   private long generation;
   private Duration backoff = INITIAL_BACKOFF;
   private long pendingSealChunkNo = NO_CHUNK;
+  // false until the recovery check succeeded; requests queue up but are not written meanwhile
+  private boolean recoveryChecked;
+  // the recovered timeline if the bucket is ahead of the state; requests for it are dropped
+  private @Nullable String divergedTimelineId;
 
+  /**
+   * @param recoveryListener receives the outcome of the recovery check
+   */
   public LogArchivePublisher(
-      final int partitionId, final LogArchiveStore store, final LogStreamWriter writer) {
+      final int partitionId,
+      final LogArchiveStore store,
+      final LogStreamWriter writer,
+      final LogArchiveRecoveryListener recoveryListener) {
     super(
         buildActorName("LogArchivePublisher", partitionId),
         null,
@@ -75,6 +98,7 @@ public final class LogArchivePublisher extends Actor
     this.partitionId = partitionId;
     this.store = store;
     this.writer = writer;
+    this.recoveryListener = recoveryListener;
   }
 
   @Override
@@ -82,6 +106,14 @@ public final class LogArchivePublisher extends Actor
     actor.run(
         () -> {
           if (closed) {
+            return;
+          }
+          if (request.timelineId().equals(divergedTimelineId)) {
+            LOG.debug(
+                "Partition {}: dropping publish request for seq {} of diverged timeline {}",
+                partitionId,
+                request.seq(),
+                divergedTimelineId);
             return;
           }
           queue.add(request);
@@ -99,6 +131,9 @@ public final class LogArchivePublisher extends Actor
           step = Step.COMMIT;
           backoff = INITIAL_BACKOFF;
           pendingSealChunkNo = NO_CHUNK;
+          recoveryChecked = false;
+          divergedTimelineId = null;
+          checkRecovery(meta);
         });
   }
 
@@ -133,8 +168,78 @@ public final class LogArchivePublisher extends Actor
     queue.clear();
   }
 
+  /**
+   * Checks whether the bucket is ahead of the recovered state: does {@code commits/<nextSeq>} of
+   * the recovered timeline exist?
+   *
+   * <p>A normal leader change never finds it. A commit entry is published only by a post-commit
+   * task, i.e. after the event that took its seq is committed. A new leader has every committed
+   * entry (Raft) and announces leadership only after committing its initial entry, so it has
+   * replayed that event before this check, and its {@code nextSeq} is above every published seq.
+   * The commit entry for {@code nextSeq} can therefore only exist if the state was rolled back.
+   */
+  private void checkRecovery(final LogArchiveMeta meta) {
+    if (closed) {
+      return;
+    }
+    final var timelineId = meta.getTimelineId();
+    if (timelineId.isEmpty()) {
+      completeRecoveryCheck(meta, false);
+      return;
+    }
+    final var key =
+        LogArchiveKeys.partitionPrefix(timelineId, partitionId)
+            + LogArchiveKeys.commitKey(meta.getNextSeq());
+    final long expected = generation;
+    CompletableFuture<Optional<byte[]>> future;
+    try {
+      future = store.getIfExists(key);
+    } catch (final RuntimeException e) {
+      future = CompletableFuture.failedFuture(e);
+    }
+    future.whenComplete(
+        (existing, error) ->
+            actor.run(
+                () -> {
+                  if (expected != generation || closed) {
+                    return;
+                  }
+                  if (error != null) {
+                    LOG.warn(
+                        "Partition {}: failed to check {} after recovery, retrying in {}",
+                        partitionId,
+                        key,
+                        backoff,
+                        error);
+                    retryLater(() -> checkRecovery(meta));
+                  } else {
+                    completeRecoveryCheck(meta, existing.isPresent());
+                  }
+                }));
+  }
+
+  private void completeRecoveryCheck(final LogArchiveMeta meta, final boolean bucketAhead) {
+    backoff = INITIAL_BACKOFF;
+    if (bucketAhead) {
+      divergedTimelineId = meta.getTimelineId();
+      final int dropped = queue.size();
+      queue.removeIf(request -> request.timelineId().equals(divergedTimelineId));
+      LOG.warn(
+          "Partition {}: the log archive bucket already holds seq {} of timeline {}, so the state"
+              + " is behind the bucket (rolled back); dropped {} publish requests and publishing"
+              + " nothing more to that timeline",
+          partitionId,
+          meta.getNextSeq(),
+          divergedTimelineId,
+          dropped - queue.size());
+    }
+    recoveryChecked = true;
+    recoveryListener.onRecoveryChecked(meta, bucketAhead);
+    drive();
+  }
+
   private void drive() {
-    if (busy || closed || queue.isEmpty()) {
+    if (!recoveryChecked || busy || closed || queue.isEmpty()) {
       return;
     }
     busy = true;
@@ -249,7 +354,7 @@ public final class LogArchivePublisher extends Actor
                         key,
                         backoff,
                         error);
-                    retryLater();
+                    retryLater(this::execute);
                   }
                 }));
   }
@@ -272,7 +377,7 @@ public final class LogArchivePublisher extends Actor
           intent,
           failure,
           backoff);
-      retryLater();
+      retryLater(this::execute);
       return false;
     }
     return true;
@@ -284,7 +389,7 @@ public final class LogArchivePublisher extends Actor
     execute();
   }
 
-  private void retryLater() {
+  private void retryLater(final Runnable action) {
     final long expected = generation;
     final long delayMs = backoff.toMillis();
     backoff =
@@ -293,7 +398,7 @@ public final class LogArchivePublisher extends Actor
         Duration.ofMillis(delayMs),
         () -> {
           if (expected == generation) {
-            execute();
+            action.run();
           }
         });
   }

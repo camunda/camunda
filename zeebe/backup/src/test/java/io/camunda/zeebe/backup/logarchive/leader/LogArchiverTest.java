@@ -399,7 +399,7 @@ final class LogArchiverTest {
     source.commit(3);
 
     // when
-    archiver.onRecovered(new LogArchiveMeta());
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
     scheduler.workUntilDone();
 
     // then
@@ -411,10 +411,124 @@ final class LogArchiverTest {
   }
 
   @Test
+  void shouldForkTimelineWhenBucketIsAheadOfState() {
+    // given - the state was rolled back: the bucket already holds seq 51 of tl-0
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.setFirstIndex(5);
+    source.commit(30);
+
+    // when
+    recoverBehindBucket(TIMELINE, 20, 51);
+
+    // then - nothing is uploaded to tl-0, and a fork is started from the first index on disk
+    assertThat(written).hasSize(1);
+    final var command = written.getFirst();
+    assertThat(command.intent()).isEqualTo(LogArchiveIntent.START_TIMELINE);
+    assertThat(command.record().getTimelineId()).isEqualTo("tl-0.f51");
+    assertThat(command.record().getStartIndex()).isEqualTo(5);
+    assertThat(command.record().getParentTimelineId()).isEqualTo(TIMELINE);
+    assertThat(store.keys()).isEmpty();
+  }
+
+  @Test
+  void shouldArchiveForkOnceItIsStarted() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.setFirstIndex(5);
+    source.commit(30);
+    recoverBehindBucket(TIMELINE, 20, 51);
+
+    // when
+    archiver.onTimelineStarted("tl-0.f51");
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(archiveLogRanges()).containsExactly(range(5, 7));
+    assertThat(store.keys())
+        .containsExactly(
+            LogArchiveKeys.partitionPrefix("tl-0.f51", PARTITION)
+                + LogArchiveKeys.dataKey(5, 7, TERM));
+  }
+
+  @Test
+  void shouldForkUnderAnotherIdWhenForkAlreadyExists() {
+    // given - the state was rolled back to the same point before
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    seedTimeline("tl-0.f51");
+    seedTimeline("tl-0.f51-2");
+
+    // when
+    recoverBehindBucket(TIMELINE, 20, 51);
+
+    // then
+    assertThat(written).extracting(w -> w.record().getTimelineId()).containsExactly("tl-0.f51-3");
+  }
+
+  @Test
+  void shouldForkEffectiveTimelineWhenItExistsAlready() {
+    // given - no timeline in the state, but the bucket holds tl-0 (e.g. rolled back behind start)
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    seedTimeline(TIMELINE);
+
+    // when
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
+    scheduler.workUntilDone();
+
+    // then
+    final var command = written.getFirst();
+    assertThat(command.intent()).isEqualTo(LogArchiveIntent.START_TIMELINE);
+    assertThat(command.record().getTimelineId()).isEqualTo("tl-0.f1");
+    assertThat(command.record().getParentTimelineId()).isEmpty();
+  }
+
+  @Test
+  void shouldResumeForkOfEffectiveTimeline() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.commit(8);
+
+    // when - a later leader recovers the fork; the configuration still names tl-0
+    recover("tl-0.f51", 4);
+
+    // then
+    assertThat(archiveLogRanges()).containsExactly(range(5, 7));
+    assertThat(written).extracting(w -> w.record().getTimelineId()).containsOnly("tl-0.f51");
+  }
+
+  @Test
+  void shouldRetryTimelineLookupOnStoreError() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    store.failLists = 1;
+
+    // when
+    recoverBehindBucket(TIMELINE, 20, 51);
+    assertThat(written).isEmpty();
+    scheduler.updateClock(Duration.ofMillis(100));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(written).extracting(w -> w.record().getTimelineId()).containsExactly("tl-0.f51");
+  }
+
+  @Test
+  void shouldTreatOnlyForksAsContinuingTheEffectiveTimeline() {
+    assertThat(LogArchiver.continuesTimeline("tl-0", "tl-0")).isTrue();
+    assertThat(LogArchiver.continuesTimeline("tl-0.f51", "tl-0")).isTrue();
+    assertThat(LogArchiver.continuesTimeline("tl-0.f51-2.f7", "tl-0")).isTrue();
+    assertThat(LogArchiver.continuesTimeline("tl-0.r42.f3", "tl-0.r42")).isTrue();
+    assertThat(LogArchiver.continuesTimeline("tl-0", "tl-0.r42")).isFalse();
+    assertThat(LogArchiver.continuesTimeline("tl-0.r42", "tl-0")).isFalse();
+    assertThat(LogArchiver.continuesTimeline("tl-0.fancy", "tl-0")).isFalse();
+    assertThat(LogArchiver.continuesTimeline("tl-01", "tl-0")).isFalse();
+    assertThat(LogArchiver.continuesTimeline("", "tl-0")).isFalse();
+  }
+
+  @Test
   void shouldRetryRejectedStartTimeline() {
     // given
     startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
-    archiver.onRecovered(new LogArchiveMeta());
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
     scheduler.workUntilDone();
 
     // when
@@ -542,12 +656,32 @@ final class LogArchiverTest {
   }
 
   private void recover(final String timelineId, final long archivedIndex) {
-    archiver.onRecovered(
+    archiver.onRecoveryChecked(
         new LogArchiveMeta()
             .setTimelineId(timelineId)
             .setStartIndex(1)
-            .setArchivedIndex(archivedIndex));
+            .setArchivedIndex(archivedIndex),
+        false);
     scheduler.workUntilDone();
+  }
+
+  /** Recovers a state that the bucket is ahead of: it already holds the commit entry nextSeq. */
+  private void recoverBehindBucket(
+      final String timelineId, final long archivedIndex, final long nextSeq) {
+    archiver.onRecoveryChecked(
+        new LogArchiveMeta()
+            .setTimelineId(timelineId)
+            .setStartIndex(1)
+            .setArchivedIndex(archivedIndex)
+            .setNextSeq(nextSeq),
+        true);
+    scheduler.workUntilDone();
+  }
+
+  private void seedTimeline(final String timelineId) {
+    store.objects.put(
+        LogArchiveKeys.partitionPrefix(timelineId, PARTITION) + LogArchiveKeys.commitKey(1),
+        new byte[] {1});
   }
 
   /** Simulates the processor committing the last ARCHIVE_LOG command. */
@@ -643,6 +777,7 @@ final class LogArchiverTest {
     private final Map<String, byte[]> objects = new LinkedHashMap<>();
     private int failPuts;
     private int putAttempts;
+    private int failLists;
 
     List<String> keys() {
       return List.copyOf(objects.keySet());
@@ -681,6 +816,10 @@ final class LogArchiverTest {
 
     @Override
     public CompletableFuture<List<String>> list(final String prefix) {
+      if (failLists > 0) {
+        failLists--;
+        return CompletableFuture.failedFuture(new RuntimeException("expected"));
+      }
       return CompletableFuture.completedFuture(
           objects.keySet().stream().filter(k -> k.startsWith(prefix)).sorted().toList());
     }

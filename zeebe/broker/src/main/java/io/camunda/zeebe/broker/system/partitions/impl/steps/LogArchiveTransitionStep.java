@@ -135,8 +135,17 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             context.getPersistedSnapshotStore(),
             logStream.newLogStreamWriter(),
             cfg.getSnapshotUploadInterval());
+    // The publisher checks the bucket against the recovered state before it publishes anything and
+    // hands the outcome to the archiver and the uploader, which wait for it (spec section 8.4).
     final var publisher =
-        new LogArchivePublisher(partitionId, store, logStream.newLogStreamWriter());
+        new LogArchivePublisher(
+            partitionId,
+            store,
+            logStream.newLogStreamWriter(),
+            (meta, bucketAhead) -> {
+              archiver.onRecoveryChecked(meta.copy(), bucketAhead);
+              uploader.onRecoveryChecked(meta.copy(), bucketAhead);
+            });
     final var components = new LeaderComponents(store, archiver, uploader, publisher);
     leaderComponents = components;
 

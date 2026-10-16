@@ -57,7 +57,7 @@ Nested in the existing backup config, `zeebe.broker.data.backup.logArchive.*`:
 | Property | Default | Meaning |
 |----------|---------|---------|
 | `enabled` | `false` | Turns the log archive on. |
-| `timeline` | `tl-0` | Timeline id used when no timeline file exists in the partition directory. |
+| `timeline` | `tl-0` | Timeline id used when no timeline file exists in the partition directory. A fork of it (`<timeline>.f<seq>…`, section 8.4) counts as the same timeline. |
 | `cutMaxBytes` | `16MB` | Cut an object when it reaches this size. |
 | `cutInterval` | `PT2S` | Cut an object at least this often while there are committed, unarchived entries. |
 | `idleCutInterval` | `PT5M` | Cut an object at least this often while every committed, unarchived entry holds only `LOG_ARCHIVE` records or is a non-application Raft entry (section 8.1). |
@@ -82,7 +82,7 @@ See section 14 for the full list of registration points.
 
 | Value | Intent | Kind | Written by |
 |-------|--------|------|-----------|
-| 0 | `START_TIMELINE` | command | archiver, on leader start when the timeline differs |
+| 0 | `START_TIMELINE` | command | archiver, on leader start when the timeline differs or the bucket is ahead of the state |
 | 1 | `TIMELINE_STARTED` | event | processor |
 | 2 | `ARCHIVE_LOG` | command | archiver, after uploading objects |
 | 3 | `LOG_ARCHIVED` | event | processor |
@@ -254,9 +254,17 @@ States: `IDLE → READING → UPLOADING → AWAIT_COMMIT → IDLE`. One object i
 - Inputs: committed reader from `RaftPartitionServer.openReader()`; wake-ups from
   `AtomixLogStorage.addCommitListener` and a `cutInterval` timer.
 - Cursor `A` (in memory) starts at `meta.archivedIndex` on leader start.
-- On start: if `meta.timelineId` differs from the effective timeline (timeline file, else config),
-  write `START_TIMELINE` with `startIndex` = the reader's first index, then wait for
-  `onTimelineStarted`.
+- On start the archiver waits for the publisher's recovery check (section 8.4), then:
+  - if `meta.timelineId` is neither the effective timeline (timeline file, else config) nor a fork
+    of it, start the effective timeline;
+  - else, if the bucket is ahead of the state, start a fork `<meta.timelineId>.f<meta.nextSeq>`;
+  - else resume `meta.timelineId` from F.
+- Starting a timeline: first make sure its partition prefix is empty in the bucket (`list`). If it
+  is not, another history lives there (the state was rolled back behind its start, or the same
+  restore ran twice), so take the next candidate instead: for the effective timeline
+  `<timeline>.f1`, for a fork `<fork>-2`, `<fork>-3`, …. Then write `START_TIMELINE` with
+  `startIndex` = the reader's first index and `parentTimelineId = meta.timelineId`, and wait for
+  `onTimelineStarted`. Nothing is uploaded before that.
 - `READING`: read entries `A+1 …` from the committed reader until `cutMaxBytes` or no more committed
   entries. Skip the cut if nothing is read. If the cut interval has not passed since the last cut and
   the size limit was not reached, go back to `IDLE` and wait.
@@ -301,6 +309,8 @@ A single actor that writes to the bucket strictly in seq order.
 - A root for seq N is computed by the processor while applying seq N, from current state. A root is
   never computed for an older seq, which keeps I4.
 - Failures: retry the same PUT with backoff. Never skip a seq.
+- Nothing is written before the recovery check of section 8.4 succeeded. Requests that arrive
+  earlier queue up behind it.
 
 ### 8.3a Processor-to-leader interfaces
 
@@ -333,6 +343,35 @@ called only while processing, never during replay.
 On `onRecovered` the processor hands the publisher every outbox row (`seq > lastPublishedSeq`) in
 order, plus a root for the current `nextSeq - 1`, plus a seal request if the open chunk is full. The
 archiver resumes from F and the uploader from scratch. Republishing an existing key is harmless (I4).
+
+**Recovery check (rolled-back state).** A classic restore, or any other rollback of the broker
+state, brings back log archive state from the past (lower F, lower `nextSeq`) while the bucket
+already holds the later history of the same timeline. Republishing the outbox and continuing the
+timeline would then overwrite `commits/<seq>.json` and `_latest.json` with a diverging history.
+So before anything is written after recovery, the publisher checks whether
+`commits/<meta.nextSeq>.json` of `meta.timelineId` exists:
+
+- The listener's `onRecovered` reaches the publisher before the outbox (both hop onto its actor in
+  call order), so the check starts before any republish; requests queue up behind it. A store
+  error is retried with backoff; nothing is published before the check succeeded.
+- Not found: publish as usual.
+- Found, i.e. the bucket is ahead of the state: drop every queued and later request for
+  `meta.timelineId`; nothing is ever published to it again by this leader. The archiver forks
+  `<meta.timelineId>.f<meta.nextSeq>` (section 8.1), with `parentTimelineId = meta.timelineId` and
+  `startIndex` = the first index on disk. After `TIMELINE_STARTED` everything continues on the fork
+  as usual (seq restarts at 1). The snapshot uploader waits for the fork as well.
+- The outcome reaches the archiver and the uploader through an in-memory callback
+  (`LogArchiveRecoveryListener`); neither writes to the bucket before it.
+
+A normal leader change never triggers the fork: a commit entry is published only by a post-commit
+task, after the event that took its seq is committed. A new leader holds every committed entry and
+announces leadership only after committing its initial entry, so it has replayed that event, and its
+`nextSeq` is above every published seq.
+
+The fork id is derived from the replicated state, names the point of divergence, and keeps the
+source timeline as prefix, so the archiver recognizes a fork of the effective timeline as "the same
+timeline" (it lives only in the replicated state, not in the timeline file or configuration).
+Restore reads a fork like any other timeline; its id has to be given explicitly.
 
 ## 9. Bucket layout and JSON
 
@@ -564,6 +603,10 @@ Integration tests (broker, filesystem store first, then MinIO):
 - Side by side: with `continuous` and the log archive both enabled, existing backup tests still pass.
 
 ## 15a. Known limits of the PoC
+
+- A rolled-back state forks a new timeline (section 8.4). The forked-from timeline is left as it
+  was; nothing links it to the fork except the fork's `parentTimelineId`, and restore does not
+  follow forks or parents on its own: the operator picks the timeline to restore from.
 
 - The root lists every archived snapshot and the state keeps every snapshot descriptor. Without
   retention both grow without bound (about 17,500 snapshots a year at one every 30 minutes).

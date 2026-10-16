@@ -180,6 +180,7 @@ final class SnapshotUploaderTest {
 
     // when
     uploader.onTimelineStarted("tl-new");
+    uploader.onLogArchived(10, 100);
     scheduler.updateClock(INTERVAL);
     scheduler.workUntilDone();
 
@@ -331,8 +332,38 @@ final class SnapshotUploaderTest {
     assertThat(releases).hasValue(1);
   }
 
+  @Test
+  void shouldNotUploadToRecoveredTimelineWhenBucketIsAhead() {
+    // given
+    givenSnapshot("1-1-10-10", 5);
+
+    // when
+    uploader.onRecoveryChecked(
+        new LogArchiveMeta().setTimelineId(TIMELINE).setArchivedIndex(10), true);
+    scheduler.workUntilDone();
+    scheduler.updateClock(INTERVAL);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(writer.entries).isEmpty();
+    assertThat(store.objects).isEmpty();
+
+    // when - the archiver's fork is started and archives past the snapshot
+    uploader.onTimelineStarted("tl-0.f3");
+    uploader.onLogArchived(10, 100);
+    scheduler.updateClock(INTERVAL);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(writer.entries).hasSize(1);
+    assertThat(store.objects.keySet())
+        .isNotEmpty()
+        .allMatch(key -> key.startsWith(LogArchiveKeys.partitionPrefix("tl-0.f3", PARTITION)));
+  }
+
   private void recoverAndTick(final int seconds) {
-    uploader.onRecovered(new LogArchiveMeta().setTimelineId(TIMELINE).setArchivedIndex(10));
+    uploader.onRecoveryChecked(
+        new LogArchiveMeta().setTimelineId(TIMELINE).setArchivedIndex(10), false);
     scheduler.workUntilDone();
     scheduler.updateClock(Duration.ofSeconds(seconds));
     scheduler.workUntilDone();
