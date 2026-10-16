@@ -220,8 +220,7 @@ public class RestoreApp implements ApplicationRunner {
                     physicalTenantId,
                     new PhysicalTenantRestoreTarget(
                         tenantConfiguration,
-                        () -> backupStores.forPhysicalTenant(physicalTenantId),
-                        exporterPositionMappers.get(physicalTenantId))));
+                        () -> backupStores.forPhysicalTenant(physicalTenantId))));
     return targets;
   }
 
