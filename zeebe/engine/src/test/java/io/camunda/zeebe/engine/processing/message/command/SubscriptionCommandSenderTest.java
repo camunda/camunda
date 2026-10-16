@@ -90,7 +90,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -107,7 +108,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());

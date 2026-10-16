@@ -870,6 +870,61 @@ public final class StorageOrdinalAssignmentTest {
   }
 
   @Test
+  public void shouldAssignConfiguredOrdinalToClosedMessageSubscriptionRecords() {
+    // given: an instance waiting at an intermediate message catch event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("closed-message-subscription-process")
+                .startEvent()
+                .intermediateCatchEvent("message-catch")
+                .message(m -> m.name("ordinal-closed-message").zeebeCorrelationKeyExpression("key"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("closed-message-subscription-process")
+            .withVariable("key", "correlation-key-3")
+            .create();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when: the instance is cancelled, which closes the subscription on both sides
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then: the DELETE command, its acknowledging DELETE command and the DELETED events all carry
+    // the ordinal, including the command sent back to the process instance partition
+    final var messageSubscriptionRecords =
+        RecordingExporter.messageSubscriptionRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(r -> r.getIntent() == MessageSubscriptionIntent.DELETED)
+            .asList();
+    assertThat(messageSubscriptionRecords)
+        .extracting(Record::getIntent)
+        .contains(MessageSubscriptionIntent.DELETE, MessageSubscriptionIntent.DELETED);
+    assertThat(messageSubscriptionRecords)
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    final var processMessageSubscriptionRecords =
+        RecordingExporter.processMessageSubscriptionRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(r -> r.getIntent() == ProcessMessageSubscriptionIntent.DELETED)
+            .asList();
+    assertThat(processMessageSubscriptionRecords)
+        .extracting(Record::getIntent)
+        .contains(
+            ProcessMessageSubscriptionIntent.DELETE, ProcessMessageSubscriptionIntent.DELETED);
+    assertThat(processMessageSubscriptionRecords)
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
   public void shouldAssignConfiguredOrdinalToConditionalSubscriptionRecords() {
     // given: a conditional boundary event whose condition is already fulfilled at subscription
     // time, so the subscription is created and immediately triggered
