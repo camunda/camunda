@@ -16,6 +16,7 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -30,7 +31,11 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -43,6 +48,19 @@ public final class BatchOperationStorageOrdinalTest {
   private static final int PARTITION_COUNT = 2;
   private static final int FIXED_ORDINAL = 1234;
 
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
+  private static final ConfiguredUser USER_WITHOUT_PERMISSIONS =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
+
   private final SearchClientsProxy searchClientsProxy = Mockito.mock(SearchClientsProxy.class);
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       Mockito.mock(BrokerRequestAuthorizationConverter.class);
@@ -54,6 +72,17 @@ public final class BatchOperationStorageOrdinalTest {
   @Rule
   public final EngineRule engine =
       EngineRule.multiplePartition(PARTITION_COUNT)
+          .withIdentitySetup()
+          .withAuthorizationsEnabled(true)
+          .withSecurityConfig(
+              cfg ->
+                  cfg.getInitialization().setUsers(List.of(DEFAULT_USER, USER_WITHOUT_PERMISSIONS)))
+          .withSecurityConfig(
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              })
           .withEngineConfig(
               config ->
                   config
@@ -321,6 +350,31 @@ public final class BatchOperationStorageOrdinalTest {
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
     assertThat(rejection.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToForbiddenLifecycleCommands() {
+    // given
+    stubProcessInstanceSearchFailure();
+    final long batchOperationKey = createBatchOperation();
+    final var lifecycle =
+        engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey);
+
+    // when
+    final var forbiddenCancel =
+        lifecycle.expectRejection().cancel(USER_WITHOUT_PERMISSIONS.getUsername());
+    final var forbiddenSuspend =
+        lifecycle.expectRejection().suspend(USER_WITHOUT_PERMISSIONS.getUsername());
+    final var forbiddenResume =
+        lifecycle.expectRejection().resume(USER_WITHOUT_PERMISSIONS.getUsername());
+
+    // then
+    assertThat(List.of(forbiddenCancel, forbiddenSuspend, forbiddenResume))
+        .allSatisfy(
+            rejection -> {
+              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+              assertThat(rejection.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+            });
   }
 
   @Test

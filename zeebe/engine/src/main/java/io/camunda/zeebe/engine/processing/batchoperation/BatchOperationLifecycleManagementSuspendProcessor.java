@@ -82,6 +82,13 @@ public final class BatchOperationLifecycleManagementSuspendProcessor
   @Override
   public void processNewCommand(
       final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
+    final var recordValue = command.getValue();
+    final var batchOperationKey = recordValue.getBatchOperationKey();
+    // Look the batch operation up before the authorization check so a FORBIDDEN rejection
+    // carries its storage ordinal like every other record of the batch operation.
+    final var oBatchOperation = batchOperationState.get(batchOperationKey);
+    oBatchOperation.ifPresent(bo -> recordValue.setStorageOrdinal(bo.getStorageOrdinal()));
+
     final var authorizationResult =
         cslCheck.check(
             command,
@@ -100,21 +107,17 @@ public final class BatchOperationLifecycleManagementSuspendProcessor
       return;
     }
 
-    final var recordValue = command.getValue();
-    final var batchOperationKey = command.getValue().getBatchOperationKey();
     final var suspendKey = keyGenerator.nextKey();
     LOGGER.debug(
         "Suspending batch operation with key {}", command.getValue().getBatchOperationKey());
 
     // validation
-    final var oBatchOperation = batchOperationState.get(batchOperationKey);
     if (oBatchOperation.isEmpty()) {
       rejectNotFound(command, batchOperationKey, recordValue);
       return;
     }
 
     final var batchOperation = oBatchOperation.get();
-    recordValue.setStorageOrdinal(batchOperation.getStorageOrdinal());
 
     // check if the batch operation can be suspended
     if (!batchOperation.canSuspend()) {
