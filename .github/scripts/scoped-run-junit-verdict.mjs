@@ -25,19 +25,21 @@
 // only readable here because parent/pom.xml sets
 // `usePhrasedTestCaseMethodName`, which makes Surefire write the display name
 // as the XML `name`; without it the name would be the method identifier and a
-// per-case verdict would be impossible.
+// per-case verdict would be impossible. Both were confirmed by running the
+// two tools and reading what they wrote.
+//
+// Vitest puts the enclosing `describe` titles in that name, separated by
+// " > " and XML-escaped: a test inside one describe is reported as
+// `Audit log &gt; AL-UI-01: works`. So the id is looked for in the LEAF
+// segment, not the whole string. Matching anywhere would accept a case id
+// that names only a parent suite, where the test that ran is some other
+// assertion underneath it.
 //
 // Usage: node scoped-run-junit-verdict.mjs <report.xml|dir> <CASE_ID>
 //
 import fs from 'node:fs';
 import path from 'node:path';
-
-const [reportArg, caseId] = process.argv.slice(2);
-
-if (!reportArg || !caseId) {
-  console.error('Usage: node scoped-run-junit-verdict.mjs <report.xml|dir> <CASE_ID>');
-  process.exit(2);
-}
+import {fileURLToPath} from 'node:url';
 
 /** Every .xml under a directory, or the single file given. */
 function reportFiles(target) {
@@ -57,6 +59,72 @@ function reportFiles(target) {
   return out;
 }
 
+const ENTITIES = {
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&apos;': "'",
+  '&amp;': '&',
+};
+
+/** XML attribute text as it was written. `&amp;` last, or it double-decodes. */
+function decodeEntities(text) {
+  return String(text ?? '').replace(
+    /&(lt|gt|quot|apos|amp);/g,
+    (m) => ENTITIES[m],
+  );
+}
+
+/**
+ * The leaf title of a vitest hierarchical name.
+ *
+ * `Audit log > nested > AL-UI-01: works` is one test, named after the
+ * describes that enclose it. The case id belongs to the test, so only the last
+ * segment is its name — reading the whole string would miss it, and matching
+ * any segment would accept an id that names a parent suite while some other
+ * assertion is what actually ran. Surefire names have no separator and come
+ * through unchanged.
+ */
+export function leafName(name) {
+  const decoded = decodeEntities(name);
+  const parts = decoded.split(' > ');
+  return parts[parts.length - 1].trim();
+}
+
+/**
+ * The document with anything that is not structure removed.
+ *
+ * Tests log, and what they log lands in `system-out`. A passing case whose
+ * output contains the text `<error>handled</error>` was read as a failure,
+ * because a regex cannot tell a tag from a tag-shaped string inside CDATA.
+ * Comments go the same way. Both are stripped before any structural scan, so
+ * what is left is markup.
+ */
+export function stripNonStructure(xml) {
+  return String(xml ?? '')
+    .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '')
+    .replace(/<!--[\s\S]*?-->/g, '');
+}
+
+/**
+ * Whether the document ends where a complete one would.
+ *
+ * A report truncated mid-write — a killed runner, a full disk — can hold a
+ * passing case and lose the failure that came after it. Reading it as
+ * authoritative turns a dead run into a green verdict, which is the one
+ * answer this script exists to refuse. Checked structurally rather than by
+ * parsing: every opened element of the three that matter is closed.
+ */
+export function wellFormed(xml) {
+  const opens = (tag) =>
+    (xml.match(new RegExp(`<${tag}\\b(?![^>]*\\/>)`, 'g')) ?? []).length;
+  const closes = (tag) => (xml.match(new RegExp(`<\\/${tag}>`, 'g')) ?? []).length;
+  for (const tag of ['testsuites', 'testsuite', 'testcase']) {
+    if (opens(tag) !== closes(tag)) return `unbalanced <${tag}>`;
+  }
+  return null;
+}
+
 /**
  * The test cases in one JUnit document, each with its own outcome.
  *
@@ -64,7 +132,7 @@ function reportFiles(target) {
  * same class or file, and a failure among those must not be read as this
  * case's. They are counted and shown, but they do not decide the verdict.
  */
-function parseCases(xml) {
+export function parseCases(xml) {
   const cases = [];
   // Self-closing `<testcase ... />` is a pass; the long form carries the
   // outcome as a child element.
@@ -79,9 +147,11 @@ function parseCases(xml) {
       const hit = new RegExp(`\\b${key}="([^"]*)"`).exec(attrs);
       return hit ? hit[1] : null;
     };
+    const name = attr('name');
     cases.push({
-      name: attr('name'),
-      classname: attr('classname'),
+      name: decodeEntities(name),
+      leaf: leafName(name),
+      classname: decodeEntities(attr('classname')),
       failed: /<(failure|error)\b/.test(body),
       skipped: /<skipped\b/.test(body),
     });
@@ -89,54 +159,84 @@ function parseCases(xml) {
   return cases;
 }
 
-const files = reportFiles(reportArg);
-if (files.length === 0) {
-  console.error(`::error::no JUnit XML report under ${reportArg} — cannot verify that ${caseId} ran`);
-  process.exit(1);
-}
+// ---------------------------------------------------------------------------
+// CLI
+// ---------------------------------------------------------------------------
 
-const all = [];
-for (const file of files) {
-  try {
-    all.push(...parseCases(fs.readFileSync(file, 'utf-8')));
-  } catch (error) {
-    console.error(`::error::could not read ${file}: ${error.message}`);
-    process.exit(2);
+export function runCli(argv) {
+  const [reportArg, caseId] = argv;
+  if (!reportArg || !caseId) {
+    console.error(
+      'Usage: node scoped-run-junit-verdict.mjs <report.xml|dir> <CASE_ID>',
+    );
+    return 2;
   }
-}
 
-const matched = all.filter((c) => (c.name ?? '').startsWith(`${caseId}:`));
-const others = all.length - matched.length;
-
-console.log(`Report files: ${files.length}`);
-console.log(`Test cases:   ${all.length} (${matched.length} for ${caseId}, ${others} other)`);
-
-if (matched.length === 0) {
-  console.error(`::error::no test named "${caseId}: ..." ran.`);
-  console.error(
-    '  The filter selected nothing, so there is no evidence the case works. ' +
-      'Check that the generated test title starts with the case id — in JUnit ' +
-      'that is a method-level @DisplayName.',
-  );
-  if (all.length > 0) {
-    console.error('  Cases the report does contain:');
-    for (const c of all.slice(0, 20)) console.error(`    ${c.name}`);
+  const files = reportFiles(reportArg);
+  if (files.length === 0) {
+    console.error(`::error::no JUnit XML report under ${reportArg} — cannot verify that ${caseId} ran`);
+    return 1;
   }
-  process.exit(1);
+
+  const all = [];
+  for (const file of files) {
+    let xml;
+    try {
+      xml = stripNonStructure(fs.readFileSync(file, 'utf-8'));
+    } catch (error) {
+      console.error(`::error::could not read ${file}: ${error.message}`);
+      return 2;
+    }
+    const broken = wellFormed(xml);
+    if (broken) {
+      console.error(`::error::${file} is not a complete report (${broken}).`);
+      console.error(
+        '  A truncated report can hold a passing case and have lost the ' +
+          'failure that came after it, so it is refused rather than read.',
+      );
+      return 1;
+    }
+    all.push(...parseCases(xml));
+  }
+
+  const matched = all.filter((c) => c.leaf.startsWith(`${caseId}:`));
+  const others = all.length - matched.length;
+
+  console.log(`Report files: ${files.length}`);
+  console.log(`Test cases:   ${all.length} (${matched.length} for ${caseId}, ${others} other)`);
+
+  if (matched.length === 0) {
+    console.error(`::error::no test named "${caseId}: ..." ran.`);
+    console.error(
+      '  The filter selected nothing, so there is no evidence the case works. ' +
+        'Check that the generated test title starts with the case id — in JUnit ' +
+        'that is a method-level @DisplayName.',
+    );
+    if (all.length > 0) {
+      console.error('  Cases the report does contain:');
+      for (const c of all.slice(0, 20)) console.error(`    ${c.name}`);
+    }
+    return 1;
+  }
+
+  let bad = 0;
+  for (const c of matched) {
+    const state = c.failed ? 'FAILED' : c.skipped ? 'SKIPPED' : 'passed';
+    console.log(`  ${state}  ${c.name}`);
+    if (c.failed || c.skipped) bad += 1;
+  }
+
+  if (bad > 0) {
+    // Skipped counts as not passing. A skipped test is not evidence, and the
+    // loop asking this question is deciding whether a case is covered.
+    console.error(`::error::${caseId} did not pass: ${bad} of ${matched.length} case(s) failed or were skipped`);
+    return 1;
+  }
+
+  console.log(`✓ ${caseId} passed.`);
+  return 0;
 }
 
-let bad = 0;
-for (const c of matched) {
-  const state = c.failed ? 'FAILED' : c.skipped ? 'SKIPPED' : 'passed';
-  console.log(`  ${state}  ${c.name}`);
-  if (c.failed || c.skipped) bad += 1;
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  process.exit(runCli(process.argv.slice(2)));
 }
-
-if (bad > 0) {
-  // Skipped counts as not passing. A skipped test is not evidence, and the
-  // loop asking this question is deciding whether a case is covered.
-  console.error(`::error::${caseId} did not pass: ${bad} of ${matched.length} case(s) failed or were skipped`);
-  process.exit(1);
-}
-
-console.log(`✓ ${caseId} passed.`);
