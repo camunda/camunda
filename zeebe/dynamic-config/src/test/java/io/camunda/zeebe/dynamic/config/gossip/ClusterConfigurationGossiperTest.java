@@ -8,12 +8,24 @@
 package io.camunda.zeebe.dynamic.config.gossip;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
@@ -26,6 +38,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -34,6 +47,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
@@ -41,6 +58,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 final class ClusterConfigurationGossiperTest {
 
@@ -162,6 +180,176 @@ final class ClusterConfigurationGossiperTest {
     assertThat(backfilled.get().hasPartitionGroup("tenanta")).isTrue();
   }
 
+  @Test
+  void shouldKeepSyncingWhenNoPeerIsKnownAtFirstTick() {
+    // given
+    final var fixture = new SyncFixture();
+    fixture.start();
+    assertThat(fixture.executor.scheduledTasks()).as("first sync tick is scheduled").isOne();
+
+    // when
+    fixture.executor.runAll();
+
+    // then
+
+    verify(fixture.communicationService, never()).send(any(), any(), any(), any(), any(), any());
+    assertThat(fixture.executor.scheduledTasks()).as("next sync tick is scheduled").isOne();
+
+    // when
+    final var peer = fixture.addPeer("peer");
+    fixture.executor.runAll();
+
+    // then
+    verify(fixture.communicationService)
+        .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
+  }
+
+  @Test
+  void shouldKeepSyncingAfterASuccessfulSync() {
+    // given
+    final var fixture = new SyncFixture();
+    final var peer = fixture.addPeer("peer");
+    final var peerConfiguration =
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(MemberId.from("peer"), MemberState.initializeAsActive(Map.of())));
+    final var response = new ClusterConfigurationGossipState();
+    response.setCurrentClusterConfiguration(peerConfiguration);
+    fixture.respondWith(CompletableFuture.completedFuture(response));
+    fixture.start();
+
+    // when
+    fixture.executor.runAll();
+
+    // then
+    assertThat(fixture.receivedConfigurations).containsExactly(peerConfiguration);
+    fixture.executor.runAll();
+    verify(fixture.communicationService, times(2))
+        .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
+  }
+
+  @Test
+  void shouldKeepSyncingAfterAFailedSync() {
+    // given
+    final var fixture = new SyncFixture();
+    final var peer = fixture.addPeer("peer");
+    fixture.respondWith(CompletableFuture.failedFuture(new IllegalStateException("expected")));
+    fixture.start();
+
+    // when
+    fixture.executor.runAll();
+
+    // then
+    assertThat(fixture.receivedConfigurations).isEmpty();
+    fixture.executor.runAll();
+    verify(fixture.communicationService, times(2))
+        .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
+  }
+
+  @Test
+  void shouldKeepSyncingWhenStartingASyncFails() {
+    // given
+    final var fixture = new SyncFixture();
+    final var peer = fixture.addPeer("peer");
+    when(fixture.membershipService.getMembers())
+        .thenThrow(new IllegalStateException("expected"))
+        .thenAnswer(i -> Set.copyOf(fixture.members));
+    fixture.start();
+
+    // when
+    assertThatThrownBy(fixture.executor::runAll).isInstanceOf(IllegalStateException.class);
+
+    // then
+    assertThat(fixture.executor.scheduledTasks()).as("next sync tick is scheduled").isOne();
+    fixture.executor.runAll();
+    verify(fixture.communicationService)
+        .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
+  }
+
+  @Test
+  void shouldSyncWithEveryPeerBeforeRepeatingOne() {
+    // given
+    final var fixture = new SyncFixture();
+    final var peers = List.of(fixture.addPeer("a"), fixture.addPeer("b"), fixture.addPeer("c"));
+    fixture.respondWith(CompletableFuture.completedFuture(new ClusterConfigurationGossipState()));
+    fixture.start();
+
+    // when
+    for (int i = 0; i < 2 * peers.size(); i++) {
+      fixture.executor.runAll();
+    }
+
+    // then
+    final var syncedMembers = ArgumentCaptor.forClass(MemberId.class);
+    verify(fixture.communicationService, times(2 * peers.size()))
+        .send(any(), any(), any(), any(), syncedMembers.capture(), any());
+    final var allSynced = syncedMembers.getAllValues();
+    assertThat(allSynced.subList(0, peers.size())).containsExactlyInAnyOrderElementsOf(peers);
+    assertThat(allSynced.subList(peers.size(), allSynced.size()))
+        .containsExactlyInAnyOrderElementsOf(peers);
+  }
+
+  @Test
+  void shouldNotSendANewSyncWhileOneIsPending() {
+    // given
+    final var fixture = new SyncFixture();
+    final var peer = fixture.addPeer("peer");
+    final var pending = new CompletableFuture<ClusterConfigurationGossipState>();
+    fixture.respondWith(pending);
+    fixture.start();
+
+    // when
+    fixture.executor.runAll();
+    fixture.executor.runAll();
+    fixture.executor.runAll();
+
+    // then
+    verify(fixture.communicationService)
+        .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
+
+    // when
+    pending.complete(new ClusterConfigurationGossipState());
+    fixture.executor.runAll();
+
+    // then
+    verify(fixture.communicationService, times(2))
+        .send(eq("cluster-topology-sync"), any(), any(), any(), eq(peer), any());
+  }
+
+  @Test
+  void shouldNotStartSyncingOnceClosed() {
+    // given
+    final var fixture = new SyncFixture();
+    fixture.addPeer("peer");
+
+    // when
+    fixture.gossiper.close();
+    fixture.start();
+    fixture.executor.runAll();
+
+    // then
+    assertThat(fixture.executor.scheduledTasks()).isZero();
+    verify(fixture.communicationService, never()).send(any(), any(), any(), any(), any(), any());
+    verify(fixture.communicationService, never()).replyTo(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void shouldStopSyncingWhenClosed() {
+    // given
+    final var fixture = new SyncFixture();
+    fixture.addPeer("peer");
+    fixture.start();
+    assertThat(fixture.executor.scheduledTasks()).as("sync tick is scheduled").isOne();
+
+    // when
+    fixture.gossiper.close();
+
+    // then
+    assertThat(fixture.executor.scheduledTasks()).as("sync tick is cancelled").isZero();
+    fixture.executor.runAll();
+    verify(fixture.communicationService, never()).send(any(), any(), any(), any(), any(), any());
+  }
+
   private Node createNode(final String id) {
     return Node.builder().withId(id).withPort(SocketUtil.getNextAddress().getPort()).build();
   }
@@ -232,6 +420,60 @@ final class ClusterConfigurationGossiperTest {
 
     void addUpdateListener(final ClusterConfigurationUpdateListener listener) {
       gossiper.addUpdateListener(listener);
+    }
+  }
+
+  /**
+   * Drives a gossiper with a membership service and a communication service that are mocked, and an
+   * executor that only runs scheduled sync ticks when {@link TestConcurrencyControl#runAll()} is
+   * called, so tests don't depend on timing.
+   */
+  private final class SyncFixture {
+    private final TestConcurrencyControl executor = new TestConcurrencyControl(true);
+    private final Set<Member> members = new CopyOnWriteArraySet<>();
+    private final List<CurrentClusterConfiguration> receivedConfigurations =
+        new CopyOnWriteArrayList<>();
+    private final ClusterMembershipService membershipService = mock(ClusterMembershipService.class);
+    private final ClusterCommunicationService communicationService =
+        mock(ClusterCommunicationService.class);
+    private final ClusterConfigurationGossiper gossiper;
+
+    private SyncFixture() {
+      final var localMember =
+          Member.member(MemberId.from("local"), Address.from("localhost:26501"));
+      members.add(localMember);
+      when(membershipService.getLocalMember()).thenReturn(localMember);
+      when(membershipService.getMembers()).thenAnswer(i -> Set.copyOf(members));
+      respondWith(new CompletableFuture<>());
+      gossiper =
+          new ClusterConfigurationGossiper(
+              executor,
+              communicationService,
+              membershipService,
+              new ProtoBufSerializer(),
+              new ClusterConfigurationGossiperConfig(
+                  Duration.ofMillis(100),
+                  Duration.ofSeconds(1),
+                  0,
+                  Duration.ofSeconds(1),
+                  Duration.ofSeconds(1)),
+              receivedConfigurations::add,
+              topologyMetrics);
+    }
+
+    private MemberId addPeer(final String id) {
+      final var memberId = MemberId.from(id);
+      members.add(Member.member(memberId, Address.from("localhost:" + (26502 + members.size()))));
+      return memberId;
+    }
+
+    private void respondWith(final CompletableFuture<ClusterConfigurationGossipState> response) {
+      when(communicationService.send(any(), any(), any(), any(), any(), any()))
+          .thenAnswer(i -> response);
+    }
+
+    private void start() {
+      gossiper.start();
     }
   }
 }

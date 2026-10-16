@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collections;
@@ -51,6 +52,13 @@ public final class ClusterConfigurationGossiper
 
   // Reuse the same random ordered list for both sync and gossip
   private List<MemberId> membersToSync = new LinkedList<>();
+  private ScheduledTimer syncTimer;
+  // true while a sync request is awaiting its response; ticks are skipped meanwhile so slow peers
+  // don't pile up requests. Only accessed from the actor
+  private boolean syncInFlight;
+  // Set once closed, so that a start() queued after close() does nothing. Only accessed from the
+  // actor
+  private boolean closed;
 
   // The handler which can merge configuration updates and reacts to the changes.
   private final Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler;
@@ -84,7 +92,10 @@ public final class ClusterConfigurationGossiper
   }
 
   private void internalStart() {
-    scheduleSync();
+    if (closed) {
+      return;
+    }
+    syncTimer = executor.runAtFixedRate(config.syncDelay(), this::sync);
     registerSyncHandler();
     registerGossipHandler();
     registerMemberAddedListener();
@@ -120,27 +131,26 @@ public final class ClusterConfigurationGossiper
     communicationService.unsubscribe(GOSSIP_REQUEST_TOPIC);
   }
 
-  private void scheduleSync() {
-    executor.schedule(config.syncDelay(), this::sync);
-  }
-
   private void sync() {
+    if (closed || syncInFlight) {
+      return;
+    }
     refreshMembersToSync();
 
     if (membersToSync.isEmpty()) {
+      LOGGER.debug("No other cluster member known, skipping this configuration sync round");
       return;
     }
 
-    final var randomMemberToSync = membersToSync.remove(0);
-
-    sync(randomMemberToSync);
+    sync(membersToSync.remove(0));
   }
 
   private void sync(final MemberId toMember) {
     LOGGER.trace("Sending sync request to {}", toMember);
-    sendSyncRequest(toMember)
-        .whenCompleteAsync(
-            (response, error) -> handleSyncResponse(response, error, toMember), executor::run);
+    final var request = sendSyncRequest(toMember);
+    syncInFlight = true;
+    request.whenCompleteAsync(
+        (response, error) -> handleSyncResponse(response, error, toMember), executor::run);
   }
 
   private void refreshMembersToSync() {
@@ -158,12 +168,12 @@ public final class ClusterConfigurationGossiper
       final ClusterConfigurationGossipState response,
       final Throwable error,
       final MemberId member) {
+    syncInFlight = false;
     if (error == null) {
       update(response);
     } else {
       LOGGER.warn("Failed to sync with {}", member, error);
     }
-    scheduleSync();
   }
 
   private void update(final ClusterConfigurationGossipState receivedGossipState) {
@@ -308,6 +318,15 @@ public final class ClusterConfigurationGossiper
 
   @Override
   public void close() {
+    executor.run(this::internalClose);
+  }
+
+  private void internalClose() {
+    closed = true;
+    if (syncTimer != null) {
+      syncTimer.cancel();
+      syncTimer = null;
+    }
     unregisterMemberListener();
     unregisterSyncHandler();
     unregisterGossipHandler();
