@@ -69,7 +69,17 @@ judgement or exploration step; everything else Claude runs and reports.
    Start.
 6. `jobs.sh` → expect exactly 100.
 7. `bucket.sh`: new timeline `tl-0.rC` appears and grows.
-8. **You:** browse the bucket layout (`commits/`, `root/`, `index/`, `state/`, `_latest.json`); read
+8. **Snapshot checks.**
+   - The restore log names the archived snapshot it starts from, per partition: its processed
+     position is just below C's position, and it may come from another broker (the broker id is
+     part of the snapshot id).
+   - **Older snapshot when the newest is too late:** before restoring, wait until a snapshot taken
+     *after* C is archived (`state/` grows). The restore must skip it and use the last one taken
+     before C.
+   - **Bigger snapshot:** in a second run, create 3,000 instances with a 10 KB payload each before
+     C, so the snapshot is several MB. The upload completes (descriptor present, `fileCount` and
+     `sizeBytes` match the files) and the restore from it works.
+9. **You:** browse the bucket layout (`commits/`, `root/`, `index/`, `state/`, `_latest.json`); read
    a commit entry and a root; does the layout match the design doc?
 
 ### D. Both side by side
