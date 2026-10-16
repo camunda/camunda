@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.backup.logarchive.leader;
 
-import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
-
 /**
  * The committed journal entries the {@link LogArchiver} reads. Only used on the archiver's actor.
  * Abstracts the committed Raft log reader so that the archiver can be tested without Raft.
@@ -28,7 +26,7 @@ public interface LogArchiverEntrySource extends AutoCloseable {
   boolean hasNext();
 
   /** Returns the committed entry at the current position and advances to the next one. */
-  LogArchiveFrame next();
+  LogArchiverEntry next();
 
   @Override
   void close();

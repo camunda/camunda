@@ -32,11 +32,13 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +56,7 @@ final class LogArchiverTest {
   private static final int RECORD_BYTES = 100;
   private static final int FRAME_BYTES = 6 * Long.BYTES + Integer.BYTES + RECORD_BYTES;
   private static final Duration CUT_INTERVAL = Duration.ofSeconds(2);
+  private static final Duration IDLE_CUT_INTERVAL = Duration.ofSeconds(60);
 
   @RegisterExtension
   private final ControlledActorSchedulerExtension scheduler =
@@ -144,6 +147,93 @@ final class LogArchiverTest {
     // then
     assertThat(written).isEmpty();
     assertThat(store.keys()).isEmpty();
+  }
+
+  @Test
+  void shouldNotCutOnCutIntervalWhileOnlyOwnEntriesArePending() {
+    // given - two committed entries holding nothing but log archive records
+    startArchiver(1024 * 1024, () -> TIMELINE);
+    source.markOwn(1, 2);
+    source.commit(2);
+    recover(TIMELINE, 0);
+
+    // when
+    scheduler.updateClock(CUT_INTERVAL.multipliedBy(5));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(written).isEmpty();
+    assertThat(store.keys()).isEmpty();
+  }
+
+  @Test
+  void shouldCutOwnEntriesAfterIdleCutInterval() {
+    // given
+    startArchiver(1024 * 1024, () -> TIMELINE);
+    source.markOwn(1, 2);
+    source.commit(2);
+    recover(TIMELINE, 0);
+
+    // when
+    scheduler.updateClock(IDLE_CUT_INTERVAL);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(archiveLogRanges()).containsExactly(range(1, 2));
+  }
+
+  @Test
+  void shouldCutOnCutIntervalOnceAnotherEntryIsPending() {
+    // given - own entries wait
+    startArchiver(1024 * 1024, () -> TIMELINE);
+    source.markOwn(1, 2);
+    source.commit(2);
+    recover(TIMELINE, 0);
+    scheduler.updateClock(CUT_INTERVAL);
+    scheduler.workUntilDone();
+    assertThat(written).isEmpty();
+
+    // when - an entry with other records is committed
+    source.commit(3);
+    archiver.onCommit();
+    scheduler.updateClock(CUT_INTERVAL);
+    scheduler.workUntilDone();
+
+    // then - the whole pending range is cut by the normal rule
+    assertThat(archiveLogRanges()).containsExactly(range(1, 3));
+  }
+
+  @Test
+  void shouldNotFeedItselfWhenIdleButKeepRangesContiguous() {
+    // given - load: entries 1..3 are cut on cutInterval
+    startArchiver(1024 * 1024, () -> TIMELINE);
+    source.commit(3);
+    recover(TIMELINE, 0);
+    scheduler.updateClock(CUT_INTERVAL);
+    scheduler.workUntilDone();
+    assertThat(archiveLogRanges()).containsExactly(range(1, 3));
+
+    // when - committing the cut produces own entries 4..5 (ARCHIVE_LOG, LOG_ARCHIVED)
+    source.markOwn(4, 5);
+    source.commit(5);
+    acknowledgeLastArchiveLog();
+    scheduler.updateClock(CUT_INTERVAL.multipliedBy(10));
+    scheduler.workUntilDone();
+
+    // then - nothing is cut while idle
+    assertThat(archiveLogRanges()).containsExactly(range(1, 3));
+
+    // when - the idle interval passes, then the cut's own entries and new load arrive
+    scheduler.updateClock(IDLE_CUT_INTERVAL);
+    scheduler.workUntilDone();
+    source.markOwn(6, 7);
+    source.commit(8);
+    acknowledgeLastArchiveLog();
+    scheduler.updateClock(CUT_INTERVAL);
+    scheduler.workUntilDone();
+
+    // then - every entry is archived, contiguous from the first one
+    assertThat(archiveLogRanges()).containsExactly(range(1, 3), range(4, 5), range(6, 8));
   }
 
   @Test
@@ -309,7 +399,7 @@ final class LogArchiverTest {
     source.commit(3);
 
     // when
-    archiver.onRecovered(new LogArchiveMeta());
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
     scheduler.workUntilDone();
 
     // then
@@ -321,10 +411,124 @@ final class LogArchiverTest {
   }
 
   @Test
+  void shouldForkTimelineWhenBucketIsAheadOfState() {
+    // given - the state was rolled back: the bucket already holds seq 51 of tl-0
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.setFirstIndex(5);
+    source.commit(30);
+
+    // when
+    recoverBehindBucket(TIMELINE, 20, 51);
+
+    // then - nothing is uploaded to tl-0, and a fork is started from the first index on disk
+    assertThat(written).hasSize(1);
+    final var command = written.getFirst();
+    assertThat(command.intent()).isEqualTo(LogArchiveIntent.START_TIMELINE);
+    assertThat(command.record().getTimelineId()).isEqualTo("tl-0.f51");
+    assertThat(command.record().getStartIndex()).isEqualTo(5);
+    assertThat(command.record().getParentTimelineId()).isEqualTo(TIMELINE);
+    assertThat(store.keys()).isEmpty();
+  }
+
+  @Test
+  void shouldArchiveForkOnceItIsStarted() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.setFirstIndex(5);
+    source.commit(30);
+    recoverBehindBucket(TIMELINE, 20, 51);
+
+    // when
+    archiver.onTimelineStarted("tl-0.f51");
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(archiveLogRanges()).containsExactly(range(5, 7));
+    assertThat(store.keys())
+        .containsExactly(
+            LogArchiveKeys.partitionPrefix("tl-0.f51", PARTITION)
+                + LogArchiveKeys.dataKey(5, 7, TERM));
+  }
+
+  @Test
+  void shouldForkUnderAnotherIdWhenForkAlreadyExists() {
+    // given - the state was rolled back to the same point before
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    seedTimeline("tl-0.f51");
+    seedTimeline("tl-0.f51-2");
+
+    // when
+    recoverBehindBucket(TIMELINE, 20, 51);
+
+    // then
+    assertThat(written).extracting(w -> w.record().getTimelineId()).containsExactly("tl-0.f51-3");
+  }
+
+  @Test
+  void shouldForkEffectiveTimelineWhenItExistsAlready() {
+    // given - no timeline in the state, but the bucket holds tl-0 (e.g. rolled back behind start)
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    seedTimeline(TIMELINE);
+
+    // when
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
+    scheduler.workUntilDone();
+
+    // then
+    final var command = written.getFirst();
+    assertThat(command.intent()).isEqualTo(LogArchiveIntent.START_TIMELINE);
+    assertThat(command.record().getTimelineId()).isEqualTo("tl-0.f1");
+    assertThat(command.record().getParentTimelineId()).isEmpty();
+  }
+
+  @Test
+  void shouldResumeForkOfEffectiveTimeline() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.commit(8);
+
+    // when - a later leader recovers the fork; the configuration still names tl-0
+    recover("tl-0.f51", 4);
+
+    // then
+    assertThat(archiveLogRanges()).containsExactly(range(5, 7));
+    assertThat(written).extracting(w -> w.record().getTimelineId()).containsOnly("tl-0.f51");
+  }
+
+  @Test
+  void shouldRetryTimelineLookupOnStoreError() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    store.failLists = 1;
+
+    // when
+    recoverBehindBucket(TIMELINE, 20, 51);
+    assertThat(written).isEmpty();
+    scheduler.updateClock(Duration.ofMillis(100));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(written).extracting(w -> w.record().getTimelineId()).containsExactly("tl-0.f51");
+  }
+
+  @Test
+  void shouldTreatOnlyForksAsContinuingTheEffectiveTimeline() {
+    assertThat(LogArchiver.continuesTimeline("tl-0", "tl-0")).isTrue();
+    assertThat(LogArchiver.continuesTimeline("tl-0.f51", "tl-0")).isTrue();
+    assertThat(LogArchiver.continuesTimeline("tl-0.f51-2.f7", "tl-0")).isTrue();
+    assertThat(LogArchiver.continuesTimeline("tl-0.r42.f3", "tl-0.r42")).isTrue();
+    assertThat(LogArchiver.continuesTimeline("tl-0", "tl-0.r42")).isFalse();
+    assertThat(LogArchiver.continuesTimeline("tl-0.r42", "tl-0")).isFalse();
+    assertThat(LogArchiver.continuesTimeline("tl-0.fancy", "tl-0")).isFalse();
+    assertThat(LogArchiver.continuesTimeline("tl-01", "tl-0")).isFalse();
+    assertThat(LogArchiver.continuesTimeline("", "tl-0")).isFalse();
+  }
+
+  @Test
   void shouldRetryRejectedStartTimeline() {
     // given
     startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
-    archiver.onRecovered(new LogArchiveMeta());
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
     scheduler.workUntilDone();
 
     // when
@@ -438,18 +642,46 @@ final class LogArchiverTest {
   private void startArchiver(final long cutMaxBytes, final Supplier<String> timeline) {
     archiver =
         new LogArchiver(
-            PARTITION, TERM, store, writer, source, timeline, cutMaxBytes, CUT_INTERVAL);
+            PARTITION,
+            TERM,
+            store,
+            writer,
+            source,
+            timeline,
+            cutMaxBytes,
+            CUT_INTERVAL,
+            IDLE_CUT_INTERVAL);
     scheduler.submitActor(archiver);
     scheduler.workUntilDone();
   }
 
   private void recover(final String timelineId, final long archivedIndex) {
-    archiver.onRecovered(
+    archiver.onRecoveryChecked(
         new LogArchiveMeta()
             .setTimelineId(timelineId)
             .setStartIndex(1)
-            .setArchivedIndex(archivedIndex));
+            .setArchivedIndex(archivedIndex),
+        false);
     scheduler.workUntilDone();
+  }
+
+  /** Recovers a state that the bucket is ahead of: it already holds the commit entry nextSeq. */
+  private void recoverBehindBucket(
+      final String timelineId, final long archivedIndex, final long nextSeq) {
+    archiver.onRecoveryChecked(
+        new LogArchiveMeta()
+            .setTimelineId(timelineId)
+            .setStartIndex(1)
+            .setArchivedIndex(archivedIndex)
+            .setNextSeq(nextSeq),
+        true);
+    scheduler.workUntilDone();
+  }
+
+  private void seedTimeline(final String timelineId) {
+    store.objects.put(
+        LogArchiveKeys.partitionPrefix(timelineId, PARTITION) + LogArchiveKeys.commitKey(1),
+        new byte[] {1});
   }
 
   /** Simulates the processor committing the last ARCHIVE_LOG command. */
@@ -481,8 +713,12 @@ final class LogArchiverTest {
 
   private record Written(LogArchiveIntent intent, LogArchiveRecord record) {}
 
-  /** Committed log with entries {@code firstIndex..commitIndex}; all are application entries. */
+  /**
+   * Committed log with entries {@code firstIndex..commitIndex}; all are application entries, and
+   * those marked with {@link #markOwn} hold only log archive records.
+   */
   private static final class FakeEntrySource implements LogArchiverEntrySource {
+    private final Set<Long> ownIndexes = new HashSet<>();
     private long firstIndex = 1;
     private long commitIndex;
     private long nextIndex = 1;
@@ -495,6 +731,12 @@ final class LogArchiverTest {
 
     void commit(final long index) {
       commitIndex = index;
+    }
+
+    void markOwn(final long first, final long last) {
+      for (long index = first; index <= last; index++) {
+        ownIndexes.add(index);
+      }
     }
 
     LogArchiveFrame frame(final long index) {
@@ -520,8 +762,9 @@ final class LogArchiverTest {
     }
 
     @Override
-    public LogArchiveFrame next() {
-      return frame(nextIndex++);
+    public LogArchiverEntry next() {
+      final long index = nextIndex++;
+      return new LogArchiverEntry(frame(index), ownIndexes.contains(index));
     }
 
     @Override
@@ -534,6 +777,7 @@ final class LogArchiverTest {
     private final Map<String, byte[]> objects = new LinkedHashMap<>();
     private int failPuts;
     private int putAttempts;
+    private int failLists;
 
     List<String> keys() {
       return List.copyOf(objects.keySet());
@@ -572,6 +816,10 @@ final class LogArchiverTest {
 
     @Override
     public CompletableFuture<List<String>> list(final String prefix) {
+      if (failLists > 0) {
+        failLists--;
+        return CompletableFuture.failedFuture(new RuntimeException("expected"));
+      }
       return CompletableFuture.completedFuture(
           objects.keySet().stream().filter(k -> k.startsWith(prefix)).sorted().toList());
     }

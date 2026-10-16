@@ -161,8 +161,10 @@ public final class LogArchiveRecordsProcessor
 
   /**
    * Hands the leader components everything that may not have reached the bucket yet: every outbox
-   * row in order, then a root for the latest seq and a seal request if the open chunk is full. A
-   * new leader republishes unconditionally; writing the same key again is harmless (I4).
+   * row in order, then a root for the latest seq and a seal request if the open chunk is full.
+   * Writing the same key again is harmless (I4). The publisher holds these requests until it has
+   * checked that the bucket is not ahead of this state (rolled back state); if it is, it drops them
+   * and the archiver forks a new timeline (spec section 8.4).
    */
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {

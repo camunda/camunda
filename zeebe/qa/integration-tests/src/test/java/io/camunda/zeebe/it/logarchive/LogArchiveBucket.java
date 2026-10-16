@@ -67,6 +67,7 @@ final class LogArchiveBucket implements AutoCloseable {
     return broker
         .withProperty(prefix + "enabled", true)
         .withProperty(prefix + "cutInterval", "PT0.2S")
+        .withProperty(prefix + "idleCutInterval", "PT1S")
         .withProperty(prefix + "cutMaxBytes", "64KB")
         .withProperty(prefix + "snapshotUploadInterval", "PT2S")
         .withProperty(prefix + "chunkSize", 3)

@@ -34,7 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,22 +46,29 @@ import org.slf4j.LoggerFactory;
  * (spec section 8.1). Runs only on the partition leader, one object in flight at a time: {@code
  * IDLE → READING → UPLOADING → AWAIT_COMMIT → IDLE}.
  *
- * <p>Nothing happens before {@link #onRecovered(LogArchiveMeta)}: it delivers the replicated F,
- * from which the in-memory cursor {@code A} starts, or reveals that the timeline must be started
- * first.
+ * <p>Nothing happens before {@link #onRecoveryChecked(LogArchiveMeta, boolean)}: the publisher
+ * delivers the replicated meta once it has checked the bucket against it (spec section 8.4). The
+ * archiver then either continues the recovered timeline from its F, or starts a timeline with
+ * {@code START_TIMELINE}: the effective one (timeline file, else configuration) if the recovered
+ * timeline is a different one, or a fork if the bucket is ahead of the recovered state. A timeline
+ * is only started under an id that has nothing in the bucket yet, so that no history is ever
+ * overwritten.
  *
  * <p>All state lives on the actor thread. Listener callbacks and commit wake-ups arrive on other
  * threads and hop onto the actor. Every asynchronous continuation (store PUT, retry timer) captures
  * the current {@code epoch} and is dropped if the cursor was reset in the meantime, so a late
  * completion can never act on a stale range.
  */
-public final class LogArchiver extends Actor implements LogArchiveListener, CommitListener {
+public final class LogArchiver extends Actor
+    implements LogArchiveListener, LogArchiveRecoveryListener, CommitListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(LogArchiver.class);
   private static final Duration INITIAL_BACKOFF = Duration.ofMillis(100);
   private static final Duration MAX_BACKOFF = Duration.ofSeconds(10);
   // fixed part of a frame in the log object format: six longs and the record length
   private static final int FRAME_OVERHEAD_BYTES = 6 * Long.BYTES + Integer.BYTES;
+  // one or more fork suffixes as produced by forkTimelineId, e.g. ".f51" or ".f51-2.f7"
+  private static final Pattern FORK_SUFFIXES = Pattern.compile("(\\.f\\d+(-\\d+)?)+");
 
   private final int partitionId;
   private final long term;
@@ -69,6 +78,7 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
   private final Supplier<String> timelineResolver;
   private final long cutMaxBytes;
   private final Duration cutInterval;
+  private final Duration idleCutInterval;
   private final AtomicBoolean wakeUpScheduled = new AtomicBoolean();
 
   // all fields below are only accessed on the actor thread
@@ -82,6 +92,8 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
   private long nextReadIndex = -1;
   private final List<LogArchiveFrame> pending = new ArrayList<>();
   private long pendingBytes;
+  // true once a pending entry carries a record of another value type than LOG_ARCHIVE
+  private boolean pendingHasForeignEntry;
   private @Nullable InFlight inFlight;
   private long lastCutMillis;
   private long epoch;
@@ -94,6 +106,8 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
    *     called on the actor when recovering
    * @param cutMaxBytes cut an object once the pending entries reach this size
    * @param cutInterval cut an object at least this often while entries are pending
+   * @param idleCutInterval cut an object at least this often while all pending entries are the log
+   *     archive's own (see {@link LogArchiverEntry#archiveOwn()})
    */
   public LogArchiver(
       final int partitionId,
@@ -103,7 +117,8 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
       final LogArchiverEntrySource source,
       final Supplier<String> timelineResolver,
       final long cutMaxBytes,
-      final Duration cutInterval) {
+      final Duration cutInterval,
+      final Duration idleCutInterval) {
     super(
         buildActorName("LogArchiver", partitionId),
         null,
@@ -114,6 +129,10 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
     if (cutInterval.isNegative() || cutInterval.isZero()) {
       throw new IllegalArgumentException("cutInterval must be positive, but was " + cutInterval);
     }
+    if (idleCutInterval.isNegative() || idleCutInterval.isZero()) {
+      throw new IllegalArgumentException(
+          "idleCutInterval must be positive, but was " + idleCutInterval);
+    }
     this.partitionId = partitionId;
     this.term = term;
     this.store = store;
@@ -122,6 +141,7 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
     this.timelineResolver = timelineResolver;
     this.cutMaxBytes = cutMaxBytes;
     this.cutInterval = cutInterval;
+    this.idleCutInterval = idleCutInterval;
   }
 
   @Override
@@ -155,8 +175,8 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
   }
 
   @Override
-  public void onRecovered(final LogArchiveMeta meta) {
-    actor.run(() -> recover(meta));
+  public void onRecoveryChecked(final LogArchiveMeta meta, final boolean bucketAhead) {
+    actor.run(() -> recover(meta, bucketAhead));
   }
 
   @Override
@@ -209,28 +229,42 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
   // State machine (actor thread)
   // -----------------------------------------------------------------------------------------------
 
-  private void recover(final LogArchiveMeta meta) {
+  private void recover(final LogArchiveMeta meta, final boolean bucketAhead) {
     if (state == State.CLOSED) {
       return;
     }
     epoch++;
     inFlight = null;
     clearPending();
-    timelineId = timelineResolver.get();
-    prefix = LogArchiveKeys.partitionPrefix(timelineId, partitionId);
     backoff = INITIAL_BACKOFF;
+    final var effectiveTimelineId = timelineResolver.get();
+    final var recoveredTimelineId = meta.getTimelineId();
 
-    if (!meta.getTimelineId().equals(timelineId)) {
-      startIndex = source.firstIndex();
+    if (!continuesTimeline(recoveredTimelineId, effectiveTimelineId)) {
       LOG.info(
-          "Partition {}: log archive timeline is '{}', but the effective timeline is '{}'; starting it at index {}",
+          "Partition {}: log archive timeline is '{}', but the effective timeline is '{}'; starting it",
           partitionId,
-          meta.getTimelineId(),
-          timelineId,
-          startIndex);
-      state = State.AWAIT_TIMELINE;
-      writeStartTimeline(meta.getTimelineId());
+          recoveredTimelineId,
+          effectiveTimelineId);
+      startTimeline(
+          attempt ->
+              attempt == 0 ? effectiveTimelineId : forkTimelineId(effectiveTimelineId, 1, attempt),
+          0,
+          recoveredTimelineId);
+    } else if (bucketAhead) {
+      LOG.warn(
+          "Partition {}: the log archive bucket is ahead of the recovered state of timeline '{}'"
+              + " (seq {} exists); the state was rolled back, forking a new timeline",
+          partitionId,
+          recoveredTimelineId,
+          meta.getNextSeq());
+      startTimeline(
+          attempt -> forkTimelineId(recoveredTimelineId, meta.getNextSeq(), attempt),
+          1,
+          recoveredTimelineId);
     } else {
+      timelineId = recoveredTimelineId;
+      prefix = LogArchiveKeys.partitionPrefix(timelineId, partitionId);
       LOG.info(
           "Partition {}: resuming log archive timeline {} after index {}",
           partitionId,
@@ -240,9 +274,95 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
     }
   }
 
-  private void writeStartTimeline(final String parent) {
+  /**
+   * Returns the id of a timeline forked from {@code timelineId} because the bucket already holds
+   * {@code commits/<seq>} of it: {@code <timelineId>.f<seq>}, and {@code <timelineId>.f<seq>-<n>}
+   * for the n-th attempt if that one is taken too (the state can be rolled back to the same point
+   * more than once). It is derived from the replicated state only, and it names the point of
+   * divergence for operators.
+   */
+  static String forkTimelineId(final String timelineId, final long seq, final int attempt) {
+    final var fork = timelineId + ".f" + seq;
+    return attempt <= 1 ? fork : fork + "-" + attempt;
+  }
+
+  /**
+   * Returns whether the recovered timeline is the effective one or a fork of it. A fork exists only
+   * in the replicated state, not in the timeline file or the configuration, so it must not count as
+   * a different timeline: that would start the effective one again on the next leader.
+   */
+  static boolean continuesTimeline(final String recoveredTimelineId, final String effective) {
+    if (recoveredTimelineId.isEmpty() || !recoveredTimelineId.startsWith(effective)) {
+      return false;
+    }
+    final var suffix = recoveredTimelineId.substring(effective.length());
+    return suffix.isEmpty() || FORK_SUFFIXES.matcher(suffix).matches();
+  }
+
+  /**
+   * Starts the first of the {@code candidates} (from {@code attempt} on) that has nothing in the
+   * bucket yet. A non-empty prefix means that another history already lives there, e.g. because the
+   * state was rolled back behind the point where that timeline was started; writing into it would
+   * overwrite that history.
+   */
+  private void startTimeline(
+      final IntFunction<String> candidates, final int attempt, final String parent) {
+    startIndex = source.firstIndex();
     parentTimelineId = parent;
-    writeStartTimeline();
+    timelineId = "";
+    state = State.RESOLVE_TIMELINE;
+    resolveTimeline(candidates, attempt);
+  }
+
+  private void resolveTimeline(final IntFunction<String> candidates, final int attempt) {
+    if (state != State.RESOLVE_TIMELINE) {
+      return;
+    }
+    final var candidate = candidates.apply(attempt);
+    final var candidatePrefix = LogArchiveKeys.partitionPrefix(candidate, partitionId);
+    final long expectedEpoch = epoch;
+    CompletableFuture<List<String>> future;
+    try {
+      future = store.list(candidatePrefix);
+    } catch (final RuntimeException e) {
+      future = CompletableFuture.failedFuture(e);
+    }
+    future.whenComplete(
+        (keys, error) ->
+            actor.run(
+                () -> {
+                  if (expectedEpoch != epoch || state != State.RESOLVE_TIMELINE) {
+                    return;
+                  }
+                  if (error != null) {
+                    LOG.warn(
+                        "Partition {}: failed to list {}, retrying in {}",
+                        partitionId,
+                        candidatePrefix,
+                        backoff,
+                        error);
+                    retryLater(() -> resolveTimeline(candidates, attempt));
+                  } else if (!keys.isEmpty()) {
+                    LOG.warn(
+                        "Partition {}: log archive timeline '{}' already exists in the bucket;"
+                            + " not writing into it",
+                        partitionId,
+                        candidate);
+                    resolveTimeline(candidates, attempt + 1);
+                  } else {
+                    timelineId = candidate;
+                    prefix = candidatePrefix;
+                    backoff = INITIAL_BACKOFF;
+                    state = State.AWAIT_TIMELINE;
+                    LOG.info(
+                        "Partition {}: starting log archive timeline '{}' (parent '{}') at index {}",
+                        partitionId,
+                        timelineId,
+                        parentTimelineId,
+                        startIndex);
+                    writeStartTimeline();
+                  }
+                }));
   }
 
   private void writeStartTimeline() {
@@ -278,7 +398,8 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
     }
     state = State.READING;
     while (pendingBytes < cutMaxBytes && source.hasNext()) {
-      final var frame = source.next();
+      final var entry = source.next();
+      final var frame = entry.frame();
       if (frame.index() != nextReadIndex) {
         LOG.error(
             "Partition {}: expected to read index {} from the committed log, but got {}; retrying in {}",
@@ -294,12 +415,18 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
       }
       pending.add(frame);
       pendingBytes += FRAME_OVERHEAD_BYTES + frame.serializedRecord().length;
+      pendingHasForeignEntry |= !entry.archiveOwn();
       nextReadIndex++;
     }
 
+    // Every cut is followed by ARCHIVE_LOG and LOG_ARCHIVED (and, now and then, other LOG_ARCHIVE
+    // records), which are committed entries themselves. Cutting them on cutInterval would make an
+    // idle partition archive its own bookkeeping forever, so entries that hold nothing else wait
+    // for idleCutInterval. They are still archived, in order, with the next cut.
     final boolean sizeReached = pendingBytes >= cutMaxBytes;
+    final Duration interval = pendingHasForeignEntry ? cutInterval : idleCutInterval;
     final boolean intervalElapsed =
-        ActorClock.currentTimeMillis() - lastCutMillis >= cutInterval.toMillis();
+        ActorClock.currentTimeMillis() - lastCutMillis >= interval.toMillis();
     if (pending.isEmpty() || !(sizeReached || intervalElapsed)) {
       state = State.IDLE;
       return;
@@ -396,7 +523,10 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
   }
 
   private void logArchived(final long newArchivedIndex) {
-    if (state == State.CLOSED || state == State.AWAIT_RECOVERY || state == State.AWAIT_TIMELINE) {
+    if (state == State.CLOSED
+        || state == State.AWAIT_RECOVERY
+        || state == State.RESOLVE_TIMELINE
+        || state == State.AWAIT_TIMELINE) {
       return;
     }
     if (newArchivedIndex <= archivedIndex) {
@@ -477,6 +607,7 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
   private void clearPending() {
     pending.clear();
     pendingBytes = 0;
+    pendingHasForeignEntry = false;
   }
 
   /** The state of the archiver; visible for tests. */
@@ -487,6 +618,8 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
   enum State {
     /** Waiting for the processor to deliver the replicated meta. */
     AWAIT_RECOVERY,
+    /** A timeline must be started; looking for an id that has nothing in the bucket yet. */
+    RESOLVE_TIMELINE,
     /** START_TIMELINE written, waiting for TIMELINE_STARTED. */
     AWAIT_TIMELINE,
     IDLE,

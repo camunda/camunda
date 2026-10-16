@@ -54,6 +54,7 @@ final class LogArchivePublisherTest {
   private final List<IndexChunk> sealedChunks = new ArrayList<>();
   private final FakeStore store = new FakeStore(events);
   private final LogStreamWriter writer = mock(LogStreamWriter.class);
+  private final List<RecoveryCheck> recoveryChecks = new ArrayList<>();
   private int failWrites;
   private LogArchivePublisher publisher;
 
@@ -70,18 +71,120 @@ final class LogArchivePublisherTest {
               final LogAppendEntry entry = invocation.getArgument(1);
               final var intent = (LogArchiveIntent) entry.recordMetadata().getIntent();
               final var value = (LogArchiveRecord) entry.recordValue();
-              assertThat(value.getTimelineId()).isEqualTo(TIMELINE);
               if (intent == LogArchiveIntent.CONFIRM_PUBLISHED) {
                 events.add("CONFIRM " + value.getPublishedSeq());
+                assertThat(value.getTimelineId()).isEqualTo(TIMELINE);
               } else {
                 events.add("SEAL " + value.getChunk().getChunkNo());
+                assertThat(value.getTimelineId()).isEqualTo(TIMELINE);
                 sealedChunks.add(new IndexChunk().copy(value.getChunk()));
               }
               return Either.right(1L);
             });
-    publisher = new LogArchivePublisher(PARTITION, store, writer);
-    scheduler.submitActor(publisher);
+    publisher = startPublisher();
+    // nothing in the bucket yet, so nothing is ahead of the state
+    publisher.onRecovered(new LogArchiveMeta());
     scheduler.workUntilDone();
+  }
+
+  @Test
+  void shouldNotPublishBeforeRecovery() {
+    // given
+    final var fresh = startPublisher();
+
+    // when
+    fresh.publish(commit(1));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(events).isEmpty();
+  }
+
+  @Test
+  void shouldRepublishWhenBucketIsNotAheadOfState() {
+    // given - the bucket holds commits 1..3, the state continues at seq 4
+    final var fresh = startPublisher();
+    store.seed(PREFIX + LogArchiveKeys.commitKey(1), PREFIX + LogArchiveKeys.commitKey(3));
+    final var meta = new LogArchiveMeta().setTimelineId(TIMELINE).setNextSeq(4);
+
+    // when
+    fresh.onRecovered(meta);
+    fresh.publish(commit(3));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(store.getAttempts).isEqualTo(1);
+    assertThat(recoveryChecks).containsExactly(new RecoveryCheck(TIMELINE, 4, false));
+    assertThat(events).containsExactly("PUT " + PREFIX + LogArchiveKeys.commitKey(3));
+  }
+
+  @Test
+  void shouldPublishNothingToTimelineWhenBucketIsAheadOfState() {
+    // given - the state was rolled back: it continues at seq 3, but the bucket holds seq 3 already
+    final var fresh = startPublisher();
+    store.seed(PREFIX + LogArchiveKeys.commitKey(3), PREFIX + LogArchiveKeys.commitKey(4));
+    final var meta = new LogArchiveMeta().setTimelineId(TIMELINE).setNextSeq(3);
+
+    // when - the processor republishes its outbox and a root, and later publishes another event
+    fresh.onRecovered(meta);
+    fresh.publish(commit(1));
+    fresh.publish(commit(2));
+    fresh.publish(new PublishRequest(TIMELINE, 2, null, bytes("root2"), seal(chunk(1))));
+    scheduler.workUntilDone();
+    fresh.publish(commit(3));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(recoveryChecks).containsExactly(new RecoveryCheck(TIMELINE, 3, true));
+    assertThat(events).isEmpty();
+  }
+
+  @Test
+  void shouldPublishForkedTimelineAfterDivergence() {
+    // given
+    final var fresh = startPublisher();
+    store.seed(PREFIX + LogArchiveKeys.commitKey(3));
+    fresh.onRecovered(new LogArchiveMeta().setTimelineId(TIMELINE).setNextSeq(3));
+    scheduler.workUntilDone();
+
+    // when - the archiver forked a new timeline, whose TIMELINE_STARTED takes seq 1
+    final var fork = "tl-0.f3";
+    fresh.publish(new PublishRequest(fork, 1, bytes("c1"), null, null));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(events)
+        .containsExactly(
+            "PUT " + LogArchiveKeys.partitionPrefix(fork, PARTITION) + LogArchiveKeys.commitKey(1));
+  }
+
+  @Test
+  void shouldRetryRecoveryCheckAndNotPublishBeforeItSucceeded() {
+    // given
+    final var fresh = startPublisher();
+    store.failNextGets(2);
+    final var meta = new LogArchiveMeta().setTimelineId(TIMELINE).setNextSeq(2);
+
+    // when
+    fresh.onRecovered(meta);
+    fresh.publish(commit(1));
+    scheduler.workUntilDone();
+
+    // then - nothing is published while the check fails
+    assertThat(events).isEmpty();
+    assertThat(recoveryChecks).isEmpty();
+
+    // when
+    scheduler.updateClock(Duration.ofMillis(100));
+    scheduler.workUntilDone();
+    assertThat(events).isEmpty();
+    scheduler.updateClock(Duration.ofMillis(200));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(store.getAttempts).isEqualTo(3);
+    assertThat(recoveryChecks).containsExactly(new RecoveryCheck(TIMELINE, 2, false));
+    assertThat(events).containsExactly("PUT " + PREFIX + LogArchiveKeys.commitKey(1));
   }
 
   @Test
@@ -296,6 +399,21 @@ final class LogArchivePublisherTest {
             "PUT " + PREFIX + LogArchiveKeys.commitKey(3));
   }
 
+  private LogArchivePublisher startPublisher() {
+    final var started =
+        new LogArchivePublisher(
+            PARTITION,
+            store,
+            writer,
+            (meta, bucketAhead) ->
+                recoveryChecks.add(
+                    new RecoveryCheck(meta.getTimelineId(), meta.getNextSeq(), bucketAhead)));
+    scheduler.submitActor(started);
+    scheduler.workUntilDone();
+    recoveryChecks.clear();
+    return started;
+  }
+
   private static PublishRequest commit(final long seq) {
     return new PublishRequest(TIMELINE, seq, bytes("c" + seq), null, null);
   }
@@ -322,10 +440,14 @@ final class LogArchivePublisherTest {
     return value.getBytes(StandardCharsets.UTF_8);
   }
 
+  private record RecoveryCheck(String timelineId, long nextSeq, boolean bucketAhead) {}
+
   private static final class FakeStore implements LogArchiveStore {
     private final java.util.Map<String, byte[]> objects = new java.util.HashMap<>();
     private final List<String> events;
     private int failures;
+    private int getFailures;
+    private int getAttempts;
 
     private FakeStore(final List<String> events) {
       this.events = events;
@@ -333,6 +455,17 @@ final class LogArchivePublisherTest {
 
     private void failNext(final int count) {
       failures = count;
+    }
+
+    private void failNextGets(final int count) {
+      getFailures = count;
+    }
+
+    /** Puts objects without recording them as events, e.g. those of an earlier leader. */
+    private void seed(final String... keys) {
+      for (final var key : keys) {
+        objects.put(key, bytes("seeded"));
+      }
     }
 
     @Override
@@ -354,6 +487,11 @@ final class LogArchivePublisherTest {
 
     @Override
     public CompletableFuture<Optional<byte[]>> getIfExists(final String key) {
+      getAttempts++;
+      if (getFailures > 0) {
+        getFailures--;
+        return CompletableFuture.failedFuture(new RuntimeException("boom"));
+      }
       return CompletableFuture.completedFuture(Optional.ofNullable(objects.get(key)));
     }
 

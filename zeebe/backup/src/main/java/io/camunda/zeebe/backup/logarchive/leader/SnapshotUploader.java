@@ -45,7 +45,8 @@ import org.slf4j.LoggerFactory;
  * AWAIT_COMMIT → IDLE}. The snapshot stays reserved until the command is accepted or rejected.
  */
 @NullMarked
-public final class SnapshotUploader extends Actor implements LogArchiveListener {
+public final class SnapshotUploader extends Actor
+    implements LogArchiveListener, LogArchiveRecoveryListener {
 
   static final Duration INITIAL_DELAY = Duration.ofSeconds(5);
   static final Duration AWAIT_COMMIT_TIMEOUT = Duration.ofMinutes(1);
@@ -112,13 +113,18 @@ public final class SnapshotUploader extends Actor implements LogArchiveListener 
     state = State.IDLE;
   }
 
+  /**
+   * Starts uploading once the publisher has checked the bucket against the recovered state. If the
+   * bucket is ahead, nothing may be written to the recovered timeline; the uploader then waits for
+   * the archiver's new timeline ({@link #onTimelineStarted(String)}).
+   */
   @Override
-  public void onRecovered(final LogArchiveMeta meta) {
+  public void onRecoveryChecked(final LogArchiveMeta meta, final boolean bucketAhead) {
     final var recoveredTimeline = meta.getTimelineId();
     final var recoveredIndex = meta.getArchivedIndex();
     actor.run(
         () -> {
-          if (!recoveredTimeline.isEmpty()) {
+          if (!recoveredTimeline.isEmpty() && !bucketAhead) {
             timelineId = recoveredTimeline;
           }
           archivedIndex = recoveredIndex;
@@ -140,6 +146,9 @@ public final class SnapshotUploader extends Actor implements LogArchiveListener 
           timelineId = startedTimelineId;
           // a new timeline needs its own snapshot, even if the newest local one was archived before
           archivedProcessedPosition = -1;
+          // F of the new timeline is not known before its first LOG_ARCHIVED; uploading against the
+          // previous timeline's F could upload a snapshot above the new F, which is rejected
+          archivedIndex = -1;
         });
   }
 
