@@ -125,7 +125,12 @@ public final class SnapshotUploader extends Actor implements LogArchiveListener 
 
   @Override
   public void onTimelineStarted(final String startedTimelineId) {
-    actor.run(() -> timelineId = startedTimelineId);
+    actor.run(
+        () -> {
+          timelineId = startedTimelineId;
+          // a new timeline needs its own snapshot, even if the newest local one was archived before
+          lastArchivedSnapshotId = null;
+        });
   }
 
   @Override
@@ -149,6 +154,11 @@ public final class SnapshotUploader extends Actor implements LogArchiveListener 
     actor.run(
         () -> {
           if (state == State.AWAIT_COMMIT && snapshotId.equals(currentId)) {
+            // The upload was checked against F before it started, so a rejection means the
+            // snapshot is already archived (e.g. by a previous leader) or can never be: retrying
+            // the
+            // same snapshot would upload it again on every tick.
+            lastArchivedSnapshotId = snapshotId;
             finishAttempt();
           }
         });

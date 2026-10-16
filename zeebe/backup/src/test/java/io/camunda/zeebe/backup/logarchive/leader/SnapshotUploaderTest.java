@@ -154,7 +154,7 @@ final class SnapshotUploaderTest {
   }
 
   @Test
-  void shouldReleaseReservationWhenRejectedAndRetryNextTick() {
+  void shouldReleaseReservationWhenRejectedAndNotRetrySameSnapshot() {
     // given
     givenSnapshot("1-1-10-10", 5);
     recoverAndTick(5);
@@ -167,6 +167,23 @@ final class SnapshotUploaderTest {
     assertThat(releases).hasValue(1);
     scheduler.updateClock(INTERVAL);
     scheduler.workUntilDone();
+    assertThat(writer.entries).hasSize(1);
+  }
+
+  @Test
+  void shouldUploadSnapshotAgainForNewTimeline() {
+    // given
+    givenSnapshot("1-1-10-10", 5);
+    recoverAndTick(5);
+    uploader.onSnapshotRejected("1-1-10-10");
+    scheduler.workUntilDone();
+
+    // when
+    uploader.onTimelineStarted("tl-new");
+    scheduler.updateClock(INTERVAL);
+    scheduler.workUntilDone();
+
+    // then
     assertThat(writer.entries).hasSize(2);
   }
 
