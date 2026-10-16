@@ -211,6 +211,7 @@ public class JobSearchIT {
                 "taskAExecutionListener",
                 "taskBTaskListener",
                 "taskA"));
+    assertThat(result.items()).extracting(Job::getStorageOrdinal).doesNotContainNull();
   }
 
   @Test

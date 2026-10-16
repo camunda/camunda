@@ -901,6 +901,7 @@ components:
         - errorMessage
         - isDenied
         - lastUpdateTime
+        - storageOrdinal
       properties:
         customHeaders:
           description: A set of custom headers defined during modelling.
@@ -982,6 +983,13 @@ components:
           nullable: true
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/BusinessId"
+        storageOrdinal:
+          description: |
+            The storage ordinal of the job, which groups entities that are stored and disposed of
+            together. This is `null` for jobs created before version 8.11.
+          type: integer
+          format: int32
+          nullable: true
         retries:
           description: The amount of retries left to this job.
           type: integer
@@ -1025,6 +1033,8 @@ components:
           addedInVersion: "8.10"
         - propertyName: businessId
           addedInVersion: "8.10"
+        - propertyName: storageOrdinal
+          addedInVersion: "8.11"
 
     JobFailRequest:
       type: object

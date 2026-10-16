@@ -91,4 +91,14 @@ public interface Job {
   OffsetDateTime getCreationTime();
 
   OffsetDateTime getLastUpdateTime();
+
+  /**
+   * Returns the storage ordinal this job's data belongs to.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} for data exported before storage ordinals
+   * were introduced in version 8.11.
+   *
+   * @return the storage ordinal, or {@code null} for data created before version 8.11
+   */
+  Integer getStorageOrdinal();
 }

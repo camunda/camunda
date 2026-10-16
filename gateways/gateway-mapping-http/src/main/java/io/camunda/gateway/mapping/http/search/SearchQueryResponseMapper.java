@@ -967,6 +967,7 @@ public final class SearchQueryResponseMapper {
         .errorMessage(job.errorMessage())
         .isDenied(job.isDenied())
         .lastUpdateTime(formatDate(job.lastUpdateTime()))
+        .storageOrdinal(job.storageOrdinal())
         .build();
   }
 

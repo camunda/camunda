@@ -234,6 +234,30 @@ class JobExportHandlerTest {
   }
 
   @Test
+  void shouldSetStorageOrdinal() {
+    // given
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withStorageOrdinal(1001)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(jobWriter).create(jobDbModelCaptor.capture());
+    assertThat(jobDbModelCaptor.getValue().storageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
   void shouldNotSetBusinessIdWhenEmpty() {
     // given
     final var recordValue =
