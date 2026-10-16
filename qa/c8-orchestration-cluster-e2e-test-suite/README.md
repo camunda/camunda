@@ -20,6 +20,7 @@ Follow the steps below to get started and run the tests locally.
   - [C8 SM Requirements (Self-Managed)](#c8-sm-requirements-self-managed)
 - [Test Suite Structure (Page Object Model)](#test-suite-structure-page-object-model)
 - [GitHub Actions for Testing](#github-actions-for-testing)
+  - [Automatic PR Check](#automatic-pr-check)
   - [Running the On-Demand Workflow](#running-the-on-demand-workflow)
   - [Automated Nightly Test Runs](#automated-nightly-test-runs)
   - [CI Test Results](#ci-test-results)
@@ -161,6 +162,22 @@ Starting with Camunda 8.8, Tasklist V2 is the default mode. The test suite refle
 
 ## GitHub Actions for Testing
 
+### Automatic PR Check
+
+When a pull request changes files under `qa/c8-orchestration-cluster-e2e-test-suite/`,
+the suite runs automatically as a required check (no manual trigger needed). It mirrors
+the on-demand matrix (API, H2/RDBMS API and E2E) for the PR's base branch.
+
+The check is **scoped to the tests you changed**: the full suite runs, but the check
+blocks the merge only when a spec your PR **added or modified** fails. Failures in
+untouched tests are reported in the uploaded report but do not block — keeping the
+historically flaky parts of the suite from blocking unrelated changes.
+
+Run the on-demand workflow below when you need the full suite to gate (for example a
+change to a shared page object, fixture or config that can break untouched tests without
+changing any spec file), or for a pull request from a fork, which the automatic check
+skips.
+
 ### Running the On-Demand Workflow
 
 - `c8-orchestration-cluster-e2e-tests-on-demand.yml`: Manually triggered for ad hoc testing
@@ -199,7 +216,19 @@ We welcome contributions! To contribute:
 
 - Follow the POM pattern
 - Test cases must involve at least one core component
-- Reviewer must be the someone from the Test Automation Team and a product team developer
+- Reviewers must include someone from the Test Automation Team and a product team developer
+
+> [!IMPORTANT]
+> **Your changed tests must pass before review.**
+> A PR that changes the suite runs the [Automatic PR Check](#automatic-pr-check), which blocks the
+> merge on the specs you added or modified. Do not request a review while that check is red for one
+> of your own tests.
+>
+> The automatic check does **not** gate on untouched tests, and it does not run on fork PRs. When
+> your change can break tests you did not edit (a shared page object, fixture or config), or your PR
+> is from a fork, also run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml)
+> against your branch, wait for it to complete, and document any failures in the PR description,
+> confirming they are pre-existing and not regressions caused by your changes.
 
 ### Project Board
 

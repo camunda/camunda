@@ -251,9 +251,10 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 
 ## CI Workflows
 
-|                      Workflow                      |        Trigger         |                                                       Link                                                       |
-|----------------------------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
+| Workflow | Trigger | Link |
+|---|---|---|
 | `c8-orchestration-cluster-e2e-tests-nightly.yml`   | Nightly (all versions) | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)   |
+| `ci-c8-orchestration-cluster-e2e-suite-reusable.yml` | Automatic PR check (non-fork PRs touching the suite) | Called by `ci.yml`; blocks only on the PR's own added/modified specs |
 | `c8-orchestration-cluster-e2e-tests-on-demand.yml` | Manual                 | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
 
 Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and TestRail.
@@ -283,7 +284,7 @@ This file lives on `stable/8.9`. Each supported version has its own branch:
 - Follow the Page Object Model: page interactions belong in `pages/` (or `pages/v1/`), not in spec files.
 - Every test must involve at least one core component (Operate, Tasklist, Identity, Zeebe).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
-- **Run the on-demand workflow against your branch before requesting review.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
+- **Your changed tests must pass the automatic PR check before requesting review.** A PR that changes the suite runs the suite automatically (`ci-c8-orchestration-cluster-e2e-suite-reusable.yml`, via `ci.yml`), blocking the merge on the specs you added or modified. It does not gate on untouched tests and does not run on fork PRs — when your change can break tests you did not edit (shared page object, fixture or config) or the PR is from a fork, also run the on-demand workflow and document any failures in the PR description, confirming they are pre-existing.
 - Link the [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description if any test or page file is modified.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - When changing Tasklist behavior, ensure **both** V1 and V2 specs are updated where applicable, or document why only one mode is affected.
