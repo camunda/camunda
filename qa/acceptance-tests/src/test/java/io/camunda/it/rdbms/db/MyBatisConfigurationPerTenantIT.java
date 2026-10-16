@@ -67,6 +67,20 @@ class MyBatisConfigurationPerTenantIT {
     }
   }
 
+  @Test
+  void shouldNotRetainParsedMapperFragmentsAfterBuildingFactory() throws Exception {
+    // given
+    try (final var fixture = wireTenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
+      // when
+      final var configuration = fixture.factories.get("tenantb").getConfiguration();
+
+      // then - fragments keep the parsed mapper DOM alive, statements stay fully resolved
+      assertThat(configuration.getSqlFragments()).isEmpty();
+      assertThat(configuration.getMappedStatementNames()).isNotEmpty();
+      assertThat(configuration.getIncompleteStatements()).isEmpty();
+    }
+  }
+
   private static TenantFixture wireTenants(final String... tenantIds) throws Exception {
     final var props = new LinkedHashMap<String, Object>();
     for (final var tenantId : tenantIds) {
