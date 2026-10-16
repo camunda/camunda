@@ -2001,11 +2001,17 @@ components:
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
-          description: The process definition key.
+          description: |
+            The process definition key. This field is not present for sequence flows imported
+            by Operate 8.1 or earlier.
+          nullable: true
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
-          description: The process definition id.
+          description: |
+            The process definition id. This field is not present for sequence flows imported by
+            Operate 8.1 or earlier.
+          nullable: true
         elementId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'

@@ -54,7 +54,7 @@ const elementInstanceTypeSchema = z.enum([
 type ElementInstanceType = z.infer<typeof elementInstanceTypeSchema>;
 
 const elementInstanceSchema = z.object({
-	processDefinitionId: z.string(),
+	processDefinitionId: z.string().nullable(),
 	startDate: z.string(),
 	endDate: z.string().nullable(),
 	elementId: z.string(),
@@ -66,7 +66,7 @@ const elementInstanceSchema = z.object({
 	elementInstanceKey: z.string(),
 	processInstanceKey: z.string(),
 	rootProcessInstanceKey: z.string().nullable(),
-	processDefinitionKey: z.string(),
+	processDefinitionKey: z.string().nullable(),
 	incidentKey: z.string().nullable(),
 });
 type ElementInstance = z.infer<typeof elementInstanceSchema>;

@@ -1654,6 +1654,126 @@ class SearchQueryResponseMapperTest {
     assertThat(response.getItems().getFirst().getAgentDefinitionKey()).isEqualTo("123");
   }
 
+  /** Documents written before 8.8 (or 8.9 for jobs) lack fields; see camunda/camunda#66159. */
+  @Nested
+  class LegacyData {
+
+    @Test
+    void shouldMapJobWithoutProcessDefinitionAndTimestamps() {
+      // given - a job imported by Operate 8.6/8.7
+      final var entity =
+          new JobEntity.Builder()
+              .jobKey(123L)
+              .type("test-type")
+              .worker("test-worker")
+              .state(JobState.FAILED)
+              .kind(JobKind.BPMN_ELEMENT)
+              .listenerEventType(ListenerEventType.UNSPECIFIED)
+              .retries(0)
+              .hasFailedWithRetriesLeft(false)
+              .processInstanceKey(789L)
+              .elementInstanceKey(111L)
+              .tenantId("tenant")
+              .build();
+
+      // when
+      final var job =
+          SearchQueryResponseMapper.toJobSearchQueryResponse(
+                  new SearchQueryResult<JobEntity>(1, false, List.of(entity), null, null))
+              .getItems()
+              .getFirst();
+
+      // then
+      assertThat(job.getJobKey()).isEqualTo("123");
+      assertThat(job.getProcessDefinitionKey()).isNull();
+      assertThat(job.getProcessDefinitionId()).isNull();
+      assertThat(job.getElementId()).isNull();
+      assertThat(job.getCreationTime()).isNull();
+      assertThat(job.getLastUpdateTime()).isNull();
+    }
+
+    @Test
+    void shouldMapElementInstanceWithoutProcessDefinition() {
+      // given - an element instance imported by Operate 8.1
+      final var entity =
+          new FlowNodeInstanceEntity(
+              123L, // flowNodeInstanceKey
+              456L, // processInstanceKey
+              null, // rootProcessInstanceKey
+              null, // processDefinitionKey
+              null, // startDate
+              null, // endDate
+              "flowNodeId", // flowNodeId
+              null, // flowNodeName
+              null, // treePath
+              FlowNodeType.SERVICE_TASK, // type
+              FlowNodeState.ACTIVE, // state
+              true, // hasIncident
+              222L, // incidentKey
+              null, // processDefinitionId
+              "tenant", // tenantId
+              null); // level
+
+      // when
+      final var response = SearchQueryResponseMapper.toElementInstance(entity);
+
+      // then
+      assertThat(response.getElementInstanceKey()).isEqualTo("123");
+      assertThat(response.getProcessDefinitionKey()).isNull();
+      assertThat(response.getProcessDefinitionId()).isNull();
+    }
+
+    @Test
+    void shouldMapSequenceFlowWithoutProcessDefinition() {
+      // given - a sequence flow imported by Operate 8.1
+      final var entity =
+          new SequenceFlowEntity.Builder()
+              .sequenceFlowId("flow1")
+              .flowNodeId("task1")
+              .processInstanceKey(789L)
+              .tenantId("tenant")
+              .build();
+
+      // when
+      final var sequenceFlow =
+          SearchQueryResponseMapper.toSequenceFlowsResult(List.of(entity)).getItems().getFirst();
+
+      // then
+      assertThat(sequenceFlow.getSequenceFlowId()).isEqualTo("flow1");
+      assertThat(sequenceFlow.getProcessDefinitionKey()).isNull();
+      assertThat(sequenceFlow.getProcessDefinitionId()).isNull();
+    }
+
+    @Test
+    void shouldMapCorrelatedMessageSubscriptionWithoutProcessDefinitionKey() {
+      // given - a process message subscription correlation exported by 8.8
+      final var entity =
+          CorrelatedMessageSubscriptionEntity.builder()
+              .correlationTime(OffsetDateTime.now())
+              .flowNodeId("messageCatch")
+              .messageKey(222L)
+              .messageName("testMessage")
+              .partitionId(1)
+              .processDefinitionId("processId")
+              .processInstanceKey(789L)
+              .subscriptionKey(333L)
+              .tenantId("tenant")
+              .build();
+
+      // when
+      final var subscription =
+          SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(
+                  new SearchQueryResult<CorrelatedMessageSubscriptionEntity>(
+                      1, false, List.of(entity), null, null))
+              .getItems()
+              .getFirst();
+
+      // then
+      assertThat(subscription.getSubscriptionKey()).isEqualTo("333");
+      assertThat(subscription.getProcessDefinitionKey()).isNull();
+    }
+  }
+
   @Nested
   class AgentHistoryItemResult {
 

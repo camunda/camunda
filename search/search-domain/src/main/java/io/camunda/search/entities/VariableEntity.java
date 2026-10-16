@@ -24,7 +24,8 @@ public record VariableEntity(
     Long processInstanceKey,
     // ES/OS handler only writes when rootProcessInstanceKey > 0 (absent for top-level instances).
     @Nullable Long rootProcessInstanceKey,
-    String processDefinitionId,
+    // absent on variables imported by Operate 8.1 and earlier.
+    @Nullable String processDefinitionId,
     String tenantId)
     implements TenantOwnedEntity {
 
@@ -35,7 +36,6 @@ public record VariableEntity(
     Objects.requireNonNull(isPreview, "isPreview");
     Objects.requireNonNull(scopeKey, "scopeKey");
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");
-    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
     Objects.requireNonNull(tenantId, "tenantId");
   }
 }
