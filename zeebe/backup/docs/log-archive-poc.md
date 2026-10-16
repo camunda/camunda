@@ -570,3 +570,123 @@ Integration tests (broker, filesystem store first, then MinIO):
 | W8 publisher | `logarchive/leader/LogArchivePublisher*` | W3, W4, W5 |
 | W9 restore | `zeebe/restore` `logarchive` package | W2, W3, W4 |
 | W10 integration tests | new ITs in `zeebe/qa/integration-tests` | all |
+
+## 18. Handover from continuous backup to the log archive
+
+Background: part 3 of the design series ("From Continuous Backup to Log Archive"). Each partition's
+history gets one dividing line, the handover checkpoint H. Before H, the old continuous backups are
+the source of truth; after H, the log archive. The handover is recorded on both sides and lets a
+restore cross from the old backups into the archive.
+
+### 18.1 Upgrade gate and activation (H1)
+
+- **Gate:** the log archive may write its first record only once every broker in the cluster
+  topology reports a version ≥ the current minor version. Reuse the logic of
+  `ClusterBrokerVersionMigrationStatusProvider` (extract a shared helper if practical). Brokers
+  missing from the topology count as not upgraded.
+- **Activation:** the checkpoint scheduler checks the gate. When it is open and the log archive is
+  enabled, it sends a new management request `ACTIVATE_LOG_ARCHIVE` to every partition. The partition
+  leader's archiver then writes `START_TIMELINE` (configured timeline, start index = first index on
+  disk) if the timeline is still empty. The request is idempotent.
+- **Archiver change:** on recovery, the archiver no longer starts the first timeline by itself. It
+  waits for activation. Starting a *new* timeline after a restore (timeline file differs from state)
+  stays automatic, because a restore always runs on upgraded brokers.
+- **Test hook:** a test-only way to make a broker advertise a different version (e.g. a test-only
+  config property), so an integration test can prove the gate stays closed with one old broker.
+
+### 18.2 Handover type and state (H2)
+
+- **`CheckpointType.HANDOVER`** (value 3), `shouldCreateBackup() == true`. A HANDOVER checkpoint is
+  taken like a scheduled backup and uploads an old-style backup.
+- **Two phases, so partial failures never leave partitions with different dividers:**
+  1. The scheduler takes a HANDOVER checkpoint H. Nothing changes yet; old backups and the archive
+     both keep running. If H fails on any partition, the scheduler retries later with a new id.
+  2. Once H is confirmed on every partition and F has passed H everywhere, the scheduler sends
+     `COMPLETE_HANDOVER(H)` to every partition. The leader writes the new log archive command
+     `COMPLETE_HANDOVER` → event `HANDOVER_COMPLETED` (gets a seq, so it is a commit entry of type
+     `HANDOVER` with H's id and position).
+- **Validation of `COMPLETE_HANDOVER`:** timeline started; H is a confirmed backup of type HANDOVER
+  in the checkpoint state; `archivedPosition ≥ H.position`; no handover recorded yet (a repeat for
+  the same H is rejected and harmless).
+- **Applier of `HANDOVER_COMPLETED`:** records `handoverCheckpointId` and `handoverPosition` in the log
+  archive meta and in the checkpoint state. Post-commit: sync `metadata.json`.
+- **`metadata.json` version 2:** optional `handover` object `{checkpointId, checkpointPosition,
+  logArchiveTimeline}`. Readers of version 1 keep working.
+- **Compaction pin release:** once a handover is recorded on the partition, `DbPositionSupplier`
+  ignores the old backup position (treats it as `Long.MAX_VALUE`) and caps at F only.
+
+### 18.3 Checkpoint state query (H2)
+
+`CheckpointStateResponse` (cluster-management-protocol.xml) gets a new group `logArchiveStates`
+with `sinceVersion="3"` (schema version 2 → 3): `partitionId`, `timelineStarted` (uint8),
+`archivedPosition` (int64), `newestArchivedSnapshotProcessedPosition` (int64, -1 if none),
+`handoverCheckpointId` (int64, -1 if none). The partition's `BackupApiRequestHandler` fills it from
+`DbLogArchiveState`; `BackupRequestHandler` aggregates it like the existing groups.
+
+### 18.4 Handover decision (H3)
+
+The checkpoint scheduler, per physical tenant, on its backup tick:
+
+1. If no partition has a timeline yet: check the gate, send `ACTIVATE_LOG_ARCHIVE`, done.
+2. If a handover is recorded on every partition: the old backup loop is finished. Do nothing (the
+   marker loop keeps running). After a scheduler failover this is re-derived from the query.
+3. If a HANDOVER checkpoint H is confirmed on every partition and F ≥ H on every partition: send
+   `COMPLETE_HANDOVER(H)` to every partition.
+4. Else, if on every partition the timeline is started, `archivedPosition ≥` the last confirmed old
+   backup's position, and an archived snapshot exists: take the next backup as type `HANDOVER`
+   instead of `SCHEDULED_BACKUP`.
+5. Else: take a normal scheduled backup, as today.
+
+All decisions are derived from the query, never from scheduler memory, so they survive the
+scheduler moving to another broker.
+
+### 18.5 Restore across the handover (H5)
+
+Per target checkpoint T and partition, using `metadata.json` (handover object) and the archive view
+(`HANDOVER` commit entry):
+
+| Target | Path |
+|---|---|
+| no handover, or T ≤ H | old restore, unchanged |
+| T > H and an archived snapshot qualifies for T | shortcut: archive only (existing `LogArchiveRestore`) |
+| T > H otherwise | handover restore: old restore up to H (backups of the chain ending at H), then append archived frames from the entry after H's checkpoint record up to T, on the same journal |
+
+The handover restore must produce the same journal as the shortcut would (same indexes, same
+records). After any restore, the new timeline's parent is the source: the archive timeline, or
+`legacy:<H>`.
+
+Restore entry point: `restore-standalone` gets a log archive mode (timeline, target checkpoint id or
+"latest") that picks the path automatically.
+
+### 18.6 Backups after the handover (H6)
+
+Once a handover is recorded on a partition:
+
+- `SCHEDULED_BACKUP` and `MANUAL_BACKUP` checkpoints are still created (they are restore points), but
+  no old-style backup is uploaded for them.
+- Backup status (`GET /actuator/backups/{id}`) for such a checkpoint is `COMPLETED` once the
+  partition's `archivedPosition ≥` the checkpoint position, `IN_PROGRESS` before.
+
+This keeps `POST /actuator/backups` + `GET /actuator/backups/{id}` usable as "give me a restore
+point and tell me when it is safe" in tests and locally.
+
+### 18.7 Tests and local runbook (H7, H8)
+
+- Integration tests: upgrade simulation (start with continuous backup only, enable the log archive,
+  observe activation, H, `HANDOVER_COMPLETED`, old backups stop, pin released); gate stays closed
+  with one broker advertising an older version; restore before H, across H (handover restore), after
+  H (shortcut); manual backup after handover reports `COMPLETED` once archived.
+- `zeebe/backup/docs/log-archive-local.md`: how to run it locally (filesystem or MinIO config, take a
+  backup, check status, restore).
+
+### 18.8 Workstreams
+
+| WS | Owns | Model | Depends on |
+|----|------|-------|-----------|
+| H1 gate + activation | scheduler gate, `ACTIVATE_LOG_ARCHIVE` request + handler, archiver waits for activation, version test hook | Opus | spec |
+| H2 handover state + query | `CheckpointType.HANDOVER`, `COMPLETE_HANDOVER`/`HANDOVER_COMPLETED` intents + applier + commit entry type, checkpoint state + meta fields, `metadata.json` v2, pin release, `logArchiveStates` query group | Sonnet | spec |
+| H3 handover decision | scheduler steps 1–5, `COMPLETE_HANDOVER` request | Opus | H1, H2 |
+| H5 restore | planner paths, journal stitching, `restore-standalone` mode | Opus (planner + stitching), Sonnet (CLI) | H2 |
+| H6 backups after handover | skip old upload, status from F | Sonnet | H2 |
+| H7 integration tests | scenarios in 18.7 | Sonnet | all |
+| H8 local runbook | `log-archive-local.md` | Haiku | H6 |
