@@ -140,7 +140,7 @@ New partition-local column families in `ZbColumnFamilies` (next free numbers):
 `LogArchiveMeta` fields: `timelineId`, `parentTimelineId`, `startIndex`, `archivedIndex` (F index,
 `startIndex - 1` initially), `archivedPosition` (F position, -1 until the first application entry is
 archived), `nextSeq` (starts at 1), `lastPublishedSeq` (0), `nextChunkNo` (1),
-`lastCoveredCheckpointId` (-1).
+`lastCoveredCheckpointId` (-1), `firstArchivedPosition` (-1).
 
 `DbLogArchiveState` exposes read methods (used by appliers, the processor, the compaction cap) and
 mutation methods (used only by appliers). The compaction cap opens its own read-only instance on the
@@ -164,8 +164,8 @@ into the event record. The applier also stores the commit entry JSON for that se
 - Valid when `timelineId` is non-empty and differs from `meta.timelineId`, and `startIndex > 0`.
 - Applier: clear all log archive column families, then set meta to the new timeline: `startIndex`,
   `archivedIndex = startIndex - 1`, `archivedPosition = -1`, `nextSeq = 1`, `lastPublishedSeq = 0`,
-  `nextChunkNo = 1`. `lastCoveredCheckpointId` = the newest checkpoint id at or before the start (or -1).
-  Then take seq 1 for this event.
+  `nextChunkNo = 1`, `lastCoveredCheckpointId = -1`, `firstArchivedPosition = -1`. Then take seq 1
+  for this event.
 
 ### `ARCHIVE_LOG`
 
@@ -175,9 +175,11 @@ into the event record. The applier also stores the commit entry JSON for that se
   lastIndex - firstIndex + 1`.
 - Applier: insert each object into `LOG_ARCHIVE_OPEN_OBJECTS`; set `archivedIndex` to the last
   object's `lastIndex` and, if any object has application entries, `archivedPosition` to the highest
-  `lastPosition`; collect covered checkpoints: all entries of the `CHECKPOINTS` column family with
-  `checkpointId > lastCoveredCheckpointId` and `checkpointPosition <= archivedPosition`, in id order;
-  write them into the event and advance `lastCoveredCheckpointId`.
+  `lastPosition`; set `firstArchivedPosition` from the first object with application entries if it
+  is still -1; collect covered checkpoints: walk the `CHECKPOINTS` column family in id order from
+  `lastCoveredCheckpointId`, stop at the first entry with `checkpointPosition > archivedPosition`;
+  entries with `checkpointPosition >= firstArchivedPosition` are covered (written into the event),
+  older ones are skipped; advance `lastCoveredCheckpointId` past every visited entry.
 - Sealing trigger: if the open chunk now holds at least `chunkSize` objects, the processor's
   post-commit task also hands the chunk to the publisher (section 8.3).
 
@@ -274,6 +276,32 @@ A single actor that writes to the bucket strictly in seq order.
 - A root for seq N is computed by the processor while applying seq N, from current state. A root is
   never computed for an older seq, which keeps I4.
 - Failures: retry the same PUT with backoff. Never skip a seq.
+
+### 8.3a Processor-to-leader interfaces
+
+Defined by W5 in `logarchive/processing`, implemented by W6 to W8:
+
+```java
+/** Receives bucket writes the processor decided on; implemented by the publisher (W8). */
+public interface LogArchivePublication {
+  void publish(PublishRequest request);
+}
+
+/** Immutable. root and seal are null when not due. */
+public record PublishRequest(
+    String timelineId, long seq, byte[] commitEntryJson,
+    @Nullable byte[] rootJson,          // root/<seq>.json + _latest.json, then CONFIRM_PUBLISHED(seq)
+    @Nullable SealRequest seal) {}
+
+/** chunk carries all IndexChunk fields incl. sha256 of chunkJson; publisher PUTs chunkJson to
+ *  chunk.key, then writes SEAL_INDEX with exactly these chunk fields. */
+public record SealRequest(IndexChunk chunk, byte[] chunkJson) {}
+```
+
+A publish request without a commit entry (`seq = -1`, `commitEntryJson = null`) carries only a root
+or a seal, for recovery. The `LogArchiveListener` from section 6 is the other direction: processor
+to archiver and snapshot uploader. Both are registered on the processor by the transition step and
+called only while processing, never during replay.
 
 ### 8.4 Recovery on a new leader
 
@@ -451,6 +479,10 @@ SBE null value.
 
 Unknown value types are not exported (`shouldIndexValueType` defaults to false), so the exporters need
 no configuration change.
+
+**Known red tests on the PoC branch:** the ES/OS exporter value-type tests and the engine's
+`EventAppliersTest` enumerate every value type and intent and fail on `LOG_ARCHIVE`. Fix them before
+anything leaves the PoC branch.
 
 **PoC rule: only what the build and the protocol tests need.** Of the rows above, implement only the
 protocol, protocol-impl and broker rows plus tests that would otherwise fail. Skip the test-util,
