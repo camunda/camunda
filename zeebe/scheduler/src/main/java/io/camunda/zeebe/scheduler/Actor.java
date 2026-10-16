@@ -147,6 +147,11 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
     return actor.schedule(delay, runnable);
   }
 
+  @Override
+  public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
+    return actor.runAtFixedRate(delay, runnable);
+  }
+
   public static ActorBuilder newActor() {
     return new ActorBuilder();
   }
