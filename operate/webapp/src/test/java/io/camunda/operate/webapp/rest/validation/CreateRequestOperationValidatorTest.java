@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
@@ -27,6 +28,7 @@ import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,11 +50,16 @@ public class CreateRequestOperationValidatorTest {
 
   @Mock private IncidentReader mockIncidentReader;
 
+  @Mock private FlowNodeInstanceReader mockFlowNodeInstanceReader;
+
   @BeforeEach
   public void setup() {
     underTest =
         new CreateRequestOperationValidator(
-            mockVariableReader, mockOperationReader, mockIncidentReader);
+            mockVariableReader,
+            mockOperationReader,
+            mockIncidentReader,
+            mockFlowNodeInstanceReader);
   }
 
   @Test
@@ -100,19 +107,20 @@ public class CreateRequestOperationValidatorTest {
   void shouldFailValidationWhenVariableAlreadyExists() {
     // given
     final var request = new CreateOperationRequestDto(ADD_VARIABLE);
-    request.setVariableScopeId("scope");
+    request.setVariableScopeId("456");
     request.setVariableName("name");
     request.setVariableValue("val");
+    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(123L, Set.of(456L)))
+        .thenReturn(Set.of(456L));
 
     // simulate existing variable
-    when(mockVariableReader.getVariableByName("123", "scope", "name"))
-        .thenReturn(new VariableDto());
+    when(mockVariableReader.getVariableByName("123", "456", "name")).thenReturn(new VariableDto());
 
     // when - then
     assertThatThrownBy(() -> underTest.validate(request, "123"))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage(
-            "Cannot add variable \"name\" in scope \"scope\" of processInstanceId=123: "
+            "Cannot add variable \"name\" in scope \"456\" of processInstanceId=123: "
                 + "a variable with this name already exists.");
 
     // shouldn't query for operations
@@ -129,23 +137,25 @@ public class CreateRequestOperationValidatorTest {
   void shouldFailValidationWhenOperationWithStateExists(final OperationState opState) {
     // given
     final var request = new CreateOperationRequestDto(ADD_VARIABLE);
-    request.setVariableScopeId("scope");
+    request.setVariableScopeId("456");
     request.setVariableName("name");
     request.setVariableValue("val");
+    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(123L, Set.of(456L)))
+        .thenReturn(Set.of(456L));
 
     // no existing variable
-    when(mockVariableReader.getVariableByName("123", "scope", "name")).thenReturn(null);
+    when(mockVariableReader.getVariableByName("123", "456", "name")).thenReturn(null);
 
     // simulate pending operation
     final var operation = new OperationDto().setState(opState);
-    when(mockOperationReader.getOperations(ADD_VARIABLE, "123", "scope", "name"))
+    when(mockOperationReader.getOperations(ADD_VARIABLE, "123", "456", "name"))
         .thenReturn(List.of(operation));
 
     // when - then
     assertThatThrownBy(() -> underTest.validate(request, "123"))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage(
-            "Cannot add variable \"name\" in scope \"scope\" of processInstanceId=123: "
+            "Cannot add variable \"name\" in scope \"456\" of processInstanceId=123: "
                 + "an ADD_VARIABLE operation for this variable already exists.");
   }
 
@@ -153,16 +163,18 @@ public class CreateRequestOperationValidatorTest {
   void shouldPassValidationWhenFailedAddVariableOperationExists() {
     // given
     final var request = new CreateOperationRequestDto(ADD_VARIABLE);
-    request.setVariableScopeId("scope");
+    request.setVariableScopeId("456");
     request.setVariableName("name");
     request.setVariableValue("val");
+    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(123L, Set.of(456L)))
+        .thenReturn(Set.of(456L));
 
     // no existing variable
-    when(mockVariableReader.getVariableByName("123", "scope", "name")).thenReturn(null);
+    when(mockVariableReader.getVariableByName("123", "456", "name")).thenReturn(null);
 
     // simulate failed operation exists
     final var failedOperation = new OperationDto().setState(OperationState.FAILED);
-    when(mockOperationReader.getOperations(ADD_VARIABLE, "123", "scope", "name"))
+    when(mockOperationReader.getOperations(ADD_VARIABLE, "123", "456", "name"))
         .thenReturn(List.of(failedOperation));
 
     // when - then
@@ -176,9 +188,81 @@ public class CreateRequestOperationValidatorTest {
   void shouldPassValidationForValidVariableOperation(final OperationType operationType) {
     // given
     final var request = new CreateOperationRequestDto(operationType);
-    request.setVariableScopeId("abc");
+    request.setVariableScopeId("123");
     request.setVariableName("var");
     request.setVariableValue("val");
+
+    // when - then
+    assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectUpdateVariableWhenScopeIsNotANumber() {
+    // given: the scope is not a key
+    final var request = new CreateOperationRequestDto(UPDATE_VARIABLE);
+    request.setVariableScopeId("abc");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+
+    // when - then: the request is rejected
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Scope abc does not belong to process instance 123.");
+  }
+
+  @Test
+  void shouldRejectAddVariableWhenScopeIsNotANumber() {
+    // given: the scope is not a key
+    final var request = new CreateOperationRequestDto(ADD_VARIABLE);
+    request.setVariableScopeId("abc");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Scope abc does not belong to process instance 123.");
+    verifyNoInteractions(mockVariableReader, mockOperationReader);
+  }
+
+  @Test
+  void shouldRejectNumericScopeIdThatIsNotAFlowNodeInstanceOfTheProcessInstance() {
+    // given: 456 is not a flow node instance of process instance 123
+    final var request = new CreateOperationRequestDto(UPDATE_VARIABLE);
+    request.setVariableScopeId("456");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(123L, Set.of(456L)))
+        .thenReturn(Set.of());
+
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Scope 456 does not belong to process instance 123.");
+  }
+
+  @Test
+  void shouldAcceptScopeIdOfProcessInstanceWithLeadingZeros() {
+    // given: the scope is the process instance itself, written with a leading zero
+    final var request = new CreateOperationRequestDto(UPDATE_VARIABLE);
+    request.setVariableScopeId("0123");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+
+    // when - then
+    assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
+    verifyNoInteractions(mockFlowNodeInstanceReader);
+  }
+
+  @Test
+  void shouldAcceptScopeIdOfFlowNodeInstanceWithLeadingZeros() {
+    // given: the scope is a flow node instance of the process instance, written with a leading zero
+    final var request = new CreateOperationRequestDto(UPDATE_VARIABLE);
+    request.setVariableScopeId("0456");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(123L, Set.of(456L)))
+        .thenReturn(Set.of(456L));
 
     // when - then
     assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
