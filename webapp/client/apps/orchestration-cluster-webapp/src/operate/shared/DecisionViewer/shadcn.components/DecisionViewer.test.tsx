@@ -7,7 +7,7 @@
  */
 
 import {render} from 'vitest-browser-react';
-import {describe, expect} from 'vitest';
+import {describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {DecisionViewer} from './DecisionViewer';
@@ -49,6 +49,63 @@ describe('<DecisionViewer />', () => {
 		const indexHeader = screen.getByText('#', {exact: true}).first();
 		await expect.element(indexHeader).toBeVisible();
 		expect(indexHeader.element().tagName).toBe('TH');
+	});
+
+	it('should highlight only the given rule rows', async () => {
+		const screen = await render(
+			<DecisionViewer
+				xml={DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE}
+				decisionViewId="invoiceClassification"
+				highlightableRules={[1]}
+			/>,
+		);
+
+		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
+		await vi.waitFor(() => {
+			expect(document.querySelectorAll('tbody tr[data-highlighted]')).toHaveLength(1);
+		});
+		expect(document.querySelector('tbody tr:nth-child(1)')).toHaveAttribute('data-highlighted');
+	});
+
+	it('should update highlighted rows when the rules change', async () => {
+		const screen = await render(
+			<DecisionViewer
+				xml={DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE}
+				decisionViewId="invoiceClassification"
+				highlightableRules={[1]}
+			/>,
+		);
+		await vi.waitFor(() => {
+			expect(document.querySelectorAll('tbody tr[data-highlighted]')).toHaveLength(1);
+		});
+
+		await screen.rerender(
+			<DecisionViewer
+				xml={DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE}
+				decisionViewId="invoiceClassification"
+				highlightableRules={[]}
+			/>,
+		);
+
+		await vi.waitFor(() => {
+			expect(document.querySelectorAll('tbody tr[data-highlighted]')).toHaveLength(0);
+		});
+	});
+
+	it('should report the imported definitions', async () => {
+		const onDefinitionsChange = vi.fn();
+
+		await render(
+			<DecisionViewer
+				xml={DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE}
+				decisionViewId="invoiceClassification"
+				onDefinitionsChange={onDefinitionsChange}
+			/>,
+		);
+
+		await vi.waitFor(() => {
+			expect(onDefinitionsChange).toHaveBeenCalledWith(expect.objectContaining({id: expect.any(String)}));
+		});
 	});
 
 	it('should render nothing in the canvas when there is no xml', async () => {

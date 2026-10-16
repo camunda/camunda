@@ -70,6 +70,15 @@
 		border-width: 2px 2px 1px 2px;
 	}
 
+	tbody tr[data-highlighted],
+	tbody tr[data-highlighted] td {
+		background-color: var(--info-background-subtle) !important;
+	}
+
+	tbody tr[data-highlighted] td {
+		color: var(--foreground) !important;
+	}
+
 	.tjs-table-container {
 		background-color: var(--viewer-layer) !important;
 		border-width: 2px 2px 1px 2px;
