@@ -12,6 +12,8 @@
 import buildlogic.skipWhen
 import com.diffplug.gradle.spotless.SpotlessExtension
 import io.camunda.gradle.flags.asEnabledFlag
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
 
 plugins {
   base
@@ -21,6 +23,14 @@ plugins {
 val isCi =
   providers.environmentVariable("CI").map { it.equals("true", ignoreCase = true) }.getOrElse(false)
 val quickly = providers.gradleProperty("quickly").asEnabledFlag().orElse(false)
+
+// Single source of truth shared with the Maven spotless config.
+val ktfmtVersion =
+  resolvePomProperty(
+    "plugin.version.ktfmt",
+    PomResolver(providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get())
+      .properties(),
+  )
 
 extensions.configure<SpotlessExtension> {
   isEnforceCheck = isCi
@@ -65,8 +75,7 @@ extensions.configure<SpotlessExtension> {
         exclude("**/build/**", "**/node_modules/**", "**/target/**")
       }
     )
-    // Keep the version in sync with the <kotlin><ktfmt> block in the root pom.xml.
-    ktfmt("0.63").googleStyle()
+    ktfmt(ktfmtVersion).googleStyle()
   }
 
   pom {
