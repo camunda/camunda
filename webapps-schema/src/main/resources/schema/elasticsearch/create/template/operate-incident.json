@@ -73,6 +73,9 @@
       },
       "rootProcessInstanceKey": {
         "type": "long"
+      },
+      "storageOrdinal": {
+        "type": "integer"
       }
 		}
 	}

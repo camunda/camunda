@@ -27,7 +27,9 @@ public record IncidentEntity(
     OffsetDateTime creationTime,
     @Nullable IncidentState state,
     @Nullable Long jobKey,
-    String tenantId)
+    String tenantId,
+    // absent on data exported before storage ordinals were introduced.
+    @Nullable Integer storageOrdinal)
     implements TenantOwnedEntity {
 
   public IncidentEntity {
@@ -40,6 +42,37 @@ public record IncidentEntity(
     Objects.requireNonNull(flowNodeInstanceKey, "flowNodeInstanceKey");
     Objects.requireNonNull(creationTime, "creationTime");
     Objects.requireNonNull(tenantId, "tenantId");
+  }
+
+  public IncidentEntity(
+      final Long incidentKey,
+      final Long processDefinitionKey,
+      final String processDefinitionId,
+      final Long processInstanceKey,
+      final @Nullable Long rootProcessInstanceKey,
+      final @Nullable ErrorType errorType,
+      final String errorMessage,
+      final String flowNodeId,
+      final Long flowNodeInstanceKey,
+      final OffsetDateTime creationTime,
+      final @Nullable IncidentState state,
+      final @Nullable Long jobKey,
+      final String tenantId) {
+    this(
+        incidentKey,
+        processDefinitionKey,
+        processDefinitionId,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        errorType,
+        errorMessage,
+        flowNodeId,
+        flowNodeInstanceKey,
+        creationTime,
+        state,
+        jobKey,
+        tenantId,
+        null);
   }
 
   public enum IncidentState {

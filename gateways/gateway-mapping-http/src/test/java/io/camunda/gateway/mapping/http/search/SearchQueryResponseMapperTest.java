@@ -408,6 +408,60 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapStorageOrdinalForIncident() {
+    // given
+    final var entity =
+        new IncidentEntity(
+            123L, // incidentKey
+            456L, // processDefinitionKey
+            "processId", // processDefinitionId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            ErrorType.JOB_NO_RETRIES, // errorType
+            "Error message", // errorMessage
+            "flowNodeId", // flowNodeId
+            111L, // flowNodeInstanceKey
+            OffsetDateTime.now(), // creationTime
+            IncidentState.ACTIVE, // state
+            222L, // jobKey
+            "tenant", // tenantId
+            1001); // storageOrdinal
+
+    // when
+    final var response = SearchQueryResponseMapper.toIncident(entity);
+
+    // then
+    assertThat(response.getStorageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldMapNullStorageOrdinalForIncident() {
+    // given
+    final var entity =
+        new IncidentEntity(
+            123L, // incidentKey
+            456L, // processDefinitionKey
+            "processId", // processDefinitionId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            ErrorType.JOB_NO_RETRIES, // errorType
+            "Error message", // errorMessage
+            "flowNodeId", // flowNodeId
+            111L, // flowNodeInstanceKey
+            OffsetDateTime.now(), // creationTime
+            IncidentState.ACTIVE, // state
+            222L, // jobKey
+            "tenant", // tenantId
+            null); // storageOrdinal
+
+    // when
+    final var response = SearchQueryResponseMapper.toIncident(entity);
+
+    // then
+    assertThat(response.getStorageOrdinal()).isNull();
+  }
+
+  @Test
   void shouldHandleNullIncidentState() {
     // given
     final var entity =
