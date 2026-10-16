@@ -12,6 +12,11 @@ import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
 
+// DEMO (non-block path): this spec is the PR's own CHANGED test and it still
+// passes. The deliberate failure lives in an UNTOUCHED spec (swagger.spec.ts),
+// broken via a shared page object, to confirm the gate does NOT block when the
+// failing test is not one the PR changed. Revert before merge.
+
 test.describe.parallel('Login Tests', () => {
   test.beforeEach(async ({page}) => {
     await navigateToApp(page, 'operate');

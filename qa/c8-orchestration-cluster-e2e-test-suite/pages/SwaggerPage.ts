@@ -33,6 +33,11 @@ export class SwaggerPage {
 
   async gotoSwaggerUI(options?: Parameters<Page['goto']>[1]): Promise<void> {
     await this.page.goto(this.swaggerUiPath, options);
+    // DEMO (non-block path): deterministic runtime failure injected into a
+    // shared page object so the UNTOUCHED swagger.spec.ts fails while the PR's
+    // own changed spec stays green. This verifies the gate does not block on a
+    // failure in a test the PR did not change. Revert before merge.
+    throw new Error('DEMO: non-block path — untouched spec should not block');
   }
 
   async expectLoaded(timeout: number = 30_000): Promise<void> {
