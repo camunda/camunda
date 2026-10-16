@@ -24,12 +24,12 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 
@@ -230,7 +230,7 @@ final class RestoreStatusTest {
     assertThat(partition.state()).isEqualTo(PartitionRestoreState.RESTORED);
   }
 
-  private static TreeSet<Long> backups(final Long... ids) {
-    return new TreeSet<>(List.of(ids));
+  private static PartitionRestore backups(final long... ids) {
+    return PartitionRestore.ofBackups(ids);
   }
 }

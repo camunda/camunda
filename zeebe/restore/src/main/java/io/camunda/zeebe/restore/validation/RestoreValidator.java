@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.restore.RestorePointResolver;
 import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
 import io.camunda.zeebe.util.Either;
@@ -29,7 +30,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,8 +88,7 @@ public final class RestoreValidator
     final RestoreResolvedRequest resolvedRequest;
     try {
       validateParameters(request);
-      final var partitionBackups = resolveBackups(request);
-      resolvedRequest = new RestoreResolvedRequest(partitionBackups, request.dryRun());
+      resolvedRequest = new RestoreResolvedRequest(resolvePartitions(request), request.dryRun());
     } catch (final Exception e) {
       return Either.left(e);
     }
@@ -141,7 +140,7 @@ public final class RestoreValidator
     }
   }
 
-  private Map<Integer, long[]> resolveBackups(final RestoreRequest request) {
+  private Map<Integer, PartitionRestore> resolvePartitions(final RestoreRequest request) {
     final var backupIds = request.arguments().parameters().backupIds();
     if (!backupIds.isEmpty()) {
       return resolveBackupsByPartition(backupIds);
@@ -149,35 +148,35 @@ public final class RestoreValidator
     return resolveRestorePoint(request);
   }
 
-  private Map<Integer, long[]> resolveBackupsByPartition(final List<Long> backupIds) {
-    final var ids = backupIds.stream().mapToLong(Long::longValue).sorted().toArray();
+  private Map<Integer, PartitionRestore> resolveBackupsByPartition(final List<Long> backupIds) {
+    final var restore = PartitionRestore.ofBackups(backupIds);
+    final var lastBackupId = restore.backupIds().last();
     final var store =
         Objects.requireNonNull(backupStore, "Backup store must be configured to load backups");
-    final var restoredPartitionCount = backupPartitionCount(store, ids[ids.length - 1]);
+    final var restoredPartitionCount = backupPartitionCount(store, lastBackupId);
     if (exportedPositionSupplier != null) {
       // A database that already holds exported positions has to belong to the partitions of the
       // backup. One without any is restored from scratch, so the backup alone decides.
       final var exportedPartitionCount = availableExportedPositions(exportedPositionSupplier);
       if (!exportedPartitionCount.isEmpty()) {
         verifyPartitionCountsAgree(
-            ids[ids.length - 1], restoredPartitionCount, exportedPartitionCount.size());
+            lastBackupId, restoredPartitionCount, exportedPartitionCount.size());
       }
     }
-    return awaitResult(
-            FuturesUtil.parTraverse(
-                IntStream.rangeClosed(1, restoredPartitionCount).boxed().toList(),
-                partition -> verifyBackupsExist(store, partition, ids)))
-        .stream()
-        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    final var partitions = IntStream.rangeClosed(1, restoredPartitionCount).boxed().toList();
+    awaitResult(
+        FuturesUtil.<Integer, @Nullable Void>parTraverse(
+            partitions, partition -> verifyBackupsExist(store, partition, restore)));
+    return partitions.stream()
+        .collect(Collectors.toMap(partition -> partition, partition -> restore));
   }
 
-  private CompletableFuture<Entry<Integer, long[]>> verifyBackupsExist(
-      final BackupStore store, final int partitionId, final long[] backupIds) {
+  private CompletableFuture<@Nullable Void> verifyBackupsExist(
+      final BackupStore store, final int partitionId, final PartitionRestore restore) {
     return FuturesUtil.traverseIgnoring(
-            Arrays.stream(backupIds).boxed().toList(),
-            backupId -> verifyBackupExists(store, partitionId, backupId),
-            Runnable::run)
-        .thenApply(ignored -> Map.entry(partitionId, backupIds));
+        restore.backupIds(),
+        backupId -> verifyBackupExists(store, partitionId, backupId),
+        Runnable::run);
   }
 
   private CompletableFuture<Void> verifyBackupExists(
@@ -199,16 +198,17 @@ public final class RestoreValidator
                                     .formatted(partitionId, backupId))));
   }
 
-  private Map<Integer, long[]> resolveRestorePoint(final RestoreRequest request) {
+  private Map<Integer, PartitionRestore> resolveRestorePoint(final RestoreRequest request) {
     final var backups = findBackups(request);
     return backups.backupsByPartitionId().entrySet().stream()
         .collect(
             Collectors.toMap(
                 Entry::getKey,
                 e ->
-                    e.getValue().stream()
-                        .mapToLong(BackupMetadata.CheckpointEntry::checkpointId)
-                        .toArray()));
+                    PartitionRestore.ofBackups(
+                        e.getValue().stream()
+                            .mapToLong(BackupMetadata.CheckpointEntry::checkpointId)
+                            .toArray())));
   }
 
   private RestorableBackups findBackups(final RestoreRequest request) {

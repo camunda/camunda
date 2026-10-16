@@ -98,6 +98,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -665,7 +666,7 @@ public class ProtoBufSerializer
           builder.setPartitionRestore(
               Topology.PartitionRestoreOperation.newBuilder()
                   .setPartitionId(op.partitionId())
-                  .addAllBackupIds(op.backupIds())
+                  .addAllBackupIds(op.restore().backupIds())
                   .build());
       case final SchemaInitializationOperation ignored ->
           builder.setSchemaInitialization(Topology.SchemaInitializationOperation.newBuilder());
@@ -1018,7 +1019,8 @@ public class ProtoBufSerializer
       return new PartitionRestoreOperation(
           memberId,
           topologyChangeOperation.getPartitionRestore().getPartitionId(),
-          new TreeSet<>(topologyChangeOperation.getPartitionRestore().getBackupIdsList()));
+          PartitionRestore.ofBackups(
+              topologyChangeOperation.getPartitionRestore().getBackupIdsList()));
     } else if (topologyChangeOperation.hasSchemaInitialization()) {
       return new SchemaInitializationOperation(memberId);
     } else {
@@ -2569,7 +2571,7 @@ public class ProtoBufSerializer
           builder.setPartitionRestore(
               Topology.PartitionRestoreOperation.newBuilder()
                   .setPartitionId(op.partitionId())
-                  .addAllBackupIds(op.backupIds())
+                  .addAllBackupIds(op.restore().backupIds())
                   .build());
       case final SchemaInitializationOperation ignored ->
           builder.setSchemaInitialization(Topology.SchemaInitializationOperation.newBuilder());
@@ -2680,7 +2682,7 @@ public class ProtoBufSerializer
       return new PartitionRestoreOperation(
           memberId,
           proto.getPartitionRestore().getPartitionId(),
-          new TreeSet<>(proto.getPartitionRestore().getBackupIdsList()));
+          PartitionRestore.ofBackups(proto.getPartitionRestore().getBackupIdsList()));
     } else if (proto.hasSchemaInitialization()) {
       return new SchemaInitializationOperation(memberId);
     } else if (proto.hasRemovePhysicalTenant()) {

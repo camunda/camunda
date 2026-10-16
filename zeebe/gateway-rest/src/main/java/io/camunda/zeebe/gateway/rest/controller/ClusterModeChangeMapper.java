@@ -173,7 +173,7 @@ final class ClusterModeChangeMapper {
               .operation(type)
               .brokerId(restore.brokerId())
               .partitionId(restore.partitionId())
-              .backupIds(List.copyOf(restore.backupIds()))
+              .backupIds(List.copyOf(restore.restore().backupIds()))
               .build();
       case final PartitionPreRestoreOperation preRestore ->
           ClusterRestorePartitionOperation.Builder.create()

@@ -273,13 +273,9 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
      *
      * @param memberId the member id of the member that will apply this operation
      * @param partitionId id of the partition to restore
-     * @param backupIds the ids of the backups to restore, in ascending order
+     * @param restore what the partition is restored from
      */
-    record PartitionRestoreOperation(MemberId memberId, int partitionId, SortedSet<Long> backupIds)
-        implements PartitionChangeOperation {
-      public PartitionRestoreOperation {
-        backupIds = ImmutableSortedSet.copyOf(backupIds);
-      }
-    }
+    record PartitionRestoreOperation(MemberId memberId, int partitionId, PartitionRestore restore)
+        implements PartitionChangeOperation {}
   }
 }

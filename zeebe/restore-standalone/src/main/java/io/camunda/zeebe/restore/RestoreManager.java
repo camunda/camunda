@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -74,7 +75,7 @@ public class RestoreManager implements CloseableSilently {
   }
 
   /**
-   * Restores partitions from backups, where each partition may restore from different backup IDs.
+   * Restores partitions, where each partition may restore from different backups.
    *
    * <p>This is useful when partitions have different safe start checkpoints based on their exported
    * positions, but all need to reach the same global checkpoint.
@@ -84,26 +85,25 @@ public class RestoreManager implements CloseableSilently {
    * them. Verifying the data directory per tenant would fail the second tenant on the first
    * tenant's freshly restored partitions, and emptying it on failure would discard them.
    *
-   * @param backupIdsByPartition map from partition ID to the backup IDs to restore for that
-   *     partition
+   * @param partitions what each partition is restored from, by partition id
    * @param validateConfig whether to validate the backup configuration
    */
-  public void restore(final Map<Integer, long[]> backupIdsByPartition, final boolean validateConfig)
+  public void restore(final Map<Integer, PartitionRestore> partitions, final boolean validateConfig)
       throws IOException, ExecutionException, InterruptedException {
-    final var partitionCount = backupIdsByPartition.size();
+    final var partitionCount = partitions.size();
     final var partitionsToRestore = collectPartitions(partitionCount);
     final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
     for (final var partition : partitionsToRestore) {
       final var partitionId = partition.partition().id().number();
-      final var backupIds = backupIdsByPartition.get(partitionId);
-      if (backupIds == null || backupIds.length == 0) {
+      final var restore = partitions.get(partitionId);
+      if (restore == null || restore.backupIds().isEmpty()) {
         throw new IllegalArgumentException(
             "No backup IDs provided for partition %d of physical tenant '%s'"
                 .formatted(partitionId, physicalTenantId));
       }
       tasks.add(
           () -> {
-            restorePartition(partition, backupIds, partitionCount, validateConfig);
+            restorePartition(partition, restore, partitionCount, validateConfig);
             return null;
           });
     }
@@ -114,7 +114,7 @@ public class RestoreManager implements CloseableSilently {
 
   private void restorePartition(
       final InstrumentedRaftPartition partition,
-      final long[] backupIds,
+      final PartitionRestore restore,
       final int partitionCount,
       final boolean validateConfig)
       throws IOException, FlushException {
@@ -137,11 +137,8 @@ public class RestoreManager implements CloseableSilently {
             new RocksDBSnapshotFileInfoProvider(),
             partition.registry());
     try {
-      restoreService.restore(backupIds, validator);
-      LOG.info(
-          "Successfully restored partition {} from backups {}.",
-          raftPartition.id().number(),
-          backupIds);
+      restoreService.restore(restore, validator);
+      LOG.info("Successfully restored partition {} from {}.", raftPartition.id().number(), restore);
     } finally {
       MicrometerUtil.close(registry);
     }

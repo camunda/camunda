@@ -360,7 +360,7 @@ final class DependencyChangePlanTest {
           final var pre = builder.add(new PartitionPreRestoreOperation(member(m), p));
           restoresOfMember.add(
               builder.add(
-                  new PartitionRestoreOperation(member(m), p, new java.util.TreeSet<>(Set.of(1L))),
+                  new PartitionRestoreOperation(member(m), p, PartitionRestore.ofBackups(1L)),
                   Set.of(pre)));
         }
         builder.add(new ModeChangeOperation(member(m), Mode.PROCESSING), restoresOfMember);

@@ -14,6 +14,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.util.List;
 import java.util.Map;
@@ -327,7 +328,12 @@ public sealed interface ClusterConfigurationManagementRequest {
   record RestoreRequest(String physicalTenantId, TenantRestoreArguments arguments, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record RestoreResolvedRequest(Map<Integer, long[]> backups, boolean dryRun)
+  /**
+   * @param partitions what each partition is restored from, by partition id. These are the
+   *     partitions to restore, which can be fewer than are configured when the cluster was scaled
+   *     up since the backups were taken.
+   */
+  record RestoreResolvedRequest(Map<Integer, PartitionRestore> partitions, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record ClusterRestoreRequest(Map<String, TenantRestoreArguments> tenantArguments, boolean dryRun)
