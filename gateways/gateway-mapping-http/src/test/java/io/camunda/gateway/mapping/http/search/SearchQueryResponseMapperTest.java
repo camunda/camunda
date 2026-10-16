@@ -510,6 +510,7 @@ class SearchQueryResponseMapperTest {
             .result("result")
             .tenantId("tenant")
             .businessId("business-1")
+            .storageOrdinal(1001)
             .build();
 
     // when
@@ -518,6 +519,7 @@ class SearchQueryResponseMapperTest {
     // then
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
     assertThat(response.getBusinessId()).isEqualTo("business-1");
+    assertThat(response.getStorageOrdinal()).isEqualTo(1001);
   }
 
   @Test
@@ -1194,6 +1196,7 @@ class SearchQueryResponseMapperTest {
     // then
     assertThat(response.getRootProcessInstanceKey()).isNull();
     assertThat(response.getBusinessId()).isNull();
+    assertThat(response.getStorageOrdinal()).isNull();
   }
 
   @Test

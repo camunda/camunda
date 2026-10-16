@@ -22,4 +22,15 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_storage_ordinal_to_decision_instance" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}DECISION_INSTANCE" columnName="STORAGE_ORDINAL"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}DECISION_INSTANCE">
+      <column name="STORAGE_ORDINAL" type="INTEGER"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

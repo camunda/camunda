@@ -81,6 +81,17 @@ public interface DecisionInstance {
   String getBusinessId();
 
   /**
+   * Returns the storage ordinal of the decision instance, which groups entities that are stored and
+   * disposed of together.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} for decision instances created before
+   * version 8.11.
+   *
+   * @return the storage ordinal, or {@code null} when not set
+   */
+  Integer getStorageOrdinal();
+
+  /**
    * @return the element instance key of the decision instance
    */
   Long getElementInstanceKey();
