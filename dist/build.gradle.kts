@@ -16,12 +16,10 @@ plugins {
   id("buildlogic.openapi-conventions")
 }
 
-// OpenAPI generation tasks for the dist module (4 executions matching Maven pom.xml)
+// OpenAPI generation tasks for the dist module (2 executions matching Maven pom.xml)
 // Each generator task gets its own output directory so Gradle can track them independently.
 // We then merge the generated Java sources into a single source directory for compilation.
 val openApiBackupsOutputDir = layout.buildDirectory.dir("generated/openapi-backups")
-val openApiClusterOutputDir = layout.buildDirectory.dir("generated/openapi-cluster")
-val openApiExporterOutputDir = layout.buildDirectory.dir("generated/openapi-exporter")
 val openApiUpgradeReadinessOutputDir =
   layout.buildDirectory.dir("generated/openapi-upgrade-readiness")
 val mergedOpenApiJavaDir = layout.buildDirectory.dir("generated/openapi-merged/src/main/java")
@@ -61,32 +59,6 @@ val openApiGenerateBackups =
     modelPackage.set("io.camunda.management.backups")
   }
 
-val openApiGenerateCluster =
-  tasks.register<GenerateTask>("openApiGenerateCluster") {
-    configureCommonOpenApiGeneration(
-      fileTree("$projectDir/src/main/resources/api/cluster") { include("**/*.yaml", "**/*.yml") },
-      "clusterOpenApiSpecs",
-    )
-    inputSpec.set("$projectDir/src/main/resources/api/cluster/cluster-api.yaml")
-    outputDir.set(openApiClusterOutputDir)
-    modelPackage.set("io.camunda.zeebe.management.cluster")
-    ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
-    openapiNormalizer.set(mapOf("SIMPLIFY_ONEOF_ANYOF" to "false"))
-    configOptions.set(commonOpenApiConfigOptions + ("useSealed" to "true"))
-  }
-
-val openApiGenerateExporter =
-  tasks.register<GenerateTask>("openApiGenerateExporter") {
-    configureCommonOpenApiGeneration(
-      fileTree("$projectDir/src/main/resources/api/cluster") { include("**/*.yaml", "**/*.yml") },
-      "exporterOpenApiSpecs",
-    )
-    inputSpec.set("$projectDir/src/main/resources/api/cluster/exporter-api.yaml")
-    outputDir.set(openApiExporterOutputDir)
-    modelPackage.set("io.camunda.zeebe.management.cluster")
-    ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
-  }
-
 val openApiGenerateUpgradeReadiness =
   tasks.register<GenerateTask>("openApiGenerateUpgradeReadiness") {
     configureCommonOpenApiGeneration(
@@ -96,7 +68,6 @@ val openApiGenerateUpgradeReadiness =
     inputSpec.set("$projectDir/src/main/resources/api/cluster/upgrade-readiness-api.yaml")
     outputDir.set(openApiUpgradeReadinessOutputDir)
     modelPackage.set("io.camunda.zeebe.management.cluster")
-    ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
   }
 
 val syncOpenApiGeneratedSources =
@@ -104,15 +75,7 @@ val syncOpenApiGeneratedSources =
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     into(mergedOpenApiJavaDir)
     from(openApiGenerateBackups.flatMap { it.outputDir }.map { it.dir("src/main/java") })
-    from(openApiGenerateCluster.flatMap { it.outputDir }.map { it.dir("src/main/java") }) {
-      exclude("**/BrokerId.java")
-    }
-    from(openApiGenerateExporter.flatMap { it.outputDir }.map { it.dir("src/main/java") }) {
-      exclude("**/BrokerId.java")
-    }
-    from(openApiGenerateUpgradeReadiness.flatMap { it.outputDir }.map { it.dir("src/main/java") }) {
-      exclude("**/BrokerId.java")
-    }
+    from(openApiGenerateUpgradeReadiness.flatMap { it.outputDir }.map { it.dir("src/main/java") })
   }
 
 // Add merged generated sources to the source set; the task output carries its dependency.
@@ -396,6 +359,7 @@ dependencies {
   implementation(project(":zeebe-backup-store-s3"))
   implementation(project(":zeebe-backup-store-gcs"))
   implementation(project(":zeebe-cluster-config-api"))
+  implementation(project(":zeebe-cluster-config-openapi"))
   implementation(project(":zeebe-cluster-config-impl"))
   implementation(project(":camunda-client-java"))
   implementation(project(":webapp-server"))

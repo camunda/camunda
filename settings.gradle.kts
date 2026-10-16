@@ -210,6 +210,7 @@ registerProject(":zeebe-scheduler", "zeebe/scheduler")
 registerProject(":zeebe-cluster-config-api", "zeebe/dynamic-config/api")
 
 registerProject(":zeebe-cluster-config-impl", "zeebe/dynamic-config/impl")
+registerProject(":zeebe-cluster-config-openapi", "zeebe/dynamic-config/openapi")
 
 registerProject(":zeebe-qa-integration-tests", "zeebe/qa/integration-tests")
 
