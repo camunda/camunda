@@ -60,7 +60,7 @@ jobs:
         run: ./.github/actions/rdbms/create-aurora-database.sh
         env:
           PGDATABASE: ${{env.AURORA_DATABASE}}
-          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
+          PGHOST: camunda-ci-eks-aurora-postgresql-18.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
           PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
           PGPORT: 5432
           PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
@@ -85,7 +85,12 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D flaky.test.reportDir=failsafe-reports
+<<<<<<< HEAD
           -D test.integration.aurora.aws.url="jdbc:aws-wrapper:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}?wrapperPlugins=iam"
+=======
+          -D failsafe.timeout=3900
+          -D test.integration.aurora.aws.url="jdbc:aws-wrapper:postgresql://camunda-ci-eks-aurora-postgresql-18.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}?wrapperPlugins=iam"
+>>>>>>> c4d6e20c (ci: use PostgreSQL 18 Aurora cluster in dispatch tests)
           -D test.integration.aurora.aws.username=zeebe-irsa
           -D test.integration.camunda.database.type=rdbms_aurora
           -P parallel-tests,extract-flaky-tests,multi-db-test
@@ -97,7 +102,7 @@ jobs:
         run: ./.github/actions/rdbms/drop-aurora-database.sh
         env:
           PGDATABASE: ${{env.AURORA_DATABASE}}
-          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
+          PGHOST: camunda-ci-eks-aurora-postgresql-18.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
           PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
           PGPORT: 5432
           PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
