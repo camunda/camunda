@@ -21,18 +21,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayDeque;
+import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +45,16 @@ import org.sqlite.SQLiteException;
  * {@code _}, see {@link KeyLayout} for the columns. Two constants that map to the same table name
  * are rejected.
  *
- * <p>All access goes through one writer connection. Durability is the Raft log's job, so the
- * connection runs with {@code synchronous=OFF}, like RocksDB runs without its WAL.
+ * <p>Connections: there is one writer connection and a pool of read-only reader connections. The
+ * WAL journal lets readers run next to the writer, and a reader sees committed state only. SQLite
+ * allows one writing transaction at a time, so the writer connection is guarded by a lease that a
+ * {@link SqliteTransactionContext} takes when it first writes and gives back when its transaction
+ * ends. The engine has several contexts that write, on different actors (stream processor,
+ * exporters, backups), so which context writes is not fixed, they take turns. Contexts that only
+ * read, like the scheduled tasks, never wait for the lease.
+ *
+ * <p>Durability is the Raft log's job, so the writer runs with {@code synchronous=OFF}, like
+ * RocksDB runs without its WAL.
  */
 public final class SqliteDb<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
@@ -57,22 +63,32 @@ public final class SqliteDb<
   /** The name of the database file inside the database directory. */
   public static final String DB_FILE_NAME = "zeebe.sqlite";
 
+  static final Duration DEFAULT_WRITE_LEASE_TIMEOUT = Duration.ofSeconds(10);
+
   private static final Logger LOG = LoggerFactory.getLogger(SqliteDb.class);
 
-  private final Connection connection;
+  private final Path file;
+  private final SqliteConnection writer;
+  private final Semaphore writeLease = new Semaphore(1, true);
+  private final Duration writeLeaseTimeout;
+  private volatile @Nullable SqliteTransactionContext writeLeaseHolder;
+  private final ConcurrentLinkedDeque<SqliteConnection> idleReaders = new ConcurrentLinkedDeque<>();
+  private final ConcurrentLinkedDeque<SqliteConnection> allReaders = new ConcurrentLinkedDeque<>();
+  private volatile boolean closed;
   private final MeterRegistry meterRegistry;
   private final ConsistencyChecksSettings consistencyChecksSettings;
-  private final Map<String, PreparedStatement> statements = new HashMap<>();
-  private final Map<String, Deque<PreparedStatement>> idleCursorStatements = new HashMap<>();
-  private final Map<String, ColumnFamilyType> tables = new HashMap<>();
-  private final Map<String, TableState> tableStates = new HashMap<>();
-  private @Nullable SqliteTransactionContext activeContext;
+  private final Map<String, ColumnFamilyType> tables = new ConcurrentHashMap<>();
+  private final Map<String, TableState> tableStates = new ConcurrentHashMap<>();
 
   private SqliteDb(
-      final Connection connection,
+      final Path file,
+      final SqliteConnection writer,
+      final Duration writeLeaseTimeout,
       final MeterRegistry meterRegistry,
       final ConsistencyChecksSettings consistencyChecksSettings) {
-    this.connection = connection;
+    this.file = file;
+    this.writer = writer;
+    this.writeLeaseTimeout = writeLeaseTimeout;
     this.meterRegistry = meterRegistry;
     this.consistencyChecksSettings = consistencyChecksSettings;
   }
@@ -81,26 +97,21 @@ public final class SqliteDb<
       final Path directory,
       final MeterRegistry meterRegistry,
       final ConsistencyChecksSettings consistencyChecksSettings) {
-    Connection connection = null;
+    return open(directory, meterRegistry, consistencyChecksSettings, DEFAULT_WRITE_LEASE_TIMEOUT);
+  }
+
+  static <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily> SqliteDb<T> open(
+      final Path directory,
+      final MeterRegistry meterRegistry,
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final Duration writeLeaseTimeout) {
     try {
       Files.createDirectories(directory);
-      connection =
-          DriverManager.getConnection(
-              "jdbc:sqlite:" + directory.resolve(DB_FILE_NAME).toAbsolutePath());
-      try (final var statement = connection.createStatement()) {
-        statement.execute("PRAGMA journal_mode=WAL");
-        statement.execute("PRAGMA synchronous=OFF");
-        statement.execute("PRAGMA temp_store=MEMORY");
-      }
-      return new SqliteDb<>(connection, meterRegistry, consistencyChecksSettings);
+      final var file = directory.resolve(DB_FILE_NAME);
+      final var writer = SqliteConnection.openWriter(file);
+      return new SqliteDb<>(
+          file, writer, writeLeaseTimeout, meterRegistry, consistencyChecksSettings);
     } catch (final SQLException | IOException e) {
-      if (connection != null) {
-        try {
-          connection.close();
-        } catch (final SQLException closeFailure) {
-          e.addSuppressed(closeFailure);
-        }
-      }
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);
     }
   }
@@ -117,6 +128,7 @@ public final class SqliteDb<
           final TransactionContext context,
           final KeyType keyInstance,
           final ValueType valueInstance) {
+    final var sqliteContext = sqliteContext(context);
     final var table = tableName(columnFamily);
     final var existing = tables.putIfAbsent(table, columnFamily);
     if (existing != null && existing != columnFamily) {
@@ -125,9 +137,9 @@ public final class SqliteDb<
               .formatted(existing, columnFamily, table));
     }
 
-    final var state = tableState(table, KeyLayout.of(keyInstance));
+    final var state = tableState(table, KeyLayout.of(keyInstance), sqliteContext);
     return new SqliteColumnFamily<>(
-        this, columnFamily, table, state, context, keyInstance, valueInstance);
+        this, columnFamily, table, state, sqliteContext, keyInstance, valueInstance);
   }
 
   /** Whether the checks that are too expensive for production are enabled. */
@@ -136,17 +148,18 @@ public final class SqliteDb<
   }
 
   /**
-   * Creates the snapshot with {@code VACUUM INTO}, which cannot run inside a transaction. The
-   * snapshot directory contains a database file that {@link SqliteDbFactory#createDb} opens as is.
+   * Creates the snapshot with {@code VACUUM INTO}, which cannot run inside a transaction. It runs
+   * on a connection of its own, so it neither waits for nor interrupts the writer, and it contains
+   * the committed state only. The snapshot directory contains a database file that {@link
+   * SqliteDbFactory#createDb} opens as is.
    */
   @Override
   public void createSnapshot(final File snapshotDir) {
     try {
       Files.createDirectories(snapshotDir.toPath());
-      closeStatements();
       final var target = snapshotDir.toPath().resolve(DB_FILE_NAME).toAbsolutePath();
-      try (final var statement = connection.createStatement()) {
-        statement.execute("VACUUM INTO '" + target.toString().replace("'", "''") + "'");
+      try (final var snapshotConnection = SqliteConnection.openReader(file)) {
+        snapshotConnection.execute("VACUUM INTO '" + target.toString().replace("'", "''") + "'");
       }
     } catch (final SQLException | IOException e) {
       throw new ZeebeDbException(
@@ -161,14 +174,16 @@ public final class SqliteDb<
 
   @Override
   public boolean isEmpty(final ColumnFamilyType column, final TransactionContext context) {
+    final var sqliteContext = sqliteContext(context);
     final var table = tableName(column);
     final boolean[] empty = {true};
     context.runInTransaction(
         () -> {
-          if (!tableExists(table)) {
+          final var connection = sqliteContext.read();
+          if (!tableExists(connection, table)) {
             return;
           }
-          try (final var statement = connection.createStatement();
+          try (final var statement = connection.jdbc().createStatement();
               final var result =
                   statement.executeQuery("SELECT EXISTS(SELECT 1 FROM " + table + ")")) {
             empty[0] = !result.next() || result.getInt(1) == 0;
@@ -186,84 +201,118 @@ public final class SqliteDb<
 
   @Override
   public void close() {
-    final var open = activeContext;
-    if (open != null) {
-      open.abandon();
-      activeContext = null;
+    closed = true;
+    final var holder = writeLeaseHolder;
+    if (holder != null) {
+      holder.abandon();
+      writeLeaseHolder = null;
     }
-    closeStatements();
+    SqliteConnection reader;
+    while ((reader = allReaders.pollFirst()) != null) {
+      reader.close();
+    }
+    idleReaders.clear();
+    writer.close();
+  }
+
+  /** The writer connection, to be used only by the context that holds the write lease. */
+  SqliteConnection writer() {
+    return writer;
+  }
+
+  /** An idle reader connection, or a new one if all are in use. */
+  SqliteConnection borrowReader() {
+    if (closed) {
+      throw new IllegalStateException("Expected to read from the database, but it is closed");
+    }
+    final var idle = idleReaders.pollFirst();
+    if (idle != null) {
+      return idle;
+    }
     try {
-      connection.close();
+      final var reader = SqliteConnection.openReader(file);
+      allReaders.add(reader);
+      return reader;
     } catch (final SQLException e) {
-      LOG.error(
-          "Expected to close the SQLite connection successfully, but exception was thrown", e);
+      throw translate("Failed to open a reader connection", e);
     }
   }
 
-  /** The prepared statement for the SQL, which is cached until the database is closed. */
-  PreparedStatement prepare(final String sql) throws SQLException {
-    final var cached = statements.get(sql);
-    if (cached != null) {
-      return cached;
+  void returnReader(final SqliteConnection reader) {
+    if (closed) {
+      // the database closed while the reader was borrowed
+      allReaders.remove(reader);
+      reader.close();
+    } else {
+      idleReaders.push(reader);
     }
-    final var statement = connection.prepareStatement(sql);
-    statements.put(sql, statement);
-    return statement;
   }
 
   /**
-   * A prepared statement for a cursor over the SQL that no other open cursor uses. Unlike {@link
-   * #prepare(String)} this can be called while a cursor with the same SQL is open, which happens
-   * when iterations are nested.
+   * Gives the context the write lease and starts its transaction on the writer connection. Waits
+   * for the context that holds the lease to commit or roll back.
    */
-  PreparedStatement acquireCursorStatement(final String sql) throws SQLException {
-    final var idle = idleCursorStatements.get(sql);
-    if (idle != null && !idle.isEmpty()) {
-      return idle.pop();
+  void acquireWriter(final SqliteTransactionContext context) {
+    if (closed) {
+      throw new IllegalStateException("Expected to write to the database, but it is closed");
     }
-    return connection.prepareStatement(sql);
-  }
-
-  /** Hands the statement back once its result set is closed. */
-  void releaseCursorStatement(final String sql, final PreparedStatement statement) {
-    idleCursorStatements.computeIfAbsent(sql, k -> new ArrayDeque<>()).push(statement);
-  }
-
-  /**
-   * SQLite JDBC leaves a prepared write statement active after it ran, which makes {@code VACUUM}
-   * fail. Closing the cached statements is cheap, they are prepared again on next use.
-   */
-  private void closeStatements() {
-    final var all = new ArrayList<>(statements.values());
-    idleCursorStatements.values().forEach(all::addAll);
-    for (final var statement : all) {
-      try {
-        statement.close();
-      } catch (final SQLException e) {
-        LOG.error("Expected to close a SQLite statement successfully, but exception was thrown", e);
-      }
-    }
-    statements.clear();
-    idleCursorStatements.clear();
-  }
-
-  void begin(final SqliteTransactionContext context) {
-    if (activeContext != null && activeContext != context) {
+    final boolean acquired;
+    try {
+      acquired = writeLease.tryAcquire(writeLeaseTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new IllegalStateException(
-          "Expected no other transaction to be open, but another context has one; all contexts share one writer connection");
+          "Interrupted while waiting for the SQLite write lease, which another transaction context holds",
+          e);
     }
-    execute("BEGIN");
-    activeContext = context;
+    if (!acquired) {
+      throw new IllegalStateException(
+          ("Expected to acquire the SQLite write lease within %s to write, but another transaction context still holds it. "
+                  + "SQLite has one writer, so a transaction that writes waits for the transaction of every other context that writes; "
+                  + "a context must not write while a transaction of another context on the same thread is open")
+              .formatted(writeLeaseTimeout));
+    }
+    try {
+      writer.execute("BEGIN");
+    } catch (final SQLException e) {
+      writeLease.release();
+      throw translate("Failed to begin a transaction", e);
+    }
+    writeLeaseHolder = context;
   }
 
   void commit(final SqliteTransactionContext context) {
-    execute("COMMIT");
-    activeContext = null;
+    try {
+      writer.execute("COMMIT");
+    } catch (final SQLException e) {
+      // the lease stays with the context, so that it can roll back
+      throw translate("Failed to execute COMMIT", e);
+    }
+    releaseWriter();
   }
 
   void rollback(final SqliteTransactionContext context) {
-    activeContext = null;
-    execute("ROLLBACK");
+    try {
+      writer.execute("ROLLBACK");
+    } catch (final SQLException e) {
+      throw translate("Failed to execute ROLLBACK", e);
+    } finally {
+      releaseWriter();
+    }
+  }
+
+  private void releaseWriter() {
+    writeLeaseHolder = null;
+    writeLease.release();
+  }
+
+  private SqliteTransactionContext sqliteContext(final TransactionContext context) {
+    if (context instanceof final SqliteTransactionContext sqliteContext
+        && sqliteContext.belongsTo(this)) {
+      return sqliteContext;
+    }
+    throw new IllegalArgumentException(
+        "Expected a transaction context created by this SQLite database, but got " + context);
   }
 
   /** Whether the failure is SQLite's report of a violated primary key. */
@@ -298,21 +347,46 @@ public final class SqliteDb<
    * readable. That needs the layout the rows were written with, which is only known from earlier in
    * this session. A typed table from an earlier session that does not match the key is therefore
    * rejected, as binding a key to the wrong columns would corrupt it silently.
+   *
+   * <p>The schema changes run on the writer connection in the transaction of the context, which
+   * joins its open transaction if it has one.
    */
-  private TableState tableState(final String table, final KeyLayout layout) {
+  private TableState tableState(
+      final String table, final KeyLayout layout, final SqliteTransactionContext context) {
     final var known = tableStates.get(table);
+    if (known != null && (known.layout().isOpaque() || known.layout().sameShape(layout))) {
+      return known;
+    }
+    final TableState[] resolved = new TableState[1];
+    context.runInTransaction(
+        () -> resolved[0] = resolveTableState(table, layout, context, tableStates.get(table)));
+    return resolved[0];
+  }
+
+  private TableState resolveTableState(
+      final String table,
+      final KeyLayout layout,
+      final SqliteTransactionContext context,
+      final @Nullable TableState known) {
     if (known != null) {
       if (!known.layout().isOpaque() && !known.layout().sameShape(layout)) {
-        migrateToOpaque(table, known);
+        migrateToOpaque(table, known, context.write());
       }
       return known;
     }
 
-    final var actual = columns(table);
+    var actual = columns(context.read(), table);
     final var state = new TableState(layout);
     if (actual.isEmpty()) {
-      execute(layout.createTable(table));
-    } else if (!actual.equals(expectedColumns(layout))) {
+      // another context may have created the table while this one waited for the write lease
+      final var connection = context.write();
+      actual = columns(connection, table);
+      if (actual.isEmpty()) {
+        execute(connection, layout.createTable(table));
+        actual = expectedColumns(layout);
+      }
+    }
+    if (!actual.equals(expectedColumns(layout))) {
       if (!actual.equals(expectedColumns(layout.asOpaque()))) {
         throw new IllegalStateException(
             "Expected the table %s to have the columns %s for this key, but it has %s; a column family must always be used with the same key structure"
@@ -320,15 +394,16 @@ public final class SqliteDb<
       }
       state.layout(layout.asOpaque());
     }
-    tableStates.put(table, state);
-    return state;
+    final var raced = tableStates.putIfAbsent(table, state);
+    return raced != null ? raced : state;
   }
 
   /**
    * Rewrites the table with a single opaque key column. It runs in a savepoint, so it joins an open
    * transaction and either completes entirely or not at all.
    */
-  private void migrateToOpaque(final String table, final TableState state) {
+  private void migrateToOpaque(
+      final String table, final TableState state, final SqliteConnection writer) {
     final var old = state.layout();
     final var opaque = old.asOpaque();
     final var migrated = table + "_opaque";
@@ -336,21 +411,24 @@ public final class SqliteDb<
         "Column family table {} is used with more than one key structure, storing its keys as opaque blobs",
         table);
 
-    closeStatements();
-    execute("SAVEPOINT zb_opaque_migration");
+    writer.closeStatements();
+    execute(writer, "SAVEPOINT zb_opaque_migration");
     try {
-      execute("DROP TABLE IF EXISTS " + migrated);
-      execute(opaque.createTable(migrated));
-      try (final var select = connection.createStatement();
+      execute(writer, "DROP TABLE IF EXISTS " + migrated);
+      execute(writer, opaque.createTable(migrated));
+      try (final var select = writer.jdbc().createStatement();
           final var rows =
               select.executeQuery(
                   "SELECT %s, %s FROM %s"
                       .formatted(
                           String.join(", ", old.columnNames()), KeyLayout.VALUE_COLUMN, table));
           final var insert =
-              connection.prepareStatement(
-                  "INSERT INTO %s (%s, %s) VALUES (?, ?)"
-                      .formatted(migrated, opaque.columnNames().get(0), KeyLayout.VALUE_COLUMN))) {
+              writer
+                  .jdbc()
+                  .prepareStatement(
+                      "INSERT INTO %s (%s, %s) VALUES (?, ?)"
+                          .formatted(
+                              migrated, opaque.columnNames().get(0), KeyLayout.VALUE_COLUMN))) {
         final int valueColumn = old.columnNames().size() + 1;
         while (rows.next()) {
           insert.setBytes(1, old.readKey(rows, 1));
@@ -358,13 +436,13 @@ public final class SqliteDb<
           insert.executeUpdate();
         }
       }
-      execute("DROP TABLE " + table);
-      execute("ALTER TABLE %s RENAME TO %s".formatted(migrated, table));
-      execute("RELEASE zb_opaque_migration");
+      execute(writer, "DROP TABLE " + table);
+      execute(writer, "ALTER TABLE %s RENAME TO %s".formatted(migrated, table));
+      execute(writer, "RELEASE zb_opaque_migration");
     } catch (final SQLException | RuntimeException e) {
       try {
-        execute("ROLLBACK TO zb_opaque_migration");
-        execute("RELEASE zb_opaque_migration");
+        execute(writer, "ROLLBACK TO zb_opaque_migration");
+        execute(writer, "RELEASE zb_opaque_migration");
       } catch (final RuntimeException rollbackFailure) {
         e.addSuppressed(rollbackFailure);
       }
@@ -386,9 +464,9 @@ public final class SqliteDb<
   }
 
   /** The names and types of the columns of the table, empty if it does not exist. */
-  private List<String> columns(final String table) {
+  private List<String> columns(final SqliteConnection connection, final String table) {
     final var actual = new ArrayList<String>();
-    try (final var statement = connection.createStatement();
+    try (final var statement = connection.jdbc().createStatement();
         final var result = statement.executeQuery("PRAGMA table_info(" + table + ")")) {
       while (result.next()) {
         actual.add(result.getString("name") + " " + result.getString("type"));
@@ -399,10 +477,11 @@ public final class SqliteDb<
     return actual;
   }
 
-  private boolean tableExists(final String table) {
+  private boolean tableExists(final SqliteConnection connection, final String table) {
     try (final var statement =
-        connection.prepareStatement(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")) {
+        connection
+            .jdbc()
+            .prepareStatement("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")) {
       statement.setString(1, table);
       try (final var result = statement.executeQuery()) {
         return result.next();
@@ -412,9 +491,9 @@ public final class SqliteDb<
     }
   }
 
-  private void execute(final String sql) {
-    try (final Statement statement = connection.createStatement()) {
-      statement.execute(sql);
+  private void execute(final SqliteConnection connection, final String sql) {
+    try {
+      connection.execute(sql);
     } catch (final SQLException e) {
       throw translate("Failed to execute " + sql, e);
     }

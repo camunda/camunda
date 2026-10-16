@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.db.impl.sqlite;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -19,8 +19,8 @@ import org.jspecify.annotations.Nullable;
  */
 final class TableState {
 
-  private KeyLayout layout;
-  private final List<Cursor> cursors = new ArrayList<>();
+  private volatile KeyLayout layout;
+  private final List<Cursor> cursors = new CopyOnWriteArrayList<>();
 
   TableState(final KeyLayout layout) {
     this.layout = layout;
@@ -40,17 +40,25 @@ final class TableState {
 
   /** The position of a running iteration. */
   static final class Cursor {
+    private final SqliteTransactionContext owner;
     private final boolean reverse;
     private final byte[] prefix;
     private byte @Nullable [] current;
 
     /**
+     * @param owner the context that runs the iteration, which is the only one that its position
+     *     matters to
      * @param reverse whether the iteration moves towards smaller keys
      * @param prefix the serialized prefix the iteration is restricted to, empty if it is not
      */
-    Cursor(final boolean reverse, final byte[] prefix) {
+    Cursor(final SqliteTransactionContext owner, final boolean reverse, final byte[] prefix) {
+      this.owner = owner;
       this.reverse = reverse;
       this.prefix = prefix;
+    }
+
+    SqliteTransactionContext owner() {
+      return owner;
     }
 
     /** Moves the cursor to the key that the iteration visits now. */

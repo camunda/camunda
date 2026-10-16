@@ -72,6 +72,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- required to run both jqwik and junit as test engines -->
     <dependency>
       <groupId>net.jqwik</groupId>
