@@ -29,6 +29,7 @@ import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -138,6 +139,11 @@ public final class ClusterTopologyDomain extends DomainContextBase {
                 new PartitionDistributorConfig.ZoneSpec("zone-c", 1, 200))),
         new PartitionDistributorConfig.ZoneAwareConfig(
             List.of(new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000))));
+  }
+
+  @Provide
+  Arbitrary<PartitionRestore> partitionRestores() {
+    return Arbitraries.longs().set().ofMinSize(1).map(PartitionRestore::ofBackups);
   }
 
   @Provide

@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStore
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
@@ -44,10 +45,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
@@ -832,7 +831,8 @@ final class RecoveryPartitionManagerTest {
       // when: restoring a partition id that is not one of the manager's local partitions
       // (only PARTITION_ID and PARTITION_ID_2 are local per this class's setup)
       final var future = new AtomicReference<ActorFuture<Void>>();
-      controlActor.run(() -> future.set(partitionManager.restore(999, new TreeSet<>(List.of(1L)))));
+      controlActor.run(
+          () -> future.set(partitionManager.restore(999, PartitionRestore.ofBackups(1L))));
 
       // then
       await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
@@ -861,7 +861,7 @@ final class RecoveryPartitionManagerTest {
       // when
       final var future = new AtomicReference<ActorFuture<Void>>();
       controlActor.run(
-          () -> future.set(partitionManager.restore(PARTITION_ID, new TreeSet<>(List.of(1L)))));
+          () -> future.set(partitionManager.restore(PARTITION_ID, PartitionRestore.ofBackups(1L))));
 
       // then
       await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);

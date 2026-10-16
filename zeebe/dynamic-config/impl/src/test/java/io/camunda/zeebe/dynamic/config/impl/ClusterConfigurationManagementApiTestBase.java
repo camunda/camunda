@@ -96,6 +96,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
@@ -254,11 +255,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
           /** Resolves the requested backups on partition 1, the only partition these tests use. */
           @Override
           public Either<Exception, RestoreResolvedRequest> validate(final RestoreRequest request) {
-            final var backupIds =
-                request.arguments().parameters().backupIds().stream()
-                    .mapToLong(Long::longValue)
-                    .toArray();
-            return Either.right(new RestoreResolvedRequest(Map.of(1, backupIds), false));
+            final var restore =
+                PartitionRestore.ofBackups(request.arguments().parameters().backupIds());
+            return Either.right(new RestoreResolvedRequest(Map.of(1, restore), false));
           }
         });
 
