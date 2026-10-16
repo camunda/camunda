@@ -264,7 +264,9 @@ jobs:
           bash "$GITHUB_WORKSPACE/.github/scripts/apply-changed-spec-verdict.sh" "$pw_exit"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
+        # Not failure(): with changed-spec gating a job can pass while untouched
+        # specs failed, and that report must stay downloadable to be useful.
+        if: ${{ !cancelled() }}
         with:
           name: C8 Orchestration Cluster API Test Result (Mode ${{ matrix.camunda_mode }})
           path: ${{ env.SUITE_DIR }}/html-report
@@ -455,7 +457,9 @@ jobs:
           cat dev-dist/camunda.log
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
+        # Not failure(): with changed-spec gating a job can pass while untouched
+        # specs failed, and that report must stay downloadable to be useful.
+        if: ${{ !cancelled() }}
         with:
           name: C8 Orchestration Cluster API Test Result (H2-RDBMS, Mode ${{ matrix.camunda_mode }})
           path: ${{ env.SUITE_DIR }}/html-report
@@ -748,7 +752,9 @@ jobs:
           bash "$GITHUB_WORKSPACE/.github/scripts/apply-changed-spec-verdict.sh" "$pw_exit"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
+        # Not failure(): with changed-spec gating a job can pass while untouched
+        # specs failed, and that report must stay downloadable to be useful.
+        if: ${{ !cancelled() }}
         with:
           name: C8 Orchestration Cluster E2E Test Result (Mode ${{ matrix.camunda_mode }}${{ matrix.tasklist_mode && format(', Tasklist {0}', matrix.tasklist_mode) || '' }})
           path: ${{ env.SUITE_DIR }}/html-report
