@@ -192,11 +192,6 @@ public class BackupCfg implements ConfigurationEntry {
     this.logArchive = logArchive;
   }
 
-  /** Whether checkpoint metadata must be tracked in the CHECKPOINTS column family. */
-  public boolean shouldTrackBackupMetadata() {
-    return continuous || logArchive.isEnabled();
-  }
-
   public interface BackupStoreFactory {
     /** Returns {@code null} for {@link BackupCfg.BackupStoreType#NONE}. */
     @Nullable

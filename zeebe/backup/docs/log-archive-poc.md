@@ -67,10 +67,10 @@ Nested in the existing backup config, `zeebe.broker.data.backup.logArchive.*`:
 The store type and its connection settings come from the existing backup config (`store`, `s3`,
 `filesystem`). All log archive keys are prefixed with `log-archive/` below the store's base path.
 
-When `logArchive.enabled` is true, checkpoint metadata tracking (the `CHECKPOINTS` column family) is
-enabled too, the same as for `continuous`: `trackBackupMetadata = continuous || logArchive.enabled`.
-The log archive does not take its covered checkpoints from there, though, but from
-`LOG_ARCHIVE_PENDING_CHECKPOINTS` (`trackLogArchiveCheckpoints = logArchive.enabled`, section 5).
+The log archive does not depend on the continuous backup's bookkeeping. The `CHECKPOINTS` column
+family is tracked only when `continuous` is on, as before. The log archive keeps its own list of
+checkpoints in `LOG_ARCHIVE_PENDING_CHECKPOINTS` (`trackLogArchiveCheckpoints = logArchive.enabled`,
+section 5).
 
 ## 4. Protocol
 
