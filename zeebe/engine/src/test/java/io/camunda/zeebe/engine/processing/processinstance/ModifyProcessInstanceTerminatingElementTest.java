@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -125,6 +126,27 @@ public class ModifyProcessInstanceTerminatingElementTest {
     assertThatElementIsTerminated(childKey, childProcessId);
     assertThatCancelingUserTaskIsRemoved(childKey);
     assertThatIncidentIsResolved(childKey);
+  }
+
+  @Test
+  public void shouldNotRepeatTerminatingForElementsThatAreAlreadyTerminating() {
+    // given
+    final long processInstanceKey = createProcessInstanceBlockedByCancelingListener();
+
+    // when
+    terminateElementByModification(processInstanceKey, "userTask");
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATING)
+                .map(r -> r.getValue().getBpmnElementType()))
+        .describedAs("Expected each element to be set to terminating only once")
+        .containsExactlyInAnyOrder(
+            BpmnElementType.PROCESS, BpmnElementType.SUB_PROCESS, BpmnElementType.USER_TASK);
   }
 
   /**

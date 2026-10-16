@@ -1415,8 +1415,10 @@ public final class ProcessInstanceModificationModifyProcessor
       final var elementInstanceRecord = currentElement.getValue();
       final BpmnElementType elementType = currentElement.getValue().getBpmnElementType();
 
-      stateWriter.appendFollowUpEvent(
-          elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+      if (!currentElement.isTerminating()) {
+        stateWriter.appendFollowUpEvent(
+            elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+      }
       elementInstancesToTerminate.push(currentElement);
 
       jobBehavior.cancelJob(currentElement);
