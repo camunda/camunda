@@ -93,6 +93,7 @@ public final class ClusterRecoveryServices {
       final RestoreParameters parameters,
       final Map<String, RestoreParameters> overrides,
       final boolean dryRun) {
+    overrides.keySet().forEach(this::restoreEnvironmentFor);
     final var restoreArgumentsMap =
         restoreEnvironmentByPhysicalTenant.keySet().stream()
             .collect(
