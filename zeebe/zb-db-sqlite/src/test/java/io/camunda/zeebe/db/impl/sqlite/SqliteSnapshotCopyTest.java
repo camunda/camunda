@@ -142,6 +142,38 @@ final class SqliteSnapshotCopyTest {
   }
 
   @Test
+  void shouldCopyTablesAndIndexesButNotTriggers() throws Exception {
+    // given a source whose table has an index and a trigger
+    final var table = SqliteDb.tableName(LOCAL_CF);
+    final var withExtras = scratch.resolve("withExtras");
+    Files.createDirectories(withExtras);
+    Files.copy(source.resolve(SqliteDb.DB_FILE_NAME), withExtras.resolve(SqliteDb.DB_FILE_NAME));
+    try (final var connection =
+            DriverManager.getConnection(
+                "jdbc:sqlite:" + withExtras.resolve(SqliteDb.DB_FILE_NAME));
+        final var statement = connection.createStatement()) {
+      final String column;
+      try (final var columns = statement.executeQuery("PRAGMA table_info(" + table + ")")) {
+        columns.next();
+        column = columns.getString("name");
+      }
+      statement.execute("CREATE INDEX idx_copy_test ON " + table + "(" + column + ")");
+      statement.execute(
+          "CREATE TRIGGER trg_copy_test AFTER INSERT ON " + table + " BEGIN SELECT 1; END");
+    }
+
+    // when
+    final var target = scratch.resolve("target");
+    copy.copySnapshot(withExtras, target, Set.of(ColumnFamilyScope.PARTITION_LOCAL));
+
+    // then
+    assertThat(schemaObjects(target))
+        .contains("table:" + table, "index:idx_copy_test")
+        .doesNotContain("trigger:trg_copy_test");
+    assertThat(rowCount(target, LOCAL_CF)).isEqualTo(1);
+  }
+
+  @Test
   void shouldOpenCopyLikeAnySnapshotAndKeepRowsReadable() throws Exception {
     // given
     final var target = scratch.resolve("local");
@@ -226,6 +258,19 @@ final class SqliteSnapshotCopyTest {
       }
     }
     return tables;
+  }
+
+  private static List<String> schemaObjects(final Path snapshot) throws Exception {
+    final List<String> objects = new ArrayList<>();
+    final var file = new File(snapshot.toFile(), SqliteDb.DB_FILE_NAME);
+    try (final var connection = DriverManager.getConnection("jdbc:sqlite:" + file);
+        final var statement = connection.createStatement();
+        final var result = statement.executeQuery("SELECT type, name FROM sqlite_master")) {
+      while (result.next()) {
+        objects.add(result.getString(1) + ":" + result.getString(2));
+      }
+    }
+    return objects;
   }
 
   private static int rowCount(final Path snapshot, final ZbColumnFamilies cf) throws Exception {

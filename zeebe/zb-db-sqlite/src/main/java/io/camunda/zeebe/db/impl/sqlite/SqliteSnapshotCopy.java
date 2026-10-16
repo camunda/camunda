@@ -79,12 +79,19 @@ public final class SqliteSnapshotCopy implements SnapshotCopy {
       final SqliteConnection target, final String table, final ZbColumnFamilies columnFamily)
       throws SQLException {
     final List<String> ddl = new ArrayList<>();
-    // ORDER BY type DESC puts 'table' before 'index', so a table exists when its indexes are made
+    // The table and its indexes are copied, triggers and views are not: a trigger would run against
+    // the target, and one that is attached to the table would be created before the table exists.
+    // The table sorts first, so it exists when its indexes are created. Automatic indexes have no
+    // SQL and are recreated with the table.
     try (final var statement =
         target
             .jdbc()
             .prepareStatement(
-                "SELECT sql FROM %s.sqlite_master WHERE tbl_name = ? AND sql IS NOT NULL ORDER BY type DESC"
+                """
+                    SELECT sql FROM %s.sqlite_master
+                    WHERE tbl_name = ? AND type IN ('table', 'index') AND sql IS NOT NULL
+                    ORDER BY CASE type WHEN 'table' THEN 0 ELSE 1 END, name
+                    """
                     .formatted(SOURCE))) {
       statement.setString(1, table);
       try (final var result = statement.executeQuery()) {
