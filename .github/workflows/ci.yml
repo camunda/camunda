@@ -70,6 +70,13 @@ jobs:
       client-components-changes: ${{ steps.filter.outputs.client-components-changes }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
       deps-changed: ${{ steps.filter.outputs.deps-changed }}
+      c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
+      # Scope for the orchestration-cluster suite PR check (team-test-automation#188):
+      # base branch, whether any suite file actually changed, and the spec files
+      # the PR added/modified (so the run can gate only on the author's own tests).
+      c8-e2e-suite-base: ${{ steps.c8-e2e-suite-scope.outputs.base }}
+      c8-e2e-suite-run-tests: ${{ steps.c8-e2e-suite-scope.outputs.run-tests }}
+      c8-e2e-suite-changed-specs: ${{ steps.c8-e2e-suite-scope.outputs.changed-specs }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -83,6 +90,56 @@ jobs:
       - name: Detect changes
         uses: ./.github/actions/paths-filter
         id: filter
+      # Resolve the orchestration-cluster suite PR check's scope: the base
+      # branch, whether any file under the suite directory actually changed
+      # (so a CI-only PR tripping c8-e2e-test-suite-changes via ci-relevant does
+      # not start the heavy run), and which spec files the PR added or modified
+      # (so the run gates only on the author's own tests). PR-only; on other
+      # events the outputs stay empty and the suite test job is skipped.
+      - name: Resolve C8 E2E suite PR scope
+        id: c8-e2e-suite-scope
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          SUITE_PREFIX: qa/c8-orchestration-cluster-e2e-test-suite/
+        run: |
+          set -euo pipefail
+          echo "base=${BASE_REF}" >> "$GITHUB_OUTPUT"
+
+          # Added/modified/renamed files, not removed: a deleted spec cannot fail.
+          files="$(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
+            --jq '.[] | select(.status != "removed") | .filename')"
+
+          suite_changed="$(printf '%s\n' "$files" | grep -F "$SUITE_PREFIX" || true)"
+          if [[ -z "$suite_changed" ]]; then
+            echo "No files under ${SUITE_PREFIX} changed; suite tests will be skipped."
+            echo "run-tests=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "changed-specs<<EOF"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "run-tests=true" >> "$GITHUB_OUTPUT"
+
+          # Spec files only, path relative to the suite root (matching the
+          # Playwright report), restricted to the test roots the PR run executes.
+          changed_specs="$(printf '%s\n' "$suite_changed" \
+            | sed -n "s#^${SUITE_PREFIX}##p" \
+            | grep -E '\.spec\.ts$' \
+            | grep -E '^(tests/|v2-stateless-tests/)' || true)"
+
+          echo "Spec files gating this PR:"
+          printf '%s\n' "${changed_specs:-<none>}"
+
+          {
+            echo "changed-specs<<EOF"
+            printf '%s\n' "$changed_specs"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
@@ -1943,6 +2000,67 @@ jobs:
     secrets: inherit
     permissions: { }
 
+  c8-e2e-test-suite:
+    if: needs.detect-changes.outputs.c8-e2e-test-suite-changes == 'true'
+    name: "Lint / C8 E2E Test Suite"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      SUITE_DIR: qa/c8-orchestration-cluster-e2e-test-suite
+    defaults:
+      run:
+        working-directory: ${{ env.SUITE_DIR }}
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.SUITE_DIR }}
+      - name: Lint (tsc + eslint)
+        run: npm run lint
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Automatic PR run of the orchestration-cluster suite against a local stack,
+  # mirroring the manual on-demand matrix for the PR's base branch. It blocks the
+  # merge only on specs this PR added or modified (gating: changed); failures in
+  # untouched, historically flaky tests are reported but do not block. The PR
+  # scope (base branch, which specs changed, whether to run at all) is computed
+  # by the detect-changes job. Runs only on a non-fork pull_request — fork PRs
+  # cannot authenticate to Vault, which the RDBMS leg's setup-build needs.
+  # See camunda/team-test-automation#188.
+  c8-e2e-test-suite-tests:
+    name: "C8 E2E Test Suite / Tests"
+    if: >-
+      needs.detect-changes.outputs.c8-e2e-suite-run-tests == 'true'
+      && github.event.pull_request.head.repo.fork != true
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-c8-orchestration-cluster-e2e-suite-reusable.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      base: ${{ needs.detect-changes.outputs.c8-e2e-suite-base }}
+      test-ref: ${{ github.sha }}
+      changed-specs: ${{ needs.detect-changes.outputs.c8-e2e-suite-changed-specs }}
+      gating: changed
+
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
@@ -2137,6 +2255,8 @@ jobs:
       - archunit-tests
       - build-distball
       - build-platform-frontend
+      - c8-e2e-test-suite
+      - c8-e2e-test-suite-tests
       - client-components
       - commitlint
       - database-integration-tests
