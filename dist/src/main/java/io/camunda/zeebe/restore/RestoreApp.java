@@ -12,6 +12,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.restore.ClusterRestore.PhysicalTenantRestoreTarget;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantRestoreEnvironments;
+import io.camunda.zeebe.restore.RestoreArguments.LogArchiveSelection;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -143,6 +145,11 @@ public class RestoreApp implements ApplicationRunner {
 
   @Override
   public void run(final ApplicationArguments args) throws Exception {
+    final var logArchiveSelection = arguments.logArchiveSelection();
+    if (logArchiveSelection.isPresent()) {
+      restoreFromLogArchive(logArchiveSelection.get());
+      return;
+    }
     final var selectionPerTenant =
         arguments.selectionPerPhysicalTenant(physicalTenantConfigurations.physicalTenantIds());
     final var backupIdsPerTenant = validateParameters(selectionPerTenant);
@@ -186,6 +193,41 @@ public class RestoreApp implements ApplicationRunner {
     // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
     // complete restore.
     postRestoreAction.restored(postRestoreActionContext);
+  }
+
+  private void restoreFromLogArchive(final LogArchiveSelection selection) throws Exception {
+    final var tenantId = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+    final var tenantConfiguration = physicalTenantConfigurations.forPhysicalTenant(tenantId);
+    final var restoreId = "log-archive-" + selection.timelineId() + "-" + selection.checkpointId();
+    final var nodeId = configuration.getCluster().getNodeId();
+    final var preResult = preRestoreAction.beforeRestore(restoreId, nodeId);
+    final var partitionCount = tenantConfiguration.getCluster().getPartitionsCount();
+    if (!preResult.skipRestore()) {
+      LOG.info(
+          "Restoring the default physical tenant from log archive timeline '{}', checkpoint {}",
+          selection.timelineId(),
+          selection.checkpointId().map(String::valueOf).orElse("latest common"));
+      final var result =
+          new LogArchiveClusterRestore(tenantConfiguration, meterRegistry)
+              .restore(
+                  selection.timelineId(),
+                  selection.checkpointId(),
+                  restoreConfiguration.ignoreFilesInTarget());
+      LOG.info(
+          "Restored from checkpoint {}; the restored partitions start the new timeline '{}'",
+          result.restorePoint().checkpointId(),
+          result.timelineId());
+    } else {
+      LOG.info("Skipping restore: {}", preResult.message());
+    }
+    postRestoreAction.restored(
+        new PostRestoreActionContext(
+            restoreId,
+            nodeId,
+            preResult.skipRestore(),
+            Set.of(tenantId),
+            Map.of(tenantId, partitionCount),
+            false));
   }
 
   private static Map<String, ExporterPositionMapper> exporterPositionMappers(

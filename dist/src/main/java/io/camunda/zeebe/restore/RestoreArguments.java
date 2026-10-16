@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import org.jspecify.annotations.NullMarked;
@@ -32,6 +33,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *   --tenantId=tenanta                target that tenant alone (default: the default tenant)
  *   --allTenants                      target every configured physical tenant
  *   --override.tenanta.backupId=31    tenanta restores from 31 instead of the cluster-wide selection
+ *   --logArchive.timeline=t1          (PoC) restore the default tenant from the log archive timeline
+ *   --logArchive.checkpointId=27      (PoC, optional) restore to that checkpoint, default: latest
  * </pre>
  *
  * <p>Bound rather than read with {@code @Value} so every flag accepts the relaxed spellings Spring
@@ -48,6 +51,34 @@ public class RestoreArguments {
   private @Nullable String tenantId;
   private @Nullable String allTenants;
   private Map<String, TenantOverride> override = new LinkedHashMap<>();
+  private LogArchive logArchive = new LogArchive();
+
+  /**
+   * The log archive restore requested with {@code --logArchive.timeline}, if any (PoC). It is
+   * exclusive with the backup selection and limited to the default physical tenant.
+   *
+   * @throws IllegalArgumentException if it is combined with options it cannot be combined with
+   */
+  public Optional<LogArchiveSelection> logArchiveSelection() {
+    if (logArchive.timeline == null || logArchive.timeline.isBlank()) {
+      if (logArchive.checkpointId != null) {
+        throw new IllegalArgumentException(
+            "--logArchive.checkpointId requires --logArchive.timeline");
+      }
+      return Optional.empty();
+    }
+    if (backupId != null || from != null || to != null || !override.isEmpty()) {
+      throw new IllegalArgumentException(
+          "--logArchive.timeline cannot be combined with --backupId, --from, --to or --override.*");
+    }
+    if (tenantId != null || allTenantsRequested()) {
+      throw new IllegalArgumentException(
+          "--logArchive.timeline only supports the default physical tenant, so --tenantId and"
+              + " --allTenants are not allowed");
+    }
+    return Optional.of(
+        new LogArchiveSelection(logArchive.timeline, Optional.ofNullable(logArchive.checkpointId)));
+  }
 
   /**
    * What this run may do to data already in the data directory.
@@ -134,6 +165,14 @@ public class RestoreArguments {
     return new RestoreSelection(backupIds == null ? List.of() : backupIds, from, to);
   }
 
+  public LogArchive getLogArchive() {
+    return logArchive;
+  }
+
+  public void setLogArchive(final LogArchive logArchive) {
+    this.logArchive = logArchive;
+  }
+
   public @Nullable List<Long> getBackupId() {
     return backupId;
   }
@@ -194,6 +233,32 @@ public class RestoreArguments {
 
   public void setOverride(final Map<String, TenantOverride> override) {
     this.override = override;
+  }
+
+  /** The timeline and optional checkpoint to restore from the log archive. */
+  public record LogArchiveSelection(String timelineId, Optional<Long> checkpointId) {}
+
+  /** Binds {@code --logArchive.timeline} and {@code --logArchive.checkpointId}. */
+  @NullMarked
+  public static class LogArchive {
+    private @Nullable String timeline;
+    private @Nullable Long checkpointId;
+
+    public @Nullable String getTimeline() {
+      return timeline;
+    }
+
+    public void setTimeline(final @Nullable String timeline) {
+      this.timeline = timeline;
+    }
+
+    public @Nullable Long getCheckpointId() {
+      return checkpointId;
+    }
+
+    public void setCheckpointId(final @Nullable Long checkpointId) {
+      this.checkpointId = checkpointId;
+    }
   }
 
   /** One physical tenant's replacement for the cluster-wide selection. */
