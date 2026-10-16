@@ -231,13 +231,18 @@ change to a shared page object, fixture or config that can break untouched tests
 changing any spec file), or for a pull request from a fork, which the automatic check
 skips.
 
-> **Product code + test in the same PR:** the ES API and E2E (browser) jobs run against the
-> published `camunda/camunda:SNAPSHOT` image, so they exercise your test changes against the
-> current product, not the product code in your PR (only the H2/RDBMS job builds from source).
-> A PR that adds backend or UI behaviour **and** a spec for it can see those jobs go red because
-> the published image lacks the change. Rely on the H2/RDBMS leg (which is source-built) and a
-> manual on-demand run against your branch to validate such a change; the ES/browser result is a
-> false negative in that case, not a regression in your code.
+> **Product code + test in the same PR:** when a suite PR **also** changes product code baked
+> into the Camunda image (any change that makes `build-distball` run — backend, frontend, or a
+> Dockerfile change), the ES API and E2E (browser) jobs build the image from your PR branch and
+> run against it, so they validate your test changes against your own product change. A
+> **suite-only** PR keeps running against the published `camunda/camunda:SNAPSHOT` image, which is
+> the correct baseline since there is no product change to build. The H2/RDBMS job always builds
+> from source regardless.
+>
+> Remaining gap: only the `camunda/camunda` image is branch-built — `camunda/optimize` still
+> comes from its published `SNAPSHOT`, so a PR that changes Optimize product code plus a suite
+> spec that exercises Optimize should still be validated with a manual on-demand run against your
+> branch.
 
 ### Running the On-Demand Workflow
 

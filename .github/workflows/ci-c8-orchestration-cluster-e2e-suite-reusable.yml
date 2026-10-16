@@ -39,6 +39,17 @@ on:
         required: false
         type: string
         default: "full"
+      image-from-branch:
+        description: >-
+          When true, build the Camunda image from the distball-<run_id> artifact
+          (produced by ci.yml's build-distball from the PR branch) and run the
+          docker-compose legs against it instead of camunda/camunda:SNAPSHOT, so a
+          PR that changes product code as well as the suite validates its own
+          change. The H2/RDBMS leg builds from source already and is unaffected.
+          Only ci.yml sets this; the on-demand run leaves it false (SNAPSHOT).
+        required: false
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -53,7 +64,9 @@ jobs:
   c8-orchestration-cluster-api-tests:
     name: C8 Orchestration Cluster API Tests (Mode ${{ matrix.camunda_mode }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Branch-image builds add ~10 min before the tests (see the E2E job); give
+    # the branch-image path headroom. SNAPSHOT keeps 30.
+    timeout-minutes: ${{ inputs.image-from-branch && 40 || 30 }}
     permissions:
       contents: read
     strategy:
@@ -85,6 +98,45 @@ jobs:
           else
             echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
           fi
+
+      # When the suite PR also changes product code, ci.yml's build-distball has
+      # produced a distball from the PR branch. Build the Camunda image from it
+      # and point the compose stack at it, so this docker-compose leg validates
+      # the PR's own product change instead of camunda/camunda:SNAPSHOT. (The
+      # H2/RDBMS leg builds from source already, so it needs none of this.)
+      # setup-build logs into the Minimus + DockerHub registries so buildx can
+      # pull camunda.Dockerfile's base image (reg.mini.dev/.../openjre-base); the
+      # compose legs otherwise have no registry login, so the build 403s. Matches
+      # the docker-checks image build (dockerhub-readonly + minimus).
+      - name: Set up registry auth for the branch-image build
+        if: ${{ inputs.image-from-branch }}
+        uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: e2e-branch-image
+          dockerhub-readonly: true
+          minimus: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Download PR-branch distball
+        if: ${{ inputs.image-from-branch }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: distball-${{ github.run_id }}
+          path: dist/target/
+      - name: Build Camunda image from the PR branch
+        if: ${{ inputs.image-from-branch }}
+        id: branch-image
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: camunda/camunda
+          version: SNAPSHOT
+          dockerfile: camunda.Dockerfile
+      - name: Point the stack at the PR-branch image
+        if: ${{ inputs.image-from-branch }}
+        env:
+          BRANCH_IMAGE: ${{ steps.branch-image.outputs.image }}
+        run: echo "CAMUNDA_DOCKER_IMAGE=${BRANCH_IMAGE}" >> "$GITHUB_ENV"
 
       - name: Start Camunda
         env:
@@ -490,7 +542,10 @@ jobs:
       matrix:
         include: ${{ fromJSON( inputs.base == 'main' && '[{"camunda_mode":"profiles"},{"camunda_mode":"all-in-one"}]' || (inputs.base == 'stable/8.6' || inputs.base == 'stable/8.7') && '[{"camunda_mode":"profiles","tasklist_mode":"v1"}]' || inputs.base == 'stable/8.9' && '[{"camunda_mode":"profiles","tasklist_mode":"v1"},{"camunda_mode":"all-in-one","tasklist_mode":"v1"},{"camunda_mode":"profiles","tasklist_mode":"v2"},{"camunda_mode":"all-in-one","tasklist_mode":"v2"}]' || inputs.base == 'stable/8.8' && '[{"camunda_mode":"profiles","tasklist_mode":"v1"},{"camunda_mode":"profiles","tasklist_mode":"v2"}]' || '[{"camunda_mode":"profiles","tasklist_mode":"v2"}]' ) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Building the image from the PR branch adds ~10 min (distball download +
+    # setup-build + docker build) before the tests, which already nearly fill 45
+    # min, so give the branch-image path extra headroom. SNAPSHOT keeps 45.
+    timeout-minutes: ${{ inputs.image-from-branch && 60 || 45 }}
     permissions:
       contents: read
     steps:
@@ -522,6 +577,45 @@ jobs:
           else
             echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
           fi
+
+      # When the suite PR also changes product code, ci.yml's build-distball has
+      # produced a distball from the PR branch. Build the Camunda image from it
+      # and point the compose stack at it, so this docker-compose leg validates
+      # the PR's own product change instead of camunda/camunda:SNAPSHOT. (The
+      # H2/RDBMS leg builds from source already, so it needs none of this.)
+      # setup-build logs into the Minimus + DockerHub registries so buildx can
+      # pull camunda.Dockerfile's base image (reg.mini.dev/.../openjre-base); the
+      # compose legs otherwise have no registry login, so the build 403s. Matches
+      # the docker-checks image build (dockerhub-readonly + minimus).
+      - name: Set up registry auth for the branch-image build
+        if: ${{ inputs.image-from-branch }}
+        uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: e2e-branch-image
+          dockerhub-readonly: true
+          minimus: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Download PR-branch distball
+        if: ${{ inputs.image-from-branch }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: distball-${{ github.run_id }}
+          path: dist/target/
+      - name: Build Camunda image from the PR branch
+        if: ${{ inputs.image-from-branch }}
+        id: branch-image
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: camunda/camunda
+          version: SNAPSHOT
+          dockerfile: camunda.Dockerfile
+      - name: Point the stack at the PR-branch image
+        if: ${{ inputs.image-from-branch }}
+        env:
+          BRANCH_IMAGE: ${{ steps.branch-image.outputs.image }}
+        run: echo "CAMUNDA_DOCKER_IMAGE=${BRANCH_IMAGE}" >> "$GITHUB_ENV"
 
       - name: Start Camunda
         env:
