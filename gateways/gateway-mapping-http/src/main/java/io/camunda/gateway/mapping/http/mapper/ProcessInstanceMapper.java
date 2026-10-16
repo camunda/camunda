@@ -95,91 +95,85 @@ public class ProcessInstanceMapper {
 
   public Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
       final ProcessInstanceCreationInstructionById request, final boolean multiTenancyEnabled) {
-    final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
-            .flatMap(
-                tenant ->
-                    validateCreateProcessInstanceRequest(request)
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenant)));
-
-    return validationResponse.map(
-        tenantId ->
-            new ProcessInstanceCreateRequest(
-                -1L,
-                getStringOrEmpty(
-                    request, ProcessInstanceCreationInstructionById::getProcessDefinitionId),
-                getIntOrDefault(
-                    request,
-                    ProcessInstanceCreationInstructionById::getProcessDefinitionVersion,
-                    -1),
-                getMapOrEmpty(request, ProcessInstanceCreationInstructionById::getVariables),
-                tenantId,
-                request.getAwaitCompletion(),
-                request.getRequestTimeout(),
-                request.getOperationReference(),
-                request.getStartInstructions().stream()
-                    .map(
-                        instruction ->
-                            new ProcessInstanceCreationStartInstruction()
-                                .setElementId(instruction.getElementId()))
-                    .toList(),
-                request.getRuntimeInstructions().stream()
-                    .map(
-                        instruction -> {
-                          final var instructionCasted =
-                              (ProcessInstanceCreationTerminateInstruction) instruction;
-                          return new ProcessInstanceCreationRuntimeInstruction()
-                              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
-                              .setAfterElementId(instructionCasted.getAfterElementId());
-                        })
-                    .toList(),
-                request.getFetchVariables(),
-                request.getTags(),
-                request.getBusinessId()));
+    return validateCreateProcessInstance(request, request.getTenantId(), multiTenancyEnabled)
+        .map(
+            tenantId ->
+                new ProcessInstanceCreateRequest(
+                    -1L,
+                    getStringOrEmpty(
+                        request, ProcessInstanceCreationInstructionById::getProcessDefinitionId),
+                    getIntOrDefault(
+                        request,
+                        ProcessInstanceCreationInstructionById::getProcessDefinitionVersion,
+                        -1),
+                    getMapOrEmpty(request, ProcessInstanceCreationInstructionById::getVariables),
+                    tenantId,
+                    request.getAwaitCompletion(),
+                    request.getRequestTimeout(),
+                    request.getOperationReference(),
+                    toStartInstructions(request.getStartInstructions()),
+                    toRuntimeInstructions(request.getRuntimeInstructions()),
+                    request.getFetchVariables(),
+                    request.getTags(),
+                    request.getBusinessId()));
   }
 
   public Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
       final ProcessInstanceCreationInstructionByKey request, final boolean multiTenancyEnabled) {
-    final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
-            .flatMap(
-                tenant ->
-                    validateCreateProcessInstanceRequest(request)
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenant)));
+    return validateCreateProcessInstance(request, request.getTenantId(), multiTenancyEnabled)
+        .map(
+            tenantId ->
+                new ProcessInstanceCreateRequest(
+                    getKeyOrDefault(
+                        request,
+                        ProcessInstanceCreationInstructionByKey::getProcessDefinitionKey,
+                        -1L),
+                    "",
+                    -1,
+                    getMapOrEmpty(request, ProcessInstanceCreationInstructionByKey::getVariables),
+                    tenantId,
+                    request.getAwaitCompletion(),
+                    request.getRequestTimeout(),
+                    request.getOperationReference(),
+                    toStartInstructions(request.getStartInstructions()),
+                    toRuntimeInstructions(request.getRuntimeInstructions()),
+                    request.getFetchVariables(),
+                    request.getTags(),
+                    request.getBusinessId()));
+  }
 
-    return validationResponse.map(
-        tenantId ->
-            new ProcessInstanceCreateRequest(
-                getKeyOrDefault(
-                    request, ProcessInstanceCreationInstructionByKey::getProcessDefinitionKey, -1L),
-                "",
-                -1,
-                getMapOrEmpty(request, ProcessInstanceCreationInstructionByKey::getVariables),
-                tenantId,
-                request.getAwaitCompletion(),
-                request.getRequestTimeout(),
-                request.getOperationReference(),
-                request.getStartInstructions().stream()
-                    .map(
-                        instruction ->
-                            new ProcessInstanceCreationStartInstruction()
-                                .setElementId(instruction.getElementId()))
-                    .toList(),
-                request.getRuntimeInstructions().stream()
-                    .map(
-                        instruction -> {
-                          final var instructionCasted =
-                              (ProcessInstanceCreationTerminateInstruction) instruction;
-                          return new ProcessInstanceCreationRuntimeInstruction()
-                              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
-                              .setAfterElementId(instructionCasted.getAfterElementId());
-                        })
-                    .toList(),
-                request.getFetchVariables(),
-                request.getTags(),
-                request.getBusinessId()));
+  private Either<ProblemDetail, String> validateCreateProcessInstance(
+      final ProcessInstanceCreationInstruction request,
+      final @Nullable String tenantId,
+      final boolean multiTenancyEnabled) {
+    return validateTenantId(tenantId, multiTenancyEnabled, "Create Process Instance")
+        .flatMap(
+            tenant ->
+                validateCreateProcessInstanceRequest(request)
+                    .map(Either::<ProblemDetail, String>left)
+                    .orElseGet(() -> Either.right(tenant)));
+  }
+
+  private static List<ProcessInstanceCreationStartInstruction> toStartInstructions(
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationStartInstruction>
+          instructions) {
+    return instructions.stream()
+        .map(
+            instruction ->
+                new ProcessInstanceCreationStartInstruction()
+                    .setElementId(instruction.getElementId()))
+        .toList();
+  }
+
+  private static List<ProcessInstanceCreationRuntimeInstruction> toRuntimeInstructions(
+      final List<ProcessInstanceCreationTerminateInstruction> instructions) {
+    return instructions.stream()
+        .map(
+            instruction ->
+                new ProcessInstanceCreationRuntimeInstruction()
+                    .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+                    .setAfterElementId(instruction.getAfterElementId()))
+        .toList();
   }
 
   public Either<ProblemDetail, ProcessInstanceSuspendRequest> toSuspendProcessInstance(
