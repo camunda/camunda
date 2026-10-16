@@ -13,15 +13,15 @@ import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
 import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.core.env.Environment;
 
 /**
@@ -59,12 +59,11 @@ final class PhysicalTenantOidcClientSecretValidation {
       throw new UnifiedConfigurationException(e);
     }
 
-    final Map<String, String> sharedProviders = new LinkedHashMap<>();
-    sharedProviders.put(OidcConfiguration.DEFAULT_REGISTRATION_ID, "oidc");
+    final Set<String> sharedProviders = new LinkedHashSet<>();
+    sharedProviders.add(OidcConfiguration.DEFAULT_REGISTRATION_ID);
     binder
         .bind(ROOT_AUTH + ".providers.oidc", Bindable.mapOf(String.class, OidcConfiguration.class))
-        .ifBound(
-            named -> named.keySet().forEach(id -> sharedProviders.put(id, "providers.oidc." + id)));
+        .ifBound(named -> sharedProviders.addAll(named.keySet()));
 
     final List<String> violations = new ArrayList<>();
     for (final String tenantId : tenantIds) {
@@ -74,15 +73,23 @@ final class PhysicalTenantOidcClientSecretValidation {
               .bind(tenantAuth + ".providers.assigned", Bindable.listOf(String.class))
               .orElse(null);
       sharedProviders.forEach(
-          (providerId, path) -> {
+          providerId -> {
             if (assigned != null && !assigned.contains(providerId)) {
               return;
             }
-            final String tenantPath = tenantAuth + "." + path;
-            if (inheritsSecretForOtherIdp(binder, ROOT_AUTH + "." + path, tenantPath)) {
+            if (inheritsSecretForOtherIdp(
+                binder,
+                providerNames(environment, ROOT_AUTH, tenantAuth, providerId),
+                providerNames(environment, tenantAuth, ROOT_AUTH, providerId))) {
               violations.add(
-                  "physical tenant '%s', provider '%s': set '%s.client-secret'"
-                      .formatted(tenantId, providerId, tenantPath));
+                  "physical tenant '%s', provider '%s': set '%s.%s.client-secret'"
+                      .formatted(
+                          tenantId,
+                          providerId,
+                          tenantAuth,
+                          OidcConfiguration.DEFAULT_REGISTRATION_ID.equals(providerId)
+                              ? "oidc"
+                              : "providers.oidc." + providerId));
             }
           });
     }
@@ -97,21 +104,26 @@ final class PhysicalTenantOidcClientSecretValidation {
   }
 
   private static boolean inheritsSecretForOtherIdp(
-      final Binder binder, final String rootPath, final String tenantPath) {
-    final OidcConfiguration root = bindProvider(binder, rootPath, new OidcConfiguration());
+      final Binder binder,
+      final List<ConfigurationPropertyName> rootNames,
+      final List<ConfigurationPropertyName> tenantNames) {
+    final OidcConfiguration root = bindProvider(binder, rootNames, new OidcConfiguration());
     if (root.getClientSecret() == null || root.getClientSecret().isBlank()) {
       return false;
     }
     // A blank value, for example from an unset environment variable, is not a decision.
-    if (binder
-        .bind(tenantPath + ".client-secret", Bindable.of(String.class))
-        .map(secret -> !secret.isBlank())
-        .orElse(false)) {
+    if (tenantNames.stream()
+        .anyMatch(
+            name ->
+                binder
+                    .bind(name.append("client-secret"), Bindable.of(String.class))
+                    .map(secret -> !secret.isBlank())
+                    .orElse(false))) {
       return false;
     }
     // Bind in the same order as the runtime merge, so that the check sees the same values.
     final OidcConfiguration merged =
-        bindProvider(binder, tenantPath, bindProvider(binder, rootPath, new OidcConfiguration()));
+        bindProvider(binder, tenantNames, bindProvider(binder, rootNames, new OidcConfiguration()));
     // private_key_jwt does not send the secret.
     if (OidcConfiguration.CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT.equals(
         merged.getClientAuthenticationMethod())) {
@@ -122,8 +134,29 @@ final class PhysicalTenantOidcClientSecretValidation {
   }
 
   private static OidcConfiguration bindProvider(
-      final Binder binder, final String path, final OidcConfiguration target) {
-    binder.bind(path, Bindable.ofInstance(target));
+      final Binder binder,
+      final List<ConfigurationPropertyName> names,
+      final OidcConfiguration target) {
+    names.forEach(name -> binder.bind(name, Bindable.ofInstance(target)));
     return target;
+  }
+
+  /**
+   * The property names of {@code providerId}'s config under {@code authPrefix}: the default slot
+   * for the reserved id, otherwise the named provider entry in each form it is declared in under
+   * {@code authPrefix} or {@code relatedAuthPrefix}.
+   */
+  private static List<ConfigurationPropertyName> providerNames(
+      final Environment environment,
+      final String authPrefix,
+      final String relatedAuthPrefix,
+      final String providerId) {
+    return OidcConfiguration.DEFAULT_REGISTRATION_ID.equals(providerId)
+        ? List.of(ConfigurationPropertyName.of(authPrefix + ".oidc"))
+        : PhysicalTenantConfigUtil.mapEntryNames(
+            environment,
+            authPrefix + ".providers.oidc",
+            providerId,
+            relatedAuthPrefix + ".providers.oidc");
   }
 }
