@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
+import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationServiceImpl;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.DynamicConfigExportingStateController;
@@ -68,7 +69,7 @@ public class DynamicClusterServices {
   public GatewayClusterConfigurationService gatewayClusterTopologyService(
       final ClusterConfigurationGossiperConfig configManagerCfg) {
     final var service =
-        new GatewayClusterConfigurationService(
+        new GatewayClusterConfigurationServiceImpl(
             clusterCommunicationService, clusterMembershipService, configManagerCfg, meterRegistry);
     scheduler.submitActor(service).join();
     return service;

@@ -8,7 +8,7 @@ sourceSets { main { proto { srcDir("src/main/resources/proto") } } }
 
 dependencies {
   implementation(project(":zeebe-scheduler"))
-  implementation(project(":zeebe-cluster-config"))
+  api(project(":zeebe-cluster-config-api"))
   implementation(project(":camunda-cluster"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))

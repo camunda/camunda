@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.LegacyExportingStateReader;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerServiceImpl;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
@@ -305,7 +306,7 @@ public class DynamicClusterConfigurationService
       final BrokerStartupContext brokerStartupContext) {
     final var rootDirectory =
         Path.of(brokerStartupContext.getBrokerConfiguration().getData().getDirectory());
-    return new ClusterConfigurationManagerService(
+    return new ClusterConfigurationManagerServiceImpl(
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),

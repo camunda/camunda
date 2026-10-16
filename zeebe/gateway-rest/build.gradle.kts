@@ -22,7 +22,7 @@ dependencies {
   implementation(project(":zeebe-broker-client"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-msgpack-value"))
-  implementation(project(":zeebe-cluster-config"))
+  api(project(":zeebe-cluster-config-api"))
   implementation(project(":document-api"))
   implementation(project(":camunda-security-core"))
   testImplementation(project(":camunda-security-protocol"))
