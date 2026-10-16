@@ -36,9 +36,9 @@ import org.junit.rules.TestWatcher;
  */
 public class ModifyProcessInstanceTerminatingElementTest {
 
-  private static final String LISTENER_TYPE = "canceling_listener";
-
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final String LISTENER_TYPE = "canceling_listener";
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
