@@ -24,8 +24,8 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Broker-side service that owns, gossips and applies changes to the cluster configuration. Use
- * {@link #create} to obtain an instance; the implementation is resolved at runtime.
+ * Broker-side service that owns, gossips and applies changes to the cluster configuration.
+ * Composition roots construct the implementation directly; consumers depend on this interface.
  */
 public interface ClusterConfigurationManagerService
     extends ClusterConfigurationUpdateNotifier, AsyncClosable {
