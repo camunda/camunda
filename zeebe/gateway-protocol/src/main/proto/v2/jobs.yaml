@@ -917,7 +917,8 @@ components:
           type: string
           nullable: true
         elementId:
-          description: The element ID associated with the job.
+          description: The element ID associated with the job. May be missing on job failure.
+          nullable: true
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/ElementId"
         elementInstanceKey:
