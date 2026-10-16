@@ -246,6 +246,28 @@ final class LogArchiveRecordsProcessorTest {
   }
 
   @Test
+  void shouldRejectArchiveLogWhoseKeyDoesNotMatchItsRangeAndTerm() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    final var object = object(1, 5, 1, 5).setKey(LogArchiveKeys.dataKey(1, 6, 1));
+
+    // then
+    assertRejected(
+        LogArchiveIntent.ARCHIVE_LOG, archiveLog(object), RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  void shouldRejectArchiveLogWithoutChecksum() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    final var object = object(1, 5, 1, 5).setSha256("");
+
+    // then
+    assertRejected(
+        LogArchiveIntent.ARCHIVE_LOG, archiveLog(object), RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
   void shouldRejectArchiveLogWithGapToF() {
     // given
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));

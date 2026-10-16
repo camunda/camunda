@@ -419,6 +419,17 @@ public final class LogArchiveRecordsProcessor
                     object.getEntryCount()));
       }
     }
+    for (final LogObjectValue object : objects) {
+      final var expectedKey =
+          LogArchiveKeys.dataKey(object.getFirstIndex(), object.getLastIndex(), object.getTerm());
+      if (!expectedKey.equals(object.getKey())
+          || object.getSha256().length() != 64
+          || object.getSizeBytes() <= 0) {
+        return invalidArgument(
+            "Expected log object '%s' to have the key '%s', a sha256 and a positive size"
+                .formatted(object.getKey(), expectedKey));
+      }
+    }
     for (int i = 0; i + 1 < objects.size(); i++) {
       if (objects.get(i + 1).getFirstIndex() != objects.get(i).getLastIndex() + 1) {
         return invalidArgument(
