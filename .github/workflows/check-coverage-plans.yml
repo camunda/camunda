@@ -17,8 +17,10 @@ on:
   pull_request:
     paths:
       - 'qa/**'
+      - 'configuration/src/main/**'
       - 'configuration/src/test/**'
       - 'operate/client/**'
+      - 'service/src/main/**'
       - 'service/src/test/**'
       - 'webapp/client/**'
       - '.github/scripts/coverage-plan-check/**'
@@ -46,6 +48,15 @@ on:
   # Kept deliberately broad: `webapp/client/**` rather than the
   # `webapp/client/apps/**` the paths strictly imply. Narrowing to exactly
   # what today's plans reference buys nothing and misses the next one.
+  #
+  # The `src/main/**` entries are NOT referenced by any plan, and are here
+  # anyway. The planned-case report below matches a Maven test package against
+  # the main package it mirrors, so the pull request it most wants to speak to
+  # -- one that changes AuditLog.java and has no test yet -- touches only main
+  # sources. Deriving this list from the plans alone left that pull request
+  # starting no run at all, so the report advertised a match it could never
+  # make. Whatever a plan points at under `<module>/src/test/`, the matching
+  # `<module>/src/main/` belongs here too.
   push:
     branches:
       - main
