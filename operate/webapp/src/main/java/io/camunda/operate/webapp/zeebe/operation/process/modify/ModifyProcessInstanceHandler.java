@@ -63,6 +63,22 @@ public class ModifyProcessInstanceHandler extends AbstractOperationHandler
   }
 
   @Override
+  protected boolean isRetriable(final Exception ex) {
+    return super.isRetriable(ex) && !operationServicesAdapter.isOutcomeUnknown(ex);
+  }
+
+  @Override
+  protected String failureMessage(final Exception ex) {
+    if (operationServicesAdapter.isOutcomeUnknown(ex)) {
+      return String.format(
+          "Unable to process operation: %s. The modification may have been applied;"
+              + " check the process instance before retrying.",
+          ex.getMessage());
+    }
+    return super.failureMessage(ex);
+  }
+
+  @Override
   public Set<OperationType> getTypes() {
     return Set.of(OperationType.MODIFY_PROCESS_INSTANCE);
   }

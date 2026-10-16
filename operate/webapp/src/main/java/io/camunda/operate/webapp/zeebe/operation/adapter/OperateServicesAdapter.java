@@ -37,4 +37,6 @@ public interface OperateServicesAdapter {
       final String operationId);
 
   boolean isExceptionRetriable(final Throwable ex);
+
+  boolean isOutcomeUnknown(final Throwable ex);
 }
