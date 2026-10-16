@@ -211,6 +211,7 @@ registerProject(":zeebe-cluster-config-api", "zeebe/dynamic-config/api")
 
 registerProject(":zeebe-cluster-config-impl", "zeebe/dynamic-config/impl")
 registerProject(":zeebe-cluster-config-openapi", "zeebe/dynamic-config/openapi")
+registerProject(":zeebe-cluster-config-rest", "zeebe/dynamic-config/rest")
 
 registerProject(":zeebe-qa-integration-tests", "zeebe/qa/integration-tests")
 
