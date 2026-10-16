@@ -335,6 +335,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
                         -1L,
                         bpmnProcessId,
                         -1,
+                        null,
                         variables,
                         tenantId,
                         null,

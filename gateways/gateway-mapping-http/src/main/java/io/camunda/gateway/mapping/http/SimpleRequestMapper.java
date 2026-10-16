@@ -12,6 +12,7 @@ import io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationStartInstruction;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.zeebe.util.Either;
@@ -32,6 +33,28 @@ public class SimpleRequestMapper {
     }
 
     if (request.getProcessDefinitionId() != null && !request.getProcessDefinitionId().isBlank()) {
+      if (request.getProcessDefinitionVersionTag() != null) {
+        return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
+            (ProcessInstanceCreationInstruction)
+                ProcessInstanceCreationInstructionByVersionTag.Builder.create()
+                    .processDefinitionId(request.getProcessDefinitionId())
+                    .processDefinitionVersionTag(request.getProcessDefinitionVersionTag())
+                    .variables(request.getVariables())
+                    .tenantId(request.getTenantId())
+                    .operationReference(request.getOperationReference())
+                    .startInstructions(
+                        mapCreateProcessInstanceStartInstructions(request.getStartInstructions()))
+                    .runtimeInstructions(
+                        mapCreateProcessInstanceRuntimeInstructions(
+                            request.getRuntimeInstructions()))
+                    .awaitCompletion(request.getAwaitCompletion())
+                    .fetchVariables(request.getFetchVariables())
+                    .requestTimeout(request.getRequestTimeout())
+                    .tags(request.getTags())
+                    .businessId(request.getBusinessId())
+                    .build(),
+            multiTenancyEnabled);
+      }
       return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
           (ProcessInstanceCreationInstruction)
               ProcessInstanceCreationInstructionById.Builder.create()

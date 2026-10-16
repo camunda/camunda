@@ -992,5 +992,45 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
       assertTextContentFallback(result);
     }
+
+    @Test
+    void shouldCreateProcessInstanceWithVersionTag() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
+
+      final var createResponse =
+          new ProcessInstanceCreationRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(3)
+              .setProcessInstanceKey(456L)
+              .setTenantId("<default>")
+              .setTags(Set.of());
+
+      when(processInstanceServices.createProcessInstance(
+              any(ProcessInstanceCreateRequest.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("createProcessInstance")
+                  .arguments(
+                      Map.of(
+                          "processDefinitionId",
+                          "testProcessId",
+                          "processDefinitionVersionTag",
+                          "release-1"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+      final var capturedRequest = createRequestCaptor.getValue();
+      assertThat(capturedRequest.bpmnProcessId()).isEqualTo("testProcessId");
+      assertThat(capturedRequest.versionTag()).isEqualTo("release-1");
+      assertThat(capturedRequest.version()).isEqualTo(-1);
+    }
   }
 }

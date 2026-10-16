@@ -35,6 +35,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInst
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
@@ -85,13 +86,15 @@ public class ProcessInstanceMapper {
           toCreateProcessInstance(req, multiTenancyEnabled);
       case final ProcessInstanceCreationInstructionByKey req ->
           toCreateProcessInstance(req, multiTenancyEnabled);
+      case final ProcessInstanceCreationInstructionByVersionTag req ->
+          toCreateProcessInstance(req, multiTenancyEnabled);
       default ->
           Either.left(
               GatewayErrorMapper.createProblemDetail(
                   HttpStatus.BAD_REQUEST,
                   "Unsupported process instance creation instruction type: "
                       + request.getClass().getSimpleName(),
-                  "Only process instance creation by id or key is supported."));
+                  "Only process instance creation by id, by id and version tag, or by key is supported."));
     };
   }
 
@@ -108,7 +111,34 @@ public class ProcessInstanceMapper {
                         request,
                         ProcessInstanceCreationInstructionById::getProcessDefinitionVersion,
                         -1),
+                    null,
                     getMapOrEmpty(request, ProcessInstanceCreationInstructionById::getVariables),
+                    tenantId,
+                    request.getAwaitCompletion(),
+                    request.getRequestTimeout(),
+                    request.getOperationReference(),
+                    toStartInstructions(request.getStartInstructions()),
+                    toRuntimeInstructions(request.getRuntimeInstructions()),
+                    request.getFetchVariables(),
+                    request.getTags(),
+                    request.getBusinessId()));
+  }
+
+  public Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final ProcessInstanceCreationInstructionByVersionTag request,
+      final boolean multiTenancyEnabled) {
+    return validateCreateProcessInstance(request, request.getTenantId(), multiTenancyEnabled)
+        .map(
+            tenantId ->
+                new ProcessInstanceCreateRequest(
+                    -1L,
+                    getStringOrEmpty(
+                        request,
+                        ProcessInstanceCreationInstructionByVersionTag::getProcessDefinitionId),
+                    -1,
+                    request.getProcessDefinitionVersionTag(),
+                    getMapOrEmpty(
+                        request, ProcessInstanceCreationInstructionByVersionTag::getVariables),
                     tenantId,
                     request.getAwaitCompletion(),
                     request.getRequestTimeout(),
@@ -132,6 +162,7 @@ public class ProcessInstanceMapper {
                         -1L),
                     "",
                     -1,
+                    null,
                     getMapOrEmpty(request, ProcessInstanceCreationInstructionByKey::getVariables),
                     tenantId,
                     request.getAwaitCompletion(),
