@@ -152,9 +152,12 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
                 engine.getCurrentPartitionCount(
                     context.getBrokerCfg().getCluster().getPartitionsCount()));
 
+    final var scheduledCommandCacheCapacity =
+        context.getBrokerCfg().getProcessing().getScheduledCommandCacheCapacity();
     final var scheduledCommandCache =
         BoundedScheduledCommandCache.ofIntent(
             new BoundedCommandCacheMetrics(context.getPartitionTransitionMeterRegistry()),
+            scheduledCommandCacheCapacity,
             TimerIntent.TRIGGER,
             JobIntent.TIME_OUT,
             JobIntent.RECUR_AFTER_BACKOFF,
