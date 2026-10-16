@@ -146,7 +146,7 @@ public final class RestoreValidator
     if (!backupIds.isEmpty()) {
       return resolveBackupsByPartition(backupIds);
     }
-    return resolveRdbmsRangeBackups(request);
+    return resolveRestorePoint(request);
   }
 
   private Map<Integer, long[]> resolveBackupsByPartition(final List<Long> backupIds) {
@@ -199,7 +199,7 @@ public final class RestoreValidator
                                     .formatted(partitionId, backupId))));
   }
 
-  private Map<Integer, long[]> resolveRdbmsRangeBackups(final RestoreRequest request) {
+  private Map<Integer, long[]> resolveRestorePoint(final RestoreRequest request) {
     final var backups = findBackups(request);
     return backups.backupsByPartitionId().entrySet().stream()
         .collect(
