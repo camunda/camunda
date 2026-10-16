@@ -21,6 +21,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.OperationExecutorProperties;
 import io.camunda.operate.webapp.elasticsearch.writer.BatchOperationWriter;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -29,6 +30,7 @@ import io.grpc.Status;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,11 +51,13 @@ public class UpdateVariableHandlerTest {
   private OperateProperties operateProperties;
 
   @Mock private Metrics metrics;
+  @Mock private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @InjectMocks private UpdateVariableHandler handler;
 
   private final String operationId = "123";
   private final Long scopeKey = 456L;
+  private final Long processInstanceKey = 456L;
   private final Long variableDocumentKey = 995L;
   private final String variableName = "x";
   private final int variableValue = 1;
@@ -91,6 +95,25 @@ public class UpdateVariableHandlerTest {
             OperationState.SENT.name(),
             Metrics.TAG_KEY_TYPE,
             OperationType.UPDATE_VARIABLE.name());
+  }
+
+  @Test
+  void shouldSendSetVariablesCommandForFlowNodeInstanceOfProcessInstance() throws Exception {
+    // given
+    final var operation = createLockedOperation().setScopeKey(789L);
+    when(flowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(
+            processInstanceKey, Set.of(789L)))
+        .thenReturn(Set.of(789L));
+    doReturn(variableDocumentKey)
+        .when(operateServicesAdapter)
+        .setVariables(789L, Map.of(variableName, variableValue), true, operationId);
+
+    // when
+    handler.handle(operation);
+
+    // then
+    assertThat(operation.getState()).isEqualTo(OperationState.SENT);
+    assertThat(operation.getZeebeCommandKey()).isEqualTo(variableDocumentKey);
   }
 
   @ParameterizedTest
@@ -153,6 +176,22 @@ public class UpdateVariableHandlerTest {
             OperationType.UPDATE_VARIABLE.name());
   }
 
+  @Test
+  void shouldFailOperationWhenScopeDoesNotBelongToProcessInstance() throws Exception {
+    // given: scopeKey belongs to a foreign process instance
+    final var operation = createLockedOperation().setScopeKey(999L);
+
+    // when
+    handler.handle(operation);
+
+    // then: the operation fails and setVariables is never called
+    verify(batchOperationWriter).updateOperation(operation);
+    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
+    assertThat(operation.getErrorMessage())
+        .isEqualTo("Scope 999 does not belong to process instance " + processInstanceKey + ".");
+    verifyNoInteractions(operateServicesAdapter);
+  }
+
   /**
    * Creates a locked UPDATE_VARIABLE operation, simulating an operation that was picked up by the
    * executor for processing.
@@ -164,6 +203,7 @@ public class UpdateVariableHandlerTest {
         .setVariableName(variableName)
         .setVariableValue(String.valueOf(variableValue))
         .setScopeKey(scopeKey)
+        .setProcessInstanceKey(processInstanceKey)
         .setState(OperationState.LOCKED)
         .setLockOwner(workerId);
   }
