@@ -149,6 +149,52 @@ public class ModifyProcessInstanceTerminatingElementTest {
             BpmnElementType.PROCESS, BpmnElementType.SUB_PROCESS, BpmnElementType.USER_TASK);
   }
 
+  @Test
+  public void shouldTerminateCancelingUserTaskInterruptedByBoundaryEvent() {
+    // given a user task that is terminating because a boundary event interrupted it
+    final String processId = Strings.newRandomValidBpmnId();
+    final String messageName = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(
+                    "userTask",
+                    u ->
+                        u.zeebeUserTask().zeebeTaskListener(l -> l.canceling().type(LISTENER_TYPE)))
+                .boundaryEvent(
+                    "boundary",
+                    b -> b.message(m -> m.name(messageName).zeebeCorrelationKey("=\"key\"")))
+                .endEvent("boundaryEnd")
+                .moveToActivity("userTask")
+                .endEvent("end")
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    // publish only once the user task exists, so that the boundary event is subscribed
+    getUserTaskKey(processInstanceKey);
+    ENGINE.message().withName(messageName).withCorrelationKey("key").publish();
+    failCancelingListenerJob(processInstanceKey);
+
+    // when
+    terminateElementByModification(processInstanceKey, "userTask");
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "userTask");
+    assertThatCancelingUserTaskIsRemoved(processInstanceKey);
+    assertThatIncidentIsResolved(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
+                .withElementId("boundary")
+                .exists())
+        .describedAs("Expected the boundary event not to be activated")
+        .isFalse();
+  }
+
   /**
    * Creates a process instance that is canceled while its subprocess contains a user task with a
    * canceling task listener. The listener job fails without retries, so the instance stays
