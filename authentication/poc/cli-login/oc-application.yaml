@@ -1,0 +1,97 @@
+# Orchestration Cluster for the CLI login PoC: OIDC against the local Keycloak, H2 as secondary
+# storage, authorizations off (the PoC proves authentication, not permissions).
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:mem:camunda-cli-poc;DB_CLOSE_DELAY=-1
+        username: sa
+        password:
+  security:
+    authentication:
+      method: oidc
+      unprotected-api: false
+      oidc:
+        client-name: Keycloak
+        issuer-uri: http://localhost:18080/realms/camunda
+        client-id: camunda
+        client-secret: camunda-secret
+        redirect-uri: http://localhost:8080/sso-callback
+        # The same list validates the webapp's ID tokens (aud = client-id "camunda") and the API's
+        # access tokens (aud = camunda-api, via the Keycloak client scope).
+        audiences: [camunda-api, camunda]
+        username-claim: preferred_username
+      # New in the PoC: the public client a CLI logs users in with, per OIDC registration id
+      # ("oidc" is the flat block above).
+      cli-clients:
+        oidc:
+          client-id: c8ctl
+          # camunda-api is the Keycloak client scope that adds the cluster's audience
+          scopes: [openid, offline_access, camunda-api]
+          # Must equal the redirect URI registered at the IdP (only the loopback port is ignored).
+          # http on 127.0.0.1, [::1] or localhost; without a port the CLI picks one per login.
+          redirect-uri: http://127.0.0.1/callback
+          # RFC 8707 resource indicator, for identity providers that set the audience from it
+          # (Keycloak and Entra ID use scopes instead, so it is not needed here).
+          # resource: http://localhost:8080
+      # Name of the default physical tenant in the discovery document's list of physical tenants
+      cli-discovery:
+        display-name: Default
+    authorizations:
+      enabled: false
+    initialization:
+      default-roles:
+        admin:
+          users: [demo]
+  # Two physical tenants, each authenticating on its own:
+  # - pt1: the same Keycloak realm as the default tenant, but its own audience, so a token of the
+  #   default tenant does not work on pt1 and vice versa
+  # - pt2: an identity provider only pt2 knows (Keycloak realm "acme"), with its own CLI client
+  physical-tenants:
+    pt1:
+      data:
+        secondary-storage:
+          type: rdbms
+          rdbms:
+            url: jdbc:h2:mem:camunda-cli-poc-pt1;DB_CLOSE_DELAY=-1
+            username: sa
+            password:
+      security:
+        authentication:
+          cli-discovery:
+            display-name: Sales EU
+          providers:
+            assigned: [oidc]
+          oidc:
+            audiences: [camunda-api-pt1, camunda]
+          cli-clients:
+            oidc:
+              client-id: c8ctl
+              scopes: [openid, offline_access, camunda-api-pt1]
+    pt2:
+      data:
+        secondary-storage:
+          type: rdbms
+          rdbms:
+            url: jdbc:h2:mem:camunda-cli-poc-pt2;DB_CLOSE_DELAY=-1
+            username: sa
+            password:
+      security:
+        authentication:
+          cli-discovery:
+            display-name: ACME Corp
+          providers:
+            assigned: [acme]
+            oidc:
+              acme:
+                client-name: ACME Keycloak
+                issuer-uri: http://localhost:18080/realms/acme
+                client-id: camunda
+                client-secret: acme-secret
+                audiences: [camunda-api, camunda]
+                username-claim: preferred_username
+          cli-clients:
+            acme:
+              client-id: c8ctl
+              scopes: [openid, offline_access, camunda-api]

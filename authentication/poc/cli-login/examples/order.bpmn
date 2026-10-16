@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  id="order-definitions" targetNamespace="http://camunda.org/examples">
+  <bpmn:process id="order" name="Order" isExecutable="true">
+    <bpmn:startEvent id="received" name="Order received">
+      <bpmn:outgoing>to-review</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="to-review" sourceRef="received" targetRef="review" />
+    <bpmn:userTask id="review" name="Review order">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>to-review</bpmn:incoming>
+      <bpmn:outgoing>to-done</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="to-done" sourceRef="review" targetRef="done" />
+    <bpmn:endEvent id="done" name="Order handled">
+      <bpmn:incoming>to-done</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="diagram">
+    <bpmndi:BPMNPlane id="plane" bpmnElement="order">
+      <bpmndi:BPMNShape id="received_di" bpmnElement="received">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="review_di" bpmnElement="review">
+        <dc:Bounds x="240" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="done_di" bpmnElement="done">
+        <dc:Bounds x="392" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="to-review_di" bpmnElement="to-review">
+        <di:waypoint x="188" y="100" />
+        <di:waypoint x="240" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="to-done_di" bpmnElement="to-done">
+        <di:waypoint x="340" y="100" />
+        <di:waypoint x="392" y="100" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
