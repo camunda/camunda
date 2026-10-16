@@ -227,7 +227,7 @@ public class RestoreApp implements ApplicationRunner {
             preResult.skipRestore(),
             Set.of(tenantId),
             Map.of(tenantId, partitionCount),
-            false));
+            true));
   }
 
   private static Map<String, ExporterPositionMapper> exporterPositionMappers(

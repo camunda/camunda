@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Restores the local partitions of the default physical tenant from the log archive (PoC scope: no
- * other tenants, and the topology file is left as it is).
+ * other tenants). Node 0 writes the restored topology file, as in a classic whole-cluster restore.
  */
 @NullMarked
 public final class LogArchiveClusterRestore {
@@ -93,6 +93,14 @@ public final class LogArchiveClusterRestore {
       final var result =
           new LogArchiveRestore(store, new RocksDBSnapshotFileInfoProvider(), meterRegistry)
               .restorePartitions(timelineId, partitionCount, checkpointId, targets);
+      // Like a classic whole-cluster restore: node 0 writes the topology the restored brokers boot
+      // from; the others leave it to node 0.
+      if (brokerId == 0) {
+        ClusterRestore.writeRestoredTopologyFile(
+            configuration,
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, configuration),
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionCount));
+      }
       LOG.info(
           "Restored partitions {} from log archive timeline '{}' to checkpoint {}; new timeline is '{}'",
           result.partitions().keySet(),

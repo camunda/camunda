@@ -304,13 +304,25 @@ public final class ClusterRestore {
    *     from; the topology is generated for these partitions rather than the configured ones
    */
   void restoreTopologyFile(final Map<String, Integer> partitionCounts) throws IOException {
+    writeRestoredTopologyFile(configuration, physicalTenantConfigurations(), partitionCounts);
+  }
+
+  /**
+   * Writes the topology file of a whole-cluster restore; see {@link #restoreTopologyFile(Map)}.
+   * Shared with the log archive restore, which restores the whole cluster the same way.
+   */
+  static void writeRestoredTopologyFile(
+      final BrokerCfg configuration,
+      final Map<String, BrokerCfg> physicalTenantConfigurations,
+      final Map<String, Integer> partitionCounts)
+      throws IOException {
     LOG.info("Restoring topology file");
     final var file =
         Path.of(configuration.getData().getDirectory())
             .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
     final var generated =
         StaticConfigurationGenerator.getStaticConfiguration(
-                configuration, physicalTenantConfigurations(), partitionCounts, COORDINATOR_ID)
+                configuration, physicalTenantConfigurations, partitionCounts, COORDINATOR_ID)
             .generateCurrentClusterConfiguration();
     generated
         .partitionGroups()
@@ -471,7 +483,7 @@ public final class ClusterRestore {
   }
 
   /** {@code base} carrying an activated restore plan over the restored groups. */
-  private CurrentClusterConfiguration withRestorePlan(
+  private static CurrentClusterConfiguration withRestorePlan(
       final CurrentClusterConfiguration base, final Set<String> restoredPhysicalTenantIds) {
     final Map<String, List<PartitionGroupOperation>> operationsPerGroup =
         restoredPhysicalTenantIds.stream()
