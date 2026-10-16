@@ -452,6 +452,11 @@ SBE null value.
 Unknown value types are not exported (`shouldIndexValueType` defaults to false), so the exporters need
 no configuration change.
 
+**PoC rule: only what the build and the protocol tests need.** Of the rows above, implement only the
+protocol, protocol-impl and broker rows plus tests that would otherwise fail. Skip the test-util,
+exporter and engine-test rows unless a module does not compile without them. The integration tests
+read log archive records generically instead of through a dedicated `RecordingExporter` stream.
+
 ## 15. Test plan
 
 Unit tests (each workstream):
