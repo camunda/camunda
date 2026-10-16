@@ -50,6 +50,14 @@ previous stable version (e.g. `8.10`).
    - `tasklist_mode` matrix: enumerates `stable/8.6`/`stable/8.7` (v1-only) and
      `stable/8.8`/`stable/8.9` (v1+v2), defaulting everything else to v2-only. Self-updating as
      long as no future branch reintroduces Tasklist v1. No edit needed unless that changes.
+   - **Apply the same matrix edits to the automatic PR-check workflow**
+     (`.github/workflows/ci-c8-orchestration-cluster-e2e-suite-reusable.yml`): it carries the same
+     ES API-tests `camunda_mode` matrix, the same allow-list RDBMS gate and matrix, and the same
+     `tasklist_mode`-keyed E2E `include`, all keyed on `inputs.base`. It has **no** base-detection
+     block to edit — the caller (`ci.yml`) passes the PR's base ref directly — so only these
+     matrix/gate expressions need the new `stable/<X.Y>`. Skip this and a PR against the new branch
+     runs the default (v2-only E2E, `profiles`-only ES API, no RDBMS leg) instead of the intended
+     matrix.
 4. **Route the new branch in the release workflow**
    (`.github/workflows/c8-orchestration-cluster-e2e-tests-release.yml`):
    - Version-to-base mapping (the `if/elif` chain that sets `base="stable/<X.Y>"` from

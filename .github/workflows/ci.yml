@@ -77,6 +77,12 @@ jobs:
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
       load-test-k6-changes: ${{ steps.filter.outputs.load-test-k6-changes }}
+      # Scope for the orchestration-cluster suite PR check (team-test-automation#188):
+      # base branch, whether any suite file actually changed, and the spec files
+      # the PR added/modified (so the run can gate only on the author's own tests).
+      c8-e2e-suite-base: ${{ steps.c8-e2e-suite-scope.outputs.base }}
+      c8-e2e-suite-run-tests: ${{ steps.c8-e2e-suite-scope.outputs.run-tests }}
+      c8-e2e-suite-changed-specs: ${{ steps.c8-e2e-suite-scope.outputs.changed-specs }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -96,6 +102,73 @@ jobs:
       - name: Detect changes
         uses: ./.github/actions/paths-filter
         id: filter
+      # Resolve the orchestration-cluster suite PR check's scope: the base
+      # branch, whether any file under the suite directory actually changed
+      # (so a CI-only PR tripping c8-e2e-test-suite-changes via ci-relevant does
+      # not start the heavy run), and which spec files the PR added or modified
+      # (so the run gates only on the author's own tests). PR-only; on other
+      # events the outputs stay empty and the suite test job is skipped.
+      - name: Resolve C8 E2E suite PR scope
+        id: c8-e2e-suite-scope
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          SUITE_PREFIX: qa/c8-orchestration-cluster-e2e-test-suite/
+        run: |
+          set -euo pipefail
+          echo "base=${BASE_REF}" >> "$GITHUB_OUTPUT"
+
+          # One listing, carrying each file's status, so the run decision and the
+          # gating scope can read it differently. Each rename also emits a
+          # synthetic "removed<TAB>previous_filename" entry so a file moved OUT of
+          # the suite still counts for the run decision (via its old suite path);
+          # the changed-specs filter below drops the removed entry and keeps only
+          # the destination.
+          files="$(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
+            --jq '.[] | ("\(.status)\t\(.filename)"), (select(.previous_filename != null) | "removed\t\(.previous_filename)")')"
+
+          # Run decision: ANY suite file changed, including deletions — a PR that
+          # only removes a fixture, resource or spec can still break the suite and
+          # must be exercised.
+          suite_changed="$(printf '%s\n' "$files" | cut -f2- | grep -F "$SUITE_PREFIX" || true)"
+          if [[ -z "$suite_changed" ]]; then
+            echo "No files under ${SUITE_PREFIX} changed; suite tests will be skipped."
+            echo "run-tests=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "changed-specs<<EOF"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "run-tests=true" >> "$GITHUB_OUTPUT"
+
+          # Gating scope: added/modified/renamed spec files only (a removed spec
+          # cannot fail), path relative to the suite root (matching the Playwright
+          # report), and restricted to the specs the PR matrix actually executes
+          # (the api-tests + chromium projects), so the gate never greens a
+          # changed spec it did not run: v2-stateless-tests (needs
+          # V2_STATELESS_TESTS=true, which swaps the whole project list),
+          # analytics-exporter (its own isolated project) and optimize (its own
+          # projects) are excluded here — they are covered by their dedicated
+          # nightly workflows, exactly as the on-demand run leaves them out.
+          changed_specs="$(printf '%s\n' "$files" \
+            | awk -F'\t' '$1 != "removed" {print $2}' \
+            | sed -n "s#^${SUITE_PREFIX}##p" \
+            | grep -E '\.spec\.ts$' \
+            | grep -E '^tests/' \
+            | grep -Ev '^tests/api/v2/(analytics-exporter|optimize)/' || true)"
+
+          echo "Spec files gating this PR:"
+          printf '%s\n' "${changed_specs:-<none>}"
+
+          {
+            echo "changed-specs<<EOF"
+            printf '%s\n' "$changed_specs"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
@@ -2523,6 +2596,30 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  # Automatic PR run of the orchestration-cluster suite against a local stack,
+  # mirroring the manual on-demand matrix for the PR's base branch. It blocks the
+  # merge only on specs this PR added or modified (gating: changed); failures in
+  # untouched, historically flaky tests are reported but do not block. The PR
+  # scope (base branch, which specs changed, whether to run at all) is computed
+  # by the detect-changes job. Runs only on a non-fork pull_request — fork PRs
+  # cannot authenticate to Vault, which the RDBMS leg's setup-build needs.
+  # See camunda/team-test-automation#188.
+  c8-e2e-test-suite-tests:
+    name: "C8 E2E Test Suite / Tests"
+    if: >-
+      needs.detect-changes.outputs.c8-e2e-suite-run-tests == 'true'
+      && github.event.pull_request.head.repo.fork != true
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-c8-orchestration-cluster-e2e-suite-reusable.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      base: ${{ needs.detect-changes.outputs.c8-e2e-suite-base }}
+      test-ref: ${{ github.sha }}
+      changed-specs: ${{ needs.detect-changes.outputs.c8-e2e-suite-changed-specs }}
+      gating: changed
+
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
@@ -2917,6 +3014,7 @@ jobs:
       - build-distball
       - build-platform-frontend
       - c8-e2e-test-suite
+      - c8-e2e-test-suite-tests
       - codeowners-check
       - commitlint
       - database-integration-tests
