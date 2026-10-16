@@ -312,7 +312,8 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-config-openapi</artifactId>
+      <artifactId>zeebe-cluster-config-rest</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -1166,6 +1167,8 @@
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.springframework.boot:spring-boot-jackson2</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
+            <!-- Cluster and exporters actuator endpoints, found by component scan -->
+            <dependency>io.camunda:zeebe-cluster-config-rest</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
             <!-- Provides Swagger UI and swagger-config through Spring auto-configuration -->
             <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>

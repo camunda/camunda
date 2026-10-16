@@ -359,7 +359,7 @@ dependencies {
   implementation(project(":zeebe-backup-store-s3"))
   implementation(project(":zeebe-backup-store-gcs"))
   implementation(project(":zeebe-cluster-config-api"))
-  implementation(project(":zeebe-cluster-config-openapi"))
+  runtimeOnly(project(":zeebe-cluster-config-rest"))
   implementation(project(":zeebe-cluster-config-impl"))
   implementation(project(":camunda-client-java"))
   implementation(project(":webapp-server"))
