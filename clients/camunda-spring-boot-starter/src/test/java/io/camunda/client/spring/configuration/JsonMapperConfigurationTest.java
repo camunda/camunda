@@ -25,6 +25,8 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaJackson3ObjectMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.spring.configuration.JsonMapperConfigurationTest.OverrideObjectMapper.JacksonConfiguration;
+import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
@@ -110,6 +112,18 @@ public class JsonMapperConfigurationTest {
     @Test
     void shouldUseCamundaJackson2ObjectMapper() {
       assertThat(jsonMapper).isInstanceOf(CamundaObjectMapper.class);
+    }
+
+    @Test
+    void shouldSerializeJavaTimeTypes() {
+      // given
+      final Map<String, Object> variables = Collections.singletonMap("d", Duration.ofSeconds(90));
+
+      // when
+      final String json = jsonMapper.toJson(variables);
+
+      // then
+      assertThat(json).isEqualTo("{\"d\":90.000000000}");
     }
   }
 
