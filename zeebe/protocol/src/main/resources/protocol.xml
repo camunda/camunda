@@ -108,6 +108,7 @@
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->
       <validValue name="SCALE">253</validValue>
       <validValue name="CHECKPOINT">254</validValue>
+      <validValue name="LOG_ARCHIVE">251</validValue>
     </enum>
 
     <enum name="RecordType" encodingType="uint8">

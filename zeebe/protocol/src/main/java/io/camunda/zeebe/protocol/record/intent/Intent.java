@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -64,6 +65,7 @@ public interface Intent {
     map.put(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, BatchOperationIntent.class);
     map.put(ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE, BatchOperationIntent.class);
     map.put(ValueType.CHECKPOINT, CheckpointIntent.class);
+    map.put(ValueType.LOG_ARCHIVE, LogArchiveIntent.class);
     map.put(ValueType.CLOCK, ClockIntent.class);
     map.put(ValueType.CLUSTER_VARIABLE, ClusterVariableIntent.class);
     map.put(ValueType.COMMAND_DISTRIBUTION, CommandDistributionIntent.class);

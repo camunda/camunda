@@ -53,6 +53,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -228,6 +229,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.RUNTIME_INSTRUCTION -> new RuntimeInstructionRecord();
       case ValueType.BATCH_OPERATION_INITIALIZATION -> new BatchOperationInitializationRecord();
       case ValueType.CHECKPOINT -> new CheckpointRecord();
+      case ValueType.LOG_ARCHIVE -> new LogArchiveRecord();
       case ValueType.MESSAGE_SUBSCRIPTION -> new MessageSubscriptionRecord();
       case ValueType.GLOBAL_LISTENER_BATCH -> new GlobalListenerBatchRecord();
       case ValueType.JOB_METRICS_BATCH -> new JobMetricsBatchRecord();

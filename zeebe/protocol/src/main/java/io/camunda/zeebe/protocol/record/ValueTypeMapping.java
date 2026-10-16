@@ -89,6 +89,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionRecordValue;
@@ -164,6 +165,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
+import io.camunda.zeebe.protocol.record.value.management.LogArchiveRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -287,6 +289,8 @@ public final class ValueTypeMapping {
         new Mapping<>(VariableDocumentRecordValue.class, VariableDocumentIntent.class));
     mapping.put(
         ValueType.CHECKPOINT, new Mapping<>(CheckpointRecordValue.class, CheckpointIntent.class));
+    mapping.put(
+        ValueType.LOG_ARCHIVE, new Mapping<>(LogArchiveRecordValue.class, LogArchiveIntent.class));
     mapping.put(
         ValueType.ESCALATION, new Mapping<>(EscalationRecordValue.class, EscalationIntent.class));
     mapping.put(ValueType.SIGNAL, new Mapping<>(SignalRecordValue.class, SignalIntent.class));
