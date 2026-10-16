@@ -397,7 +397,19 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // re-accumulate its metrics. Written when an item is first created (see
   // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
   // instance completes (see AgentInstanceCompletedApplier).
-  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
+
+  // Log archive state (see zeebe/backup/docs/log-archive-poc.md, section 5).
+  // constant key -> LogArchiveMeta
+  LOG_ARCHIVE_META(166, PARTITION_LOCAL),
+  // firstIndex -> open (not yet sealed) log object and the checkpoints it covers
+  LOG_ARCHIVE_OPEN_OBJECTS(167, PARTITION_LOCAL),
+  // chunkNo -> sealed index chunk
+  LOG_ARCHIVE_CHUNKS(168, PARTITION_LOCAL),
+  // seq -> archived snapshot
+  LOG_ARCHIVE_SNAPSHOTS(169, PARTITION_LOCAL),
+  // seq -> commit entry JSON bytes that are not yet confirmed as published
+  LOG_ARCHIVE_OUTBOX(170, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
