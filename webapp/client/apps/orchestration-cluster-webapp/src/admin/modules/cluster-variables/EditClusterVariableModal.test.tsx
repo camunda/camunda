@@ -11,7 +11,7 @@ import {Toaster, toast} from '@camunda/design-system';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterAll, afterEach, beforeAll, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {replaceMonacoValue} from '#/shared-test-modules/monaco';
@@ -41,13 +41,7 @@ function getWrapper() {
 }
 
 describe('<EditClusterVariableModal />', () => {
-	beforeAll(() => {
-		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'Date'], shouldAdvanceTime: true});
-	});
-	afterAll(() => vi.useRealTimers());
 	afterEach(async () => {
-		// Closing Monaco before its word highlighter fires leaves an unhandled "Canceled" rejection.
-		await vi.advanceTimersByTimeAsync(300);
 		await cleanup();
 		toast.dismiss();
 	});

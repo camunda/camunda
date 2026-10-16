@@ -12,12 +12,16 @@ import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
 	mockQueryRolesEndpoint,
+	mockQueryMappingRulesEndpoint,
+	mockQueryUsersEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryRolesResponse} from '#/shared-test-modules/api-mocks/roles';
+import {createQueryMappingRulesResponse} from '#/shared-test-modules/api-mocks/mapping-rules';
+import {createQueryUsersResponse} from '#/shared-test-modules/api-mocks/users';
 
 test.beforeEach(async ({network, adminRolesPage}) => {
 	await adminRolesPage.mockClientConfig();
@@ -34,6 +38,8 @@ test.beforeEach(async ({network, adminRolesPage}) => {
 		mockQueryRolesEndpoint({
 			successResponse: HttpResponse.json(createQueryRolesResponse({items: []})),
 		}),
+		mockQueryUsersEndpoint({successResponse: HttpResponse.json(createQueryUsersResponse())}),
+		mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json(createQueryMappingRulesResponse())}),
 	);
 });
 

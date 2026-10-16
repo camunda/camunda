@@ -10,7 +10,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {Toaster, toast} from '@camunda/design-system';
 import {HttpResponse} from 'msw';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterAll, afterEach, beforeAll, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {mockGetGlobalClusterVariableEndpoint} from '#/shared-test-modules/mock-handlers';
@@ -33,13 +33,7 @@ function getWrapper() {
 }
 
 describe('<ViewClusterVariableModal />', () => {
-	beforeAll(() => {
-		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'Date'], shouldAdvanceTime: true});
-	});
-	afterAll(() => vi.useRealTimers());
 	afterEach(async () => {
-		// Closing Monaco before its word highlighter fires leaves an unhandled "Canceled" rejection.
-		await vi.advanceTimersByTimeAsync(300);
 		await cleanup();
 		toast.dismiss();
 	});

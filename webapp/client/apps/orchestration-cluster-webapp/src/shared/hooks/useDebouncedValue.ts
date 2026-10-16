@@ -6,13 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Heading} from '@camunda/design-system';
+import {useEffect, useState} from 'react';
 
-const AdminPage: React.FC = () => {
-	return (
-		<Heading as="h1" variant="heading-lg">
-			Admin
-		</Heading>
-	);
-};
-export {AdminPage};
+function useDebouncedValue<T>(value: T, delay: number): T {
+	const [debounced, setDebounced] = useState(value);
+
+	useEffect(() => {
+		const timeoutId = setTimeout(() => setDebounced(value), delay);
+		return () => clearTimeout(timeoutId);
+	}, [value, delay]);
+
+	return debounced;
+}
+
+export {useDebouncedValue};

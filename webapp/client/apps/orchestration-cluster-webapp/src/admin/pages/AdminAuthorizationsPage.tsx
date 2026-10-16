@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
 	Button,
@@ -21,13 +21,13 @@ import {
 	SelectValue,
 } from '@camunda/design-system';
 import type {Authorization, ResourceType} from '@camunda/camunda-api-zod-schemas/8.11';
+import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import type {AdminClientConfig} from '#/shared/http/adminClientConfig';
 import {AddAuthorizationModal} from '#/admin/modules/authorizations/AddAuthorizationModal';
 import {DeleteAuthorizationModal} from '#/admin/modules/authorizations/DeleteAuthorizationModal';
 import {AuthorizationsTable} from '#/admin/modules/authorizations/AuthorizationsTable';
 import type {AuthorizationsSearch} from '#/admin/modules/authorizations/searchSchema';
 
-const SEARCH_DEBOUNCE = 500;
 const AUTHORIZATIONS_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/authorization/';
 
 type ModalState = {type: 'create'} | {type: 'delete'; authorization: Authorization} | null;
@@ -53,26 +53,10 @@ const AdminAuthorizationsPage: React.FC<AdminAuthorizationsPageProps> = ({
 }) => {
 	const {t} = useTranslation();
 	const appliedOwnerId = search.ownerId ?? '';
-	const [ownerIdDraft, setOwnerIdDraft] = useState(appliedOwnerId);
-	const [lastAppliedOwnerId, setLastAppliedOwnerId] = useState(appliedOwnerId);
+	const [ownerIdDraft, setOwnerIdDraft] = useDebouncedUrlFilter(appliedOwnerId, (ownerId) =>
+		onSearchChange({ownerId, page: undefined}),
+	);
 	const [modalState, setModalState] = useState<ModalState>(null);
-
-	if (lastAppliedOwnerId !== appliedOwnerId) {
-		setLastAppliedOwnerId(appliedOwnerId);
-		setOwnerIdDraft(appliedOwnerId);
-	}
-
-	useEffect(() => {
-		if (ownerIdDraft === appliedOwnerId) {
-			return;
-		}
-
-		const timeoutId = setTimeout(() => {
-			onSearchChange({ownerId: ownerIdDraft === '' ? undefined : ownerIdDraft, page: undefined});
-		}, SEARCH_DEBOUNCE);
-
-		return () => clearTimeout(timeoutId);
-	}, [appliedOwnerId, onSearchChange, ownerIdDraft]);
 
 	const closeModal = useCallback(() => setModalState(null), []);
 

@@ -16,12 +16,14 @@ import {
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryUserTasksEndpoint,
+	mockQueryUsersEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
+import {createQueryUsersResponse} from '#/shared-test-modules/api-mocks/users';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 
 test.describe('component routes', () => {
@@ -70,7 +72,7 @@ test.describe('component routes', () => {
 		await expect(tasklistIndexPage.filterSelect).toHaveText('All open tasks');
 	});
 
-	test('should render Admin when component is active', async ({network, page}) => {
+	test('should land on Admin users when Admin component is active', async ({network, page}) => {
 		network.use(
 			mockCurrentUserEndpoint({
 				successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['admin']})),
@@ -81,11 +83,13 @@ test.describe('component routes', () => {
 			mockLicenseEndpoint({
 				successResponse: HttpResponse.json(createLicense()),
 			}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createQueryUsersResponse())}),
 		);
 
 		await page.goto('/admin');
 
-		await expect(page.getByRole('heading', {name: 'Admin'})).toBeVisible();
+		await expect(page).toHaveURL('/admin/users');
+		await expect(page.getByRole('heading', {name: 'Users', exact: true})).toBeVisible();
 	});
 
 	test('should show the forbidden page at the original URL when component access is denied', async ({
