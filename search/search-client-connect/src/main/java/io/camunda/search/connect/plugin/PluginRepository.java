@@ -22,6 +22,7 @@ import java.util.SequencedCollection;
 import java.util.SequencedMap;
 import java.util.stream.Stream;
 import org.agrona.LangUtil;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,7 @@ public final class PluginRepository implements AutoCloseable {
     return plugins.isEmpty();
   }
 
-  public CompatHttpRequestInterceptor asRequestInterceptor() {
+  public HttpRequestInterceptor asRequestInterceptor() {
     return PluginRepositoryInterceptor.ofRepository(this);
   }
 

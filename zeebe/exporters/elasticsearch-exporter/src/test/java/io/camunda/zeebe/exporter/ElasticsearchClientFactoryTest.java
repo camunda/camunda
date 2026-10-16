@@ -12,38 +12,38 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Node;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import io.camunda.search.connect.util.SecurityUtil;
 import java.io.IOException;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.auth.Credentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.concurrent.FutureCallback;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.protocol.BasicHttpContext;
-import org.elasticsearch.client.Node;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.client5.http.auth.BasicUserPrincipal;
+import org.apache.hc.client5.http.auth.Credentials;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.impl.BasicEntityDetails;
+import org.apache.hc.core5.http.message.BasicHttpRequest;
+import org.apache.hc.core5.http.protocol.HttpCoreContext;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchClientFactoryTest {
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
 
-  private static RestClient extractRestClient(final ElasticsearchClient client) {
-    return ((RestClientTransport) client._transport()).restClient();
+  private static Rest5Client extractRestClient(final ElasticsearchClient client) {
+    return ((Rest5ClientTransport) client._transport()).restClient();
   }
 
   @Test
-  void shouldConfigureMultipleHosts() {
+  void shouldConfigureMultipleHosts() throws java.net.URISyntaxException {
     // given
     config.url = "http://localhost:9201,https://localhost:9202";
 
@@ -64,58 +64,55 @@ final class ElasticsearchClientFactoryTest {
     // given
     config.getAuthentication().setUsername("user");
     config.getAuthentication().setPassword("password");
-    final var context = new BasicHttpContext();
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
 
     // when
-    final var esClient = ElasticsearchClientFactory.of(config);
-    final var restClient = extractRestClient(esClient);
-    restClient
-        .getHttpClient()
-        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+    ElasticsearchClientFactory.INSTANCE.configureHttpClient(config, builder);
 
     // then
-    final var credentialsProvider =
-        (CredentialsProvider) context.getAttribute(HttpClientContext.CREDS_PROVIDER);
-    assertThat(credentialsProvider)
-        .extracting(c -> c.getCredentials(AuthScope.ANY))
-        .extracting(Credentials::getUserPrincipal, Credentials::getPassword)
-        .containsExactly(new BasicUserPrincipal("user"), "password");
+    final var providerCaptor = ArgumentCaptor.forClass(CredentialsProvider.class);
+    Mockito.verify(builder).setDefaultCredentialsProvider(providerCaptor.capture());
+    final Credentials credentials =
+        providerCaptor.getValue().getCredentials(SecurityUtil.ANY_AUTH_SCOPE, null);
+    assertThat(credentials.getUserPrincipal()).isEqualTo(new BasicUserPrincipal("user"));
+    assertThat(((UsernamePasswordCredentials) credentials).getUserPassword())
+        .isEqualTo("password".toCharArray());
   }
 
   @Test
   void shouldNotConfigureAuthenticationByDefault() {
     // given
-    final var context = new BasicHttpContext();
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
 
     // when
-    final var esClient = ElasticsearchClientFactory.of(config);
-    final var restClient = extractRestClient(esClient);
-    restClient
-        .getHttpClient()
-        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+    ElasticsearchClientFactory.INSTANCE.configureHttpClient(config, builder);
 
     // then
-    final var credentialsProvider =
-        (CredentialsProvider) context.getAttribute(HttpClientContext.CREDS_PROVIDER);
-    assertThat(credentialsProvider.getCredentials(AuthScope.ANY)).isNull();
+    Mockito.verify(builder, Mockito.never())
+        .setDefaultCredentialsProvider(Mockito.any(CredentialsProvider.class));
   }
 
   @Test
-  void shouldApplyRequestInterceptorsInOrder() throws IOException {
+  void shouldApplyRequestInterceptorsInOrder()
+      throws IOException, org.apache.hc.core5.http.HttpException {
     // given
-    final var context = new BasicHttpContext();
-    final var esClient =
-        ElasticsearchClientFactory.of(
-            config,
-            (req, ctx) -> ctx.setAttribute("foo", "bar"),
-            (req, ctx) -> ctx.setAttribute("foo", "baz"));
-    try (final var restClient = extractRestClient(esClient)) {
+    final var context = HttpCoreContext.create();
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
 
-      // when
-      restClient
-          .getHttpClient()
-          .execute(
-              HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+    // when
+    ElasticsearchClientFactory.INSTANCE.configureHttpClient(
+        config,
+        builder,
+        (req, entity, ctx) -> ctx.setAttribute("foo", "bar"),
+        (req, entity, ctx) -> ctx.setAttribute("foo", "baz"));
+
+    final var interceptorCaptor =
+        ArgumentCaptor.forClass(org.apache.hc.core5.http.HttpRequestInterceptor.class);
+    Mockito.verify(builder, Mockito.times(2))
+        .addRequestInterceptorLast(interceptorCaptor.capture());
+    for (final var interceptor : interceptorCaptor.getAllValues()) {
+      interceptor.process(
+          new BasicHttpRequest("GET", "localhost"), new BasicEntityDetails(0, null), context);
     }
 
     // then
@@ -132,20 +129,7 @@ final class ElasticsearchClientFactoryTest {
 
     // then
     final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
-    verify(builder).setDefaultIOReactorConfig(captor.capture());
-    assertThat(captor.getValue().isSoKeepalive()).isTrue();
-  }
-
-  private static final class NoopCallback implements FutureCallback<HttpResponse> {
-    private static final NoopCallback INSTANCE = new NoopCallback();
-
-    @Override
-    public void completed(final HttpResponse result) {}
-
-    @Override
-    public void failed(final Exception ex) {}
-
-    @Override
-    public void cancelled() {}
+    verify(builder).setIOReactorConfig(captor.capture());
+    assertThat(captor.getValue().isSoKeepAlive()).isTrue();
   }
 }

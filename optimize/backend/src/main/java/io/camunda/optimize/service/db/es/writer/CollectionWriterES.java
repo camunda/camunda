@@ -193,7 +193,8 @@ public class CollectionWriterES implements CollectionWriter {
             s ->
                 s.lang(ScriptLanguage.Painless)
                     .params(Map.of("scopeEntryIdToRemove", JsonData.of(scopeEntryId)))
-                    .source(REMOVE_SCOPE_ENTRY_FROM_COLLECTION_SCRIPT_CODE));
+                    .source(
+                        src -> src.scriptString(REMOVE_SCOPE_ENTRY_FROM_COLLECTION_SCRIPT_CODE)));
 
     final Query query =
         Query.of(

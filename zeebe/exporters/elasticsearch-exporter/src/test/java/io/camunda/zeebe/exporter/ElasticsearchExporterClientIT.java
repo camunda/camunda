@@ -17,6 +17,8 @@ import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
@@ -82,14 +84,16 @@ final class ElasticsearchExporterClientIT {
 
   @Test
   void shouldThrowExceptionIfFailToFlushBulk() {
-    // given - a record with a negative timestamp will not be indexed because its field in ES is a
-    // date, which must be a positive number of milliseconds since the UNIX epoch
+    // given - a variable whose name exceeds Lucene's maximum term length (32766 bytes) cannot be
+    // indexed, as the name is mapped as a keyword without an ignore_above limit
+    final VariableRecordValue generated =
+        recordFactory.<VariableRecordValue>generateRecord(ValueType.VARIABLE).getValue();
+    final var invalidValue =
+        ImmutableVariableRecordValue.builder().from(generated).withName("x".repeat(40_000)).build();
     final var invalidRecord =
         recordFactory.generateRecord(
             ValueType.VARIABLE,
-            b ->
-                b.withTimestamp(Long.MIN_VALUE)
-                    .withBrokerVersion(VersionUtil.getVersionLowerCase()));
+            b -> b.withValue(invalidValue).withBrokerVersion(VersionUtil.getVersionLowerCase()));
     client.index(invalidRecord, new RecordSequence(PARTITION_ID, 1));
     client.putComponentTemplate();
     client.putIndexTemplate(ValueType.VARIABLE);
@@ -98,7 +102,7 @@ final class ElasticsearchExporterClientIT {
     assertThatThrownBy(client::flush)
         .isInstanceOf(ElasticsearchExporterException.class)
         .hasMessageContaining(
-            "Failed to flush bulk request: [Failed to flush 1 item(s) of bulk request [type: document_parsing_exception, reason: [1:114] failed to parse field [timestamp] of type [date]");
+            "Failed to flush bulk request: [Failed to flush 1 item(s) of bulk request [type: document_parsing_exception");
   }
 
   @Test

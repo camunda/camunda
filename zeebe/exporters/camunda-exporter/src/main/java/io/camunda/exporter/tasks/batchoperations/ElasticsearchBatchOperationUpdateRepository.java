@@ -212,17 +212,19 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
             .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
     return new Script.Builder()
         .source(
-            """
-            def storedTotal = ctx._source.operationsTotalCount;
-            if (ctx._source.state == 'COMPLETED'
-                && storedTotal != null
-                && storedTotal <= params.operationsFinishedCount) {
-              ctx._source.endDate = params.endDate;
-            }
-            ctx._source.operationsFinishedCount = params.operationsFinishedCount;
-            ctx._source.operationsCompletedCount = params.operationsCompletedCount;
-            ctx._source.operationsFailedCount = params.operationsFailedCount;
-            """)
+            src ->
+                src.scriptString(
+                    """
+                    def storedTotal = ctx._source.operationsTotalCount;
+                    if (ctx._source.state == 'COMPLETED'
+                        && storedTotal != null
+                        && storedTotal <= params.operationsFinishedCount) {
+                      ctx._source.endDate = params.endDate;
+                    }
+                    ctx._source.operationsFinishedCount = params.operationsFinishedCount;
+                    ctx._source.operationsCompletedCount = params.operationsCompletedCount;
+                    ctx._source.operationsFailedCount = params.operationsFailedCount;
+                    """))
         .lang("painless")
         .params(parameters)
         .build();

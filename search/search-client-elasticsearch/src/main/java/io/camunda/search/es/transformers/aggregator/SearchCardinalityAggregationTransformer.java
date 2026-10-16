@@ -33,7 +33,7 @@ public final class SearchCardinalityAggregationTransformer
                 cardinalityBuilder.script(
                     Script.of(
                         s -> {
-                          s.source(script);
+                          s.source(src -> src.scriptString(script));
                           Optional.ofNullable(value.lang()).ifPresent(s::lang);
                           return s;
                         })));
