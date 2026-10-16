@@ -29,7 +29,9 @@ import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.RestGatewayPaths;
+import io.camunda.client.util.RestGatewayService;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -484,6 +486,39 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     Assertions.assertThat(request.getBusinessId()).isEqualTo(businessId);
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceByBpmnProcessIdAndVersionTag() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client.newCreateInstanceCommand().bpmnProcessId("testProcess").versionTag("v1").send().join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    assertThat(request.getProcessDefinitionId()).isEqualTo("testProcess");
+    assertThat(request.getProcessDefinitionVersionTag()).isEqualTo("v1");
+    assertThat(JsonUtil.fromJsonAsMap(RestGatewayService.getLastRequest().getBodyAsString()))
+        .doesNotContainKey("processDefinitionVersion");
+  }
+
+  @Test
+  public void shouldRejectNullVersionTag() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newCreateInstanceCommand().bpmnProcessId("testProcess").versionTag(null))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldRejectEmptyVersionTag() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newCreateInstanceCommand().bpmnProcessId("testProcess").versionTag(""))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   public static class VariableDocument {
