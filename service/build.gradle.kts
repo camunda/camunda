@@ -11,7 +11,7 @@ dependencies {
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-protocol"))
-  implementation(project(":zeebe-cluster-config"))
+  api(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-msgpack-core"))
   implementation(project(":zeebe-msgpack-value"))
   implementation(project(":zeebe-atomix-cluster"))

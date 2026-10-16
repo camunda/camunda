@@ -11,7 +11,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
 import java.nio.file.Path;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -79,7 +79,7 @@ public class PostRestoreValidator {
   private boolean checkTopologyFileIsRestored() {
     if (expectTopologyFile && memberId.nodeIdx() == 0) {
       final var topologyFile =
-          rootDataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+          rootDataDirectory.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
       return topologyFile.toFile().exists() && topologyFile.toFile().isFile();
     }
     return true;

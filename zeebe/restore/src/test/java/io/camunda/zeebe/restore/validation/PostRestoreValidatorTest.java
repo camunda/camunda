@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,7 +79,7 @@ class PostRestoreValidatorTest {
     Files.writeString(partitionDir.resolve("segment-1.log"), "data");
 
     final Path topologyFile =
-        dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+        dataDirectory.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     Files.writeString(topologyFile, "topology");
 
     // when
@@ -97,7 +97,7 @@ class PostRestoreValidatorTest {
     Files.writeString(partitionDir.resolve("segment-1.log"), "data");
 
     final Path topologyDir =
-        dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+        dataDirectory.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     Files.createDirectories(topologyDir);
 
     // when
@@ -119,7 +119,7 @@ class PostRestoreValidatorTest {
     }
 
     final Path topologyFile =
-        dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+        dataDirectory.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     Files.writeString(topologyFile, "topology");
 
     // when
@@ -143,7 +143,7 @@ class PostRestoreValidatorTest {
     }
 
     final Path topologyFile =
-        dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+        dataDirectory.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     Files.writeString(topologyFile, "topology");
 
     // when

@@ -12,7 +12,7 @@ dependencies {
   implementation(libs.org.slf4j.slf4j.api)
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))
-  api(project(":zeebe-cluster-config"))
+  api(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-scheduler"))

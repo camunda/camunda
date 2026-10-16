@@ -25,7 +25,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationJsonSerializer;
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
@@ -472,7 +472,9 @@ final class ClusterEndpointTest {
       assertThat(response.getStatusCode().value()).isEqualTo(200);
       assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROTOBUF);
       assertThat(response.getBody())
-          .isEqualTo(new ProtoBufSerializer().encodeCurrentClusterConfiguration(configuration));
+          .isEqualTo(
+              ClusterConfigurationSerializer.protobuf()
+                  .encodeCurrentClusterConfiguration(configuration));
     }
 
     @Test

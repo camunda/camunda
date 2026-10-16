@@ -305,7 +305,7 @@ public class DynamicClusterConfigurationService
       final BrokerStartupContext brokerStartupContext) {
     final var rootDirectory =
         Path.of(brokerStartupContext.getBrokerConfiguration().getData().getDirectory());
-    return new ClusterConfigurationManagerService(
+    return ClusterConfigurationManagerService.create(
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),

@@ -16,9 +16,8 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -307,7 +306,7 @@ public final class ClusterRestore {
     LOG.info("Restoring topology file");
     final var file =
         Path.of(configuration.getData().getDirectory())
-            .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+            .resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     final var generated =
         StaticConfigurationGenerator.getStaticConfiguration(
                 configuration, physicalTenantConfigurations(), partitionCounts, COORDINATOR_ID)
@@ -322,7 +321,8 @@ public final class ClusterRestore {
                     config.routingState()));
     final var restored = withRestorePlan(generated, generated.partitionGroups().keySet());
 
-    PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer()).update(restored);
+    PersistedCurrentClusterConfiguration.ofFile(file, ClusterConfigurationSerializer.protobuf())
+        .update(restored);
     LOG.info(
         "Successfully restored topology file {} for physical tenants {}",
         file,
@@ -353,10 +353,11 @@ public final class ClusterRestore {
     if (tenantsWithFewerPartitions.isEmpty()) {
       return;
     }
-    final var file = dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+    final var file = dataDirectory.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     final var persisted =
         Files.exists(file)
-            ? PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer())
+            ? PersistedCurrentClusterConfiguration.ofFile(
+                    file, ClusterConfigurationSerializer.protobuf())
                 .getConfiguration()
             : null;
     final var tenantsWithoutTopology =
@@ -390,14 +391,15 @@ public final class ClusterRestore {
   void updateTopologyFile(final Map<String, Integer> restoredPartitionCounts) throws IOException {
     final var file =
         Path.of(configuration.getData().getDirectory())
-            .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+            .resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     if (restoredPartitionCounts.isEmpty() || !Files.exists(file)) {
       return;
     }
     final var cluster = configuration.getCluster();
     final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
     final var persisted =
-        PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer());
+        PersistedCurrentClusterConfiguration.ofFile(
+            file, ClusterConfigurationSerializer.protobuf());
     final var current = persisted.getConfiguration();
     final var updated =
         withoutUnroutedPartitions(

@@ -5,7 +5,8 @@ plugins { id("buildlogic.server-conventions") }
 dependencies {
   implementation(project(":zeebe-restore"))
   implementation(project(":zeebe-broker"))
-  implementation(project(":zeebe-cluster-config"))
+  api(project(":zeebe-cluster-config-api"))
+  runtimeOnly(project(":zeebe-cluster-config-impl"))
   implementation(project(":zeebe-backup"))
   implementation(project(":camunda-cluster"))
   implementation(project(":zeebe-atomix-cluster"))

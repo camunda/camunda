@@ -212,7 +212,8 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-config</artifactId>
+      <artifactId>zeebe-cluster-config-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>

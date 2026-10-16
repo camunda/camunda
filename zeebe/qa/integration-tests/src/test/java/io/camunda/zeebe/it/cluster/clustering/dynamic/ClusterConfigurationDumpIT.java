@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.cluster.clustering.dynamic;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationJsonSerializer;
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -70,7 +70,8 @@ final class ClusterConfigurationDumpIT {
     assertThat(contentTypeOf(response)).contains("application/x-protobuf");
 
     final var body = response.body();
-    final var decoded = new ProtoBufSerializer().decodeCurrentClusterConfiguration(body);
+    final var decoded =
+        ClusterConfigurationSerializer.protobuf().decodeCurrentClusterConfiguration(body);
     assertThat(decoded.globalConfiguration().clusterId()).contains("dumped-cluster");
     assertThat(decoded.getMembers()).hasSize(1);
     assertThat(decoded.partitionGroups()).containsOnlyKeys("default");
@@ -86,7 +87,8 @@ final class ClusterConfigurationDumpIT {
     // then — the two encodings are two views of one fetched configuration, so decoding the
     // binary one and rendering it has to reproduce the JSON one
     final var fromProtobuf =
-        new ProtoBufSerializer().decodeCurrentClusterConfiguration(asProtobuf.body());
+        ClusterConfigurationSerializer.protobuf()
+            .decodeCurrentClusterConfiguration(asProtobuf.body());
     assertThat(asJson.body()).isEqualTo(ClusterConfigurationJsonSerializer.toJson(fromProtobuf));
   }
 

@@ -20,7 +20,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.DynamicConfigExportingStateController;
 import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationRequestsSerializer;
 import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -68,9 +68,9 @@ public class DynamicClusterServices {
   public GatewayClusterConfigurationService gatewayClusterTopologyService(
       final ClusterConfigurationGossiperConfig configManagerCfg) {
     final var service =
-        new GatewayClusterConfigurationService(
+        GatewayClusterConfigurationService.create(
             clusterCommunicationService, clusterMembershipService, configManagerCfg, meterRegistry);
-    scheduler.submitActor(service).join();
+    service.start(scheduler).join();
     return service;
   }
 
@@ -109,7 +109,7 @@ public class DynamicClusterServices {
         clusterCommunicationService,
         ClusterConfigurationCoordinatorSupplier.from(
             brokerTopologyManager::getClusterConfiguration),
-        new ProtoBufSerializer(),
+        ClusterConfigurationRequestsSerializer.protobuf(),
         clusterMembershipService.getLocalMember().id());
   }
 

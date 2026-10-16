@@ -9,7 +9,7 @@ dependencies {
   testImplementation(project(":camunda-cluster"))
   testImplementation(project(":camunda-gateway-model"))
   testImplementation(project(":camunda-authentication"))
-  testImplementation(project(":zeebe-cluster-config"))
+  testImplementation(project(":zeebe-cluster-config-api"))
   testImplementation(project(":zeebe-broker"))
   testImplementation(project(":zeebe-db"))
   testImplementation(projectArtifact(":zeebe-broker", ArtifactKind.TESTS))
