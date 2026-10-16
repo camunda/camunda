@@ -10,60 +10,17 @@ package io.camunda.zeebe.db.conformance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.db.ColumnFamily;
-import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-public abstract class AbstractDbStringColumnFamilyTest {
-
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private ZeebeDb<DefaultColumnFamily> zeebeDb;
-  private ColumnFamily<DbString, DbString> columnFamily;
-  private DbString key;
-  private DbString value;
-
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> factory();
-
-  @Before
-  public void setup() throws Exception {
-    final File pathName = temporaryFolder.newFolder();
-    zeebeDb = factory().createDb(pathName);
-
-    key = new DbString();
-    value = new DbString();
-    columnFamily =
-        zeebeDb.createColumnFamily(
-            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), key, value);
-  }
-
-  @Test
-  public void shouldUpsertValue() {
-    // given
-    key.wrapString("foo");
-    value.wrapString("baring");
-
-    // when
-    columnFamily.upsert(key, value);
-    value.wrapString("yes");
-
-    // then
-    final DbString zbLong = columnFamily.get(key);
-
-    assertThat(zbLong).isNotNull();
-    assertThat(zbLong.toString()).isEqualTo("baring");
-
-    // zbLong and value are referencing the same object
-    assertThat(value.toString()).isEqualTo("baring");
-  }
+/**
+ * Iteration conformance tests for a column family keyed by a string, kept apart from the point
+ * operations so that a backend can adopt them once it supports iteration.
+ */
+public abstract class AbstractDbStringColumnFamilyIterationTest
+    extends AbstractDbStringColumnFamilyTestBase {
 
   @Test
   public void shouldUseForeachValue() {
@@ -252,11 +209,5 @@ public abstract class AbstractDbStringColumnFamilyTest {
         .isInstanceOf(IllegalStateException.class)
         .hasMessage(
             "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
-  }
-
-  private void upsertKeyValuePair(final String key, final String value) {
-    this.key.wrapString(key);
-    this.value.wrapString(value);
-    columnFamily.upsert(this.key, this.value);
   }
 }

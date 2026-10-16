@@ -5,17 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl.rocksdb.conformance;
+package io.camunda.zeebe.db.impl.sqlite.conformance;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.db.conformance.AbstractColumnFamilyTest;
+import io.camunda.zeebe.db.conformance.AbstractDbTenantAwareKeyColumnFamilyPointOperationsTest;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import io.camunda.zeebe.db.impl.rocksdb.DefaultZeebeDbFactory;
+import io.camunda.zeebe.db.impl.sqlite.SqliteDbFactory;
 
-public final class RocksDbColumnFamilyTest extends AbstractColumnFamilyTest {
+public final class SqliteDbTenantAwareKeyColumnFamilyPointOperationsTest
+    extends AbstractDbTenantAwareKeyColumnFamilyPointOperationsTest {
 
   @Override
   protected ZeebeDbFactory<DefaultColumnFamily> factory() {
-    return DefaultZeebeDbFactory.getDefaultFactory();
+    return new SqliteDbFactory<>();
   }
 }

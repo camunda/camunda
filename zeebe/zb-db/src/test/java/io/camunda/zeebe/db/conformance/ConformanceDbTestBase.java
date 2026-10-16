@@ -38,7 +38,6 @@ public abstract class ConformanceDbTestBase {
 
   protected ZeebeDb<Cf> db;
   protected TransactionContext context;
-
   @TempDir Path tempDir;
 
   protected abstract <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
