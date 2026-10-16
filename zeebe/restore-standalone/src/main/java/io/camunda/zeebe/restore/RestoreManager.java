@@ -279,6 +279,9 @@ public class RestoreManager implements CloseableSilently {
     }
 
     final var registry = partition.registry();
+    // The tenant's configuration, like the running partitions of the tenant are built from
+    // (PartitionManager passes the physical tenant's configuration to ZeebePartitionFactory), so
+    // restore and runtime pick the same backend even if the type becomes overridable per tenant.
     final var restoreService =
         new PartitionRestoreService(
             backupStore,
