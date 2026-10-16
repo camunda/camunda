@@ -767,6 +767,63 @@ public final class ProcessInstanceServiceTest {
   }
 
   @Test
+  void shouldForwardVersionTagToBrokerWhenCreatingProcessInstance() {
+    // given
+    final var request = requestWithVersionTag("release-1", false);
+    final var captor = ArgumentCaptor.forClass(BrokerCreateProcessInstanceRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new BrokerResponse<>(new ProcessInstanceCreationRecord())));
+
+    // when
+    services.createProcessInstance(request, authentication).join();
+
+    // then
+    final var record = captor.getValue().getRequestWriter();
+    assertThat(record.getVersionTag()).isEqualTo("release-1");
+    assertThat(record.getBpmnProcessId()).isEqualTo("test-process");
+    assertThat(record.getVersion()).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldForwardVersionTagToBrokerWhenCreatingProcessInstanceWithResult() {
+    // given
+    final var request = requestWithVersionTag("release-1", true);
+    final var captor = ArgumentCaptor.forClass(BrokerCreateProcessInstanceWithResultRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new BrokerResponse<>(new ProcessInstanceResultRecord())));
+
+    // when
+    services.createProcessInstanceWithResult(request, authentication).join();
+
+    // then
+    assertThat(captor.getValue().getRequestWriter().getVersionTag()).isEqualTo("release-1");
+  }
+
+  private static ProcessInstanceServices.ProcessInstanceCreateRequest requestWithVersionTag(
+      final String versionTag, final boolean awaitCompletion) {
+    return new ProcessInstanceServices.ProcessInstanceCreateRequest(
+        -1L, // processDefinitionKey
+        "test-process", // bpmnProcessId
+        -1, // version
+        versionTag, // versionTag
+        null, // variables
+        "<default>", // tenantId
+        awaitCompletion, // awaitCompletion
+        null, // requestTimeout
+        null, // operationReference
+        List.of(), // startInstructions
+        List.of(), // runtimeInstructions
+        List.of(), // fetchVariables
+        null, // tags
+        null // businessId
+        );
+  }
+
+  @Test
   void shouldCreateProcessInstanceWithResultUsingCustomRequestTimeout() {
     // given
     final var request =
@@ -774,6 +831,7 @@ public final class ProcessInstanceServiceTest {
             123L, // processDefinitionKey
             "", // bpmnProcessId
             -1, // version
+            null, // versionTag
             null, // variables
             "<default>", // tenantId
             true, // awaitCompletion
@@ -812,6 +870,7 @@ public final class ProcessInstanceServiceTest {
             123L, // processDefinitionKey
             "", // bpmnProcessId
             -1, // version
+            null, // versionTag
             null, // variables
             "<default>", // tenantId
             true, // awaitCompletion
@@ -851,6 +910,7 @@ public final class ProcessInstanceServiceTest {
             123L, // processDefinitionKey
             "", // bpmnProcessId
             -1, // version
+            null, // versionTag
             null, // variables
             "<default>", // tenantId
             true, // awaitCompletion
@@ -1108,6 +1168,7 @@ public final class ProcessInstanceServiceTest {
           123L, // processDefinitionKey
           "test-process", // bpmnProcessId
           -1, // version
+          null, // versionTag
           null, // variables
           "<default>", // tenantId
           false, // awaitCompletion
@@ -1127,6 +1188,7 @@ public final class ProcessInstanceServiceTest {
           123L, // processDefinitionKey
           "test-process", // bpmnProcessId
           -1, // version
+          null, // versionTag
           null, // variables
           "<default>", // tenantId
           true, // awaitCompletion
