@@ -121,18 +121,32 @@ for (const spec of specs) {
 // top-level import) never becomes a failing spec in the tree — Playwright
 // records it in the report's top-level `errors` instead and exits non-zero.
 // Walking only `suites` would miss it and let the wrapper turn that non-zero
-// exit into a pass. So a changed spec named by such an error blocks, and an
-// error with no file at all (a global-setup or config failure that invalidates
-// the whole run) blocks too, since the run then proves nothing about the
-// changed tests. An error attributable to an untouched spec does not block.
+// exit into a pass. The exemption that keeps untouched tests from blocking
+// applies only to an error located in an untouched *spec* file. Any other
+// error blocks, because it can stop the changed specs from loading:
+//   - a changed spec's own load error;
+//   - a load error in a helper, fixture, page object or config (a non-spec
+//     file), which the changed specs may import;
+//   - an error with no location at all (a global-setup or config failure that
+//     invalidates the whole run).
+const isSpec = (f) => /\.spec\.[jt]s$/.test(f);
 const errorFileBlocking = [];
-let globalError = false;
+let runLevelError = false;
 for (const err of report?.errors ?? []) {
-  const file = err?.location?.file;
-  if (!file) {
-    globalError = true;
-  } else if (changed.has(normalize(file))) {
-    errorFileBlocking.push(normalize(file));
+  const raw = err?.location?.file;
+  if (!raw) {
+    runLevelError = true;
+    continue;
+  }
+  const file = normalize(raw);
+  if (isSpec(file)) {
+    if (changed.has(file)) errorFileBlocking.push(file);
+    // an untouched spec's load error stays non-blocking
+  } else {
+    // a non-spec load error (helper/fixture/config) is not attributable to a
+    // single untouched test and can break the changed specs — block.
+    runLevelError = true;
+    errorFileBlocking.push(file);
   }
 }
 
@@ -144,10 +158,10 @@ const summary = [
   `Changed specs in this PR: ${changed.size}`,
   `Specs executed in this job: ${specs.length}`,
   blocking.length
-    ? `BLOCKING — changed specs that failed or errored:\n  - ${blocking.join('\n  - ')}`
-    : 'BLOCKING — changed specs that failed or errored: none',
-  globalError
-    ? 'BLOCKING — a run-level error with no spec location was reported'
+    ? `BLOCKING — changed specs or load errors:\n  - ${blocking.join('\n  - ')}`
+    : 'BLOCKING — changed specs or load errors: none',
+  runLevelError
+    ? 'BLOCKING — a run-level load error (no spec location, or a helper/fixture) was reported'
     : 'Run-level errors: none',
   nonBlocking.length
     ? `Non-blocking — untouched specs that failed (reported, not gating):\n  - ${nonBlocking.join('\n  - ')}`
@@ -163,9 +177,9 @@ if (process.env.GITHUB_STEP_SUMMARY) {
   );
 }
 
-if (blocking.length || globalError) {
-  const reason = globalError
-    ? 'a run-level error prevented the changed tests from being validated'
+if (blocking.length || runLevelError) {
+  const reason = runLevelError
+    ? 'a run-level load error prevented the changed tests from being validated'
     : `${blocking.length} test(s) this PR added or modified failed`;
   console.error(`::error::${reason}; see the uploaded report.`);
   process.exit(1);
