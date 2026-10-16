@@ -406,6 +406,11 @@ trailer  footerOffset u64 | magic "ZLAE" (4)
 - The codec offers: encode from a list of entries; decode all frames; find the frame offset for a
   position using the footer (for ranged reads).
 
+**Decision (confirmed):** log objects hold the journal entries as they are, byte for byte, including
+Raft-internal entries and the log archive's own records. Restore appends them unchanged. Consumers
+that want individual Zeebe records unwrap frame → Raft entry → record batch through a reader
+library, which becomes a public contract with a version-support promise.
+
 ## 11. Store SPI
 
 ```java
