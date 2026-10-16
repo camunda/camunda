@@ -20,10 +20,10 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
@@ -42,12 +42,12 @@ import org.slf4j.Logger;
  * it writes a follow-up command and no event, the same way {@code
  * ProcessInstanceBatchTerminateProcessor} descends. Once an element instance has no more children
  * left to visit, it is suspended (visitors run, {@link
- * SuspensionBatchIntent#ELEMENT_INSTANCE_SUSPENDED} is appended) and the walk moves straight on to
- * its next sibling under the same parent; only once there is no sibling left does it ascend to the
- * parent, with {@code index} set to the element instance just suspended. The walk completes with
- * {@link ProcessInstanceIntent#SUSPENDED} once the root itself is suspended, since it has no parent
- * to continue to. Called process instances are not children of their call activity in the element
- * instance tree, so the walk does not enter them.
+ * ElementInstanceWalkIntent#ELEMENT_INSTANCE_SUSPENDED} is appended) and the walk moves straight on
+ * to its next sibling under the same parent; only once there is no sibling left does it ascend to
+ * the parent, with {@code index} set to the element instance just suspended. The walk completes
+ * with {@link ProcessInstanceIntent#SUSPENDED} once the root itself is suspended, since it has no
+ * parent to continue to. Called process instances are not children of their call activity in the
+ * element instance tree, so the walk does not enter them.
  *
  * <p>Each visited element instance is passed to every {@link ElementInstanceVisitor}, in order. The
  * order matters, since commands buffered for resume drain in the order they were buffered.
@@ -59,8 +59,9 @@ import org.slf4j.Logger;
  * performance much.
  */
 @ExcludeAuthorizationCheck
-public final class SuspensionBatchSuspendElementInstanceProcessor
-    implements TypedRecordProcessor<SuspensionBatchRecord>, SuspensionAware<SuspensionBatchRecord> {
+public final class ElementInstanceWalkSuspendElementInstanceProcessor
+    implements TypedRecordProcessor<ElementInstanceWalkRecord>,
+        SuspensionAware<ElementInstanceWalkRecord> {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
@@ -83,7 +84,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
   private final SuspensionMetrics suspensionMetrics;
   private final List<ElementInstanceVisitor> visitors;
 
-  public SuspensionBatchSuspendElementInstanceProcessor(
+  public ElementInstanceWalkSuspendElementInstanceProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState,
@@ -103,7 +104,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<SuspensionBatchRecord> command) {
+  public void processRecord(final TypedRecord<ElementInstanceWalkRecord> command) {
     final var value = command.getValue();
     final long processInstanceKey = value.getProcessInstanceKey();
     if (!validateProcessInstance(command, processInstanceKey)) {
@@ -143,17 +144,17 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
   }
 
   @Override
-  public SuspensionAction onSuspended(final TypedRecord<SuspensionBatchRecord> record) {
+  public SuspensionAction onSuspended(final TypedRecord<ElementInstanceWalkRecord> record) {
     return SuspensionAction.PROCESS;
   }
 
   @Override
-  public SuspensionAction onResuming(final TypedRecord<SuspensionBatchRecord> record) {
+  public SuspensionAction onResuming(final TypedRecord<ElementInstanceWalkRecord> record) {
     return SuspensionAction.PROCESS;
   }
 
   private boolean validateProcessInstance(
-      final TypedRecord<SuspensionBatchRecord> command, final long processInstanceKey) {
+      final TypedRecord<ElementInstanceWalkRecord> command, final long processInstanceKey) {
     final var processInstance = elementInstanceState.getInstance(processInstanceKey);
     if (processInstance == null) {
       reject(command, INSTANCE_GONE_MESSAGE.formatted(processInstanceKey));
@@ -178,7 +179,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
 
   /** No (more) children left to visit: suspend the instance itself and continue the walk. */
   private void suspend(
-      final TypedRecord<SuspensionBatchRecord> command,
+      final TypedRecord<ElementInstanceWalkRecord> command,
       final long instanceToSuspendKey,
       final ElementInstance instanceToSuspend) {
     final var value = command.getValue();
@@ -186,7 +187,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
         .filter(v -> v.shouldVisit(instanceToSuspend))
         .forEach(v -> v.visit(instanceToSuspend));
     stateWriter.appendFollowUpEvent(
-        command.getKey(), SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED, value);
+        command.getKey(), ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED, value);
 
     if (isProcessInstance(instanceToSuspendKey, value)) {
       stateWriter.appendFollowUpEvent(
@@ -201,13 +202,15 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
   }
 
   private boolean isProcessInstance(
-      final long elementInstanceKey, final SuspensionBatchRecord value) {
+      final long elementInstanceKey, final ElementInstanceWalkRecord value) {
     return elementInstanceKey == value.getProcessInstanceKey();
   }
 
   /** Descends into {@code childKey}, which starts at its own first child. */
   private void continueWithChild(
-      final TypedRecord<SuspensionBatchRecord> command, final long childKey, final long parentKey) {
+      final TypedRecord<ElementInstanceWalkRecord> command,
+      final long childKey,
+      final long parentKey) {
     appendContinueTraversal(command, childKey, parentKey, NO_KEY);
   }
 
@@ -216,7 +219,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
    * own next step seeks from there.
    */
   private void continueWithParent(
-      final TypedRecord<SuspensionBatchRecord> command,
+      final TypedRecord<ElementInstanceWalkRecord> command,
       final ElementInstance parent,
       final long suspendedChildKey) {
     appendContinueTraversal(command, parent.getKey(), parent.getParentKey(), suspendedChildKey);
@@ -230,7 +233,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
    * root so no remaining element instance is missed.
    */
   private void continueWithNextSiblingOrParent(
-      final TypedRecord<SuspensionBatchRecord> command,
+      final TypedRecord<ElementInstanceWalkRecord> command,
       final long parentKey,
       final long suspendedChildKey) {
     final var parent = parentKey > 0 ? elementInstanceState.getInstance(parentKey) : null;
@@ -248,7 +251,7 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
   }
 
   private void restartFromRoot(
-      final TypedRecord<SuspensionBatchRecord> command,
+      final TypedRecord<ElementInstanceWalkRecord> command,
       final long parentKey,
       final long suspendedChildKey) {
     final long processInstanceKey = command.getValue().getProcessInstanceKey();
@@ -283,13 +286,13 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
   }
 
   private void appendContinueTraversal(
-      final TypedRecord<SuspensionBatchRecord> command,
+      final TypedRecord<ElementInstanceWalkRecord> command,
       final long elementInstanceKey,
       final long parentKey,
       final long index) {
     final var value = command.getValue();
     final var record =
-        new SuspensionBatchRecord()
+        new ElementInstanceWalkRecord()
             .setProcessInstanceKey(value.getProcessInstanceKey())
             .setProcessDefinitionKey(value.getProcessDefinitionKey())
             .setStorageOrdinal(value.getStorageOrdinal())
@@ -297,10 +300,10 @@ public final class SuspensionBatchSuspendElementInstanceProcessor
             .setParentKey(parentKey)
             .setIndex(index);
     commandWriter.appendFollowUpCommand(
-        command.getKey(), SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE, record);
+        command.getKey(), ElementInstanceWalkIntent.SUSPEND_ELEMENT_INSTANCE, record);
   }
 
-  private void reject(final TypedRecord<SuspensionBatchRecord> command, final String reason) {
+  private void reject(final TypedRecord<ElementInstanceWalkRecord> command, final String reason) {
     rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
   }
 }

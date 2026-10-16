@@ -17,11 +17,11 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
@@ -197,14 +197,14 @@ public class EventAppliersTest {
   }
 
   @Test
-  void shouldReplaySuspensionBatchAcknowledgementWithoutChangingState() {
+  void shouldReplayElementInstanceWalkAcknowledgementWithoutChangingState() {
     // given
     final var state = mock(MutableProcessingState.class);
     eventAppliers.registerEventAppliers(state);
     Mockito.clearInvocations(state);
-    final var intent = SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED;
+    final var intent = ElementInstanceWalkIntent.ELEMENT_INSTANCE_SUSPENDED;
     final var value =
-        new SuspensionBatchRecord()
+        new ElementInstanceWalkRecord()
             .setProcessInstanceKey(123L)
             .setProcessDefinitionKey(234L)
             .setElementInstanceKey(456L)

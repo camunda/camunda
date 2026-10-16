@@ -19,10 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.protocol.record.ValueTypeMapping.Mapping;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
-import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
 import java.util.EnumSet;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -81,15 +81,15 @@ final class ValueTypeMappingTest {
   }
 
   @Test
-  void shouldMapSuspensionBatchRecord() {
+  void shouldMapElementInstanceWalkRecord() {
     // when
-    final Mapping<?, ?> mapping = ValueTypeMapping.get(ValueType.SUSPENSION_BATCH);
+    final Mapping<?, ?> mapping = ValueTypeMapping.get(ValueType.ELEMENT_INSTANCE_WALK);
 
     // then
-    assertThat(mapping.getValueClass()).isEqualTo(SuspensionBatchRecordValue.class);
-    assertThat(mapping.getIntentClass()).isEqualTo(SuspensionBatchIntent.class);
+    assertThat(mapping.getValueClass()).isEqualTo(ElementInstanceWalkRecordValue.class);
+    assertThat(mapping.getIntentClass()).isEqualTo(ElementInstanceWalkIntent.class);
     assertThat(ProcessInstanceRelated.class).isAssignableFrom(mapping.getValueClass());
-    assertThat(ValueTypes.isUserCommand(ValueType.SUSPENSION_BATCH)).isFalse();
-    assertThat(ValueType.SUSPENSION_BATCH.value()).isEqualTo((short) 79);
+    assertThat(ValueTypes.isUserCommand(ValueType.ELEMENT_INSTANCE_WALK)).isFalse();
+    assertThat(ValueType.ELEMENT_INSTANCE_WALK.value()).isEqualTo((short) 79);
   }
 }
