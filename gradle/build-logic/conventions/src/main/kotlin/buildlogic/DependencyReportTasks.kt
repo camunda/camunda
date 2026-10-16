@@ -41,8 +41,8 @@ abstract class PrintGradleDependencyReportTask : DefaultTask() {
           "third_party" to thirdParty.get(),
           "direct_third_party" to directThirdParty.get(),
           "internal" to internal.get(),
-        )
-      )
+        ),
+      ),
     )
   }
 }
