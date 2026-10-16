@@ -588,6 +588,7 @@ final class ClusterConfigurationGossiperTest {
                   0,
                   Duration.ofSeconds(1),
                   Duration.ofSeconds(1)),
+              null,
               receivedConfigurations::add,
               topologyMetrics);
     }
