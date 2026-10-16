@@ -69,6 +69,7 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
   private final Supplier<String> timelineResolver;
   private final long cutMaxBytes;
   private final Duration cutInterval;
+  private final Duration idleCutInterval;
   private final AtomicBoolean wakeUpScheduled = new AtomicBoolean();
 
   // all fields below are only accessed on the actor thread
@@ -82,6 +83,8 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
   private long nextReadIndex = -1;
   private final List<LogArchiveFrame> pending = new ArrayList<>();
   private long pendingBytes;
+  // true once a pending entry carries a record of another value type than LOG_ARCHIVE
+  private boolean pendingHasForeignEntry;
   private @Nullable InFlight inFlight;
   private long lastCutMillis;
   private long epoch;
@@ -94,6 +97,8 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
    *     called on the actor when recovering
    * @param cutMaxBytes cut an object once the pending entries reach this size
    * @param cutInterval cut an object at least this often while entries are pending
+   * @param idleCutInterval cut an object at least this often while all pending entries are the log
+   *     archive's own (see {@link LogArchiverEntry#archiveOwn()})
    */
   public LogArchiver(
       final int partitionId,
@@ -103,7 +108,8 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
       final LogArchiverEntrySource source,
       final Supplier<String> timelineResolver,
       final long cutMaxBytes,
-      final Duration cutInterval) {
+      final Duration cutInterval,
+      final Duration idleCutInterval) {
     super(
         buildActorName("LogArchiver", partitionId),
         null,
@@ -114,6 +120,10 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
     if (cutInterval.isNegative() || cutInterval.isZero()) {
       throw new IllegalArgumentException("cutInterval must be positive, but was " + cutInterval);
     }
+    if (idleCutInterval.isNegative() || idleCutInterval.isZero()) {
+      throw new IllegalArgumentException(
+          "idleCutInterval must be positive, but was " + idleCutInterval);
+    }
     this.partitionId = partitionId;
     this.term = term;
     this.store = store;
@@ -122,6 +132,7 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
     this.timelineResolver = timelineResolver;
     this.cutMaxBytes = cutMaxBytes;
     this.cutInterval = cutInterval;
+    this.idleCutInterval = idleCutInterval;
   }
 
   @Override
@@ -278,7 +289,8 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
     }
     state = State.READING;
     while (pendingBytes < cutMaxBytes && source.hasNext()) {
-      final var frame = source.next();
+      final var entry = source.next();
+      final var frame = entry.frame();
       if (frame.index() != nextReadIndex) {
         LOG.error(
             "Partition {}: expected to read index {} from the committed log, but got {}; retrying in {}",
@@ -294,12 +306,18 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
       }
       pending.add(frame);
       pendingBytes += FRAME_OVERHEAD_BYTES + frame.serializedRecord().length;
+      pendingHasForeignEntry |= !entry.archiveOwn();
       nextReadIndex++;
     }
 
+    // Every cut is followed by ARCHIVE_LOG and LOG_ARCHIVED (and, now and then, other LOG_ARCHIVE
+    // records), which are committed entries themselves. Cutting them on cutInterval would make an
+    // idle partition archive its own bookkeeping forever, so entries that hold nothing else wait
+    // for idleCutInterval. They are still archived, in order, with the next cut.
     final boolean sizeReached = pendingBytes >= cutMaxBytes;
+    final Duration interval = pendingHasForeignEntry ? cutInterval : idleCutInterval;
     final boolean intervalElapsed =
-        ActorClock.currentTimeMillis() - lastCutMillis >= cutInterval.toMillis();
+        ActorClock.currentTimeMillis() - lastCutMillis >= interval.toMillis();
     if (pending.isEmpty() || !(sizeReached || intervalElapsed)) {
       state = State.IDLE;
       return;
@@ -477,6 +495,7 @@ public final class LogArchiver extends Actor implements LogArchiveListener, Comm
   private void clearPending() {
     pending.clear();
     pendingBytes = 0;
+    pendingHasForeignEntry = false;
   }
 
   /** The state of the archiver; visible for tests. */

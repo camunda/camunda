@@ -60,6 +60,7 @@ Nested in the existing backup config, `zeebe.broker.data.backup.logArchive.*`:
 | `timeline` | `tl-0` | Timeline id used when no timeline file exists in the partition directory. |
 | `cutMaxBytes` | `16MB` | Cut an object when it reaches this size. |
 | `cutInterval` | `PT2S` | Cut an object at least this often while there are committed, unarchived entries. |
+| `idleCutInterval` | `PT5M` | Cut an object at least this often while every committed, unarchived entry holds only `LOG_ARCHIVE` records or is a non-application Raft entry (section 8.1). |
 | `snapshotUploadInterval` | `PT30M` | How often the newest local snapshot is uploaded. |
 | `chunkSize` | `1000` | Objects per sealed index chunk. |
 | `rootEvery` | `100` | Write a root every this many commit entries (and on every seal). |
@@ -257,8 +258,17 @@ States: `IDLE → READING → UPLOADING → AWAIT_COMMIT → IDLE`. One object i
   write `START_TIMELINE` with `startIndex` = the reader's first index, then wait for
   `onTimelineStarted`.
 - `READING`: read entries `A+1 …` from the committed reader until `cutMaxBytes` or no more committed
-  entries. Skip the cut if nothing is read. If `cutInterval` has not passed and the size limit was not
-  reached, go back to `IDLE` and wait.
+  entries. Skip the cut if nothing is read. If the cut interval has not passed since the last cut and
+  the size limit was not reached, go back to `IDLE` and wait.
+- Cut interval: `cutInterval` as soon as one pending entry (committed, not yet archived) holds a
+  record of another value type than `LOG_ARCHIVE`, otherwise `idleCutInterval`. Every cut is
+  followed by `ARCHIVE_LOG`/`LOG_ARCHIVED` (and now and then `CONFIRM_PUBLISHED`/`PUBLISHED`,
+  `SEAL_INDEX`/`INDEX_SEALED`, rejections), which are committed entries themselves; cutting them on
+  `cutInterval` would make an idle partition archive its own bookkeeping forever. Such entries are
+  still archived, contiguously, by the next cut. The Raft adapter reads the value type of every
+  record of an application entry (record metadata, as the log stream reader does) and passes the
+  result next to the frame; the object format does not change. Non-application entries (e.g. a
+  leader's initial entry) count as the archive's own.
 - `UPLOADING`: encode with the codec (section 10), PUT `data/<firstIndex>-<lastIndex>-t<term>.rec`,
   where `term` is the leader's current term.
 - `AWAIT_COMMIT`: write `ARCHIVE_LOG` with the object. On `onLogArchived`, set `A` to the new F and go

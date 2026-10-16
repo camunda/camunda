@@ -26,6 +26,7 @@ public class LogArchiveCfg implements ConfigurationEntry {
   private String timeline = "tl-0";
   private DataSize cutMaxBytes = DataSize.ofMegabytes(16);
   private Duration cutInterval = Duration.ofSeconds(2);
+  private Duration idleCutInterval = Duration.ofMinutes(5);
   private Duration snapshotUploadInterval = Duration.ofMinutes(30);
   private int chunkSize = 1000;
   private int rootEvery = 100;
@@ -61,6 +62,19 @@ public class LogArchiveCfg implements ConfigurationEntry {
 
   public void setCutInterval(final Duration cutInterval) {
     this.cutInterval = cutInterval;
+  }
+
+  /**
+   * How often an object is cut while every committed, unarchived entry holds only the log archive's
+   * own records. Archiving produces such entries itself, so cutting them on {@link #cutInterval}
+   * would keep an idle partition uploading forever.
+   */
+  public Duration getIdleCutInterval() {
+    return idleCutInterval;
+  }
+
+  public void setIdleCutInterval(final Duration idleCutInterval) {
+    this.idleCutInterval = idleCutInterval;
   }
 
   public Duration getSnapshotUploadInterval() {
@@ -99,6 +113,8 @@ public class LogArchiveCfg implements ConfigurationEntry {
         + cutMaxBytes
         + ", cutInterval="
         + cutInterval
+        + ", idleCutInterval="
+        + idleCutInterval
         + ", snapshotUploadInterval="
         + snapshotUploadInterval
         + ", chunkSize="

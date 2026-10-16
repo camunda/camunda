@@ -32,11 +32,13 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +56,7 @@ final class LogArchiverTest {
   private static final int RECORD_BYTES = 100;
   private static final int FRAME_BYTES = 6 * Long.BYTES + Integer.BYTES + RECORD_BYTES;
   private static final Duration CUT_INTERVAL = Duration.ofSeconds(2);
+  private static final Duration IDLE_CUT_INTERVAL = Duration.ofSeconds(60);
 
   @RegisterExtension
   private final ControlledActorSchedulerExtension scheduler =
@@ -144,6 +147,93 @@ final class LogArchiverTest {
     // then
     assertThat(written).isEmpty();
     assertThat(store.keys()).isEmpty();
+  }
+
+  @Test
+  void shouldNotCutOnCutIntervalWhileOnlyOwnEntriesArePending() {
+    // given - two committed entries holding nothing but log archive records
+    startArchiver(1024 * 1024, () -> TIMELINE);
+    source.markOwn(1, 2);
+    source.commit(2);
+    recover(TIMELINE, 0);
+
+    // when
+    scheduler.updateClock(CUT_INTERVAL.multipliedBy(5));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(written).isEmpty();
+    assertThat(store.keys()).isEmpty();
+  }
+
+  @Test
+  void shouldCutOwnEntriesAfterIdleCutInterval() {
+    // given
+    startArchiver(1024 * 1024, () -> TIMELINE);
+    source.markOwn(1, 2);
+    source.commit(2);
+    recover(TIMELINE, 0);
+
+    // when
+    scheduler.updateClock(IDLE_CUT_INTERVAL);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(archiveLogRanges()).containsExactly(range(1, 2));
+  }
+
+  @Test
+  void shouldCutOnCutIntervalOnceAnotherEntryIsPending() {
+    // given - own entries wait
+    startArchiver(1024 * 1024, () -> TIMELINE);
+    source.markOwn(1, 2);
+    source.commit(2);
+    recover(TIMELINE, 0);
+    scheduler.updateClock(CUT_INTERVAL);
+    scheduler.workUntilDone();
+    assertThat(written).isEmpty();
+
+    // when - an entry with other records is committed
+    source.commit(3);
+    archiver.onCommit();
+    scheduler.updateClock(CUT_INTERVAL);
+    scheduler.workUntilDone();
+
+    // then - the whole pending range is cut by the normal rule
+    assertThat(archiveLogRanges()).containsExactly(range(1, 3));
+  }
+
+  @Test
+  void shouldNotFeedItselfWhenIdleButKeepRangesContiguous() {
+    // given - load: entries 1..3 are cut on cutInterval
+    startArchiver(1024 * 1024, () -> TIMELINE);
+    source.commit(3);
+    recover(TIMELINE, 0);
+    scheduler.updateClock(CUT_INTERVAL);
+    scheduler.workUntilDone();
+    assertThat(archiveLogRanges()).containsExactly(range(1, 3));
+
+    // when - committing the cut produces own entries 4..5 (ARCHIVE_LOG, LOG_ARCHIVED)
+    source.markOwn(4, 5);
+    source.commit(5);
+    acknowledgeLastArchiveLog();
+    scheduler.updateClock(CUT_INTERVAL.multipliedBy(10));
+    scheduler.workUntilDone();
+
+    // then - nothing is cut while idle
+    assertThat(archiveLogRanges()).containsExactly(range(1, 3));
+
+    // when - the idle interval passes, then the cut's own entries and new load arrive
+    scheduler.updateClock(IDLE_CUT_INTERVAL);
+    scheduler.workUntilDone();
+    source.markOwn(6, 7);
+    source.commit(8);
+    acknowledgeLastArchiveLog();
+    scheduler.updateClock(CUT_INTERVAL);
+    scheduler.workUntilDone();
+
+    // then - every entry is archived, contiguous from the first one
+    assertThat(archiveLogRanges()).containsExactly(range(1, 3), range(4, 5), range(6, 8));
   }
 
   @Test
@@ -438,7 +528,15 @@ final class LogArchiverTest {
   private void startArchiver(final long cutMaxBytes, final Supplier<String> timeline) {
     archiver =
         new LogArchiver(
-            PARTITION, TERM, store, writer, source, timeline, cutMaxBytes, CUT_INTERVAL);
+            PARTITION,
+            TERM,
+            store,
+            writer,
+            source,
+            timeline,
+            cutMaxBytes,
+            CUT_INTERVAL,
+            IDLE_CUT_INTERVAL);
     scheduler.submitActor(archiver);
     scheduler.workUntilDone();
   }
@@ -481,8 +579,12 @@ final class LogArchiverTest {
 
   private record Written(LogArchiveIntent intent, LogArchiveRecord record) {}
 
-  /** Committed log with entries {@code firstIndex..commitIndex}; all are application entries. */
+  /**
+   * Committed log with entries {@code firstIndex..commitIndex}; all are application entries, and
+   * those marked with {@link #markOwn} hold only log archive records.
+   */
   private static final class FakeEntrySource implements LogArchiverEntrySource {
+    private final Set<Long> ownIndexes = new HashSet<>();
     private long firstIndex = 1;
     private long commitIndex;
     private long nextIndex = 1;
@@ -495,6 +597,12 @@ final class LogArchiverTest {
 
     void commit(final long index) {
       commitIndex = index;
+    }
+
+    void markOwn(final long first, final long last) {
+      for (long index = first; index <= last; index++) {
+        ownIndexes.add(index);
+      }
     }
 
     LogArchiveFrame frame(final long index) {
@@ -520,8 +628,9 @@ final class LogArchiverTest {
     }
 
     @Override
-    public LogArchiveFrame next() {
-      return frame(nextIndex++);
+    public LogArchiverEntry next() {
+      final long index = nextIndex++;
+      return new LogArchiverEntry(frame(index), ownIndexes.contains(index));
     }
 
     @Override

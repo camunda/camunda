@@ -126,7 +126,8 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             new LogArchiverRaftEntrySource(context.getRaftPartition().getServer().openReader()),
             () -> LogArchiverTimeline.resolve(partitionDirectory, cfg.getTimeline()),
             cfg.getCutMaxBytes().toBytes(),
-            cfg.getCutInterval());
+            cfg.getCutInterval(),
+            cfg.getIdleCutInterval());
     final var uploader =
         new SnapshotUploader(
             partitionId,
