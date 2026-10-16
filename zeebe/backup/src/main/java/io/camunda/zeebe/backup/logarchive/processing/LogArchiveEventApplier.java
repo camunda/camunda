@@ -9,7 +9,6 @@ package io.camunda.zeebe.backup.logarchive.processing;
 
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
-import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CoveredCheckpoint;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
@@ -34,15 +33,10 @@ final class LogArchiveEventApplier {
 
   private final int partitionId;
   private final DbLogArchiveState state;
-  private final DbCheckpointMetadataState checkpointMetadataState;
 
-  LogArchiveEventApplier(
-      final int partitionId,
-      final DbLogArchiveState state,
-      final DbCheckpointMetadataState checkpointMetadataState) {
+  LogArchiveEventApplier(final int partitionId, final DbLogArchiveState state) {
     this.partitionId = partitionId;
     this.state = state;
-    this.checkpointMetadataState = checkpointMetadataState;
   }
 
   /**
@@ -106,8 +100,9 @@ final class LogArchiveEventApplier {
       meta.setArchivedPosition(Math.max(meta.getArchivedPosition(), object.getLastPosition()));
     }
 
-    final var covered = collectCoveredCheckpoints(meta, objects);
-    final var attached = attach(objects, covered);
+    final var attached = new ArrayList<List<CoveredCheckpoint>>();
+    objects.forEach(object -> attached.add(new ArrayList<>()));
+    final var covered = coverPendingCheckpoints(meta, objects, attached);
     for (int i = 0; i < objects.size(); i++) {
       state.insertOpenObject(objects.get(i), attached.get(i));
     }
@@ -120,69 +115,60 @@ final class LogArchiveEventApplier {
   }
 
   /**
-   * Walks the checkpoints in id order past the last covered one, up to F. Checkpoints before the
-   * first archived position, or whose position lies in none of this event's objects (they became
-   * visible only after their objects were archived), are skipped; either way the walk moves on past
-   * them. This keeps every listed checkpoint inside the position range of the chunk listing it.
-   * Advances {@code lastCoveredCheckpointId} in the given meta.
+   * Takes the pending checkpoints up to F in id order and removes them from the pending ones.
+   * Checkpoints taken before the first archived position are dropped. Every other one is attached
+   * to the object of this event that contains its position, so that a chunk's checkpoints are a
+   * function of its objects alone, and it is returned as covered.
+   *
+   * <p>A checkpoint is pending from its {@code CREATED} event on. Commands are processed in log
+   * order, so that event always precedes the {@code LOG_ARCHIVED} event that archives the
+   * checkpoint's position: a pending checkpoint up to F lies in an object of this event. If not, an
+   * invariant is broken, and this fails instead of silently not listing the checkpoint.
    */
-  private List<CoveredCheckpoint> collectCoveredCheckpoints(
-      final LogArchiveMeta meta, final List<LogObjectValue> objects) {
+  private List<CoveredCheckpoint> coverPendingCheckpoints(
+      final LogArchiveMeta meta,
+      final List<LogObjectValue> objects,
+      final List<List<CoveredCheckpoint>> attached) {
     final var covered = new ArrayList<CoveredCheckpoint>();
-    final long archivedPosition = meta.getArchivedPosition();
-    final long firstArchivedPosition = meta.getFirstArchivedPosition();
-    final long[] lastCovered = {meta.getLastCoveredCheckpointId()};
-
-    checkpointMetadataState.visitCheckpointsAfter(
-        meta.getLastCoveredCheckpointId(),
-        checkpoint -> {
-          if (checkpoint.checkpointPosition() > archivedPosition) {
-            return false;
-          }
-          lastCovered[0] = checkpoint.checkpointId();
-          if (checkpoint.checkpointPosition() >= firstArchivedPosition
-              && isWithinAnObject(objects, checkpoint.checkpointPosition())) {
-            covered.add(
-                new CoveredCheckpoint()
-                    .setCheckpointId(checkpoint.checkpointId())
-                    .setCheckpointPosition(checkpoint.checkpointPosition())
-                    .setCheckpointType(checkpoint.checkpointType()));
-          }
-          return true;
-        });
-
-    meta.setLastCoveredCheckpointId(lastCovered[0]);
+    for (final var checkpoint : state.pendingCheckpointsUpTo(meta.getArchivedPosition())) {
+      state.deletePendingCheckpoint(checkpoint.getCheckpointId());
+      final long position = checkpoint.getCheckpointPosition();
+      if (position < meta.getFirstArchivedPosition()) {
+        continue;
+      }
+      final int objectIndex = indexOfObjectContaining(objects, position);
+      if (objectIndex < 0) {
+        throw new IllegalStateException(
+            "Expected checkpoint %d at position %d to lie in an object of this LOG_ARCHIVED event, but it lies in none of %s (first archived position %d, archived position %d); its CREATED event must precede the event archiving its position"
+                .formatted(
+                    checkpoint.getCheckpointId(),
+                    position,
+                    objects.stream()
+                        .map(
+                            object ->
+                                "[%d..%d]"
+                                    .formatted(object.getFirstPosition(), object.getLastPosition()))
+                        .toList(),
+                    meta.getFirstArchivedPosition(),
+                    meta.getArchivedPosition()));
+      }
+      attached.get(objectIndex).add(checkpoint);
+      covered.add(checkpoint);
+    }
     return covered;
   }
 
-  private static boolean isWithinAnObject(final List<LogObjectValue> objects, final long position) {
-    return objects.stream()
-        .anyMatch(
-            object ->
-                object.getFirstPosition() >= 0
-                    && object.getFirstPosition() <= position
-                    && position <= object.getLastPosition());
-  }
-
-  /**
-   * Attaches each covered checkpoint to the first object of this event that reaches its position,
-   * so that a chunk's checkpoints are a function of its objects alone. Checkpoints can be deleted
-   * from the CHECKPOINTS column family later, the attached copies cannot.
-   */
-  private static List<List<CoveredCheckpoint>> attach(
-      final List<LogObjectValue> objects, final List<CoveredCheckpoint> covered) {
-    final var attached = new ArrayList<List<CoveredCheckpoint>>();
-    objects.forEach(object -> attached.add(new ArrayList<>()));
-    for (final var checkpoint : covered) {
-      for (int i = 0; i < objects.size(); i++) {
-        final long lastPosition = objects.get(i).getLastPosition();
-        if (lastPosition >= 0 && lastPosition >= checkpoint.getCheckpointPosition()) {
-          attached.get(i).add(checkpoint);
-          break;
-        }
+  private static int indexOfObjectContaining(
+      final List<LogObjectValue> objects, final long position) {
+    for (int i = 0; i < objects.size(); i++) {
+      final var object = objects.get(i);
+      if (object.getFirstPosition() >= 0
+          && object.getFirstPosition() <= position
+          && position <= object.getLastPosition()) {
+        return i;
       }
     }
-    return attached;
+    return -1;
   }
 
   private void applySnapshotArchived(final LogArchiveRecord event) {

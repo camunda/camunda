@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
 import io.camunda.zeebe.protocol.impl.record.value.management.CoveredCheckpoint;
 import io.camunda.zeebe.protocol.impl.record.value.management.IndexChunk;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogObject;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.protocol.record.value.management.LogArchiveRecordValue.ArchivedSnapshotValue;
 import io.camunda.zeebe.protocol.record.value.management.LogArchiveRecordValue.CoveredCheckpointValue;
 import io.camunda.zeebe.protocol.record.value.management.LogArchiveRecordValue.IndexChunkValue;
@@ -61,6 +62,12 @@ public final class DbLogArchiveState {
   private final OutboxDbValue outboxValue = new OutboxDbValue();
   private final ColumnFamily<DbLong, OutboxDbValue> outboxColumnFamily;
 
+  private final DbLong pendingCheckpointKey = new DbLong();
+  private final ObjectDbValue<CoveredCheckpoint> pendingCheckpointValue =
+      new ObjectDbValue<>(CoveredCheckpoint::new);
+  private final ColumnFamily<DbLong, ObjectDbValue<CoveredCheckpoint>>
+      pendingCheckpointsColumnFamily;
+
   public DbLogArchiveState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     metaKey.wrapString(META_KEY);
@@ -82,6 +89,12 @@ public final class DbLogArchiveState {
     outboxColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.LOG_ARCHIVE_OUTBOX, transactionContext, outboxKey, outboxValue);
+    pendingCheckpointsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.LOG_ARCHIVE_PENDING_CHECKPOINTS,
+            transactionContext,
+            pendingCheckpointKey,
+            pendingCheckpointValue);
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -158,6 +171,21 @@ public final class DbLogArchiveState {
     return result;
   }
 
+  /**
+   * The pending checkpoints, i.e. created but not yet covered by a {@code LOG_ARCHIVED} event, with
+   * a position up to {@code maxPosition}, in checkpoint id order.
+   */
+  public List<CoveredCheckpoint> pendingCheckpointsUpTo(final long maxPosition) {
+    final var result = new ArrayList<CoveredCheckpoint>();
+    pendingCheckpointsColumnFamily.forEach(
+        value -> {
+          if (value.value().getCheckpointPosition() <= maxPosition) {
+            result.add(new CoveredCheckpoint().copy(value.value()));
+          }
+        });
+    return result;
+  }
+
   // ---------------------------------------------------------------------------------------------
   // Mutations: appliers only
   // ---------------------------------------------------------------------------------------------
@@ -211,13 +239,34 @@ public final class DbLogArchiveState {
         });
   }
 
-  /** Deletes every log archive row including the meta row. */
+  /**
+   * Records a created checkpoint until a {@code LOG_ARCHIVED} event covers it. Called by the
+   * checkpoint {@code CREATED} applier.
+   */
+  public void insertPendingCheckpoint(
+      final long checkpointId, final long checkpointPosition, final CheckpointType checkpointType) {
+    pendingCheckpointKey.wrapLong(checkpointId);
+    pendingCheckpointValue
+        .value()
+        .setCheckpointId(checkpointId)
+        .setCheckpointPosition(checkpointPosition)
+        .setCheckpointType(checkpointType);
+    pendingCheckpointsColumnFamily.upsert(pendingCheckpointKey, pendingCheckpointValue);
+  }
+
+  public void deletePendingCheckpoint(final long checkpointId) {
+    pendingCheckpointKey.wrapLong(checkpointId);
+    pendingCheckpointsColumnFamily.deleteExisting(pendingCheckpointKey);
+  }
+
+  /** Deletes every log archive row including the meta row and the pending checkpoints. */
   public void clearAll() {
     clear(metaColumnFamily);
     clear(openObjectsColumnFamily);
     clear(chunksColumnFamily);
     clear(snapshotsColumnFamily);
     clear(outboxColumnFamily);
+    clear(pendingCheckpointsColumnFamily);
   }
 
   private static <K extends DbKey, V extends DbValue> void clear(

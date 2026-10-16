@@ -69,6 +69,8 @@ The store type and its connection settings come from the existing backup config 
 
 When `logArchive.enabled` is true, checkpoint metadata tracking (the `CHECKPOINTS` column family) is
 enabled too, the same as for `continuous`: `trackBackupMetadata = continuous || logArchive.enabled`.
+The log archive does not take its covered checkpoints from there, though, but from
+`LOG_ARCHIVE_PENDING_CHECKPOINTS` (`trackLogArchiveCheckpoints = logArchive.enabled`, section 5).
 
 ## 4. Protocol
 
@@ -136,11 +138,19 @@ New partition-local column families in `ZbColumnFamilies` (next free numbers):
 | `LOG_ARCHIVE_CHUNKS` | `chunkNo` (long) | `IndexChunk` |
 | `LOG_ARCHIVE_SNAPSHOTS` | archive `seq` (long) | `ArchivedSnapshot` |
 | `LOG_ARCHIVE_OUTBOX` | `seq` (long) | commit entry JSON bytes (section 9.2) |
+| `LOG_ARCHIVE_PENDING_CHECKPOINTS` | `checkpointId` (long) | `checkpointPosition`, `checkpointType` |
 
 `LogArchiveMeta` fields: `timelineId`, `parentTimelineId`, `startIndex`, `archivedIndex` (F index,
 `startIndex - 1` initially), `archivedPosition` (F position, -1 until the first application entry is
 archived), `nextSeq` (starts at 1), `lastPublishedSeq` (0), `nextChunkNo` (1),
-`lastCoveredCheckpointId` (-1), `firstArchivedPosition` (-1).
+`firstArchivedPosition` (-1).
+
+`LOG_ARCHIVE_PENDING_CHECKPOINTS` holds every checkpoint that was created but is not yet covered by a
+`LOG_ARCHIVED` event. With the log archive enabled, the checkpoint `CREATED` applier
+(`CheckpointCreatedEventApplier`, flag `trackLogArchiveCheckpoints`) inserts every created
+checkpoint, of any type, when processing and when replaying. It does not depend on the
+`CHECKPOINTS` column family of the old backup mechanism, which holds a backup checkpoint only once
+its backup is confirmed.
 
 `DbLogArchiveState` exposes read methods (used by appliers, the processor, the compaction cap) and
 mutation methods (used only by appliers). The compaction cap opens its own read-only instance on the
@@ -162,10 +172,10 @@ into the event record. The applier also stores the commit entry JSON for that se
 ### `START_TIMELINE`
 
 - Valid when `timelineId` is non-empty and differs from `meta.timelineId`, and `startIndex > 0`.
-- Applier: clear all log archive column families, then set meta to the new timeline: `startIndex`,
-  `archivedIndex = startIndex - 1`, `archivedPosition = -1`, `nextSeq = 1`, `lastPublishedSeq = 0`,
-  `nextChunkNo = 1`, `lastCoveredCheckpointId = -1`, `firstArchivedPosition = -1`. Then take seq 1
-  for this event.
+- Applier: clear all log archive column families, including `LOG_ARCHIVE_PENDING_CHECKPOINTS`, then
+  set meta to the new timeline: `startIndex`, `archivedIndex = startIndex - 1`,
+  `archivedPosition = -1`, `nextSeq = 1`, `lastPublishedSeq = 0`, `nextChunkNo = 1`,
+  `firstArchivedPosition = -1`. Then take seq 1 for this event.
 
 ### `ARCHIVE_LOG`
 
@@ -176,10 +186,14 @@ into the event record. The applier also stores the commit entry JSON for that se
 - Applier: insert each object into `LOG_ARCHIVE_OPEN_OBJECTS`; set `archivedIndex` to the last
   object's `lastIndex` and, if any object has application entries, `archivedPosition` to the highest
   `lastPosition`; set `firstArchivedPosition` from the first object with application entries if it
-  is still -1; collect covered checkpoints: walk the `CHECKPOINTS` column family in id order from
-  `lastCoveredCheckpointId`, stop at the first entry with `checkpointPosition > archivedPosition`;
-  entries with `checkpointPosition >= firstArchivedPosition` are covered (written into the event),
-  older ones are skipped; advance `lastCoveredCheckpointId` past every visited entry.
+  is still -1; collect covered checkpoints: take every entry of `LOG_ARCHIVE_PENDING_CHECKPOINTS`
+  with `checkpointPosition <= archivedPosition`, in id order, and delete it. An entry with
+  `checkpointPosition < firstArchivedPosition` was taken before the archive started and is dropped.
+  Every other entry is covered: it is written into the event and attached to the object of this
+  event that contains its position (`firstPosition <= checkpointPosition <= lastPosition`). Commands
+  are processed in log order, so a checkpoint's `CREATED` event always precedes the `LOG_ARCHIVED`
+  event that archives its position, and such an object always exists. If none does, an invariant is
+  broken: the applier throws instead of silently not listing the checkpoint.
 - Sealing trigger: if the open chunk now holds at least `chunkSize` objects, the processor's
   post-commit task also hands the chunk to the publisher (section 8.3).
 
@@ -452,7 +466,9 @@ Restore (W9, merged) validates everything it reads and fails loudly. Writers mus
   object must start at F + 1.
 - **Seq 1** of a timeline is `TIMELINE_STARTED`.
 - **Chunk checkpoints:** a chunk file lists every covered checkpoint with position in
-  `[firstPosition, lastPosition]`; `firstCheckpointId`/`lastCheckpointId` are the min/max of exactly
+  `[firstPosition, lastPosition]`; covered are all checkpoints, of any type, created on this
+  timeline at or after the first archived position, taken from their `CREATED` events
+  independently of whether an old-style backup of them was confirmed (section 6, `ARCHIVE_LOG`); `firstCheckpointId`/`lastCheckpointId` are the min/max of exactly
   those (-1 if none). Root `openCheckpoints` holds every covered checkpoint not in a sealed chunk.
 - **Checksums:** `IndexChunk.sha256` is the hash of exactly the bytes stored at `chunk.key`;
   `LogObject.sizeBytes`/`sha256` describe exactly the bytes stored at the object key.

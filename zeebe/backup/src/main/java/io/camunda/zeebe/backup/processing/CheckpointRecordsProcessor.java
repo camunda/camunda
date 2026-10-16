@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
@@ -44,6 +45,7 @@ public final class CheckpointRecordsProcessor
 
   private final BackupManager backupManager;
   private final boolean trackBackupMetadata;
+  private final boolean trackLogArchiveCheckpoints;
 
   @SuppressWarnings("NullAway.Init")
   private CheckpointCreateProcessor checkpointCreateProcessor;
@@ -83,9 +85,11 @@ public final class CheckpointRecordsProcessor
   public CheckpointRecordsProcessor(
       final BackupManager backupManager,
       final MeterRegistry registry,
-      final boolean trackBackupMetadata) {
+      final boolean trackBackupMetadata,
+      final boolean trackLogArchiveCheckpoints) {
     this.backupManager = backupManager;
     this.trackBackupMetadata = trackBackupMetadata;
+    this.trackLogArchiveCheckpoints = trackLogArchiveCheckpoints;
     metrics = new CheckpointMetrics(registry);
   }
 
@@ -125,7 +129,14 @@ public final class CheckpointRecordsProcessor
     }
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(
-            checkpointState, checkpointMetadataState, checkpointListeners, trackBackupMetadata);
+            checkpointState,
+            checkpointMetadataState,
+            new DbLogArchiveState(
+                recordProcessorContext.getZeebeDb(),
+                recordProcessorContext.getTransactionContext()),
+            checkpointListeners,
+            trackBackupMetadata,
+            trackLogArchiveCheckpoints);
     checkpointBackupConfirmedApplier =
         new CheckpointBackupConfirmedApplier(
             checkpointState, checkpointMetadataState, backupRangeState, trackBackupMetadata);

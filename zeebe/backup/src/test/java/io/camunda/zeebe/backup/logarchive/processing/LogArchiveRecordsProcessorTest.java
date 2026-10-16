@@ -16,6 +16,7 @@ import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.se
 import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.snapshot;
 import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.startTimeline;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
 import io.camunda.zeebe.backup.logarchive.model.IndexChunkFile;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.management.IndexChunk;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -82,7 +84,6 @@ final class LogArchiveRecordsProcessorTest {
     assertThat(meta.getNextSeq()).isEqualTo(2);
     assertThat(meta.getLastPublishedSeq()).isZero();
     assertThat(meta.getNextChunkNo()).isEqualTo(1);
-    assertThat(meta.getLastCoveredCheckpointId()).isEqualTo(-1);
     assertThat(meta.getFirstArchivedPosition()).isEqualTo(-1);
     assertThat(harness.state().outboxAfter(0)).extracting("seq").containsExactly(1L);
     assertThat(harness.listener.calls).containsExactly("timelineStarted " + TIMELINE);
@@ -142,6 +143,7 @@ final class LogArchiveRecordsProcessorTest {
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1), object(2)));
     harness.accept(LogArchiveIntent.ARCHIVE_SNAPSHOT, archiveSnapshot(snapshot("snap-1", 2)));
     harness.accept(LogArchiveIntent.CONFIRM_PUBLISHED, confirmPublished(2));
+    harness.createCheckpoint(10, 50, CheckpointType.MANUAL_BACKUP);
 
     // when
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline("tl-0.r7", 1));
@@ -156,6 +158,7 @@ final class LogArchiveRecordsProcessorTest {
     assertThat(harness.state().openObjects()).isEmpty();
     assertThat(harness.state().snapshots()).isEmpty();
     assertThat(harness.state().chunks()).isEmpty();
+    assertThat(harness.state().pendingCheckpointsUpTo(Long.MAX_VALUE)).isEmpty();
     assertThat(harness.state().outboxAfter(0)).extracting("seq").containsExactly(1L);
     assertThat(harness.events.getLast().value().getSeq()).isEqualTo(1);
   }
@@ -347,12 +350,12 @@ final class LogArchiveRecordsProcessorTest {
   // ---- covered checkpoints ----------------------------------------------------------------------
 
   @Test
-  void shouldCoverCheckpointsUpToFAndSkipThoseBeforeFirstArchivedPosition() {
+  void shouldCoverCheckpointsUpToFAndDropThoseBeforeFirstArchivedPosition() {
     // given
-    harness.checkpoints.addMarkerCheckpoint(10, 5, 0);
-    harness.checkpoints.addMarkerCheckpoint(20, 15, 0);
-    harness.checkpoints.addMarkerCheckpoint(30, 100, 0);
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(10, 5, CheckpointType.MARKER);
+    harness.createCheckpoint(20, 15, CheckpointType.MARKER);
+    harness.createCheckpoint(30, 100, CheckpointType.MARKER);
 
     // when
     final var first =
@@ -361,7 +364,9 @@ final class LogArchiveRecordsProcessorTest {
     // then: 10 lies before the first archived position, 30 beyond F
     assertThat(first.getCheckpoints()).extracting("checkpointId").containsExactly(20L);
     assertThat(first.getCheckpoints()).extracting("checkpointPosition").containsExactly(15L);
-    assertThat(harness.state().meta().getLastCoveredCheckpointId()).isEqualTo(20);
+    assertThat(harness.state().pendingCheckpointsUpTo(Long.MAX_VALUE))
+        .extracting("checkpointId")
+        .containsExactly(30L);
 
     // when
     final var second =
@@ -369,7 +374,7 @@ final class LogArchiveRecordsProcessorTest {
 
     // then
     assertThat(second.getCheckpoints()).extracting("checkpointId").containsExactly(30L);
-    assertThat(harness.state().meta().getLastCoveredCheckpointId()).isEqualTo(30);
+    assertThat(harness.state().pendingCheckpointsUpTo(Long.MAX_VALUE)).isEmpty();
     assertThat(harness.state().openObjects().get(0).checkpoints())
         .extracting("checkpointId")
         .containsExactly(20L);
@@ -385,10 +390,71 @@ final class LogArchiveRecordsProcessorTest {
   }
 
   @Test
+  void shouldCoverBackupCheckpointWhoseBackupIsConfirmedOnlyAfterItsPositionIsArchived() {
+    // given: the backup's checkpoint is created, but its backup is not yet confirmed
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(7, 210, CheckpointType.MANUAL_BACKUP);
+
+    // when: the log up to the checkpoint is archived before the backup is confirmed
+    final var event =
+        harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 10, 201, 210)));
+    harness.confirmBackup(7, 210, CheckpointType.MANUAL_BACKUP);
+    final var next =
+        harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(11, 20, 211, 220)));
+
+    // then: listed exactly once, by the event that archived its position
+    assertThat(event.getCheckpoints()).extracting("checkpointId").containsExactly(7L);
+    assertThat(event.getCheckpoints())
+        .extracting("checkpointType")
+        .containsExactly(CheckpointType.MANUAL_BACKUP);
+    assertThat(harness.state().openObjects().getFirst().checkpoints())
+        .extracting("checkpointId")
+        .containsExactly(7L);
+    assertThat(next.getCheckpoints()).isEmpty();
+  }
+
+  @Test
+  void shouldCoverCheckpointsOfEveryType() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(1, 2, CheckpointType.MARKER);
+    harness.createCheckpoint(2, 3, CheckpointType.MANUAL_BACKUP);
+    harness.createCheckpoint(3, 4, CheckpointType.SCHEDULED_BACKUP);
+
+    // when
+    final var event = harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 5, 1, 5)));
+
+    // then
+    assertThat(event.getCheckpoints())
+        .extracting("checkpointType")
+        .containsExactly(
+            CheckpointType.MARKER, CheckpointType.MANUAL_BACKUP, CheckpointType.SCHEDULED_BACKUP);
+  }
+
+  @Test
+  void shouldAttachCheckpointToTheObjectContainingItsPosition() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(1, 12, CheckpointType.MARKER);
+    harness.createCheckpoint(2, 31, CheckpointType.MANUAL_BACKUP);
+
+    // when: the middle object holds no application entries
+    harness.accept(
+        LogArchiveIntent.ARCHIVE_LOG,
+        archiveLog(object(1, 1, 11, 20), object(2, 2, -1, -1), object(3, 3, 30, 32)));
+
+    // then
+    final var open = harness.state().openObjects();
+    assertThat(open.get(0).checkpoints()).extracting("checkpointId").containsExactly(1L);
+    assertThat(open.get(1).checkpoints()).isEmpty();
+    assertThat(open.get(2).checkpoints()).extracting("checkpointId").containsExactly(2L);
+  }
+
+  @Test
   void shouldNotCoverCheckpointsTwice() {
     // given
-    harness.checkpoints.addMarkerCheckpoint(10, 15, 0);
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(10, 15, CheckpointType.MARKER);
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 10, 10, 20)));
 
     // when
@@ -397,6 +463,21 @@ final class LogArchiveRecordsProcessorTest {
 
     // then
     assertThat(second.getCheckpoints()).isEmpty();
+    assertThat(harness.state().pendingCheckpointsUpTo(Long.MAX_VALUE)).isEmpty();
+  }
+
+  @Test
+  void shouldDropCheckpointsCreatedBeforeTheTimelineStarted() {
+    // given
+    harness.createCheckpoint(10, 15, CheckpointType.MANUAL_BACKUP);
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+
+    // when
+    final var event =
+        harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 10, 10, 20)));
+
+    // then
+    assertThat(event.getCheckpoints()).isEmpty();
   }
 
   // ---- ARCHIVE_SNAPSHOT -------------------------------------------------------------------------
@@ -650,9 +731,12 @@ final class LogArchiveRecordsProcessorTest {
   @Test
   void shouldCarryCheckpointIdsAndRangeInChunk() {
     // given
-    harness.checkpoints.addMarkerCheckpoint(10, 2, 0);
-    harness.checkpoints.addMarkerCheckpoint(20, 3, 0);
-    fillOpenChunk();
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(10, 2, CheckpointType.MARKER);
+    harness.createCheckpoint(20, 3, CheckpointType.MANUAL_BACKUP);
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1)));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(2)));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(3)));
 
     // then
     final var chunk = harness.published.getLast().seal().chunk();
@@ -663,11 +747,11 @@ final class LogArchiveRecordsProcessorTest {
   @Test
   void shouldListInChunkExactlyTheCheckpointsInItsRangeAndMatchIdsAndSha() {
     // given: 10 and 20 lie in the objects, 5 is before the first archived position
-    harness.checkpoints.addMarkerCheckpoint(5, 1, 0);
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(5, 1, CheckpointType.MARKER);
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 1, 11, 11)));
-    harness.checkpoints.addMarkerCheckpoint(10, 12, 0);
-    harness.checkpoints.addMarkerCheckpoint(20, 31, 0);
+    harness.createCheckpoint(10, 12, CheckpointType.MARKER);
+    harness.createCheckpoint(20, 31, CheckpointType.MARKER);
     harness.accept(
         LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(2, 2, 12, 13), object(3, 3, 30, 32)));
 
@@ -688,19 +772,20 @@ final class LogArchiveRecordsProcessorTest {
   }
 
   @Test
-  void shouldSkipCheckpointsBecomingVisibleAfterTheirObjectsWereArchived() {
-    // given
+  void shouldFailIfAPendingCheckpointLiesInNoObjectOfTheEvent() {
+    // given: a checkpoint whose position was archived before it was created, which log order
+    // rules out
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 5, 10, 20)));
-    harness.checkpoints.addMarkerCheckpoint(8, 15, 0);
+    harness.createCheckpoint(8, 15, CheckpointType.MANUAL_BACKUP);
+    final var before = harness.fingerprint();
 
     // when
-    final var event =
-        harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(6, 9, 21, 30)));
-
-    // then
-    assertThat(event.getCheckpoints()).isEmpty();
-    assertThat(harness.state().meta().getLastCoveredCheckpointId()).isEqualTo(8);
+    assertThatThrownBy(
+            () -> harness.process(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(6, 9, 21, 30))))
+        // then
+        .hasStackTraceContaining("Expected checkpoint 8 at position 15");
+    assertThat(harness.fingerprint()).isEqualTo(before);
   }
 
   @Test
@@ -877,8 +962,8 @@ final class LogArchiveRecordsProcessorTest {
   @Test
   void shouldBuildRootFromStateAtItsSeq() {
     // given
-    harness.checkpoints.addMarkerCheckpoint(10, 1, 0);
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 5));
+    harness.createCheckpoint(10, 1, CheckpointType.MARKER);
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(5)));
     harness.accept(LogArchiveIntent.ARCHIVE_SNAPSHOT, archiveSnapshot(snapshot("snap-1", 5)));
 
@@ -903,8 +988,8 @@ final class LogArchiveRecordsProcessorTest {
   @Test
   void shouldIncludeCoveredCheckpointsInRootUntilSealed() {
     // given
-    harness.checkpoints.addMarkerCheckpoint(10, 2, 0);
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(10, 2, CheckpointType.MARKER);
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1), object(2), object(3)));
     final var seal = harness.published.getLast().seal();
     harness.published.clear();
@@ -948,12 +1033,14 @@ final class LogArchiveRecordsProcessorTest {
   @Test
   void shouldReachIdenticalStateWhenReplayingProcessedEvents() throws Exception {
     // given a mixed sequence, including rejections, seals, checkpoints and confirmations
-    harness.checkpoints.addMarkerCheckpoint(10, 5, 0);
-    harness.checkpoints.addMarkerCheckpoint(20, 15, 0);
-    harness.checkpoints.addMarkerCheckpoint(30, 25, 0);
+    harness.createCheckpoint(1, 0, CheckpointType.MARKER);
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(10, 5, CheckpointType.MARKER);
+    harness.createCheckpoint(20, 15, CheckpointType.MANUAL_BACKUP);
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 10, 1, 10)));
+    harness.createCheckpoint(30, 25, CheckpointType.SCHEDULED_BACKUP);
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(11, 20, 11, 20)));
+    harness.confirmBackup(20, 15, CheckpointType.MANUAL_BACKUP);
     harness.process(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(30, 40, 30, 40)));
     harness.accept(LogArchiveIntent.ARCHIVE_SNAPSHOT, archiveSnapshot(snapshot("snap-1", 12)));
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(21, 30, 21, 30)));
@@ -962,14 +1049,17 @@ final class LogArchiveRecordsProcessorTest {
     harness.process(LogArchiveIntent.CONFIRM_PUBLISHED, confirmPublished(3));
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(31, 35, 31, 35), object(36)));
     harness.accept(LogArchiveIntent.ARCHIVE_SNAPSHOT, archiveSnapshot(snapshot("snap-2", 30)));
+    harness.createCheckpoint(40, 50, CheckpointType.MANUAL_BACKUP);
     harness.accept(LogArchiveIntent.CONFIRM_PUBLISHED, confirmPublished(8));
 
     // when
     try (final var replica = new LogArchiveHarness(replicaDirectory.toFile(), CONFIG)) {
-      seedCheckpoints(replica);
-      harness.events.forEach(replica::replay);
+      replica.replayLog(harness.log);
 
       // then
+      assertThat(harness.state().pendingCheckpointsUpTo(Long.MAX_VALUE))
+          .extracting("checkpointId")
+          .containsExactly(40L);
       assertThat(replica.fingerprint()).isEqualTo(harness.fingerprint());
       assertThat(harness.state().meta().getNextSeq()).isEqualTo(9);
 
@@ -987,15 +1077,14 @@ final class LogArchiveRecordsProcessorTest {
   @Test
   void shouldWriteSameCommitEntryBytesWhenReplayingAnEvent() throws Exception {
     // given
-    harness.checkpoints.addMarkerCheckpoint(10, 5, 0);
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(10, 5, CheckpointType.MANUAL_BACKUP);
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 10, 1, 10)));
     final var published = harness.published.getLast().commitEntryJson();
 
     // when
     try (final var replica = new LogArchiveHarness(replicaDirectory.toFile(), CONFIG)) {
-      replica.checkpoints.addMarkerCheckpoint(10, 5, 0);
-      harness.events.forEach(replica::replay);
+      replica.replayLog(harness.log);
 
       // then
       final var replayed = replica.state().outboxAfter(1).getFirst().commitEntryJson();
@@ -1136,13 +1225,6 @@ final class LogArchiveRecordsProcessorTest {
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1)));
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(2)));
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(3)));
-  }
-
-  /** Followers hold the checkpoints as well, from replaying the checkpoint events. */
-  private static void seedCheckpoints(final LogArchiveHarness replica) {
-    replica.checkpoints.addMarkerCheckpoint(10, 5, 0);
-    replica.checkpoints.addMarkerCheckpoint(20, 15, 0);
-    replica.checkpoints.addMarkerCheckpoint(30, 25, 0);
   }
 
   private static String sha256Hex(final byte[] content) {

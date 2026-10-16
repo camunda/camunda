@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 import org.agrona.collections.MutableLong;
 import org.jspecify.annotations.Nullable;
 
@@ -96,24 +95,6 @@ public final class DbCheckpointMetadataState {
                     value.getCheckpointPosition(),
                     value.getFirstLogPosition())));
     return result;
-  }
-
-  /**
-   * Visits the checkpoints with an id greater than {@code checkpointId} in ascending id order,
-   * until the visitor returns false.
-   */
-  public void visitCheckpointsAfter(final long checkpointId, final Predicate<Checkpoint> visitor) {
-    checkpointIdKey.wrapLong(checkpointId + 1);
-    checkpointsColumnFamily.whileTrue(
-        checkpointIdKey,
-        (key, value) ->
-            visitor.test(
-                new Checkpoint(
-                    requireNonNull(value.getCheckpointType(), "checkpoint type"),
-                    key.getValue(),
-                    value.getCheckpointTimestamp(),
-                    value.getCheckpointPosition(),
-                    value.getFirstLogPosition())));
   }
 
   /** Returns true if no checkpoint entries exist (for migration detection). */
