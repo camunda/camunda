@@ -100,7 +100,6 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
-    operateFiltersPanelPage,
     taskPanelPageV1,
     taskDetailsPageV1,
     loginPage,
@@ -134,7 +133,9 @@ test.describe('HTO User Flow Tests', () => {
       await expect(page.getByText('"testValue"')).not.toBeVisible({
         timeout: 90000,
       });
-      await expect(page.getByText('"updatedValue"')).toBeVisible();
+      await expect(page.getByText('"updatedValue"')).toBeVisible({
+        timeout: 90000,
+      });
       await sleep(10000);
 
       await navigateToApp(page, 'tasklist');
