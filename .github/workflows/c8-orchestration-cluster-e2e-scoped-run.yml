@@ -55,6 +55,14 @@ on:
         required: false
         default: main
         type: string
+      image_branch:
+        description: >-
+          Branch whose published SNAPSHOT image to run the stack from, when
+          `branch` is not itself one (e.g. a generated test branch). Defaults
+          to `branch`.
+        required: false
+        default: ""
+        type: string
 
 permissions: {}
 
@@ -90,10 +98,24 @@ jobs:
           sparse-checkout: .github/scripts/e2e-scoped-verdict.mjs
           sparse-checkout-cone-mode: false
 
+      # The branch whose CODE is tested and the branch whose IMAGE the stack
+      # runs are not the same question, and conflating them locked out the
+      # caller this workflow was built for. A generation branch carries the
+      # test to run but has no published image, so it was refused below before
+      # a test could start -- see camunda/team-test-automation#83.
+      #
+      # `branch` stays the code. `image_branch` is the image, and defaults to
+      # `branch` so every existing dispatch behaves exactly as before: main
+      # tests main's SNAPSHOT, stable/8.9 tests 8.9's.
       - name: Set CAMUNDA_DOCKER_IMAGE
         env:
-          BRANCH: ${{ inputs.branch }}
+          BRANCH: ${{ inputs.image_branch || inputs.branch }}
+          CODE_BRANCH: ${{ inputs.branch }}
         run: |
+          if [[ "$BRANCH" != "$CODE_BRANCH" ]]; then
+            echo "Testing code from '$CODE_BRANCH' against the image published for '$BRANCH'."
+          fi
+
           if [[ "$BRANCH" == "main" ]]; then
             echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
           elif [[ "$BRANCH" == stable/* ]]; then
@@ -113,7 +135,13 @@ jobs:
           else
             # A feature branch has no published image. Say so here rather than
             # failing twenty minutes later on an image pull.
-            echo "::error::no SNAPSHOT image is published for '$BRANCH' — dispatch against main or a stable/* branch"
+            #
+            # Not a fallback to main: the right image for a feature branch is
+            # the one for whatever it was cut from, which this workflow cannot
+            # know. Guessing would run the generated test against a product
+            # version it was never written for, and report the result as
+            # though it meant something.
+            echo "::error::no SNAPSHOT image is published for '$BRANCH' — pass image_branch (main or stable/*) naming the branch this was cut from, or dispatch against one directly"
             exit 1
           fi
 
