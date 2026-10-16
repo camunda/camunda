@@ -17,9 +17,13 @@ Dashboards are stored as JSON files in the [grafana](grafana) folder. You can ed
 2. Or by manually editing the JSON files.
 
 > [!TIP]
-> Starting from Camunda 8.10, Grafana dashboards are stored using the
+> Starting from Camunda 8.11, Grafana dashboards are stored using the
 > [Grafana data model v2](https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/view-dashboard-json-model/),
-> which require Grafana >= 12.
+> which require Grafana >= 13.
+>
+> If you are using Camunda <= 8.10 and/or Grafana < 13, you can find compatible
+> dashboards in the associated stable branches (for instance, [`stable/8.10`
+> for 8.10](https://github.com/camunda/camunda/tree/stable/8.10/monitor/grafana))
 
 ### Editing a dashboard through Grafana
 
