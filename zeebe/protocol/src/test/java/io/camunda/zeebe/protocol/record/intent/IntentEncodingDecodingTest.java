@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,6 +86,7 @@ final class IntentEncodingDecodingTest {
         buildParameterSets(
             BatchOperationExecutionIntent.class, BatchOperationExecutionIntent::from));
     result.addAll(buildParameterSets(CheckpointIntent.class, CheckpointIntent::from));
+    result.addAll(buildParameterSets(LogArchiveIntent.class, LogArchiveIntent::from));
     result.addAll(buildParameterSets(ClockIntent.class, ClockIntent::from));
     result.addAll(buildParameterSets(ClusterVariableIntent.class, ClusterVariableIntent::from));
     result.addAll(

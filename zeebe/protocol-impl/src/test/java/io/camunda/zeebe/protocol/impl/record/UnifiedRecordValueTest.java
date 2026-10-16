@@ -10,8 +10,14 @@ package io.camunda.zeebe.protocol.impl.record;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
+import io.camunda.zeebe.protocol.impl.record.value.management.CoveredCheckpoint;
+import io.camunda.zeebe.protocol.impl.record.value.management.IndexChunk;
+import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.LogObject;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -85,6 +91,70 @@ final class UnifiedRecordValueTest {
     assertThat(record.getParentKey()).isEqualTo(-1L);
     assertThat(record.getIndex()).isEqualTo(-1L);
     assertThat(record.getStorageOrdinal()).isZero();
+  }
+
+  @Test
+  void shouldRoundTripLogArchiveRecordWithNestedValues() {
+    // given
+    final var original =
+        new LogArchiveRecord()
+            .setTimelineId("t1")
+            .setSeq(3L)
+            .setStartIndex(1L)
+            .setParentTimelineId("t0")
+            .addObject(new LogObject().setKey("data/1.rec").setFirstIndex(1L).setLastIndex(9L))
+            .addObject(new LogObject().setKey("data/2.rec").setFirstIndex(10L).setLastIndex(19L))
+            .setSnapshot(new ArchivedSnapshot().setId("1-2-3-4-5-6").setIndex(10L).setFileCount(4L))
+            .setChunk(new IndexChunk().setChunkNo(1L).setKey("index/1.json").setObjectCount(2L))
+            .setPublishedSeq(2L)
+            .setArchivedIndex(19L)
+            .setArchivedPosition(90L)
+            .addCheckpoint(
+                new CoveredCheckpoint()
+                    .setCheckpointId(8L)
+                    .setCheckpointPosition(30L)
+                    .setCheckpointType(CheckpointType.SCHEDULED_BACKUP));
+    final var buffer = new UnsafeBuffer(new byte[original.getLength()]);
+    original.write(buffer, 0);
+
+    // when
+    final var copy = new LogArchiveRecord();
+    copy.wrap(buffer);
+
+    // then
+    assertThat(copy.getTimelineId()).isEqualTo("t1");
+    assertThat(copy.getSeq()).isEqualTo(3L);
+    assertThat(copy.getParentTimelineId()).isEqualTo("t0");
+    assertThat(copy.getObjects())
+        .extracting(o -> o.getKey())
+        .containsExactly("data/1.rec", "data/2.rec");
+    assertThat(copy.getSnapshot().getId()).isEqualTo("1-2-3-4-5-6");
+    assertThat(copy.getSnapshot().getFileCount()).isEqualTo(4L);
+    assertThat(copy.getChunk().getKey()).isEqualTo("index/1.json");
+    assertThat(copy.getPublishedSeq()).isEqualTo(2L);
+    assertThat(copy.getArchivedIndex()).isEqualTo(19L);
+    assertThat(copy.getArchivedPosition()).isEqualTo(90L);
+    assertThat(copy.getCheckpoints())
+        .extracting(c -> c.getCheckpointType())
+        .containsExactly(CheckpointType.SCHEDULED_BACKUP);
+  }
+
+  @Test
+  void shouldDefaultMissingLogArchiveFields() {
+    // given
+    final var buffer = new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{}"));
+
+    // when
+    final var record = new LogArchiveRecord();
+    record.wrap(buffer);
+
+    // then
+    assertThat(record.getTimelineId()).isEmpty();
+    assertThat(record.getSeq()).isEqualTo(-1L);
+    assertThat(record.getStartIndex()).isEqualTo(-1L);
+    assertThat(record.getObjects()).isEmpty();
+    assertThat(record.getCheckpoints()).isEmpty();
+    assertThat(record.getSnapshot().getIndex()).isEqualTo(-1L);
   }
 
   private static Stream<SuspensionBatchRecord> suspensionBatchRecords() {
