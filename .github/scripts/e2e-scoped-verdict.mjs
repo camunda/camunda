@@ -16,6 +16,21 @@
 // full regardless of --grep. Those tests are counted and reported, but they do
 // not decide the verdict.
 //
+// `spec.ok` IS NOT "RAN AND PASSED". It comes from TestCase.ok(), which is
+// true for `skipped` as well as `expected` and `flaky` -- so a case written
+// as test.skip/test.fixme, or one that skips itself at runtime, reports
+// ok: true, and a run made only of such tests still exits 0. Reading it
+// re-opens the hole the paragraph above closes, by a different door: the test
+// IS in the report, so the scope did select something, and it still never
+// ran. The outcome is therefore taken from `spec.tests[].status`, and a skip
+// is a failure here.
+//
+// `flaky` COUNTS AS PASSED, deliberately. It means the case failed and then
+// passed on a retry, so it did run and it did end green -- which is what a
+// coverage claim asserts. It is counted separately and named in the output
+// rather than hidden, because a generated test that only passes on retry is
+// worth a human's attention even though it does not fail this check.
+//
 // Usage: node e2e-scoped-verdict.mjs <results.json> <CASE_ID>
 //
 import fs from 'node:fs';
@@ -45,19 +60,44 @@ for (const suite of report?.suites ?? []) walk(suite);
 const matched = specs.filter((spec) =>
   String(spec?.title ?? '').startsWith(`${caseId}:`),
 );
-const failed = matched.filter((spec) => spec?.ok !== true).map((s) => s.title);
+
+// One entry per project the spec ran under. The runner pins a single project,
+// so this is normally one -- but every entry has to have run and passed,
+// because a case green in one project and skipped in another has not been
+// shown to work.
+const PASSING = new Set(['expected', 'flaky']);
+const outcomeOf = (spec) => {
+  const tests = spec?.tests ?? [];
+  if (tests.length === 0) return 'did not run';
+  if (tests.some((t) => t?.status === 'skipped')) return 'skipped';
+  if (tests.every((t) => PASSING.has(t?.status))) {
+    return tests.some((t) => t?.status === 'flaky') ? 'flaky' : 'passed';
+  }
+  return 'failed';
+};
+
+const outcomes = matched.map((spec) => ({
+  title: spec.title,
+  outcome: outcomeOf(spec),
+}));
+const bad = outcomes.filter(
+  (o) => o.outcome !== 'passed' && o.outcome !== 'flaky',
+);
+const flaky = outcomes.filter((o) => o.outcome === 'flaky');
 
 const verdict = {
   case: caseId,
   ran: specs.length,
   matched: matched.length,
-  ok: matched.length > 0 && failed.length === 0,
+  flaky: flaky.length,
+  ok: matched.length > 0 && bad.length === 0,
   reason:
     matched.length === 0
       ? `no test titled "${caseId}: ..." ran — the scope selected nothing`
-      : failed.length === 0
-        ? `${matched.length} test(s) passed`
-        : `failed: ${failed.join(', ')}`,
+      : bad.length === 0
+        ? `${matched.length} test(s) passed` +
+          (flaky.length > 0 ? ` (${flaky.length} only on retry)` : '')
+        : `did not pass: ${bad.map((o) => `${o.title} (${o.outcome})`).join(', ')}`,
 };
 
 const rendered = JSON.stringify(verdict, null, 2);
