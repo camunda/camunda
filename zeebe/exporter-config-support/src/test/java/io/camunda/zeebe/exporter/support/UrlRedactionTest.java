@@ -78,7 +78,9 @@ final class UrlRedactionTest {
         "http://alice/name:password@host:9200",
         // '?' and '#' in the password end the authority early
         "http://user:pass?word@host:9200",
-        "http://user:pass#word@host:9200"
+        "http://user:pass#word@host:9200",
+        // '@' in the user plus '/' in the password leaves a valid host and user info behind
+        "http://x@a:/secret@host:9200"
       })
   void shouldOmitUnparseableUrl(final String url) {
     assertThat(UrlRedaction.describe(url)).isEqualTo("***");
@@ -101,14 +103,16 @@ final class UrlRedactionTest {
     final var result = UrlRedaction.describe(url);
 
     // then
-    assertThat(result)
-        .isIn("***", "http://****:****@host:9200")
-        .satisfies(r -> assertThat(r).doesNotContain(user, password, queryValue));
+    assertThat(result).isIn("***", "http://****:****@host:9200");
   }
 
   @Provide
   Arbitrary<String> secrets() {
-    // distinctive prefix so a secret cannot match the fixed parts of the output by chance
-    return Arbitraries.strings().all().ofMinLength(1).ofMaxLength(20).map(s -> "Zq9" + s);
+    // URI delimiters and digits are over-represented, as they are what shifts the authority
+    // boundary and lets a numeric port parse out of a password
+    return Arbitraries.strings()
+        .withChars("abcXYZ0123456789/?#@:%[]-._~")
+        .ofMinLength(1)
+        .ofMaxLength(20);
   }
 }
