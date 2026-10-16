@@ -12,6 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -21,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -117,7 +121,7 @@ public class ModifyProcessInstanceTerminatingElementTest {
             .getKey();
     getUserTaskKey(childKey);
     ENGINE.processInstance().withInstanceKey(parentKey).expectTerminating().cancel();
-    failCancelingListenerJob(childKey);
+    failCancelingListenerJob(childKey, LISTENER_TYPE);
 
     // when
     terminateElementByModification(parentKey, "callActivity");
@@ -175,7 +179,7 @@ public class ModifyProcessInstanceTerminatingElementTest {
     // publish only once the user task exists, so that the boundary event is subscribed
     getUserTaskKey(processInstanceKey);
     ENGINE.message().withName(messageName).withCorrelationKey("key").publish();
-    failCancelingListenerJob(processInstanceKey);
+    failCancelingListenerJob(processInstanceKey, LISTENER_TYPE);
 
     // when
     terminateElementByModification(processInstanceKey, "userTask");
@@ -195,6 +199,55 @@ public class ModifyProcessInstanceTerminatingElementTest {
         .isFalse();
   }
 
+  @Test
+  public void shouldKeepCorrectionsOfCompletedCancelingListenersWhenCancelingUserTask() {
+    // given a user task with two canceling listeners, the first one corrects the user task
+    final String processId = Strings.newRandomValidBpmnId();
+    final String secondListenerType = LISTENER_TYPE + "_2";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(
+                    "userTask",
+                    u ->
+                        u.zeebeUserTask()
+                            .zeebeTaskListener(l -> l.canceling().type(LISTENER_TYPE))
+                            .zeebeTaskListener(l -> l.canceling().type(secondListenerType)))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    getUserTaskKey(processInstanceKey);
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections().setAssignee("corrected_assignee").setPriority(99))
+                .setCorrectedAttributes(List.of("assignee", "priority")))
+        .complete();
+    failCancelingListenerJob(processInstanceKey, secondListenerType);
+
+    // when
+    terminateElementByModification(processInstanceKey, "userTask");
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expected the corrections of the completed listener to be kept")
+        .hasAssignee("corrected_assignee")
+        .hasPriority(99)
+        .hasChangedAttributes("assignee", "priority");
+  }
+
   /**
    * Creates a process instance that is canceled while its subprocess contains a user task with a
    * canceling task listener. The listener job fails without retries, so the instance stays
@@ -208,7 +261,7 @@ public class ModifyProcessInstanceTerminatingElementTest {
     getUserTaskKey(processInstanceKey);
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
-    failCancelingListenerJob(processInstanceKey);
+    failCancelingListenerJob(processInstanceKey, LISTENER_TYPE);
 
     return processInstanceKey;
   }
@@ -228,8 +281,9 @@ public class ModifyProcessInstanceTerminatingElementTest {
         .done();
   }
 
-  private static void failCancelingListenerJob(final long processInstanceKey) {
-    ENGINE.job().ofInstance(processInstanceKey).withType(LISTENER_TYPE).withRetries(0).fail();
+  private static void failCancelingListenerJob(
+      final long processInstanceKey, final String listenerType) {
+    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).withRetries(0).fail();
     RecordingExporter.incidentRecords(IncidentIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .getFirst();
