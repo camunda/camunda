@@ -75,6 +75,10 @@ val generateJobWorkerPermutations =
     argumentProviders.add(CommandLineArgumentProvider { listOf(outputDir.get().asFile.absolutePath) })
   }
 
+// The Spring configuration processor loses defaultValue entries for classes it did not see again,
+// so recompile the whole module on any change. Mirrors useIncrementalCompilation in the pom.
+tasks.named<JavaCompile>("compileJava") { options.isIncremental = false }
+
 dependencies {
   implementation(libs.org.slf4j.slf4j.api)
   annotationProcessor(libs.org.springframework.boot.spring.boot.configuration.processor)
