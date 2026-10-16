@@ -21,7 +21,9 @@ import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.CheckpointType;
 import io.camunda.management.backups.PartitionBackupInfo;
+import io.camunda.management.backups.PartitionCheckpointState;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -33,6 +35,7 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,6 +69,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   protected static final int PARTITION_COUNT = 2;
   private static final String PROCESS_ID = "process";
   private static final String JOB_TYPE = "task";
+  private static final Duration MARKER_INTERVAL = Duration.ofHours(1);
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsRangeRestoreTestBase.class);
 
   // H2 in-memory DB URL. DB_CLOSE_DELAY=-1 keeps the DB alive across a broker's stop/restart
@@ -170,6 +174,39 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
 
     // then
     completeJobs(4);
+  }
+
+  @Test
+  void shouldRestoreToAMarkerCheckpoint() throws Exception {
+    // given - instances created before and after a marker; the next backup holds both
+    final List<Long> createdBeforeMarker;
+    final Instant markerTimestamp;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      takeAndAwaitBackup();
+      ExportersActuator.of(broker).disableExporter(RDBMS_EXPORTER_NAME);
+      awaitBackupCoversExportedPositionsOnEveryPartition();
+
+      createdBeforeMarker =
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, PARTITION_COUNT);
+      markerTimestamp = awaitMarkerCoveringExportedPositions();
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(client, PROCESS_ID, PARTITION_COUNT);
+      takeAndAwaitBackup();
+    }
+
+    // when
+    restore(RestoreTarget.closestTo(markerTimestamp));
+
+    // then - every partition ends at the marker
+    try (final var client = broker.newClientBuilder().build()) {
+      final var activatedInstances =
+          InProcessRestoreTestUtil.awaitJobsOfInstancesActivatable(
+              client, JOB_TYPE, createdBeforeMarker);
+      assertThat(activatedInstances)
+          .describedAs("only the instances created before the marker survive the restore")
+          .containsExactlyInAnyOrderElementsOf(createdBeforeMarker);
+    }
   }
 
   /**
@@ -289,6 +326,46 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     return new RestoreTarget(from, to);
   }
 
+  /**
+   * Moves the pinned clock past the marker interval, so the checkpoint scheduler takes a marker
+   * checkpoint, and returns the marker's timestamp once every partition has it. Asserts that the
+   * marker is at or after every partition's exported position, which a restore to it requires.
+   */
+  private Instant awaitMarkerCoveringExportedPositions() {
+    final var previousCheckpointId =
+        backupActuator.state().getCheckpointStates().stream()
+            .mapToLong(PartitionCheckpointState::getCheckpointId)
+            .max()
+            .orElseThrow();
+    progressClock(broker, MARKER_INTERVAL.plusSeconds(1).toMillis());
+    final var markers =
+        Awaitility.await("a marker checkpoint is taken on every partition")
+            .atMost(Duration.ofSeconds(30))
+            .ignoreExceptions()
+            .until(
+                () -> backupActuator.state().getCheckpointStates(),
+                states ->
+                    states.size() == PARTITION_COUNT
+                        && states.stream()
+                            .allMatch(
+                                state ->
+                                    state.getCheckpointType() == CheckpointType.MARKER
+                                        && state.getCheckpointId() > previousCheckpointId));
+    final var marker = markers.getFirst();
+    assertThat(markers)
+        .allSatisfy(
+            partitionMarker -> {
+              assertThat(partitionMarker.getCheckpointId()).isEqualTo(marker.getCheckpointId());
+              assertThat(partitionMarker.getCheckpointPosition())
+                  .describedAs("marker position on partition %d", partitionMarker.getPartitionId())
+                  .isGreaterThanOrEqualTo(
+                      exporterPositionMapper
+                          .findOne(partitionMarker.getPartitionId())
+                          .lastExportedPosition());
+            });
+    return marker.getCheckpointTimestamp().toInstant();
+  }
+
   protected final BackupInfo takeAndAwaitBackup() {
     progressClock(broker, 2000);
     final var res = backupActuator.take();
@@ -317,6 +394,9 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
 
     // Enable continuous backups
     cfg.getData().getPrimaryStorage().getBackup().setContinuous(true);
+    // A marker is taken at startup, as no checkpoint exists yet, and then an interval after the
+    // latest checkpoint, which only a test moving the pinned clock by the interval reaches
+    cfg.getData().getPrimaryStorage().getBackup().setCheckpointInterval(MARKER_INTERVAL);
 
     // Use smaller log segments for faster checkpoint creation.
     // Max message size must be <= log segment size (enforced by RaftPartitionFactory).
@@ -343,6 +423,10 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
 
     static RestoreTarget latest() {
       return new RestoreTarget(null, null);
+    }
+
+    static RestoreTarget closestTo(final Instant to) {
+      return new RestoreTarget(null, to);
     }
   }
 }
