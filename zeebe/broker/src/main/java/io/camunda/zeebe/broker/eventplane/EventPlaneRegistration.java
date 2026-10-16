@@ -26,9 +26,14 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -42,6 +47,11 @@ import org.slf4j.Logger;
  * <p>Best effort: it never holds up the partition, and retries with backoff until the Event Plane
  * answers. The requests run on the HTTP client's threads, and their outcome comes back to the
  * actor.
+ *
+ * <p>Every partition's leader registers its tenant, so it logs little: a failure at debug level
+ * until attempts have failed for a minute, then a warning, again every hour while they keep
+ * failing, and a line at info level once they succeed after a warning. Otherwise only a newly
+ * registered environment is logged at info level.
  */
 public final class EventPlaneRegistration extends Actor {
 
@@ -50,6 +60,8 @@ public final class EventPlaneRegistration extends Actor {
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
   private static final Duration TOKEN_EXPIRY_BUFFER = Duration.ofSeconds(30);
   private static final int MAX_LOGGED_BODY = 500;
+  private static final Duration WARN_AFTER = Duration.ofMinutes(1);
+  private static final Duration WARN_EVERY = Duration.ofHours(1);
 
   private final EventPlaneCfg cfg;
   private final URI endpoint;
@@ -57,6 +69,8 @@ public final class EventPlaneRegistration extends Actor {
   private final Supplier<Optional<String>> clusterId;
   private final RetryDelayStrategy retryDelay;
   private final HttpClient http;
+  private final InstantSource clock;
+  private final FailureEscalation failures = new FailureEscalation(WARN_AFTER, WARN_EVERY);
 
   private @Nullable String token;
   private Instant tokenExpiresAt = Instant.EPOCH;
@@ -69,7 +83,8 @@ public final class EventPlaneRegistration extends Actor {
         cfg,
         partitionId,
         clusterId,
-        new ExponentialBackoffRetryDelay(Duration.ofMinutes(5), Duration.ofSeconds(1)));
+        new ExponentialBackoffRetryDelay(Duration.ofMinutes(5), Duration.ofSeconds(1)),
+        InstantSource.system());
   }
 
   @VisibleForTesting
@@ -77,13 +92,15 @@ public final class EventPlaneRegistration extends Actor {
       final EventPlaneCfg cfg,
       final PartitionId partitionId,
       final Supplier<Optional<String>> clusterId,
-      final RetryDelayStrategy retryDelay) {
+      final RetryDelayStrategy retryDelay,
+      final InstantSource clock) {
     super("EventPlaneRegistration", partitionId);
     this.cfg = cfg;
     endpoint = requireEndpoint(cfg);
     physicalTenantId = partitionId.group();
     this.clusterId = clusterId;
     this.retryDelay = retryDelay;
+    this.clock = clock;
     http = HttpClient.newBuilder().connectTimeout(REQUEST_TIMEOUT).build();
   }
 
@@ -115,23 +132,11 @@ public final class EventPlaneRegistration extends Actor {
       final @Nullable HttpResponse<String> response,
       final @Nullable Throwable error) {
     if (error != null || response == null) {
-      retry("the request failed: " + error);
+      retry(error == null ? "no answer" : describe(error));
       return;
     }
     switch (response.statusCode()) {
-      case 201 ->
-          LOG.info(
-              "Registered physical tenant {} of cluster {} in the Event Plane at {}",
-              physicalTenantId,
-              clusterId,
-              endpoint);
-      // Every partition's leader registers the tenant, so this is the usual answer.
-      case 200 ->
-          LOG.debug(
-              "The Event Plane at {} knows physical tenant {} of cluster {} already",
-              endpoint,
-              physicalTenantId,
-              clusterId);
+      case 200, 201 -> registered(clusterId, response.statusCode() == 201);
       default -> {
         if (response.statusCode() == 401) {
           // An expired or revoked token: the next attempt gets a new one.
@@ -142,15 +147,73 @@ public final class EventPlaneRegistration extends Actor {
     }
   }
 
+  private void registered(final String clusterId, final boolean created) {
+    final var failedFor = failures.failingFor(clock.instant()).truncatedTo(ChronoUnit.SECONDS);
+    if (failures.succeeded()) {
+      LOG.info(
+          "Registered physical tenant {} of cluster {} in the Event Plane at {}, after failing for {}",
+          physicalTenantId,
+          clusterId,
+          endpoint,
+          failedFor);
+    } else if (created) {
+      LOG.info(
+          "Registered physical tenant {} of cluster {} in the Event Plane at {}",
+          physicalTenantId,
+          clusterId,
+          endpoint);
+    } else {
+      // Every partition's leader registers the tenant, so this is the usual answer.
+      LOG.debug(
+          "The Event Plane at {} knows physical tenant {} of cluster {} already",
+          endpoint,
+          physicalTenantId,
+          clusterId);
+    }
+  }
+
   private void retry(final String reason) {
+    final var now = clock.instant();
     final var delay = retryDelay.nextDelay();
-    LOG.warn(
-        "Failed to register physical tenant {} in the Event Plane at {}, retrying in {}: {}",
-        physicalTenantId,
-        endpoint,
-        delay,
-        reason);
+    if (failures.failed(now)) {
+      LOG.warn(
+          "Failed to register physical tenant {} in the Event Plane at {} for {}, retrying in {}: {}",
+          physicalTenantId,
+          endpoint,
+          failures.failingFor(now).truncatedTo(ChronoUnit.SECONDS),
+          delay,
+          reason);
+    } else {
+      LOG.debug(
+          "Failed to register physical tenant {} in the Event Plane at {}, retrying in {}: {}",
+          physicalTenantId,
+          endpoint,
+          delay,
+          reason);
+    }
     actor.schedule(delay, this::register);
+  }
+
+  /**
+   * The failure and its causes, without the wrappers of the asynchronous calls: {@code
+   * ConnectException, caused by ConnectException: Connection refused} rather than {@code
+   * java.util.concurrent.CompletionException: java.net.ConnectException}.
+   */
+  @VisibleForTesting
+  static String describe(final Throwable error) {
+    final var parts = new ArrayList<String>();
+    Throwable cause = error;
+    for (int depth = 0; cause != null && depth < 10; depth++, cause = cause.getCause()) {
+      if (cause instanceof CompletionException || cause instanceof ExecutionException) {
+        continue;
+      }
+      final var name = cause.getClass().getSimpleName();
+      final var part = cause.getMessage() == null ? name : name + ": " + cause.getMessage();
+      if (parts.isEmpty() || !parts.getLast().equals(part)) {
+        parts.add(part);
+      }
+    }
+    return parts.isEmpty() ? error.toString() : String.join(", caused by ", parts);
   }
 
   private HttpRequest request(final String clusterId, final Optional<String> authorization) {

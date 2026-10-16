@@ -17,15 +17,18 @@ import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.RetryDelayStrategy;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.ArrayDeque;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -177,7 +180,10 @@ final class EventPlaneRegistrationTest {
   }
 
   private void register(final Supplier<Optional<String>> clusterId) {
-    scheduler.submitActor(new EventPlaneRegistration(cfg, PARTITION, clusterId, NO_DELAY)).join();
+    scheduler
+        .submitActor(
+            new EventPlaneRegistration(cfg, PARTITION, clusterId, NO_DELAY, InstantSource.system()))
+        .join();
   }
 
   private List<Request> awaitRequests(final int count) {
@@ -216,6 +222,20 @@ final class EventPlaneRegistrationTest {
     try (final var out = exchange.getResponseBody()) {
       out.write(bytes);
     }
+  }
+
+  @Test
+  void describesTheCauseRatherThanItsWrappers() {
+    // given
+    final var refused = new ConnectException();
+    refused.initCause(new ConnectException("Connection refused"));
+
+    // when
+    final var description = EventPlaneRegistration.describe(new CompletionException(refused));
+
+    // then
+    assertThat(description)
+        .isEqualTo("ConnectException, caused by ConnectException: Connection refused");
   }
 
   private record Request(
