@@ -219,6 +219,34 @@ final class SnapshotUploaderTest {
   }
 
   @Test
+  void shouldNotUploadNewestSnapshotWhenRecoveredAsArchived() {
+    // given
+    givenSnapshot("1-1-10-10", 5);
+    uploader.onNewestArchivedSnapshotRecovered("1-1-10-10", 10);
+
+    // when
+    recoverAndTick(5);
+
+    // then
+    assertThat(store.objects).isEmpty();
+    assertThat(writer.entries).isEmpty();
+    assertThat(reservations).hasValue(0);
+  }
+
+  @Test
+  void shouldUploadNewestSnapshotWhenItsProcessedPositionIsAboveRecovered() {
+    // given
+    givenSnapshot("1-1-10-10", 5);
+    uploader.onNewestArchivedSnapshotRecovered("older", 9);
+
+    // when
+    recoverAndTick(5);
+
+    // then
+    assertThat(writer.entries).hasSize(1);
+  }
+
+  @Test
   void shouldSkipSnapshotAboveArchivedIndexAndRetryAfterItAdvances() {
     // given
     givenSnapshot("1-1-10-10", 50);

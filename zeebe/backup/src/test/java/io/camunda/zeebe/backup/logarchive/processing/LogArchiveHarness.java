@@ -269,6 +269,9 @@ final class LogArchiveHarness implements AutoCloseable {
 
   static final class RecordingListener implements LogArchiveListener {
     final List<String> calls = new ArrayList<>();
+    final List<NewestSnapshot> newestSnapshotsOnRecovery = new ArrayList<>();
+
+    record NewestSnapshot(String id, long processedPosition) {}
 
     @Override
     public void onTimelineStarted(final String timelineId) {
@@ -314,6 +317,12 @@ final class LogArchiveHarness implements AutoCloseable {
     @Override
     public void onRecovered(final LogArchiveMeta meta) {
       calls.add("recovered " + meta.getNextSeq());
+    }
+
+    @Override
+    public void onNewestArchivedSnapshotRecovered(
+        final String snapshotId, final long processedPosition) {
+      newestSnapshotsOnRecovery.add(new NewestSnapshot(snapshotId, processedPosition));
     }
   }
 

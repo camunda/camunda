@@ -22,6 +22,7 @@ import io.camunda.zeebe.backup.logarchive.model.IndexChunkFile;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.model.RootFile;
+import io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.RecordingListener;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
@@ -1040,6 +1041,37 @@ final class LogArchiveRecordsProcessorTest {
     // then
     assertThat(harness.published).isEmpty();
     assertThat(harness.listener.calls).containsExactly("recovered 1");
+  }
+
+  @Test
+  void shouldDeliverNewestArchivedSnapshotOnRecovered() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 10, 1, 10)));
+    harness.accept(LogArchiveIntent.ARCHIVE_SNAPSHOT, archiveSnapshot(snapshot("snap-old", 5)));
+    harness.accept(LogArchiveIntent.ARCHIVE_SNAPSHOT, archiveSnapshot(snapshot("snap-new", 10)));
+    harness.listener.newestSnapshotsOnRecovery.clear();
+
+    // when
+    harness.recover();
+
+    // then
+    assertThat(harness.listener.newestSnapshotsOnRecovery)
+        .containsExactly(new RecordingListener.NewestSnapshot("snap-new", 10));
+  }
+
+  @Test
+  void shouldDeliverNoArchivedSnapshotOnRecoveredWithoutSnapshots() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.listener.newestSnapshotsOnRecovery.clear();
+
+    // when
+    harness.recover();
+
+    // then
+    assertThat(harness.listener.newestSnapshotsOnRecovery)
+        .containsExactly(new RecordingListener.NewestSnapshot("", -1));
   }
 
   // ---- helpers ----------------------------------------------------------------------------------

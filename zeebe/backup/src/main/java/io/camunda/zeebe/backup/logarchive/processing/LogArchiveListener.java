@@ -58,4 +58,12 @@ public interface LogArchiveListener {
    * {@link LogArchivePublication}. The meta is a copy.
    */
   default void onRecovered(final LogArchiveMeta meta) {}
+
+  /**
+   * Called on recovery right after {@link #onRecovered(LogArchiveMeta)}, with the archived snapshot
+   * that has the highest processed position in the current timeline, or {@code ("", -1)} if none.
+   * Called only while processing, from the stream processor thread.
+   */
+  default void onNewestArchivedSnapshotRecovered(
+      final String snapshotId, final long processedPosition) {}
 }
