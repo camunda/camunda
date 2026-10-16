@@ -29,8 +29,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.collection.Tuple;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -208,33 +210,32 @@ public final class EventHandle {
 
   /**
    * Triggers a message start event: writes the CORRELATED event and activates a new root process
-   * instance for it. The storage ordinal of that instance is resolved once by the caller and passed
-   * in, so the caller can stamp its own follow-up records (the CORRELATED response) with the same
-   * value without this method mutating {@code subscription}.
+   * instance for it. The storage ordinal is resolved here, next to the new instance key, and
+   * returned with it so the caller can stamp its own follow-up records (the CORRELATED response)
+   * with the same value.
    *
-   * @param storageOrdinal the ordinal assigned to the new root instance, resolved by the caller
-   *     from the {@link StorageOrdinalProvider}
-   * @return the key of the new process instance, or {@code -1} when no instance can be created for
-   *     the start event (definition draining or already removed)
+   * @return the key of the new process instance and its storage ordinal, or {@code -1} with {@link
+   *     StorageOrdinalRelated#NOT_ORDINAL_CONTROLLED} when no instance can be created for the start
+   *     event (definition draining or already removed)
    */
-  public long triggerMessageStartEvent(
+  public Tuple<Long, Integer> triggerMessageStartEvent(
       final long subscriptionKey,
       final MessageStartEventSubscriptionRecord subscription,
       final long messageKey,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final DirectBuffer variables,
-      final DirectBuffer businessId,
-      final int storageOrdinal) {
+      final DirectBuffer businessId) {
 
     // Validate before generating a key so we neither waste a key nor emit a CORRELATED event when
     // no instance will be created (definition draining or already removed).
     if (!canCreateInstanceForStartEvent(
         subscription.getProcessDefinitionKey(), subscription.getTenantId())) {
-      return -1L;
+      return Tuple.of(-1L, StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     }
 
     final var newProcessInstanceKey = keyGenerator.nextKey();
+    final int storageOrdinal = storageOrdinalProvider.getStorageOrdinal();
     startEventSubscriptionRecord
         .setProcessDefinitionKey(subscription.getProcessDefinitionKey())
         .setBpmnProcessId(subscription.getBpmnProcessIdBuffer())
@@ -262,7 +263,7 @@ public final class EventHandle {
         businessId,
         storageOrdinal);
 
-    return newProcessInstanceKey;
+    return Tuple.of(newProcessInstanceKey, storageOrdinal);
   }
 
   public boolean activateProcessInstanceForStartEvent(
