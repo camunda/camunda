@@ -1,0 +1,179 @@
+# description: Runs ONE component (vitest) case of the orchestration-cluster
+#              webapp, on demand. The verify step of coverage-plan test
+#              generation — see camunda/team-test-automation#83.
+# test location: /webapp/client/apps/orchestration-cluster-webapp
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Component - Scoped Run
+
+# The sibling of C8 Orchestration Cluster - Scoped E2E Run, for the surface
+# below it. The generation loop in camunda/c8-cross-component-e2e-tests writes
+# a component test from a reviewed coverage plan and needs one answer: did
+# that case pass? Until this existed the loop could write such a test but
+# nothing could run it, so the pull request carried code that had never been
+# executed and said so.
+#
+# Dispatch-only. Nothing schedules this and no pull request triggers it; the
+# full component suite runs in ci-webapp-client.yml, which is what guards the
+# app. This runs one case and answers in minutes, because the loop calls it on
+# every iteration.
+#
+# THE INSTANCE MUST BE PINNED alongside the title filter. vite.config.ts splits
+# the app into six browser instances, and they are not interchangeable: the
+# carbon ones exclude `**/shadcn.components/**` and load a different setup
+# file. Running a shadcn component test under `operate:carbon` selects nothing
+# and exits 0. `scripts/component-suite-run.mjs` in the cross-component
+# repository resolves the right one from the spec path; it reads this config
+# rather than carrying a copy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: "Test file, relative to the app (e.g. src/operate/pages/X.test.tsx)"
+        required: true
+        type: string
+      case_id:
+        description: "Coverage-plan case id carried in the test title (e.g. AL-UI-01)"
+        required: true
+        type: string
+      instance:
+        description: "vitest browser instance to scope to"
+        required: true
+        type: choice
+        options:
+          - admin
+          - operate:carbon
+          - operate:shadcn
+          - tasklist
+          - shared:carbon
+          - shared:shadcn
+      branch:
+        description: "Branch to test"
+        required: false
+        default: main
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TEST_PRODUCT: Orchestration Cluster Webapp
+  TEST_OWNER: "@camunda/test-automation-team"
+  CLIENT_DIR: webapp/client
+  APP_DIR: webapp/client/apps/orchestration-cluster-webapp
+
+jobs:
+  scoped-run:
+    name: ${{ inputs.case_id }} in ${{ inputs.instance }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    # The same image and user the full component suite runs under, because the
+    # tests run in a real browser through vitest's playwright provider.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0
+      options: --user 1001:1000
+    steps:
+      - name: Checkout the branch under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.branch }}
+          persist-credentials: false
+
+      # The workspace above is the branch under test, which need not carry this
+      # workflow's own verdict helper — a branch cut before it was added would
+      # die on a missing module instead of producing a verdict. Take the helper
+      # from the revision the workflow itself is running from.
+      - name: Check out the verdict helper from this workflow's revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .scoped-run-helper
+          persist-credentials: false
+          sparse-checkout: .github/scripts/scoped-run-junit-verdict.mjs
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "6"
+
+      - name: Run the scoped case
+        id: run
+        working-directory: ${{ env.CLIENT_DIR }}
+        env:
+          # Capture failure screenshots even when CI contention delays web font
+          # loading — the same reason the full suite sets it.
+          PW_TEST_SCREENSHOT_NO_FONTS_READY: "1"
+          SPEC: ${{ inputs.spec }}
+          CASE_ID: ${{ inputs.case_id }}
+          INSTANCE: ${{ inputs.instance }}
+        run: |
+          # The id becomes a title filter, so a metacharacter in it would change
+          # what the pattern means. Reject rather than escape: a case id is an
+          # identifier, and one carrying a metacharacter is a mistake upstream
+          # that should be seen there.
+          if [[ ! "$CASE_ID" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::case_id '$CASE_ID' must be letters, digits, hyphen or underscore"
+            exit 1
+          fi
+
+          # Not `set -e` around this: a failing test is an outcome to report,
+          # not a reason to skip the verdict. The verdict step decides, because
+          # the exit code cannot tell a failure from a filter that matched
+          # nothing.
+          set +e
+          npm run test:unit -w @camunda/orchestration-cluster-webapp -- \
+            --project "$INSTANCE" \
+            -t "${CASE_ID}:" \
+            "$SPEC"
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Read the verdict
+        if: always()
+        env:
+          CASE_ID: ${{ inputs.case_id }}
+          RUN_EXIT: ${{ steps.run.outputs.exit }}
+        run: |
+          # vitest writes TEST-unit.xml at the app root when CI is set, which it
+          # is here. See vite.config.ts.
+          report="$APP_DIR/TEST-unit.xml"
+          if [[ ! -f "$report" ]]; then
+            echo "::error::no JUnit report at $report (vitest exit ${RUN_EXIT:-unknown}); cannot verify that the case ran"
+            exit 1
+          fi
+          node "$GITHUB_WORKSPACE/.scoped-run-helper/.github/scripts/scoped-run-junit-verdict.mjs" \
+            "$report" "$CASE_ID"
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: component-scoped-run-${{ inputs.case_id }}
+          path: ${{ env.APP_DIR }}/test-artifacts/**
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
