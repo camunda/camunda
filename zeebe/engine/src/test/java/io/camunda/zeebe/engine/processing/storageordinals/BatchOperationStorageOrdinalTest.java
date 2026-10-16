@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -378,6 +379,32 @@ public final class BatchOperationStorageOrdinalTest {
   }
 
   @Test
+  public void shouldCarryOrdinalToRejectedCreateCommands() {
+    // when
+    final var invalidFilter =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{}")))
+            .expectRejection()
+            .create();
+    final var forbidden =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(processInstanceFilter())
+            .expectRejection()
+            .create(USER_WITHOUT_PERMISSIONS.getUsername());
+
+    // then
+    assertThat(invalidFilter.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(forbidden.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(List.of(invalidFilter, forbidden))
+        .extracting(rejection -> rejection.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
   public void shouldCarryOrdinalToFailedRecords() {
     // given
     stubProcessInstanceSearchFailure();
@@ -437,15 +464,17 @@ public final class BatchOperationStorageOrdinalTest {
   }
 
   private Record<BatchOperationCreationRecordValue> createBatchOperationRecord() {
-    final var filter =
-        new UnsafeBuffer(
-            MsgPackConverter.convertToMsgPack(
-                new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build()));
     return engine
         .batchOperation()
         .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
-        .withFilter(filter)
+        .withFilter(processInstanceFilter())
         .create();
+  }
+
+  private static DirectBuffer processInstanceFilter() {
+    return new UnsafeBuffer(
+        MsgPackConverter.convertToMsgPack(
+            new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build()));
   }
 
   private void stubProcessInstanceSearch(final Set<Long> processInstanceKeys) {
