@@ -4,10 +4,24 @@ Manages cluster topology changes: membership, partition placement, exporter stat
 flow through a coordinator that serializes requests, computes operations, and applies them one by
 one across the cluster.
 
+## Modules
+
+|   Module   |                                                                                                    Purpose                                                                                                     |
+|------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `api/`     | Interfaces and models other modules compile against: the cluster state model, request/response types, executor interfaces, serializer contracts, `ClusterConfigurationManagerService` and the gateway service. |
+| `impl/`    | Implementation: transformers, appliers, coordinator, gossip, request server/handler, the `*Impl` services and `ProtoBufSerializer`. Owns the protobuf definitions, an internal detail.                         |
+| `openapi/` | The cluster and exporters OpenAPI specs and the models generated from them, plus the hand-written `BrokerId`.                                                                                                  |
+| `rest/`    | The `cluster` and `exporters` actuator endpoints (`ClusterEndpoint`, `ExportersEndpoint`) and their mapping utilities.                                                                                         |
+
+Other modules depend on `api` (and `openapi`/`rest` where needed), never on `impl` at compile time.
+The composition roots (broker, dist, restore-standalone) construct the `*Impl` services directly;
+debug-cli also reads the raw protobuf. Package names are the same across `api` and `impl`, so a
+package listed below can live in both modules.
+
 ## Request flow
 
 ```
-REST controller (dist/)
+REST controller (rest/)
   └─ ClusterConfigurationManagementRequestSender   sends over Atomix ClusterCommunicationService
        └─ ClusterConfigurationRequestServer        receives, deserializes, dispatches
             └─ ClusterConfigurationManagementRequestsHandler   picks transformer, calls coordinator
