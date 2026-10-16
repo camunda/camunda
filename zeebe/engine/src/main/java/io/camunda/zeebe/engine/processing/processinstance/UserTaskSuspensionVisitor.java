@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -28,15 +29,18 @@ final class UserTaskSuspensionVisitor implements ElementInstanceVisitor {
   private final StateWriter stateWriter;
   private final CommandBufferingBehavior bufferingBehavior;
   private final UserTaskState userTaskState;
+  private final SuspensionMetrics suspensionMetrics;
   private final UserTaskRecord resumeCommand = new UserTaskRecord();
 
   UserTaskSuspensionVisitor(
       final StateWriter stateWriter,
       final CommandBufferingBehavior bufferingBehavior,
-      final UserTaskState userTaskState) {
+      final UserTaskState userTaskState,
+      final SuspensionMetrics suspensionMetrics) {
     this.stateWriter = stateWriter;
     this.bufferingBehavior = bufferingBehavior;
     this.userTaskState = userTaskState;
+    this.suspensionMetrics = suspensionMetrics;
   }
 
   @Override
@@ -64,5 +68,6 @@ final class UserTaskSuspensionVisitor implements ElementInstanceVisitor {
         UserTaskIntent.RESUME,
         resumeCommand,
         userTask.getProcessInstanceKey());
+    suspensionMetrics.userTaskSuspended();
   }
 }

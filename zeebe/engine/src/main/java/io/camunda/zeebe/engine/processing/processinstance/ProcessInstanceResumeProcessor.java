@@ -209,9 +209,7 @@ public final class ProcessInstanceResumeProcessor
     // buffer spans several command batches, and RESUMED is written only once it is empty
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.RESUMING, value, command);
-    if (!isRestart) {
-      suspensionMetrics.startResumeDuration(command.getKey());
-    }
+    suspensionMetrics.startResumeDuration(command.getKey());
   }
 
   /**

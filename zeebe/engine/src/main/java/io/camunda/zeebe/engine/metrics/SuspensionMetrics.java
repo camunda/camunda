@@ -19,14 +19,23 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
+  /**
+   * Upper bound of in-flight suspend and resume measurements each. When full, new measurements are
+   * dropped, so the running ones still complete and get recorded; losing some data points is fine.
+   */
+  static final int MAX_IN_FLIGHT_DURATIONS = 1000;
+
   private final MeterRegistry registry;
 
   private final Counter suspendedCounter;
   private final Counter resumedCounter;
   private final Counter jobSuspendedCounter;
   private final Counter jobResumedCounter;
+  private final Counter userTaskSuspendedCounter;
+  private final Counter userTaskResumedCounter;
   private final Counter commandBufferedCounter;
   private final Counter commandDrainedCounter;
   private final Counter commandDroppedCounter;
@@ -37,6 +46,13 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
    * for the same reasoning applied to its per-key samples.
    */
   private final HashMap<Long, Timer.ResourceSample> resumeDurationSamples = new HashMap<>();
+
+  private final Timer suspendDurationTimer;
+
+  /**
+   * Start times of in-flight suspensions keyed by process instance key; same threading as above.
+   */
+  private final HashMap<Long, Long> suspendStartTimes = new HashMap<>();
 
   public SuspensionMetrics(final MeterRegistry meterRegistry) {
     registry = meterRegistry;
@@ -53,6 +69,16 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
     jobResumedCounter =
         registerCounter(
             meterRegistry, SuspensionMetricsDoc.JOB_SUSPENSION_EVENTS, SuspensionAction.RESUMED);
+    userTaskSuspendedCounter =
+        registerCounter(
+            meterRegistry,
+            SuspensionMetricsDoc.USER_TASK_SUSPENSION_EVENTS,
+            SuspensionAction.SUSPENDED);
+    userTaskResumedCounter =
+        registerCounter(
+            meterRegistry,
+            SuspensionMetricsDoc.USER_TASK_SUSPENSION_EVENTS,
+            SuspensionAction.RESUMED);
     commandBufferedCounter =
         registerCounter(
             meterRegistry,
@@ -69,6 +95,10 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
             SuspensionMetricsDoc.BUFFERED_COMMAND_EVENTS,
             BufferedCommandAction.DROPPED);
 
+    suspendDurationTimer =
+        MicrometerUtil.buildTimer(SuspensionMetricsDoc.SUSPEND_DURATION)
+            .minimumExpectedValue(Duration.ofMillis(10))
+            .register(meterRegistry);
     MicrometerUtil.buildTimer(SuspensionMetricsDoc.RESUME_DURATION)
         .minimumExpectedValue(Duration.ofMillis(10))
         .register(meterRegistry);
@@ -87,11 +117,21 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
   }
 
   public void jobsSuspended(final int count) {
-    jobSuspendedCounter.increment(count);
+    if (count > 0) {
+      jobSuspendedCounter.increment(count);
+    }
   }
 
   public void jobResumed() {
     jobResumedCounter.increment();
+  }
+
+  public void userTaskSuspended() {
+    userTaskSuspendedCounter.increment();
+  }
+
+  public void userTaskResumed() {
+    userTaskResumedCounter.increment();
   }
 
   public void commandBuffered() {
@@ -106,7 +146,37 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
     commandDroppedCounter.increment(count);
   }
 
+  /**
+   * Returns the current monotonic time, to pass to {@link #startSuspendDuration} once the SUSPEND
+   * command was processed. Taking it before processing includes the command's own work in the
+   * duration, while a command that is rejected or fails never starts a measurement.
+   */
+  public long takeSuspendStartTime() {
+    return now();
+  }
+
+  /**
+   * Starts measuring the suspension of the given process instance from {@code startTime}. An
+   * already running measurement is kept, so a restarted suspension is timed from its first start.
+   */
+  public void startSuspendDuration(final long processInstanceKey, final long startTime) {
+    if (suspendStartTimes.size() >= MAX_IN_FLIGHT_DURATIONS) {
+      return;
+    }
+    suspendStartTimes.putIfAbsent(processInstanceKey, startTime);
+  }
+
+  public void stopSuspendDuration(final long processInstanceKey) {
+    final Long startTime = suspendStartTimes.remove(processInstanceKey);
+    if (startTime != null) {
+      suspendDurationTimer.record(now() - startTime, TimeUnit.NANOSECONDS);
+    }
+  }
+
   public void startResumeDuration(final long processInstanceKey) {
+    if (resumeDurationSamples.size() >= MAX_IN_FLIGHT_DURATIONS) {
+      return;
+    }
     resumeDurationSamples.computeIfAbsent(
         processInstanceKey,
         key -> Timer.resource(registry, SuspensionMetricsDoc.RESUME_DURATION.getName()));
@@ -120,16 +190,23 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
   }
 
   /**
-   * Discards the in-flight resume-duration sample for the given key without recording it. Called
-   * when a resuming instance terminates before the resume completes, so the sample does not leak.
+   * Discards the in-flight suspend and resume measurements for the given key without recording
+   * them. Called when an instance completes or terminates before its suspension or resume finishes,
+   * so the entries do not leak.
    */
-  public void cancelResumeDuration(final long processInstanceKey) {
+  public void discardDurations(final long processInstanceKey) {
+    suspendStartTimes.remove(processInstanceKey);
     resumeDurationSamples.remove(processInstanceKey);
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     resumeDurationSamples.clear();
+    suspendStartTimes.clear();
+  }
+
+  private long now() {
+    return registry.config().clock().monotonicTime();
   }
 
   private static Counter registerCounter(

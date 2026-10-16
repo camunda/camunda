@@ -13,7 +13,9 @@ import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 import java.time.Duration;
 
-/** {@link SuspensionMetricsDoc} documents process instance and job suspension metrics. */
+/**
+ * {@link SuspensionMetricsDoc} documents process instance, job and user task suspension metrics.
+ */
 @SuppressWarnings("NullableProblems")
 public enum SuspensionMetricsDoc implements ExtendedMeterDocumentation {
   /** Number of process instance suspension lifecycle events */
@@ -72,6 +74,34 @@ public enum SuspensionMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /** Number of user task suspension lifecycle events */
+  USER_TASK_SUSPENSION_EVENTS {
+    @Override
+    public String getName() {
+      return "zeebe.user.task.suspension.events.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Number of user task suspension lifecycle events";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return ACTION_KEY_NAMES;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
   /** Number of buffered command lifecycle events */
   BUFFERED_COMMAND_EVENTS {
     @Override
@@ -92,6 +122,34 @@ public enum SuspensionMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public KeyName[] getKeyNames() {
       return ACTION_KEY_NAMES;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Wall-clock time from SUSPEND command to SUSPENDED event per process instance */
+  SUSPEND_DURATION {
+    @Override
+    public String getName() {
+      return "zeebe.process.instance.suspend.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Wall-clock time from SUSPEND command to SUSPENDED event per process instance";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return RESUME_DURATION.getTimerSLOs();
     }
 
     @Override
