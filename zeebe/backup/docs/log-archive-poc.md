@@ -536,6 +536,14 @@ Integration tests (broker, filesystem store first, then MinIO):
   restored journal.
 - Side by side: with `continuous` and the log archive both enabled, existing backup tests still pass.
 
+## 15a. Known limits of the PoC
+
+- The root lists every archived snapshot and the state keeps every snapshot descriptor. Without
+  retention both grow without bound (about 17,500 snapshots a year at one every 30 minutes).
+  Retention, or chunking snapshots like log objects, must cover this.
+- A new leader learns only the newest archived snapshot on recovery
+  (`onNewestArchivedSnapshotRecovered`), which is all the uploader needs.
+
 ## 16. Working rules for workstreams
 
 - Work only in the files and packages your workstream owns (section 17). Need a change elsewhere?
