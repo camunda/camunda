@@ -118,11 +118,15 @@ jobs:
           set -euo pipefail
           echo "base=${BASE_REF}" >> "$GITHUB_OUTPUT"
 
-          # Added/modified/renamed files, not removed: a deleted spec cannot fail.
+          # One listing, carrying each file's status, so the run decision and the
+          # gating scope can read it differently.
           files="$(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
-            --jq '.[] | select(.status != "removed") | .filename')"
+            --jq '.[] | "\(.status)\t\(.filename)"')"
 
-          suite_changed="$(printf '%s\n' "$files" | grep -F "$SUITE_PREFIX" || true)"
+          # Run decision: ANY suite file changed, including deletions — a PR that
+          # only removes a fixture, resource or spec can still break the suite and
+          # must be exercised.
+          suite_changed="$(printf '%s\n' "$files" | cut -f2- | grep -F "$SUITE_PREFIX" || true)"
           if [[ -z "$suite_changed" ]]; then
             echo "No files under ${SUITE_PREFIX} changed; suite tests will be skipped."
             echo "run-tests=false" >> "$GITHUB_OUTPUT"
@@ -134,15 +138,17 @@ jobs:
           fi
           echo "run-tests=true" >> "$GITHUB_OUTPUT"
 
-          # Spec files only, path relative to the suite root (matching the
-          # Playwright report). Restricted to the specs the PR matrix actually
-          # executes (the api-tests + chromium projects), so the gate never
-          # greens a changed spec it did not run: v2-stateless-tests (needs
+          # Gating scope: added/modified/renamed spec files only (a removed spec
+          # cannot fail), path relative to the suite root (matching the Playwright
+          # report), and restricted to the specs the PR matrix actually executes
+          # (the api-tests + chromium projects), so the gate never greens a
+          # changed spec it did not run: v2-stateless-tests (needs
           # V2_STATELESS_TESTS=true, which swaps the whole project list),
           # analytics-exporter (its own isolated project) and optimize (its own
           # projects) are excluded here — they are covered by their dedicated
           # nightly workflows, exactly as the on-demand run leaves them out.
-          changed_specs="$(printf '%s\n' "$suite_changed" \
+          changed_specs="$(printf '%s\n' "$files" \
+            | awk -F'\t' '$1 != "removed" {print $2}' \
             | sed -n "s#^${SUITE_PREFIX}##p" \
             | grep -E '\.spec\.ts$' \
             | grep -E '^tests/' \
