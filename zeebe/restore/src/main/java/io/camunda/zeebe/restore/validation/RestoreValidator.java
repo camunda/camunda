@@ -201,16 +201,8 @@ public final class RestoreValidator
   }
 
   private Map<Integer, PartitionRestore> resolveRestorePoint(final RestoreRequest request) {
-    final var backups = findBackups(request);
-    return backups.backupsByPartitionId().entrySet().stream()
-        .collect(
-            Collectors.toMap(
-                Entry::getKey,
-                e ->
-                    PartitionRestore.ofBackups(
-                        e.getValue().stream()
-                            .mapToLong(BackupMetadata.CheckpointEntry::checkpointId)
-                            .toArray())));
+    return findBackups(request).partitions().entrySet().stream()
+        .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().toPartitionRestore()));
   }
 
   private RestorableBackups findBackups(final RestoreRequest request) {
@@ -237,8 +229,8 @@ public final class RestoreValidator
       final RestorableBackups restorableBackups, final int exportedPartitionCount) {
     final var store =
         requireNonNull(backupStore, "Backup store must be configured to load backups");
-    restorableBackups.backupsByPartitionId().values().stream()
-        .map(backups -> backups.getLast().checkpointId())
+    restorableBackups.partitions().values().stream()
+        .map(partition -> partition.lastBackup().checkpointId())
         .distinct()
         .sorted()
         .forEach(

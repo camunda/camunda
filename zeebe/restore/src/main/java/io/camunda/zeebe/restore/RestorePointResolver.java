@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -73,7 +74,7 @@ public class RestorePointResolver {
         "Finding restorable backups with commonCheckpoint={}, partitionCount={}",
         commonCheckpoint,
         allRestorableCheckpoints.size());
-    final var backupsByPartitionId = new HashMap<Integer, List<CheckpointEntry>>();
+    final var partitions = new HashMap<Integer, PartitionBackups>();
     for (final var restorableCheckpoints : allRestorableCheckpoints) {
       final var partitionId = restorableCheckpoints.partitionId();
       final var backups = new ArrayList<CheckpointEntry>();
@@ -101,9 +102,9 @@ public class RestorePointResolver {
       LOG.atDebug()
           .addKeyValue("partition", partitionId)
           .log("Found required backups: requiredBackups={}", backups.size());
-      backupsByPartitionId.put(partitionId, backups);
+      partitions.put(partitionId, new PartitionBackups(backups));
     }
-    return new RestorableBackups(commonCheckpoint, backupsByPartitionId);
+    return new RestorableBackups(commonCheckpoint, partitions);
   }
 
   /**
@@ -417,7 +418,30 @@ public class RestorePointResolver {
   public record RestorableCheckpoints(
       int partitionId, @NonNull List<CheckpointEntry> checkpoints) {}
 
+  /**
+   * @param globalCheckpointId the checkpoint every partition is restored to
+   * @param partitions what each partition is restored from, by partition id
+   */
   public record RestorableBackups(
-      long globalCheckpointId,
-      @NonNull Map<Integer, @NonNull List<CheckpointEntry>> backupsByPartitionId) {}
+      long globalCheckpointId, @NonNull Map<Integer, @NonNull PartitionBackups> partitions) {}
+
+  /**
+   * @param backups the backups the partition is restored from, in ascending order. The last one is
+   *     the first backup at or after the global checkpoint.
+   */
+  public record PartitionBackups(@NonNull List<CheckpointEntry> backups) {
+
+    public PartitionBackups {
+      backups = List.copyOf(backups);
+    }
+
+    public @NonNull CheckpointEntry lastBackup() {
+      return backups.getLast();
+    }
+
+    public @NonNull PartitionRestore toPartitionRestore() {
+      return PartitionRestore.ofBackups(
+          backups.stream().map(CheckpointEntry::checkpointId).toList());
+    }
+  }
 }
