@@ -17,17 +17,16 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Registers the physical tenant in its Event Plane while this broker leads the tenant's first
- * partition, if {@code camunda.event-plane.endpoint} is set. Every tenant numbers its partitions
- * from 1, so its leader registers it, and each new leader again. A registration changes nothing for
- * an environment the Event Plane knows, so two leaders that overlap briefly do no harm.
+ * Registers the physical tenant in its Event Plane while this broker leads one of the tenant's
+ * partitions, if {@code camunda.event-plane.endpoint} is set. Every partition's leader registers
+ * it, as each will publish the partition's log, so the tenant registers even while some of its
+ * partitions have no leader. A registration changes nothing for an environment the Event Plane
+ * knows, so the leaders' registrations, and new leaders', do no harm.
  *
  * <p>Each partition has its own instance of this step, which holds that partition's registration.
  * Registering is best effort: it never fails a transition.
  */
 public final class EventPlaneRegistrationStep implements PartitionTransitionStep {
-
-  private static final int REGISTERING_PARTITION = 1;
 
   private @Nullable EventPlaneRegistration registration;
 
@@ -47,9 +46,7 @@ public final class EventPlaneRegistrationStep implements PartitionTransitionStep
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var cfg = context.getBrokerCfg().getEventPlane();
     final var partitionId = context.partitionId();
-    if (targetRole != Role.LEADER
-        || cfg.getEndpoint() == null
-        || partitionId.number() != REGISTERING_PARTITION) {
+    if (targetRole != Role.LEADER || cfg.getEndpoint() == null) {
       return CompletableActorFuture.completed(null);
     }
 

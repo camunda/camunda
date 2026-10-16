@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class EventPlaneRegistrationStepTest {
 
@@ -54,10 +55,11 @@ final class EventPlaneRegistrationStepTest {
     scheduler.close();
   }
 
-  @Test
-  void registersWhileLeadingTheFirstPartition() {
+  @ParameterizedTest
+  @ValueSource(ints = {1, 2, 7})
+  void registersWhileLeadingAnyPartition(final int partition) {
     // when
-    step.transitionTo(context(1), 1, Role.LEADER).join();
+    step.transitionTo(context(partition), 1, Role.LEADER).join();
 
     // then
     assertThat(submitted).singleElement().isInstanceOf(EventPlaneRegistration.class);
@@ -68,15 +70,6 @@ final class EventPlaneRegistrationStepTest {
   void registersOnlyAsLeader(final Role role) {
     // when
     step.transitionTo(context(1), 1, role).join();
-
-    // then
-    assertThat(submitted).isEmpty();
-  }
-
-  @Test
-  void registersOnlyFromTheFirstPartition() {
-    // when
-    step.transitionTo(context(2), 1, Role.LEADER).join();
 
     // then
     assertThat(submitted).isEmpty();

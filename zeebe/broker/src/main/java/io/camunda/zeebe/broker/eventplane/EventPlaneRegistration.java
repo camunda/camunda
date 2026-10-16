@@ -125,8 +125,9 @@ public final class EventPlaneRegistration extends Actor {
               physicalTenantId,
               clusterId,
               endpoint);
+      // Every partition's leader registers the tenant, so this is the usual answer.
       case 200 ->
-          LOG.info(
+          LOG.debug(
               "The Event Plane at {} knows physical tenant {} of cluster {} already",
               endpoint,
               physicalTenantId,
