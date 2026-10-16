@@ -14,6 +14,7 @@ import {cleanup} from 'vitest-browser-react';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {holdResponse} from '#/vitest-modules/hold-response';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {
@@ -183,6 +184,7 @@ describe('<ProcessInstanceOperations />', () => {
 		async ({action, state, pending, success, mock}, {worker}) => {
 			mockViewport(false);
 			const instance = createInstance(state);
+			const command = holdResponse();
 			const requests: Request[] = [];
 			const onRequest = ({request}: {request: Request}) => {
 				if (request.method !== 'GET') {
@@ -197,7 +199,7 @@ describe('<ProcessInstanceOperations />', () => {
 							action === 'Retry'
 								? HttpResponse.json({batchOperationKey: 'retry-batch'}, {status: 202})
 								: new HttpResponse(null, {status: 204}),
-						delay: 200,
+						delay: command.held,
 					}),
 					mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
 					mockGetProcessInstanceEndpoint({
@@ -207,6 +209,7 @@ describe('<ProcessInstanceOperations />', () => {
 				const screen = await renderOperations(instance, {basepath: '/deployment'});
 				await execute(screen, action, instance.processInstanceKey);
 				await expect.element(screen.getByText(pending)).toBeVisible();
+				command.release();
 				if (action === 'Delete') {
 					await expect.poll(() => notificationsStore.notifications[0]?.title).toBe(success);
 				} else {
@@ -334,14 +337,20 @@ describe('<ProcessInstanceOperations />', () => {
 		async ({action, state, target, mock}, {worker}) => {
 			mockViewport(false);
 			const instance = createInstance(state);
+			const targetRead = holdResponse();
 			worker.use(
 				mock({successResponse: new HttpResponse(null, {status: 204})}),
+				// Rendering reads the instance from initialData, so the operation's first state read takes this `once` GET.
 				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance), once: true}),
-				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: target})}),
+				mockGetProcessInstanceEndpoint({
+					successResponse: HttpResponse.json({...instance, state: target}),
+					delay: targetRead.held,
+				}),
 			);
 			const screen = await renderOperations(instance);
 			await execute(screen, action, instance.processInstanceKey);
 			await expect.element(screen.getByText(action === 'Suspend' ? 'Suspending...' : 'Resuming...')).toBeVisible();
+			targetRead.release();
 			await expect
 				.element(screen.getByText(action === 'Suspend' ? 'Instance suspended' : 'Instance resumed'))
 				.toBeVisible();
@@ -360,8 +369,9 @@ describe('<ProcessInstanceOperations />', () => {
 	}) => {
 		const setCollapsed = mockViewport(true);
 		const instance = createInstance('ACTIVE');
+		const command = holdResponse();
 		worker.use(
-			mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 500}),
+			mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: command.held}),
 			mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: 'SUSPENDED'})}),
 		);
 		const screen = await renderOperations(instance);
@@ -374,6 +384,7 @@ describe('<ProcessInstanceOperations />', () => {
 		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).toBeEnabled();
 		setCollapsed(false);
 		await expect.element(screen.getByText('Suspending...')).toBeVisible();
+		command.release();
 		await expect.element(screen.getByText('Instance suspended')).toBeVisible();
 	});
 
