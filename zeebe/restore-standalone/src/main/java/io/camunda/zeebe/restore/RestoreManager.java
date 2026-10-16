@@ -9,40 +9,28 @@ package io.camunda.zeebe.restore;
 
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.common.BackupMetadata;
-import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.VisibleForTesting;
-import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,29 +53,8 @@ public class RestoreManager implements CloseableSilently {
   private final BrokerCfg physicalTenantConfiguration;
   private final Set<PartitionMetadata> partitions;
   private final BackupStore backupStore;
-  private final BackupMetadataSyncer metadataSyncer;
   private final MeterRegistry meterRegistry;
-  @Nullable private final ExporterPositionMapper exporterPositionMapper;
   private final ExecutorService executor;
-
-  /** Restores the default physical tenant, configured by {@code configuration} itself. */
-  @VisibleForTesting
-  RestoreManager(
-      final BrokerCfg configuration,
-      final BackupStore backupStore,
-      final MeterRegistry meterRegistry) {
-    this(
-        configuration,
-        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-        configuration,
-        ClusterRestore.localPartitionsOf(
-            configuration,
-            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, configuration),
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID),
-        backupStore,
-        null,
-        meterRegistry);
-  }
 
   public RestoreManager(
       final BrokerCfg configuration,
@@ -95,133 +62,15 @@ public class RestoreManager implements CloseableSilently {
       final BrokerCfg physicalTenantConfiguration,
       final Set<PartitionMetadata> partitions,
       final BackupStore backupStore,
-      @Nullable final ExporterPositionMapper exporterPositionMapper,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.physicalTenantId = physicalTenantId;
     this.physicalTenantConfiguration = physicalTenantConfiguration;
     this.partitions = Set.copyOf(partitions);
     this.backupStore = backupStore;
-    metadataSyncer = new BackupMetadataSyncer(backupStore, meterRegistry);
-    this.exporterPositionMapper = exporterPositionMapper;
     this.meterRegistry = meterRegistry;
     executor =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("zeebe-restore-", 0).factory());
-  }
-
-  public void restore(final long backupId, final boolean validateConfig)
-      throws IOException, ExecutionException, InterruptedException {
-    restore(new long[] {backupId}, validateConfig);
-  }
-
-  public void restore(final RestoreSelection selection, final boolean validateConfig)
-      throws IOException, ExecutionException, InterruptedException {
-    if (selection.hasBackupIds()) {
-      restore(selection.backupIdsAsArray(), validateConfig);
-    } else {
-      restore(selection.from(), selection.to(), validateConfig);
-    }
-  }
-
-  public void restore(
-      @Nullable final Instant from, @Nullable final Instant to, final boolean validateConfig)
-      throws IOException, ExecutionException, InterruptedException {
-    if (exporterPositionMapper == null) {
-      if (from == null) {
-        throw new IllegalArgumentException(
-            "Expected `from` to not be null, but got <null>. When the restore is not using a RDBMS as secondary storage, `from` parameter is required");
-      }
-      restoreTimeRange(from, to, validateConfig);
-    } else {
-      restoreRdbms(exporterPositionMapper, from, to, validateConfig);
-    }
-  }
-
-  private void restoreRdbms(
-      final ExporterPositionMapper positionMapper,
-      @Nullable final Instant from,
-      @Nullable final Instant to,
-      final boolean validateConfig)
-      throws IOException, ExecutionException, InterruptedException {
-    final var partitionCount = physicalTenantConfiguration.getCluster().getPartitionsCount();
-
-    final var exportedPositions = exportedPositions(positionMapper, partitionCount).join();
-    LOG.info("Exported positions for all partitions: {}", exportedPositions);
-
-    // Load backup metadata for each partition in parallel
-    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
-
-    final var restorableBackups =
-        RestorePointResolver.resolve(metadataByPartition, from, to, exportedPositions);
-
-    // Convert List<CheckpointEntry> to long[] of checkpoint IDs per partition
-    final var backupIdsByPartition =
-        restorableBackups.backupsByPartitionId().entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Entry::getKey,
-                    e ->
-                        e.getValue().stream()
-                            .mapToLong(BackupMetadata.CheckpointEntry::checkpointId)
-                            .toArray()));
-
-    LOG.info(
-        "Restoring RDBMS backups in range [{},{}] to global checkpoint {}: {}",
-        from,
-        to,
-        restorableBackups.globalCheckpointId(),
-        backupIdsByPartition);
-
-    restore(backupIdsByPartition, validateConfig);
-  }
-
-  public void restoreTimeRange(
-      final @Nullable Instant from, final @Nullable Instant to, final boolean validateConfig)
-      throws IOException, ExecutionException, InterruptedException {
-    final var partitionCount = physicalTenantConfiguration.getCluster().getPartitionsCount();
-
-    // Load backup metadata for each partition in parallel
-    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
-
-    final var restorableBackups = RestorePointResolver.resolve(metadataByPartition, from, to, null);
-
-    // Convert List<CheckpointEntry> to long[] of checkpoint IDs per partition
-    final var backupIdsByPartition =
-        restorableBackups.backupsByPartitionId().entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Entry::getKey,
-                    e ->
-                        e.getValue().stream()
-                            .mapToLong(BackupMetadata.CheckpointEntry::checkpointId)
-                            .toArray()));
-
-    LOG.info(
-        "Restoring time-range backups in range [{},{}] to global checkpoint {}: {}",
-        from,
-        to,
-        restorableBackups.globalCheckpointId(),
-        backupIdsByPartition);
-
-    restore(backupIdsByPartition, validateConfig);
-  }
-
-  public void restore(final long[] backupIds, final boolean validateConfig)
-      throws IOException, ExecutionException, InterruptedException {
-    restore(toBackupIdsByPartition(backupIds), validateConfig);
-  }
-
-  /**
-   * Converts a common array of backup IDs to a map where each partition uses the same backup IDs.
-   *
-   * @param backupIds the backup IDs to use for all partitions
-   * @return a map from partition ID to backup IDs
-   */
-  private Map<Integer, long[]> toBackupIdsByPartition(final long[] backupIds) {
-    final var partitionCount = physicalTenantConfiguration.getCluster().getPartitionsCount();
-    return IntStream.rangeClosed(1, partitionCount)
-        .boxed()
-        .collect(Collectors.toMap(partition -> partition, partition -> backupIds));
   }
 
   /**
@@ -317,46 +166,10 @@ public class RestoreManager implements CloseableSilently {
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
   }
 
-  private CompletableFuture<Map<Integer, Long>> exportedPositions(
-      final ExporterPositionMapper positionMapper, final int partitionCount) {
-    return FuturesUtil.parTraverse(
-            IntStream.rangeClosed(1, partitionCount).boxed().toList(),
-            partition ->
-                CompletableFuture.supplyAsync(
-                    () -> {
-                      final var positionModel = positionMapper.findOne(partition);
-                      if (positionModel == null || positionModel.lastExportedPosition() == null) {
-                        throw new IllegalArgumentException(
-                            "No exported position found for partition " + partition + " in RDBMS");
-                      }
-
-                      return Map.entry(partition, positionModel.lastExportedPosition());
-                    },
-                    executor))
-        .thenApply(
-            s -> s.stream().collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue)));
-  }
-
-  private CompletableFuture<List<BackupMetadata>> loadMetadataForAllPartitions(
-      final int partitionCount) {
-    return FuturesUtil.parTraverse(
-        IntStream.rangeClosed(1, partitionCount).boxed().toList(),
-        partition ->
-            metadataSyncer
-                .load(partition)
-                .thenApply(
-                    opt ->
-                        opt.orElseThrow(
-                            () ->
-                                new IllegalStateException(
-                                    "No backup metadata found for partition " + partition))));
-  }
-
   @Override
   public void close() {
     try {
       backupStore.closeAsync().join();
-      metadataSyncer.close();
       executor.shutdown();
       if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
         executor.shutdownNow();

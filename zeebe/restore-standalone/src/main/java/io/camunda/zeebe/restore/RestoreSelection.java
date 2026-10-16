@@ -61,10 +61,6 @@ public record RestoreSelection(List<Long> backupIds, @Nullable Instant from, @Nu
     return from != null || to != null;
   }
 
-  public long[] backupIdsAsArray() {
-    return backupIds.stream().mapToLong(Long::longValue).toArray();
-  }
-
   /**
    * This selection expressed as {@code ClusterConfigurationManagementRequest.RestoreParameters} —
    * the wire shape a {@code RestoreRequest} carries, with {@code from}/{@code to} as strings rather

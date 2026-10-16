@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
@@ -47,7 +46,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,7 +156,6 @@ public final class ClusterRestore {
                     placementPartitionCounts,
                     physicalTenantId),
                 target.backupStore().get(),
-                target.exporterPositionMapper(),
                 meterRegistry)) {
           manager.restore(entry.getValue(), validateConfig);
           restoredPartitionCounts.put(physicalTenantId, entry.getValue().size());
@@ -656,13 +653,9 @@ public final class ClusterRestore {
    * @param backupStore that tenant's backup store, resolved only when the tenant is actually
    *     restored. A supplier rather than a store: a tenant may have no backup store configured at
    *     all, which must not fail a restore that does not name it
-   * @param exporterPositionMapper that tenant's exported positions when its secondary storage is
-   *     RDBMS, otherwise {@code null}
    */
   public record PhysicalTenantRestoreTarget(
-      BrokerCfg configuration,
-      Supplier<BackupStore> backupStore,
-      @Nullable ExporterPositionMapper exporterPositionMapper) {}
+      BrokerCfg configuration, Supplier<BackupStore> backupStore) {}
 
   /** What this run may do to data already in the target directory. */
   public enum TargetDataPolicy {
