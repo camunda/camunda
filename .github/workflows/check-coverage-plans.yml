@@ -17,15 +17,35 @@ on:
   pull_request:
     paths:
       - 'qa/**'
+      - 'configuration/src/test/**'
+      - 'operate/client/**'
       - 'service/src/test/**'
       - 'webapp/client/**'
       - '.github/scripts/coverage-plan-check/**'
       - '.github/workflows/check-coverage-plans.yml'
-  # The PR filter above covers every path the current plans point at, with
-  # headroom. It still has to be widened by hand when a plan starts pointing
-  # somewhere new, so a PR that moves a test outside it would slip through. The
-  # unfiltered push and schedule runs below are the backstop: a stale filter then
-  # costs one merge of delay rather than silence.
+  # Every directory the current plans point at. After adding a plan, check it
+  # against what the plans actually reference rather than guessing:
+  #
+  #   grep -h '^\s*- path:' qa/coverage/*.yml | sed 's/.*path: *//' \
+  #     | cut -d/ -f1-2 | sort -u
+  #
+  # That prints what is referenced, not the list below -- each entry here is
+  # that widened to a prefix worth filtering on. It is a check, not a
+  # generator.
+  #
+  # `configuration/` was missing, and the cost was real: the PR that moved
+  # AuditLogTest.java into a `data` package touched no filtered path, so this
+  # check never ran on it and it merged with a plan pointing at a file that no
+  # longer existed. The unfiltered push run below caught it afterwards, on
+  # main, as a paging alert.
+  #
+  # So the filter decides WHEN a break is caught, not whether. The push and
+  # schedule runs are the backstop, which is why a stale filter costs one
+  # merge of delay rather than silence.
+  #
+  # Kept deliberately broad: `webapp/client/**` rather than the
+  # `webapp/client/apps/**` the paths strictly imply. Narrowing to exactly
+  # what today's plans reference buys nothing and misses the next one.
   push:
     branches:
       - main
