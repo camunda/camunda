@@ -59,7 +59,7 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
       timeRange = createProcessInstancesAndTakeBackups(client, processKey);
     }
     takeAndAwaitBackup();
-    ExportersActuator.of(broker).disableExporter(RDBMS_EXPORTER_NAME);
+    disableRdbmsExporter();
     awaitBackupCoversExportedPositionsOnEveryPartition();
     final var clusterActuator = enterRecovering();
     final var dataSource =

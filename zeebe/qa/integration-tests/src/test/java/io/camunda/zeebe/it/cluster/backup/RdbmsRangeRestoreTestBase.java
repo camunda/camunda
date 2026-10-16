@@ -142,8 +142,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     }
     takeAndAwaitBackup();
 
-    final var exporterActuator = ExportersActuator.of(broker);
-    exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
+    disableRdbmsExporter();
 
     awaitBackupCoversExportedPositionsOnEveryPartition();
 
@@ -164,8 +163,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     }
     takeAndAwaitBackup();
 
-    final var exporterActuator = ExportersActuator.of(broker);
-    exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
+    disableRdbmsExporter();
 
     awaitBackupCoversExportedPositionsOnEveryPartition();
 
@@ -186,7 +184,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     try (final var client = broker.newClientBuilder().build()) {
       deployTestProcess(client);
       takeAndAwaitBackup();
-      ExportersActuator.of(broker).disableExporter(RDBMS_EXPORTER_NAME);
+      disableRdbmsExporter();
       awaitBackupCoversExportedPositionsOnEveryPartition();
 
       createdBeforeMarker =
@@ -233,6 +231,31 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
    * directory.
    */
   protected abstract Path backupDir();
+
+  /**
+   * Disables the RDBMS exporter once it has recorded an exported position on every partition.
+   *
+   * <p>The exporter records its position only when it opens, and fails to open until the RDBMS
+   * schema is ready. Its director retries the open with a backoff on the pinned actor clock, so
+   * until the clock moves on, a retry can stay pending. Disabled before it opened, the exporter
+   * never records a position on that partition, and no backup can ever cover it.
+   */
+  protected final void disableRdbmsExporter() {
+    await("the RDBMS exporter recorded a position on every partition")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              progressClock(broker, 1000);
+              assertThat(IntStream.rangeClosed(1, PARTITION_COUNT).boxed())
+                  .allSatisfy(
+                      partitionId ->
+                          assertThat(exporterPositionMapper.findOne(partitionId))
+                              .describedAs("exported position for partition %d", partitionId)
+                              .isNotNull());
+            });
+    ExportersActuator.of(broker).disableExporter(RDBMS_EXPORTER_NAME);
+  }
 
   /**
    * Waits until a freshly-taken backup exists whose per-partition checkpoint position is at or
