@@ -444,6 +444,29 @@ writes in the PoC.
 
 The new timeline id is deterministic so that all brokers restoring independently agree on it.
 
+## 13a. What restore relies on (writer guarantees)
+
+Restore (W9, merged) validates everything it reads and fails loudly. Writers must guarantee:
+
+- **Root N** is the state *after* applying seq N. Restore replays commits from `rootSeq + 1`, and each
+  object must start at F + 1.
+- **Seq 1** of a timeline is `TIMELINE_STARTED`.
+- **Chunk checkpoints:** a chunk file lists every covered checkpoint with position in
+  `[firstPosition, lastPosition]`; `firstCheckpointId`/`lastCheckpointId` are the min/max of exactly
+  those (-1 if none). Root `openCheckpoints` holds every covered checkpoint not in a sealed chunk.
+- **Checksums:** `IndexChunk.sha256` is the hash of exactly the bytes stored at `chunk.key`;
+  `LogObject.sizeBytes`/`sha256` describe exactly the bytes stored at the object key.
+- **Frames** carry the unchanged bytes and checksum of `getReplicatableJournalRecord()`; the object
+  header's partition id and first/last index match the `LogObject`.
+- **Snapshot descriptor:** `files` lists every key under `state/<id>/` except `descriptor.json`,
+  including `<id>.checksum`; `fileCount == files.size()`; the id is the local snapshot's id.
+- **Timeline file** `log-archive-timeline` is written without a trailing newline; readers `strip()`
+  it.
+- **Checkpoint position** is the asqn of a journal entry (the checkpoint record starts its batch), as
+  for existing backups.
+- **After a restore**, the new timeline starts at the restored journal's first index, so a later
+  restore from it needs an archived snapshot with index ≥ `startIndex - 1` (unless `startIndex` is 1).
+
 ## 14. Protocol registration checklist
 
 Modelled on commit `dd2258a2ba2` ("add suspension batch traversal records"), which added a value
