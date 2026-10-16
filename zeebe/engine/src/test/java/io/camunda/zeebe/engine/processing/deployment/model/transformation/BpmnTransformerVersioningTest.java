@@ -146,7 +146,8 @@ class BpmnTransformerVersioningTest {
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(
                 TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 2,
-                TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2));
+                TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2,
+                TransformerSlot.SCRIPT_TASK.id(), 2));
   }
 
   @Test
@@ -165,7 +166,8 @@ class BpmnTransformerVersioningTest {
             Map.of(
                 TransformerSlot.SIGNAL.id(), 2,
                 TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 2,
-                TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2));
+                TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2,
+                TransformerSlot.SCRIPT_TASK.id(), 2));
   }
 
   @Test
@@ -184,7 +186,8 @@ class BpmnTransformerVersioningTest {
             Map.of(
                 TransformerSlot.SIGNAL.id(), 2,
                 TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 2,
-                TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2));
+                TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2,
+                TransformerSlot.SCRIPT_TASK.id(), 2));
   }
 
   /** Delegating marker handler — SignalTransformer is final, so we wrap rather than subclass. */

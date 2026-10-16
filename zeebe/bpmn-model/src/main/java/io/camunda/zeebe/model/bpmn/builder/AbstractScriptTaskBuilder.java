@@ -19,7 +19,11 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Script;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
+import java.util.function.Consumer;
 
 /**
  * @author Sebastian Menski
@@ -81,6 +85,25 @@ public abstract class AbstractScriptTaskBuilder<B extends AbstractScriptTaskBuil
   public B zeebeResultVariable(final String resultVariable) {
     final ZeebeScript zeebeScript = getCreateSingleExtensionElement(ZeebeScript.class);
     zeebeScript.setResultVariable(resultVariable);
+    return myself;
+  }
+
+  /**
+   * Adds a linked resource to the script task. Only effective for script tasks implemented by a job
+   * worker (i.e. with a {@code zeebe:taskDefinition}).
+   *
+   * @param linkedResourceBuilderConsumer the consumer to configure the linked resource
+   * @return the builder object
+   */
+  public B zeebeLinkedResources(
+      final Consumer<LinkedResourceBuilder> linkedResourceBuilderConsumer) {
+    final ZeebeLinkedResources linkedResources =
+        myself.getCreateSingleExtensionElement(ZeebeLinkedResources.class);
+    final ZeebeLinkedResource linkedResource =
+        myself.createChild(linkedResources, ZeebeLinkedResource.class);
+    linkedResource.setBindingType(ZeebeBindingType.latest);
+
+    linkedResourceBuilderConsumer.accept(new LinkedResourceBuilder(linkedResource, myself));
     return myself;
   }
 }
