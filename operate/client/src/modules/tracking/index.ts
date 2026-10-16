@@ -307,28 +307,28 @@ type Events =
     }
   | {
       eventName: 'batch-operation-details-opened';
-      batchOperationType: BatchOperationType;
+      batchOperationType: BatchOperationType | null;
       batchOperationState: BatchOperationState;
     }
   | {
       eventName: 'batch-operation-details-loaded';
-      batchOperationType: BatchOperationType;
+      batchOperationType: BatchOperationType | null;
       batchOperationState: BatchOperationState;
       operationsTotalCount: number;
     }
   | {
       eventName: 'batch-operation-suspended';
-      batchOperationType: BatchOperationType;
+      batchOperationType: BatchOperationType | null;
       batchOperationState: BatchOperationState;
     }
   | {
       eventName: 'batch-operation-resumed';
-      batchOperationType: BatchOperationType;
+      batchOperationType: BatchOperationType | null;
       batchOperationState: BatchOperationState;
     }
   | {
       eventName: 'batch-operation-canceled';
-      batchOperationType: BatchOperationType;
+      batchOperationType: BatchOperationType | null;
       batchOperationState: BatchOperationState;
     }
   /**

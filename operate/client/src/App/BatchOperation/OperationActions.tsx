@@ -22,7 +22,7 @@ import {tracking} from 'modules/tracking';
 type Props = {
   batchOperationKey: string;
   batchOperationState: BatchOperationState;
-  batchOperationType: BatchOperationType;
+  batchOperationType: BatchOperationType | null;
 };
 
 type OperationAction = 'SUSPEND' | 'RESUME' | 'CANCEL';
