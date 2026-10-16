@@ -2847,6 +2847,9 @@ jobs:
         run: bats .github/scripts/mergeback/mergeback.bats
       - name: Run scoped-run verdict tests
         run: node --test .github/scripts/scoped-run-junit-verdict.test.mjs
+      - name: Run coverage-plan planned-for-paths tests
+        run: node --test .github/scripts/coverage-plan-check/planned-for-paths.test.mjs
+
       - name: Run failing-test owner resolver tests
         run: bats .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.bats
       - name: Run OC nightly suite-health tests
