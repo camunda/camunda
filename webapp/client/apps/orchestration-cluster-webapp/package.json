@@ -38,7 +38,7 @@
 		"@tanstack/react-query-devtools": "5.104.2",
 		"@tanstack/react-router": "1.170.44",
 		"@tanstack/react-router-devtools": "1.167.2",
-		"@tanstack/react-virtual": "3.14.17",
+		"@tanstack/react-virtual": "3.14.19",
 		"@tanstack/router-plugin": "1.168.45",
 		"@xstate/react": "6.1.0",
 		"bpmn-js": "18.31.0",
