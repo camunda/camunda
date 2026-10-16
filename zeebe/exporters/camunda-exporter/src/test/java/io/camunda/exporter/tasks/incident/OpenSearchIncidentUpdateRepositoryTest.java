@@ -294,6 +294,7 @@ public final class OpenSearchIncidentUpdateRepositoryTest {
         "listViewFullQualifiedName",
         "flowNodeAlias",
         "operationAlias",
+        () -> Long.MAX_VALUE,
         client,
         Runnable::run,
         LOGGER);

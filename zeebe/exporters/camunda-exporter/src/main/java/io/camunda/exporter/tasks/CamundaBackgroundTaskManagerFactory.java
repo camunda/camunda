@@ -201,6 +201,7 @@ public final class CamundaBackgroundTaskManagerFactory {
         listViewTemplate.getFullQualifiedName(),
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
+        metadata::getLastFlushedPosition,
         asyncClient,
         executor,
         logger);
@@ -254,6 +255,7 @@ public final class CamundaBackgroundTaskManagerFactory {
         listViewTemplate.getFullQualifiedName(),
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
+        metadata::getLastFlushedPosition,
         asyncClient,
         executor,
         logger);
