@@ -32,6 +32,7 @@ public class BrokerCfg {
   private ProcessingCfg processingCfg = new ProcessingCfg();
 
   private ExperimentalCfg experimental = new ExperimentalCfg();
+  private EventPlaneCfg eventPlane = new EventPlaneCfg();
 
   private boolean executionMetricsExporterEnabled;
 
@@ -74,6 +75,14 @@ public class BrokerCfg {
 
   public void setNetwork(final NetworkCfg network) {
     this.network = network;
+  }
+
+  public EventPlaneCfg getEventPlane() {
+    return eventPlane;
+  }
+
+  public void setEventPlane(final EventPlaneCfg eventPlane) {
+    this.eventPlane = eventPlane;
   }
 
   public ClusterCfg getCluster() {
@@ -199,6 +208,8 @@ public class BrokerCfg {
         + processingCfg
         + ", experimental="
         + experimental
+        + ", eventPlane="
+        + eventPlane
         + ", executionMetricsExporterEnabled="
         + executionMetricsExporterEnabled
         + '}';
