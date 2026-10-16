@@ -124,12 +124,12 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_INITIALIZATION,
             BatchOperationIntent.INITIALIZE,
-            new BatchOperationInitializationInitializeProcessor(writers))
+            new BatchOperationInitializationInitializeProcessor(writers, processingState))
         .onCommand(
             ValueType.BATCH_OPERATION_INITIALIZATION,
             BatchOperationIntent.FINISH_INITIALIZATION,
             new BatchOperationInitializationFinishInitializationProcessor(
-                writers, batchOperationMetrics))
+                writers, processingState, batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.FAIL,

@@ -123,6 +123,8 @@ public final class BatchOperationExecutionExecuteProcessor
       return;
     }
 
+    executionRecord.setStorageOrdinal(batchOperation.getStorageOrdinal());
+
     // if suspended, skip execution and stop the EXECUTE-loop
     if (batchOperation.isSuspended()) {
       final var message = "Batch operation '%d' is suspended.".formatted(batchKey);
@@ -140,7 +142,7 @@ public final class BatchOperationExecutionExecuteProcessor
           command.getPartitionId());
 
       appendBatchOperationExecutionExecutedEvent(batchOperation, Collections.emptySet());
-      appendBatchOperationExecutionCompletedEvent(command);
+      appendBatchOperationExecutionCompletedEvent(command, batchOperation);
 
       metrics.stopTotalExecutionLatencyMeasure(batchKey);
       return;
@@ -150,7 +152,7 @@ public final class BatchOperationExecutionExecuteProcessor
     metrics.stopStartExecuteLatencyMeasure(batchKey);
 
     // mark the items as in progress
-    appendBatchOperationExecutionExecutingEvent(command.getValue(), Set.copyOf(entityKeys));
+    appendBatchOperationExecutionExecutingEvent(batchOperation, Set.copyOf(entityKeys));
 
     // retrieve the handler for the batch operation type and execute each itemKey with it
     final var handler = handlers.get(batchOperation.getBatchOperationType());
@@ -182,6 +184,7 @@ public final class BatchOperationExecutionExecuteProcessor
         command.getPartitionId());
     final var followupCommand = new BatchOperationExecutionRecord();
     followupCommand.setBatchOperationKey(batchKey);
+    followupCommand.setStorageOrdinal(batchOperation.getStorageOrdinal());
     commandWriter.appendFollowUpCommand(
         command.getKey(),
         BatchOperationExecutionIntent.EXECUTE,
@@ -192,16 +195,16 @@ public final class BatchOperationExecutionExecuteProcessor
   }
 
   private void appendBatchOperationExecutionExecutingEvent(
-      final BatchOperationExecutionRecord executionRecord, final Set<Long> keys) {
+      final PersistedBatchOperation batchOperation, final Set<Long> keys) {
     final var batchExecute = new BatchOperationExecutionRecord();
-    batchExecute.setBatchOperationKey(executionRecord.getBatchOperationKey());
+    batchExecute.setBatchOperationKey(batchOperation.getKey());
+    batchExecute.setStorageOrdinal(batchOperation.getStorageOrdinal());
     batchExecute.setItemKeys(keys);
     stateWriter.appendFollowUpEvent(
-        executionRecord.getBatchOperationKey(),
+        batchOperation.getKey(),
         BatchOperationExecutionIntent.EXECUTING,
         batchExecute,
-        FollowUpEventMetadata.of(
-            b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
+        FollowUpEventMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
@@ -219,6 +222,7 @@ public final class BatchOperationExecutionExecuteProcessor
     }
 
     batchExecute.setBatchOperationKey(batchOperation.getKey());
+    batchExecute.setStorageOrdinal(batchOperation.getStorageOrdinal());
     batchExecute.setItemKeys(keys);
     stateWriter.appendFollowUpEvent(
         batchOperation.getKey(),
@@ -228,11 +232,13 @@ public final class BatchOperationExecutionExecuteProcessor
   }
 
   private void appendBatchOperationExecutionCompletedEvent(
-      final TypedRecord<BatchOperationExecutionRecord> command) {
+      final TypedRecord<BatchOperationExecutionRecord> command,
+      final PersistedBatchOperation batchOperation) {
     final var executionRecord = command.getValue();
     final var batchInternalComplete =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(executionRecord.getBatchOperationKey())
+            .setStorageOrdinal(batchOperation.getStorageOrdinal())
             .setSourcePartitionId(command.getPartitionId());
 
     LOGGER.debug(

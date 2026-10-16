@@ -12,6 +12,8 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -26,11 +28,15 @@ public final class BatchOperationInitializationFinishInitializationProcessor
       LoggerFactory.getLogger(BatchOperationInitializationFinishInitializationProcessor.class);
 
   private final StateWriter stateWriter;
+  private final BatchOperationState batchOperationState;
   private final BatchOperationMetrics metrics;
 
   public BatchOperationInitializationFinishInitializationProcessor(
-      final Writers writers, final BatchOperationMetrics metrics) {
+      final Writers writers,
+      final ProcessingState processingState,
+      final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
+    batchOperationState = processingState.getBatchOperationState();
     this.metrics = metrics;
   }
 
@@ -39,6 +45,11 @@ public final class BatchOperationInitializationFinishInitializationProcessor
     final var initializationRecord = command.getValue();
     LOGGER.debug(
         "Marking batch operation {} as initialized", command.getValue().getBatchOperationKey());
+    batchOperationState
+        .get(initializationRecord.getBatchOperationKey())
+        .ifPresent(
+            batchOperation ->
+                initializationRecord.setStorageOrdinal(batchOperation.getStorageOrdinal()));
     stateWriter.appendFollowUpEvent(
         command.getKey(), BatchOperationIntent.INITIALIZED, initializationRecord);
   }

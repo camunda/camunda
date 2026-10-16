@@ -107,15 +107,18 @@ public final class BatchOperationLifecycleManagementSuspendProcessor
         "Suspending batch operation with key {}", command.getValue().getBatchOperationKey());
 
     // validation
-    final var batchOperation = batchOperationState.get(batchOperationKey);
-    if (batchOperation.isEmpty()) {
+    final var oBatchOperation = batchOperationState.get(batchOperationKey);
+    if (oBatchOperation.isEmpty()) {
       rejectNotFound(command, batchOperationKey, recordValue);
       return;
     }
 
+    final var batchOperation = oBatchOperation.get();
+    recordValue.setStorageOrdinal(batchOperation.getStorageOrdinal());
+
     // check if the batch operation can be suspended
-    if (!batchOperation.get().canSuspend()) {
-      final var batchOperationStatus = batchOperation.get().getStatus().name();
+    if (!batchOperation.canSuspend()) {
+      final var batchOperationStatus = batchOperation.getStatus().name();
       rejectInvalidState(command, batchOperationKey, batchOperationStatus, recordValue);
       return;
     }
@@ -128,7 +131,7 @@ public final class BatchOperationLifecycleManagementSuspendProcessor
         .inQueue(DistributionQueue.BATCH_OPERATION)
         .distribute(command);
 
-    metrics.recordSuspended(batchOperation.get().getBatchOperationType());
+    metrics.recordSuspended(batchOperation.getBatchOperationType());
   }
 
   @Override
@@ -139,6 +142,7 @@ public final class BatchOperationLifecycleManagementSuspendProcessor
 
     // Validation
     final var batchOperation = batchOperationState.get(batchOperationKey);
+    batchOperation.ifPresent(bo -> recordValue.setStorageOrdinal(bo.getStorageOrdinal()));
     if (batchOperation.isPresent() && batchOperation.get().canSuspend()) {
       LOGGER.debug(
           "Processing distributed command to suspend with key '{}': {}",
