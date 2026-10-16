@@ -27,16 +27,28 @@ jobs:
     name: Resolve release branch
     runs-on: ubuntu-slim
     timeout-minutes: 5
-    permissions:
-      contents: write
+    permissions: {}  # Uses GitHub App token instead of GITHUB_TOKEN as it needs to push branches with workflow files that trigger other workflows, which GITHUB_TOKEN cannot do
     outputs:
       branch: ${{ steps.resolve-branch.outputs.branch }}
     steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         # Credentials stay: this job pushes the fake dry-run tags and branch.
         # zizmor: ignore[artipacked]
         with:
           ref: ${{ inputs.branch || 'main' }}
+          token: ${{ steps.github-token.outputs.token }}
       - name: Create fake dry-run tags
         run: |
           for tag in 0.0.0-dryrun-minor 0.0.0-dryrun-alpha; do
@@ -94,12 +106,25 @@ jobs:
     if: always()
     runs-on: ubuntu-slim
     timeout-minutes: 5
-    permissions:
-      contents: write
+    permissions: {}  # Uses GitHub App token instead of GITHUB_TOKEN
     steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         # Credentials stay: this job pushes the branch and tag deletions.
         # zizmor: ignore[artipacked]
+        with:
+          token: ${{ steps.github-token.outputs.token }}
       - name: Delete temporary release branch
         if: ${{ needs.dry-run-release.result == 'success' }}
         run: git push origin --delete "${{ needs.setup.outputs.branch }}" 2>/dev/null || true
