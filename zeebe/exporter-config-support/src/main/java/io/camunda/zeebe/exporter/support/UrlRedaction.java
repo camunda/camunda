@@ -24,8 +24,9 @@ public final class UrlRedaction {
   /**
    * Describes a comma separated list of URLs without secrets, as {@code
    * scheme://****:****@host:port}. The user info is masked only when present, and the path, query
-   * and fragment are dropped. If any URL cannot be parsed into a scheme and host, the whole list is
-   * replaced by {@code ***}, as a comma inside a password makes the split ambiguous.
+   * and fragment are dropped. If any URL cannot be parsed into a scheme and host, or has an
+   * {@code @} outside its user info, the whole list is replaced by {@code ***}, as a comma inside a
+   * password makes the split ambiguous.
    */
   public static @Nullable String describe(final @Nullable String urls) {
     if (urls == null) {
@@ -50,6 +51,10 @@ public final class UrlRedaction {
       return null;
     }
     if (uri.getScheme() == null || uri.getHost() == null) {
+      return null;
+    }
+    // an '@' outside the authority means a '/', '?' or '#' in the password cut the authority short
+    if (url.indexOf('@') >= 0 && uri.getRawUserInfo() == null) {
       return null;
     }
     final var result = new StringBuilder(uri.getScheme()).append("://");

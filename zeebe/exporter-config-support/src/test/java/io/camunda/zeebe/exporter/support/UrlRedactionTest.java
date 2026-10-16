@@ -72,7 +72,13 @@ final class UrlRedactionTest {
         // non numeric port
         "http://user:secret@host:notaport",
         // empty segment
-        "http://host:9200,"
+        "http://host:9200,",
+        // '/' in the password ends the authority early, host and port would be the credentials
+        "http://private-user:12345/secret@host:9200",
+        "http://alice/name:password@host:9200",
+        // '?' and '#' in the password end the authority early
+        "http://user:pass?word@host:9200",
+        "http://user:pass#word@host:9200"
       })
   void shouldOmitUnparseableUrl(final String url) {
     assertThat(UrlRedaction.describe(url)).isEqualTo("***");
