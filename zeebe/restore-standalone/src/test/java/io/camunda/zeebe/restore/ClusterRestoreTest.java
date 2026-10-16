@@ -94,8 +94,7 @@ final class ClusterRestoreTest {
                     PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)
                         ? root
                         : brokerCfg(dir, partitionCount),
-                    TestRestorableBackupStore::new,
-                    null)));
+                    TestRestorableBackupStore::new)));
     return new ClusterRestore(root, targets, new SimpleMeterRegistry());
   }
 
