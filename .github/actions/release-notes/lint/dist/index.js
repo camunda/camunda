@@ -7,10 +7,11 @@
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.GithubCommentApi = exports.GATE_DOCS_URL = exports.STICKY_MARKER = void 0;
+exports.GithubCommentApi = exports.OPT_OUT_LINE = exports.GATE_DOCS_URL = exports.STICKY_MARKER = void 0;
 exports.renderStickyComment = renderStickyComment;
 exports.syncStickyComment = syncStickyComment;
 const github_1 = __nccwpck_require__(631);
+const parser_1 = __nccwpck_require__(883);
 /**
  * The single sticky PR comment the gate maintains — one per PR, upserted by
  * a hidden marker so re-runs never stack duplicates. Split like the resolver:
@@ -21,6 +22,24 @@ const github_1 = __nccwpck_require__(631);
 exports.STICKY_MARKER = '<!-- release-notes-pr-gate -->';
 /** Where the comment sends authors for the full list of causes and fixes. */
 exports.GATE_DOCS_URL = 'https://camunda.github.io/camunda/ci/#release-notes-pr-gate';
+/** The template's opt-out line. The parser matches OPT_OUT_PHRASE anywhere
+ *  after the ticked box, so the label may extend it; a test pins that. */
+exports.OPT_OUT_LINE = '- [ ] This PR does not need a linked issue (no tracked issue, or it is tracked in another repository)';
+/** What a failing link check should look like, shown only when that check
+ *  fails. The placeholder is deliberately not a number: pasted unchanged it
+ *  matches nothing, whereas `#1234` would link a real, unrelated issue. */
+function linkExample(code) {
+    if (code === 'pr-ref-in-section') {
+        return 'Replace the PR number with the issue it tracks (a PR number is never accepted here):\n\n```md\n'
+            + `## ${parser_1.SECTION_HEADING}\n\ncloses #<issue-number>\n\`\`\`\n`;
+    }
+    if (code === 'unlinked-undeclared') {
+        return `Expected format in the PR description:\n\n\`\`\`md\n## ${parser_1.SECTION_HEADING}\n\ncloses #<issue-number>\n\n${exports.OPT_OUT_LINE}\n\`\`\`\n\n`
+            + '- `closes #<issue-number>` when this PR fully resolves the issue, or `relates to #<issue-number>` when it is one of several PRs for it.\n'
+            + '- No tracked issue (hotfix, dep bump, CI/refactor)? Tick the checkbox instead.\n';
+    }
+    return null;
+}
 /** Deliberately terse: the reasons name the exact fix; everything else (why
  *  the rule exists, rollout state) lives behind GATE_DOCS_URL. */
 function renderStickyComment(gate) {
@@ -31,8 +50,10 @@ function renderStickyComment(gate) {
         .filter((check) => check.outcome === 'fail')
         .map((check) => `**${check.label}**\n${check.reasons.map((reason) => `- ${reason}`).join('\n')}`)
         .join('\n\n');
-    const footer = `[Causes and fixes](${exports.GATE_DOCS_URL}) · advisory, does not block merge`;
-    return `${exports.STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${footer}\n`;
+    // A backport hop's reasons already speak to the marker; the section example would be noise.
+    const example = gate.link.outcome === 'fail' && gate.deliveryPath === 'direct' ? linkExample(gate.link.code) : null;
+    const footer = `[Causes and fixes](${exports.GATE_DOCS_URL}) · fix this to turn the check green`;
+    return `${exports.STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${example ? `${example}\n` : ''}${footer}\n`;
 }
 /** fail: update or create. pass: update to the resolved body if a comment
  *  already exists (the PR failed earlier), else do nothing — a PR that never
@@ -562,7 +583,8 @@ const core = __importStar(__nccwpck_require__(93));
 const labels_1 = __nccwpck_require__(855);
 const resolver_1 = __nccwpck_require__(306);
 /**
- * PR-gate lint entrypoint (warn-only rollout).
+ * PR-gate lint entrypoint. Enforcing in the workflow (`enforce: 'true'`);
+ * `enforce=false` remains available as a warn-only mode.
  *
  * Security: runs on `pull_request`, resolving from the PR head — no
  * privileged token anywhere here. A fork PR gets a read-only GITHUB_TOKEN
@@ -572,8 +594,7 @@ const resolver_1 = __nccwpck_require__(306);
  * Body/title are fetched fresh from the API rather than the event payload,
  * so a PR edited twice in quick succession is judged on the current body.
  *
- * ponytail: warn-only for now. `enforce=true` flips a fail into a non-zero
- * exit; enforce mode ships in a follow-up PR.
+ * `enforce=true` turns a fail into a non-zero exit; `enforce=false` only warns.
  */
 async function run() {
     const token = core.getInput('token', { required: true });
@@ -587,7 +608,7 @@ async function run() {
     }
     const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
     const resolver = new resolver_1.GithubResolver(token, owner ?? '', repo ?? '');
-    let gate; // a transient API error respects `enforce` too — warn-only means a blip can't turn a green check red
+    let gate; // a transient API error respects `enforce` too — in warn-only mode a blip can't turn a green check red
     try {
         const pull = await resolver.fetchPull(prNumber);
         if (!pull) {
