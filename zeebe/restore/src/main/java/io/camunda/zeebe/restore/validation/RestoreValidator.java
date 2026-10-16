@@ -200,6 +200,11 @@ public final class RestoreValidator
                                     .formatted(partitionId, backupId))));
   }
 
+  /**
+   * Restores every partition to the resolved checkpoint, at that partition's own position of it.
+   * The checkpoint can be a marker, which no backup ends at, so ending each partition's log at its
+   * last backup instead would restore the partitions to different points.
+   */
   private Map<Integer, PartitionRestore> resolveRestorePoint(final RestoreRequest request) {
     return findBackups(request).partitions().entrySet().stream()
         .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().toPartitionRestore()));

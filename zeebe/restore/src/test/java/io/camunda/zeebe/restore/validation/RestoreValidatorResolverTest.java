@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.IntFunction;
 import org.junit.jupiter.api.Nested;
@@ -212,6 +213,12 @@ final class RestoreValidatorResolverTest {
         List.of(new RangeEntry(checkpointId, checkpointId)));
   }
 
+  /** The partition restored from {@link #singleCheckpointMetadata}, up to its one checkpoint. */
+  private static PartitionRestore toSingleCheckpoint(final long backupId) {
+    return new PartitionRestore(
+        new TreeSet<>(List.of(backupId)), OptionalLong.of(CHECKPOINT_POSITION));
+  }
+
   @Nested
   final class RdbmsBackupResolution {
 
@@ -227,7 +234,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L)), false);
     }
 
     @Test
@@ -246,13 +253,7 @@ final class RestoreValidatorResolverTest {
       // then
       assertValid(
           result,
-          Map.of(
-              1,
-              PartitionRestore.ofBackups(1L),
-              2,
-              PartitionRestore.ofBackups(1L),
-              3,
-              PartitionRestore.ofBackups(1L)),
+          Map.of(1, toSingleCheckpoint(1L), 2, toSingleCheckpoint(1L), 3, toSingleCheckpoint(1L)),
           false);
     }
 
@@ -278,7 +279,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L)), false);
     }
 
     @Test
@@ -301,7 +302,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L)), false);
     }
 
     @Test
@@ -327,7 +328,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L)), false);
     }
 
     @Test
@@ -342,7 +343,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L)), false);
     }
 
     @Test
@@ -375,7 +376,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), true);
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L)), true);
     }
 
     @Test
@@ -461,7 +462,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L)), false);
     }
 
     @Test
@@ -507,6 +508,69 @@ final class RestoreValidatorResolverTest {
       // when / then
       final var result = validator.validate(request);
       assertThat(assertInvalid(result)).isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    void shouldRestoreEveryPartitionToTheResolvedMarker() {
+      // given - marker 15 is the latest checkpoint common to both partitions, as backup 20 was
+      // never confirmed on partition 2 and backup 25 never on partition 1
+      stubMetadata(
+          1,
+          metadataOf(
+              1,
+              List.of(backupEntry(10, 100, 1), markerEntry(15, 150), backupEntry(20, 200, 101))));
+      stubMetadata(
+          2,
+          metadataOf(
+              2, List.of(backupEntry(10, 80, 1), markerEntry(15, 130), backupEntry(25, 260, 81))));
+      stubBackupPartitionCount(20L, 2);
+      stubBackupPartitionCount(25L, 2);
+      final IntFunction<Long> exportedPositionSupplier =
+          partitionId -> partitionId == 1 ? 120L : 110L;
+      final var validator = new RestoreValidator(2, backupStore, exportedPositionSupplier);
+
+      // when
+      final var result = validator.validate(rdbmsRequest());
+
+      // then - each partition ends at its own position of the marker, not at its last backup
+      assertValid(
+          result,
+          Map.of(
+              1, new PartitionRestore(new TreeSet<>(List.of(10L, 20L)), OptionalLong.of(150L)),
+              2, new PartitionRestore(new TreeSet<>(List.of(10L, 25L)), OptionalLong.of(130L))),
+          false);
+    }
+
+    private static BackupMetadata metadataOf(
+        final int partitionId, final List<CheckpointEntry> checkpoints) {
+      return new BackupMetadata(
+          BackupMetadata.VERSION,
+          partitionId,
+          CHECKPOINT_TIMESTAMP,
+          checkpoints,
+          List.of(
+              new RangeEntry(
+                  checkpoints.getFirst().checkpointId(), checkpoints.getLast().checkpointId())));
+    }
+
+    private static CheckpointEntry backupEntry(
+        final long checkpointId, final long checkpointPosition, final long firstLogPosition) {
+      return new CheckpointEntry(
+          checkpointId,
+          checkpointPosition,
+          CHECKPOINT_TIMESTAMP.plusSeconds(checkpointId),
+          CheckpointType.SCHEDULED_BACKUP,
+          OptionalLong.of(firstLogPosition));
+    }
+
+    private static CheckpointEntry markerEntry(
+        final long checkpointId, final long checkpointPosition) {
+      return new CheckpointEntry(
+          checkpointId,
+          checkpointPosition,
+          CHECKPOINT_TIMESTAMP.plusSeconds(checkpointId),
+          CheckpointType.MARKER,
+          OptionalLong.empty());
     }
   }
 
@@ -634,10 +698,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(rdbmsRequest());
 
       // then
-      assertValid(
-          result,
-          Map.of(1, PartitionRestore.ofBackups(1L), 2, PartitionRestore.ofBackups(1L)),
-          false);
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L), 2, toSingleCheckpoint(1L)), false);
     }
 
     @Test
@@ -761,14 +822,14 @@ final class RestoreValidatorResolverTest {
     }
 
     private static PartitionBackups lastBackupAt(final long checkpointId) {
-      return new PartitionBackups(
-          List.of(
-              new CheckpointEntry(
-                  checkpointId,
-                  CHECKPOINT_POSITION,
-                  CHECKPOINT_TIMESTAMP,
-                  CheckpointType.SCHEDULED_BACKUP,
-                  OptionalLong.of(1L))));
+      final var backup =
+          new CheckpointEntry(
+              checkpointId,
+              CHECKPOINT_POSITION,
+              CHECKPOINT_TIMESTAMP,
+              CheckpointType.SCHEDULED_BACKUP,
+              OptionalLong.of(1L));
+      return new PartitionBackups(List.of(backup), backup);
     }
 
     private static RestoreRequest rdbmsRequestWithBackupIds(final long backupId) {

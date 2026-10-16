@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.restore;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
@@ -17,7 +19,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Queue;
+import java.util.TreeSet;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NonNull;
@@ -105,7 +109,10 @@ public class RestorePointResolver {
       LOG.atDebug()
           .addKeyValue("partition", partitionId)
           .log("Found required backups: requiredBackups={}", backups.size());
-      partitions.put(partitionId, new PartitionBackups(backups));
+      // non-null: findCommonCheckpoint only returns a checkpoint every partition has
+      final var restorePoint =
+          requireNonNull(findCheckpointInfo(restorableCheckpoints.checkpoints(), commonCheckpoint));
+      partitions.put(partitionId, new PartitionBackups(backups, restorePoint));
     }
     return new RestorableBackups(commonCheckpoint, partitions);
   }
@@ -444,7 +451,7 @@ public class RestorePointResolver {
   }
 
   /**
-   * @param globalCheckpointId the checkpoint every partition is restored to
+   * @param globalCheckpointId the checkpoint every partition is restored to, a backup or a marker
    * @param partitions what each partition is restored from, by partition id
    */
   public record RestorableBackups(
@@ -453,8 +460,11 @@ public class RestorePointResolver {
   /**
    * @param backups the backups the partition is restored from, in ascending order. The last one is
    *     the first backup at or after the global checkpoint.
+   * @param restorePoint the global checkpoint as this partition recorded it, a backup or a marker,
+   *     at whose position the partition's restored log ends
    */
-  public record PartitionBackups(@NonNull List<CheckpointEntry> backups) {
+  public record PartitionBackups(
+      @NonNull List<CheckpointEntry> backups, @NonNull CheckpointEntry restorePoint) {
 
     public PartitionBackups {
       backups = List.copyOf(backups);
@@ -465,8 +475,11 @@ public class RestorePointResolver {
     }
 
     public @NonNull PartitionRestore toPartitionRestore() {
-      return PartitionRestore.ofBackups(
-          backups.stream().map(CheckpointEntry::checkpointId).toList());
+      return new PartitionRestore(
+          backups.stream()
+              .map(CheckpointEntry::checkpointId)
+              .collect(Collectors.toCollection(TreeSet::new)),
+          OptionalLong.of(restorePoint.checkpointPosition()));
     }
   }
 }
