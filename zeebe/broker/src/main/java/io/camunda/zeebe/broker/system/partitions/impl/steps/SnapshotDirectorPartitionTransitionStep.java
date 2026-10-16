@@ -58,7 +58,9 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
 
       final var processingMode = StreamProcessorMode.fromRole(targetRole.isLeader());
       final var zeebeDb = context.getZeebeDb();
-      final var continuousBackup = context.getBrokerCfg().getData().getBackup().isContinuous();
+      final var backupCfg = context.getBrokerCfg().getData().getBackup();
+      final var continuousBackup = backupCfg.isContinuous();
+      final var logArchiveEnabled = backupCfg.getLogArchive().isEnabled();
       final var director =
           AsyncSnapshotDirector.of(
               context.partitionId(),
@@ -67,7 +69,7 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
               processingMode,
               snapshotPeriod,
               flushLog,
-              new DbPositionSupplier(zeebeDb, continuousBackup));
+              new DbPositionSupplier(zeebeDb, continuousBackup, logArchiveEnabled));
 
       // The returned future must not complete until the director has been published on the
       // context. Otherwise the next transition step (SnapshotAfterMigrationTransitionStep) can

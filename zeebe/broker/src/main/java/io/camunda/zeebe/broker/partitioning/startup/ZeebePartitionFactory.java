@@ -249,13 +249,15 @@ public final class ZeebePartitionFactory {
     final Path runtimeDirectory =
         resolveRuntimeDirectory(brokerCfg, raftPartition.id(), raftPartition.dataDirectory());
 
-    final var continuousBackup = brokerCfg.getData().getBackup().isContinuous();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    final var continuousBackup = backupCfg.isContinuous();
+    final var logArchiveEnabled = backupCfg.getLogArchive().isEnabled();
     return new StateControllerImpl(
         zeebeRocksDbFactory,
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
-        zeebeDb -> new DbPositionSupplier(zeebeDb, continuousBackup),
+        zeebeDb -> new DbPositionSupplier(zeebeDb, continuousBackup, logArchiveEnabled),
         concurrencyControl);
   }
 
