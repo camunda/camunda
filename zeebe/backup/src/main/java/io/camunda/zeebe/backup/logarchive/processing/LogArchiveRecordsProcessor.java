@@ -11,7 +11,6 @@ import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
-import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
@@ -91,9 +90,7 @@ public final class LogArchiveRecordsProcessor
   @Override
   public void init(final RecordProcessorContext context) {
     state = new DbLogArchiveState(context.getZeebeDb(), context.getTransactionContext());
-    final var checkpointMetadataState =
-        new DbCheckpointMetadataState(context.getZeebeDb(), context.getTransactionContext());
-    applier = new LogArchiveEventApplier(config.partitionId(), state, checkpointMetadataState);
+    applier = new LogArchiveEventApplier(config.partitionId(), state);
     context.addLifecycleListeners(List.of(this));
   }
 

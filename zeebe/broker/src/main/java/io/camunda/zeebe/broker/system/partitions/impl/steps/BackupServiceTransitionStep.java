@@ -140,9 +140,14 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
       final PartitionTransitionContext context, final BackupManager backupManager) {
     final var trackBackupMetadata =
         context.getBrokerCfg().getData().getBackup().shouldTrackBackupMetadata();
+    final var trackLogArchiveCheckpoints =
+        context.getBrokerCfg().getData().getBackup().getLogArchive().isEnabled();
     final CheckpointRecordsProcessor checkpointRecordsProcessor =
         new CheckpointRecordsProcessor(
-            backupManager, context.getPartitionTransitionMeterRegistry(), trackBackupMetadata);
+            backupManager,
+            context.getPartitionTransitionMeterRegistry(),
+            trackBackupMetadata,
+            trackLogArchiveCheckpoints);
     context.setCheckpointProcessor(checkpointRecordsProcessor);
   }
 

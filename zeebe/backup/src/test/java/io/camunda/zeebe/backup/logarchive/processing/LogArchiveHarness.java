@@ -10,7 +10,11 @@ package io.camunda.zeebe.backup.logarchive.processing;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
+import io.camunda.zeebe.backup.processing.CheckpointBackupConfirmedApplier;
+import io.camunda.zeebe.backup.processing.CheckpointCreatedEventApplier;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -22,6 +26,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.IndexChunk;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogObject;
@@ -31,6 +36,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.api.ProcessingResult;
@@ -49,6 +55,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.mockito.Mockito;
 
@@ -68,7 +75,13 @@ final class LogArchiveHarness implements AutoCloseable {
   final List<PublishRequest> published = new ArrayList<>();
   final List<CapturedEvent> events = new ArrayList<>();
   final List<CapturedEvent> rejections = new ArrayList<>();
+
+  /** Every event in log order: the log archive events and the checkpoint events in between. */
+  final List<LoggedEvent> log = new ArrayList<>();
+
   private final TransactionContext transactionContext;
+  private final CheckpointCreatedEventApplier checkpointCreatedApplier;
+  private final CheckpointBackupConfirmedApplier checkpointConfirmedApplier;
   private long nextPosition = 1000;
 
   LogArchiveHarness(final File directory, final LogArchiveProcessorConfig config) {
@@ -94,7 +107,20 @@ final class LogArchiveHarness implements AutoCloseable {
     processor.setListener(listener);
     processor.setPublication(published::add);
     processor.init(context);
-    checkpoints = new DbCheckpointMetadataState(db, db.createContext());
+    checkpoints = new DbCheckpointMetadataState(db, transactionContext);
+    final var checkpointState = new DbCheckpointState(db, transactionContext);
+    // as the broker wires it with the log archive and continuous backups enabled
+    checkpointCreatedApplier =
+        new CheckpointCreatedEventApplier(
+            checkpointState,
+            checkpoints,
+            new DbLogArchiveState(db, transactionContext),
+            Set.of(),
+            true,
+            true);
+    checkpointConfirmedApplier =
+        new CheckpointBackupConfirmedApplier(
+            checkpointState, checkpoints, new DbBackupRangeState(db, transactionContext), true);
   }
 
   /** A reader on its own transaction context, so that reads never see a stale snapshot. */
@@ -112,14 +138,15 @@ final class LogArchiveHarness implements AutoCloseable {
     transactionContext.runInTransaction(() -> result[0] = processor.process(record, builder));
     builder.postCommitTasks.forEach(PostCommitTask::flush);
     for (final var event : builder.captured) {
-      (event.type() == RecordType.EVENT ? events : rejections)
-          .add(
-              new CapturedEvent(
-                  event.intent(),
-                  event.type(),
-                  event.value(),
-                  record.position(),
-                  event.rejection()));
+      final var captured =
+          new CapturedEvent(
+              event.intent(), event.type(), event.value(), record.position(), event.rejection());
+      if (event.type() == RecordType.EVENT) {
+        events.add(captured);
+        log.add(captured);
+      } else {
+        rejections.add(captured);
+      }
     }
     return result[0];
   }
@@ -132,6 +159,47 @@ final class LogArchiveHarness implements AutoCloseable {
       throw new AssertionError("Expected %s to be accepted, but it was rejected".formatted(intent));
     }
     return events.getLast().value();
+  }
+
+  /**
+   * Applies a checkpoint {@code CREATED} event with the real applier, as the checkpoint processor
+   * does when processing and when replaying.
+   */
+  void createCheckpoint(
+      final long checkpointId, final long checkpointPosition, final CheckpointType type) {
+    final var created = new CheckpointCreated(checkpointId, checkpointPosition, type);
+    apply(created);
+    log.add(created);
+  }
+
+  /** Applies a checkpoint {@code CONFIRMED_BACKUP} event with the real applier. */
+  void confirmBackup(
+      final long checkpointId, final long checkpointPosition, final CheckpointType type) {
+    final var confirmed = new BackupConfirmed(checkpointId, checkpointPosition, type);
+    apply(confirmed);
+    log.add(confirmed);
+  }
+
+  /** Replays every event of the given log in order, as a follower would. */
+  void replayLog(final List<LoggedEvent> events) {
+    for (final var event : events) {
+      switch (event) {
+        case final CapturedEvent captured -> replay(captured);
+        default -> apply(event);
+      }
+    }
+  }
+
+  private void apply(final LoggedEvent event) {
+    switch (event) {
+      case final CheckpointCreated created ->
+          transactionContext.runInTransaction(
+              () -> checkpointCreatedApplier.apply(created.toRecord(), 0));
+      case final BackupConfirmed confirmed ->
+          transactionContext.runInTransaction(
+              () -> checkpointConfirmedApplier.apply(confirmed.toRecord(), 0));
+      case final CapturedEvent captured -> throw new IllegalArgumentException("" + captured);
+    }
   }
 
   void replay(final CapturedEvent event) {
@@ -241,6 +309,10 @@ final class LogArchiveHarness implements AutoCloseable {
         .snapshots()
         .forEach(snapshot -> builder.append(LogArchiveJsonMapper.snapshot(snapshot)).append('\n'));
     state
+        .pendingCheckpointsUpTo(Long.MAX_VALUE)
+        .forEach(
+            checkpoint -> builder.append(LogArchiveJsonMapper.checkpoint(checkpoint)).append('\n'));
+    state
         .outboxAfter(-1)
         .forEach(
             row ->
@@ -257,12 +329,37 @@ final class LogArchiveHarness implements AutoCloseable {
     db.close();
   }
 
+  sealed interface LoggedEvent permits CapturedEvent, CheckpointCreated, BackupConfirmed {}
+
   record CapturedEvent(
       Intent intent,
       RecordType type,
       LogArchiveRecord value,
       long commandPosition,
-      RejectionType rejection) {}
+      RejectionType rejection)
+      implements LoggedEvent {}
+
+  record CheckpointCreated(long checkpointId, long checkpointPosition, CheckpointType type)
+      implements LoggedEvent {
+    CheckpointRecord toRecord() {
+      return checkpointRecord(checkpointId, checkpointPosition, type);
+    }
+  }
+
+  record BackupConfirmed(long checkpointId, long checkpointPosition, CheckpointType type)
+      implements LoggedEvent {
+    CheckpointRecord toRecord() {
+      return checkpointRecord(checkpointId, checkpointPosition, type);
+    }
+  }
+
+  private static CheckpointRecord checkpointRecord(
+      final long checkpointId, final long checkpointPosition, final CheckpointType type) {
+    return new CheckpointRecord()
+        .setCheckpointId(checkpointId)
+        .setCheckpointPosition(checkpointPosition)
+        .setCheckpointType(type);
+  }
 
   record Appended(
       Intent intent, RecordType type, LogArchiveRecord value, RejectionType rejection) {}

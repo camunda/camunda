@@ -31,13 +31,11 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
   private final LongProperty nextSeqProperty = new LongProperty("nextSeq", 1L);
   private final LongProperty lastPublishedSeqProperty = new LongProperty("lastPublishedSeq", 0L);
   private final LongProperty nextChunkNoProperty = new LongProperty("nextChunkNo", 1L);
-  private final LongProperty lastCoveredCheckpointIdProperty =
-      new LongProperty("lastCoveredCheckpointId", -1L);
   private final LongProperty firstArchivedPositionProperty =
       new LongProperty("firstArchivedPosition", -1L);
 
   public LogArchiveMeta() {
-    super(10);
+    super(9);
     declareProperty(timelineIdProperty)
         .declareProperty(parentTimelineIdProperty)
         .declareProperty(startIndexProperty)
@@ -46,7 +44,6 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
         .declareProperty(nextSeqProperty)
         .declareProperty(lastPublishedSeqProperty)
         .declareProperty(nextChunkNoProperty)
-        .declareProperty(lastCoveredCheckpointIdProperty)
         .declareProperty(firstArchivedPositionProperty);
   }
 
@@ -125,15 +122,6 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public long getLastCoveredCheckpointId() {
-    return lastCoveredCheckpointIdProperty.getValue();
-  }
-
-  public LogArchiveMeta setLastCoveredCheckpointId(final long lastCoveredCheckpointId) {
-    lastCoveredCheckpointIdProperty.setValue(lastCoveredCheckpointId);
-    return this;
-  }
-
   /** Position of the first application entry ever archived on this timeline, -1 if none. */
   public long getFirstArchivedPosition() {
     return firstArchivedPositionProperty.getValue();
@@ -155,13 +143,12 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
         .setNextSeq(getNextSeq())
         .setLastPublishedSeq(getLastPublishedSeq())
         .setNextChunkNo(getNextChunkNo())
-        .setLastCoveredCheckpointId(getLastCoveredCheckpointId())
         .setFirstArchivedPosition(getFirstArchivedPosition());
   }
 
   @Override
   public String toString() {
-    return "LogArchiveMeta{timelineId=%s, parentTimelineId=%s, startIndex=%d, archivedIndex=%d, archivedPosition=%d, nextSeq=%d, lastPublishedSeq=%d, nextChunkNo=%d, lastCoveredCheckpointId=%d, firstArchivedPosition=%d}"
+    return "LogArchiveMeta{timelineId=%s, parentTimelineId=%s, startIndex=%d, archivedIndex=%d, archivedPosition=%d, nextSeq=%d, lastPublishedSeq=%d, nextChunkNo=%d, firstArchivedPosition=%d}"
         .formatted(
             getTimelineId(),
             getParentTimelineId(),
@@ -171,7 +158,6 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
             getNextSeq(),
             getLastPublishedSeq(),
             getNextChunkNo(),
-            getLastCoveredCheckpointId(),
             getFirstArchivedPosition());
   }
 }

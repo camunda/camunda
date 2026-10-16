@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -22,6 +23,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.Event;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingResultBuilder;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
@@ -35,6 +37,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.CoveredCheckpoint;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
@@ -92,7 +95,8 @@ final class CheckpointRecordsProcessorTest {
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
     resultBuilder = new MockProcessingResultBuilder();
-    processor = new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true);
+    processor =
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true, false);
 
     processor.setScalingInProgressSupplier(scalingInProgress::get);
     processor.setPartitionCountSupplier(() -> (int) dynamicPartitionCount.get());
@@ -357,7 +361,8 @@ final class CheckpointRecordsProcessorTest {
   void shouldNotifyListenerOnInit() {
     // given
     final RecordProcessorContextImpl context = createContext(null, zeebedb);
-    processor = new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true);
+    processor =
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true, false);
     processor.setScalingInProgressSupplier(scalingInProgress::get);
     processor.setPartitionCountSupplier(dynamicPartitionCount::get);
     final long checkpointId = 3;
@@ -872,7 +877,7 @@ final class CheckpointRecordsProcessorTest {
     // given
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
     final var processorWithoutRuntimeTracking =
-        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), false);
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), false, false);
     processorWithoutRuntimeTracking.setScalingInProgressSupplier(scalingInProgress::get);
     processorWithoutRuntimeTracking.setPartitionCountSupplier(dynamicPartitionCount::get);
     processorWithoutRuntimeTracking.init(context);
@@ -898,11 +903,72 @@ final class CheckpointRecordsProcessorTest {
   }
 
   @Test
+  void shouldRecordEveryCreatedCheckpointAsPendingForTheLogArchive() {
+    // given
+    final RecordProcessorContextImpl context = createContext(executor, zeebedb);
+    final var processorWithLogArchive =
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true, true);
+    processorWithLogArchive.setScalingInProgressSupplier(scalingInProgress::get);
+    processorWithLogArchive.setPartitionCountSupplier(dynamicPartitionCount::get);
+    processorWithLogArchive.init(context);
+    final var created =
+        new CheckpointRecord()
+            .setCheckpointId(301L)
+            .setCheckpointPosition(3001L)
+            .setCheckpointType(CheckpointType.MARKER);
+    final var command =
+        new CheckpointRecord()
+            .setCheckpointId(302L)
+            .setCheckpointPosition(3002L)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
+
+    // when: replaying one CREATED event and processing one CREATE command
+    processorWithLogArchive.replay(
+        new MockTypedCheckpointRecord(
+            3002L, 3001L, CheckpointIntent.CREATED, RecordType.EVENT, created));
+    processorWithLogArchive.process(
+        new MockTypedCheckpointRecord(
+            3002L, 0, CheckpointIntent.CREATE, RecordType.COMMAND, command),
+        new MockProcessingResultBuilder());
+
+    // then: both are pending, although no backup of either is confirmed
+    assertThat(
+            new DbLogArchiveState(zeebedb, zeebedb.createContext())
+                .pendingCheckpointsUpTo(Long.MAX_VALUE))
+        .extracting(CoveredCheckpoint::getCheckpointId, CoveredCheckpoint::getCheckpointType)
+        .containsExactly(
+            tuple(301L, CheckpointType.MARKER), tuple(302L, CheckpointType.MANUAL_BACKUP));
+    assertThat(checkpointMetadataState.getCheckpoint(302L)).isNull();
+  }
+
+  @Test
+  void shouldNotRecordPendingCheckpointsWhenLogArchiveDisabled() {
+    // given
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(401L)
+            .setCheckpointPosition(4001L)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
+
+    // when
+    processor.process(
+        new MockTypedCheckpointRecord(4001L, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value),
+        resultBuilder);
+
+    // then
+    assertThat(state.getLatestCheckpointId()).isEqualTo(401L);
+    assertThat(
+            new DbLogArchiveState(zeebedb, zeebedb.createContext())
+                .pendingCheckpointsUpTo(Long.MAX_VALUE))
+        .isEmpty();
+  }
+
+  @Test
   void shouldNotStoreBackupMetadataAndRangesWhenRuntimeTrackingDisabled() {
     // given
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
     final var processorWithoutRuntimeTracking =
-        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), false);
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), false, false);
     processorWithoutRuntimeTracking.setScalingInProgressSupplier(scalingInProgress::get);
     processorWithoutRuntimeTracking.setPartitionCountSupplier(dynamicPartitionCount::get);
     processorWithoutRuntimeTracking.init(context);
@@ -1065,7 +1131,7 @@ final class CheckpointRecordsProcessorTest {
 
     final var context = createContext(executor, zeebedb);
     final var syncProcessor =
-        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true);
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true, false);
     syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
     syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
     syncProcessor.init(context);
@@ -1100,7 +1166,7 @@ final class CheckpointRecordsProcessorTest {
     // given — a processor with a backup manager and an existing newer backup
     final var context = createContext(executor, zeebedb);
     final var syncProcessor =
-        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true);
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true, false);
     syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
     syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
     syncProcessor.init(context);
