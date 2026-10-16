@@ -151,8 +151,8 @@ public class ClusterEndpoint {
    * is at fault.
    *
    * <p>The shape is the configuration model's own, so it changes whenever the model does.
-   * Deliberately absent from {@code api/cluster/cluster-api.yaml} for that reason: a debugging aid
-   * rather than a contract.
+   * Deliberately absent from {@code cluster-api.yaml} for that reason: a debugging aid rather than
+   * a contract.
    */
   @GetMapping(path = "/dump", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<?> dumpConfigurationAsJson() {

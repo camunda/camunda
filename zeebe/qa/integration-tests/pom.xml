@@ -35,6 +35,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config-openapi</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-cluster-config-impl</artifactId>
       <scope>test</scope>
     </dependency>

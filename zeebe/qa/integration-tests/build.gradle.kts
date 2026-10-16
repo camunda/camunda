@@ -10,6 +10,7 @@ dependencies {
   testImplementation(project(":camunda-gateway-model"))
   testImplementation(project(":camunda-authentication"))
   testImplementation(project(":zeebe-cluster-config-api"))
+  testImplementation(project(":zeebe-cluster-config-openapi"))
   testImplementation(project(":zeebe-cluster-config-impl"))
   testImplementation(project(":zeebe-broker"))
   testImplementation(project(":zeebe-db"))
