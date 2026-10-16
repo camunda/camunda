@@ -23,7 +23,7 @@
     }
   },
   "dependencies": {
-    "@camunda/camunda-api-zod-schemas": "0.0.90",
+    "@camunda/camunda-api-zod-schemas": "0.0.96",
     "@camunda/camunda-composite-components": "0.25.4",
     "@camunda/design-system": "0.61.2",
     "@camunda/oc-saas-notifications": "0.0.1",

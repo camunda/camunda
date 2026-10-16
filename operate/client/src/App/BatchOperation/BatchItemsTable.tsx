@@ -44,7 +44,7 @@ const RESOLVE_INCIDENT_HEADER_COLUMNS = [
 
 type Props = {
   batchOperationKey: string;
-  batchOperationType: BatchOperationType | undefined;
+  batchOperationType: BatchOperationType | null | undefined;
   isLoading: boolean;
 };
 

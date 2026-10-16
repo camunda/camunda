@@ -282,7 +282,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         agentInstanceKey: AGENT_INSTANCE_KEY_1,
         elementInstanceKey: AI_AGENT_ELEMENT_INSTANCE_KEY_2,
         jobKey: '2251799813700043',
-        jobLease: 'lease-004',
+        jobLeaseToken: 'lease-004',
         loopIteration: 2,
         role: 'ASSISTANT',
         content: [
@@ -314,7 +314,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         agentInstanceKey: AGENT_INSTANCE_KEY_1,
         elementInstanceKey: AI_AGENT_ELEMENT_INSTANCE_KEY_2,
         jobKey: '2251799813700042',
-        jobLease: 'lease-003',
+        jobLeaseToken: 'lease-003',
         loopIteration: 2,
         role: 'TOOL_RESULT',
         content: [
@@ -372,7 +372,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         agentInstanceKey: AGENT_INSTANCE_KEY_1,
         elementInstanceKey: AI_AGENT_ELEMENT_INSTANCE_KEY_1,
         jobKey: '2251799813700041',
-        jobLease: 'lease-002',
+        jobLeaseToken: 'lease-002',
         loopIteration: 1,
         role: 'ASSISTANT',
         content: [
@@ -432,7 +432,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         agentInstanceKey: AGENT_INSTANCE_KEY_1,
         elementInstanceKey: AI_AGENT_ELEMENT_INSTANCE_KEY_1,
         jobKey: '2251799813700040',
-        jobLease: 'lease-001',
+        jobLeaseToken: 'lease-001',
         loopIteration: 1,
         role: 'USER',
         content: [
