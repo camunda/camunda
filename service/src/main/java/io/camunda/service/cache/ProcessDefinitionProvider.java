@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +109,9 @@ public class ProcessDefinitionProvider {
   public record ProcessElement(String id, String name) {}
 
   public record ProcessCacheData(
-      String processName, Map<String, String> elementIdNameMap, Integer processDefinitionVersion) {
+      String processName,
+      Map<String, String> elementIdNameMap,
+      @Nullable Integer processDefinitionVersion) {
 
     public static final ProcessCacheData EMPTY =
         new ProcessCacheData(null, Collections.emptyMap(), null);

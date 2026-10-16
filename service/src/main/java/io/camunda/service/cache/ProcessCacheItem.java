@@ -10,9 +10,12 @@ package io.camunda.service.cache;
 import io.camunda.service.cache.ProcessDefinitionProvider.ProcessCacheData;
 import java.util.Collections;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public record ProcessCacheItem(
-    String processName, Map<String, String> elementIdNameMap, Integer processDefinitionVersion) {
+    String processName,
+    Map<String, String> elementIdNameMap,
+    @Nullable Integer processDefinitionVersion) {
 
   public static final ProcessCacheItem EMPTY =
       new ProcessCacheItem(null, Collections.emptyMap(), null);
@@ -25,7 +28,7 @@ public record ProcessCacheItem(
     return elementIdNameMap.getOrDefault(elementId, elementId);
   }
 
-  public Integer getProcessDefinitionVersion() {
+  public @Nullable Integer getProcessDefinitionVersion() {
     return processDefinitionVersion;
   }
 
