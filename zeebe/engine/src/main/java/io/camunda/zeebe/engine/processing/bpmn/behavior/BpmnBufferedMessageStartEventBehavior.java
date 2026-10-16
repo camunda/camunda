@@ -58,7 +58,6 @@ public final class BpmnBufferedMessageStartEventBehavior {
   private final StateWriter stateWriter;
   private final SubscriptionCommandSender commandSender;
   private final MessageCorrelationMetrics metrics;
-  private final StorageOrdinalProvider storageOrdinalProvider;
 
   public BpmnBufferedMessageStartEventBehavior(
       final ProcessingState processingState,
@@ -83,7 +82,6 @@ public final class BpmnBufferedMessageStartEventBehavior {
     stateWriter = writers.state();
     this.commandSender = commandSender;
     this.metrics = metrics;
-    this.storageOrdinalProvider = storageOrdinalProvider;
 
     final var eventHandle =
         new EventHandle(
@@ -111,8 +109,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
             businessIdUniquenessEnabled,
             routingInfo,
             processingState.getPartitionId(),
-            metrics,
-            storageOrdinalProvider);
+            metrics);
   }
 
   public Optional<DirectBuffer> findCorrelationKey(final BpmnElementContext context) {
@@ -312,8 +309,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
             message.getDeadline(),
             message.getTimeToLive()),
         messageCorrelation.subscriptionKey,
-        messageCorrelation.subscriptionRecord,
-        storageOrdinalProvider.getStorageOrdinal());
+        messageCorrelation.subscriptionRecord);
   }
 
   private void traceBufferedRedrive(

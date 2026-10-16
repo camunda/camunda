@@ -118,8 +118,7 @@ public final class MessageCorrelationCorrelateProcessor
             businessIdUniquenessEnabled,
             routingInfo,
             partitionId,
-            metrics,
-            bpmnBehaviors.storageOrdinalProvider());
+            metrics);
   }
 
   @Override
