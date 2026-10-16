@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.util.Strings;
@@ -40,29 +41,90 @@ public class ModifyProcessInstanceTerminatingElementTest {
   public void shouldCancelUserTaskWhenTerminatingUserTaskElementThatIsCanceling() {
     // given
     final long processInstanceKey = createProcessInstanceBlockedByCancelingListener();
-    final long userTaskKey = getUserTaskKey(processInstanceKey);
 
     // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .modification()
-        .terminateElement(getElementInstanceKey(processInstanceKey, "userTask"))
-        .modify();
+    terminateElementByModification(processInstanceKey, "userTask");
 
     // then
-    assertThat(
-            RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
-                .withProcessInstanceKey(processInstanceKey)
-                .exists())
-        .describedAs("Expected the canceling user task to be canceled")
-        .isTrue();
+    assertThatCancelingUserTaskIsRemoved(processInstanceKey);
+    assertThatIncidentIsResolved(processInstanceKey);
+  }
 
-    final var rejection =
-        ENGINE.userTask().withKey(userTaskKey).withAssignee("user").expectRejection().assign();
-    assertThat(rejection.getRejectionType())
-        .describedAs("Expected the canceled user task to be gone")
-        .isEqualTo(RejectionType.NOT_FOUND);
+  @Test
+  public void shouldTerminateCancelingUserTaskWhenTerminatingFlowScope() {
+    // given
+    final long processInstanceKey = createProcessInstanceBlockedByCancelingListener();
+
+    // when
+    terminateElementByModification(processInstanceKey, "sub");
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "userTask");
+    assertThatCancelingUserTaskIsRemoved(processInstanceKey);
+    assertThatIncidentIsResolved(processInstanceKey);
+  }
+
+  @Test
+  public void shouldTerminateCancelingUserTaskWithRetriedListenerJobWhenTerminatingFlowScope() {
+    // given
+    final long processInstanceKey = createProcessInstanceBlockedByCancelingListener();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withRetries(1)
+        .updateRetries();
+    ENGINE
+        .incident()
+        .ofInstance(processInstanceKey)
+        .withKey(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getKey())
+        .resolve();
+
+    // when
+    terminateElementByModification(processInstanceKey, "sub");
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "userTask");
+    assertThatCancelingUserTaskIsRemoved(processInstanceKey);
+  }
+
+  @Test
+  public void shouldTerminateCancelingUserTaskInCalledProcessWhenTerminatingCallActivity() {
+    // given
+    final String childProcessId = Strings.newRandomValidBpmnId();
+    final String parentProcessId = Strings.newRandomValidBpmnId();
+    ENGINE.deployment().withXmlResource(processWithCancelingListener(childProcessId)).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .callActivity("callActivity", c -> c.zeebeProcessId(childProcessId))
+                .endEvent()
+                .done())
+        .deploy();
+    final long parentKey = ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+    final long childKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(parentKey)
+            .withBpmnProcessId(childProcessId)
+            .getFirst()
+            .getKey();
+    getUserTaskKey(childKey);
+    ENGINE.processInstance().withInstanceKey(parentKey).expectTerminating().cancel();
+    failCancelingListenerJob(childKey);
+
+    // when
+    terminateElementByModification(parentKey, "callActivity");
+
+    // then
+    assertThatElementIsTerminated(childKey, childProcessId);
+    assertThatCancelingUserTaskIsRemoved(childKey);
+    assertThatIncidentIsResolved(childKey);
   }
 
   /**
@@ -78,10 +140,7 @@ public class ModifyProcessInstanceTerminatingElementTest {
     getUserTaskKey(processInstanceKey);
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
-    ENGINE.job().ofInstance(processInstanceKey).withType(LISTENER_TYPE).withRetries(0).fail();
-    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .getFirst();
+    failCancelingListenerJob(processInstanceKey);
 
     return processInstanceKey;
   }
@@ -101,9 +160,34 @@ public class ModifyProcessInstanceTerminatingElementTest {
         .done();
   }
 
+  private static void failCancelingListenerJob(final long processInstanceKey) {
+    ENGINE.job().ofInstance(processInstanceKey).withType(LISTENER_TYPE).withRetries(0).fail();
+    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+  }
+
+  private static void terminateElementByModification(
+      final long processInstanceKey, final String elementId) {
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(getElementInstanceKey(processInstanceKey, elementId))
+        .modify();
+  }
+
   private static long getUserTaskKey(final long processInstanceKey) {
     return RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
+        .getFirst()
+        .getKey();
+  }
+
+  private static long getListenerJobKey(final long processInstanceKey) {
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(LISTENER_TYPE)
         .getFirst()
         .getKey();
   }
@@ -114,5 +198,58 @@ public class ModifyProcessInstanceTerminatingElementTest {
         .withElementId(elementId)
         .getFirst()
         .getKey();
+  }
+
+  private static void assertThatElementIsTerminated(
+      final long processInstanceKey, final String elementId) {
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(elementId)
+                .exists())
+        .describedAs("Expected element '%s' to be terminated", elementId)
+        .isTrue();
+  }
+
+  private static void assertThatIncidentIsResolved(final long processInstanceKey) {
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .describedAs("Expected the incident of the canceling listener job to be resolved")
+        .isTrue();
+  }
+
+  /**
+   * Asserts that the user task and its listener job are canceled, and that commands for them are
+   * rejected as not found, so that no state is left behind.
+   */
+  private static void assertThatCancelingUserTaskIsRemoved(final long processInstanceKey) {
+    final long userTaskKey = getUserTaskKey(processInstanceKey);
+    final long jobKey = getListenerJobKey(processInstanceKey);
+
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .describedAs("Expected the user task to be canceled")
+        .isTrue();
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType(LISTENER_TYPE)
+                .exists())
+        .describedAs("Expected the canceling listener job to be canceled")
+        .isTrue();
+
+    final var assignRejection =
+        ENGINE.userTask().withKey(userTaskKey).withAssignee("user").expectRejection().assign();
+    assertThat(assignRejection.getRejectionType())
+        .describedAs("Expected the user task to be gone")
+        .isEqualTo(RejectionType.NOT_FOUND);
+    final var completeRejection = ENGINE.job().withKey(jobKey).expectRejection().complete();
+    assertThat(completeRejection.getRejectionType())
+        .describedAs("Expected the canceling listener job to be gone")
+        .isEqualTo(RejectionType.NOT_FOUND);
   }
 }

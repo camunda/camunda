@@ -1437,16 +1437,25 @@ public final class ProcessInstanceModificationModifyProcessor
     final var childInstances = new ArrayList<ElementInstance>();
     if (elementType.isContainerElement()) {
       elementInstanceState.getChildren(elementInstanceKey).stream()
-          .filter(ElementInstance::canTerminate)
+          .filter(ProcessInstanceModificationModifyProcessor::shouldTerminateWithParent)
           .forEach(childInstances::add);
     } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
       final var calledActivityElementInstance =
           elementInstanceState.getInstance(currentElement.getCalledChildInstanceKey());
-      if (calledActivityElementInstance != null && calledActivityElementInstance.canTerminate()) {
+      if (calledActivityElementInstance != null
+          && shouldTerminateWithParent(calledActivityElementInstance)) {
         childInstances.add(calledActivityElementInstance);
       }
     }
     return childInstances;
+  }
+
+  /**
+   * A terminating child can be blocked, for example by a canceling task listener job without
+   * retries. It is terminated together with its parent, otherwise it would be left behind.
+   */
+  private static boolean shouldTerminateWithParent(final ElementInstance child) {
+    return child.canTerminate() || child.isTerminating();
   }
 
   private void terminateElements(final Stack<ElementInstance> elementsTerminating) {
