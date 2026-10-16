@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -171,6 +173,12 @@ public final class LogArchiveRecordsProcessor
     final var currentListener = listener;
     if (currentListener != null) {
       currentListener.onRecovered(meta);
+      final var newest =
+          state.snapshots().stream()
+              .max(Comparator.comparingLong(ArchivedSnapshot::getProcessedPosition));
+      currentListener.onNewestArchivedSnapshotRecovered(
+          newest.map(ArchivedSnapshot::getId).orElse(""),
+          newest.map(ArchivedSnapshot::getProcessedPosition).orElse(-1L));
     }
     final var currentPublication = publication;
     if (currentPublication == null || meta.getTimelineId().isEmpty()) {

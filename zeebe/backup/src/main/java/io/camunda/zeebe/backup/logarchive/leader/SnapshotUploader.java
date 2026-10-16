@@ -71,13 +71,16 @@ public final class SnapshotUploader extends Actor implements LogArchiveListener 
   private boolean closed;
   private @Nullable String timelineId;
   private long archivedIndex = -1;
-  private @Nullable String lastArchivedSnapshotId;
+  // processed position of the newest snapshot known to be archived in the current timeline; a
+  // local snapshot at or below it is already archived or can never be
+  private long archivedProcessedPosition = -1;
 
   // current attempt; every async callback checks the attempt number to ignore stale results
   private long attempt;
   private @Nullable SnapshotReservation reservation;
   private @Nullable ArchivedSnapshot pendingSnapshot;
   private @Nullable String currentId;
+  private long currentProcessedPosition;
   private @Nullable ScheduledTimer awaitTimer;
   private Duration writeBackoff = WRITE_RETRY_MIN;
 
@@ -124,12 +127,19 @@ public final class SnapshotUploader extends Actor implements LogArchiveListener 
   }
 
   @Override
+  public void onNewestArchivedSnapshotRecovered(
+      final String snapshotId, final long processedPosition) {
+    actor.run(
+        () -> archivedProcessedPosition = Math.max(archivedProcessedPosition, processedPosition));
+  }
+
+  @Override
   public void onTimelineStarted(final String startedTimelineId) {
     actor.run(
         () -> {
           timelineId = startedTimelineId;
           // a new timeline needs its own snapshot, even if the newest local one was archived before
-          lastArchivedSnapshotId = null;
+          archivedProcessedPosition = -1;
         });
   }
 
@@ -143,7 +153,8 @@ public final class SnapshotUploader extends Actor implements LogArchiveListener 
     actor.run(
         () -> {
           if (state == State.AWAIT_COMMIT && snapshotId.equals(currentId)) {
-            lastArchivedSnapshotId = snapshotId;
+            archivedProcessedPosition =
+                Math.max(archivedProcessedPosition, currentProcessedPosition);
             finishAttempt();
           }
         });
@@ -158,7 +169,8 @@ public final class SnapshotUploader extends Actor implements LogArchiveListener 
             // snapshot is already archived (e.g. by a previous leader) or can never be: retrying
             // the
             // same snapshot would upload it again on every tick.
-            lastArchivedSnapshotId = snapshotId;
+            archivedProcessedPosition =
+                Math.max(archivedProcessedPosition, currentProcessedPosition);
             finishAttempt();
           }
         });
@@ -173,13 +185,15 @@ public final class SnapshotUploader extends Actor implements LogArchiveListener 
       return;
     }
     final var snapshot = latest.get();
-    if (snapshot.getId().equals(lastArchivedSnapshotId) || snapshot.getIndex() > archivedIndex) {
+    final long processedPosition = snapshot.getMetadata().processedPosition();
+    if (processedPosition <= archivedProcessedPosition || snapshot.getIndex() > archivedIndex) {
       return;
     }
 
     state = State.RESERVED;
     final long thisAttempt = ++attempt;
     currentId = snapshot.getId();
+    currentProcessedPosition = processedPosition;
     final var timeline = timelineId;
     actor.runOnCompletion(
         snapshot.reserve(),
