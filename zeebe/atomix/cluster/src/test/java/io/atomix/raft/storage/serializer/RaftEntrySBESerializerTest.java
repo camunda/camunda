@@ -27,13 +27,17 @@ import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.Set;
+import java.util.UUID;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
 public class RaftEntrySBESerializerTest {
+
+  private static final UUID EPOCH = UUID.randomUUID();
 
   final RaftEntrySerializer serializer = new RaftEntrySBESerializer();
   final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
@@ -46,7 +50,8 @@ public class RaftEntrySBESerializerTest {
         new SerializedApplicationEntry(1, 2, new UnsafeBuffer(data));
 
     // when
-    final int writtenBytes = serializer.writeApplicationEntry(5, applicationEntry, buffer, 0);
+    final int writtenBytes =
+        serializer.writeApplicationEntry(5, EPOCH, applicationEntry, buffer, 0);
 
     // then
     assertThat(serializer.getApplicationEntrySerializedLength(applicationEntry))
@@ -59,10 +64,10 @@ public class RaftEntrySBESerializerTest {
     final byte[] data = "Test".getBytes();
     final SerializedApplicationEntry applicationEntryWritten =
         new SerializedApplicationEntry(1, 2, new UnsafeBuffer(data));
-    final RaftLogEntry raftLogEntryExpected = new RaftLogEntry(5, applicationEntryWritten);
+    final RaftLogEntry raftLogEntryExpected = new RaftLogEntry(5, EPOCH, applicationEntryWritten);
 
     // when
-    serializer.writeApplicationEntry(5, applicationEntryWritten, buffer, 0);
+    serializer.writeApplicationEntry(5, EPOCH, applicationEntryWritten, buffer, 0);
     final RaftLogEntry raftLogEntryRead = serializer.readRaftLogEntry(buffer);
 
     assertThat(raftLogEntryRead.isApplicationEntry()).isTrue();
@@ -81,10 +86,11 @@ public class RaftEntrySBESerializerTest {
     final byte[] data = "Test".getBytes();
     final SerializedApplicationEntry applicationEntryWritten =
         new SerializedApplicationEntry(1, 2, new UnsafeBuffer(data));
-    final RaftLogEntry raftLogEntryExpected = new RaftLogEntry(5, applicationEntryWritten);
+    final RaftLogEntry raftLogEntryExpected = new RaftLogEntry(5, EPOCH, applicationEntryWritten);
 
     // when
-    final var length = serializer.writeApplicationEntry(5, applicationEntryWritten, buffer, offset);
+    final var length =
+        serializer.writeApplicationEntry(5, EPOCH, applicationEntryWritten, buffer, offset);
     final RaftLogEntry raftLogEntryRead =
         serializer.readRaftLogEntry(new UnsafeBuffer(buffer, offset, length));
 
@@ -103,7 +109,7 @@ public class RaftEntrySBESerializerTest {
     final InitialEntry initialEntry = new InitialEntry();
 
     // when
-    final int writtenBytes = serializer.writeInitialEntry(5, initialEntry, buffer, 0);
+    final int writtenBytes = serializer.writeInitialEntry(5, EPOCH, initialEntry, buffer, 0);
 
     // then
     assertThat(serializer.getInitialEntrySerializedLength()).isEqualTo(writtenBytes);
@@ -113,10 +119,10 @@ public class RaftEntrySBESerializerTest {
   public void shouldWriteInitialEntry() {
     // given
     final InitialEntry initialEntryWritten = new InitialEntry();
-    final RaftLogEntry raftLogEntryExpected = new RaftLogEntry(5, initialEntryWritten);
+    final RaftLogEntry raftLogEntryExpected = new RaftLogEntry(5, EPOCH, initialEntryWritten);
 
     // when
-    serializer.writeInitialEntry(5, initialEntryWritten, buffer, 0);
+    serializer.writeInitialEntry(5, EPOCH, initialEntryWritten, buffer, 0);
     final RaftLogEntry raftLogEntryRead = serializer.readRaftLogEntry(buffer);
 
     assertThat(raftLogEntryRead.isInitialEntry()).isTrue();
@@ -128,10 +134,10 @@ public class RaftEntrySBESerializerTest {
     // given
     final int offset = 10;
     final InitialEntry initialEntryWritten = new InitialEntry();
-    final RaftLogEntry raftLogEntryExpected = new RaftLogEntry(5, initialEntryWritten);
+    final RaftLogEntry raftLogEntryExpected = new RaftLogEntry(5, EPOCH, initialEntryWritten);
 
     // when
-    final var length = serializer.writeInitialEntry(5, initialEntryWritten, buffer, offset);
+    final var length = serializer.writeInitialEntry(5, EPOCH, initialEntryWritten, buffer, offset);
     final RaftLogEntry raftLogEntryRead =
         serializer.readRaftLogEntry(new UnsafeBuffer(buffer, offset, length));
 
@@ -153,7 +159,8 @@ public class RaftEntrySBESerializerTest {
     final ConfigurationEntry configurationEntry = new ConfigurationEntry(1234L, members);
 
     // when
-    final int writtenBytes = serializer.writeConfigurationEntry(5, configurationEntry, buffer, 0);
+    final int writtenBytes =
+        serializer.writeConfigurationEntry(5, EPOCH, configurationEntry, buffer, 0);
 
     // then
     assertThat(serializer.getConfigurationEntrySerializedLength(configurationEntry))
@@ -172,11 +179,12 @@ public class RaftEntrySBESerializerTest {
     final ConfigurationEntry configurationEntryWritten = new ConfigurationEntry(1234L, members);
 
     // when
-    serializer.writeConfigurationEntry(5, configurationEntryWritten, buffer, 0);
+    serializer.writeConfigurationEntry(5, EPOCH, configurationEntryWritten, buffer, 0);
     final RaftLogEntry entryRead = serializer.readRaftLogEntry(buffer);
 
     // then
     assertThat(entryRead.isConfigurationEntry()).isTrue();
+    assertThat(entryRead.epoch()).isEqualTo(EPOCH);
     final var configurationEntryRead = entryRead.getConfigurationEntry();
     assertThat(configurationEntryRead.requiresJointConsensus()).isFalse();
     assertThat(configurationEntryRead.timestamp()).isEqualTo(configurationEntryWritten.timestamp());
@@ -197,7 +205,7 @@ public class RaftEntrySBESerializerTest {
 
     // when
     final var length =
-        serializer.writeConfigurationEntry(5, configurationEntryWritten, buffer, offset);
+        serializer.writeConfigurationEntry(5, EPOCH, configurationEntryWritten, buffer, offset);
     final RaftLogEntry entryRead =
         serializer.readRaftLogEntry(new UnsafeBuffer(buffer, offset, length));
 
@@ -227,7 +235,7 @@ public class RaftEntrySBESerializerTest {
         new ConfigurationEntry(1234L, oldMembers, newMembers);
 
     // when
-    serializer.writeConfigurationEntry(5, configurationEntryWritten, buffer, 0);
+    serializer.writeConfigurationEntry(5, EPOCH, configurationEntryWritten, buffer, 0);
     final RaftLogEntry entryRead = serializer.readRaftLogEntry(buffer);
 
     // then
@@ -258,10 +266,56 @@ public class RaftEntrySBESerializerTest {
         new ConfigurationEntry(1234L, newMembers, oldMembers);
 
     // when
-    final int writtenBytes = serializer.writeConfigurationEntry(5, configurationEntry, buffer, 0);
+    final int writtenBytes =
+        serializer.writeConfigurationEntry(5, EPOCH, configurationEntry, buffer, 0);
 
     // then
     assertThat(serializer.getConfigurationEntrySerializedLength(configurationEntry))
         .isEqualTo(writtenBytes);
+  }
+
+  @Test
+  public void shouldWriteEpochInCanonicalByteOrder() {
+    // given
+    final UUID epoch = UUID.fromString("00112233-4455-6677-8899-aabbccddeeff");
+
+    // when
+    serializer.writeInitialEntry(5, epoch, new InitialEntry(), buffer, 0);
+
+    // then
+    final byte[] written = new byte[RaftLogEntryEncoder.epochLength()];
+    buffer.getBytes(
+        MessageHeaderEncoder.ENCODED_LENGTH + RaftLogEntryEncoder.epochEncodingOffset(), written);
+    assertThat(HexFormat.of().formatHex(written)).isEqualTo("00112233445566778899aabbccddeeff");
+  }
+
+  @Test
+  public void shouldMakeEpochFromTermForEntryWrittenBeforeEpochs() {
+    // given an application entry as schema version 4 wrote it: its RaftLogEntry block ends where
+    // the epoch starts now
+    final SerializedApplicationEntry applicationEntry =
+        new SerializedApplicationEntry(1, 2, new UnsafeBuffer("Test".getBytes()));
+    final MutableDirectBuffer current = new ExpandableArrayBuffer();
+    final int length = serializer.writeApplicationEntry(5, EPOCH, applicationEntry, current, 0);
+
+    final int headerLength = MessageHeaderEncoder.ENCODED_LENGTH;
+    final int oldBlockLength = RaftLogEntryEncoder.epochEncodingOffset();
+    final int applicationEntryOffset = headerLength + RaftLogEntryEncoder.BLOCK_LENGTH;
+    final int oldLength = length - (RaftLogEntryEncoder.BLOCK_LENGTH - oldBlockLength);
+    buffer.putBytes(0, current, 0, headerLength + oldBlockLength);
+    buffer.putBytes(
+        headerLength + oldBlockLength,
+        current,
+        applicationEntryOffset,
+        length - applicationEntryOffset);
+    new MessageHeaderEncoder().wrap(buffer, 0).blockLength(oldBlockLength).version(4);
+    new MessageHeaderEncoder().wrap(buffer, headerLength + oldBlockLength).version(4);
+
+    // when
+    final RaftLogEntry entryRead =
+        serializer.readRaftLogEntry(new UnsafeBuffer(buffer, 0, oldLength));
+
+    // then
+    assertThat(entryRead).isEqualTo(new RaftLogEntry(5, new UUID(0, 5), applicationEntry));
   }
 }

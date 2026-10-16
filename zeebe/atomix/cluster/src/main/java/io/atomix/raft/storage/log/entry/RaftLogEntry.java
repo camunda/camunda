@@ -18,9 +18,16 @@ package io.atomix.raft.storage.log.entry;
 
 import io.atomix.raft.storage.log.RaftLog;
 import java.util.Optional;
+import java.util.UUID;
 
-/** Stores a state change in a {@link RaftLog}. */
-public record RaftLogEntry(long term, RaftEntry entry) {
+/**
+ * Stores a state change in a {@link RaftLog}.
+ *
+ * @param term the term of the leader that appended the entry
+ * @param epoch the epoch of the leader that appended the entry
+ * @param entry the state change
+ */
+public record RaftLogEntry(long term, UUID epoch, RaftEntry entry) {
   public boolean isApplicationEntry() {
     return entry instanceof ApplicationEntry;
   }

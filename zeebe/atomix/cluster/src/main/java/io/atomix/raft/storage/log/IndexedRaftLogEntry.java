@@ -20,6 +20,7 @@ import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.ReplicatableJournalRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
+import java.util.UUID;
 
 /** Stores a state change in a {@link RaftLog}. */
 public interface IndexedRaftLogEntry {
@@ -37,6 +38,14 @@ public interface IndexedRaftLogEntry {
    * @return term
    */
   long term();
+
+  /**
+   * Returns the epoch of the leader that appended the record: a random UUID it minted for its term.
+   * A record written before epochs existed has {@code new UUID(0, term)} instead.
+   *
+   * @return epoch
+   */
+  UUID epoch();
 
   /**
    * Return the raft entry in the record
