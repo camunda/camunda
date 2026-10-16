@@ -369,6 +369,13 @@ data.wait-states.enabled
 document.assigned
 document.default-store-id
 document.thread-pool-size
+event-plane.audience
+event-plane.client-id
+event-plane.client-secret
+event-plane.endpoint
+event-plane.password
+event-plane.token-url
+event-plane.username
 expression.timeout
 mode
 monitoring.jfr

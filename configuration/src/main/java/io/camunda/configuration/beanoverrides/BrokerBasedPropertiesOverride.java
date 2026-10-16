@@ -187,6 +187,21 @@ public class BrokerBasedPropertiesOverride {
     populateFromSecurity(override, camunda);
 
     override.setLicenseKey(camunda.getLicense().getKey());
+
+    populateFromEventPlane(override, camunda);
+  }
+
+  private static void populateFromEventPlane(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var eventPlane = camunda.getEventPlane();
+    final var cfg = override.getEventPlane();
+    cfg.setEndpoint(eventPlane.getEndpoint());
+    cfg.setUsername(eventPlane.getUsername());
+    cfg.setPassword(eventPlane.getPassword());
+    cfg.setClientId(eventPlane.getClientId());
+    cfg.setClientSecret(eventPlane.getClientSecret());
+    cfg.setTokenUrl(eventPlane.getTokenUrl());
+    cfg.setAudience(eventPlane.getAudience());
   }
 
   private static void populateFromSecurity(

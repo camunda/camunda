@@ -41,6 +41,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.AdminApiRequestHandl
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupApiRequestHandlerStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupServiceTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupStoreTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.EventPlaneRegistrationStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandServiceStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
@@ -238,7 +239,8 @@ public final class ZeebePartitionFactory {
         new SnapshotApiHandlerTransitionStep(),
         new ExporterDirectorPartitionTransitionStep(),
         new BackupApiRequestHandlerStep(),
-        new AdminApiRequestHandlerStep());
+        new AdminApiRequestHandlerStep(),
+        new EventPlaneRegistrationStep());
   }
 
   private StateController createStateController(
